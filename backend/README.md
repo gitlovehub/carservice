@@ -1,58 +1,105 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CarService Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend được xây dựng bằng Laravel. Tài liệu này hướng dẫn cài đặt dự án và
+sử dụng chức năng đăng nhập, xác thực và phân quyền API.
 
-## About Laravel
+## Cài đặt
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Tại thư mục `backend`, cài các gói phụ thuộc, tạo file môi trường nếu chưa có,
+cấu hình kết nối cơ sở dữ liệu trong `.env`, sau đó chạy migration:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+php artisan migrate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Ứng dụng không tạo tài khoản đăng nhập mặc định khi chạy seeder. Hãy tạo tài
+khoản quản trị bằng một quy trình an toàn, ví dụ qua Tinker:
 
-## Contributing
+```bash
+php artisan tinker
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```php
+\App\Models\Account::create([
+    'email' => 'advisor@example.com',
+    'password_hash' => \Illuminate\Support\Facades\Hash::make('thay-bang-mat-khau-manh'),
+    'role' => \App\Models\Account::ROLE_ADVISOR,
+    'status' => \App\Models\Account::STATUS_ACTIVE,
+]);
+```
 
-## Code of Conduct
+Không sử dụng mật khẩu ví dụ này trong môi trường thật.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Cấu hình frontend
 
-## Security Vulnerabilities
+Trong file `.env` của backend, thiết lập danh sách domain frontend được phép
+dùng xác thực session và gửi yêu cầu có thông tin xác thực. Ví dụ với Vite
+chạy tại `http://localhost:5173`:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```dotenv
+SANCTUM_STATEFUL_DOMAINS=localhost,localhost:5173,127.0.0.1,127.0.0.1:5173,127.0.0.1:8000,::1
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
 
-## License
+Khi triển khai, thay các giá trị ví dụ bằng domain và cổng thực tế. Origin phải
+khớp với địa chỉ frontend, bao gồm giao thức và cổng nếu có.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## API xác thực
+
+| Phương thức | Endpoint | Chức năng | Xác thực |
+| --- | --- | --- | --- |
+| `POST` | `/api/login` | Đăng nhập; giới hạn 5 lần mỗi phút | Không |
+| `GET` | `/api/me` | Lấy thông tin tài khoản đang đăng nhập | Có |
+| `POST` | `/api/logout` | Đăng xuất và thu hồi token hiện tại | Có |
+
+Chỉ tài khoản có trạng thái `ACTIVE` mới đăng nhập được. Vai trò hợp lệ gồm
+`CUSTOMER`, `ADVISOR`, `TECHNICIAN` và `ADMIN`.
+
+### Dùng với ứng dụng SPA
+
+Sanctum xác thực SPA cùng hệ thống bằng cookie session. Trước khi đăng nhập,
+frontend cần:
+
+1. Gửi `GET /sanctum/csrf-cookie`.
+2. Gửi yêu cầu đăng nhập và các yêu cầu tiếp theo kèm cookie; với Axios, bật
+   `withCredentials: true` và `withXSRFToken: true`.
+
+Đăng nhập thành công bằng session trả về thông tin tài khoản và
+`"token": null`. Khi đăng xuất, session hiện tại sẽ bị hủy.
+
+### Dùng với ứng dụng di động hoặc Postman
+
+Gửi email và mật khẩu đến `POST /api/login`. Có thể gửi thêm `device_name` để
+đặt tên cho token:
+
+```json
+{
+  "email": "advisor@example.com",
+  "password": "mat-khau-cua-tai-khoan",
+  "device_name": "postman"
+}
+```
+
+Gửi token nhận được trong các yêu cầu cần đăng nhập bằng header:
+
+```text
+Authorization: Bearer <token>
+```
+
+Gọi `POST /api/logout` với token này để thu hồi token của thiết bị hiện tại.
+
+## Phân quyền theo vai trò
+
+Đặt `auth:sanctum` trên các route cần đăng nhập. Thêm middleware `role` để giới
+hạn vai trò được phép truy cập:
+
+```php
+Route::middleware(['auth:sanctum', 'role:ADVISOR,ADMIN'])->group(function () {
+    // Khai báo các route chỉ dành cho cố vấn và quản trị viên tại đây.
+});
+```
+
+Các vai trò middleware hỗ trợ: `CUSTOMER`, `ADVISOR`, `TECHNICIAN`, `ADMIN`.
+Nếu người dùng chưa đăng nhập, API trả về `401`; nếu tài khoản bị khóa hoặc
+không có vai trò phù hợp, API trả về `403`.
