@@ -20,7 +20,10 @@ class EnsureAccountRole
             return response()->json(['message' => 'Tài khoản đang bị khóa hoặc ngừng hoạt động.'], 403);
         }
 
-        if (! in_array($account->role, $roles, true)) {
+        $normalizedRoles = array_map(static fn (string $role): string => strtoupper(trim($role)), $roles);
+        $accountRole = strtoupper((string) $account->role);
+
+        if (! in_array($accountRole, $normalizedRoles, true)) {
             return response()->json(['message' => 'Bạn không có quyền thực hiện thao tác này.'], 403);
         }
 
