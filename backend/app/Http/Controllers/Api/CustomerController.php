@@ -111,4 +111,16 @@ class CustomerController extends Controller
             'data' => $customer->fresh(),
         ]);
     }
+
+    public function destroy($id)
+    {
+        $customer = Customer::findOrFail($id);
+
+        $customer->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Xóa khách hàng thành công.'
+        ], 200);
+    }
 }
