@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class VehicleController extends Controller
 {
@@ -78,14 +79,27 @@ class VehicleController extends Controller
         $vehicle = Vehicle::findOrFail($id);
 
         $validated = $request->validate([
-            'customer_id'   => 'required|exists:customers,id',
-            'model_id'      => 'required|exists:vehicle_models,id',
-            'variant'       => 'nullable|string|max:100',
-            'year'          => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
-            'license_plate' => 'nullable|string|max:20',
-            'vin'           => 'nullable|string|max:50',
-            'mileage'       => 'nullable|integer|min:0',
-            'note'          => 'nullable|string',
+            'customer_id' => ['sometimes', 'exists:customers,id'],
+            'model_id' => ['sometimes', 'exists:vehicle_models,id'],
+            'variant' => ['nullable', 'string', 'max:100'],
+            'year' => ['nullable', 'integer', 'min:1900', 'max:' . (date('Y') + 1)],
+
+            'license_plate' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('vehicles', 'license_plate')->ignore($vehicle->id),
+            ],
+
+            'vin' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('vehicles', 'vin')->ignore($vehicle->id),
+            ],
+
+            'mileage' => ['nullable', 'integer', 'min:0'],
+            'note' => ['nullable', 'string'],
         ]);
 
         $vehicle->update($validated);
