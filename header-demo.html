@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Header - CarService</title>
+    <!-- Nhúng Tailwind CSS qua CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-50 w-full bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+
+            <!-- 1. Logo hoặc chữ CarService -->
+            <a href="#" class="flex items-center gap-2 group">
+                <div
+                    class="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center text-white font-bold text-sm group-hover:bg-red-600 transition-colors">
+                    CS
+                </div>
+                <span class="text-xl font-bold tracking-tight text-gray-900 group-hover:text-red-600 transition-colors">
+                    Car<span class="text-red-600 group-hover:text-gray-900 transition-colors">Service</span>
+                </span>
+            </a>
+
+            <!-- 2. Menu điều hướng mẫu (Trang chủ, Dịch vụ, Đặt lịch, Liên hệ) -->
+            <nav class="flex items-center gap-8 text-sm font-medium text-gray-600">
+                <a href="#" class="hover:text-red-600 transition-colors duration-150">Trang chủ</a>
+                <a href="#" class="hover:text-red-600 transition-colors duration-150">Dịch vụ</a>
+                <a href="#" class="hover:text-red-600 transition-colors duration-150">Đặt lịch</a>
+                <a href="#" class="hover:text-red-600 transition-colors duration-150">Liên hệ</a>
+            </nav>
+
+            <!-- 3. Nút Đăng nhập -->
+            <div>
+                <button type="button"
+                    class="px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-red-600 active:scale-95 transition-all duration-150 shadow-sm">
+                    Đăng nhập
+                </button>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Vùng nội dung demo -->
+    <main class="max-w-7xl mx-auto px-6 py-12">
+        <div class="bg-white p-8 rounded-xl border border-gray-200 text-center">
+            <h1 class="text-2xl font-bold text-gray-800">Thực hành tạo Header - CarService</h1>
+            <p class="text-sm text-gray-500 mt-2">Nhiệm vụ kiểm tra quy trình phối hợp Trello + Git/GitHub.</p>
+        </div>
+    </main>
+
+</body>
+
+</html>
