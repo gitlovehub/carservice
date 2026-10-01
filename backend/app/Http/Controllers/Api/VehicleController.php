@@ -76,40 +76,76 @@ class VehicleController extends Controller
     // PUT /api/vehicles/{id}
     public function update(Request $request, $id)
     {
+        // Tìm xe theo ID, không tồn tại thì Laravel trả về 404
         $vehicle = Vehicle::findOrFail($id);
 
+        // Validate dữ liệu gửi lên
         $validated = $request->validate([
-            'customer_id' => ['sometimes', 'exists:customers,id'],
-            'model_id' => ['sometimes', 'exists:vehicle_models,id'],
-            'variant' => ['nullable', 'string', 'max:100'],
-            'year' => ['nullable', 'integer', 'min:1900', 'max:' . (date('Y') + 1)],
+            'customer_id' => [
+                'sometimes',
+                'exists:customers,id',
+            ],
+
+            'model_id' => [
+                'sometimes',
+                'exists:vehicle_models,id',
+            ],
+
+            'variant' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'year' => [
+                'nullable',
+                'integer',
+                'min:1900',
+                'max:' . (date('Y') + 1),
+            ],
 
             'license_plate' => [
                 'nullable',
                 'string',
                 'max:20',
-                Rule::unique('vehicles', 'license_plate')->ignore($vehicle->id),
+                Rule::unique('vehicles', 'license_plate')
+                    ->ignore($vehicle->id),
             ],
 
             'vin' => [
                 'nullable',
                 'string',
                 'max:50',
-                Rule::unique('vehicles', 'vin')->ignore($vehicle->id),
+                Rule::unique('vehicles', 'vin')
+                    ->ignore($vehicle->id),
             ],
 
-            'mileage' => ['nullable', 'integer', 'min:0'],
-            'note' => ['nullable', 'string'],
+            'mileage' => [
+                'nullable',
+                'integer',
+                'min:0',
+            ],
+
+            'note' => [
+                'nullable',
+                'string',
+            ],
         ]);
 
+        // Cập nhật thông tin xe
         $vehicle->update($validated);
-        $vehicle->load(['customer', 'model']);
+
+        // Load thông tin khách hàng và model xe
+        $vehicle->load([
+            'customer',
+            'model',
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật xe thành công.',
             'data' => $vehicle,
-        ]);
+        ], 200);
     }
 
     // DELETE /api/vehicles/{id}
