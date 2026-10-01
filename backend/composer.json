@@ -8,7 +8,7 @@
     "require": {
         "php": "^8.3",
         "laravel/framework": "^13.17",
-        "laravel/sanctum": "^4.0",
+        "laravel/sanctum": "4.3.3",
         "laravel/tinker": "^3.0"
     },
     "require-dev": {
@@ -81,6 +81,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "platform": {
+            "php": "8.3.30"
         }
     },
     "minimum-stability": "stable",
