@@ -12,17 +12,17 @@ use App\Http\Controllers\Api\WorkItemController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
 
+
 /*
 |--------------------------------------------------------------------------
 | Public
 |--------------------------------------------------------------------------
 */
 
-Route::post('register', [AuthController::class, 'register'])
-    ->middleware('throttle:5,1');
-
-Route::post('login', [AuthController::class, 'login'])
-    ->middleware('throttle:5,1');
+Route::controller(AuthController::class)->group(function (): void {
+    Route::post('register', 'register')->middleware('throttle:5,1');
+    Route::post('login', 'login')->middleware('throttle:5,1');
+});
 
 
 /*
@@ -33,9 +33,41 @@ Route::post('login', [AuthController::class, 'login'])
 
 Route::middleware('auth:sanctum')->group(function (): void {
 
-    // Auth
-    Route::get('me', [AuthController::class, 'me']);
-    Route::post('logout', [AuthController::class, 'logout']);
+    /*
+    |--------------------------------------------------------------------------
+    | Auth
+    |--------------------------------------------------------------------------
+    */
+
+    Route::controller(AuthController::class)->group(function (): void {
+        Route::get('me', 'me');
+        Route::post('logout', 'logout');
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Customer
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:' . Account::ROLE_CUSTOMER)->group(function (): void {
+
+        // Hồ sơ cá nhân
+        Route::controller(CustomerController::class)->prefix('me/customer')->group(function (): void {
+            Route::get('/', 'me');
+            Route::match(['put', 'patch'], '/', 'updateMe');
+        });
+
+        // Xe của tôi
+        Route::controller(VehicleController::class)->prefix('me/vehicles')->group(function (): void {
+            Route::get('/', 'myVehicles');
+            Route::post('/', 'storeMyVehicle');
+            Route::get('/{vehicle}', 'showMyVehicle');
+            Route::patch('/{vehicle}', 'updateMyVehicle');
+            Route::delete('/{vehicle}', 'destroyMyVehicle');
+        });
+    });
 
 
     /*
@@ -45,10 +77,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
     */
 
     Route::middleware(
-        'role:'.Account::ROLE_ADVISOR.','.Account::ROLE_ADMIN
+        'role:' . Account::ROLE_ADVISOR . ',' . Account::ROLE_ADMIN
     )->group(function (): void {
 
-        // Customer CRUD (không bao gồm delete)
+        // Customer CRUD
         Route::apiResource('customers', CustomerController::class)
             ->only(['index', 'store', 'show', 'update']);
 
@@ -70,8 +102,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('role:'.Account::ROLE_ADMIN)
-        ->delete('customers/{customer}', [CustomerController::class, 'destroy']);
+    Route::middleware('role:' . Account::ROLE_ADMIN)->group(function (): void {
+
+        // Xóa khách hàng
+        Route::delete(
+            'customers/{customer}',
+            [CustomerController::class, 'destroy']
+        );
+    });
 
 
     /*
@@ -80,51 +118,111 @@ Route::middleware('auth:sanctum')->group(function (): void {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('role:'.Account::ROLE_ADVISOR)
-        ->group(function (): void {
+    Route::middleware('role:' . Account::ROLE_ADVISOR)->group(function (): void {
 
-            // Repair Orders
-            Route::get('repair-orders', [RepairOrderController::class, 'index']);
-            Route::post('repair-orders', [RepairOrderController::class, 'store']);
-            Route::get('repair-orders/{repairOrder}', [RepairOrderController::class, 'show']);
+        /*
+        |--------------------------------------------------------------------------
+        | Repair Orders
+        |--------------------------------------------------------------------------
+        */
+
+        Route::controller(RepairOrderController::class)->group(function (): void {
+
+            Route::get('repair-orders', 'index');
+            Route::post('repair-orders', 'store');
+            Route::get('repair-orders/{repairOrder}', 'show');
 
             Route::prefix('repair-orders/{repairOrder}')->group(function (): void {
-                Route::post('assign-technician', [RepairOrderController::class, 'assignTechnician']);
-                Route::post('start-repair', [RepairOrderController::class, 'startRepair']);
-                Route::post('waiting-for-parts', [RepairOrderController::class, 'markWaitingForParts']);
-                Route::post('resume', [RepairOrderController::class, 'resume']);
-                Route::post('review', [RepairOrderController::class, 'review']);
-                Route::post('complete', [RepairOrderController::class, 'complete']);
-                Route::post('close', [RepairOrderController::class, 'close']);
-                Route::post('hand-over', [RepairOrderController::class, 'handOver']);
-
-                Route::post('quotations', [QuotationController::class, 'store']);
-
-                Route::get('work-items', [WorkItemController::class, 'index']);
-                Route::post('used-parts', [WorkItemController::class, 'storeUsedPart']);
-
-                Route::post('invoice', [InvoiceController::class, 'store']);
-                Route::get('invoice', [InvoiceController::class, 'show']);
+                Route::post('assign-technician', 'assignTechnician');
+                Route::post('start-repair', 'startRepair');
+                Route::post('waiting-for-parts', 'markWaitingForParts');
+                Route::post('resume', 'resume');
+                Route::post('review', 'review');
+                Route::post('complete', 'complete');
+                Route::post('close', 'close');
+                Route::post('hand-over', 'handOver');
             });
+        });
 
-            // Quotations
+
+        /*
+        |--------------------------------------------------------------------------
+        | Quotations
+        |--------------------------------------------------------------------------
+        */
+
+        Route::controller(QuotationController::class)->group(function (): void {
+
+            Route::post(
+                'repair-orders/{repairOrder}/quotations',
+                'store'
+            );
+
             Route::prefix('quotations/{quotation}')->group(function (): void {
-                Route::post('send', [QuotationController::class, 'send']);
-                Route::post('respond', [QuotationController::class, 'respond']);
+                Route::post('send', 'send');
+                Route::post('respond', 'respond');
             });
+        });
 
-            // Work Items
+
+        /*
+        |--------------------------------------------------------------------------
+        | Work Items / Used Parts
+        |--------------------------------------------------------------------------
+        */
+
+        Route::controller(WorkItemController::class)->group(function (): void {
+
+            Route::get(
+                'repair-orders/{repairOrder}/work-items',
+                'index'
+            );
+
+            Route::post(
+                'repair-orders/{repairOrder}/used-parts',
+                'storeUsedPart'
+            );
+
             Route::patch(
                 'work-items/{workItem}/status',
-                [WorkItemController::class, 'updateStatus']
-            );
-
-            // Payments
-            Route::post(
-                'invoices/{invoice}/payments',
-                [PaymentController::class, 'store']
+                'updateStatus'
             );
         });
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Invoice
+        |--------------------------------------------------------------------------
+        */
+
+        Route::controller(InvoiceController::class)->prefix('repair-orders/{repairOrder}/invoice')->group(function (): void {
+            Route::get('/', 'show');
+            Route::post('/', 'store');
+        });
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment
+        |--------------------------------------------------------------------------
+        */
+
+        Route::controller(PaymentController::class)->group(function (): void {
+
+            // Ghi nhận thanh toán DIRECT / QR
+            Route::post(
+                'invoices/{invoice}/payments',
+                'store'
+            );
+
+            // Tạm thời Advisor xác nhận QR
+            Route::post(
+                'payments/{payment}/confirm-qr',
+                'confirmQr'
+            );
+        });
+    });
 
 
     /*
@@ -133,22 +231,20 @@ Route::middleware('auth:sanctum')->group(function (): void {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('role:'.Account::ROLE_TECHNICIAN)
-        ->post(
-            'repair-orders/{repairOrder}/inspections',
-            [InspectionController::class, 'store']
-        );
+    Route::middleware('role:' . Account::ROLE_TECHNICIAN)->group(function (): void {
 
+        /*
+        |--------------------------------------------------------------------------
+        | Inspections
+        |--------------------------------------------------------------------------
+        */
 
-    /*
-    |--------------------------------------------------------------------------
-    | Payment
-    |--------------------------------------------------------------------------
-    | Tạm giữ nguyên quyền hiện tại, sẽ rà soát PaymentController riêng.
-    */
+        Route::controller(InspectionController::class)->group(function (): void {
 
-    Route::post(
-        'payments/{payment}/confirm-qr',
-        [PaymentController::class, 'confirmQr']
-    );
+            Route::post(
+                'repair-orders/{repairOrder}/inspections',
+                'store'
+            );
+        });
+    });
 });
