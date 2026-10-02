@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\QuotationController;
 use App\Http\Controllers\Api\RepairOrderController;
+use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\WorkItemController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
@@ -42,7 +43,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
-
 
     /*
     |--------------------------------------------------------------------------
@@ -215,4 +215,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
         '/payments/{payment}/confirm-qr',
         [PaymentController::class, 'confirmQr']
     );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Vehicles
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/vehicles', [VehicleController::class, 'index']);
+    Route::post('/vehicles', [VehicleController::class, 'store']);
+    Route::get('/vehicles/{id}', [VehicleController::class, 'show']);
+    Route::put('/vehicles/{id}', [VehicleController::class, 'update']);
+    Route::delete('/vehicles/{id}', [VehicleController::class, 'destroy']);
+    Route::get('/customers/{customerId}/vehicles', [VehicleController::class, 'byCustomer']);
 });
