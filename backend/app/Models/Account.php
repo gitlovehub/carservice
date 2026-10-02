@@ -58,6 +58,6 @@ class Account extends Authenticatable
 
     public function hasRole(string $role): bool
     {
-        return $this->role === $role;
+        return strtoupper($this->role) === strtoupper(trim($role));
     }
 }

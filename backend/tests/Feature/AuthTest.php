@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
+use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\TechnicianProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -142,6 +143,34 @@ class AuthTest extends TestCase
             ->assertJsonPath('message', 'Bạn không có quyền thực hiện thao tác này.');
     }
 
+    public function test_login_is_case_insensitive_for_email_and_trims_whitespace(): void
+    {
+        $account = $this->createAccount(email: 'Advisor@Example.com');
+
+        $this->postJson('/api/login', [
+            'email' => '  ADVISOR@EXAMPLE.COM  ',
+            'password' => 'correct-password',
+            'device_name' => 'test-client',
+        ])
+            ->assertOk()
+            ->assertJsonPath('account.id', $account->id)
+            ->assertJsonPath('account.role', Account::ROLE_ADVISOR);
+    }
+
+    public function test_role_middleware_accepts_lowercase_role_names(): void
+    {
+        Route::get('/api/test/advisor-only-lowercase', fn () => response()->json(['allowed' => true]))
+            ->middleware(['auth:sanctum', 'role:advisor']);
+
+        $advisor = $this->createAccount(role: Account::ROLE_ADVISOR);
+        $advisorToken = $advisor->createToken('advisor-client')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$advisorToken)
+            ->getJson('/api/test/advisor-only-lowercase')
+            ->assertOk()
+            ->assertJsonPath('allowed', true);
+    }
+
     public function test_spa_login_uses_a_session_instead_of_creating_a_bearer_token(): void
     {
         config(['sanctum.stateful' => ['localhost:5173']]);
@@ -184,6 +213,104 @@ class AuthTest extends TestCase
         $response->assertNoContent()
             ->assertHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
             ->assertHeader('Access-Control-Allow-Credentials', 'true');
+    }
+
+    public function test_customer_can_register_and_receive_bearer_token(): void
+    {
+        $response = $this->postJson('/api/register', [
+            'full_name' => 'Nguyen Van B',
+            'phone' => '0912345678',
+            'email' => 'customer_new@example.com',
+            'password' => 'Password123@',
+            'password_confirmation' => 'Password123@',
+            'device_name' => 'test-device',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('message', 'Đăng ký tài khoản thành công.')
+            ->assertJsonPath('account.email', 'customer_new@example.com')
+            ->assertJsonPath('account.role', Account::ROLE_CUSTOMER)
+            ->assertJsonPath('account.status', Account::STATUS_ACTIVE)
+            ->assertJsonPath('account.customer.full_name', 'Nguyen Van B')
+            ->assertJsonPath('account.customer.phone', '0912345678')
+            ->assertJsonPath('account.employee', null);
+
+        $this->assertIsString($response->json('token'));
+        $this->assertDatabaseHas('accounts', [
+            'email' => 'customer_new@example.com',
+            'role' => Account::ROLE_CUSTOMER,
+        ]);
+        $this->assertDatabaseHas('customers', [
+            'email' => 'customer_new@example.com',
+            'phone' => '0912345678',
+            'full_name' => 'Nguyen Van B',
+        ]);
+    }
+
+    public function test_registration_validation_rules(): void
+    {
+        $this->createAccount(email: 'existing@example.com');
+
+        $response = $this->postJson('/api/register', [
+            'full_name' => '',
+            'phone' => '12345',
+            'email' => 'existing@example.com',
+            'password' => 'short',
+            'password_confirmation' => 'mismatch',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['full_name', 'phone', 'email', 'password']);
+    }
+
+    public function test_registration_links_to_existing_walkin_customer_profile(): void
+    {
+        $walkinCustomer = Customer::query()->create([
+            'account_id' => null,
+            'full_name' => 'Khach Vang Lai',
+            'phone' => '0988776655',
+            'email' => null,
+            'address' => '123 Ha Noi',
+        ]);
+
+        $response = $this->postJson('/api/register', [
+            'full_name' => 'Nguyen Khach',
+            'phone' => '0988776655',
+            'email' => 'khach@example.com',
+            'password' => 'Password123@',
+            'password_confirmation' => 'Password123@',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('account.customer.id', $walkinCustomer->id)
+            ->assertJsonPath('account.customer.full_name', 'Nguyen Khach');
+
+        $this->assertDatabaseCount('customers', 1);
+
+        $walkinCustomer->refresh();
+        $this->assertNotNull($walkinCustomer->account_id);
+        $this->assertSame('khach@example.com', $walkinCustomer->email);
+    }
+
+    public function test_spa_registration_uses_session_and_logs_in(): void
+    {
+        config(['sanctum.stateful' => ['localhost:5173']]);
+
+        $response = $this->withHeader('Origin', 'http://localhost:5173')
+            ->postJson('/api/register', [
+                'full_name' => 'Khach SPA',
+                'phone' => '0933445566',
+                'email' => 'spa_customer@example.com',
+                'password' => 'Password123@',
+                'password_confirmation' => 'Password123@',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('token', null);
+
+        $account = Account::query()->where('email', 'spa_customer@example.com')->firstOrFail();
+        $this->assertAuthenticatedAs($account, 'web');
+        $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 
     private function createAccount(
