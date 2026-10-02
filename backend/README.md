@@ -49,6 +49,7 @@ khớp với địa chỉ frontend, bao gồm giao thức và cổng nếu có.
 
 | Phương thức | Endpoint | Chức năng | Xác thực |
 | --- | --- | --- | --- |
+| `POST` | `/api/register` | Đăng ký tài khoản khách hàng; giới hạn 5 lần mỗi phút | Không |
 | `POST` | `/api/login` | Đăng nhập; giới hạn 5 lần mỗi phút | Không |
 | `GET` | `/api/me` | Lấy thông tin tài khoản đang đăng nhập | Có |
 | `POST` | `/api/logout` | Đăng xuất và thu hồi token hiện tại | Có |
