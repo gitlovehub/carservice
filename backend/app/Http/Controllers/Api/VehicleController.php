@@ -9,7 +9,18 @@ use Illuminate\Validation\Rule;
 
 class VehicleController extends Controller
 {
-    // GET /api/vehicles
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN / ADVISOR - QUẢN LÝ XE
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * GET /api/vehicles
+     *
+     * Lấy danh sách xe.
+     * Có thể lọc theo customer_id hoặc tìm kiếm.
+     */
     public function index(Request $request)
     {
         $query = Vehicle::with(['customer', 'model']);
@@ -28,7 +39,9 @@ class VehicleController extends Controller
             });
         }
 
-        $vehicles = $query->latest()->paginate(10);
+        $vehicles = $query
+            ->latest()
+            ->paginate(10);
 
         return response()->json([
             'success' => true,
@@ -37,22 +50,69 @@ class VehicleController extends Controller
         ]);
     }
 
-    // POST /api/vehicles
+    /**
+     * POST /api/vehicles
+     *
+     * Admin/Advisor thêm xe cho khách hàng.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'customer_id'   => 'required|exists:customers,id',
-            'model_id'      => 'required|exists:vehicle_models,id',
-            'variant'       => 'nullable|string|max:100',
-            'year'          => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
-            'license_plate' => 'nullable|string|max:20',
-            'vin'           => 'nullable|string|max:50',
-            'mileage'       => 'nullable|integer|min:0',
-            'note'          => 'nullable|string',
+            'customer_id' => [
+                'required',
+                'exists:customers,id',
+            ],
+
+            'model_id' => [
+                'required',
+                'exists:vehicle_models,id',
+            ],
+
+            'variant' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'year' => [
+                'nullable',
+                'integer',
+                'min:1900',
+                'max:' . (date('Y') + 1),
+            ],
+
+            'license_plate' => [
+                'nullable',
+                'string',
+                'max:20',
+                'unique:vehicles,license_plate',
+            ],
+
+            'vin' => [
+                'nullable',
+                'string',
+                'max:50',
+                'unique:vehicles,vin',
+            ],
+
+            'mileage' => [
+                'nullable',
+                'integer',
+                'min:0',
+            ],
+
+            'note' => [
+                'nullable',
+                'string',
+            ],
         ]);
 
         $vehicle = Vehicle::create($validated);
-        $vehicle->load(['customer', 'model']);
+
+        $vehicle->load([
+            'customer',
+            'model',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -61,10 +121,17 @@ class VehicleController extends Controller
         ], 201);
     }
 
-    // GET /api/vehicles/{id}
-    public function show($id)
+    /**
+     * GET /api/vehicles/{vehicle}
+     *
+     * Xem chi tiết xe.
+     */
+    public function show(Vehicle $vehicle)
     {
-        $vehicle = Vehicle::with(['customer', 'model'])->findOrFail($id);
+        $vehicle->load([
+            'customer',
+            'model',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -73,13 +140,13 @@ class VehicleController extends Controller
         ]);
     }
 
-    // PUT /api/vehicles/{id}
-    public function update(Request $request, $id)
+    /**
+     * PUT/PATCH /api/vehicles/{vehicle}
+     *
+     * Admin/Advisor cập nhật xe.
+     */
+    public function update(Request $request, Vehicle $vehicle)
     {
-        // Tìm xe theo ID, không tồn tại thì Laravel trả về 404
-        $vehicle = Vehicle::findOrFail($id);
-
-        // Validate dữ liệu gửi lên
         $validated = $request->validate([
             'customer_id' => [
                 'sometimes',
@@ -132,10 +199,8 @@ class VehicleController extends Controller
             ],
         ]);
 
-        // Cập nhật thông tin xe
         $vehicle->update($validated);
 
-        // Load thông tin khách hàng và model xe
         $vehicle->load([
             'customer',
             'model',
@@ -145,14 +210,16 @@ class VehicleController extends Controller
             'success' => true,
             'message' => 'Cập nhật xe thành công.',
             'data' => $vehicle,
-        ], 200);
+        ]);
     }
 
-    // DELETE /api/vehicles/{id}
-    public function destroy($id)
+    /**
+     * DELETE /api/vehicles/{vehicle}
+     *
+     * Admin/Advisor xóa xe.
+     */
+    public function destroy(Vehicle $vehicle)
     {
-        $vehicle = Vehicle::findOrFail($id);
-
         $vehicle->delete();
 
         return response()->json([
@@ -161,7 +228,11 @@ class VehicleController extends Controller
         ]);
     }
 
-    // GET /api/customers/{customerId}/vehicles
+    /**
+     * GET /api/customers/{customerId}/vehicles
+     *
+     * Admin/Advisor xem xe của một khách hàng.
+     */
     public function byCustomer($customerId)
     {
         $vehicles = Vehicle::with('model')
@@ -174,5 +245,296 @@ class VehicleController extends Controller
             'message' => 'Lấy danh sách xe của khách hàng thành công.',
             'data' => $vehicles,
         ]);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CUSTOMER - QUẢN LÝ XE CỦA CHÍNH MÌNH
+    |--------------------------------------------------------------------------
+    |
+    | Không nhận customer_id từ phía client.
+    | Customer được xác định từ Bearer Token:
+    |
+    | Account đăng nhập
+    |      ↓
+    | Customer
+    |      ↓
+    | customer_id
+    |
+    */
+
+    /**
+     * GET /api/me/vehicles
+     *
+     * Customer xem danh sách xe của chính mình.
+     */
+    public function myVehicles(Request $request)
+    {
+        $customer = $this->getAuthenticatedCustomer($request);
+
+        if (!$customer) {
+            return $this->customerProfileNotFoundResponse();
+        }
+
+        $vehicles = Vehicle::with('model')
+            ->where('customer_id', $customer->id)
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy danh sách xe của bạn thành công.',
+            'data' => $vehicles,
+        ]);
+    }
+
+    /**
+     * POST /api/me/vehicles
+     *
+     * Customer tự thêm xe.
+     *
+     * customer_id KHÔNG lấy từ request.
+     */
+    public function storeMyVehicle(Request $request)
+    {
+        $customer = $this->getAuthenticatedCustomer($request);
+
+        if (!$customer) {
+            return $this->customerProfileNotFoundResponse();
+        }
+
+        $validated = $request->validate([
+            'model_id' => [
+                'required',
+                'exists:vehicle_models,id',
+            ],
+
+            'variant' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'year' => [
+                'nullable',
+                'integer',
+                'min:1900',
+                'max:' . (date('Y') + 1),
+            ],
+
+            'license_plate' => [
+                'nullable',
+                'string',
+                'max:20',
+                'unique:vehicles,license_plate',
+            ],
+
+            'vin' => [
+                'nullable',
+                'string',
+                'max:50',
+                'unique:vehicles,vin',
+            ],
+
+            'mileage' => [
+                'nullable',
+                'integer',
+                'min:0',
+            ],
+
+            'note' => [
+                'nullable',
+                'string',
+            ],
+        ]);
+
+        // Không cho client tự chọn customer_id.
+        $validated['customer_id'] = $customer->id;
+
+        $vehicle = Vehicle::create($validated);
+
+        $vehicle->load('model');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Thêm xe của bạn thành công.',
+            'data' => $vehicle,
+        ], 201);
+    }
+
+    /**
+     * GET /api/me/vehicles/{vehicle}
+     *
+     * Customer chỉ xem được xe thuộc chính mình.
+     */
+    public function showMyVehicle(Request $request, Vehicle $vehicle)
+    {
+        $customer = $this->getAuthenticatedCustomer($request);
+
+        if (!$customer) {
+            return $this->customerProfileNotFoundResponse();
+        }
+
+        if ((int) $vehicle->customer_id !== (int) $customer->id) {
+            return $this->vehicleForbiddenResponse();
+        }
+
+        $vehicle->load('model');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy thông tin xe thành công.',
+            'data' => $vehicle,
+        ]);
+    }
+
+    /**
+     * PATCH /api/me/vehicles/{vehicle}
+     *
+     * Customer chỉ sửa xe thuộc chính mình.
+     *
+     * Không cho phép sửa customer_id.
+     */
+    public function updateMyVehicle(
+        Request $request,
+        Vehicle $vehicle
+    ) {
+        $customer = $this->getAuthenticatedCustomer($request);
+
+        if (!$customer) {
+            return $this->customerProfileNotFoundResponse();
+        }
+
+        if ((int) $vehicle->customer_id !== (int) $customer->id) {
+            return $this->vehicleForbiddenResponse();
+        }
+
+        $validated = $request->validate([
+            'model_id' => [
+                'sometimes',
+                'exists:vehicle_models,id',
+            ],
+
+            'variant' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'year' => [
+                'nullable',
+                'integer',
+                'min:1900',
+                'max:' . (date('Y') + 1),
+            ],
+
+            'license_plate' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('vehicles', 'license_plate')
+                    ->ignore($vehicle->id),
+            ],
+
+            'vin' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('vehicles', 'vin')
+                    ->ignore($vehicle->id),
+            ],
+
+            'mileage' => [
+                'nullable',
+                'integer',
+                'min:0',
+            ],
+
+            'note' => [
+                'nullable',
+                'string',
+            ],
+        ]);
+
+        $vehicle->update($validated);
+
+        $vehicle->load('model');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật xe của bạn thành công.',
+            'data' => $vehicle,
+        ]);
+    }
+
+    /**
+     * DELETE /api/me/vehicles/{vehicle}
+     *
+     * Customer chỉ xóa được xe thuộc chính mình.
+     */
+    public function destroyMyVehicle(
+        Request $request,
+        Vehicle $vehicle
+    ) {
+        $customer = $this->getAuthenticatedCustomer($request);
+
+        if (!$customer) {
+            return $this->customerProfileNotFoundResponse();
+        }
+
+        if ((int) $vehicle->customer_id !== (int) $customer->id) {
+            return $this->vehicleForbiddenResponse();
+        }
+
+        $vehicle->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Xóa xe của bạn thành công.',
+        ]);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PRIVATE HELPERS
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Lấy Customer tương ứng với Account đang đăng nhập.
+     */
+    private function getAuthenticatedCustomer(Request $request)
+    {
+        $account = $request->user();
+
+        if (!$account) {
+            return null;
+        }
+
+        return $account->customer;
+    }
+
+    /**
+     * Response khi Account CUSTOMER chưa có hồ sơ Customer.
+     */
+    private function customerProfileNotFoundResponse()
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'Không tìm thấy hồ sơ khách hàng của tài khoản này.',
+        ], 404);
+    }
+
+    /**
+     * Response khi Customer cố truy cập xe của người khác.
+     */
+    private function vehicleForbiddenResponse()
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'Bạn không có quyền truy cập xe này.',
+        ], 403);
     }
 }
