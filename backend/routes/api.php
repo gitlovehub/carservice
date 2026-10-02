@@ -56,7 +56,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Hồ sơ cá nhân
         Route::controller(CustomerController::class)->prefix('me/customer')->group(function (): void {
             Route::get('/', 'me');
-            Route::match(['put', 'patch'], '/', 'updateMe');
+            Route::patch('/', 'updateMe');
         });
 
         // Xe của tôi
