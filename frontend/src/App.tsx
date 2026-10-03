@@ -22,6 +22,8 @@ import AdvisorQuotation from "./pages/advisor/Quotation";
 
 import AssignedRepairs from "./pages/technician/AssignedRepairs";
 import VehicleCheck from "./pages/technician/VehicleCheck";
+import Diagnosis from "./pages/technician/Diagnosis";
+import RepairProgress from "./pages/technician/RepairProgress";
 
 function App() {
   return (
@@ -52,6 +54,8 @@ function App() {
 
         <Route path="/assigned-repairs" element={<AssignedRepairs />} />
         <Route path="/vehicle-check" element={<VehicleCheck />} />
+        <Route path="/diagnosis" element={<Diagnosis />} />
+        <Route path="/repair-progress" element={<RepairProgress />} />
       </Routes>
     </BrowserRouter>
   );
