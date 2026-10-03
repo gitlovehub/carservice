@@ -101,7 +101,10 @@ function AssignedRepairs() {
             </p>
           </Link>
 
-          <div className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4">
+          <Link
+            to="/checklist"
+            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
+          >
             <p className="text-[12px] font-semibold">
               Checklist
             </p>
@@ -109,7 +112,7 @@ function AssignedRepairs() {
             <p className="mt-1 text-[10px] text-[#8a949e]">
               Review & Test
             </p>
-          </div>
+          </Link>
         </div>
 
         <div className="mb-6">

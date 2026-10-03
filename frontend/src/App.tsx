@@ -24,6 +24,7 @@ import AssignedRepairs from "./pages/technician/AssignedRepairs";
 import VehicleCheck from "./pages/technician/VehicleCheck";
 import Diagnosis from "./pages/technician/Diagnosis";
 import RepairProgress from "./pages/technician/RepairProgress";
+import Checklist from "./pages/technician/Checklist";
 
 function App() {
   return (
@@ -52,10 +53,12 @@ function App() {
         <Route path="/repair-status" element={<AdvisorRepairStatus />} />
         <Route path="/quotation" element={<AdvisorQuotation />} />
 
+        <Route path="/technician" element={<AssignedRepairs />} />
         <Route path="/assigned-repairs" element={<AssignedRepairs />} />
         <Route path="/vehicle-check" element={<VehicleCheck />} />
         <Route path="/diagnosis" element={<Diagnosis />} />
         <Route path="/repair-progress" element={<RepairProgress />} />
+        <Route path="/checklist" element={<Checklist />} />
       </Routes>
     </BrowserRouter>
   );
