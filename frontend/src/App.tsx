@@ -12,6 +12,12 @@ import Payment from "./pages/customer/Payment";
 import Invoices from "./pages/customer/Invoices";
 import Reviews from "./pages/customer/Reviews";
 import Customers from "./pages/customer/Customers";
+import AdvisorCustomer from "./pages/advisor/Customers";
+import AdvisorCustomerCars from "./pages/advisor/Customer-cars";
+import AdvisorAppointments from "./pages/advisor/Appointments";
+import AdvisorRepairStatus from "./pages/advisor/RepairStatus";
+
+
 
 function App() {
   return (
@@ -30,6 +36,26 @@ function App() {
         <Route path="/invoices" element={<Invoices />} />
         <Route path="/reviews" element={<Reviews />} />
         <Route path="/customers" element={<Customers />} />
+
+        <Route
+          path="/advisor/customers"
+          element={<AdvisorCustomer />}
+        />
+
+        <Route
+          path="/advisor/customer-cars"
+          element={<AdvisorCustomerCars />}
+        />
+
+        <Route
+          path="/advisor/appointments"
+          element={<AdvisorAppointments />}
+        />
+
+        <Route
+  path="/advisor/repair-status"
+  element={<AdvisorRepairStatus />}
+/>
       </Routes>
     </BrowserRouter>
   );

@@ -1,39 +1,54 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
-const appointments = [
+const cars = [
   {
     id: 1,
-    customer: "Nguyễn Tiến Hiền",
+    owner: "Nguyễn Tiến Hiền",
     phone: "0901234567",
-    car: "Toyota Camry - 30A-12345",
-    date: "03/10/2026",
-    time: "08:30",
-    service: "Bảo dưỡng định kỳ",
-    status: "Đã xác nhận",
+    plate: "30A-12345",
+    brand: "Toyota",
+    model: "Camry",
+    year: 2022,
+    status: "Đang sử dụng",
   },
   {
     id: 2,
-    customer: "Phùng Đức Anh",
+    owner: "Phùng Đức Anh",
     phone: "0912345678",
-    car: "Honda Civic - 29A-67890",
-    date: "03/10/2026",
-    time: "10:00",
-    service: "Kiểm tra phanh",
-    status: "Chờ xác nhận",
+    plate: "29A-67890",
+    brand: "Honda",
+    model: "Civic",
+    year: 2021,
+    status: "Đang sử dụng",
   },
   {
     id: 3,
-    customer: "Bùi Việt",
+    owner: "Bùi Việt",
     phone: "0987654321",
-    car: "Mazda CX-5 - 30F-11111",
-    date: "04/10/2026",
-    time: "14:00",
-    service: "Sửa chữa điều hòa",
-    status: "Đã xác nhận",
+    plate: "30F-11111",
+    brand: "Mazda",
+    model: "CX-5",
+    year: 2023,
+    status: "Đang sửa chữa",
   },
 ];
 
-function Appointments() {
+function CustomerCars() {
+  const [search, setSearch] = useState("");
+  const [brand, setBrand] = useState("");
+
+  const filteredCars = cars.filter((car) => {
+    const matchSearch =
+      car.owner.toLowerCase().includes(search.toLowerCase()) ||
+      car.phone.includes(search) ||
+      car.plate.toLowerCase().includes(search.toLowerCase());
+
+    const matchBrand = brand === "" || car.brand === brand;
+
+    return matchSearch && matchBrand;
+  });
+
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-[#20252b]">
       <header className="border-b border-[#e1e4e7] bg-white">
@@ -99,20 +114,20 @@ function Appointments() {
 
           <Link
             to="/advisor/customer-cars"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
+            className="rounded-xl border border-[#20252b] bg-[#20252b] px-4 py-4 text-white"
           >
             <p className="text-[12px] font-semibold">Xe của khách</p>
-            <p className="mt-1 text-[10px] text-[#8a949e]">
+            <p className="mt-1 text-[10px] text-[#cbd0d5]">
               Quản lý xe
             </p>
           </Link>
 
           <Link
             to="/advisor/appointments"
-            className="rounded-xl border border-[#20252b] bg-[#20252b] px-4 py-4 text-white"
+            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
           >
             <p className="text-[12px] font-semibold">Lịch hẹn</p>
-            <p className="mt-1 text-[10px] text-[#cbd0d5]">
+            <p className="mt-1 text-[10px] text-[#8a949e]">
               Quản lý lịch
             </p>
           </Link>
@@ -140,59 +155,42 @@ function Appointments() {
 
         <div className="mb-6">
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-            GARA / LỊCH HẸN
+            GARA / XE CỦA KHÁCH
           </p>
 
-          <h2 className="text-[24px] font-bold">Quản lý lịch hẹn</h2>
+          <h2 className="text-[24px] font-bold">Quản lý xe của khách</h2>
 
           <p className="mt-1 text-[12px] text-[#8a949e]">
-            Theo dõi và quản lý lịch hẹn của khách hàng tại gara.
+            Quản lý thông tin xe của khách hàng tại gara.
           </p>
         </div>
 
-        <div className="mb-6 grid grid-cols-4 gap-3">
-          <div className="rounded-xl border border-[#e1e4e7] bg-white p-5">
-            <p className="text-[10px] text-[#8a949e]">TỔNG LỊCH HẸN</p>
-            <p className="mt-2 text-[24px] font-bold">12</p>
-          </div>
-
-          <div className="rounded-xl border border-[#e1e4e7] bg-white p-5">
-            <p className="text-[10px] text-[#8a949e]">CHỜ XÁC NHẬN</p>
-            <p className="mt-2 text-[24px] font-bold">3</p>
-          </div>
-
-          <div className="rounded-xl border border-[#e1e4e7] bg-white p-5">
-            <p className="text-[10px] text-[#8a949e]">ĐÃ XÁC NHẬN</p>
-            <p className="mt-2 text-[24px] font-bold">7</p>
-          </div>
-
-          <div className="rounded-xl border border-[#e1e4e7] bg-white p-5">
-            <p className="text-[10px] text-[#8a949e]">HOÀN THÀNH</p>
-            <p className="mt-2 text-[24px] font-bold">2</p>
-          </div>
+        <div className="mb-6 flex justify-end">
+          <button className="rounded-lg bg-[#20252b] px-4 py-2.5 text-[12px] font-semibold text-white">
+            + Thêm xe
+          </button>
         </div>
 
         <div className="mb-6 rounded-xl border border-[#e1e4e7] bg-white p-5">
-          <p className="mb-4 text-[12px] font-semibold">Bộ lọc lịch hẹn</p>
+          <p className="mb-4 text-[12px] font-semibold">Tìm kiếm xe</p>
 
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-[1.5fr_1fr_auto] gap-3">
             <input
-              type="date"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tên khách, số điện thoại hoặc biển số"
               className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none"
             />
 
-            <select className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none">
-              <option>Tất cả trạng thái</option>
-              <option>Chờ xác nhận</option>
-              <option>Đã xác nhận</option>
-              <option>Hoàn thành</option>
-            </select>
-
-            <select className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none">
-              <option>Tất cả dịch vụ</option>
-              <option>Bảo dưỡng định kỳ</option>
-              <option>Kiểm tra phanh</option>
-              <option>Sửa chữa điều hòa</option>
+            <select
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none"
+            >
+              <option value="">Tất cả hãng xe</option>
+              <option value="Toyota">Toyota</option>
+              <option value="Honda">Honda</option>
+              <option value="Mazda">Mazda</option>
             </select>
 
             <button className="rounded-lg bg-[#20252b] px-5 py-2.5 text-[12px] font-semibold text-white">
@@ -203,10 +201,10 @@ function Appointments() {
 
         <div className="overflow-hidden rounded-xl border border-[#e1e4e7] bg-white">
           <div className="flex items-center justify-between border-b border-[#e1e4e7] px-5 py-4">
-            <p className="text-[13px] font-semibold">Danh sách lịch hẹn</p>
+            <p className="text-[13px] font-semibold">Danh sách xe</p>
 
             <p className="text-[11px] text-[#8a949e]">
-              12 lịch hẹn
+              {filteredCars.length} xe
             </p>
           </div>
 
@@ -217,19 +215,19 @@ function Appointments() {
                   STT
                 </th>
                 <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  KHÁCH HÀNG
+                  CHỦ XE
                 </th>
                 <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  XE
+                  BIỂN SỐ
                 </th>
                 <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  NGÀY
+                  HÃNG XE
                 </th>
                 <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  GIỜ
+                  MODEL
                 </th>
                 <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  DỊCH VỤ
+                  NĂM
                 </th>
                 <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
                   TRẠNG THÁI
@@ -241,9 +239,9 @@ function Appointments() {
             </thead>
 
             <tbody>
-              {appointments.map((appointment, index) => (
+              {filteredCars.map((car, index) => (
                 <tr
-                  key={appointment.id}
+                  key={car.id}
                   className="border-b border-[#eef0f2] last:border-0"
                 >
                   <td className="px-5 py-4 text-[12px]">
@@ -251,32 +249,22 @@ function Appointments() {
                   </td>
 
                   <td className="px-5 py-4">
-                    <p className="text-[12px] font-semibold">
-                      {appointment.customer}
-                    </p>
-                    <p className="text-[10px] text-[#8a949e]">
-                      {appointment.phone}
-                    </p>
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px]">
-                    {appointment.car}
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px]">
-                    {appointment.date}
+                    <p className="text-[12px] font-semibold">{car.owner}</p>
+                    <p className="text-[10px] text-[#8a949e]">{car.phone}</p>
                   </td>
 
                   <td className="px-5 py-4 text-[12px] font-semibold">
-                    {appointment.time}
+                    {car.plate}
                   </td>
 
-                  <td className="px-5 py-4 text-[12px]">
-                    {appointment.service}
-                  </td>
+                  <td className="px-5 py-4 text-[12px]">{car.brand}</td>
+
+                  <td className="px-5 py-4 text-[12px]">{car.model}</td>
+
+                  <td className="px-5 py-4 text-[12px]">{car.year}</td>
 
                   <td className="px-5 py-4 text-[11px]">
-                    {appointment.status}
+                    {car.status}
                   </td>
 
                   <td className="px-5 py-4">
@@ -306,4 +294,4 @@ function Appointments() {
   );
 }
 
-export default Appointments;
+export default CustomerCars;
