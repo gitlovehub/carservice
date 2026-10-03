@@ -1,16 +1,17 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
-import Contact from "./pages/Contact";
-import Services from "./pages/Services";
-import Booking from "./pages/Booking";
-import Appointments from "./pages/Appointments";
-import Cars from "./pages/Cars";
-import Account from "./pages/Account";
-import RepairStatus from "./pages/RepairStatus";
-import Quotation from "./pages/Quotation";
-import Payment from "./pages/Payment";
-import Invoices from "./pages/Invoices";
-import Reviews from "./pages/Reviews";
+import Contact from "./pages/customer/Contact";
+import Services from "./pages/customer/Services";
+import Booking from "./pages/customer/Booking";
+import Appointments from "./pages/customer/Appointments";
+import Cars from "./pages/customer/Cars";
+import Account from "./pages/customer/Account";
+import RepairStatus from "./pages/customer/RepairStatus";
+import Quotation from "./pages/customer/Quotation";
+import Payment from "./pages/customer/Payment";
+import Invoices from "./pages/customer/Invoices";
+import Reviews from "./pages/customer/Reviews";
+import Customers from "./pages/customer/Customers";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         <Route path="/payment" element={<Payment />} />
         <Route path="/invoices" element={<Invoices />} />
         <Route path="/reviews" element={<Reviews />} />
+        <Route path="/customers" element={<Customers />} />
       </Routes>
     </BrowserRouter>
   );
