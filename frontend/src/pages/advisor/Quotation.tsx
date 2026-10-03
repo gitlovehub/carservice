@@ -1,55 +1,40 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "../../components/Header";
 
-const cars = [
+const quotations = [
   {
     id: 1,
-    owner: "Nguyễn Tiến Hiền",
+    customer: "Nguyễn Tiến Hiền",
     phone: "0901234567",
-    plate: "30A-12345",
-    brand: "Toyota",
-    model: "Camry",
-    year: 2022,
-    status: "Đang sử dụng",
+    car: "Toyota Camry - 30A-12345",
+    service: "Bảo dưỡng định kỳ",
+    amount: "3.500.000đ",
+    date: "03/10/2026",
+    status: "Chờ xác nhận",
   },
   {
     id: 2,
-    owner: "Phùng Đức Anh",
+    customer: "Phùng Đức Anh",
     phone: "0912345678",
-    plate: "29A-67890",
-    brand: "Honda",
-    model: "Civic",
-    year: 2021,
-    status: "Đang sử dụng",
+    car: "Honda Civic - 29A-67890",
+    service: "Kiểm tra phanh",
+    amount: "2.800.000đ",
+    date: "03/10/2026",
+    status: "Đã xác nhận",
   },
   {
     id: 3,
-    owner: "Bùi Việt",
+    customer: "Bùi Việt",
     phone: "0987654321",
-    plate: "30F-11111",
-    brand: "Mazda",
-    model: "CX-5",
-    year: 2023,
-    status: "Đang sửa chữa",
+    car: "Mazda CX-5 - 30F-11111",
+    service: "Sửa chữa điều hòa",
+    amount: "4.200.000đ",
+    date: "02/10/2026",
+    status: "Đã gửi",
   },
 ];
 
-function CustomerCars() {
-  const [search, setSearch] = useState("");
-  const [brand, setBrand] = useState("");
-
-  const filteredCars = cars.filter((car) => {
-    const matchSearch =
-      car.owner.toLowerCase().includes(search.toLowerCase()) ||
-      car.phone.includes(search) ||
-      car.plate.toLowerCase().includes(search.toLowerCase());
-
-    const matchBrand = brand === "" || car.brand === brand;
-
-    return matchSearch && matchBrand;
-  });
-
+function Quotation() {
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-[#20252b]">
       <Header />
@@ -93,13 +78,13 @@ function CustomerCars() {
 
           <Link
             to="/customer-cars"
-            className="rounded-xl border border-[#20252b] bg-[#20252b] px-4 py-4 text-white"
+            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
           >
             <p className="text-[12px] font-semibold">
               Xe của khách
             </p>
 
-            <p className="mt-1 text-[10px] text-[#cbd0d5]">
+            <p className="mt-1 text-[10px] text-[#8a949e]">
               Quản lý xe
             </p>
           </Link>
@@ -132,13 +117,13 @@ function CustomerCars() {
 
           <Link
             to="/quotation"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
+            className="rounded-xl border border-[#20252b] bg-[#20252b] px-4 py-4 text-white"
           >
             <p className="text-[12px] font-semibold">
               Báo giá
             </p>
 
-            <p className="mt-1 text-[10px] text-[#8a949e]">
+            <p className="mt-1 text-[10px] text-[#cbd0d5]">
               Quản lý báo giá
             </p>
           </Link>
@@ -146,47 +131,94 @@ function CustomerCars() {
 
         <div className="mb-6">
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-            GARA / XE CỦA KHÁCH
+            GARA / BÁO GIÁ
           </p>
 
           <h2 className="text-[24px] font-bold">
-            Quản lý xe của khách
+            Quản lý báo giá
           </h2>
 
           <p className="mt-1 text-[12px] text-[#8a949e]">
-            Quản lý thông tin xe của khách hàng tại gara.
+            Tạo và theo dõi báo giá dịch vụ cho khách hàng.
           </p>
         </div>
 
-        <div className="mb-6 flex justify-end">
+        <div className="mb-6 grid grid-cols-4 gap-3">
+          <div className="rounded-xl border border-[#e1e4e7] bg-white p-5">
+            <p className="text-[10px] text-[#8a949e]">
+              TỔNG BÁO GIÁ
+            </p>
+
+            <p className="mt-2 text-[24px] font-bold">
+              15
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[#e1e4e7] bg-white p-5">
+            <p className="text-[10px] text-[#8a949e]">
+              CHỜ XÁC NHẬN
+            </p>
+
+            <p className="mt-2 text-[24px] font-bold">
+              4
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[#e1e4e7] bg-white p-5">
+            <p className="text-[10px] text-[#8a949e]">
+              ĐÃ XÁC NHẬN
+            </p>
+
+            <p className="mt-2 text-[24px] font-bold">
+              8
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[#e1e4e7] bg-white p-5">
+            <p className="text-[10px] text-[#8a949e]">
+              ĐÃ GỬI
+            </p>
+
+            <p className="mt-2 text-[24px] font-bold">
+              3
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-6 flex items-center justify-between rounded-xl border border-[#e1e4e7] bg-white p-5">
+          <div>
+            <p className="text-[13px] font-semibold">
+              Danh sách báo giá
+            </p>
+
+            <p className="mt-1 text-[11px] text-[#8a949e]">
+              Quản lý các báo giá đã tạo cho khách hàng.
+            </p>
+          </div>
+
           <button className="rounded-lg bg-[#20252b] px-4 py-2.5 text-[12px] font-semibold text-white">
-            + Thêm xe
+            + Tạo báo giá
           </button>
         </div>
 
         <div className="mb-6 rounded-xl border border-[#e1e4e7] bg-white p-5">
-          <p className="mb-4 text-[12px] font-semibold">
-            Tìm kiếm xe
-          </p>
-
-          <div className="grid grid-cols-[1.5fr_1fr_auto] gap-3">
+          <div className="grid grid-cols-[1.5fr_1fr_1fr_auto] gap-3">
             <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tên khách, số điện thoại hoặc biển số"
+              placeholder="Tên khách hàng hoặc biển số"
               className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none"
             />
 
-            <select
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none"
-            >
-              <option value="">Tất cả hãng xe</option>
-              <option value="Toyota">Toyota</option>
-              <option value="Honda">Honda</option>
-              <option value="Mazda">Mazda</option>
+            <select className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none">
+              <option>Tất cả trạng thái</option>
+              <option>Chờ xác nhận</option>
+              <option>Đã xác nhận</option>
+              <option>Đã gửi</option>
             </select>
+
+            <input
+              type="date"
+              className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none"
+            />
 
             <button className="rounded-lg bg-[#20252b] px-5 py-2.5 text-[12px] font-semibold text-white">
               Tìm kiếm
@@ -197,55 +229,55 @@ function CustomerCars() {
         <div className="overflow-hidden rounded-xl border border-[#e1e4e7] bg-white">
           <div className="flex items-center justify-between border-b border-[#e1e4e7] px-5 py-4">
             <p className="text-[13px] font-semibold">
-              Danh sách xe
+              Danh sách báo giá
             </p>
 
             <p className="text-[11px] text-[#8a949e]">
-              {filteredCars.length} xe
+              15 báo giá
             </p>
           </div>
 
-          <table className="w-full border-collapse">
+          <table className="w-full">
             <thead>
               <tr className="border-b border-[#e1e4e7] bg-[#fafbfc] text-left">
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
+                <th className="px-5 py-3 text-[10px] text-[#8a949e]">
                   STT
                 </th>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  CHỦ XE
+                <th className="px-5 py-3 text-[10px] text-[#8a949e]">
+                  KHÁCH HÀNG
                 </th>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  BIỂN SỐ
+                <th className="px-5 py-3 text-[10px] text-[#8a949e]">
+                  XE
                 </th>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  HÃNG XE
+                <th className="px-5 py-3 text-[10px] text-[#8a949e]">
+                  DỊCH VỤ
                 </th>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  MODEL
+                <th className="px-5 py-3 text-[10px] text-[#8a949e]">
+                  GIÁ TRỊ
                 </th>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  NĂM
+                <th className="px-5 py-3 text-[10px] text-[#8a949e]">
+                  NGÀY
                 </th>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
+                <th className="px-5 py-3 text-[10px] text-[#8a949e]">
                   TRẠNG THÁI
                 </th>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
+                <th className="px-5 py-3 text-[10px] text-[#8a949e]">
                   THAO TÁC
                 </th>
               </tr>
             </thead>
 
             <tbody>
-              {filteredCars.map((car, index) => (
+              {quotations.map((quotation, index) => (
                 <tr
-                  key={car.id}
+                  key={quotation.id}
                   className="border-b border-[#eef0f2] last:border-0"
                 >
                   <td className="px-5 py-4 text-[12px]">
@@ -254,39 +286,41 @@ function CustomerCars() {
 
                   <td className="px-5 py-4">
                     <p className="text-[12px] font-semibold">
-                      {car.owner}
+                      {quotation.customer}
                     </p>
 
-                    <p className="text-[10px] text-[#8a949e]">
-                      {car.phone}
+                    <p className="mt-1 text-[10px] text-[#8a949e]">
+                      {quotation.phone}
                     </p>
+                  </td>
+
+                  <td className="px-5 py-4 text-[12px]">
+                    {quotation.car}
+                  </td>
+
+                  <td className="px-5 py-4 text-[12px]">
+                    {quotation.service}
                   </td>
 
                   <td className="px-5 py-4 text-[12px] font-semibold">
-                    {car.plate}
+                    {quotation.amount}
                   </td>
 
                   <td className="px-5 py-4 text-[12px]">
-                    {car.brand}
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px]">
-                    {car.model}
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px]">
-                    {car.year}
+                    {quotation.date}
                   </td>
 
                   <td className="px-5 py-4">
                     <span
                       className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-                        car.status === "Đang sử dụng"
-                          ? "bg-[#e7f6ec] text-[#237a3b]"
-                          : "bg-[#fff4d6] text-[#9a6b00]"
+                        quotation.status === "Chờ xác nhận"
+                          ? "bg-[#fff4d6] text-[#9a6b00]"
+                          : quotation.status === "Đã xác nhận"
+                            ? "bg-[#e7f6ec] text-[#237a3b]"
+                            : "bg-[#e8f1ff] text-[#2563a8]"
                       }`}
                     >
-                      {car.status}
+                      {quotation.status}
                     </span>
                   </td>
 
@@ -317,4 +351,4 @@ function CustomerCars() {
   );
 }
 
-export default CustomerCars;
+export default Quotation;

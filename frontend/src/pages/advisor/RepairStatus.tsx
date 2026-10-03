@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import Header from "../../components/Header";
 
 const repairs = [
   {
@@ -33,35 +34,7 @@ const repairs = [
 function RepairStatus() {
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-[#20252b]">
-      <header className="border-b border-[#e1e4e7] bg-white">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-4">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#20252b] text-[11px] font-bold text-white">
-              CS
-            </div>
-
-            <div>
-              <p className="text-[14px] font-bold">CarService</p>
-              <p className="text-[10px] text-[#8a949e]">
-                Quản lý dịch vụ ô tô
-              </p>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e9ecef] text-[10px] font-bold">
-              CV
-            </div>
-
-            <div>
-              <p className="text-[12px] font-semibold">Tên người dùng</p>
-              <p className="text-[10px] text-[#8a949e]">
-                Tài khoản · Cố vấn dịch vụ
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="mx-auto max-w-[1200px] px-6 py-8">
         <div className="mb-8">
@@ -78,6 +51,7 @@ function RepairStatus() {
               <h1 className="text-[18px] font-bold">
                 Cố vấn dịch vụ
               </h1>
+
               <p className="text-[11px] text-[#8a949e]">
                 Giao diện nội bộ
               </p>
@@ -87,52 +61,65 @@ function RepairStatus() {
 
         <div className="mb-8 grid grid-cols-5 gap-3">
           <Link
-            to="/advisor/customers"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4"
+            to="/customers"
+            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
           >
-            <p className="text-[12px] font-semibold">Khách hàng</p>
+            <p className="text-[12px] font-semibold">
+              Khách hàng
+            </p>
+
             <p className="mt-1 text-[10px] text-[#8a949e]">
               Quản lý khách hàng
             </p>
           </Link>
 
           <Link
-            to="/advisor/customer-cars"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4"
+            to="/customer-cars"
+            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
           >
-            <p className="text-[12px] font-semibold">Xe của khách</p>
+            <p className="text-[12px] font-semibold">
+              Xe của khách
+            </p>
+
             <p className="mt-1 text-[10px] text-[#8a949e]">
               Quản lý xe
             </p>
           </Link>
 
           <Link
-            to="/advisor/appointments"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4"
+            to="/appointments"
+            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
           >
-            <p className="text-[12px] font-semibold">Lịch hẹn</p>
+            <p className="text-[12px] font-semibold">
+              Lịch hẹn
+            </p>
+
             <p className="mt-1 text-[10px] text-[#8a949e]">
               Quản lý lịch
             </p>
           </Link>
 
           <Link
-            to="/advisor/repair-status"
+            to="/repair-status"
             className="rounded-xl border border-[#20252b] bg-[#20252b] px-4 py-4 text-white"
           >
             <p className="text-[12px] font-semibold">
               Phiếu sửa chữa
             </p>
+
             <p className="mt-1 text-[10px] text-[#cbd0d5]">
               Theo dõi sửa chữa
             </p>
           </Link>
 
           <Link
-            to="/advisor/quotation"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4"
+            to="/quotation"
+            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
           >
-            <p className="text-[12px] font-semibold">Báo giá</p>
+            <p className="text-[12px] font-semibold">
+              Báo giá
+            </p>
+
             <p className="mt-1 text-[10px] text-[#8a949e]">
               Quản lý báo giá
             </p>
@@ -158,28 +145,40 @@ function RepairStatus() {
             <p className="text-[10px] text-[#8a949e]">
               TỔNG PHIẾU
             </p>
-            <p className="mt-2 text-[24px] font-bold">12</p>
+
+            <p className="mt-2 text-[24px] font-bold">
+              12
+            </p>
           </div>
 
           <div className="rounded-xl border border-[#e1e4e7] bg-white p-5">
             <p className="text-[10px] text-[#8a949e]">
               CHỜ SỬA CHỮA
             </p>
-            <p className="mt-2 text-[24px] font-bold">3</p>
+
+            <p className="mt-2 text-[24px] font-bold">
+              3
+            </p>
           </div>
 
           <div className="rounded-xl border border-[#e1e4e7] bg-white p-5">
             <p className="text-[10px] text-[#8a949e]">
               ĐANG SỬA CHỮA
             </p>
-            <p className="mt-2 text-[24px] font-bold">6</p>
+
+            <p className="mt-2 text-[24px] font-bold">
+              6
+            </p>
           </div>
 
           <div className="rounded-xl border border-[#e1e4e7] bg-white p-5">
             <p className="text-[10px] text-[#8a949e]">
               HOÀN THÀNH
             </p>
-            <p className="mt-2 text-[24px] font-bold">3</p>
+
+            <p className="mt-2 text-[24px] font-bold">
+              3
+            </p>
           </div>
         </div>
 
@@ -224,24 +223,31 @@ function RepairStatus() {
                 <th className="px-5 py-3 text-[10px] text-[#8a949e]">
                   STT
                 </th>
+
                 <th className="px-5 py-3 text-[10px] text-[#8a949e]">
                   KHÁCH HÀNG
                 </th>
+
                 <th className="px-5 py-3 text-[10px] text-[#8a949e]">
                   XE
                 </th>
+
                 <th className="px-5 py-3 text-[10px] text-[#8a949e]">
                   DỊCH VỤ
                 </th>
+
                 <th className="px-5 py-3 text-[10px] text-[#8a949e]">
                   KỸ THUẬT VIÊN
                 </th>
+
                 <th className="px-5 py-3 text-[10px] text-[#8a949e]">
                   NGÀY
                 </th>
+
                 <th className="px-5 py-3 text-[10px] text-[#8a949e]">
                   TRẠNG THÁI
                 </th>
+
                 <th className="px-5 py-3 text-[10px] text-[#8a949e]">
                   THAO TÁC
                 </th>
@@ -252,7 +258,7 @@ function RepairStatus() {
               {repairs.map((repair, index) => (
                 <tr
                   key={repair.id}
-                  className="border-b border-[#eef0f2]"
+                  className="border-b border-[#eef0f2] last:border-0"
                 >
                   <td className="px-5 py-4 text-[12px]">
                     {index + 1}
@@ -278,8 +284,18 @@ function RepairStatus() {
                     {repair.date}
                   </td>
 
-                  <td className="px-5 py-4 text-[11px]">
-                    {repair.status}
+                  <td className="px-5 py-4">
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                        repair.status === "Chờ sửa chữa"
+                          ? "bg-[#fff4d6] text-[#9a6b00]"
+                          : repair.status === "Đang sửa chữa"
+                            ? "bg-[#e8f1ff] text-[#2563a8]"
+                            : "bg-[#e7f6ec] text-[#237a3b]"
+                      }`}
+                    >
+                      {repair.status}
+                    </span>
                   </td>
 
                   <td className="px-5 py-4">

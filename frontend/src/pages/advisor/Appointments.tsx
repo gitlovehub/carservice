@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import Header from "../../components/Header";
 
 const appointments = [
   {
@@ -29,44 +30,16 @@ const appointments = [
     date: "04/10/2026",
     time: "14:00",
     service: "Sửa chữa điều hòa",
-    status: "Đã xác nhận",
+    status: "Hoàn thành",
   },
 ];
 
 function Appointments() {
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-[#20252b]">
-      <header className="border-b border-[#e1e4e7] bg-white">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-4">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#20252b] text-[11px] font-bold text-white">
-              CS
-            </div>
+      <Header />
 
-            <div>
-              <p className="text-[14px] font-bold">CarService</p>
-              <p className="text-[10px] text-[#8a949e]">
-                Quản lý dịch vụ ô tô
-              </p>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e9ecef] text-[10px] font-bold">
-              CV
-            </div>
-
-            <div>
-              <p className="text-[12px] font-semibold">Tên người dùng</p>
-              <p className="text-[10px] text-[#8a949e]">
-                Tài khoản · Cố vấn dịch vụ
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-[1200px] px-6 py-8">
+      <main className="mx-auto max-w-[1200px] px-6 py-8">
         <div className="mb-8">
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
             KHÔNG GIAN LÀM VIỆC
@@ -88,7 +61,7 @@ function Appointments() {
 
         <div className="mb-8 grid grid-cols-5 gap-3">
           <Link
-            to="/advisor/customers"
+            to="/customers"
             className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
           >
             <p className="text-[12px] font-semibold">Khách hàng</p>
@@ -98,7 +71,7 @@ function Appointments() {
           </Link>
 
           <Link
-            to="/advisor/customer-cars"
+            to="/customer-cars"
             className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
           >
             <p className="text-[12px] font-semibold">Xe của khách</p>
@@ -108,7 +81,7 @@ function Appointments() {
           </Link>
 
           <Link
-            to="/advisor/appointments"
+            to="/appointments"
             className="rounded-xl border border-[#20252b] bg-[#20252b] px-4 py-4 text-white"
           >
             <p className="text-[12px] font-semibold">Lịch hẹn</p>
@@ -118,7 +91,7 @@ function Appointments() {
           </Link>
 
           <Link
-            to="/advisor/repair-status"
+            to="/repair-status"
             className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
           >
             <p className="text-[12px] font-semibold">Phiếu sửa chữa</p>
@@ -128,7 +101,7 @@ function Appointments() {
           </Link>
 
           <Link
-            to="/advisor/quotation"
+            to="/quotation"
             className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
           >
             <p className="text-[12px] font-semibold">Báo giá</p>
@@ -173,7 +146,9 @@ function Appointments() {
         </div>
 
         <div className="mb-6 rounded-xl border border-[#e1e4e7] bg-white p-5">
-          <p className="mb-4 text-[12px] font-semibold">Bộ lọc lịch hẹn</p>
+          <p className="mb-4 text-[12px] font-semibold">
+            Bộ lọc lịch hẹn
+          </p>
 
           <div className="grid grid-cols-4 gap-3">
             <input
@@ -203,7 +178,9 @@ function Appointments() {
 
         <div className="overflow-hidden rounded-xl border border-[#e1e4e7] bg-white">
           <div className="flex items-center justify-between border-b border-[#e1e4e7] px-5 py-4">
-            <p className="text-[13px] font-semibold">Danh sách lịch hẹn</p>
+            <p className="text-[13px] font-semibold">
+              Danh sách lịch hẹn
+            </p>
 
             <p className="text-[11px] text-[#8a949e]">
               12 lịch hẹn
@@ -275,8 +252,18 @@ function Appointments() {
                     {appointment.service}
                   </td>
 
-                  <td className="px-5 py-4 text-[11px]">
-                    {appointment.status}
+                  <td className="px-5 py-4">
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                        appointment.status === "Chờ xác nhận"
+                          ? "bg-[#fff4d6] text-[#9a6b00]"
+                          : appointment.status === "Đã xác nhận"
+                            ? "bg-[#e7f6ec] text-[#237a3b]"
+                            : "bg-[#e8f1ff] text-[#2563a8]"
+                      }`}
+                    >
+                      {appointment.status}
+                    </span>
                   </td>
 
                   <td className="px-5 py-4">
@@ -289,7 +276,7 @@ function Appointments() {
             </tbody>
           </table>
         </div>
-      </div>
+      </main>
 
       <footer className="mt-10 border-t border-[#e1e4e7] bg-white">
         <div className="mx-auto flex max-w-[1200px] justify-between px-6 py-5">
@@ -307,3 +294,4 @@ function Appointments() {
 }
 
 export default Appointments;
+
