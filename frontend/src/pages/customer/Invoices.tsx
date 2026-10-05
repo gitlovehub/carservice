@@ -1,175 +1,194 @@
-function Invoices() {
-  const invoices = [
-    {
-      id: 1,
-      code: "HD-001",
-      car: "Toyota Vios",
-      plate: "30A-123.45",
-      service: "Bảo dưỡng định kỳ",
-      date: "24/06/2026",
-      total: "1.500.000 VNĐ",
-      status: "Đã thanh toán",
-    },
-    {
-      id: 2,
-      code: "HD-002",
-      car: "Honda City",
-      plate: "30F-678.90",
-      service: "Kiểm tra tổng quát",
-      date: "25/06/2026",
-      total: "850.000 VNĐ",
-      status: "Chưa thanh toán",
-    },
-  ];
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 
+const invoices = [
+  {
+    id: "INV-001",
+    date: "12/10/2026",
+    car: "Toyota Vios · 30A-123.45",
+    service: "Bảo dưỡng định kỳ",
+    amount: "1.160.000đ",
+    status: "Chưa thanh toán",
+  },
+  {
+    id: "INV-002",
+    date: "20/09/2026",
+    car: "Honda City · 30F-678.90",
+    service: "Thay dầu động cơ",
+    amount: "650.000đ",
+    status: "Đã thanh toán",
+  },
+];
+
+function Invoices() {
   return (
-    <div className="min-h-screen bg-[#f6f7f8] text-[#20252b]">
+    <div className="min-h-screen bg-[#f7f8f9] text-[#20252b]">
+      <Header />
+
       <main className="mx-auto max-w-[1200px] px-6 py-10">
         <div className="mb-8">
-          <p className="mb-2 text-[10px] uppercase tracking-[0.08em] text-[#8a949e]">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a949e]">
             KHÁCH HÀNG / HÓA ĐƠN
           </p>
 
-          <h1 className="text-[28px] font-bold">
+          <h1 className="text-3xl font-bold tracking-tight">
             Hóa đơn của tôi
           </h1>
 
-          <p className="mt-2 text-[12px] text-[#7b858f]">
-            Xem lại các hóa đơn dịch vụ và trạng thái thanh toán.
+          <p className="mt-2 text-xs leading-5 text-[#7b858f]">
+            Theo dõi các hóa đơn và lịch sử thanh toán dịch vụ.
           </p>
         </div>
 
-        <div className="mb-8 rounded-xl border border-[#e1e4e7] bg-white p-6">
-          <h2 className="mb-4 text-[15px] font-bold">
-            Tìm kiếm hóa đơn
-          </h2>
+        <div className="mb-6 grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+              Tổng hóa đơn
+            </p>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <input
-              type="text"
-              placeholder="Nhập mã hóa đơn..."
-              className="rounded-lg border border-[#dfe3e6] px-4 py-3 text-[12px] outline-none focus:border-[#20252b]"
-            />
+            <p className="mt-3 text-2xl font-bold">
+              {invoices.length}
+            </p>
 
-            <select className="rounded-lg border border-[#dfe3e6] px-4 py-3 text-[12px] outline-none focus:border-[#20252b]">
-              <option>Tất cả trạng thái</option>
-              <option>Đã thanh toán</option>
-              <option>Chưa thanh toán</option>
-            </select>
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Hóa đơn đã tạo
+            </p>
+          </div>
 
-            <button
-              type="button"
-              className="rounded-lg bg-[#20252b] px-5 py-3 text-[12px] font-semibold text-white hover:bg-[#111519]"
-            >
-              Tìm kiếm
-            </button>
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+              Đã thanh toán
+            </p>
+
+            <p className="mt-3 text-2xl font-bold">
+              1
+            </p>
+
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Hóa đơn hoàn tất
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+              Chưa thanh toán
+            </p>
+
+            <p className="mt-3 text-2xl font-bold">
+              1
+            </p>
+
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Cần xử lý
+            </p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#e1e4e7] bg-white">
-          <div className="flex items-center justify-between border-b border-[#e1e4e7] px-6 py-5">
-            <h2 className="text-[15px] font-bold">
+        <div className="overflow-hidden rounded-2xl border border-[#e3e6e8] bg-white shadow-sm">
+          <div className="border-b border-[#eef0f2] px-6 py-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+              INVOICE HISTORY
+            </p>
+
+            <h2 className="mt-1 text-base font-bold">
               Danh sách hóa đơn
             </h2>
-
-            <span className="text-[11px] text-[#8a949e]">
-              {invoices.length} hóa đơn
-            </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-[#e1e4e7] text-[10px] uppercase text-[#8a949e]">
-                  <th className="px-6 py-4">STT</th>
-                  <th className="px-6 py-4">Mã hóa đơn</th>
-                  <th className="px-6 py-4">Xe</th>
-                  <th className="px-6 py-4">Dịch vụ</th>
-                  <th className="px-6 py-4">Ngày</th>
-                  <th className="px-6 py-4">Tổng tiền</th>
-                  <th className="px-6 py-4">Trạng thái</th>
-                  <th className="px-6 py-4">Thao tác</th>
-                </tr>
-              </thead>
+          <div className="space-y-4 p-5">
+            {invoices.map((invoice) => (
+              <div
+                key={invoice.id}
+                className="rounded-2xl border border-[#e5e8ea] bg-[#fafbfb] p-5 transition hover:border-[#d5d9dc] hover:shadow-sm"
+              >
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#20252b] text-[10px] font-bold text-white">
+                      HD
+                    </div>
 
-              <tbody>
-                {invoices.map((invoice, index) => (
-                  <tr
-                    key={invoice.id}
-                    className="border-b border-[#eef0f2] last:border-b-0"
-                  >
-                    <td className="px-6 py-5 text-[12px] text-[#7b858f]">
-                      {index + 1}
-                    </td>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-bold">
+                          {invoice.id}
+                        </p>
 
-                    <td className="px-6 py-5 text-[12px] font-semibold">
-                      {invoice.code}
-                    </td>
+                        <span
+                          className={`rounded-full px-3 py-1.5 text-[10px] font-medium ${
+                            invoice.status === "Đã thanh toán"
+                              ? "bg-[#eef7f0] text-[#39734a]"
+                              : "bg-[#f5f1e8] text-[#876d35]"
+                          }`}
+                        >
+                          {invoice.status}
+                        </span>
+                      </div>
 
-                    <td className="px-6 py-5">
-                      <p className="text-[12px] font-semibold">
+                      <p className="mt-2 text-xs font-semibold">
+                        {invoice.service}
+                      </p>
+
+                      <p className="mt-1 text-[10px] text-[#7b858f]">
                         {invoice.car}
                       </p>
-                      <p className="mt-1 text-[10px] text-[#8a949e]">
-                        {invoice.plate}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-5 border-t border-[#e5e8ea] pt-4 sm:grid-cols-3 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                    <div>
+                      <p className="text-[10px] text-[#8a949e]">
+                        Ngày lập
                       </p>
-                    </td>
 
-                    <td className="px-6 py-5 text-[12px] text-[#7b858f]">
-                      {invoice.service}
-                    </td>
+                      <p className="mt-1 text-xs font-semibold">
+                        {invoice.date}
+                      </p>
+                    </div>
 
-                    <td className="px-6 py-5 text-[12px] text-[#7b858f]">
-                      {invoice.date}
-                    </td>
+                    <div>
+                      <p className="text-[10px] text-[#8a949e]">
+                        Thành tiền
+                      </p>
 
-                    <td className="px-6 py-5 text-[12px] font-semibold">
-                      {invoice.total}
-                    </td>
+                      <p className="mt-1 text-xs font-bold">
+                        {invoice.amount}
+                      </p>
+                    </div>
 
-                    <td className="px-6 py-5">
-                      <span className="rounded-full bg-[#f1f3f4] px-3 py-1 text-[10px] font-medium text-[#59636d]">
-                        {invoice.status}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className="rounded-md bg-[#20252b] px-3 py-2 text-[10px] font-semibold text-white hover:bg-[#111519]"
-                        >
-                          Xem chi tiết
-                        </button>
-
-                        <button
-                          type="button"
-                          className="rounded-md border border-[#dfe3e6] px-3 py-2 text-[10px] font-medium hover:bg-[#f5f5f5]"
-                        >
-                          In hóa đơn
-                        </button>
-
-                        {invoice.status === "Chưa thanh toán" && (
-                          <button
-                            type="button"
-                            className="rounded-md border border-[#dfe3e6] px-3 py-2 text-[10px] font-medium hover:bg-[#f5f5f5]"
-                          >
-                            Thanh toán
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    <button
+                      type="button"
+                      className="rounded-xl border border-[#dfe3e6] px-3 py-2 text-[10px] font-semibold transition hover:border-[#20252b] hover:bg-[#20252b] hover:text-white"
+                    >
+                      Xem hóa đơn
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="mt-8 text-center text-[10px] text-[#8a949e]">
-          © CarService · Quản lý dịch vụ ô tô
+        <div className="mt-6 rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0f2f3] text-xs font-bold">
+              i
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold">
+                Lịch sử thanh toán
+              </p>
+
+              <p className="mt-1 text-[10px] leading-5 text-[#7b858f]">
+                Bạn có thể xem lại thông tin các hóa đơn và trạng thái
+                thanh toán của từng lần sử dụng dịch vụ.
+              </p>
+            </div>
+          </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }

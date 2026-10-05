@@ -1,202 +1,221 @@
-import { useState } from "react";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+
+const appointments = [
+  {
+    id: "LH-001",
+    car: "Toyota Vios · 30A-123.45",
+    service: "Bảo dưỡng định kỳ",
+    date: "12/10/2026",
+    time: "08:00 – 10:00",
+    status: "Đã xác nhận",
+  },
+  {
+    id: "LH-002",
+    car: "Honda City · 30F-678.90",
+    service: "Thay dầu động cơ",
+    date: "18/10/2026",
+    time: "13:00 – 15:00",
+    status: "Chờ xác nhận",
+  },
+];
 
 function Appointments() {
-  const [status, setStatus] = useState("");
-  const [keyword, setKeyword] = useState("");
-
-  const appointments = [
-    {
-      code: "LH-001",
-      car: "Toyota Vios",
-      service: "Bảo dưỡng định kỳ",
-      date: "24/06/2026",
-      status: "Chờ xác nhận",
-    },
-    {
-      code: "LH-002",
-      car: "Honda City",
-      service: "Kiểm tra tổng quát",
-      date: "25/06/2026",
-      status: "Đã xác nhận",
-    },
-  ];
-
-  const filteredAppointments = appointments.filter((item) => {
-    const matchStatus =
-      status === "" || item.status === status;
-
-    const matchKeyword =
-      keyword === "" ||
-      item.code.toLowerCase().includes(keyword.toLowerCase()) ||
-      item.car.toLowerCase().includes(keyword.toLowerCase()) ||
-      item.service.toLowerCase().includes(keyword.toLowerCase());
-
-    return matchStatus && matchKeyword;
-  });
-
   return (
-    <div className="min-h-screen bg-[#f6f7f8] text-[#20252b]">
-      <main className="mx-auto max-w-[1200px] px-6 py-10">
+    <div className="min-h-screen bg-[#f7f8f9] text-[#20252b]">
+      <Header />
 
-        {/* TITLE */}
+      <main className="mx-auto max-w-[1200px] px-6 py-10">
         <div className="mb-8">
-          <p className="mb-2 text-[10px] uppercase tracking-[0.08em] text-[#8a949e]">
-            GARA / LỊCH HẸN
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a949e]">
+            KHÁCH HÀNG / LỊCH HẸN
           </p>
 
-          <h1 className="text-[28px] font-bold">
+          <h1 className="text-3xl font-bold tracking-tight">
             Lịch hẹn của tôi
           </h1>
 
-          <p className="mt-2 text-[12px] text-[#7b858f]">
-            Xem chi tiết, đổi hoặc hủy lịch hẹn bảo dưỡng.
+          <p className="mt-2 text-xs leading-5 text-[#7b858f]">
+            Theo dõi các lịch bảo dưỡng và sửa chữa xe của bạn.
           </p>
         </div>
 
-        {/* SEARCH */}
-        <div className="mb-8 rounded-xl border border-[#e1e4e7] bg-white p-6">
-          <h2 className="mb-4 text-[15px] font-bold">
-            Tìm kiếm lịch hẹn
-          </h2>
+        <div className="mb-6 grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+                Tổng lịch hẹn
+              </p>
 
-          <div className="grid gap-4 md:grid-cols-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-xs font-bold">
+                01
+              </div>
+            </div>
 
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="rounded-lg border border-[#dfe3e6] px-4 py-3 text-[12px] outline-none focus:border-[#20252b]"
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="Chờ xác nhận">
-                Chờ xác nhận
-              </option>
-              <option value="Đã xác nhận">
+            <p className="text-2xl font-bold">
+              {appointments.length}
+            </p>
+
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Lịch hẹn đã tạo
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
                 Đã xác nhận
-              </option>
-            </select>
+              </p>
 
-            <input
-              type="text"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Nhập mã lịch, xe hoặc dịch vụ..."
-              className="rounded-lg border border-[#dfe3e6] px-4 py-3 text-[12px] outline-none focus:border-[#20252b]"
-            />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef7f0] text-xs font-bold text-[#39734a]">
+                ✓
+              </div>
+            </div>
+
+            <p className="text-2xl font-bold">
+              1
+            </p>
+
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Đang được gara tiếp nhận
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+                Chờ xác nhận
+              </p>
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5f1e8] text-xs font-bold text-[#876d35]">
+                !
+              </div>
+            </div>
+
+            <p className="text-2xl font-bold">
+              1
+            </p>
+
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Đang chờ xử lý
+            </p>
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-[#e3e6e8] bg-white shadow-sm">
+          <div className="flex flex-col justify-between gap-4 border-b border-[#eef0f2] px-6 py-5 sm:flex-row sm:items-center">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+                BOOKING HISTORY
+              </p>
+
+              <h2 className="mt-1 text-base font-bold">
+                Danh sách lịch hẹn
+              </h2>
+            </div>
 
             <button
               type="button"
-              className="rounded-lg bg-[#20252b] px-5 py-3 text-[12px] font-semibold text-white hover:bg-[#111519]"
+              className="rounded-xl bg-[#20252b] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#343a40]"
             >
-              Tìm kiếm
+              + Đặt lịch mới
             </button>
-
           </div>
 
-          <p className="mt-4 text-[11px] text-[#8a949e]">
-            Tìm kiếm và lọc danh sách theo thông tin hiện có.
-          </p>
-        </div>
+          <div className="space-y-4 p-5">
+            {appointments.map((appointment) => (
+              <div
+                key={appointment.id}
+                className="rounded-2xl border border-[#e5e8ea] bg-[#fafbfb] p-5 transition hover:border-[#d5d9dc] hover:shadow-sm"
+              >
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#20252b] text-[10px] font-bold text-white">
+                      LH
+                    </div>
 
-        {/* TABLE */}
-        <div className="rounded-xl border border-[#e1e4e7] bg-white">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-bold">
+                          {appointment.id}
+                        </p>
 
-          <div className="flex items-center justify-between border-b border-[#e1e4e7] px-6 py-5">
-            <h2 className="text-[15px] font-bold">
-              Danh sách lịch hẹn
-            </h2>
-
-            <span className="text-[11px] text-[#8a949e]">
-              {filteredAppointments.length} kết quả
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-
-              <thead>
-                <tr className="border-b border-[#e1e4e7] text-[10px] uppercase text-[#8a949e]">
-                  <th className="px-6 py-4">STT</th>
-                  <th className="px-6 py-4">Mã lịch hẹn</th>
-                  <th className="px-6 py-4">Xe</th>
-                  <th className="px-6 py-4">Dịch vụ</th>
-                  <th className="px-6 py-4">Ngày hẹn</th>
-                  <th className="px-6 py-4">Trạng thái</th>
-                  <th className="px-6 py-4">Thao tác</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredAppointments.map((item, index) => (
-                  <tr
-                    key={item.code}
-                    className="border-b border-[#eef0f2] last:border-b-0"
-                  >
-                    <td className="px-6 py-5 text-[12px] text-[#7b858f]">
-                      {index + 1}
-                    </td>
-
-                    <td className="px-6 py-5 text-[12px] font-semibold">
-                      {item.code}
-                    </td>
-
-                    <td className="px-6 py-5 text-[12px]">
-                      {item.car}
-                    </td>
-
-                    <td className="px-6 py-5 text-[12px] text-[#7b858f]">
-                      {item.service}
-                    </td>
-
-                    <td className="px-6 py-5 text-[12px] text-[#7b858f]">
-                      {item.date}
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <span className="rounded-md bg-[#f1f2f3] px-3 py-2 text-[10px] font-medium">
-                        {item.status}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <div className="flex flex-wrap gap-2">
-
-                        <button
-                          type="button"
-                          className="rounded-md bg-[#20252b] px-3 py-2 text-[10px] font-semibold text-white hover:bg-[#111519]"
+                        <span
+                          className={`rounded-full px-3 py-1 text-[10px] font-medium ${
+                            appointment.status === "Đã xác nhận"
+                              ? "bg-[#eef7f0] text-[#39734a]"
+                              : "bg-[#f5f1e8] text-[#876d35]"
+                          }`}
                         >
-                          Xem chi tiết
-                        </button>
-
-                        <button
-                          type="button"
-                          className="rounded-md border border-[#dfe3e6] px-3 py-2 text-[10px] font-medium hover:bg-[#f5f5f5]"
-                        >
-                          Đổi lịch
-                        </button>
-
-                        <button
-                          type="button"
-                          className="rounded-md border border-[#dfe3e6] px-3 py-2 text-[10px] font-medium hover:bg-[#f5f5f5]"
-                        >
-                          Hủy lịch
-                        </button>
-
+                          {appointment.status}
+                        </span>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
 
-            </table>
+                      <p className="mt-2 text-xs font-semibold">
+                        {appointment.service}
+                      </p>
+
+                      <p className="mt-1 text-[10px] text-[#7b858f]">
+                        {appointment.car}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-5 border-t border-[#e5e8ea] pt-4 sm:grid-cols-3 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                    <div>
+                      <p className="text-[10px] text-[#8a949e]">
+                        Ngày hẹn
+                      </p>
+
+                      <p className="mt-1 text-xs font-semibold">
+                        {appointment.date}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] text-[#8a949e]">
+                        Khung giờ
+                      </p>
+
+                      <p className="mt-1 text-xs font-semibold">
+                        {appointment.time}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="rounded-xl border border-[#dfe3e6] px-3 py-2 text-[10px] font-semibold transition hover:border-[#20252b] hover:bg-[#20252b] hover:text-white"
+                    >
+                      Xem chi tiết
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* FOOTER */}
-        <div className="mt-8 text-center text-[10px] text-[#8a949e]">
-          © CarService · Quản lý dịch vụ ô tô
-        </div>
+        <div className="mt-6 rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0f2f3] text-xs font-bold">
+              i
+            </div>
 
+            <div>
+              <p className="text-xs font-semibold">
+                Lưu ý về lịch hẹn
+              </p>
+
+              <p className="mt-1 text-[10px] leading-5 text-[#7b858f]">
+                Thời gian thực tế có thể thay đổi tùy tình trạng xe và
+                tình hình tiếp nhận tại gara.
+              </p>
+            </div>
+          </div>
+        </div>
       </main>
+
+      <Footer />
     </div>
   );
 }
