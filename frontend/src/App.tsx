@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
+import CustomerDashboard from "./pages/customer/Dashboard";
+
 
 import Contact from "./pages/customer/Contact";
 import Services from "./pages/customer/Services";
@@ -37,6 +39,7 @@ function App() {
       <Routes>
 
         <Route path="/" element={<Home />} />
+        <Route path="/customer" element={<CustomerDashboard />} />
 
         <Route path="/contact" element={<Contact />} />
         <Route path="/services" element={<Services />} />
