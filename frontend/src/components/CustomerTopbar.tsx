@@ -1,12 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
+import RoleAccountMenu from "./RoleAccountMenu";
 
 function CustomerTopbar() {
   const location = useLocation();
 
   const pageNames: Record<string, string> = {
     "/customer": "Tổng quan",
-    "/appointments": "Lịch hẹn",
-    "/cars": "Xe của tôi",
+    "/customer/appointments": "Lịch hẹn",
+    "/customer/cars": "Xe của tôi",
     "/quotation": "Báo giá",
     "/payment": "Thanh toán",
     "/invoices": "Hóa đơn",
@@ -42,32 +43,7 @@ function CustomerTopbar() {
           Trang chủ
         </Link>
 
-        <Link
-          to="/account"
-          className={`flex items-center gap-3 rounded-xl border px-2.5 py-2 transition sm:px-3 ${
-            location.pathname === "/account"
-              ? "border-[#D6A85F] bg-[#F7F7F5]"
-              : "border-[#E1E4E6] bg-white hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
-          }`}
-        >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F2933] text-[9px] font-bold text-white">
-            NV
-          </div>
-
-          <div className="hidden min-w-0 text-left sm:block">
-            <p className="max-w-[120px] truncate text-[10px] font-semibold text-[#20252B]">
-              Tên người dùng
-            </p>
-
-            <p className="mt-0.5 text-[9px] text-[#8A949E]">
-              Khách hàng
-            </p>
-          </div>
-
-          <span className="hidden text-[11px] text-[#8A949E] sm:block">
-            ›
-          </span>
-        </Link>
+        <RoleAccountMenu />
       </div>
     </header>
   );

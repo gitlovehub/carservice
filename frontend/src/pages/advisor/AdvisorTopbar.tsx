@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import RoleAccountMenu from "../../components/RoleAccountMenu";
 
 const pageNames: Record<string, string> = {
   "/advisor/customers": "Khách hàng",
@@ -35,21 +36,7 @@ function AdvisorTopbar() {
             Trang chủ
           </Link>
 
-          <div className="flex items-center gap-2 rounded-xl border border-[#E1E4E6] bg-white px-3 py-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1F2933] text-[9px] font-bold text-white">
-              CV
-            </div>
-
-            <div className="hidden text-left sm:block">
-              <p className="text-[10px] font-semibold text-[#20252B]">
-                Tên người dùng
-              </p>
-
-              <p className="text-[9px] text-[#8A949E]">
-                Cố vấn dịch vụ
-              </p>
-            </div>
-          </div>
+          <RoleAccountMenu />
         </div>
       </div>
     </header>

@@ -2,33 +2,28 @@ import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
   {
-    label: "Phiếu được phân công",
-    path: "/assigned-repairs",
-    icon: "▣",
+    label: "Tài khoản",
+    path: "/admin",
+    icon: "♙",
   },
   {
-    label: "Kiểm tra xe",
-    path: "/vehicle-check",
+    label: "Dịch vụ",
+    path: "/admin/services",
     icon: "◇",
   },
   {
-    label: "Chẩn đoán",
-    path: "/diagnosis",
-    icon: "⌕",
+    label: "Kho vật tư",
+    path: "/admin/inventory",
+    icon: "▰",
   },
   {
-    label: "Tiến độ sửa chữa",
-    path: "/repair-progress",
-    icon: "↻",
-  },
-  {
-    label: "Checklist",
-    path: "/checklist",
-    icon: "✓",
+    label: "Báo cáo",
+    path: "/admin/reports",
+    icon: "▣",
   },
 ];
 
-function TechnicianSidebar() {
+function AdminSidebar() {
   const location = useLocation();
 
   return (
@@ -50,7 +45,7 @@ function TechnicianSidebar() {
               </p>
 
               <p className="mt-0.5 text-[9px] font-medium text-[#AEB8C1]">
-                Kỹ thuật viên
+                Quản trị hệ thống
               </p>
             </div>
           </Link>
@@ -58,15 +53,12 @@ function TechnicianSidebar() {
 
         <div className="px-4 py-5">
           <p className="mb-3 px-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[#AEB8C1]">
-            CÔNG VIỆC
+            QUẢN TRỊ
           </p>
 
           <nav className="space-y-1">
             {menuItems.map((item) => {
-              const active =
-                location.pathname === item.path ||
-                (item.path === "/assigned-repairs" &&
-                  location.pathname === "/technician");
+              const active = location.pathname === item.path;
 
               return (
                 <Link
@@ -107,7 +99,7 @@ function TechnicianSidebar() {
           <div className="mb-3 rounded-xl bg-white/10 p-3">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#1F2933]">
-                KT
+                AD
               </div>
 
               <div className="min-w-0">
@@ -116,7 +108,7 @@ function TechnicianSidebar() {
                 </p>
 
                 <p className="mt-0.5 text-[9px] text-[#AEB8C1]">
-                  Kỹ thuật viên
+                  Quản trị viên
                 </p>
               </div>
             </div>
@@ -135,4 +127,4 @@ function TechnicianSidebar() {
   );
 }
 
-export default TechnicianSidebar;
+export default AdminSidebar;

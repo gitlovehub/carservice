@@ -2,25 +2,24 @@ import { Link, useLocation } from "react-router-dom";
 import RoleAccountMenu from "../../components/RoleAccountMenu";
 
 const pageNames: Record<string, string> = {
-  "/assigned-repairs": "Phiếu được phân công",
-  "/vehicle-check": "Kiểm tra xe",
-  "/diagnosis": "Chẩn đoán",
-  "/repair-progress": "Tiến độ sửa chữa",
-  "/checklist": "Checklist",
+  "/admin": "Tài khoản",
+  "/admin/services": "Dịch vụ",
+  "/admin/inventory": "Kho vật tư",
+  "/admin/reports": "Báo cáo",
 };
 
-function TechnicianTopbar() {
+function AdminTopbar() {
   const location = useLocation();
 
   const pageName =
-    pageNames[location.pathname] || "Không gian làm việc";
+    pageNames[location.pathname] || "Không gian quản trị";
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#E1E4E6] bg-white lg:ml-[250px]">
       <div className="flex h-[72px] items-center justify-between px-6 lg:px-8">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
-            KỸ THUẬT VIÊN
+            QUẢN TRỊ HỆ THỐNG
           </p>
 
           <h1 className="mt-2 text-[16px] font-bold text-[#20252B]">
@@ -43,4 +42,4 @@ function TechnicianTopbar() {
   );
 }
 
-export default TechnicianTopbar;
+export default AdminTopbar;
