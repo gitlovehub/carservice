@@ -5,15 +5,21 @@ function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="border-b border-[#e1e4e7] bg-white">
+    <header className="border-b border-[#e5e7eb] bg-white">
       <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-4">
-        <Link to="/" className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#20252b] text-[11px] font-bold text-white">
+        <Link
+          to="/"
+          className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition hover:bg-[#f7f7f7]"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#20252b] text-xs font-bold text-white shadow-sm">
             CS
           </div>
 
           <div>
-            <p className="text-[14px] font-bold">CarService</p>
+            <p className="text-sm font-bold text-[#20252b]">
+              CarService
+            </p>
+
             <p className="text-[10px] text-[#8a949e]">
               Quản lý dịch vụ ô tô
             </p>
@@ -24,14 +30,14 @@ function Header() {
           <button
             type="button"
             onClick={() => setOpen(!open)}
-            className="flex items-center gap-3"
+            className="flex items-center gap-3 rounded-xl border border-[#e5e7eb] bg-white px-3 py-2 transition hover:bg-[#f7f7f7]"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e9ecef] text-[10px] font-bold">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#eef0f2] text-[10px] font-bold text-[#20252b]">
               NV
             </div>
 
             <div className="text-left">
-              <p className="text-[12px] font-semibold">
+              <p className="text-xs font-semibold text-[#20252b]">
                 Tên người dùng
               </p>
 
@@ -40,62 +46,70 @@ function Header() {
               </p>
             </div>
 
-            <span className="text-[14px] text-[#7b858f]">
+            <span
+              className={`text-sm text-[#7b858f] transition ${
+                open ? "rotate-180" : ""
+              }`}
+            >
               ⌄
             </span>
           </button>
 
           {open && (
-            <div className="absolute right-0 top-full z-50 mt-3 w-64 rounded-xl border border-[#e1e4e7] bg-white p-4 shadow-lg">
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                TÀI KHOẢN
-              </p>
+            <div className="absolute right-0 top-full z-50 mt-3 w-64 overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white p-2 shadow-lg">
+              <div className="px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+                  TÀI KHOẢN
+                </p>
+              </div>
 
               <Link
                 to="/account"
                 onClick={() => setOpen(false)}
-                className="mb-4 block rounded-lg px-3 py-2.5 text-[12px] font-semibold hover:bg-[#f6f7f8]"
+                className="block rounded-xl px-3 py-3 text-xs font-semibold text-[#20252b] transition hover:bg-[#f5f6f7]"
               >
                 Thông tin tài khoản
               </Link>
 
-              <div className="border-t border-[#eef0f2] pt-4">
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+              <div className="my-2 border-t border-[#eef0f2]" />
+
+              <div className="px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
                   XEM WIREFRAME THEO VAI TRÒ
                 </p>
-
-                <Link
-                  to="/"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2.5 text-[12px] hover:bg-[#f6f7f8]"
-                >
-                  Khách hàng
-                </Link>
-
-                <Link
-                  to="/customers"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2.5 text-[12px] hover:bg-[#f6f7f8]"
-                >
-                  Cố vấn dịch vụ
-                </Link>
-
-                <Link
-                  to="/technician"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2.5 text-[12px] hover:bg-[#f6f7f8]"
-                >
-                  Kỹ thuật viên
-                </Link>
-
-                <Link
-                  to="/admin"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2.5 text-[12px] hover:bg-[#f6f7f8]"
-                >
-                  Quản trị viên
-                </Link>
               </div>
+
+              <Link
+                to="/"
+                onClick={() => setOpen(false)}
+                className="block rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#f5f6f7]"
+              >
+                Khách hàng
+              </Link>
+
+              <Link
+                to="/customers"
+                onClick={() => setOpen(false)}
+                className="block rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#f5f6f7]"
+              >
+                Cố vấn dịch vụ
+              </Link>
+
+              <Link
+                to="/technician"
+                onClick={() => setOpen(false)}
+                className="block rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#f5f6f7]"
+              >
+                Kỹ thuật viên
+              </Link>
+
+              <Link
+                to="/admin"
+                onClick={() => setOpen(false)}
+                className="block rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#f5f6f7]"
+              >
+                Quản trị viên
+              </Link>
             </div>
           )}
         </div>
