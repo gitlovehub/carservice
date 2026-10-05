@@ -1,297 +1,222 @@
 import { Link } from "react-router-dom";
 import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 
-const repairs = [
+const progressList = [
   {
-    id: 1,
-    code: "PSC-001",
-    car: "Toyota Vios",
-    plate: "30A-12345",
+    id: "PSC-001",
+    customer: "Nguyễn Tiến Hiền",
+    car: "Toyota Vios - 30A-123.45",
     service: "Bảo dưỡng định kỳ",
-    technician: "Trần Văn Nam",
-    date: "23/06/2026",
-    progress: "Đang sửa chữa",
-    percent: 65,
+    progress: 70,
+    status: "Đang sửa chữa",
+    currentStep: "Thay dầu và kiểm tra động cơ",
   },
   {
-    id: 2,
-    code: "PSC-003",
-    car: "Mazda 3",
-    plate: "30F-67890",
-    service: "Kiểm tra tổng quát",
-    technician: "Nguyễn Văn Minh",
-    date: "24/06/2026",
-    progress: "Chưa bắt đầu",
-    percent: 0,
+    id: "PSC-003",
+    customer: "Bùi Việt",
+    car: "Mazda 3 - 30F-111.11",
+    service: "Sửa chữa điều hòa",
+    progress: 45,
+    status: "Đang sửa chữa",
+    currentStep: "Bổ sung gas điều hòa",
+  },
+  {
+    id: "PSC-005",
+    customer: "Trần Thị B",
+    car: "Honda City - 30G-222.22",
+    service: "Kiểm tra phanh",
+    progress: 100,
+    status: "Hoàn thành",
+    currentStep: "Hoàn tất kiểm tra và chạy thử",
   },
 ];
 
 function RepairProgress() {
   return (
-    <div className="min-h-screen bg-[#f6f7f8] text-[#20252b]">
+    <div className="min-h-screen bg-[#f7f8f9] text-[#20252b]">
       <Header />
 
-      <main className="mx-auto max-w-[1200px] px-6 py-8">
+      <main className="mx-auto max-w-[1200px] px-6 py-10">
         <div className="mb-8">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-            KHÔNG GIAN LÀM VIỆC
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a949e]">
+            KỸ THUẬT VIÊN / TIẾN ĐỘ
           </p>
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#20252b] text-[11px] font-bold text-white">
-              KT
-            </div>
-
-            <div>
-              <h1 className="text-[18px] font-bold">
-                Kỹ thuật viên
-              </h1>
-
-              <p className="text-[11px] text-[#8a949e]">
-                Giao diện nội bộ
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-8 grid grid-cols-5 gap-3">
-          <Link
-            to="/assigned-repairs"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
-          >
-            <p className="text-[12px] font-semibold">
-              Phiếu được phân công
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Phiếu đang phụ trách
-            </p>
-          </Link>
-
-          <Link
-            to="/vehicle-check"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
-          >
-            <p className="text-[12px] font-semibold">
-              Kiểm tra xe
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Kiểm tra tình trạng xe
-            </p>
-          </Link>
-
-          <Link
-            to="/diagnosis"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
-          >
-            <p className="text-[12px] font-semibold">
-              Chẩn đoán
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Chẩn đoán lỗi
-            </p>
-          </Link>
-
-          <Link
-            to="/repair-progress"
-            className="rounded-xl border border-[#20252b] bg-[#20252b] px-4 py-4 text-white"
-          >
-            <p className="text-[12px] font-semibold">
-              Tiến độ sửa chữa
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#cbd0d5]">
-              Cập nhật tiến độ
-            </p>
-          </Link>
-
-          <div className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4">
-            <p className="text-[12px] font-semibold">
-              Checklist
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Review & Test
-            </p>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-            GARA / TIẾN ĐỘ SỬA CHỮA
-          </p>
-
-          <h2 className="text-[24px] font-bold">
+          <h1 className="text-3xl font-bold tracking-tight">
             Tiến độ sửa chữa
-          </h2>
+          </h1>
 
-          <p className="mt-1 text-[12px] text-[#8a949e]">
-            Theo dõi và cập nhật tiến độ các phiếu sửa chữa đang phụ trách.
+          <p className="mt-2 text-xs leading-5 text-[#7b858f]">
+            Cập nhật tiến độ thực hiện và công việc hiện tại của từng phiếu.
           </p>
         </div>
 
-        <div className="mb-6 rounded-xl border border-[#e1e4e7] bg-white p-5">
-          <p className="mb-4 text-[12px] font-semibold">
-            Tìm kiếm phiếu sửa chữa
-          </p>
+        <div className="mb-6 grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+              Đang sửa chữa
+            </p>
 
-          <div className="grid grid-cols-[1.5fr_1fr_auto] gap-3">
-            <input
-              placeholder="Mã phiếu, tên xe hoặc biển số"
-              className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none"
-            />
+            <p className="mt-4 text-2xl font-bold">
+              2
+            </p>
 
-            <select className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none">
-              <option>Tất cả trạng thái</option>
-              <option>Đang sửa chữa</option>
-              <option>Chưa bắt đầu</option>
-              <option>Hoàn thành</option>
-            </select>
-
-            <button className="rounded-lg bg-[#20252b] px-5 py-2.5 text-[12px] font-semibold text-white">
-              Tìm kiếm
-            </button>
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Phiếu đang xử lý
+            </p>
           </div>
 
-          <p className="mt-3 text-[10px] text-[#8a949e]">
-            Tìm kiếm và lọc danh sách phiếu đang sửa chữa.
-          </p>
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+              Tiến độ trung bình
+            </p>
+
+            <p className="mt-4 text-2xl font-bold">
+              72%
+            </p>
+
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Các phiếu đang xử lý
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+              Hoàn thành
+            </p>
+
+            <p className="mt-4 text-2xl font-bold">
+              1
+            </p>
+
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Phiếu đã hoàn tất
+            </p>
+          </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-[#e1e4e7] bg-white">
-          <div className="flex items-center justify-between border-b border-[#e1e4e7] px-5 py-4">
-            <p className="text-[13px] font-semibold">
-              Danh sách tiến độ sửa chữa
-            </p>
+        <div className="mb-6 grid gap-4 md:grid-cols-5">
+          <Link to="/assigned-repairs" className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-[10px] font-bold">PS</div>
+            <p className="mt-4 text-xs font-semibold">Phiếu được phân công</p>
+            <p className="mt-1 text-[10px] text-[#8a949e]">Công việc được giao</p>
+          </Link>
 
-            <p className="text-[11px] text-[#8a949e]">
-              2 kết quả
-            </p>
-          </div>
+          <Link to="/vehicle-check" className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-[10px] font-bold">KT</div>
+            <p className="mt-4 text-xs font-semibold">Kiểm tra xe</p>
+            <p className="mt-1 text-[10px] text-[#8a949e]">Kiểm tra tình trạng xe</p>
+          </Link>
 
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#e1e4e7] bg-[#fafbfc] text-left">
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  STT
-                </th>
+          <Link to="/diagnosis" className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-[10px] font-bold">CD</div>
+            <p className="mt-4 text-xs font-semibold">Chẩn đoán</p>
+            <p className="mt-1 text-[10px] text-[#8a949e]">Ghi nhận lỗi xe</p>
+          </Link>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  MÃ PHIẾU
-                </th>
+          <Link to="/repair-progress" className="rounded-2xl border border-[#20252b] bg-[#20252b] p-5 text-white shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[10px] font-bold">TD</div>
+            <p className="mt-4 text-xs font-semibold">Tiến độ sửa chữa</p>
+            <p className="mt-1 text-[10px] text-[#cbd0d5]">Cập nhật tiến độ</p>
+          </Link>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  XE
-                </th>
+          <Link to="/checklist" className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-[10px] font-bold">CL</div>
+            <p className="mt-4 text-xs font-semibold">Checklist</p>
+            <p className="mt-1 text-[10px] text-[#8a949e]">Review & Test</p>
+          </Link>
+        </div>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  YÊU CẦU DỊCH VỤ
-                </th>
+        <div className="space-y-4">
+          {progressList.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-2xl border border-[#e3e6e8] bg-white p-6 shadow-sm"
+            >
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-bold">
+                        {item.id}
+                      </p>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  KỸ THUẬT VIÊN
-                </th>
+                      <span
+                        className={`rounded-full px-3 py-1.5 text-[10px] font-medium ${
+                          item.status === "Hoàn thành"
+                            ? "bg-[#eef7f0] text-[#39734a]"
+                            : "bg-[#f5f1e8] text-[#876d35]"
+                        }`}
+                      >
+                        {item.status}
+                      </span>
+                    </div>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  TIẾN ĐỘ
-                </th>
-
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  TRẠNG THÁI
-                </th>
-
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  THAO TÁC
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {repairs.map((repair, index) => (
-                <tr
-                  key={repair.id}
-                  className="border-b border-[#eef0f2] last:border-0"
-                >
-                  <td className="px-5 py-4 text-[12px]">
-                    {index + 1}
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px] font-semibold">
-                    {repair.code}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <p className="text-[12px]">
-                      {repair.car}
+                    <p className="mt-2 text-xs font-semibold">
+                      {item.customer}
                     </p>
 
                     <p className="mt-1 text-[10px] text-[#8a949e]">
-                      {repair.plate}
+                      {item.car}
                     </p>
-                  </td>
+                  </div>
 
-                  <td className="px-5 py-4 text-[12px]">
-                    {repair.service}
-                  </td>
+                  <div>
+                    <p className="text-[10px] text-[#8a949e]">
+                      Dịch vụ
+                    </p>
 
-                  <td className="px-5 py-4 text-[12px]">
-                    {repair.technician}
-                  </td>
+                    <p className="mt-1 text-xs font-semibold">
+                      {item.service}
+                    </p>
+                  </div>
+                </div>
 
-                  <td className="px-5 py-4">
-                    <div className="w-24">
-                      <div className="mb-1 flex justify-between">
-                        <span className="text-[10px] text-[#8a949e]">
-                          {repair.percent}%
-                        </span>
-                      </div>
+                <div className="border-t border-[#eef0f2] pt-5">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-[10px] font-semibold text-[#8a949e]">
+                      TIẾN ĐỘ THỰC HIỆN
+                    </p>
 
-                      <div className="h-1.5 overflow-hidden rounded-full bg-[#e9ecef]">
-                        <div
-                          className="h-full rounded-full bg-[#20252b]"
-                          style={{ width: `${repair.percent}%` }}
-                        />
-                      </div>
-                    </div>
-                  </td>
+                    <p className="text-sm font-bold">
+                      {item.progress}%
+                    </p>
+                  </div>
 
-                  <td className="px-5 py-4">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-                        repair.progress === "Đang sửa chữa"
-                          ? "bg-[#e8f1ff] text-[#2563a8]"
-                          : "bg-[#fff4d6] text-[#9a6b00]"
-                      }`}
-                    >
-                      {repair.progress}
-                    </span>
-                  </td>
+                  <div className="h-3 overflow-hidden rounded-full bg-[#eef0f2]">
+                    <div
+                      className="h-full rounded-full bg-[#20252b]"
+                      style={{ width: `${item.progress}%` }}
+                    />
+                  </div>
+                </div>
 
-                  <td className="px-5 py-4">
-                    <button className="rounded-lg bg-[#20252b] px-3 py-1.5 text-[11px] font-semibold text-white">
-                      Cập nhật
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                <div className="rounded-2xl bg-[#f8f9fa] p-4">
+                  <p className="text-[10px] text-[#8a949e]">
+                    CÔNG VIỆC HIỆN TẠI
+                  </p>
+
+                  <p className="mt-1 text-xs font-semibold">
+                    {item.currentStep}
+                  </p>
+                </div>
+
+                <div className="flex justify-end border-t border-[#eef0f2] pt-5">
+                  <button
+                    type="button"
+                    className="rounded-xl bg-[#20252b] px-5 py-2.5 text-[10px] font-semibold text-white transition hover:bg-[#343a40]"
+                  >
+                    Cập nhật tiến độ
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </main>
 
-      <footer className="mt-10 border-t border-[#e1e4e7] bg-white">
-        <div className="mx-auto flex max-w-[1200px] justify-between px-6 py-5">
-          <p className="text-[10px] text-[#8a949e]">
-            © CarService · Quản lý dịch vụ ô tô
-          </p>
-
-          <p className="text-[10px] text-[#8a949e]">
-            Dịch vụ bảo dưỡng và sửa chữa ô tô
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

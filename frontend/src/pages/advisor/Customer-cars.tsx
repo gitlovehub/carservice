@@ -1,318 +1,291 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
 import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 
-const cars = [
+const customerCars = [
   {
-    id: 1,
-    owner: "Nguyễn Tiến Hiền",
-    phone: "0901234567",
-    plate: "30A-12345",
-    brand: "Toyota",
-    model: "Camry",
-    year: 2022,
+    customer: "Nguyễn Văn A",
+    customerId: "KH-001",
+    car: "Toyota Vios",
+    plate: "30A-123.45",
+    year: "2022",
+    color: "Trắng",
+    mileage: "32.500 km",
     status: "Đang sử dụng",
   },
   {
-    id: 2,
-    owner: "Phùng Đức Anh",
-    phone: "0912345678",
-    plate: "29A-67890",
-    brand: "Honda",
-    model: "Civic",
-    year: 2021,
+    customer: "Nguyễn Văn A",
+    customerId: "KH-001",
+    car: "Honda City",
+    plate: "30F-678.90",
+    year: "2023",
+    color: "Đen",
+    mileage: "18.200 km",
     status: "Đang sử dụng",
   },
   {
-    id: 3,
-    owner: "Bùi Việt",
-    phone: "0987654321",
-    plate: "30F-11111",
-    brand: "Mazda",
-    model: "CX-5",
-    year: 2023,
-    status: "Đang sửa chữa",
+    customer: "Trần Thị B",
+    customerId: "KH-002",
+    car: "Mazda 3",
+    plate: "30G-456.78",
+    year: "2021",
+    color: "Xám",
+    mileage: "45.800 km",
+    status: "Đang sử dụng",
   },
 ];
 
 function CustomerCars() {
-  const [search, setSearch] = useState("");
-  const [brand, setBrand] = useState("");
-
-  const filteredCars = cars.filter((car) => {
-    const matchSearch =
-      car.owner.toLowerCase().includes(search.toLowerCase()) ||
-      car.phone.includes(search) ||
-      car.plate.toLowerCase().includes(search.toLowerCase());
-
-    const matchBrand = brand === "" || car.brand === brand;
-
-    return matchSearch && matchBrand;
-  });
-
   return (
-    <div className="min-h-screen bg-[#f6f7f8] text-[#20252b]">
+    <div className="min-h-screen bg-[#f7f8f9] text-[#20252b]">
       <Header />
 
-      <main className="mx-auto max-w-[1200px] px-6 py-8">
+      <main className="mx-auto max-w-[1200px] px-6 py-10">
         <div className="mb-8">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-            KHÔNG GIAN LÀM VIỆC
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a949e]">
+            CỐ VẤN / XE KHÁCH HÀNG
           </p>
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#20252b] text-[11px] font-bold text-white">
-              CV
-            </div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Quản lý xe khách hàng
+          </h1>
 
-            <div>
-              <h1 className="text-[18px] font-bold">
-                Cố vấn dịch vụ
-              </h1>
+          <p className="mt-2 text-xs leading-5 text-[#7b858f]">
+            Theo dõi thông tin phương tiện và lịch sử xe của khách hàng.
+          </p>
+        </div>
 
-              <p className="text-[11px] text-[#8a949e]">
-                Giao diện nội bộ
+        <div className="mb-6 grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+                Tổng phương tiện
               </p>
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-xs font-bold">
+                XE
+              </div>
             </div>
+
+            <p className="mt-4 text-2xl font-bold">
+              {customerCars.length}
+            </p>
+
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Xe của khách hàng
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+                Đang sử dụng
+              </p>
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef7f0] text-xs font-bold text-[#39734a]">
+                ✓
+              </div>
+            </div>
+
+            <p className="mt-4 text-2xl font-bold">
+              {
+                customerCars.filter(
+                  (car) => car.status === "Đang sử dụng",
+                ).length
+              }
+            </p>
+
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Phương tiện đang hoạt động
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+                Khách hàng
+              </p>
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5f1e8] text-xs font-bold text-[#876d35]">
+                KH
+              </div>
+            </div>
+
+            <p className="mt-4 text-2xl font-bold">
+              2
+            </p>
+
+            <p className="mt-1 text-[10px] text-[#8a949e]">
+              Có phương tiện đăng ký
+            </p>
           </div>
         </div>
 
-        <div className="mb-8 grid grid-cols-5 gap-3">
-          <Link
-            to="/customers"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
-          >
-            <p className="text-[12px] font-semibold">
-              Khách hàng
-            </p>
+        <div className="mb-5 rounded-2xl border border-[#e3e6e8] bg-white p-6 shadow-sm">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+                VEHICLE MANAGEMENT
+              </p>
 
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý khách hàng
-            </p>
-          </Link>
+              <h2 className="mt-1 text-base font-bold">
+                Tìm kiếm phương tiện
+              </h2>
+            </div>
 
-          <Link
-            to="/customer-cars"
-            className="rounded-xl border border-[#20252b] bg-[#20252b] px-4 py-4 text-white"
-          >
-            <p className="text-[12px] font-semibold">
-              Xe của khách
-            </p>
+            <button
+              type="button"
+              className="rounded-xl bg-[#20252b] px-5 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[#343a40] hover:shadow-md"
+            >
+              + Thêm phương tiện
+            </button>
+          </div>
 
-            <p className="mt-1 text-[10px] text-[#cbd0d5]">
-              Quản lý xe
-            </p>
-          </Link>
-
-          <Link
-            to="/appointments"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
-          >
-            <p className="text-[12px] font-semibold">
-              Lịch hẹn
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý lịch
-            </p>
-          </Link>
-
-          <Link
-            to="/repair-status"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
-          >
-            <p className="text-[12px] font-semibold">
-              Phiếu sửa chữa
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Theo dõi sửa chữa
-            </p>
-          </Link>
-
-          <Link
-            to="/quotation"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
-          >
-            <p className="text-[12px] font-semibold">
-              Báo giá
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý báo giá
-            </p>
-          </Link>
-        </div>
-
-        <div className="mb-6">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-            GARA / XE CỦA KHÁCH
-          </p>
-
-          <h2 className="text-[24px] font-bold">
-            Quản lý xe của khách
-          </h2>
-
-          <p className="mt-1 text-[12px] text-[#8a949e]">
-            Quản lý thông tin xe của khách hàng tại gara.
-          </p>
-        </div>
-
-        <div className="mb-6 flex justify-end">
-          <button className="rounded-lg bg-[#20252b] px-4 py-2.5 text-[12px] font-semibold text-white">
-            + Thêm xe
-          </button>
-        </div>
-
-        <div className="mb-6 rounded-xl border border-[#e1e4e7] bg-white p-5">
-          <p className="mb-4 text-[12px] font-semibold">
-            Tìm kiếm xe
-          </p>
-
-          <div className="grid grid-cols-[1.5fr_1fr_auto] gap-3">
+          <div className="mt-5 grid gap-3 md:grid-cols-[1fr_220px_140px]">
             <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tên khách, số điện thoại hoặc biển số"
-              className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none"
+              type="text"
+              placeholder="Tìm theo tên khách hàng hoặc biển số..."
+              className="rounded-xl border border-[#dfe3e6] bg-white px-4 py-3 text-xs outline-none transition focus:border-[#20252b] focus:ring-2 focus:ring-[#20252b]/10"
             />
 
-            <select
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none"
-            >
-              <option value="">Tất cả hãng xe</option>
-              <option value="Toyota">Toyota</option>
-              <option value="Honda">Honda</option>
-              <option value="Mazda">Mazda</option>
+            <select className="rounded-xl border border-[#dfe3e6] bg-white px-4 py-3 text-xs outline-none">
+              <option>Tất cả trạng thái</option>
+              <option>Đang sử dụng</option>
+              <option>Ngừng sử dụng</option>
             </select>
 
-            <button className="rounded-lg bg-[#20252b] px-5 py-2.5 text-[12px] font-semibold text-white">
+            <button
+              type="button"
+              className="rounded-xl border border-[#dfe3e6] px-5 py-3 text-xs font-semibold transition hover:border-[#20252b] hover:bg-[#20252b] hover:text-white"
+            >
               Tìm kiếm
             </button>
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-[#e1e4e7] bg-white">
-          <div className="flex items-center justify-between border-b border-[#e1e4e7] px-5 py-4">
-            <p className="text-[13px] font-semibold">
-              Danh sách xe
-            </p>
+        <div className="overflow-hidden rounded-2xl border border-[#e3e6e8] bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-[#eef0f2] px-6 py-5">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+                CUSTOMER VEHICLES
+              </p>
 
-            <p className="text-[11px] text-[#8a949e]">
-              {filteredCars.length} xe
-            </p>
+              <h2 className="mt-1 text-base font-bold">
+                Danh sách phương tiện
+              </h2>
+            </div>
+
+            <span className="rounded-full bg-[#f0f2f3] px-3 py-1.5 text-[10px] font-semibold text-[#6f7881]">
+              {customerCars.length} phương tiện
+            </span>
           </div>
 
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-[#e1e4e7] bg-[#fafbfc] text-left">
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  STT
-                </th>
+          <div className="space-y-4 p-5">
+            {customerCars.map((item, index) => (
+              <div
+                key={item.plate}
+                className="rounded-2xl border border-[#e5e8ea] bg-[#fafbfb] p-5 transition hover:border-[#d5d9dc] hover:shadow-sm"
+              >
+                <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#20252b] text-sm font-bold text-white">
+                      {String(index + 1).padStart(2, "0")}
+                    </div>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  CHỦ XE
-                </th>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm font-bold">
+                          {item.car}
+                        </h3>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  BIỂN SỐ
-                </th>
+                        <span className="rounded-full bg-[#eef7f0] px-3 py-1.5 text-[10px] font-medium text-[#39734a]">
+                          {item.status}
+                        </span>
+                      </div>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  HÃNG XE
-                </th>
+                      <p className="mt-1 text-xs font-semibold">
+                        {item.plate}
+                      </p>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  MODEL
-                </th>
+                      <p className="mt-1 text-[10px] text-[#8a949e]">
+                        {item.customer} · {item.customerId}
+                      </p>
+                    </div>
+                  </div>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  NĂM
-                </th>
+                  <div className="grid grid-cols-2 gap-4 border-t border-[#e5e8ea] pt-4 sm:grid-cols-3 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
+                    <div>
+                      <p className="text-[10px] text-[#8a949e]">
+                        Năm sản xuất
+                      </p>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  TRẠNG THÁI
-                </th>
+                      <p className="mt-1 text-xs font-semibold">
+                        {item.year}
+                      </p>
+                    </div>
 
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  THAO TÁC
-                </th>
-              </tr>
-            </thead>
+                    <div>
+                      <p className="text-[10px] text-[#8a949e]">
+                        Màu xe
+                      </p>
 
-            <tbody>
-              {filteredCars.map((car, index) => (
-                <tr
-                  key={car.id}
-                  className="border-b border-[#eef0f2] last:border-0"
-                >
-                  <td className="px-5 py-4 text-[12px]">
-                    {index + 1}
-                  </td>
+                      <p className="mt-1 text-xs font-semibold">
+                        {item.color}
+                      </p>
+                    </div>
 
-                  <td className="px-5 py-4">
-                    <p className="text-[12px] font-semibold">
-                      {car.owner}
-                    </p>
+                    <div>
+                      <p className="text-[10px] text-[#8a949e]">
+                        Số km
+                      </p>
 
-                    <p className="text-[10px] text-[#8a949e]">
-                      {car.phone}
-                    </p>
-                  </td>
+                      <p className="mt-1 text-xs font-semibold">
+                        {item.mileage}
+                      </p>
+                    </div>
+                  </div>
 
-                  <td className="px-5 py-4 text-[12px] font-semibold">
-                    {car.plate}
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px]">
-                    {car.brand}
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px]">
-                    {car.model}
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px]">
-                    {car.year}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-                        car.status === "Đang sử dụng"
-                          ? "bg-[#e7f6ec] text-[#237a3b]"
-                          : "bg-[#fff4d6] text-[#9a6b00]"
-                      }`}
+                  <div className="flex gap-2 border-t border-[#e5e8ea] pt-4 xl:border-t-0 xl:pt-0">
+                    <button
+                      type="button"
+                      className="flex-1 rounded-xl border border-[#dfe3e6] px-4 py-2.5 text-[10px] font-semibold transition hover:border-[#20252b] hover:bg-[#20252b] hover:text-white"
                     >
-                      {car.status}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <button className="rounded-lg border border-[#d9dde1] px-3 py-1.5 text-[11px] font-semibold">
-                      Xem
+                      Xem chi tiết
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+                    <button
+                      type="button"
+                      className="rounded-xl border border-[#dfe3e6] px-4 py-2.5 text-[10px] font-semibold transition hover:bg-[#f5f6f7]"
+                    >
+                      Lịch sử
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0f2f3] text-xs font-bold">
+              i
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold">
+                Thông tin phương tiện
+              </p>
+
+              <p className="mt-1 text-[10px] leading-5 text-[#7b858f]">
+                Cố vấn có thể sử dụng thông tin phương tiện để kiểm tra
+                lịch sử bảo dưỡng và tư vấn dịch vụ phù hợp cho khách hàng.
+              </p>
+            </div>
+          </div>
         </div>
       </main>
 
-      <footer className="mt-10 border-t border-[#e1e4e7] bg-white">
-        <div className="mx-auto flex max-w-[1200px] justify-between px-6 py-5">
-          <p className="text-[10px] text-[#8a949e]">
-            © CarService · Quản lý dịch vụ ô tô
-          </p>
-
-          <p className="text-[10px] text-[#8a949e]">
-            Dịch vụ bảo dưỡng và sửa chữa ô tô
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
