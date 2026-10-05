@@ -26,6 +26,8 @@ import VehicleCheck from "./pages/technician/VehicleCheck";
 import Diagnosis from "./pages/technician/Diagnosis";
 import RepairProgress from "./pages/technician/RepairProgress";
 import Checklist from "./pages/technician/Checklist";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
 
 import AdminAccounts from "./pages/admin/Accounts";
 import AdminServices from "./pages/admin/Services";
@@ -37,6 +39,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+<Route path="/register" element={<Register />} />
         <Route path="/customer" element={<CustomerDashboard />} />
 
         <Route path="/contact" element={<Contact />} />
