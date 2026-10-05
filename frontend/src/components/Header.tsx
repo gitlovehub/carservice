@@ -51,9 +51,13 @@ function Header() {
                 TÀI KHOẢN
               </p>
 
-              <p className="mb-4 text-[12px] font-semibold">
+              <Link
+                to="/account"
+                onClick={() => setOpen(false)}
+                className="mb-4 block rounded-lg px-3 py-2.5 text-[12px] font-semibold hover:bg-[#f6f7f8]"
+              >
                 Thông tin tài khoản
-              </p>
+              </Link>
 
               <div className="border-t border-[#eef0f2] pt-4">
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
