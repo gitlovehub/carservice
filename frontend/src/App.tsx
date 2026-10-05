@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import CustomerDashboard from "./pages/customer/Dashboard";
 
-
 import Contact from "./pages/customer/Contact";
 import Services from "./pages/customer/Services";
 import Booking from "./pages/customer/Booking";
@@ -37,15 +36,19 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         <Route path="/" element={<Home />} />
         <Route path="/customer" element={<CustomerDashboard />} />
 
         <Route path="/contact" element={<Contact />} />
         <Route path="/services" element={<Services />} />
         <Route path="/booking" element={<Booking />} />
+
         <Route path="/appointments" element={<Appointments />} />
         <Route path="/cars" element={<Cars />} />
+
+        <Route path="/customer/appointments" element={<Appointments />} />
+        <Route path="/customer/cars" element={<Cars />} />
+
         <Route path="/account" element={<Account />} />
         <Route path="/repair-status" element={<RepairStatus />} />
         <Route path="/quotation" element={<Quotation />} />
@@ -124,7 +127,6 @@ function App() {
           path="/admin/reports"
           element={<AdminReports />}
         />
-
       </Routes>
     </BrowserRouter>
   );
