@@ -1,307 +1,273 @@
 import { Link } from "react-router-dom";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-
-const shortcuts = [
-  {
-    title: "Dịch vụ",
-    description: "Xem các dịch vụ bảo dưỡng và sửa chữa.",
-    link: "/services",
-  },
-  {
-    title: "Đặt lịch",
-    description: "Đặt lịch bảo dưỡng cho xe của bạn.",
-    link: "/booking",
-  },
-  {
-    title: "Lịch hẹn",
-    description: "Theo dõi các lịch hẹn đã đặt.",
-    link: "/appointments",
-  },
-  {
-    title: "Xe của tôi",
-    description: "Quản lý danh sách xe của bạn.",
-    link: "/cars",
-  },
-];
+import CustomerHeader from "../../components/CustomerHeader";
+import CustomerTopbar from "../../components/CustomerTopbar";
 
 function Dashboard() {
   return (
-    <div className="min-h-screen bg-[#eef0f2] text-[#20252b]">
-      <Header />
+    <div className="min-h-screen bg-[#F7F7F5]">
+      <CustomerHeader />
 
-      <main className="mx-auto max-w-[1200px] px-6 py-10">
-        <div className="mb-8">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#243b53]">
-            KHÁCH HÀNG / TRANG TỔNG QUAN
-          </p>
+      <div className="lg:ml-[250px]">
+        <CustomerTopbar />
 
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="text-[28px] font-bold tracking-[-0.5px]">
-                Chào mừng bạn đến với CarService
-              </h1>
-
-              <p className="mt-2 text-[12px] text-[#66717c]">
-                Quản lý xe, lịch hẹn và các dịch vụ của bạn tại một nơi.
-              </p>
-            </div>
-
-            <Link
-              to="/booking"
-              className="rounded-xl bg-[#243b53] px-5 py-3 text-[11px] font-semibold text-white shadow-sm transition hover:bg-[#1d3043]"
-            >
-              + Đặt lịch bảo dưỡng
-            </Link>
-          </div>
-        </div>
-
-        <div className="mb-6 grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-[#d5d9dd] bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-semibold text-[#66717c]">
-              XE CỦA TÔI
+        <main className="p-6 lg:p-8">
+          <div className="mb-8">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
+              DASHBOARD
             </p>
-
-            <p className="mt-2 text-[25px] font-bold">
-              2
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#66717c]">
-              xe đang sử dụng
+            <h1 className="mt-2 text-2xl font-bold text-[#20252B]">
+              Xin chào, Tên người dùng
+            </h1>
+            <p className="mt-2 text-sm text-[#66717C]">
+              Theo dõi xe, lịch hẹn và tình trạng sửa chữa của bạn.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[#d5d9dd] bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-semibold text-[#66717c]">
-              LỊCH HẸN
-            </p>
-
-            <p className="mt-2 text-[25px] font-bold">
-              2
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#66717c]">
-              lịch hẹn sắp tới
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#d5d9dd] bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-semibold text-[#66717c]">
-              ĐANG SỬA CHỮA
-            </p>
-
-            <p className="mt-2 text-[25px] font-bold">
-              1
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#66717c]">
-              phiếu đang xử lý
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#d5d9dd] bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-semibold text-[#66717c]">
-              BÁO GIÁ
-            </p>
-
-            <p className="mt-2 text-[25px] font-bold">
-              1
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#66717c]">
-              báo giá chờ duyệt
-            </p>
-          </div>
-        </div>
-
-        <div className="mb-6 grid gap-5 md:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-2xl border border-[#d5d9dd] bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between border-b border-[#e3e7ea] pb-4">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#243b53]">
-                  LỊCH HẸN SẮP TỚI
-                </p>
-
-                <h2 className="mt-1 text-[17px] font-bold">
-                  Bảo dưỡng định kỳ
-                </h2>
-              </div>
-
-              <span className="rounded-lg bg-[#e3e7ea] px-3 py-1.5 text-[10px] font-semibold text-[#66717c]">
-                Đã xác nhận
-              </span>
-            </div>
-
-            <div className="grid gap-4 py-5 md:grid-cols-3">
-              <div>
-                <p className="text-[9px] uppercase text-[#66717c]">
-                  NGÀY
-                </p>
-
-                <p className="mt-1 text-[12px] font-semibold">
-                  08/10/2026
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[9px] uppercase text-[#66717c]">
-                  GIỜ
-                </p>
-
-                <p className="mt-1 text-[12px] font-semibold">
-                  09:00
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[9px] uppercase text-[#66717c]">
-                  XE
-                </p>
-
-                <p className="mt-1 text-[12px] font-semibold">
-                  Toyota Camry
-                </p>
-              </div>
-            </div>
-
-            <Link
-              to="/appointments"
-              className="inline-flex text-[11px] font-semibold text-[#243b53]"
-            >
-              Xem tất cả lịch hẹn →
-            </Link>
-          </div>
-
-          <div className="rounded-2xl border border-[#d5d9dd] bg-white p-6 shadow-sm">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#243b53]">
-              XE ĐANG ĐƯỢC XỬ LÝ
-            </p>
-
-            <h2 className="mt-2 text-[17px] font-bold">
-              Toyota Camry
-            </h2>
-
-            <p className="mt-1 text-[11px] text-[#66717c]">
-              30A-123.45 · Bảo dưỡng định kỳ
-            </p>
-
-            <div className="mt-6">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[10px] text-[#66717c]">
-                  Tiến độ sửa chữa
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
+              <p className="text-xs text-[#66717C]">Xe của tôi</p>
+              <div className="mt-3 flex items-end justify-between">
+                <p className="text-3xl font-bold text-[#20252B]">2</p>
+                <span className="rounded-lg bg-[#F3E8D2] px-3 py-2 text-[10px] font-semibold text-[#3A3020]">
+                  Xe
                 </span>
+              </div>
+            </div>
 
-                <span className="text-[11px] font-bold text-[#243b53]">
-                  70%
+            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
+              <p className="text-xs text-[#66717C]">Lịch hẹn</p>
+              <div className="mt-3 flex items-end justify-between">
+                <p className="text-3xl font-bold text-[#20252B]">2</p>
+                <span className="rounded-lg bg-[#F3F4F2] px-3 py-2 text-[10px] font-semibold text-[#66717C]">
+                  Lịch
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
+              <p className="text-xs text-[#66717C]">Đang sửa</p>
+              <div className="mt-3 flex items-end justify-between">
+                <p className="text-3xl font-bold text-[#20252B]">1</p>
+                <span className="rounded-lg bg-[#F3E8D2] px-3 py-2 text-[10px] font-semibold text-[#3A3020]">
+                  Xe
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
+              <p className="text-xs text-[#66717C]">Báo giá</p>
+              <div className="mt-3 flex items-end justify-between">
+                <p className="text-3xl font-bold text-[#20252B]">1</p>
+                <span className="rounded-lg bg-[#F3F4F2] px-3 py-2 text-[10px] font-semibold text-[#66717C]">
+                  Chờ duyệt
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-6 grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                    LỊCH HẸN GẦN NHẤT
+                  </p>
+                  <h2 className="mt-2 text-lg font-bold text-[#20252B]">
+                    Bảo dưỡng định kỳ
+                  </h2>
+                </div>
+
+                <span className="rounded-full bg-[#F3E8D2] px-3 py-1.5 text-[10px] font-semibold text-[#3A3020]">
+                  Chờ xác nhận
                 </span>
               </div>
 
-              <div className="h-2 overflow-hidden rounded-full bg-[#e3e7ea]">
-                <div
-                  className="h-full rounded-full bg-[#243b53]"
-                  style={{ width: "70%" }}
-                />
+              <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                <div>
+                  <p className="text-[10px] text-[#8A949E]">Mã lịch hẹn</p>
+                  <p className="mt-1 text-sm font-semibold text-[#20252B]">
+                    LH-001
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] text-[#8A949E]">Xe</p>
+                  <p className="mt-1 text-sm font-semibold text-[#20252B]">
+                    Toyota Vios
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] text-[#8A949E]">Ngày hẹn</p>
+                  <p className="mt-1 text-sm font-semibold text-[#20252B]">
+                    24/06/2026
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <Link
-              to="/repair-status"
-              className="mt-6 inline-flex text-[11px] font-semibold text-[#243b53]"
-            >
-              Theo dõi sửa chữa →
-            </Link>
-          </div>
-        </div>
-
-        <div className="mb-6 rounded-2xl border border-[#d5d9dd] bg-white p-6 shadow-sm">
-          <div className="mb-5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#243b53]">
-              LỐI TẮT
-            </p>
-
-            <h2 className="mt-1 text-[17px] font-bold">
-              Quản lý dịch vụ
-            </h2>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-4">
-            {shortcuts.map((shortcut) => (
               <Link
-                key={shortcut.title}
-                to={shortcut.link}
-                className="rounded-xl border border-[#d5d9dd] bg-[#f7f8f9] p-4 transition hover:bg-[#e9ecef]"
+                to="/appointments"
+                className="mt-6 inline-flex rounded-xl bg-[#1F2933] px-5 py-3 text-[10px] font-semibold text-white transition hover:bg-[#151D24]"
               >
-                <h3 className="text-[13px] font-bold">
-                  {shortcut.title}
-                </h3>
-
-                <p className="mt-2 text-[10px] leading-5 text-[#66717c]">
-                  {shortcut.description}
-                </p>
-
-                <span className="mt-4 inline-block text-[10px] font-semibold text-[#243b53]">
-                  Truy cập →
-                </span>
+                Xem lịch hẹn
               </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <div className="rounded-2xl border border-[#d5d9dd] bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#243b53]">
-                  BÁO GIÁ
-                </p>
-
-                <h2 className="mt-1 text-[17px] font-bold">
-                  Báo giá chờ duyệt
-                </h2>
-              </div>
-
-              <span className="text-[20px] font-bold">
-                3.850.000 đ
-              </span>
             </div>
 
-            <p className="mt-4 text-[11px] leading-5 text-[#66717c]">
-              Bảo dưỡng định kỳ · Toyota Camry · 30A-123.45
-            </p>
+            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-6">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                TIẾN ĐỘ SỬA CHỮA
+              </p>
 
-            <Link
-              to="/quotation"
-              className="mt-5 inline-flex text-[11px] font-semibold text-[#243b53]"
-            >
-              Xem báo giá →
-            </Link>
-          </div>
+              <h2 className="mt-2 text-lg font-bold text-[#20252B]">
+                Toyota Vios
+              </h2>
 
-          <div className="rounded-2xl border border-[#d5d9dd] bg-[#20252b] p-6 text-white shadow-sm">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#aeb8c1]">
-              CẦN HỖ TRỢ?
-            </p>
+              <p className="mt-1 text-xs text-[#66717C]">
+                Bảo dưỡng định kỳ · SC-001
+              </p>
 
-            <h2 className="mt-2 text-[18px] font-bold">
-              Liên hệ CarService
-            </h2>
+              <div className="mt-6">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[10px] text-[#66717C]">
+                    Tiến độ hoàn thành
+                  </span>
+                  <span className="text-xs font-bold text-[#20252B]">70%</span>
+                </div>
 
-            <p className="mt-2 text-[11px] leading-5 text-[#aeb8c1]">
-              Đội ngũ CarService sẵn sàng hỗ trợ bạn trong quá trình bảo
-              dưỡng và sửa chữa xe.
-            </p>
+                <div className="h-2 overflow-hidden rounded-full bg-[#ECEEED]">
+                  <div className="h-full w-[70%] rounded-full bg-[#D6A85F]" />
+                </div>
+              </div>
 
-            <Link
-              to="/contact"
-              className="mt-5 inline-flex rounded-lg bg-white px-4 py-2.5 text-[10px] font-semibold text-[#20252b] transition hover:bg-[#e9ecef]"
-            >
-              Liên hệ ngay
-            </Link>
-          </div>
-        </div>
-      </main>
+              <Link
+                to="/repair-status"
+                className="mt-6 inline-flex text-[10px] font-semibold text-[#20252B] underline underline-offset-4"
+              >
+                Xem tình trạng sửa chữa
+              </Link>
+            </div>
+          </section>
 
-      <Footer />
+          <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_1.5fr]">
+            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-6">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                TRUY CẬP NHANH
+              </p>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <Link
+                  to="/booking"
+                  className="rounded-xl border border-[#E1E4E6] p-4 transition hover:bg-[#F7F7F5]"
+                >
+                  <p className="text-sm font-semibold text-[#20252B]">
+                    Đặt lịch
+                  </p>
+                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                    Tạo lịch hẹn mới
+                  </p>
+                </Link>
+
+                <Link
+                  to="/cars"
+                  className="rounded-xl border border-[#E1E4E6] p-4 transition hover:bg-[#F7F7F5]"
+                >
+                  <p className="text-sm font-semibold text-[#20252B]">
+                    Xe của tôi
+                  </p>
+                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                    Quản lý xe
+                  </p>
+                </Link>
+
+                <Link
+                  to="/quotation"
+                  className="rounded-xl border border-[#E1E4E6] p-4 transition hover:bg-[#F7F7F5]"
+                >
+                  <p className="text-sm font-semibold text-[#20252B]">
+                    Báo giá
+                  </p>
+                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                    Kiểm tra báo giá
+                  </p>
+                </Link>
+
+                <Link
+                  to="/invoices"
+                  className="rounded-xl border border-[#E1E4E6] p-4 transition hover:bg-[#F7F7F5]"
+                >
+                  <p className="text-sm font-semibold text-[#20252B]">
+                    Hóa đơn
+                  </p>
+                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                    Xem hóa đơn
+                  </p>
+                </Link>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#E1E4E6] bg-[#1F2933] p-6">
+              <div className="flex items-start justify-between gap-5">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                    BÁO GIÁ CẦN DUYỆT
+                  </p>
+
+                  <h2 className="mt-2 text-xl font-bold text-white">
+                    Bảo dưỡng định kỳ
+                  </h2>
+
+                  <p className="mt-2 text-xs text-[#AEB8C1]">
+                    Toyota Vios · 30A-123.45 · BG-001
+                  </p>
+                </div>
+
+                <span className="rounded-full bg-[#D6A85F] px-3 py-1.5 text-[10px] font-bold text-[#3A3020]">
+                  Chờ duyệt
+                </span>
+              </div>
+
+              <div className="mt-7 flex items-end justify-between border-t border-[#3A4650] pt-5">
+                <div>
+                  <p className="text-[10px] text-[#8F9BA6]">Tổng báo giá</p>
+                  <p className="mt-1 text-2xl font-bold text-white">
+                    3.850.000đ
+                  </p>
+                </div>
+
+                <Link
+                  to="/quotation"
+                  className="rounded-xl bg-[#D6A85F] px-5 py-3 text-[10px] font-bold text-[#3A3020] transition hover:bg-[#E4C17E]"
+                >
+                  Xem báo giá
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-6 rounded-2xl border border-[#E1E4E6] bg-white p-6">
+            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  HỖ TRỢ KHÁCH HÀNG
+                </p>
+                <h2 className="mt-2 text-lg font-bold text-[#20252B]">
+                  Bạn cần hỗ trợ?
+                </h2>
+                <p className="mt-1 text-xs text-[#66717C]">
+                  Liên hệ CarService nếu bạn cần tư vấn về lịch hẹn hoặc xe.
+                </p>
+              </div>
+
+              <Link
+                to="/contact"
+                className="rounded-xl border border-[#1F2933] px-5 py-3 text-center text-[10px] font-semibold text-[#1F2933] transition hover:bg-[#1F2933] hover:text-white"
+              >
+                Liên hệ hỗ trợ
+              </Link>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
   );
 }

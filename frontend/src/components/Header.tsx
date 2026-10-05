@@ -5,71 +5,78 @@ function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#d5d9dd] bg-white">
-      <div className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between px-6">
+    <header className="sticky top-0 z-50 border-b border-[#e5e7eb] bg-white/95 backdrop-blur">
+      <div className="mx-auto flex h-[76px] max-w-[1280px] items-center justify-between px-6">
+        {/* Logo */}
         <Link
           to="/"
-          className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition hover:bg-[#eef0f2]"
+          className="group flex items-center gap-3 rounded-2xl px-2 py-2 transition hover:bg-[#f7f7f5]"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#243b53] text-xs font-bold text-white shadow-sm">
-            CS
+          <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-[#1f2933] text-white shadow-sm">
+            <span className="text-lg">🚗</span>
+
+            <span className="absolute bottom-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-[#d6a85f] text-[7px]">
+              +
+            </span>
           </div>
 
           <div>
-            <p className="text-sm font-bold text-[#20252b]">
+            <p className="text-[15px] font-bold tracking-tight text-[#20252b]">
               CarService
             </p>
 
-            <p className="text-[10px] text-[#66717c]">
-              Quản lý dịch vụ ô tô
+            <p className="mt-0.5 text-[10px] font-medium text-[#7a838c]">
+              Chăm sóc xe chuyên nghiệp
             </p>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        {/* Navigation */}
+        <nav className="hidden items-center gap-1 lg:flex">
           <Link
             to="/"
-            className="rounded-lg px-3 py-2 text-[11px] font-semibold text-[#20252b] transition hover:bg-[#eef0f2]"
+            className="rounded-xl bg-[#f3f4f2] px-4 py-2.5 text-[12px] font-semibold text-[#20252b] transition hover:bg-[#e9ebe8]"
           >
             Trang chủ
           </Link>
 
           <Link
             to="/services"
-            className="rounded-lg px-3 py-2 text-[11px] font-semibold text-[#66717c] transition hover:bg-[#eef0f2] hover:text-[#20252b]"
+            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
           >
             Dịch vụ
           </Link>
 
           <Link
             to="/booking"
-            className="rounded-lg px-3 py-2 text-[11px] font-semibold text-[#66717c] transition hover:bg-[#eef0f2] hover:text-[#20252b]"
+            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
           >
             Đặt lịch
           </Link>
 
           <Link
             to="/appointments"
-            className="rounded-lg px-3 py-2 text-[11px] font-semibold text-[#66717c] transition hover:bg-[#eef0f2] hover:text-[#20252b]"
+            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
           >
             Lịch hẹn
           </Link>
 
           <Link
             to="/cars"
-            className="rounded-lg px-3 py-2 text-[11px] font-semibold text-[#66717c] transition hover:bg-[#eef0f2] hover:text-[#20252b]"
+            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
           >
             Xe của tôi
           </Link>
         </nav>
 
+        {/* Account */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setOpen(!open)}
-            className="flex items-center gap-3 rounded-xl border border-[#d5d9dd] bg-white px-3 py-2 transition hover:bg-[#eef0f2]"
+            className="flex items-center gap-3 rounded-2xl border border-[#e1e4e6] bg-white px-3 py-2 transition hover:border-[#cfd4d8] hover:bg-[#f8f8f6]"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e3e7ea] text-[10px] font-bold text-[#243b53]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1f2933] text-[10px] font-bold text-white">
               NV
             </div>
 
@@ -78,24 +85,26 @@ function Header() {
                 Tên người dùng
               </p>
 
-              <p className="text-[10px] text-[#66717c]">
-                Tài khoản · Khách hàng
+              <p className="mt-0.5 text-[10px] text-[#7a838c]">
+                Khách hàng
               </p>
             </div>
 
             <span
-              className={`text-sm text-[#66717c] transition ${
+              className={`ml-1 text-sm text-[#66717c] transition-transform ${
                 open ? "rotate-180" : ""
               }`}
             >
-              ⌄
+             ⌄
             </span>
           </button>
 
+          {/* Dropdown */}
           {open && (
-            <div className="absolute right-0 top-full z-50 mt-3 w-64 overflow-hidden rounded-2xl border border-[#d5d9dd] bg-white p-2 shadow-lg">
-              <div className="px-3 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#66717c]">
+            <div className="absolute right-0 top-full z-50 mt-3 w-72 overflow-hidden rounded-2xl border border-[#e1e4e6] bg-white p-2 shadow-[0_12px_35px_rgba(31,41,51,0.12)]">
+              {/* Account heading */}
+              <div className="px-3 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#8a9299]">
                   TÀI KHOẢN
                 </p>
               </div>
@@ -103,57 +112,102 @@ function Header() {
               <Link
                 to="/customer"
                 onClick={() => setOpen(false)}
-                className="block rounded-xl bg-[#eef0f2] px-3 py-3 text-xs font-semibold text-[#20252b] transition hover:bg-[#e3e7ea]"
+                className="flex items-center gap-3 rounded-xl bg-[#f3f4f2] px-3 py-3 transition hover:bg-[#e9ebe8]"
               >
-                Trang khách hàng
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1f2933] text-xs text-white">
+                  ✓
+                </span>
+
+                <span>
+                  <span className="block text-xs font-semibold text-[#20252b]">
+                    Trang khách hàng
+                  </span>
+
+                  <span className="mt-0.5 block text-[10px] text-[#7a838c]">
+                    Quản lý thông tin và lịch hẹn
+                  </span>
+                </span>
               </Link>
 
               <Link
                 to="/account"
                 onClick={() => setOpen(false)}
-                className="mt-1 block rounded-xl px-3 py-3 text-xs font-semibold text-[#20252b] transition hover:bg-[#eef0f2]"
+                className="mt-1 flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-[#f3f4f2]"
               >
-                Thông tin tài khoản
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eceeed] text-xs text-[#374151]">
+                  ◉
+                </span>
+
+                <span>
+                  <span className="block text-xs font-semibold text-[#20252b]">
+                    Thông tin tài khoản
+                  </span>
+
+                  <span className="mt-0.5 block text-[10px] text-[#7a838c]">
+                    Cập nhật thông tin cá nhân
+                  </span>
+                </span>
               </Link>
 
-              <div className="my-2 border-t border-[#d5d9dd]" />
+              <div className="my-2 border-t border-[#eceeed]" />
 
+              {/* Role switch */}
               <div className="px-3 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#66717c]">
-                  XEM GIAO DIỆN THEO VAI TRÒ
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#8a9299]">
+                  GIAO DIỆN THEO VAI TRÒ
                 </p>
               </div>
 
               <Link
                 to="/customer"
                 onClick={() => setOpen(false)}
-                className="block rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#eef0f2]"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#f3f4f2]"
               >
-                Khách hàng
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f1ef]">
+                  👤
+                </span>
+                <span className="font-medium text-[#374151]">
+                  Khách hàng
+                </span>
               </Link>
 
               <Link
                 to="/advisor/customers"
                 onClick={() => setOpen(false)}
-                className="block rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#eef0f2]"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#f3f4f2]"
               >
-                Cố vấn dịch vụ
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f1ef]">
+                  💬
+                </span>
+                <span className="font-medium text-[#374151]">
+                  Cố vấn dịch vụ
+                </span>
               </Link>
 
               <Link
                 to="/technician"
                 onClick={() => setOpen(false)}
-                className="block rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#eef0f2]"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#f3f4f2]"
               >
-                Kỹ thuật viên
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f1ef]">
+                  🔧
+                </span>
+                <span className="font-medium text-[#374151]">
+                  Kỹ thuật viên
+                </span>
               </Link>
 
               <Link
                 to="/admin"
                 onClick={() => setOpen(false)}
-                className="block rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#eef0f2]"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#f3f4f2]"
               >
-                Quản trị viên
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f1ef]">
+                  ⚙
+                </span>
+                <span className="font-medium text-[#374151]">
+                  Quản trị viên
+                </span>
               </Link>
             </div>
           )}
