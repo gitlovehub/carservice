@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -13,23 +14,23 @@ use Laravel\Sanctum\HasApiTokens;
 #[Hidden(['password_hash'])]
 class Account extends Authenticatable
 {
-    use HasApiTokens, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     public const ROLE_CUSTOMER = 'CUSTOMER';
-
     public const ROLE_ADVISOR = 'ADVISOR';
-
     public const ROLE_TECHNICIAN = 'TECHNICIAN';
-
     public const ROLE_ADMIN = 'ADMIN';
 
     public const STATUS_ACTIVE = 'ACTIVE';
-
     public const STATUS_LOCKED = 'LOCKED';
-
     public const STATUS_INACTIVE = 'INACTIVE';
 
-    public function getAuthPassword(): string
+    public function getAuthPasswordName(): string
+    {
+        return 'password_hash';
+    }
+
+    public function getAuthPassword(): ?string
     {
         return $this->password_hash;
     }
