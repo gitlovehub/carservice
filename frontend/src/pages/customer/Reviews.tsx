@@ -1,6 +1,6 @@
 import { useState } from "react";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
+import CustomerHeader from "../../components/CustomerHeader";
+import CustomerTopbar from "../../components/CustomerTopbar";
 
 const reviews = [
   {
@@ -37,186 +37,191 @@ function Reviews() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f8f9] text-[#20252b]">
-      <Header />
+    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+      <CustomerHeader />
+      <CustomerTopbar />
 
-      <main className="mx-auto max-w-[1200px] px-6 py-10">
-        <div className="mb-8">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a949e]">
-            KHÁCH HÀNG / ĐÁNH GIÁ
-          </p>
-
-          <h1 className="text-3xl font-bold tracking-tight">
-            Đánh giá dịch vụ
-          </h1>
-
-          <p className="mt-2 text-xs leading-5 text-[#7b858f]">
-            Chia sẻ trải nghiệm của bạn sau khi sử dụng dịch vụ tại CarService.
-          </p>
-        </div>
-
-        <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
-          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-6 shadow-sm">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-              REVIEW FORM
+      <main className="lg:ml-[250px]">
+        <div className="mx-auto max-w-[1200px] px-6 py-10 md:py-14">
+          <div className="mb-8">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+              KHÁCH HÀNG / ĐÁNH GIÁ
             </p>
 
-            <h2 className="mt-1 text-base font-bold">
-              Gửi đánh giá
-            </h2>
+            <h1 className="text-[30px] font-bold tracking-[-0.8px] text-[#1F2933]">
+              Đánh giá dịch vụ
+            </h1>
 
-            <p className="mt-2 text-[10px] leading-5 text-[#7b858f]">
-              Đánh giá của bạn giúp CarService cải thiện chất lượng dịch vụ.
+            <p className="mt-2 max-w-2xl text-[12px] leading-6 text-[#66717C]">
+              Chia sẻ trải nghiệm của bạn sau khi sử dụng dịch vụ tại
+              CarService.
             </p>
-
-            <div className="mt-6">
-              <label className="mb-3 block text-xs font-semibold">
-                Mức độ hài lòng
-              </label>
-
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setRating(item)}
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm transition ${
-                      item <= rating
-                        ? "bg-[#20252b] text-white"
-                        : "border border-[#dfe3e6] bg-white text-[#8a949e] hover:bg-[#f5f6f7]"
-                    }`}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
-
-              <p className="mt-2 text-[10px] text-[#8a949e]">
-                {rating > 0
-                  ? `${rating}/5 sao`
-                  : "Chưa chọn mức đánh giá"}
-              </p>
-            </div>
-
-            <div className="mt-5">
-              <label className="mb-2 block text-xs font-semibold">
-                Nội dung đánh giá
-              </label>
-
-              <textarea
-                rows={6}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Nhập cảm nhận của bạn..."
-                className="w-full resize-none rounded-xl border border-[#dfe3e6] bg-white px-4 py-3 text-xs outline-none transition focus:border-[#20252b] focus:ring-2 focus:ring-[#20252b]/10"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className="mt-5 w-full rounded-xl bg-[#20252b] px-5 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[#343a40] hover:shadow-md"
-            >
-              Gửi đánh giá
-            </button>
           </div>
 
-          <div className="rounded-2xl border border-[#e3e6e8] bg-white shadow-sm">
-            <div className="flex flex-col justify-between gap-3 border-b border-[#eef0f2] px-6 py-5 sm:flex-row sm:items-center">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                  REVIEW HISTORY
+          <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
+            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                REVIEW FORM
+              </p>
+
+              <h2 className="mt-1 text-base font-bold text-[#20252B]">
+                Gửi đánh giá
+              </h2>
+
+              <p className="mt-2 text-[10px] leading-5 text-[#66717C]">
+                Đánh giá của bạn giúp CarService cải thiện chất lượng dịch vụ.
+              </p>
+
+              <div className="mt-6">
+                <label className="mb-3 block text-xs font-semibold text-[#20252B]">
+                  Mức độ hài lòng
+                </label>
+
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setRating(item)}
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm transition ${
+                        item <= rating
+                          ? "bg-[#D6A85F] text-[#3A3020]"
+                          : "border border-[#DDE1E4] bg-white text-[#8A949E] hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
+                      }`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+
+                <p className="mt-2 text-[10px] text-[#8A949E]">
+                  {rating > 0
+                    ? `${rating}/5 sao`
+                    : "Chưa chọn mức đánh giá"}
                 </p>
-
-                <h2 className="mt-1 text-base font-bold">
-                  Đánh giá của tôi
-                </h2>
               </div>
 
-              <div className="rounded-full bg-[#f0f2f3] px-3 py-1.5 text-[10px] font-semibold text-[#6f7881]">
-                {reviews.length} đánh giá
+              <div className="mt-5">
+                <label className="mb-2 block text-xs font-semibold text-[#20252B]">
+                  Nội dung đánh giá
+                </label>
+
+                <textarea
+                  rows={6}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Nhập cảm nhận của bạn..."
+                  className="w-full resize-none rounded-xl border border-[#DDE1E4] bg-white px-4 py-3 text-xs text-[#20252B] outline-none transition placeholder:text-[#A0A8AF] focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
+                />
               </div>
+
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="mt-5 w-full rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[#151D24] hover:shadow-md"
+              >
+                Gửi đánh giá
+              </button>
             </div>
 
-            <div className="space-y-4 p-5">
-              {reviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="rounded-2xl border border-[#e5e8ea] bg-[#fafbfb] p-5"
-                >
-                  <div className="flex flex-col justify-between gap-4 sm:flex-row">
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#20252b] text-[10px] font-bold text-white">
-                        RV
-                      </div>
+            <div className="rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
+              <div className="flex flex-col justify-between gap-3 border-b border-[#E1E4E6] px-6 py-5 sm:flex-row sm:items-center">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                    REVIEW HISTORY
+                  </p>
 
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-bold">
-                            {review.id}
+                  <h2 className="mt-1 text-base font-bold text-[#20252B]">
+                    Đánh giá của tôi
+                  </h2>
+                </div>
+
+                <div className="rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-semibold text-[#66717C]">
+                  {reviews.length} đánh giá
+                </div>
+              </div>
+
+              <div className="space-y-4 p-5">
+                {reviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="rounded-2xl border border-[#E5E8EA] bg-[#FAFAF9] p-5 transition hover:border-[#D6A85F]"
+                  >
+                    <div className="flex flex-col justify-between gap-4 sm:flex-row">
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-white">
+                          RV
+                        </div>
+
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-bold text-[#20252B]">
+                              {review.id}
+                            </p>
+
+                            <span className="rounded-full bg-[#EEF7F0] px-3 py-1.5 text-[10px] font-medium text-[#39734A]">
+                              Đã gửi
+                            </span>
+                          </div>
+
+                          <p className="mt-2 text-xs font-semibold text-[#20252B]">
+                            {review.service}
                           </p>
 
-                          <span className="rounded-full bg-[#eef7f0] px-3 py-1.5 text-[10px] font-medium text-[#39734a]">
-                            Đã gửi
+                          <p className="mt-1 text-[10px] text-[#7B858F]">
+                            {review.car}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-left sm:text-right">
+                        <div className="text-sm tracking-[0.15em]">
+                          <span className="text-[#D6A85F]">
+                            {"★".repeat(review.rating)}
+                          </span>
+
+                          <span className="text-[#DFE3E6]">
+                            {"★".repeat(5 - review.rating)}
                           </span>
                         </div>
 
-                        <p className="mt-2 text-xs font-semibold">
-                          {review.service}
-                        </p>
-
-                        <p className="mt-1 text-[10px] text-[#7b858f]">
-                          {review.car}
+                        <p className="mt-1 text-[10px] text-[#8A949E]">
+                          {review.date}
                         </p>
                       </div>
                     </div>
 
-                    <div className="text-left sm:text-right">
-                      <div className="text-sm tracking-[0.15em]">
-                        {"★".repeat(review.rating)}
-                        <span className="text-[#dfe3e6]">
-                          {"★".repeat(5 - review.rating)}
-                        </span>
-                      </div>
-
-                      <p className="mt-1 text-[10px] text-[#8a949e]">
-                        {review.date}
+                    <div className="mt-4 rounded-xl bg-white p-4">
+                      <p className="text-[10px] leading-5 text-[#6F7881]">
+                        “{review.content}”
                       </p>
                     </div>
                   </div>
-
-                  <div className="mt-4 rounded-xl bg-white p-4">
-                    <p className="text-[10px] leading-5 text-[#6f7881]">
-                      “{review.content}”
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="mt-6 rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0f2f3] text-xs font-bold">
-              i
-            </div>
+          <div className="mt-6 rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.03)]">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F3E8D2] text-xs font-bold text-[#1F2933]">
+                i
+              </div>
 
-            <div>
-              <p className="text-xs font-semibold">
-                Góp ý của bạn rất quan trọng
-              </p>
+              <div>
+                <p className="text-xs font-semibold text-[#20252B]">
+                  Góp ý của bạn rất quan trọng
+                </p>
 
-              <p className="mt-1 text-[10px] leading-5 text-[#7b858f]">
-                Hãy đánh giá trung thực để CarService có thể nâng cao
-                chất lượng phục vụ và trải nghiệm khách hàng.
-              </p>
+                <p className="mt-1 text-[10px] leading-5 text-[#7B858F]">
+                  Hãy đánh giá trung thực để CarService có thể nâng cao chất
+                  lượng phục vụ và trải nghiệm khách hàng.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }
