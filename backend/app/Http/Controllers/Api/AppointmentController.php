@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAppointmentRequest;
 use App\Models\Appointment;
@@ -142,6 +143,63 @@ class AppointmentController extends Controller
                 'status'  => 'ERROR',
                 'message' => $e->getMessage(),
             ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Lấy danh sách lịch hẹn của khách hàng đang đăng nhập
+     */
+    public function index(Request $request): JsonResponse
+    {
+        try {
+            $account = $request->user();
+
+            // 1. Xác thực hồ sơ khách hàng
+            $customer = Customer::where('account_id', $account->id)->first();
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy thông tin khách hàng liên kết với tài khoản này.',
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // 2. Query lịch hẹn kèm thông tin xe, dịch vụ và gói bảo dưỡng
+            $query = Appointment::with([
+                'vehicle:id,customer_id,model_id,license_plate,variant,year',
+                'vehicle.model:id,brand_id,name',
+                'vehicle.model.brand:id,name',
+                'services:id,name,base_price',
+                'packages:id,name,mileage_milestone'
+            ])
+            ->where('customer_id', $customer->id);
+
+            // 3. Hỗ trợ lọc trạng thái (nếu có: PENDING, CONFIRMED, CANCELLED,...)
+            if ($request->filled('status')) {
+                $query->where('status', $request->query('status'));
+            }
+
+            // 4. Sắp xếp lịch hẹn mới nhất lên đầu và phân trang
+            $appointments = $query->orderBy('appointment_date', 'desc')
+                ->orderBy('appointment_time', 'desc')
+                ->paginate($request->query('per_page', 10));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lấy danh sách lịch hẹn thành công.',
+                'data'    => $appointments->items(),
+                'pagination' => [
+                    'current_page' => $appointments->currentPage(),
+                    'per_page'     => $appointments->perPage(),
+                    'total'        => $appointments->total(),
+                    'last_page'    => $appointments->lastPage(),
+                ],
+            ], Response::HTTP_OK);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }
