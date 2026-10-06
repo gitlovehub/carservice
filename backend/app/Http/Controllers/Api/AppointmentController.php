@@ -51,9 +51,12 @@ class AppointmentController extends Controller
                     throw new Exception('Garage đóng cửa nghỉ lễ vào ngày này. Quý khách vui lòng chọn ngày khác.');
                 }
 
-                // 4. Kiểm tra giờ làm việc & ngày trong tuần (0: CN -> 6: Thứ 7)
+                // 4. Kiểm tra giờ làm việc & ngày trong tuần
+                // Kiểm tra ngày trong tuần theo quy ước: Thứ 2..7 -> 2..7, Chủ nhật -> 8
                 $bookingDate = Carbon::parse($validated['appointment_date']);
-                $dayOfWeek = $bookingDate->dayOfWeek;
+
+                $rawDay = $bookingDate->dayOfWeek; // 0 = CN, 1 = T2, 2 = T3, 3 = T4, 4 = T5, 5 = T6, 6 = T7
+                $dayOfWeek = ($rawDay === 0) ? 8 : ($rawDay + 1);
 
                 $workingHour = DB::table('working_hours')
                     ->where('day_of_week', $dayOfWeek)
