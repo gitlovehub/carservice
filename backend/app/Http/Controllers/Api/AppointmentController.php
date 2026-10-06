@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\UpdateAppointmentRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAppointmentRequest;
@@ -201,5 +202,173 @@ class AppointmentController extends Controller
                 'message' => $e->getMessage(),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Chi tiết lịch hẹn của khách hàng
+     */
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $account = $request->user();
+        $customer = Customer::where('account_id', $account->id)->first();
+
+        $appointment = Appointment::with([
+            'vehicle.model.brand',
+            'services:id,name,base_price,estimated_minutes',
+            'packages:id,name,mileage_milestone'
+        ])
+        ->where('customer_id', $customer->id)
+        ->where('id', $id)
+        ->first();
+
+        if (!$appointment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lịch hẹn không tồn tại hoặc bạn không có quyền xem.',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => $appointment,
+        ], Response::HTTP_OK);
+    }
+
+    /**
+     * Cập nhật thông tin / đổi giờ hẹn
+     */
+    public function update(UpdateAppointmentRequest $request, int $id): JsonResponse
+    {
+        try {
+            $account = $request->user();
+            $customer = Customer::where('account_id', $account->id)->first();
+            $appointment = Appointment::where('id', $id)->where('customer_id', $customer->id)->first();
+
+            if (!$appointment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lịch hẹn không tồn tại hoặc bạn không có quyền thao tác.',
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Chỉ cho phép sửa khi còn PENDING
+            if ($appointment->status !== 'PENDING') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lịch hẹn đã được xác nhận hoặc tiếp nhận, không thể chỉnh sửa.',
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $validated = $request->validated();
+
+            DB::transaction(function () use ($appointment, $validated, $customer) {
+                // Nếu đổi xe: kiểm tra xe mới thuộc khách hàng
+                if (isset($validated['vehicle_id']) && $validated['vehicle_id'] !== $appointment->vehicle_id) {
+                    $hasVehicle = Vehicle::where('id', $validated['vehicle_id'])
+                        ->where('customer_id', $customer->id)
+                        ->exists();
+                    if (!$hasVehicle) {
+                        throw new Exception('Phương tiện không thuộc sở hữu của bạn.');
+                    }
+                }
+
+                // Nếu đổi ngày hoặc giờ hẹn: kiểm tra lịch mở cửa và slot
+                if (isset($validated['appointment_date']) || isset($validated['appointment_time'])) {
+                    $newDate = $validated['appointment_date'] ?? $appointment->appointment_date;
+                    $newTime = isset($validated['appointment_time']) 
+                        ? Carbon::parse($validated['appointment_time'])->format('H:i:s')
+                        : $appointment->appointment_time;
+
+                    // Kiểm tra ngày nghỉ
+                    $isHoliday = DB::table('holidays')->where('holiday_date', $newDate)->exists();
+                    if ($isHoliday) {
+                        throw new Exception('Garage đóng cửa nghỉ lễ vào ngày này.');
+                    }
+
+                    // Kiểm tra giờ làm việc (hệ 0..6 hoặc 2..8 theo seeder của bạn)
+                    $bookingDate = Carbon::parse($newDate);
+                    $rawDay = $bookingDate->dayOfWeek;
+                    $dayOfWeek = ($rawDay === 0) ? 8 : ($rawDay + 1);
+
+                    $wh = DB::table('working_hours')->where('day_of_week', $dayOfWeek)->where('is_active', true)->first();
+                    if (!$wh || $newTime < $wh->open_time || $newTime > $wh->close_time) {
+                        throw new Exception('Giờ hẹn không nằm trong khung giờ làm việc.');
+                    }
+
+                    // Kiểm tra slot (loại trừ chính appointment hiện tại)
+                    $booked = DB::table('appointments')
+                        ->where('appointment_date', $newDate)
+                        ->where('appointment_time', $newTime)
+                        ->where('status', '!=', 'CANCELLED')
+                        ->where('id', '!=', $appointment->id)
+                        ->count();
+
+                    if ($booked >= $wh->max_slots) {
+                        throw new Exception('Khung giờ này đã đầy, vui lòng chọn giờ khác.');
+                    }
+                }
+
+                // Cập nhật thông tin bảng appointments
+                $appointment->update(collect($validated)->except(['service_ids', 'package_ids'])->toArray());
+
+                // Cập nhật bảng quan hệ nếu có truyền
+                if (isset($validated['service_ids'])) {
+                    $appointment->services()->sync($validated['service_ids']);
+                }
+                if (isset($validated['package_ids'])) {
+                    $appointment->packages()->sync($validated['package_ids']);
+                }
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật lịch hẹn thành công.',
+                'data'    => $appointment->fresh(),
+            ], Response::HTTP_OK);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Khách hàng hủy lịch hẹn
+     */
+    public function cancel(Request $request, int $id): JsonResponse
+    {
+        $account = $request->user();
+        $customer = Customer::where('account_id', $account->id)->first();
+
+        $appointment = Appointment::where('id', $id)
+            ->where('customer_id', $customer->id)
+            ->first();
+
+        if (!$appointment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lịch hẹn không tồn tại hoặc bạn không có quyền hủy.',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Chỉ cho phép hủy nếu chưa tiếp nhận (PENDING hoặc CONFIRMED)
+        if (!in_array($appointment->status, ['PENDING', 'CONFIRMED'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lịch hẹn không thể hủy ở trạng thái hiện tại.',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $appointment->update([
+            'status'        => 'CANCELLED',
+            'cancel_reason' => $request->input('cancel_reason', 'Khách hàng chủ động hủy'),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Hủy lịch hẹn thành công.',
+        ], Response::HTTP_OK);
     }
 }
