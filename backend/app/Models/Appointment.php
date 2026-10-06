@@ -40,4 +40,14 @@ class Appointment extends Model
     {
         return $this->belongsToMany(Service::class, 'appointment_services', 'appointment_id', 'service_id');
     }
+
+    public function packages(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            MaintenancePackage::class,
+            'appointment_packages',
+            'appointment_id',
+            'package_id'
+        );
+    }
 }
