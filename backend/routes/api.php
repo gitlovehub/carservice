@@ -34,8 +34,6 @@ Route::controller(AuthController::class)->group(function (): void {
 
 Route::middleware('auth:sanctum')->group(function (): void {
 
-    Route::post('/appointments', [AppointmentController::class, 'store']);
-
     /*
     |--------------------------------------------------------------------------
     | Auth
@@ -69,6 +67,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('/{vehicle}', 'showMyVehicle');
             Route::patch('/{vehicle}', 'updateMyVehicle');
             Route::delete('/{vehicle}', 'destroyMyVehicle');
+        });
+
+        // Quản lý lịch hẹn của khách hàng
+        Route::controller(AppointmentController::class)->prefix('appointments')->group(function (): void {
+            Route::get('/', 'index');   // GET /api/appointments
+            Route::post('/', 'store');  // POST /api/appointments
         });
     });
 
