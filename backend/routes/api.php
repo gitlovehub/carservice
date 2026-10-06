@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\QuotationController;
 use App\Http\Controllers\Api\RepairOrderController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\WorkItemController;
+use App\Http\Controllers\Api\AppointmentController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,8 @@ Route::controller(AuthController::class)->group(function (): void {
 */
 
 Route::middleware('auth:sanctum')->group(function (): void {
+
+    Route::post('/appointments', [AppointmentController::class, 'store']);
 
     /*
     |--------------------------------------------------------------------------
