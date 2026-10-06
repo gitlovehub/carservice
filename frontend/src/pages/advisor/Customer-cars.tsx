@@ -1,291 +1,306 @@
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import AdvisorSidebar from "./AdvisorSidebar";
+import AdvisorTopbar from "./AdvisorTopbar";
 
-const customerCars = [
+const cars = [
   {
-    customer: "Nguyễn Văn A",
-    customerId: "KH-001",
-    car: "Toyota Vios",
+    id: 1,
     plate: "30A-123.45",
-    year: "2022",
-    color: "Trắng",
-    mileage: "32.500 km",
+    customer: "Nguyễn Tiến Hiền",
+    phone: "0901234567",
+    brand: "Toyota",
+    model: "Vios",
+    year: 2021,
     status: "Đang sử dụng",
   },
   {
-    customer: "Nguyễn Văn A",
-    customerId: "KH-001",
-    car: "Honda City",
+    id: 2,
     plate: "30F-678.90",
-    year: "2023",
-    color: "Đen",
-    mileage: "18.200 km",
+    customer: "Phùng Đức Anh",
+    phone: "0912345678",
+    brand: "Honda",
+    model: "City",
+    year: 2022,
     status: "Đang sử dụng",
   },
   {
-    customer: "Trần Thị B",
-    customerId: "KH-002",
-    car: "Mazda 3",
-    plate: "30G-456.78",
-    year: "2021",
-    color: "Xám",
-    mileage: "45.800 km",
+    id: 3,
+    plate: "29A-456.78",
+    customer: "Bùi Việt",
+    phone: "0987654321",
+    brand: "Mazda",
+    model: "Mazda 3",
+    year: 2020,
     status: "Đang sử dụng",
   },
 ];
 
 function CustomerCars() {
+  const [search, setSearch] = useState("");
+  const [brand, setBrand] = useState("");
+
+  const filteredCars = cars.filter((car) => {
+    const keyword = search.toLowerCase();
+
+    const matchSearch =
+      car.plate.toLowerCase().includes(keyword) ||
+      car.customer.toLowerCase().includes(keyword) ||
+      car.phone.includes(search) ||
+      car.model.toLowerCase().includes(keyword);
+
+    const matchBrand = brand === "" || car.brand === brand;
+
+    return matchSearch && matchBrand;
+  });
+
   return (
-    <div className="min-h-screen bg-[#f7f8f9] text-[#20252b]">
-      <Header />
+    <div className="min-h-screen bg-[#f7f7f5] text-[#20252b]">
+      <AdvisorSidebar />
 
-      <main className="mx-auto max-w-[1200px] px-6 py-10">
-        <div className="mb-8">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a949e]">
-            CỐ VẤN / XE KHÁCH HÀNG
-          </p>
+      <div className="lg:ml-[250px]">
+        <AdvisorTopbar />
 
-          <h1 className="text-3xl font-bold tracking-tight">
-            Quản lý xe khách hàng
-          </h1>
-
-          <p className="mt-2 text-xs leading-5 text-[#7b858f]">
-            Theo dõi thông tin phương tiện và lịch sử xe của khách hàng.
-          </p>
-        </div>
-
-        <div className="mb-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                Tổng phương tiện
+        <main className="px-6 py-8 lg:px-8">
+          <div className="mx-auto max-w-[1200px]">
+            <div className="mb-8">
+              <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[#9aa1a7]">
+                GARA / XE KHÁCH HÀNG
               </p>
 
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-xs font-bold">
-                XE
-              </div>
-            </div>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-[24px] font-bold tracking-tight text-[#20252b]">
+                    Quản lý xe khách hàng
+                  </h2>
 
-            <p className="mt-4 text-2xl font-bold">
-              {customerCars.length}
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Xe của khách hàng
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                Đang sử dụng
-              </p>
-
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef7f0] text-xs font-bold text-[#39734a]">
-                ✓
-              </div>
-            </div>
-
-            <p className="mt-4 text-2xl font-bold">
-              {
-                customerCars.filter(
-                  (car) => car.status === "Đang sử dụng",
-                ).length
-              }
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Phương tiện đang hoạt động
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                Khách hàng
-              </p>
-
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5f1e8] text-xs font-bold text-[#876d35]">
-                KH
-              </div>
-            </div>
-
-            <p className="mt-4 text-2xl font-bold">
-              2
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Có phương tiện đăng ký
-            </p>
-          </div>
-        </div>
-
-        <div className="mb-5 rounded-2xl border border-[#e3e6e8] bg-white p-6 shadow-sm">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                VEHICLE MANAGEMENT
-              </p>
-
-              <h2 className="mt-1 text-base font-bold">
-                Tìm kiếm phương tiện
-              </h2>
-            </div>
-
-            <button
-              type="button"
-              className="rounded-xl bg-[#20252b] px-5 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[#343a40] hover:shadow-md"
-            >
-              + Thêm phương tiện
-            </button>
-          </div>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-[1fr_220px_140px]">
-            <input
-              type="text"
-              placeholder="Tìm theo tên khách hàng hoặc biển số..."
-              className="rounded-xl border border-[#dfe3e6] bg-white px-4 py-3 text-xs outline-none transition focus:border-[#20252b] focus:ring-2 focus:ring-[#20252b]/10"
-            />
-
-            <select className="rounded-xl border border-[#dfe3e6] bg-white px-4 py-3 text-xs outline-none">
-              <option>Tất cả trạng thái</option>
-              <option>Đang sử dụng</option>
-              <option>Ngừng sử dụng</option>
-            </select>
-
-            <button
-              type="button"
-              className="rounded-xl border border-[#dfe3e6] px-5 py-3 text-xs font-semibold transition hover:border-[#20252b] hover:bg-[#20252b] hover:text-white"
-            >
-              Tìm kiếm
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-2xl border border-[#e3e6e8] bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-[#eef0f2] px-6 py-5">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                CUSTOMER VEHICLES
-              </p>
-
-              <h2 className="mt-1 text-base font-bold">
-                Danh sách phương tiện
-              </h2>
-            </div>
-
-            <span className="rounded-full bg-[#f0f2f3] px-3 py-1.5 text-[10px] font-semibold text-[#6f7881]">
-              {customerCars.length} phương tiện
-            </span>
-          </div>
-
-          <div className="space-y-4 p-5">
-            {customerCars.map((item, index) => (
-              <div
-                key={item.plate}
-                className="rounded-2xl border border-[#e5e8ea] bg-[#fafbfb] p-5 transition hover:border-[#d5d9dc] hover:shadow-sm"
-              >
-                <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#20252b] text-sm font-bold text-white">
-                      {String(index + 1).padStart(2, "0")}
-                    </div>
-
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm font-bold">
-                          {item.car}
-                        </h3>
-
-                        <span className="rounded-full bg-[#eef7f0] px-3 py-1.5 text-[10px] font-medium text-[#39734a]">
-                          {item.status}
-                        </span>
-                      </div>
-
-                      <p className="mt-1 text-xs font-semibold">
-                        {item.plate}
-                      </p>
-
-                      <p className="mt-1 text-[10px] text-[#8a949e]">
-                        {item.customer} · {item.customerId}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 border-t border-[#e5e8ea] pt-4 sm:grid-cols-3 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
-                    <div>
-                      <p className="text-[10px] text-[#8a949e]">
-                        Năm sản xuất
-                      </p>
-
-                      <p className="mt-1 text-xs font-semibold">
-                        {item.year}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] text-[#8a949e]">
-                        Màu xe
-                      </p>
-
-                      <p className="mt-1 text-xs font-semibold">
-                        {item.color}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] text-[#8a949e]">
-                        Số km
-                      </p>
-
-                      <p className="mt-1 text-xs font-semibold">
-                        {item.mileage}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 border-t border-[#e5e8ea] pt-4 xl:border-t-0 xl:pt-0">
-                    <button
-                      type="button"
-                      className="flex-1 rounded-xl border border-[#dfe3e6] px-4 py-2.5 text-[10px] font-semibold transition hover:border-[#20252b] hover:bg-[#20252b] hover:text-white"
-                    >
-                      Xem chi tiết
-                    </button>
-
-                    <button
-                      type="button"
-                      className="rounded-xl border border-[#dfe3e6] px-4 py-2.5 text-[10px] font-semibold transition hover:bg-[#f5f6f7]"
-                    >
-                      Lịch sử
-                    </button>
-                  </div>
+                  <p className="mt-1 text-[12px] text-[#8a9299]">
+                    Theo dõi thông tin xe thuộc khách hàng tại gara.
+                  </p>
                 </div>
+
+                <button
+                  type="button"
+                  className="rounded-xl bg-[#1f2933] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151d24]"
+                >
+                  + Thêm xe
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0f2f3] text-xs font-bold">
-              i
             </div>
 
-            <div>
-              <p className="text-xs font-semibold">
-                Thông tin phương tiện
-              </p>
+            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#9aa1a7]">
+                  TỔNG SỐ XE
+                </p>
 
-              <p className="mt-1 text-[10px] leading-5 text-[#7b858f]">
-                Cố vấn có thể sử dụng thông tin phương tiện để kiểm tra
-                lịch sử bảo dưỡng và tư vấn dịch vụ phù hợp cho khách hàng.
+                <p className="mt-3 text-[22px] font-bold">
+                  {cars.length}
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Xe đang được quản lý
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#9aa1a7]">
+                  KẾT QUẢ
+                </p>
+
+                <p className="mt-3 text-[22px] font-bold">
+                  {filteredCars.length}
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Xe đang hiển thị
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#9aa1a7]">
+                  VAI TRÒ
+                </p>
+
+                <p className="mt-3 text-[14px] font-bold">
+                  Cố vấn dịch vụ
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Không gian làm việc
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-6 rounded-2xl border border-[#e1e4e6] bg-white p-5">
+              <div className="mb-4">
+                <p className="text-[13px] font-semibold">
+                  Tìm kiếm xe
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Tìm theo biển số, tên khách hàng, số điện thoại hoặc mẫu xe.
+                </p>
+              </div>
+
+              <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr_auto]">
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Biển số, tên khách hàng, số điện thoại..."
+                  className="rounded-xl border border-[#d9dde1] bg-white px-4 py-3 text-[12px] outline-none transition focus:border-[#1f2933]"
+                />
+
+                <select
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                  className="rounded-xl border border-[#d9dde1] bg-white px-4 py-3 text-[12px] outline-none transition focus:border-[#1f2933]"
+                >
+                  <option value="">Tất cả hãng xe</option>
+                  <option value="Toyota">Toyota</option>
+                  <option value="Honda">Honda</option>
+                  <option value="Mazda">Mazda</option>
+                </select>
+
+                <button
+                  type="button"
+                  className="rounded-xl bg-[#1f2933] px-5 py-3 text-[11px] font-semibold text-white transition hover:bg-[#151d24]"
+                >
+                  Tìm kiếm
+                </button>
+              </div>
+
+              <p className="mt-3 text-[10px] text-[#8a9299]">
+                Có thể tìm nhanh bằng biển số xe.
               </p>
             </div>
-          </div>
-        </div>
-      </main>
 
-      <Footer />
+            <div className="overflow-hidden rounded-2xl border border-[#e1e4e6] bg-white">
+              <div className="flex items-center justify-between border-b border-[#eef0f2] px-5 py-5">
+                <div>
+                  <p className="text-[13px] font-semibold">
+                    Danh sách xe khách hàng
+                  </p>
+
+                  <p className="mt-1 text-[10px] text-[#8a9299]">
+                    Thông tin phương tiện đang quản lý
+                  </p>
+                </div>
+
+                <p className="rounded-lg bg-[#f3f4f2] px-3 py-1.5 text-[10px] font-semibold text-[#66717c]">
+                  {filteredCars.length} xe
+                </p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#e1e4e6] bg-[#f7f7f5] text-left">
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        STT
+                      </th>
+
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        BIỂN SỐ
+                      </th>
+
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        KHÁCH HÀNG
+                      </th>
+
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        HÃNG / MẪU XE
+                      </th>
+
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        NĂM SX
+                      </th>
+
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        TRẠNG THÁI
+                      </th>
+
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        THAO TÁC
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filteredCars.map((car, index) => (
+                      <tr
+                        key={car.id}
+                        className="border-b border-[#eef0f2] last:border-0 hover:bg-[#fafbfb]"
+                      >
+                        <td className="px-5 py-4 text-[11px] text-[#66717c]">
+                          {index + 1}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <span className="rounded-lg bg-[#f3f4f2] px-3 py-1.5 text-[10px] font-bold">
+                            {car.plate}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <p className="text-[11px] font-semibold">
+                            {car.customer}
+                          </p>
+
+                          <p className="mt-1 text-[9px] text-[#8a9299]">
+                            {car.phone}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <p className="text-[11px] font-semibold">
+                            {car.brand}
+                          </p>
+
+                          <p className="mt-1 text-[9px] text-[#8a9299]">
+                            {car.model}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4 text-[11px] text-[#66717c]">
+                          {car.year}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <span className="rounded-lg bg-[#eef7f0] px-3 py-1.5 text-[9px] font-semibold text-[#39734a]">
+                            {car.status}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <Link
+                            to="/advisor/appointments"
+                            className="inline-flex rounded-lg border border-[#d9dde1] px-3 py-1.5 text-[10px] font-semibold text-[#374151] transition hover:border-[#1f2933] hover:bg-[#f3f4f2]"
+                          >
+                            Lịch hẹn
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {filteredCars.length === 0 && (
+                <div className="px-5 py-12 text-center">
+                  <p className="text-[12px] font-semibold">
+                    Không tìm thấy xe
+                  </p>
+
+                  <p className="mt-1 text-[10px] text-[#8a9299]">
+                    Thử thay đổi từ khóa hoặc hãng xe.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

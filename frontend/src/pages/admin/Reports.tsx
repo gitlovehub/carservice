@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
+import AdminSidebar from "./AdminSidebar";
+import AdminTopbar from "./AdminTopbar";
 
 const reports = [
   {
@@ -54,281 +54,285 @@ const serviceReports = [
 
 function Reports() {
   return (
-    <div className="min-h-screen bg-[#f7f8f9] text-[#20252b]">
-      <Header />
+    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+      <AdminSidebar />
 
-      <main className="mx-auto max-w-[1200px] px-6 py-10">
-        <div className="mb-8">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a949e]">
-            KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
-          </p>
+      <div className="lg:ml-[250px]">
+        <AdminTopbar />
 
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#20252b] text-sm font-bold text-white shadow-sm">
-              AD
-            </div>
-
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Báo cáo & thống kê
-              </h1>
-
-              <p className="mt-1 text-xs text-[#8a949e]">
-                Theo dõi doanh thu, lịch hẹn và hoạt động của gara.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-6 grid gap-4 md:grid-cols-4">
-          <Link
-            to="/admin"
-            className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm transition hover:shadow-md"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-[10px] font-bold">
-              NV
-            </div>
-
-            <p className="mt-4 text-xs font-semibold">
-              Tài khoản & nhân viên
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý tài khoản
-            </p>
-          </Link>
-
-          <Link
-            to="/admin/services"
-            className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm transition hover:shadow-md"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-[10px] font-bold">
-              DV
-            </div>
-
-            <p className="mt-4 text-xs font-semibold">
-              Dịch vụ & gói bảo dưỡng
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý dịch vụ
-            </p>
-          </Link>
-
-          <Link
-            to="/admin/inventory"
-            className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm transition hover:shadow-md"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-[10px] font-bold">
-              PT
-            </div>
-
-            <p className="mt-4 text-xs font-semibold">
-              Phụ tùng & tồn kho
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý kho
-            </p>
-          </Link>
-
-          <Link
-            to="/admin/reports"
-            className="rounded-2xl border border-[#20252b] bg-[#20252b] p-5 text-white shadow-sm"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[10px] font-bold">
-              BC
-            </div>
-
-            <p className="mt-4 text-xs font-semibold">
-              Báo cáo & thống kê
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#cbd0d5]">
-              Theo dõi số liệu
-            </p>
-          </Link>
-        </div>
-
-        <div className="mb-6 rounded-2xl border border-[#e3e6e8] bg-white p-6 shadow-sm">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                GARA / BÁO CÁO
+        <main className="px-6 py-8 lg:px-8">
+          <div className="mx-auto max-w-[1200px]">
+            <div className="mb-8">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
+                KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
               </p>
 
-              <h2 className="mt-1 text-base font-bold">
-                Tổng quan hoạt động
-              </h2>
-            </div>
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
+                  AD
+                </div>
 
-            <select className="rounded-xl border border-[#dfe3e6] bg-white px-4 py-2.5 text-xs outline-none">
-              <option>Tháng 10/2026</option>
-              <option>Tháng 09/2026</option>
-              <option>Tháng 08/2026</option>
-            </select>
-          </div>
-        </div>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-[#20252B]">
+                    Báo cáo & thống kê
+                  </h1>
 
-        <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {reports.map((report) => (
-            <div
-              key={report.title}
-              className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm"
-            >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                {report.title}
-              </p>
-
-              <p className="mt-4 text-2xl font-bold">
-                {report.value}
-              </p>
-
-              <div className="mt-3 flex items-center justify-between gap-2">
-                <p className="text-[10px] leading-4 text-[#8a949e]">
-                  {report.description}
-                </p>
-
-                <span className="shrink-0 rounded-full bg-[#eef7f0] px-2.5 py-1 text-[10px] font-semibold text-[#39734a]">
-                  {report.change}
-                </span>
+                  <p className="mt-1 text-xs text-[#66717C]">
+                    Theo dõi doanh thu, lịch hẹn và hoạt động của gara.
+                  </p>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border border-[#e3e6e8] bg-white shadow-sm">
-            <div className="border-b border-[#eef0f2] px-6 py-5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                SERVICE REPORT
-              </p>
+            <div className="mb-6 grid gap-4 md:grid-cols-4">
+              <Link
+                to="/admin"
+                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
+                  NV
+                </div>
 
-              <h2 className="mt-1 text-base font-bold">
-                Hiệu quả theo dịch vụ
-              </h2>
+                <p className="mt-4 text-xs font-semibold text-[#20252B]">
+                  Tài khoản & nhân viên
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8A949E]">
+                  Quản lý tài khoản
+                </p>
+              </Link>
+
+              <Link
+                to="/admin/services"
+                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
+                  DV
+                </div>
+
+                <p className="mt-4 text-xs font-semibold text-[#20252B]">
+                  Dịch vụ & gói bảo dưỡng
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8A949E]">
+                  Quản lý dịch vụ
+                </p>
+              </Link>
+
+              <Link
+                to="/admin/inventory"
+                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
+                  PT
+                </div>
+
+                <p className="mt-4 text-xs font-semibold text-[#20252B]">
+                  Phụ tùng & tồn kho
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8A949E]">
+                  Quản lý kho
+                </p>
+              </Link>
+
+              <Link
+                to="/admin/reports"
+                className="rounded-2xl border border-[#1F2933] bg-[#1F2933] p-5 text-white transition hover:bg-[#151D24]"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D6A85F] text-[10px] font-bold text-[#3A3020]">
+                  BC
+                </div>
+
+                <p className="mt-4 text-xs font-semibold">
+                  Báo cáo & thống kê
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#AEB8C1]">
+                  Theo dõi số liệu
+                </p>
+              </Link>
             </div>
 
-            <div className="space-y-4 p-6">
-              {serviceReports.map((service) => (
+            <div className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-6">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                    GARA / BÁO CÁO
+                  </p>
+
+                  <h2 className="mt-1 text-base font-bold text-[#20252B]">
+                    Tổng quan hoạt động
+                  </h2>
+                </div>
+
+                <select className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-xs text-[#20252B] outline-none focus:border-[#1F2933]">
+                  <option>Tháng 10/2026</option>
+                  <option>Tháng 09/2026</option>
+                  <option>Tháng 08/2026</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {reports.map((report) => (
                 <div
-                  key={service.name}
-                  className="rounded-2xl bg-[#fafbfb] p-4"
+                  key={report.title}
+                  className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-semibold">
-                        {service.name}
-                      </p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                    {report.title}
+                  </p>
 
-                      <p className="mt-1 text-[10px] text-[#8a949e]">
-                        {service.quantity} lượt sử dụng
-                      </p>
-                    </div>
+                  <p className="mt-4 text-2xl font-bold text-[#20252B]">
+                    {report.value}
+                  </p>
 
-                    <p className="text-xs font-bold">
-                      {service.revenue}
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <p className="text-[10px] leading-4 text-[#8A949E]">
+                      {report.description}
                     </p>
-                  </div>
 
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e8ebed]">
-                    <div
-                      className="h-full rounded-full bg-[#20252b]"
-                      style={{
-                        width: `${Math.min(service.quantity * 2, 100)}%`,
-                      }}
-                    />
+                    <span className="shrink-0 rounded-full bg-[#F3E8D2] px-2.5 py-1 text-[10px] font-semibold text-[#3A3020]">
+                      {report.change}
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
 
-          <div className="rounded-2xl border border-[#e3e6e8] bg-white shadow-sm">
-            <div className="border-b border-[#eef0f2] px-6 py-5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                GARAGE OVERVIEW
-              </p>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-2xl border border-[#E1E4E6] bg-white">
+                <div className="border-b border-[#EEF0F2] px-6 py-5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                    SERVICE REPORT
+                  </p>
 
-              <h2 className="mt-1 text-base font-bold">
-                Tình hình hoạt động
-              </h2>
+                  <h2 className="mt-1 text-base font-bold text-[#20252B]">
+                    Hiệu quả theo dịch vụ
+                  </h2>
+                </div>
+
+                <div className="space-y-4 p-6">
+                  {serviceReports.map((service) => (
+                    <div
+                      key={service.name}
+                      className="rounded-2xl bg-[#FAFAF8] p-4"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-xs font-semibold text-[#20252B]">
+                            {service.name}
+                          </p>
+
+                          <p className="mt-1 text-[10px] text-[#8A949E]">
+                            {service.quantity} lượt sử dụng
+                          </p>
+                        </div>
+
+                        <p className="text-xs font-bold text-[#20252B]">
+                          {service.revenue}
+                        </p>
+                      </div>
+
+                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#ECEEED]">
+                        <div
+                          className="h-full rounded-full bg-[#D6A85F]"
+                          style={{
+                            width: `${Math.min(service.quantity * 2, 100)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-[#E1E4E6] bg-white">
+                <div className="border-b border-[#EEF0F2] px-6 py-5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                    GARAGE OVERVIEW
+                  </p>
+
+                  <h2 className="mt-1 text-base font-bold text-[#20252B]">
+                    Tình hình hoạt động
+                  </h2>
+                </div>
+
+                <div className="space-y-4 p-6">
+                  <div className="rounded-2xl border border-[#E5E8EA] p-5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-[#20252B]">
+                        Lịch hẹn hoàn thành
+                      </p>
+
+                      <p className="text-sm font-bold text-[#20252B]">
+                        92%
+                      </p>
+                    </div>
+
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#ECEEED]">
+                      <div
+                        className="h-full rounded-full bg-[#D6A85F]"
+                        style={{ width: "92%" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#E5E8EA] p-5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-[#20252B]">
+                        Phiếu sửa chữa hoàn thành
+                      </p>
+
+                      <p className="text-sm font-bold text-[#20252B]">
+                        86%
+                      </p>
+                    </div>
+
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#ECEEED]">
+                      <div
+                        className="h-full rounded-full bg-[#D6A85F]"
+                        style={{ width: "86%" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#E5E8EA] p-5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-[#20252B]">
+                        Mức sử dụng tồn kho
+                      </p>
+
+                      <p className="text-sm font-bold text-[#20252B]">
+                        64%
+                      </p>
+                    </div>
+
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#ECEEED]">
+                      <div
+                        className="h-full rounded-full bg-[#D6A85F]"
+                        style={{ width: "64%" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#F7F7F5] p-5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                      GHI CHÚ
+                    </p>
+
+                    <p className="mt-2 text-xs leading-5 text-[#66717C]">
+                      Số liệu trên trang hiện là dữ liệu mẫu phục vụ giao diện.
+                      Backend có thể kết nối dữ liệu thực tế sau.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-
-            <div className="space-y-4 p-6">
-              <div className="rounded-2xl border border-[#e5e8ea] p-5">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold">
-                    Lịch hẹn hoàn thành
-                  </p>
-
-                  <p className="text-sm font-bold">
-                    92%
-                  </p>
-                </div>
-
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eef0f2]">
-                  <div
-                    className="h-full rounded-full bg-[#20252b]"
-                    style={{ width: "92%" }}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-[#e5e8ea] p-5">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold">
-                    Phiếu sửa chữa hoàn thành
-                  </p>
-
-                  <p className="text-sm font-bold">
-                    86%
-                  </p>
-                </div>
-
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eef0f2]">
-                  <div
-                    className="h-full rounded-full bg-[#20252b]"
-                    style={{ width: "86%" }}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-[#e5e8ea] p-5">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold">
-                    Mức sử dụng tồn kho
-                  </p>
-
-                  <p className="text-sm font-bold">
-                    64%
-                  </p>
-                </div>
-
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eef0f2]">
-                  <div
-                    className="h-full rounded-full bg-[#20252b]"
-                    style={{ width: "64%" }}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-[#f8f9fa] p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                  GHI CHÚ
-                </p>
-
-                <p className="mt-2 text-xs leading-5 text-[#626b73]">
-                  Số liệu trên trang hiện là dữ liệu mẫu phục vụ giao diện.
-                  Backend có thể kết nối dữ liệu thực tế sau.
-                </p>
-              </div>
-            </div>
           </div>
-        </div>
-      </main>
-
-      <Footer />
+        </main>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
+import { useState } from "react";
+import AdvisorSidebar from "./AdvisorSidebar";
+import AdvisorTopbar from "./AdvisorTopbar";
 
 const quotations = [
   {
@@ -36,380 +36,320 @@ const quotations = [
 ];
 
 function Quotation() {
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+
+  const filteredQuotations = quotations.filter((quotation) => {
+    const keyword = search.toLowerCase();
+
+    const matchSearch =
+      quotation.id.toLowerCase().includes(keyword) ||
+      quotation.customer.toLowerCase().includes(keyword) ||
+      quotation.phone.includes(search) ||
+      quotation.car.toLowerCase().includes(keyword) ||
+      quotation.service.toLowerCase().includes(keyword);
+
+    const matchStatus =
+      status === "" || quotation.status === status;
+
+    return matchSearch && matchStatus;
+  });
+
+  const getStatusClass = (value: string) => {
+    if (value === "Đã duyệt") {
+      return "bg-[#eef7f0] text-[#39734a]";
+    }
+
+    if (value === "Chờ duyệt") {
+      return "bg-[#f5f1e8] text-[#876d35]";
+    }
+
+    return "bg-[#eef0f2] text-[#5f6871]";
+  };
+
   return (
-    <div className="min-h-screen bg-[#f7f8f9] text-[#20252b]">
-      <Header />
+    <div className="min-h-screen bg-[#f7f7f5] text-[#20252b]">
+      <AdvisorSidebar />
 
-      <main className="mx-auto max-w-[1200px] px-6 py-10">
-        <div className="mb-8">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a949e]">
-            CỐ VẤN / BÁO GIÁ
-          </p>
+      <div className="lg:ml-[250px]">
+        <AdvisorTopbar />
 
-          <h1 className="text-3xl font-bold tracking-tight">
-            Quản lý báo giá
-          </h1>
-
-          <p className="mt-2 text-xs leading-5 text-[#7b858f]">
-            Tạo, theo dõi và quản lý báo giá dịch vụ sửa chữa cho khách hàng.
-          </p>
-        </div>
-
-        <div className="mb-6 grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                Tổng báo giá
+        <main className="px-6 py-8 lg:px-8">
+          <div className="mx-auto max-w-[1200px]">
+            <div className="mb-8">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a9299]">
+                GARA / BÁO GIÁ
               </p>
 
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-xs font-bold">
-                BG
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-[24px] font-bold tracking-tight text-[#20252b]">
+                    Quản lý báo giá
+                  </h2>
+
+                  <p className="mt-1 text-[12px] text-[#8a9299]">
+                    Tạo, theo dõi và quản lý báo giá dịch vụ sửa chữa cho khách hàng.
+                  </p>
+                </div>
+
+                <button className="rounded-xl bg-[#1f2933] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151d24]">
+                  + Tạo báo giá
+                </button>
               </div>
             </div>
 
-            <p className="mt-4 text-2xl font-bold">
-              10
-            </p>
+            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-4">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#8a9299]">
+                  TỔNG BÁO GIÁ
+                </p>
 
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Báo giá trong hệ thống
-            </p>
-          </div>
+                <p className="mt-2 text-[22px] font-bold text-[#20252b]">
+                  10
+                </p>
 
-          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                Chờ duyệt
-              </p>
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Báo giá trong hệ thống
+                </p>
+              </div>
 
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5f1e8] text-xs font-bold text-[#876d35]">
-                02
+              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-4">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#8a9299]">
+                  CHỜ DUYỆT
+                </p>
+
+                <p className="mt-2 text-[22px] font-bold text-[#20252b]">
+                  2
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Chờ khách hàng duyệt
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-4">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#8a9299]">
+                  ĐÃ DUYỆT
+                </p>
+
+                <p className="mt-2 text-[22px] font-bold text-[#20252b]">
+                  6
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Báo giá đã được duyệt
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-4">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#8a9299]">
+                  GIÁ TRỊ
+                </p>
+
+                <p className="mt-2 text-[22px] font-bold text-[#20252b]">
+                  28,5M
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Tổng giá trị báo giá
+                </p>
               </div>
             </div>
 
-            <p className="mt-4 text-2xl font-bold">
-              2
-            </p>
+            <div className="mb-6 rounded-2xl border border-[#e1e4e6] bg-white p-5">
+              <div className="mb-4">
+                <p className="text-[13px] font-semibold text-[#20252b]">
+                  Tìm kiếm báo giá
+                </p>
 
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Chờ khách hàng duyệt
-            </p>
-          </div>
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Tìm theo khách hàng, biển số, mã báo giá hoặc dịch vụ.
+                </p>
+              </div>
 
-          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                Đã duyệt
-              </p>
+              <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr_auto]">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Khách hàng, biển số hoặc mã báo giá..."
+                  className="rounded-xl border border-[#d9dde1] bg-white px-4 py-3 text-[12px] outline-none transition focus:border-[#aeb8c1]"
+                />
 
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef7f0] text-xs font-bold text-[#39734a]">
-                ✓
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="rounded-xl border border-[#d9dde1] bg-white px-4 py-3 text-[12px] outline-none transition focus:border-[#aeb8c1]"
+                >
+                  <option value="">Tất cả trạng thái</option>
+                  <option value="Chờ duyệt">Chờ duyệt</option>
+                  <option value="Đã gửi">Đã gửi</option>
+                  <option value="Đã duyệt">Đã duyệt</option>
+                </select>
+
+                <button className="rounded-xl bg-[#1f2933] px-5 py-3 text-[11px] font-semibold text-white transition hover:bg-[#151d24]">
+                  Tìm kiếm
+                </button>
               </div>
             </div>
 
-            <p className="mt-4 text-2xl font-bold">
-              6
-            </p>
+            <div className="overflow-hidden rounded-2xl border border-[#e1e4e6] bg-white">
+              <div className="flex items-center justify-between border-b border-[#e1e4e6] px-5 py-4">
+                <div>
+                  <p className="text-[13px] font-semibold text-[#20252b]">
+                    Danh sách báo giá
+                  </p>
 
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Báo giá đã được duyệt
-            </p>
-          </div>
+                  <p className="mt-1 text-[10px] text-[#8a9299]">
+                    Báo giá dịch vụ dành cho khách hàng
+                  </p>
+                </div>
 
-          <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                Giá trị
-              </p>
-
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef0f2] text-xs font-bold">
-                ₫
+                <p className="rounded-lg bg-[#f3f4f2] px-3 py-1.5 text-[10px] font-semibold text-[#66717c]">
+                  {filteredQuotations.length} báo giá
+                </p>
               </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1100px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#e1e4e6] bg-[#fafbfc] text-left">
+                      <th className="px-5 py-3 text-[10px] font-semibold text-[#8a9299]">
+                        MÃ BÁO GIÁ
+                      </th>
+
+                      <th className="px-5 py-3 text-[10px] font-semibold text-[#8a9299]">
+                        KHÁCH HÀNG
+                      </th>
+
+                      <th className="px-5 py-3 text-[10px] font-semibold text-[#8a9299]">
+                        XE
+                      </th>
+
+                      <th className="px-5 py-3 text-[10px] font-semibold text-[#8a9299]">
+                        DỊCH VỤ
+                      </th>
+
+                      <th className="px-5 py-3 text-[10px] font-semibold text-[#8a9299]">
+                        NGÀY TẠO
+                      </th>
+
+                      <th className="px-5 py-3 text-[10px] font-semibold text-[#8a9299]">
+                        TỔNG TIỀN
+                      </th>
+
+                      <th className="px-5 py-3 text-[10px] font-semibold text-[#8a9299]">
+                        TRẠNG THÁI
+                      </th>
+
+                      <th className="px-5 py-3 text-[10px] font-semibold text-[#8a9299]">
+                        THAO TÁC
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filteredQuotations.map((quotation) => (
+                      <tr
+                        key={quotation.id}
+                        className="border-b border-[#eef0f2] last:border-0 hover:bg-[#fafbfc]"
+                      >
+                        <td className="px-5 py-4">
+                          <p className="text-[11px] font-bold text-[#20252b]">
+                            {quotation.id}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <p className="text-[12px] font-semibold text-[#20252b]">
+                            {quotation.customer}
+                          </p>
+
+                          <p className="mt-1 text-[10px] text-[#8a9299]">
+                            {quotation.phone}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <p className="text-[12px] font-semibold text-[#374151]">
+                            {quotation.car}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4 text-[12px] text-[#374151]">
+                          {quotation.service}
+                        </td>
+
+                        <td className="px-5 py-4 text-[12px] text-[#374151]">
+                          {quotation.date}
+                        </td>
+
+                        <td className="px-5 py-4 text-[12px] font-bold text-[#20252b]">
+                          {quotation.total}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <span
+                            className={`rounded-lg px-3 py-1.5 text-[10px] font-semibold ${getStatusClass(
+                              quotation.status
+                            )}`}
+                          >
+                            {quotation.status}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <div className="flex gap-2">
+                            <button className="rounded-lg border border-[#d9dde1] px-3 py-1.5 text-[11px] font-semibold text-[#374151] transition hover:border-[#aeb8c1] hover:bg-[#f6f7f8]">
+                              Chi tiết
+                            </button>
+
+                            <button className="rounded-lg border border-[#d9dde1] px-3 py-1.5 text-[11px] font-semibold text-[#374151] transition hover:border-[#aeb8c1] hover:bg-[#f6f7f8]">
+                              Sửa
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {filteredQuotations.length === 0 && (
+                <div className="px-5 py-12 text-center">
+                  <p className="text-[12px] font-semibold text-[#20252b]">
+                    Không tìm thấy báo giá
+                  </p>
+
+                  <p className="mt-1 text-[10px] text-[#8a9299]">
+                    Thử thay đổi từ khóa hoặc trạng thái.
+                  </p>
+                </div>
+              )}
             </div>
 
-            <p className="mt-4 text-2xl font-bold">
-              28,5M
-            </p>
+            <div className="mt-6 rounded-2xl border border-[#e1e4e6] bg-white p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0f1ef] text-xs font-bold text-[#374151]">
+                  i
+                </div>
 
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Tổng giá trị báo giá
-            </p>
-          </div>
-        </div>
+                <div>
+                  <p className="text-xs font-semibold text-[#20252b]">
+                    Quy trình báo giá
+                  </p>
 
-        <div className="mb-6 grid gap-4 md:grid-cols-5">
-          <Link
-            to="/customers"
-            className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#d5d9dc] hover:shadow-md"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-[10px] font-bold">
-              KH
-            </div>
-
-            <p className="mt-4 text-xs font-semibold">
-              Khách hàng
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý khách hàng
-            </p>
-          </Link>
-
-          <Link
-            to="/customer-cars"
-            className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#d5d9dc] hover:shadow-md"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-[10px] font-bold">
-              XE
-            </div>
-
-            <p className="mt-4 text-xs font-semibold">
-              Xe của khách
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý phương tiện
-            </p>
-          </Link>
-
-          <Link
-            to="/appointments"
-            className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#d5d9dc] hover:shadow-md"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-[10px] font-bold">
-              LH
-            </div>
-
-            <p className="mt-4 text-xs font-semibold">
-              Lịch hẹn
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý lịch hẹn
-            </p>
-          </Link>
-
-          <Link
-            to="/repair-status"
-            className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#d5d9dc] hover:shadow-md"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0f2f3] text-[10px] font-bold">
-              SC
-            </div>
-
-            <p className="mt-4 text-xs font-semibold">
-              Phiếu sửa chữa
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Theo dõi sửa chữa
-            </p>
-          </Link>
-
-          <Link
-            to="/quotation"
-            className="rounded-2xl border border-[#20252b] bg-[#20252b] p-5 text-white shadow-sm"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[10px] font-bold">
-              BG
-            </div>
-
-            <p className="mt-4 text-xs font-semibold">
-              Báo giá
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#cbd0d5]">
-              Quản lý báo giá
-            </p>
-          </Link>
-        </div>
-
-        <div className="mb-6 rounded-2xl border border-[#e3e6e8] bg-white p-6 shadow-sm">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                QUOTATION MANAGEMENT
-              </p>
-
-              <h2 className="mt-1 text-base font-bold">
-                Tìm kiếm báo giá
-              </h2>
-            </div>
-
-            <button
-              type="button"
-              className="rounded-xl bg-[#20252b] px-5 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[#343a40] hover:shadow-md"
-            >
-              + Tạo báo giá
-            </button>
-          </div>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <input
-              type="text"
-              placeholder="Tìm theo khách hàng, biển số hoặc mã báo giá..."
-              className="rounded-xl border border-[#dfe3e6] bg-white px-4 py-3 text-xs outline-none transition focus:border-[#20252b] focus:ring-2 focus:ring-[#20252b]/10"
-            />
-
-            <select className="rounded-xl border border-[#dfe3e6] bg-white px-4 py-3 text-xs outline-none transition focus:border-[#20252b] focus:ring-2 focus:ring-[#20252b]/10">
-              <option>Tất cả trạng thái</option>
-              <option>Chờ duyệt</option>
-              <option>Đã gửi</option>
-              <option>Đã duyệt</option>
-            </select>
-
-            <button
-              type="button"
-              className="rounded-xl border border-[#dfe3e6] px-5 py-3 text-xs font-semibold transition hover:border-[#20252b] hover:bg-[#20252b] hover:text-white"
-            >
-              Tìm kiếm
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-2xl border border-[#e3e6e8] bg-white shadow-sm">
-          <div className="flex flex-col justify-between gap-3 border-b border-[#eef0f2] px-6 py-5 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                QUOTATION LIST
-              </p>
-
-              <h2 className="mt-1 text-base font-bold">
-                Danh sách báo giá
-              </h2>
-            </div>
-
-            <span className="rounded-full bg-[#f0f2f3] px-3 py-1.5 text-[10px] font-semibold text-[#6f7881]">
-              10 báo giá
-            </span>
-          </div>
-
-          <div className="space-y-3 p-5">
-            {quotations.map((quotation, index) => (
-              <div
-                key={quotation.id}
-                className="rounded-2xl border border-[#e5e8ea] bg-[#fafbfb] p-5 transition hover:border-[#d5d9dc] hover:shadow-sm"
-              >
-                <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#20252b] text-[10px] font-bold text-white">
-                      {String(index + 1).padStart(2, "0")}
-                    </div>
-
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-bold">
-                          {quotation.id}
-                        </p>
-
-                        <span
-                          className={`rounded-full px-3 py-1.5 text-[10px] font-medium ${
-                            quotation.status === "Đã duyệt"
-                              ? "bg-[#eef7f0] text-[#39734a]"
-                              : quotation.status === "Chờ duyệt"
-                                ? "bg-[#f5f1e8] text-[#876d35]"
-                                : "bg-[#eef0f2] text-[#5f6871]"
-                          }`}
-                        >
-                          {quotation.status}
-                        </span>
-                      </div>
-
-                      <p className="mt-2 text-xs font-semibold">
-                        {quotation.customer}
-                      </p>
-
-                      <p className="mt-1 text-[10px] text-[#8a949e]">
-                        {quotation.phone} · {quotation.car}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 border-t border-[#e5e8ea] pt-4 sm:grid-cols-2 xl:grid-cols-4 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
-                    <div>
-                      <p className="text-[10px] text-[#8a949e]">
-                        Dịch vụ
-                      </p>
-
-                      <p className="mt-1 text-xs font-semibold">
-                        {quotation.service}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] text-[#8a949e]">
-                        Ngày tạo
-                      </p>
-
-                      <p className="mt-1 text-xs font-semibold">
-                        {quotation.date}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] text-[#8a949e]">
-                        Tổng tiền
-                      </p>
-
-                      <p className="mt-1 text-xs font-bold">
-                        {quotation.total}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] text-[#8a949e]">
-                        Khách hàng
-                      </p>
-
-                      <p className="mt-1 text-xs font-semibold">
-                        {quotation.customer}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 border-t border-[#e5e8ea] pt-4 xl:border-t-0 xl:pt-0">
-                    <button
-                      type="button"
-                      className="flex-1 rounded-xl border border-[#dfe3e6] px-4 py-2.5 text-[10px] font-semibold transition hover:border-[#20252b] hover:bg-[#20252b] hover:text-white"
-                    >
-                      Xem chi tiết
-                    </button>
-
-                    <button
-                      type="button"
-                      className="rounded-xl border border-[#dfe3e6] px-4 py-2.5 text-[10px] font-semibold transition hover:bg-[#f5f6f7]"
-                    >
-                      Sửa
-                    </button>
-                  </div>
+                  <p className="mt-1 text-[10px] leading-5 text-[#7b858f]">
+                    Cố vấn tạo báo giá dựa trên tình trạng xe, gửi cho khách
+                    hàng và theo dõi trạng thái phê duyệt trước khi thực hiện
+                    sửa chữa.
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0f2f3] text-xs font-bold">
-              i
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold">
-                Quy trình báo giá
-              </p>
-
-              <p className="mt-1 text-[10px] leading-5 text-[#7b858f]">
-                Cố vấn tạo báo giá dựa trên tình trạng xe, gửi cho khách
-                hàng và theo dõi trạng thái phê duyệt trước khi thực hiện
-                sửa chữa.
-              </p>
             </div>
           </div>
-        </div>
-      </main>
-
-      <Footer />
+        </main>
+      </div>
     </div>
   );
 }

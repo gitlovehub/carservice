@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
+import CustomerDashboard from "./pages/customer/Dashboard";
 
 import Contact from "./pages/customer/Contact";
 import Services from "./pages/customer/Services";
@@ -25,6 +26,8 @@ import VehicleCheck from "./pages/technician/VehicleCheck";
 import Diagnosis from "./pages/technician/Diagnosis";
 import RepairProgress from "./pages/technician/RepairProgress";
 import Checklist from "./pages/technician/Checklist";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
 
 import AdminAccounts from "./pages/admin/Accounts";
 import AdminServices from "./pages/admin/Services";
@@ -35,14 +38,21 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+<Route path="/register" element={<Register />} />
+        <Route path="/customer" element={<CustomerDashboard />} />
 
         <Route path="/contact" element={<Contact />} />
         <Route path="/services" element={<Services />} />
         <Route path="/booking" element={<Booking />} />
+
         <Route path="/appointments" element={<Appointments />} />
         <Route path="/cars" element={<Cars />} />
+
+        <Route path="/customer/appointments" element={<Appointments />} />
+        <Route path="/customer/cars" element={<Cars />} />
+
         <Route path="/account" element={<Account />} />
         <Route path="/repair-status" element={<RepairStatus />} />
         <Route path="/quotation" element={<Quotation />} />
@@ -121,7 +131,6 @@ function App() {
           path="/admin/reports"
           element={<AdminReports />}
         />
-
       </Routes>
     </BrowserRouter>
   );

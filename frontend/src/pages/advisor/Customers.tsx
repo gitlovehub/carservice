@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import Header from "../../components/Header";
+import AdvisorSidebar from "./AdvisorSidebar";
+import AdvisorTopbar from "./AdvisorTopbar";
 
 const customers = [
   {
@@ -43,263 +44,240 @@ function Customers() {
   });
 
   return (
-    <div className="min-h-screen bg-[#f6f7f8] text-[#20252b]">
-      <Header />
+    <div className="min-h-screen bg-[#f7f7f5] text-[#20252b]">
+      <AdvisorSidebar />
 
-      <main className="mx-auto max-w-[1200px] px-6 py-8">
-        <div className="mb-8">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-            KHÔNG GIAN LÀM VIỆC
-          </p>
+      <div className="lg:ml-[250px]">
+        <AdvisorTopbar />
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#20252b] text-[11px] font-bold text-white">
-              CV
+        <main className="px-6 py-8 lg:px-8">
+          <div className="mx-auto max-w-[1200px]">
+            <div className="mb-8">
+              <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[#9aa1a7]">
+                GARA / KHÁCH HÀNG
+              </p>
+
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-[24px] font-bold tracking-tight text-[#20252b]">
+                    Quản lý khách hàng
+                  </h2>
+
+                  <p className="mt-1 text-[12px] text-[#8a9299]">
+                    Tìm kiếm và quản lý thông tin khách hàng tại gara.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="rounded-xl bg-[#1f2933] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151d24]"
+                >
+                  + Thêm khách hàng
+                </button>
+              </div>
             </div>
 
-            <div>
-              <h1 className="text-[18px] font-bold">
-                Cố vấn dịch vụ
-              </h1>
+            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#9aa1a7]">
+                  KHÁCH HÀNG
+                </p>
 
-              <p className="text-[11px] text-[#8a949e]">
-                Giao diện nội bộ
+                <p className="mt-3 text-[22px] font-bold text-[#20252b]">
+                  {customers.length}
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Tổng số khách hàng
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#9aa1a7]">
+                  KẾT QUẢ
+                </p>
+
+                <p className="mt-3 text-[22px] font-bold text-[#20252b]">
+                  {filteredCustomers.length}
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Khách hàng đang hiển thị
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#9aa1a7]">
+                  VAI TRÒ
+                </p>
+
+                <p className="mt-3 text-[14px] font-bold text-[#20252b]">
+                  Cố vấn dịch vụ
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Không gian làm việc
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-6 rounded-2xl border border-[#e1e4e6] bg-white p-5">
+              <div className="mb-4">
+                <p className="text-[13px] font-semibold text-[#20252b]">
+                  Tìm kiếm khách hàng
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8a9299]">
+                  Tìm theo tên, số điện thoại, email hoặc địa chỉ.
+                </p>
+              </div>
+
+              <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr_auto]">
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tên, số điện thoại hoặc email"
+                  className="rounded-xl border border-[#d9dde1] bg-white px-4 py-3 text-[12px] outline-none transition focus:border-[#1f2933]"
+                />
+
+                <select
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="rounded-xl border border-[#d9dde1] bg-white px-4 py-3 text-[12px] outline-none transition focus:border-[#1f2933]"
+                >
+                  <option value="">Tất cả địa chỉ</option>
+                  <option value="Cầu Giấy, Hà Nội">
+                    Cầu Giấy, Hà Nội
+                  </option>
+                  <option value="Cổ Nhuế, Hà Nội">
+                    Cổ Nhuế, Hà Nội
+                  </option>
+                  <option value="Đống Đa, Hà Nội">
+                    Đống Đa, Hà Nội
+                  </option>
+                </select>
+
+                <button
+                  type="button"
+                  className="rounded-xl bg-[#1f2933] px-5 py-3 text-[11px] font-semibold text-white transition hover:bg-[#151d24]"
+                >
+                  Tìm kiếm
+                </button>
+              </div>
+
+              <p className="mt-3 text-[10px] text-[#8a9299]">
+                Có thể tìm kiếm nhanh theo số điện thoại của khách hàng.
               </p>
             </div>
+
+            <div className="overflow-hidden rounded-2xl border border-[#e1e4e6] bg-white">
+              <div className="flex items-center justify-between border-b border-[#eef0f2] px-5 py-5">
+                <div>
+                  <p className="text-[13px] font-semibold text-[#20252b]">
+                    Danh sách khách hàng
+                  </p>
+
+                  <p className="mt-1 text-[10px] text-[#8a9299]">
+                    Thông tin khách hàng đang quản lý
+                  </p>
+                </div>
+
+                <p className="rounded-lg bg-[#f3f4f2] px-3 py-1.5 text-[10px] font-semibold text-[#66717c]">
+                  {filteredCustomers.length} khách hàng
+                </p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[850px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#e1e4e6] bg-[#f7f7f5] text-left">
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        STT
+                      </th>
+
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        KHÁCH HÀNG
+                      </th>
+
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        SỐ ĐIỆN THOẠI
+                      </th>
+
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        EMAIL
+                      </th>
+
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        ĐỊA CHỈ
+                      </th>
+
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                        THAO TÁC
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filteredCustomers.map((customer, index) => (
+                      <tr
+                        key={customer.id}
+                        className="border-b border-[#eef0f2] last:border-0 hover:bg-[#fafbfb]"
+                      >
+                        <td className="px-5 py-4 text-[11px] text-[#66717c]">
+                          {index + 1}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <p className="text-[11px] font-semibold text-[#20252b]">
+                            {customer.name}
+                          </p>
+
+                          <p className="mt-1 text-[9px] text-[#8a9299]">
+                            Khách hàng
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4 text-[11px] text-[#374151]">
+                          {customer.phone}
+                        </td>
+
+                        <td className="px-5 py-4 text-[11px] text-[#374151]">
+                          {customer.email}
+                        </td>
+
+                        <td className="px-5 py-4 text-[11px] text-[#374151]">
+                          {customer.address}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <Link
+                            to="/advisor/customer-cars"
+                            className="inline-flex rounded-lg border border-[#d9dde1] px-3 py-1.5 text-[10px] font-semibold text-[#374151] transition hover:border-[#1f2933] hover:bg-[#f3f4f2]"
+                          >
+                            Xe
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {filteredCustomers.length === 0 && (
+                <div className="px-5 py-12 text-center">
+                  <p className="text-[12px] font-semibold text-[#20252b]">
+                    Không tìm thấy khách hàng
+                  </p>
+
+                  <p className="mt-1 text-[10px] text-[#8a9299]">
+                    Thử thay đổi từ khóa hoặc bộ lọc địa chỉ.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-
-        <div className="mb-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-            CHỨC NĂNG
-          </p>
-        </div>
-
-        <div className="mb-8 grid grid-cols-5 gap-3">
-          <Link
-            to="/customers"
-            className="rounded-xl border border-[#20252b] bg-[#20252b] px-4 py-4 text-white"
-          >
-            <p className="text-[12px] font-semibold">
-              Khách hàng
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#cbd0d5]">
-              Quản lý khách hàng
-            </p>
-          </Link>
-
-          <Link
-            to="/customer-cars"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
-          >
-            <p className="text-[12px] font-semibold">
-              Xe của khách
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý xe
-            </p>
-          </Link>
-
-          <Link
-            to="/appointments"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
-          >
-            <p className="text-[12px] font-semibold">
-              Lịch hẹn
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý lịch
-            </p>
-          </Link>
-
-          <Link
-            to="/repair-status"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
-          >
-            <p className="text-[12px] font-semibold">
-              Phiếu sửa chữa
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Theo dõi sửa chữa
-            </p>
-          </Link>
-
-          <Link
-            to="/quotation"
-            className="rounded-xl border border-[#e1e4e7] bg-white px-4 py-4 hover:bg-[#f9fafb]"
-          >
-            <p className="text-[12px] font-semibold">
-              Báo giá
-            </p>
-
-            <p className="mt-1 text-[10px] text-[#8a949e]">
-              Quản lý báo giá
-            </p>
-          </Link>
-        </div>
-
-        <div className="mb-6 rounded-lg border border-[#e1e4e7] bg-white px-4 py-3">
-          <p className="text-[11px] font-semibold">
-            MỞ CHECKLIST REVIEW & TEST
-          </p>
-        </div>
-
-        <div className="mb-6">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-            GARA / KHÁCH HÀNG
-          </p>
-
-          <h2 className="text-[24px] font-bold">
-            Quản lý khách hàng
-          </h2>
-
-          <p className="mt-1 text-[12px] text-[#8a949e]">
-            Tìm kiếm và quản lý thông tin khách hàng tại gara.
-          </p>
-        </div>
-
-        <div className="mb-6 flex justify-end">
-          <button className="rounded-lg bg-[#20252b] px-4 py-2.5 text-[12px] font-semibold text-white">
-            + Thêm khách hàng
-          </button>
-        </div>
-
-        <div className="mb-6 rounded-xl border border-[#e1e4e7] bg-white p-5">
-          <p className="mb-4 text-[12px] font-semibold">
-            Tìm kiếm khách hàng
-          </p>
-
-          <div className="grid grid-cols-[1.5fr_1fr_auto] gap-3">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tên, số điện thoại hoặc email"
-              className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none"
-            />
-
-            <select
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="rounded-lg border border-[#d9dde1] px-4 py-2.5 text-[12px] outline-none"
-            >
-              <option value="">Tất cả địa chỉ</option>
-              <option value="Cầu Giấy, Hà Nội">
-                Cầu Giấy, Hà Nội
-              </option>
-              <option value="Cổ Nhuế, Hà Nội">
-                Cổ Nhuế, Hà Nội
-              </option>
-              <option value="Đống Đa, Hà Nội">
-                Đống Đa, Hà Nội
-              </option>
-            </select>
-
-            <button className="rounded-lg bg-[#20252b] px-5 py-2.5 text-[12px] font-semibold text-white">
-              Tìm kiếm
-            </button>
-          </div>
-
-          <p className="mt-3 text-[10px] text-[#8a949e]">
-            Có thể tìm kiếm nhanh theo số điện thoại của khách hàng.
-          </p>
-        </div>
-
-        <div className="overflow-hidden rounded-xl border border-[#e1e4e7] bg-white">
-          <div className="flex items-center justify-between border-b border-[#e1e4e7] px-5 py-4">
-            <p className="text-[13px] font-semibold">
-              Danh sách khách hàng
-            </p>
-
-            <p className="text-[11px] text-[#8a949e]">
-              {filteredCustomers.length} khách hàng
-            </p>
-          </div>
-
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-[#e1e4e7] bg-[#fafbfc] text-left">
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  STT
-                </th>
-
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  KHÁCH HÀNG
-                </th>
-
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  SỐ ĐIỆN THOẠI
-                </th>
-
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  EMAIL
-                </th>
-
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  ĐỊA CHỈ
-                </th>
-
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#8a949e]">
-                  THAO TÁC
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredCustomers.map((customer, index) => (
-                <tr
-                  key={customer.id}
-                  className="border-b border-[#eef0f2] last:border-0"
-                >
-                  <td className="px-5 py-4 text-[12px]">
-                    {index + 1}
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px] font-semibold">
-                    {customer.name}
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px]">
-                    {customer.phone}
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px]">
-                    {customer.email}
-                  </td>
-
-                  <td className="px-5 py-4 text-[12px]">
-                    {customer.address}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <Link
-                      to="/customer-cars"
-                      className="inline-block rounded-lg border border-[#d9dde1] px-3 py-1.5 text-[11px] font-semibold hover:bg-[#f6f7f8]"
-                    >
-                      Xe
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </main>
-
-      <footer className="mt-10 border-t border-[#e1e4e7] bg-white">
-        <div className="mx-auto flex max-w-[1200px] justify-between px-6 py-5">
-          <p className="text-[10px] text-[#8a949e]">
-            © CarService · Quản lý dịch vụ ô tô
-          </p>
-
-          <p className="text-[10px] text-[#8a949e]">
-            Dịch vụ bảo dưỡng và sửa chữa ô tô
-          </p>
-        </div>
-      </footer>
+        </main>
+      </div>
     </div>
   );
 }

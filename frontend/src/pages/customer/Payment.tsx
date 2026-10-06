@@ -1,253 +1,197 @@
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
+import CustomerHeader from "../../components/CustomerHeader";
+import CustomerTopbar from "../../components/CustomerTopbar";
 
 function Payment() {
+  const payment = {
+    code: "BG-001",
+    car: "Toyota Vios",
+    plate: "30A-123.45",
+    service: "Bảo dưỡng định kỳ",
+    date: "24/06/2026",
+    total: "1.500.000 VNĐ",
+  };
+
   return (
-    <div className="min-h-screen bg-[#f7f8f9] text-[#20252b]">
-      <Header />
+    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+      <CustomerHeader />
+      <CustomerTopbar />
 
-      <main className="mx-auto max-w-[1100px] px-6 py-10">
-        <div className="mb-8">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a949e]">
-            KHÁCH HÀNG / THANH TOÁN
-          </p>
+      <main className="lg:ml-[250px]">
+        <div className="mx-auto max-w-[1100px] px-6 py-10 md:py-14">
+          <div className="mb-8">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+              KHÁCH HÀNG / THANH TOÁN
+            </p>
 
-          <h1 className="text-3xl font-bold tracking-tight">
-            Thanh toán
-          </h1>
+            <div className="mt-3">
+              <h1 className="text-[30px] font-bold tracking-[-0.8px] text-[#1F2933]">
+                Thanh toán dịch vụ
+              </h1>
 
-          <p className="mt-2 text-xs leading-5 text-[#7b858f]">
-            Kiểm tra thông tin hóa đơn và lựa chọn phương thức thanh toán.
-          </p>
-        </div>
+              <p className="mt-2 text-[12px] leading-6 text-[#66717C]">
+                Kiểm tra thông tin và xác nhận thanh toán dịch vụ.
+              </p>
+            </div>
+          </div>
 
-        <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
-          <div className="space-y-5">
-            <div className="rounded-2xl border border-[#e3e6e8] bg-white shadow-sm">
-              <div className="border-b border-[#eef0f2] px-6 py-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
+          <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
+            <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
+              <div className="border-b border-[#E1E4E6] px-6 py-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                   PAYMENT
                 </p>
 
-                <h2 className="mt-1 text-base font-bold">
+                <h2 className="mt-1 text-[16px] font-bold text-[#20252B]">
                   Thông tin thanh toán
                 </h2>
               </div>
 
-              <div className="space-y-4 p-6">
-                <div className="rounded-2xl border border-[#e5e8ea] bg-[#fafbfb] p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] text-[#8a949e]">
-                        Hóa đơn
-                      </p>
-
-                      <p className="mt-1 text-sm font-bold">
-                        INV-001
-                      </p>
-                    </div>
-
-                    <span className="rounded-full bg-[#f5f1e8] px-3 py-1.5 text-[10px] font-semibold text-[#876d35]">
-                      Chưa thanh toán
-                    </span>
-                  </div>
-
-                  <div className="mt-5 grid gap-4 border-t border-[#e5e8ea] pt-5 sm:grid-cols-3">
-                    <div>
-                      <p className="text-[10px] text-[#8a949e]">
-                        Khách hàng
-                      </p>
-
-                      <p className="mt-1 text-xs font-semibold">
-                        Nguyễn Văn A
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] text-[#8a949e]">
-                        Phương tiện
-                      </p>
-
-                      <p className="mt-1 text-xs font-semibold">
-                        Toyota Vios
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] text-[#8a949e]">
-                        Biển số
-                      </p>
-
-                      <p className="mt-1 text-xs font-semibold">
-                        30A-123.45
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="mb-3 text-xs font-semibold">
-                    Phương thức thanh toán
+              <div className="grid gap-x-8 gap-y-6 p-6 md:grid-cols-2">
+                <div className="rounded-xl bg-[#F7F7F5] p-4">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                    Mã báo giá
                   </p>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      className="rounded-2xl border-2 border-[#20252b] bg-[#fafbfb] p-4 text-left transition hover:shadow-sm"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#20252b] text-xs font-bold text-white">
-                          QR
-                        </div>
+                  <p className="mt-2 text-[12px] font-bold text-[#20252B]">
+                    {payment.code}
+                  </p>
+                </div>
 
-                        <div>
-                          <p className="text-xs font-bold">
-                            Chuyển khoản QR
-                          </p>
+                <div className="rounded-xl bg-[#F7F7F5] p-4">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                    Ngày dịch vụ
+                  </p>
 
-                          <p className="mt-1 text-[10px] text-[#8a949e]">
-                            Thanh toán qua mã QR
-                          </p>
-                        </div>
-                      </div>
-                    </button>
+                  <p className="mt-2 text-[12px] font-bold text-[#20252B]">
+                    {payment.date}
+                  </p>
+                </div>
 
-                    <button
-                      type="button"
-                      className="rounded-2xl border border-[#e3e6e8] bg-white p-4 text-left transition hover:border-[#20252b] hover:shadow-sm"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eef0f2] text-xs font-bold">
-                          TM
-                        </div>
+                <div className="rounded-xl border border-[#E1E4E6] p-4">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                    Xe
+                  </p>
 
-                        <div>
-                          <p className="text-xs font-bold">
-                            Thanh toán tại gara
-                          </p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1F2933] text-xs text-white">
+                      🚗
+                    </div>
 
-                          <p className="mt-1 text-[10px] text-[#8a949e]">
-                            Thanh toán trực tiếp
-                          </p>
-                        </div>
-                      </div>
-                    </button>
+                    <p className="text-[12px] font-bold text-[#20252B]">
+                      {payment.car}
+                    </p>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold">
-                        Chuyển khoản QR
-                      </p>
+                <div className="rounded-xl border border-[#E1E4E6] p-4">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                    Biển số
+                  </p>
 
-                      <p className="mt-1 text-[10px] text-[#8a949e]">
-                        Quét mã QR để thực hiện thanh toán.
-                      </p>
-                    </div>
+                  <p className="mt-2 inline-flex rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-bold text-[#20252B]">
+                    {payment.plate}
+                  </p>
+                </div>
 
-                    <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-[#e3e6e8] bg-[#f7f8f9] text-[10px] font-bold">
-                      QR CODE
-                    </div>
-                  </div>
+                <div className="rounded-xl border border-[#E1E4E6] p-4 md:col-span-2">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                    Dịch vụ
+                  </p>
+
+                  <p className="mt-2 text-[12px] font-bold text-[#20252B]">
+                    {payment.service}
+                  </p>
+
+                  <p className="mt-1 text-[10px] text-[#66717C]">
+                    Dịch vụ bảo dưỡng và chăm sóc phương tiện.
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[#e3e6e8] bg-white p-5 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0f2f3] text-xs font-bold">
-                  i
+            <div className="h-fit overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.05)]">
+              <div className="bg-[#1F2933] px-6 py-6">
+                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  TỔNG THANH TOÁN
+                </p>
+
+                <p className="mt-2 text-[27px] font-bold tracking-tight text-white">
+                  {payment.total}
+                </p>
+
+                <p className="mt-2 text-[10px] text-[#AEB8C1]">
+                  Chi phí dịch vụ cần thanh toán
+                </p>
+              </div>
+
+              <div className="p-6">
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#66717C]">
+                  Phương thức thanh toán
+                </p>
+
+                <select className="w-full rounded-xl border border-[#DDE1E4] bg-white px-4 py-3 text-[12px] font-medium text-[#20252B] outline-none transition focus:border-[#D6A85F]">
+                  <option>Tiền mặt</option>
+                  <option>Chuyển khoản</option>
+                  <option>Ví điện tử</option>
+                </select>
+
+                <div className="mt-5 rounded-xl bg-[#F7F7F5] p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-[#66717C]">
+                      Mã báo giá
+                    </span>
+
+                    <span className="text-[10px] font-bold text-[#20252B]">
+                      {payment.code}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-[10px] text-[#66717C]">
+                      Tổng tiền
+                    </span>
+
+                    <span className="text-[11px] font-bold text-[#20252B]">
+                      {payment.total}
+                    </span>
+                  </div>
                 </div>
 
-                <div>
-                  <p className="text-xs font-semibold">
-                    Lưu ý thanh toán
-                  </p>
-
-                  <p className="mt-1 text-[10px] leading-5 text-[#7b858f]">
-                    Vui lòng kiểm tra đúng số tiền và mã hóa đơn trước
-                    khi xác nhận thanh toán.
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  className="mt-5 w-full rounded-xl bg-[#1F2933] px-5 py-3.5 text-[11px] font-bold text-white transition hover:bg-[#151D24]"
+                >
+                  Xác nhận thanh toán
+                </button>
               </div>
             </div>
           </div>
 
-          <div>
-            <div className="rounded-2xl border border-[#e3e6e8] bg-white p-6 shadow-sm lg:sticky lg:top-6">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a949e]">
-                ORDER SUMMARY
-              </p>
-
-              <h2 className="mt-1 text-base font-bold">
-                Chi tiết thanh toán
-              </h2>
-
-              <div className="my-5 border-t border-[#eef0f2]" />
-
-              <div className="space-y-4">
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#7b858f]">
-                    Bảo dưỡng định kỳ
-                  </span>
-
-                  <span className="font-semibold">
-                    500.000đ
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#7b858f]">
-                    Dầu động cơ
-                  </span>
-
-                  <span className="font-semibold">
-                    480.000đ
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#7b858f]">
-                    Lọc dầu
-                  </span>
-
-                  <span className="font-semibold">
-                    180.000đ
-                  </span>
-                </div>
-
-                <div className="border-t border-[#eef0f2] pt-4">
-                  <div className="flex items-end justify-between">
-                    <span className="text-xs font-semibold">
-                      Tổng thanh toán
-                    </span>
-
-                    <span className="text-2xl font-bold">
-                      1.160.000đ
-                    </span>
-                  </div>
-                </div>
+          <div className="mt-6 rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.03)]">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F3E8D2] text-xs font-bold text-[#3A3020]">
+                i
               </div>
 
-              <button
-                type="button"
-                className="mt-6 w-full rounded-xl bg-[#20252b] px-5 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[#343a40] hover:shadow-md"
-              >
-                Xác nhận thanh toán
-              </button>
+              <div>
+                <h2 className="text-[14px] font-bold text-[#20252B]">
+                  Lưu ý thanh toán
+                </h2>
 
-              <p className="mt-3 text-center text-[10px] leading-5 text-[#8a949e]">
-                Bằng việc xác nhận, bạn đồng ý với thông tin thanh toán
-                trên.
-              </p>
+                <p className="mt-3 text-[11px] leading-6 text-[#66717C]">
+                  Vui lòng kiểm tra thông tin xe, dịch vụ và số tiền trước khi
+                  xác nhận thanh toán.
+                </p>
+
+                <p className="mt-1 text-[11px] leading-6 text-[#66717C]">
+                  Sau khi thanh toán thành công, hóa đơn sẽ được cập nhật trong
+                  mục Hóa đơn.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

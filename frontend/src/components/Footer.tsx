@@ -1,50 +1,131 @@
 function Footer() {
   return (
-    <footer className="border-t border-[#e3e6e8] bg-white">
-      <div className="mx-auto max-w-[1200px] px-6 py-8">
-        <div className="grid gap-6 md:grid-cols-3">
+    <footer className="border-t border-[#E1E4E6] bg-white">
+      <div className="mx-auto max-w-[1280px] px-6 py-12">
+
+        <div className="grid gap-10 md:grid-cols-[1.3fr_1fr_1fr]">
+
+          {/* BRAND */}
           <div>
-            <div className="mb-3 flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#20252b] text-[10px] font-bold text-white">
-                CS
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1F2933] text-white shadow-sm">
+                <span className="text-lg">🚗</span>
               </div>
 
-              <p className="text-sm font-bold text-[#20252b]">
-                CarService
-              </p>
+              <div>
+                <p className="text-[15px] font-bold tracking-tight text-[#20252B]">
+                  CarService
+                </p>
+
+                <p className="mt-0.5 text-[10px] font-medium text-[#66717C]">
+                  Chăm sóc xe chuyên nghiệp
+                </p>
+              </div>
             </div>
 
-            <p className="max-w-sm text-xs leading-5 text-[#7b858f]">
-              Dịch vụ bảo dưỡng và sửa chữa ô tô.
+            <p className="mt-5 max-w-sm text-[11px] leading-6 text-[#66717C]">
+              Dịch vụ bảo dưỡng và sửa chữa ô tô, giúp bạn quản lý lịch hẹn,
+              thông tin xe và quá trình sửa chữa một cách thuận tiện.
             </p>
+
+            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#E1E4E6] bg-[#F7F7F5] px-3 py-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]" />
+
+              <span className="text-[10px] font-semibold text-[#66717C]">
+                Đồng hành cùng mọi hành trình
+              </span>
+            </div>
           </div>
 
+          {/* CONTACT */}
           <div>
-            <p className="mb-3 text-xs font-semibold text-[#20252b]">
+            <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
               LIÊN HỆ
             </p>
 
-            <div className="space-y-2 text-xs text-[#7b858f]">
-              <p>Điện thoại: 0123 456 789</p>
-              <p>Email: contact@carservice.vn</p>
-              <p>Địa chỉ: Hà Nội, Việt Nam</p>
+            <div className="space-y-3 text-[11px] text-[#66717C]">
+              <div>
+                <p className="font-semibold text-[#20252B]">
+                  Điện thoại
+                </p>
+
+                <p className="mt-1">
+                  0123 456 789
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-[#20252B]">
+                  Email
+                </p>
+
+                <p className="mt-1">
+                  contact@carservice.vn
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-[#20252B]">
+                  Địa chỉ
+                </p>
+
+                <p className="mt-1">
+                  Hà Nội, Việt Nam
+                </p>
+              </div>
             </div>
           </div>
 
+          {/* SERVICE */}
           <div>
-            <p className="mb-3 text-xs font-semibold text-[#20252b]">
-              CAR SERVICE
+            <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+              CARSERVICE
             </p>
 
-            <p className="text-xs leading-5 text-[#7b858f]">
-              Đồng hành cùng bạn trong quá trình chăm sóc và bảo dưỡng xe.
-            </p>
+            <div className="space-y-3 text-[11px] text-[#66717C]">
+              <p>
+                Bảo dưỡng định kỳ
+              </p>
+
+              <p>
+                Kiểm tra và sửa chữa
+              </p>
+
+              <p>
+                Đặt lịch dịch vụ
+              </p>
+
+              <p>
+                Theo dõi quá trình sửa chữa
+              </p>
+            </div>
+
+            <div className="mt-5 rounded-xl bg-[#1F2933] px-4 py-3">
+              <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                SERVICE
+              </p>
+
+              <p className="mt-1 text-[11px] font-medium text-white">
+                Chăm xe đúng cách.
+              </p>
+            </div>
           </div>
+
         </div>
 
-        <div className="mt-8 border-t border-[#eef0f2] pt-5 text-center text-[11px] text-[#8a949e]">
-          © 2026 CarService. All rights reserved.
+        {/* BOTTOM */}
+        <div className="mt-10 flex flex-col gap-3 border-t border-[#E1E4E6] pt-5 text-center md:flex-row md:items-center md:justify-between md:text-left">
+
+          <p className="text-[10px] text-[#8A949E]">
+            © 2026 CarService. All rights reserved.
+          </p>
+
+          <p className="text-[10px] text-[#8A949E]">
+            Dịch vụ bảo dưỡng & sửa chữa ô tô
+          </p>
+
         </div>
+
       </div>
     </footer>
   );
