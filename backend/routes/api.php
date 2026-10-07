@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdvisorAppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\InspectionController;
@@ -89,6 +90,16 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::middleware(
         'role:' . Account::ROLE_ADVISOR . ',' . Account::ROLE_ADMIN
     )->group(function (): void {
+
+        // Quản lý lịch hẹn của cố vấn
+        // Quản lý lịch hẹn phía Cố vấn
+        Route::prefix('advisor/appointments')->group(function (): void {
+            Route::get('/', [AdvisorAppointmentController::class, 'index']);
+            Route::get('/{id}', [AdvisorAppointmentController::class, 'show']);
+            Route::post('/{id}/confirm', [AdvisorAppointmentController::class, 'confirm']);
+            Route::post('/{id}/check-in', [AdvisorAppointmentController::class, 'checkIn']);
+            Route::post('/{id}/cancel', [AdvisorAppointmentController::class, 'cancel']);
+        });
 
         // Customer CRUD
         Route::apiResource('customers', CustomerController::class)
