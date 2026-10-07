@@ -41,8 +41,13 @@ function Register() {
     
     if (!formData.password) {
       newErrors.password = "Vui lòng nhập mật khẩu";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
+    } else {
+      if (formData.password.length < 10) newErrors.password = "Mật khẩu chưa đủ mạnh";
+      if (!/[A-Z]/.test(formData.password)) newErrors.password = "Mật khẩu chưa đủ mạnh";
+      if (!/[a-z]/.test(formData.password)) newErrors.password = "Mật khẩu chưa đủ mạnh";
+      if (!/[0-9]/.test(formData.password)) newErrors.password = "Mật khẩu chưa đủ mạnh";
+      if (!/[^A-Za-z0-9]/.test(formData.password)) newErrors.password = "Mật khẩu chưa đủ mạnh";
+      if (/\s/.test(formData.password)) newErrors.password = "Mật khẩu chưa đủ mạnh";
     }
 
     if (formData.password !== formData.password_confirmation) {
@@ -96,6 +101,15 @@ function Register() {
   };
 
   const isDark = isFlashlightOn;
+
+  const passwordRules = [
+    { id: 'length', label: 'Tối thiểu 10 ký tự', isValid: formData.password.length >= 10 },
+    { id: 'uppercase', label: 'Tối thiểu 1 chữ cái viết hoa', isValid: /[A-Z]/.test(formData.password) },
+    { id: 'lowercase', label: 'Tối thiểu 1 chữ cái thường', isValid: /[a-z]/.test(formData.password) },
+    { id: 'number', label: 'Tối thiểu 1 số', isValid: /[0-9]/.test(formData.password) },
+    { id: 'special', label: 'Tối thiểu 1 ký tự đặc biệt', isValid: /[^A-Za-z0-9]/.test(formData.password) },
+    { id: 'valid', label: 'Không có khoảng trắng', isValid: formData.password.length > 0 && !/\s/.test(formData.password) },
+  ];
 
   return (
     <div className={`min-h-screen transition-colors duration-700 flex items-center justify-center p-6 ${isDark ? 'bg-[#1a1f24]' : 'bg-[#eef2f5]'}`}>
@@ -241,6 +255,30 @@ function Register() {
                 </button>
               </div>
               {errors.password && <p className="text-red-500 text-[10px] mt-1 ml-2">{errors.password}</p>}
+              
+              {/* Password Validation Rules UI */}
+              {formData.password.length > 0 && (
+                <div className={`mt-3 p-3 rounded-xl grid grid-cols-2 gap-y-2 gap-x-4 text-[10px] transition-all duration-500
+                  ${isDark ? 'bg-[#1c2431]/80 border border-[#2c384a]' : 'bg-white border border-[#e1e4e6]'}`}
+                >
+                  {passwordRules.map((rule) => (
+                    <div key={rule.id} className="flex items-center gap-2">
+                      {rule.isValid ? (
+                        <svg className={`w-3.5 h-3.5 ${isDark ? 'text-[#299593]' : 'text-[#21817f]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      ) : (
+                        <svg className={`w-3.5 h-3.5 ${isDark ? 'text-white/30' : 'text-[#8a949e]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      )}
+                      <span className={`${rule.isValid ? (isDark ? 'text-white/90' : 'text-[#20252b]') : (isDark ? 'text-white/40' : 'text-[#8a949e]')} transition-colors duration-300`}>
+                        {rule.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             
             {/* Confirm Password */}
