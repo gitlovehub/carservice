@@ -4,9 +4,8 @@ import Home from "./pages/Home";
 import CustomerDashboard from "./pages/customer/Dashboard";
 
 import Contact from "./pages/customer/Contact";
-import Services from "./pages/ServicesPage";
-import Packages from "./pages/PackagesPage";
-import Booking from "./pages/BookingPage";
+import Services from "./pages/customer/Services";
+import Booking from "./pages/customer/Booking";
 import Appointments from "./pages/customer/Appointments";
 import Cars from "./pages/customer/Cars";
 import Account from "./pages/customer/Account";
@@ -41,12 +40,11 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+<Route path="/register" element={<Register />} />
         <Route path="/customer" element={<CustomerDashboard />} />
 
         <Route path="/contact" element={<Contact />} />
         <Route path="/services" element={<Services />} />
-        <Route path="/packages" element={<Packages />} /> {/* Route cho Gói bảo dưỡng */}
         <Route path="/booking" element={<Booking />} />
 
         <Route path="/appointments" element={<Appointments />} />
