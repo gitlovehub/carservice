@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import api from "../../services/api";
+import api, { axiosInstance } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 
 function Login() {
@@ -48,6 +48,8 @@ function Login() {
 
     setLoading(true);
     try {
+      await axiosInstance.get('/sanctum/csrf-cookie');
+      
       const response = await api.post("/login", {
         email,
         password,

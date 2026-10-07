@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
-import api from "../../services/api";
+import api, { axiosInstance } from "../../services/api";
 
 function Register() {
   const navigate = useNavigate();
@@ -61,6 +61,8 @@ function Register() {
 
     setLoading(true);
     try {
+      await axiosInstance.get('/sanctum/csrf-cookie');
+      
       await api.post("/register", {
         ...formData,
         device_name: "web",
