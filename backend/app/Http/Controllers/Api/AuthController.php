@@ -18,6 +18,8 @@ use Laravel\Sanctum\PersonalAccessToken;
 use App\Mail\EmailVerificationOtpMail;
 use App\Models\EmailVerificationOtp;
 use Illuminate\Support\Facades\Mail;
+use App\Mail\PasswordResetOtpMail;
+use App\Models\PasswordResetOtp;
 
 class AuthController extends Controller
 {
@@ -298,6 +300,109 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Mã OTP mới đã được gửi đến email.',
+        ]);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $account = Account::whereRaw('LOWER(email) = ?', [
+            strtolower($request->email)
+        ])->first();
+
+        // Không tiết lộ email có tồn tại trong hệ thống hay không
+        if (!$account) {
+            return response()->json([
+                'message' => 'Nếu email tồn tại trong hệ thống, mã OTP sẽ được gửi đến email.'
+            ]);
+        }
+
+        // Hủy các OTP cũ chưa sử dụng
+        PasswordResetOtp::where('account_id', $account->id)
+            ->whereNull('used_at')
+            ->delete();
+
+        // Tạo OTP 6 số
+        $otp = (string) random_int(100000, 999999);
+
+        // Lưu OTP dưới dạng hash
+        PasswordResetOtp::create([
+            'account_id' => $account->id,
+            'otp_hash' => Hash::make($otp),
+            'expires_at' => now()->addMinutes(5),
+        ]);
+
+        // Gửi OTP qua email
+        Mail::to($account->email)
+            ->send(new PasswordResetOtpMail($otp));
+
+        return response()->json([
+            'message' => 'Nếu email tồn tại trong hệ thống, mã OTP sẽ được gửi đến email.'
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+            'otp' => ['required', 'digits:6'],
+            'password' => ['required', 'string', 'min:8', 'max:255', 'confirmed'],
+        ]);
+
+        $account = Account::whereRaw('LOWER(email) = ?', [
+            strtolower($request->email)
+        ])->first();
+
+        if (!$account) {
+            return response()->json([
+                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.'
+            ], 422);
+        }
+
+        // Lấy OTP mới nhất chưa sử dụng
+        $passwordResetOtp = PasswordResetOtp::where('account_id', $account->id)
+            ->whereNull('used_at')
+            ->latest()
+            ->first();
+
+        if (!$passwordResetOtp) {
+            return response()->json([
+                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.'
+            ], 422);
+        }
+
+        // Kiểm tra OTP đã hết hạn chưa
+        if ($passwordResetOtp->expires_at->isPast()) {
+            return response()->json([
+                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.'
+            ], 422);
+        }
+
+        // Kiểm tra OTP
+        if (!Hash::check($request->otp, $passwordResetOtp->otp_hash)) {
+            return response()->json([
+                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.'
+            ], 422);
+        }
+
+        DB::transaction(function () use ($account, $passwordResetOtp, $request) {
+            // Đổi mật khẩu
+            $account->password_hash = Hash::make($request->password);
+            $account->save();
+
+            // OTP không được sử dụng lại
+            $passwordResetOtp->used_at = now();
+            $passwordResetOtp->save();
+
+            // Đăng xuất tất cả thiết bị/token cũ
+            $account->tokens()->delete();
+        });
+
+        return response()->json([
+            'message' => 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.'
         ]);
     }
 
