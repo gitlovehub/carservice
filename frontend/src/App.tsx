@@ -5,6 +5,7 @@ import CustomerDashboard from "./pages/customer/Dashboard";
 
 import Contact from "./pages/customer/Contact";
 import Services from "./pages/customer/Services";
+import Packages from "./pages/customer/Packages";
 import Booking from "./pages/customer/Booking";
 import Appointments from "./pages/customer/Appointments";
 import Cars from "./pages/customer/Cars";
@@ -40,11 +41,12 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-<Route path="/register" element={<Register />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/customer" element={<CustomerDashboard />} />
 
         <Route path="/contact" element={<Contact />} />
         <Route path="/services" element={<Services />} />
+        <Route path="/packages" element={<Packages />} /> {/* Route cho Gói bảo dưỡng */}
         <Route path="/booking" element={<Booking />} />
 
         <Route path="/appointments" element={<Appointments />} />
