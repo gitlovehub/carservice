@@ -55,6 +55,7 @@ class RegisterRequest extends FormRequest
                 'regex:/^\S*$/u' // Không có khoảng trắng
             ],
             'device_name' => ['nullable', 'string', 'max:100'],
+            'accept_terms' => ['required', 'accepted'],
         ];
     }
 
@@ -75,6 +76,8 @@ class RegisterRequest extends FormRequest
             'password.symbols' => 'Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt.',
             'password.regex' => 'Mật khẩu không được chứa khoảng trắng.',
             'password.confirmed' => 'Mật khẩu xác nhận không khớp.',
+            'accept_terms.required' => 'Bạn phải đồng ý với điều khoản sử dụng.',
+            'accept_terms.accepted' => 'Bạn phải đồng ý với điều khoản sử dụng.',
         ];
     }
 }

@@ -10,8 +10,16 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['email', 'password_hash', 'role', 'status'])]
+#[Fillable([
+    'email',
+    'email_verified_at',
+    'password_hash',
+    'role',
+    'status'
+])]
+
 #[Hidden(['password_hash'])]
+
 class Account extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
@@ -21,6 +29,7 @@ class Account extends Authenticatable
     public const ROLE_TECHNICIAN = 'TECHNICIAN';
     public const ROLE_ADMIN = 'ADMIN';
 
+    public const STATUS_PENDING = 'PENDING';
     public const STATUS_ACTIVE = 'ACTIVE';
     public const STATUS_LOCKED = 'LOCKED';
     public const STATUS_INACTIVE = 'INACTIVE';
@@ -39,6 +48,7 @@ class Account extends Authenticatable
     {
         return [
             'password_hash' => 'hashed',
+            'email_verified_at' => 'datetime',
         ];
     }
 

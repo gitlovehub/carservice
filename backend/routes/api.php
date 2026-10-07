@@ -24,12 +24,18 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::controller(AuthController::class)->group(function (): void {
+
     Route::post('register', 'register')->middleware('throttle:5,1');
-    Route::post('verify-email-otp', 'verifyEmailOtp')->middleware('throttle:5,1');
-    Route::post('resend-email-otp', 'resendEmailOtp')->middleware('throttle:3,1');
-    Route::post('forgot-password', 'forgotPassword')->middleware('throttle:5,1');
-    Route::post('reset-password', 'resetPassword')->middleware('throttle:5,1');
+
     Route::post('login', 'login')->middleware('throttle:5,1');
+
+    Route::post('verify-email-otp', 'verifyEmailOtp')->middleware('throttle:5,1');
+
+    Route::post('resend-email-otp', 'resendEmailOtp')->middleware('throttle:3,1');
+
+    Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
+    
+    Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 });
 
 Route::get('services', [ServiceController::class, 'index']);
