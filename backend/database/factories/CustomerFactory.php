@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Account;
 use App\Models\Customer;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -13,7 +12,7 @@ class CustomerFactory extends Factory
     public function definition(): array
     {
         return [
-            'account_id' => Account::factory()->customer(),
+            'account_id' => null,
             'full_name' => fake()->name(),
             'phone' => fake()->numerify('09########'),
             'email' => fake()->safeEmail(),
