@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\RepairOrderController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\WorkItemController;
 use App\Http\Controllers\Api\AppointmentController;
+use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\MaintenancePackageController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +27,11 @@ Route::controller(AuthController::class)->group(function (): void {
     Route::post('register', 'register')->middleware('throttle:5,1');
     Route::post('login', 'login')->middleware('throttle:5,1');
 });
+
+Route::get('services', [ServiceController::class, 'index']);
+Route::get('services/{service}', [ServiceController::class, 'show']);
+Route::get('maintenance-packages', [MaintenancePackageController::class, 'index']);
+Route::get('maintenance-packages/{maintenancePackage}', [MaintenancePackageController::class, 'show']);
 
 
 /*
