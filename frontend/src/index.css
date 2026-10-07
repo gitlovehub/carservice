@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+/* Ẩn con mắt mặc định của trình duyệt (Edge/Chrome) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
+}
+input[type="password"]::-webkit-reveal {
+    display: none;
+}
