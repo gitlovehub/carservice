@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import api, { axiosInstance } from "../../services/api";
+import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 
 function Login() {
@@ -61,7 +61,7 @@ function Login() {
       } else {
         setErrors({ form: "Đăng nhập thất bại, không nhận được token." });
       }
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       setErrors({ form: err.response?.data?.message || "Email hoặc mật khẩu không chính xác." });
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ function Login() {
       await api.post("/forgot-password", { email: forgotEmail });
       setMode('reset');
       alert("Đã gửi mã OTP. Vui lòng kiểm tra email.");
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       setErrors({ form: err.response?.data?.message || "Lỗi. Vui lòng thử lại sau." });
     } finally {
       setLoading(false);
@@ -109,7 +109,7 @@ function Login() {
       setMode('login');
       setOtp("");
       setNewPassword("");
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       const errorMessage = err.response?.data?.errors?.new_password?.[0] || err.response?.data?.errors?.otp?.[0] || err.response?.data?.message || "Mã OTP không hợp lệ.";
       setErrors({ form: errorMessage });
     } finally {
@@ -148,7 +148,7 @@ function Login() {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('resize', updatePositions);
     };
-  }, [isFlashlightOn]);
+  }, [isFlashlightOn, flashlightPos.x, flashlightPos.y]);
 
   const passwordRules = [
     { id: 'length', label: 'Tối thiểu 10 ký tự', isValid: newPassword.length >= 10 },

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import api, { axiosInstance } from "../../services/api";
+import api from "../../services/api";
 
 function Register() {
   const navigate = useNavigate();
@@ -71,10 +71,10 @@ function Register() {
     try {
       await api.post("/register", { ...formData, device_name: "web" });
       setStep(2);
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       if (err.response?.status === 422 && err.response?.data?.errors) {
         const beErrors = err.response.data.errors;
-        const mappedErrors: any = {};
+        const mappedErrors: Record<string, string> = {};
         Object.keys(beErrors).forEach(key => { mappedErrors[key] = beErrors[key][0]; });
         setErrors(mappedErrors);
       } else {
@@ -98,7 +98,7 @@ function Register() {
         await api.post("/verify-email-otp", { email: formData.email, otp: otp });
         alert("Xác thực OTP thành công! Bạn có thể đăng nhập.");
         navigate("/login");
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
         setErrors({ form: err.response?.data?.message || "Mã OTP không hợp lệ hoặc đã hết hạn." });
     } finally {
         setLoading(false);
@@ -109,7 +109,7 @@ function Register() {
     try {
         await api.post("/resend-email-otp", { email: formData.email });
         alert("Đã gửi lại mã OTP mới vào email của bạn.");
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
         alert(err.response?.data?.message || "Không thể gửi lại mã OTP. Vui lòng thử lại.");
     }
   };
@@ -118,7 +118,7 @@ function Register() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
-        setErrors(prev => ({ ...prev, [name]: undefined as any }));
+        setErrors(prev => ({ ...prev, [name]: undefined as any })); // eslint-disable-line @typescript-eslint/no-explicit-any
     }
   };
 
@@ -162,7 +162,7 @@ function Register() {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('resize', updatePositions);
     };
-  }, [isFlashlightOn]);
+  }, [isFlashlightOn, flashlightPos.x, flashlightPos.y]);
 
   const getMaskStyle = () => {
     const dx = mousePos.x - flashlightPos.x;
