@@ -2,20 +2,16 @@
 
 namespace Database\Seeders;
 
-use App\Models\Account;
 use App\Models\Customer;
-use App\Models\Employee;
 use App\Models\Holiday;
 use App\Models\MaintenancePackage;
 use App\Models\Service;
-use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
 use App\Models\WorkingHour;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -24,25 +20,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $defaultPassword = Hash::make('password123');
+        // Seed data trong hệ thống không tạo sẵn tài khoản nhân sự để tránh phụ thuộc
+        // vào bảng `users` hoặc logic register. Các tài khoản thực tế sẽ được tạo qua API.
+        // Chỉ seed master data và dữ liệu nghiệp vụ hỗ trợ.
 
-        // 1. TÀI KHOẢN ADMIN MẪU
-        $adminAccount = Account::factory()->admin()->create([
-            'email' => 'admin@carservice.vn',
-            'password_hash' => $defaultPassword,
-        ]);
-
-        Employee::factory()->create([
-            'account_id' => $adminAccount->id,
-            'full_name' => 'Trần Văn Quản Trị',
-            'phone' => '0901000001',
-        ]);
-
-        // 2. NHÂN SỰ NỘI BỘ (Advisor & Technician)
-        Employee::factory()->count(3)->create();
-        TechnicianProfile::factory()->count(5)->create();
-
-        // 3. MASTER DATA: XE (Hãng xe & Dòng xe)
+        // 1. MASTER DATA: XE (Hãng xe & Dòng xe)
         $allModels = collect();
         $brands = VehicleBrand::factory()->count(4)->create();
 
