@@ -7,6 +7,17 @@ const api = axios.create({
     },
 });
 
+// Thêm interceptor để tự động gắn token vào header (nếu đã đăng nhập)
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+}, (error) => {
+    return Promise.reject(error);
+});
+
 export interface ServiceItem {
     id: number;
     name: string;
