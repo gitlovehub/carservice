@@ -43,6 +43,7 @@ class RegisterRequest extends FormRequest
             'email' => ['required', 'email', 'max:150', 'unique:accounts,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed', 'max:255'],
             'device_name' => ['nullable', 'string', 'max:100'],
+            'accept_terms' => ['required', 'accepted'],
         ];
     }
 
@@ -58,6 +59,8 @@ class RegisterRequest extends FormRequest
             'password.required' => 'Mật khẩu không được để trống.',
             'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
             'password.confirmed' => 'Mật khẩu xác nhận không khớp.',
+            'accept_terms.required' => 'Bạn phải đồng ý với điều khoản sử dụng.',
+            'accept_terms.accepted' => 'Bạn phải đồng ý với điều khoản sử dụng.',
         ];
     }
 }
