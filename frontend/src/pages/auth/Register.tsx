@@ -61,8 +61,6 @@ function Register() {
 
     setLoading(true);
     try {
-      await axiosInstance.get('/sanctum/csrf-cookie');
-      
       await api.post("/register", {
         ...formData,
         device_name: "web",
