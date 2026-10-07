@@ -54,12 +54,12 @@ function Login() {
         device_name: "web",
       });
 
-      const { token, user } = response.data;
-      if (token && user) {
-        login(token, user);
-        if (user.role === 'ADMIN') navigate('/admin');
-        else if (user.role === 'ADVISOR') navigate('/advisor/customers');
-        else if (user.role === 'TECHNICIAN') navigate('/technician');
+      const { token, account } = response.data;
+      if (token && account) {
+        login(token, account);
+        if (account.role === 'ADMIN') navigate('/admin');
+        else if (account.role === 'ADVISOR') navigate('/advisor/customers');
+        else if (account.role === 'TECHNICIAN') navigate('/technician');
         else navigate('/customer');
       } else {
         setErrors({ form: "Đăng nhập thất bại, không nhận được token." });
