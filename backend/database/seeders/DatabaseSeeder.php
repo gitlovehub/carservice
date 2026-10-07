@@ -24,6 +24,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(RealDataSeeder::class);
+        
         $defaultPassword = Hash::make('password123');
 
         // 1. TÀI KHOẢN ADMIN MẪU
