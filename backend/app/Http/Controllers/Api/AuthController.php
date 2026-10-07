@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
@@ -24,6 +26,51 @@ class AuthController extends Controller
         $data['email'] = strtolower(trim((string) $data['email']));
         $data['full_name'] = trim((string) $data['full_name']);
         $data['phone'] = trim((string) $data['phone']);
+
+        // Check if account already exists
+        if (Account::where('email', $data['email'])->exists()) {
+            throw ValidationException::withMessages([
+                'email' => ['Email đã tồn tại.'],
+            ]);
+        }
+
+        // Tạo mã OTP 6 số
+        $otp = sprintf("%06d", mt_rand(1, 999999));
+
+        // Lưu thông tin đăng ký và OTP vào cache trong 10 phút
+        Cache::put('register_data_' . $data['email'], $data, now()->addMinutes(10));
+        Cache::put('register_otp_' . $data['email'], $otp, now()->addMinutes(10));
+
+        // Gửi email OTP
+        Mail::raw("Mã xác thực OTP đăng ký tài khoản của bạn là: $otp", function ($message) use ($data) {
+            $message->to($data['email'])
+                    ->subject('Mã xác thực đăng ký tài khoản CarService');
+        });
+
+        return response()->json([
+            'message' => 'Vui lòng kiểm tra email để nhận mã OTP.',
+        ], 200);
+    }
+
+    public function verifyEmailOtp(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+        ]);
+
+        $email = strtolower(trim((string) $request->email));
+        $otp = $request->otp;
+
+        $cachedOtp = Cache::get('register_otp_' . $email);
+        if (!$cachedOtp || $cachedOtp !== $otp) {
+            return response()->json(['message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.'], 400);
+        }
+
+        $data = Cache::get('register_data_' . $email);
+        if (!$data) {
+            return response()->json(['message' => 'Dữ liệu đăng ký không tồn tại hoặc đã hết hạn.'], 400);
+        }
 
         $account = DB::transaction(function () use ($data) {
             $account = Account::query()->create([
@@ -60,8 +107,11 @@ class AuthController extends Controller
             return $account;
         });
 
-        $token = null;
+        // Xóa cache sau khi thành công
+        Cache::forget('register_otp_' . $email);
+        Cache::forget('register_data_' . $email);
 
+        $token = null;
         if ($request->hasSession()) {
             Auth::guard('web')->login($account);
             $request->session()->regenerate();
@@ -70,10 +120,89 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'Đăng ký tài khoản thành công.',
+            'message' => 'Đăng ký và xác thực tài khoản thành công.',
             'token' => $token,
             'account' => $this->formatAccount($account),
         ], 201);
+    }
+
+    public function resendEmailOtp(Request $request): JsonResponse
+    {
+        $request->validate(['email' => 'required|email']);
+        $email = strtolower(trim((string) $request->email));
+
+        $data = Cache::get('register_data_' . $email);
+        if (!$data) {
+            return response()->json(['message' => 'Vui lòng đăng ký lại từ đầu.'], 400);
+        }
+
+        $otp = sprintf("%06d", mt_rand(1, 999999));
+        Cache::put('register_otp_' . $email, $otp, now()->addMinutes(10));
+
+        Mail::raw("Mã xác thực OTP đăng ký tài khoản của bạn là: $otp", function ($message) use ($email) {
+            $message->to($email)
+                    ->subject('Mã xác thực đăng ký tài khoản CarService');
+        });
+
+        return response()->json(['message' => 'Mã OTP mới đã được gửi lại vào email.'], 200);
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => 'required|email']);
+        $email = strtolower(trim((string) $request->email));
+
+        $account = Account::where('email', $email)->first();
+        if (!$account) {
+            return response()->json(['message' => 'Email không tồn tại trong hệ thống.'], 404);
+        }
+
+        $otp = sprintf("%06d", mt_rand(1, 999999));
+        Cache::put('forgot_otp_' . $email, $otp, now()->addMinutes(10));
+
+        Mail::raw("Mã xác thực OTP để lấy lại mật khẩu của bạn là: $otp", function ($message) use ($email) {
+            $message->to($email)
+                    ->subject('Khôi phục mật khẩu CarService');
+        });
+
+        return response()->json(['message' => 'Mã OTP khôi phục mật khẩu đã được gửi.'], 200);
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+            'new_password' => 'required|string|min:6'
+        ]);
+
+        $email = strtolower(trim((string) $request->email));
+        $otp = $request->otp;
+
+        $cachedOtp = Cache::get('forgot_otp_' . $email);
+        if (!$cachedOtp || $cachedOtp !== $otp) {
+            return response()->json(['message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.'], 400);
+        }
+
+        $account = Account::where('email', $email)->first();
+        if (!$account) {
+            return response()->json(['message' => 'Không tìm thấy tài khoản.'], 404);
+        }
+
+        if (Hash::check($request->new_password, $account->getAuthPassword())) {
+            return response()->json([
+                'errors' => [
+                    'new_password' => ['Mật khẩu mới không được trùng với mật khẩu cũ.']
+                ]
+            ], 422);
+        }
+
+        $account->password_hash = Hash::make($request->new_password);
+        $account->save();
+
+        Cache::forget('forgot_otp_' . $email);
+
+        return response()->json(['message' => 'Mật khẩu đã được cập nhật thành công.'], 200);
     }
 
     public function login(LoginRequest $request): JsonResponse
