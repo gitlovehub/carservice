@@ -4,9 +4,9 @@ import Home from "./pages/Home";
 import CustomerDashboard from "./pages/customer/Dashboard";
 
 import Contact from "./pages/customer/Contact";
-import Services from "./pages/customer/Services";
-import Packages from "./pages/customer/Packages";
-import Booking from "./pages/customer/Booking";
+import Services from "./pages/ServicesPage";
+import Packages from "./pages/PackagesPage";
+import Booking from "./pages/BookingPage";
 import Appointments from "./pages/customer/Appointments";
 import Cars from "./pages/customer/Cars";
 import Account from "./pages/customer/Account";
