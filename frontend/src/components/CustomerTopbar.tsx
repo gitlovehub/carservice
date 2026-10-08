@@ -16,7 +16,8 @@ function CustomerTopbar() {
     "/repair-status": "Theo dõi sửa chữa",
   };
 
-  const currentPage = pageNames[location.pathname] || "Khu vực khách hàng";
+  const currentPage =
+    pageNames[location.pathname] || "Khu vực khách hàng";
 
   return (
     <header className="sticky top-0 z-40 flex h-[76px] items-center justify-between border-b border-[#E1E4E6] bg-white px-6 lg:ml-[250px] lg:px-8">
@@ -24,12 +25,12 @@ function CustomerTopbar() {
         <div className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]" />
 
-          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
             CARSERVICE
           </p>
         </div>
 
-        <p className="mt-1 text-xs font-bold text-[#20252B]">
+        <p className="mt-1 text-[13px] font-bold text-[#20252B]">
           {currentPage}
         </p>
       </div>
@@ -37,7 +38,7 @@ function CustomerTopbar() {
       <div className="flex items-center gap-2 sm:gap-3">
         <Link
           to="/"
-          className="hidden items-center gap-2 rounded-xl border border-[#E1E4E6] px-4 py-2.5 text-[10px] font-semibold text-[#66717C] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5] hover:text-[#20252B] sm:flex"
+          className="hidden cursor-pointer items-center gap-2 rounded-xl border border-[#E1E4E6] px-4 py-2.5 text-[11px] font-semibold text-[#66717C] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5] hover:text-[#20252B] sm:flex"
         >
           <span>←</span>
           Trang chủ

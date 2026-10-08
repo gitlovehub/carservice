@@ -56,7 +56,7 @@ function Appointments() {
       <main className={isCustomerPage ? "lg:ml-[250px]" : ""}>
         <div className="mx-auto max-w-[1200px] px-6 py-10 md:py-14">
           <div className="mb-8">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
               {isCustomerPage
                 ? "KHÁCH HÀNG / LỊCH HẸN"
                 : "CARSERVICE / LỊCH HẸN"}
@@ -67,7 +67,7 @@ function Appointments() {
                 Lịch hẹn
               </h1>
 
-              <p className="mt-2 max-w-2xl text-[12px] leading-6 text-[#66717C]">
+              <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#66717C]">
                 Quản lý và theo dõi các lịch hẹn bảo dưỡng, sửa chữa xe.
               </p>
             </div>
@@ -77,7 +77,7 @@ function Appointments() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                     TỔNG LỊCH HẸN
                   </p>
 
@@ -91,7 +91,7 @@ function Appointments() {
                 </div>
               </div>
 
-              <p className="mt-3 text-[10px] text-[#66717C]">
+              <p className="mt-3 text-[11px] text-[#66717C]">
                 Tổng số lịch hẹn hiện có.
               </p>
             </div>
@@ -99,7 +99,7 @@ function Appointments() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                     KẾT QUẢ HIỆN TẠI
                   </p>
 
@@ -113,7 +113,7 @@ function Appointments() {
                 </div>
               </div>
 
-              <p className="mt-3 text-[10px] text-[#66717C]">
+              <p className="mt-3 text-[11px] text-[#66717C]">
                 Số lịch hẹn phù hợp với bộ lọc.
               </p>
             </div>
@@ -121,22 +121,22 @@ function Appointments() {
 
           <div className="mb-7 overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
             <div className="border-b border-[#E1E4E6] px-6 py-5">
-              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                 FILTER
               </p>
 
-              <h2 className="mt-1 text-[16px] font-bold text-[#20252B]">
+              <h2 className="mt-1 text-[17px] font-bold text-[#20252B]">
                 Tìm kiếm lịch hẹn
               </h2>
 
-              <p className="mt-1 text-[10px] text-[#66717C]">
+              <p className="mt-1 text-[11px] text-[#66717C]">
                 Tìm kiếm theo mã lịch hẹn, xe hoặc dịch vụ.
               </p>
             </div>
 
             <div className="grid gap-4 p-6 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-[10px] font-semibold text-[#20252B]">
+                <label className="mb-2 block text-[13px] font-semibold text-[#20252B]">
                   Từ khóa
                 </label>
 
@@ -145,19 +145,19 @@ function Appointments() {
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   placeholder="Nhập mã lịch hẹn, tên xe..."
-                  className="w-full rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[12px] text-[#20252B] outline-none transition placeholder:text-[#9AA3AA] focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
+                  className="w-full rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[13px] text-[#20252B] outline-none transition placeholder:text-[#9AA3AA] focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-[10px] font-semibold text-[#20252B]">
+                <label className="mb-2 block text-[13px] font-semibold text-[#20252B]">
                   Trạng thái
                 </label>
 
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full cursor-pointer rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[12px] text-[#20252B] outline-none transition focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
+                  className="w-full cursor-pointer rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[13px] text-[#20252B] outline-none transition focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
                 >
                   <option value="">Tất cả trạng thái</option>
                   <option value="Chờ xác nhận">Chờ xác nhận</option>
@@ -170,16 +170,16 @@ function Appointments() {
           <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
             <div className="flex flex-col gap-3 border-b border-[#E1E4E6] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                   APPOINTMENTS
                 </p>
 
-                <h2 className="mt-1 text-[16px] font-bold text-[#20252B]">
+                <h2 className="mt-1 text-[17px] font-bold text-[#20252B]">
                   Danh sách lịch hẹn
                 </h2>
               </div>
 
-              <span className="w-fit rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-semibold text-[#66717C]">
+              <span className="w-fit rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
                 {filteredAppointments.length} kết quả
               </span>
             </div>
@@ -187,7 +187,7 @@ function Appointments() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-left">
                 <thead>
-                  <tr className="border-b border-[#E1E4E6] bg-[#FAFAF9] text-[9px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                  <tr className="border-b border-[#E1E4E6] bg-[#FAFAF9] text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
                     <th className="px-6 py-4">STT</th>
                     <th className="px-6 py-4">Mã lịch hẹn</th>
                     <th className="px-6 py-4">Xe</th>
@@ -204,12 +204,12 @@ function Appointments() {
                       key={appointment.id}
                       className="border-b border-[#EEF0F2] last:border-b-0 transition hover:bg-[#FAFAF9]"
                     >
-                      <td className="px-6 py-5 text-[11px] text-[#8A949E]">
+                      <td className="px-6 py-5 text-[12px] text-[#8A949E]">
                         {String(index + 1).padStart(2, "0")}
                       </td>
 
                       <td className="px-6 py-5">
-                        <span className="text-[11px] font-bold text-[#20252B]">
+                        <span className="text-[12px] font-bold text-[#20252B]">
                           {appointment.id}
                         </span>
                       </td>
@@ -221,30 +221,30 @@ function Appointments() {
                           </div>
 
                           <div>
-                            <p className="text-[12px] font-bold text-[#20252B]">
+                            <p className="text-[13px] font-bold text-[#20252B]">
                               {appointment.car}
                             </p>
 
-                            <p className="mt-1 text-[9px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-[#8A949E]">
                               Phương tiện cá nhân
                             </p>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-6 py-5 text-[11px] text-[#66717C]">
+                      <td className="px-6 py-5 text-[12px] text-[#66717C]">
                         {appointment.service}
                       </td>
 
                       <td className="px-6 py-5">
-                        <span className="text-[11px] font-semibold text-[#20252B]">
+                        <span className="text-[12px] font-semibold text-[#20252B]">
                           {appointment.date}
                         </span>
                       </td>
 
                       <td className="px-6 py-5">
                         <span
-                          className={`rounded-full px-3 py-1.5 text-[9px] font-semibold ${
+                          className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${
                             appointment.status === "Đã xác nhận"
                               ? "bg-[#F3E8D2] text-[#3A3020]"
                               : "bg-[#F3F4F2] text-[#66717C]"
@@ -258,14 +258,14 @@ function Appointments() {
                         <div className="flex flex-wrap gap-2">
                           <button
                             type="button"
-                            className="rounded-xl bg-[#1F2933] px-3.5 py-2.5 text-[10px] font-semibold text-white transition hover:bg-[#151D24]"
+                            className="cursor-pointer rounded-xl bg-[#1F2933] px-3.5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151D24]"
                           >
                             Xem chi tiết
                           </button>
 
                           <button
                             type="button"
-                            className="rounded-xl border border-[#DDE1E4] bg-white px-3.5 py-2.5 text-[10px] font-medium text-[#20252B] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
+                            className="cursor-pointer rounded-xl border border-[#DDE1E4] bg-white px-3.5 py-2.5 text-[11px] font-medium text-[#20252B] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
                           >
                             Hủy lịch
                           </button>
@@ -281,11 +281,11 @@ function Appointments() {
                           —
                         </div>
 
-                        <p className="mt-4 text-xs font-semibold text-[#20252B]">
+                        <p className="mt-4 text-sm font-semibold text-[#20252B]">
                           Không tìm thấy lịch hẹn
                         </p>
 
-                        <p className="mt-1 text-[10px] text-[#8A949E]">
+                        <p className="mt-1 text-[11px] text-[#8A949E]">
                           Thử thay đổi từ khóa hoặc trạng thái tìm kiếm.
                         </p>
                       </td>
@@ -303,11 +303,11 @@ function Appointments() {
               </div>
 
               <div>
-                <p className="text-xs font-bold text-[#20252B]">
+                <p className="text-sm font-bold text-[#20252B]">
                   Quản lý lịch hẹn
                 </p>
 
-                <p className="mt-1 text-[10px] leading-5 text-[#66717C]">
+                <p className="mt-1 text-[11px] leading-5 text-[#66717C]">
                   Bạn có thể theo dõi trạng thái lịch hẹn và thông tin dịch vụ
                   đã đăng ký tại CarService.
                 </p>
