@@ -207,13 +207,6 @@ class AuthController extends Controller
             ]);
         }
 
-        if ($account->status === Account::STATUS_ACTIVE
-            && $account->email_verified_at !== null) {
-            return response()->json([
-                'message' => 'Email đã được xác thực.',
-            ]);
-        }
-
         $otpRecord = EmailVerificationOtp::query()
             ->where('account_id', $account->id)
             ->whereNull('used_at')
@@ -243,10 +236,12 @@ class AuthController extends Controller
                 'used_at' => now(),
             ]);
 
-            $account->update([
-                'email_verified_at' => now(),
-                'status' => Account::STATUS_ACTIVE,
-            ]);
+            if ($account->email_verified_at === null) {
+                $account->update([
+                    'email_verified_at' => now(),
+                    'status' => Account::STATUS_ACTIVE,
+                ]);
+            }
         });
 
         $token = $account->createToken('default')->plainTextToken;
@@ -254,7 +249,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Xác thực email thành công.',
             'token' => $token,
-            'account' => $this->formatAccount($account),
+            'account' => $this->formatAccount($account->fresh()),
         ]);
     }
 
@@ -273,12 +268,6 @@ class AuthController extends Controller
         if (! $account) {
             throw ValidationException::withMessages([
                 'email' => ['Không tìm thấy tài khoản.'],
-            ]);
-        }
-
-        if ($account->email_verified_at !== null) {
-            throw ValidationException::withMessages([
-                'email' => ['Email này đã được xác thực.'],
             ]);
         }
 
