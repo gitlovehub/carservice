@@ -44,7 +44,7 @@ function Reviews() {
       <main className="lg:ml-[250px]">
         <div className="mx-auto max-w-[1200px] px-6 py-10 md:py-14">
           <div className="mb-8">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
               KHÁCH HÀNG / ĐÁNH GIÁ
             </p>
 
@@ -52,7 +52,7 @@ function Reviews() {
               Đánh giá dịch vụ
             </h1>
 
-            <p className="mt-2 max-w-2xl text-[12px] leading-6 text-[#66717C]">
+            <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#66717C]">
               Chia sẻ trải nghiệm của bạn sau khi sử dụng dịch vụ tại
               CarService.
             </p>
@@ -60,20 +60,20 @@ function Reviews() {
 
           <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                 REVIEW FORM
               </p>
 
-              <h2 className="mt-1 text-base font-bold text-[#20252B]">
+              <h2 className="mt-1 text-[17px] font-bold text-[#20252B]">
                 Gửi đánh giá
               </h2>
 
-              <p className="mt-2 text-[10px] leading-5 text-[#66717C]">
+              <p className="mt-2 text-[11px] leading-5 text-[#66717C]">
                 Đánh giá của bạn giúp CarService cải thiện chất lượng dịch vụ.
               </p>
 
               <div className="mt-6">
-                <label className="mb-3 block text-xs font-semibold text-[#20252B]">
+                <label className="mb-3 block text-[13px] font-semibold text-[#20252B]">
                   Mức độ hài lòng
                 </label>
 
@@ -83,7 +83,7 @@ function Reviews() {
                       key={item}
                       type="button"
                       onClick={() => setRating(item)}
-                      className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm transition ${
+                      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl text-sm transition ${
                         item <= rating
                           ? "bg-[#D6A85F] text-[#3A3020]"
                           : "border border-[#DDE1E4] bg-white text-[#8A949E] hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
@@ -94,7 +94,7 @@ function Reviews() {
                   ))}
                 </div>
 
-                <p className="mt-2 text-[10px] text-[#8A949E]">
+                <p className="mt-2 text-[11px] text-[#8A949E]">
                   {rating > 0
                     ? `${rating}/5 sao`
                     : "Chưa chọn mức đánh giá"}
@@ -102,7 +102,7 @@ function Reviews() {
               </div>
 
               <div className="mt-5">
-                <label className="mb-2 block text-xs font-semibold text-[#20252B]">
+                <label className="mb-2 block text-[13px] font-semibold text-[#20252B]">
                   Nội dung đánh giá
                 </label>
 
@@ -111,14 +111,14 @@ function Reviews() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Nhập cảm nhận của bạn..."
-                  className="w-full resize-none rounded-xl border border-[#DDE1E4] bg-white px-4 py-3 text-xs text-[#20252B] outline-none transition placeholder:text-[#A0A8AF] focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
+                  className="w-full resize-none rounded-xl border border-[#DDE1E4] bg-white px-4 py-3 text-[13px] text-[#20252B] outline-none transition placeholder:text-[#A0A8AF] focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="mt-5 w-full rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[#151D24] hover:shadow-md"
+                className="mt-5 w-full cursor-pointer rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[#151D24] hover:shadow-md"
               >
                 Gửi đánh giá
               </button>
@@ -127,16 +127,16 @@ function Reviews() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex flex-col justify-between gap-3 border-b border-[#E1E4E6] px-6 py-5 sm:flex-row sm:items-center">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     REVIEW HISTORY
                   </p>
 
-                  <h2 className="mt-1 text-base font-bold text-[#20252B]">
+                  <h2 className="mt-1 text-[17px] font-bold text-[#20252B]">
                     Đánh giá của tôi
                   </h2>
                 </div>
 
-                <div className="rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-semibold text-[#66717C]">
+                <div className="rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
                   {reviews.length} đánh giá
                 </div>
               </div>
@@ -149,26 +149,26 @@ function Reviews() {
                   >
                     <div className="flex flex-col justify-between gap-4 sm:flex-row">
                       <div className="flex items-start gap-4">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-white">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[11px] font-bold text-white">
                           RV
                         </div>
 
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-bold text-[#20252B]">
+                            <p className="text-[13px] font-bold text-[#20252B]">
                               {review.id}
                             </p>
 
-                            <span className="rounded-full bg-[#EEF7F0] px-3 py-1.5 text-[10px] font-medium text-[#39734A]">
+                            <span className="rounded-full bg-[#EEF7F0] px-3 py-1.5 text-[11px] font-medium text-[#39734A]">
                               Đã gửi
                             </span>
                           </div>
 
-                          <p className="mt-2 text-xs font-semibold text-[#20252B]">
+                          <p className="mt-2 text-[13px] font-semibold text-[#20252B]">
                             {review.service}
                           </p>
 
-                          <p className="mt-1 text-[10px] text-[#7B858F]">
+                          <p className="mt-1 text-[11px] text-[#7B858F]">
                             {review.car}
                           </p>
                         </div>
@@ -185,14 +185,14 @@ function Reviews() {
                           </span>
                         </div>
 
-                        <p className="mt-1 text-[10px] text-[#8A949E]">
+                        <p className="mt-1 text-[11px] text-[#8A949E]">
                           {review.date}
                         </p>
                       </div>
                     </div>
 
                     <div className="mt-4 rounded-xl bg-white p-4">
-                      <p className="text-[10px] leading-5 text-[#6F7881]">
+                      <p className="text-[11px] leading-5 text-[#6F7881]">
                         “{review.content}”
                       </p>
                     </div>
@@ -209,11 +209,11 @@ function Reviews() {
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Góp ý của bạn rất quan trọng
                 </p>
 
-                <p className="mt-1 text-[10px] leading-5 text-[#7B858F]">
+                <p className="mt-1 text-[11px] leading-5 text-[#7B858F]">
                   Hãy đánh giá trung thực để CarService có thể nâng cao chất
                   lượng phục vụ và trải nghiệm khách hàng.
                 </p>
