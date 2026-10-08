@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { fetchApi } from "../../services/api";
-import { setUserRole } from "./auth";
 
 function Register() {
   const navigate = useNavigate();
@@ -138,11 +137,12 @@ function Register() {
       });
 
       setStep("OTP");
-    } catch (error: any) {
-      setApiError(error.data?.message || "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.");
-      if (error.data?.errors) {
-        const firstErrorKey = Object.keys(error.data.errors)[0];
-        setApiError(error.data.errors[firstErrorKey][0]);
+    } catch (error: unknown) {
+      const err = error as any;
+      setApiError(err.data?.message || "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.");
+      if (err.data?.errors) {
+        const firstErrorKey = Object.keys(err.data.errors)[0];
+        setApiError(err.data.errors[firstErrorKey][0]);
       }
     } finally {
       setIsLoading(false);
@@ -170,8 +170,9 @@ function Register() {
 
       alert("Đăng ký thành công! Vui lòng đăng nhập.");
       navigate("/login");
-    } catch (error: any) {
-      setApiError(error.data?.message || error.data?.errors?.otp?.[0] || "Xác thực OTP thất bại.");
+    } catch (error: unknown) {
+      const err = error as any;
+      setApiError(err.data?.message || err.data?.errors?.otp?.[0] || "Xác thực OTP thất bại.");
     } finally {
       setIsLoading(false);
     }
@@ -186,8 +187,9 @@ function Register() {
         body: JSON.stringify({ email: form.email }),
       });
       alert("Đã gửi lại mã OTP. Vui lòng kiểm tra email.");
-    } catch (error: any) {
-      setApiError(error.data?.message || "Gửi lại OTP thất bại.");
+    } catch (error: unknown) {
+      const err = error as any;
+      setApiError(err.data?.message || "Gửi lại OTP thất bại.");
     } finally {
       setIsLoading(false);
     }
