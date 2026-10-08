@@ -7,6 +7,8 @@ function ForgotPassword() {
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [step, setStep] = useState<"FORGOT" | "RESET" | "SUCCESS">("FORGOT");
   const [isLoading, setIsLoading] = useState(false);
@@ -35,12 +37,36 @@ function ForgotPassword() {
 
   const handleResetSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!otp || !newPassword || !confirmPassword) {
-      setErrorMsg("Vui lòng điền đầy đủ thông tin.");
+    const passwordUppercase = /[A-Z]/;
+    const passwordLowercase = /[a-z]/;
+    const passwordNumber = /[0-9]/;
+
+    if (!otp || otp.length !== 6) {
+      setErrorMsg("Vui lòng nhập đủ 6 chữ số OTP.");
       return;
     }
-    
-    if (newPassword !== confirmPassword) {
+
+    if (!newPassword) {
+      setErrorMsg("Vui lòng nhập mật khẩu mới.");
+      return;
+    } else if (newPassword.length < 8) {
+      setErrorMsg("Mật khẩu phải có ít nhất 8 ký tự.");
+      return;
+    } else if (!passwordUppercase.test(newPassword)) {
+      setErrorMsg("Mật khẩu phải có ít nhất 1 chữ cái viết hoa.");
+      return;
+    } else if (!passwordLowercase.test(newPassword)) {
+      setErrorMsg("Mật khẩu phải có ít nhất 1 chữ cái viết thường.");
+      return;
+    } else if (!passwordNumber.test(newPassword)) {
+      setErrorMsg("Mật khẩu phải có ít nhất 1 chữ số.");
+      return;
+    }
+
+    if (!confirmPassword) {
+      setErrorMsg("Vui lòng xác nhận lại mật khẩu.");
+      return;
+    } else if (newPassword !== confirmPassword) {
       setErrorMsg("Mật khẩu xác nhận không khớp.");
       return;
     }
@@ -54,8 +80,8 @@ function ForgotPassword() {
         body: JSON.stringify({ 
           email,
           otp,
-          new_password: newPassword,
-          new_password_confirmation: confirmPassword
+          password: newPassword,
+          password_confirmation: confirmPassword
         }),
       });
       setStep("SUCCESS");
@@ -178,28 +204,47 @@ function ForgotPassword() {
                         value={otp}
                         onChange={(e) => { setOtp(e.target.value); setErrorMsg(""); }}
                         placeholder="Nhập mã 6 số"
+                        autoComplete="one-time-code"
                         className="mt-2 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-4 py-3 text-[12px] text-center font-mono tracking-widest outline-none transition focus:border-[#D6A85F] focus:bg-white"
                       />
                     </div>
                     <div>
                       <label className="text-[11px] font-semibold text-[#66717C]">Mật khẩu mới</label>
-                      <input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => { setNewPassword(e.target.value); setErrorMsg(""); }}
-                        placeholder="Mật khẩu mới"
-                        className="mt-2 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-4 py-3 text-[12px] outline-none transition focus:border-[#D6A85F] focus:bg-white"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => { setNewPassword(e.target.value); setErrorMsg(""); }}
+                          placeholder="Mật khẩu mới"
+                          className="mt-2 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-4 py-3 pr-16 text-[12px] outline-none transition focus:border-[#D6A85F] focus:bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 mt-1 -translate-y-1/2 text-sm font-medium text-[#66717C] transition hover:text-[#20252B]"
+                        >
+                          {showPassword ? "Ẩn" : "Hiện"}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <label className="text-[11px] font-semibold text-[#66717C]">Xác nhận mật khẩu mới</label>
-                      <input
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => { setConfirmPassword(e.target.value); setErrorMsg(""); }}
-                        placeholder="Xác nhận mật khẩu"
-                        className="mt-2 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-4 py-3 text-[12px] outline-none transition focus:border-[#D6A85F] focus:bg-white"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) => { setConfirmPassword(e.target.value); setErrorMsg(""); }}
+                          placeholder="Xác nhận mật khẩu"
+                          className="mt-2 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-4 py-3 pr-16 text-[12px] outline-none transition focus:border-[#D6A85F] focus:bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-4 top-1/2 mt-1 -translate-y-1/2 text-sm font-medium text-[#66717C] transition hover:text-[#20252B]"
+                        >
+                          {showConfirmPassword ? "Ẩn" : "Hiện"}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
