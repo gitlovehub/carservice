@@ -23,11 +23,28 @@ function Header() {
     };
   }, [location]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    setIsLoggedIn(false);
-    setOpen(false);
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        await fetch("http://localhost:8000/api/logout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Logout error", error);
+    } finally {
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setIsLoggedIn(false);
+      setOpen(false);
+      navigate("/login");
+    }
   };
 
   const isCustomer =

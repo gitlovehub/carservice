@@ -5,16 +5,18 @@ function Login() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    username: "",
+    email: "",
     password: "",
   });
 
   const [errors, setErrors] = useState({
-    username: "",
+    email: "",
     password: "",
   });
 
+  const [apiError, setApiError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -30,16 +32,19 @@ function Login() {
       ...errors,
       [name]: "",
     });
+    setApiError("");
   };
 
   const validate = () => {
     const newErrors = {
-      username: "",
+      email: "",
       password: "",
     };
 
-    if (!form.username.trim()) {
-      newErrors.username = "Vui lòng nhập tên đăng nhập.";
+    if (!form.email.trim()) {
+      newErrors.email = "Vui lòng nhập email.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = "Email không hợp lệ.";
     }
 
     if (!form.password) {
@@ -53,15 +58,51 @@ function Login() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!validate()) {
       return;
     }
 
-    localStorage.setItem("isLoggedIn", "true");
-    navigate("/customer");
+    setIsLoading(true);
+    setApiError("");
+
+    try {
+      const response = await fetch("http://localhost:8000/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setApiError(data.message || "Đăng nhập thất bại. Vui lòng thử lại.");
+        return;
+      }
+
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.account));
+        localStorage.setItem("isLoggedIn", "true");
+        
+        if (data.account.role === "CUSTOMER") {
+          navigate("/customer");
+        } else {
+          navigate("/"); // or admin dashboard
+        }
+      } else {
+        setApiError(data.message || "Tài khoản chưa xác thực email. Vui lòng nhập mã OTP.");
+      }
+    } catch (error) {
+      setApiError("Lỗi kết nối đến máy chủ. Vui lòng thử lại sau.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const inputClass = (error: string) =>
@@ -114,20 +155,26 @@ function Login() {
             noValidate
             className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_4px_20px_rgba(31,41,51,0.06)]"
           >
+            {apiError && (
+              <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-600 border border-red-100">
+                {apiError}
+              </div>
+            )}
+
             <div className="space-y-4">
               <div>
                 <input
-                  type="text"
-                  name="username"
-                  value={form.username}
+                  type="email"
+                  name="email"
+                  value={form.email}
                   onChange={handleChange}
-                  placeholder="Tên đăng nhập"
-                  className={inputClass(errors.username)}
+                  placeholder="Địa chỉ email"
+                  className={inputClass(errors.email)}
                 />
 
-                {errors.username && (
+                {errors.email && (
                   <p className="mt-1.5 text-xs font-medium text-red-600">
-                    {errors.username}
+                    {errors.email}
                   </p>
                 )}
               </div>
@@ -144,56 +191,57 @@ function Login() {
                   />
 
                   <button
-                    type="button"
-                    onClick={() =>
-                      setShowPassword(!showPassword)
-                    }
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[#66717C] transition hover:text-[#20252B]"
-                  >
-                    {showPassword ? "Ẩn" : "Hiện"}
-                  </button>
-                </div>
+                     type="button"
+                     onClick={() =>
+                       setShowPassword(!showPassword)
+                     }
+                     className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[#66717C] transition hover:text-[#20252B]"
+                   >
+                     {showPassword ? "Ẩn" : "Hiện"}
+                   </button>
+                 </div>
 
-                {errors.password && (
-                  <p className="mt-1.5 text-xs font-medium text-red-600">
-                    {errors.password}
-                  </p>
-                )}
-              </div>
+                 {errors.password && (
+                   <p className="mt-1.5 text-xs font-medium text-red-600">
+                     {errors.password}
+                   </p>
+                 )}
+               </div>
 
-              <button
-                type="submit"
-                className="h-12 w-full rounded-xl bg-[#1F2933] text-sm font-semibold text-white transition hover:bg-[#151D24]"
-              >
-                Đăng nhập
-              </button>
-            </div>
+               <button
+                 type="submit"
+                 disabled={isLoading}
+                 className="h-12 w-full flex items-center justify-center rounded-xl bg-[#1F2933] text-sm font-semibold text-white transition hover:bg-[#151D24] disabled:opacity-70 disabled:cursor-not-allowed"
+               >
+                 {isLoading ? "Đang xử lý..." : "Đăng nhập"}
+               </button>
+             </div>
 
-            <div className="mt-5 text-center">
-              <Link
-                to="/forgot-password"
-                className="text-sm font-medium text-[#66717C] transition hover:text-[#D6A85F]"
-              >
-                Quên mật khẩu?
-              </Link>
-            </div>
+             <div className="mt-5 text-center">
+               <Link
+                 to="/forgot-password"
+                 className="text-sm font-medium text-[#66717C] transition hover:text-[#D6A85F]"
+               >
+                 Quên mật khẩu?
+               </Link>
+             </div>
 
-            <div className="my-6 border-t border-[#E5E7E9]" />
+             <div className="my-6 border-t border-[#E5E7E9]" />
 
-            <div className="text-center">
+             <div className="text-center">
 
-              <Link
-                to="/register"
-                className="mt-3 inline-flex h-11 items-center justify-center rounded-xl border border-[#D6A85F] px-6 text-sm font-semibold text-[#3A3020] transition hover:bg-[#F3E8D2]"
-              >
-                Đăng ký tài khoản
-              </Link>
-            </div>
-          </form>
-        </div>
-      </main>
-    </div>
-  );
+               <Link
+                 to="/register"
+                 className="mt-3 inline-flex h-11 items-center justify-center w-full rounded-xl border border-[#D6A85F] px-6 text-sm font-semibold text-[#3A3020] transition hover:bg-[#F3E8D2]"
+               >
+                 Đăng ký tài khoản
+               </Link>
+             </div>
+           </form>
+         </div>
+       </main>
+     </div>
+   );
 }
 
 export default Login;
