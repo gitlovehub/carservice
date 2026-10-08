@@ -7,7 +7,8 @@ import Home from "./pages/Home";
 import CustomerDashboard from "./pages/customer/Dashboard";
 import Contact from "./pages/customer/Contact";
 import Services from "./pages/customer/Services";
-import Booking from "./pages/customer/Booking";
+import Booking from "./pages/Booking";
+import CustomerBooking from "./pages/customer/Booking";
 import Appointments from "./pages/customer/Appointments";
 import Cars from "./pages/customer/Cars";
 import Account from "./pages/customer/Account";
@@ -64,6 +65,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["CUSTOMER"]}>
               <CustomerDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/customer/booking"
+          element={
+            <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+              <CustomerBooking />
             </ProtectedRoute>
           }
         />

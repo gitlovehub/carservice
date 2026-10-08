@@ -26,6 +26,7 @@ function Header() {
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("role");
+    localStorage.removeItem("username");
 
     setIsLoggedIn(false);
     setOpen(false);
@@ -33,9 +34,36 @@ function Header() {
     navigate("/");
   };
 
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
   const isCustomer =
     location.pathname === "/customer" ||
     location.pathname.startsWith("/customer/");
+
+  const navItems = [
+    {
+      label: "Trang chủ",
+      path: "/",
+    },
+    {
+      label: "Dịch vụ",
+      path: "/services",
+    },
+    {
+      label: "Đặt lịch",
+      path: "/booking",
+    },
+    {
+      label: "Lịch hẹn",
+      path: "/appointments",
+    },
+    {
+      label: "Xe của tôi",
+      path: "/cars",
+    },
+  ];
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#e5e7eb] bg-white/95 backdrop-blur">
@@ -64,40 +92,23 @@ function Header() {
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">
-          <Link
-            to="/"
-            className="rounded-xl bg-[#f3f4f2] px-4 py-2.5 text-[12px] font-semibold text-[#20252b] transition hover:bg-[#e9ebe8]"
-          >
-            Trang chủ
-          </Link>
+          {navItems.map((item) => {
+            const active = isActive(item.path);
 
-          <Link
-            to="/services"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
-          >
-            Dịch vụ
-          </Link>
-
-          <Link
-            to="/booking"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
-          >
-            Đặt lịch
-          </Link>
-
-          <Link
-            to="/appointments"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
-          >
-            Lịch hẹn
-          </Link>
-
-          <Link
-            to="/cars"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
-          >
-            Xe của tôi
-          </Link>
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`rounded-xl px-4 py-2.5 text-[12px] font-semibold transition duration-200 ${
+                  active
+                    ? "bg-[#D6A85F] text-[#1F2933] shadow-[0_4px_12px_rgba(214,168,95,0.18)]"
+                    : "text-[#66717C] hover:bg-[#F3F4F2] hover:text-[#20252B]"
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -166,7 +177,9 @@ function Header() {
                     to="/customer"
                     onClick={() => setOpen(false)}
                     className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
-                      isCustomer ? "bg-[#f3f4f2]" : "hover:bg-[#f3f4f2]"
+                      isCustomer
+                        ? "bg-[#f3e8d2]"
+                        : "hover:bg-[#f3f4f2]"
                     }`}
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1f2933] text-xs text-white">
@@ -187,7 +200,11 @@ function Header() {
                   <Link
                     to="/account"
                     onClick={() => setOpen(false)}
-                    className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-[#f3f4f2]"
+                    className={`mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
+                      location.pathname === "/account"
+                        ? "bg-[#f3e8d2]"
+                        : "hover:bg-[#f3f4f2]"
+                    }`}
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eceeed] text-xs text-[#374151]">
                       ◉

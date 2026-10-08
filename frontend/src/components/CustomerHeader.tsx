@@ -8,7 +8,7 @@ const menuItems = [
   },
   {
     label: "Đặt lịch",
-    path: "/booking",
+    path: "/customer/booking",
     icon: "＋",
   },
   {
@@ -56,14 +56,16 @@ function CustomerHeader() {
       <div className="flex h-full flex-col">
         <Link
           to="/"
-          className="flex cursor-pointer items-center gap-3 border-b border-[#3C4650] px-6 py-5"
+          className="flex items-center gap-3 border-b border-[#3C4650] px-6 py-5 transition hover:bg-[#29333D]"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#D6A85F] text-lg text-[#1F2933]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D6A85F] text-lg text-[#1F2933]">
             🚗
           </div>
 
-          <div>
-            <p className="text-[13px] font-bold">CarService</p>
+          <div className="min-w-0">
+            <p className="text-[13px] font-bold tracking-wide">
+              CarService
+            </p>
 
             <p className="mt-0.5 text-[10px] text-[#AEB8C1]">
               Khu vực khách hàng
@@ -71,26 +73,37 @@ function CustomerHeader() {
           </div>
         </Link>
 
-        <div className="px-4 py-5">
-          <p className="px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#8F9AA4]">
-            MENU KHÁCH HÀNG
-          </p>
+        <div className="px-4 py-6">
+          <div className="flex items-center justify-between px-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8F9AA4]">
+              MENU KHÁCH HÀNG
+            </p>
+          </div>
 
-          <nav className="mt-3 space-y-1">
+          <nav className="mt-4 space-y-1">
             {menuItems.map((item) => {
-              const active = location.pathname === item.path;
+              const active =
+                location.pathname === item.path ||
+                (item.path === "/customer" &&
+                  location.pathname === "/customer/");
 
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-[12px] font-medium transition ${
+                  className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-[12px] font-medium transition ${
                     active
-                      ? "bg-[#D6A85F] text-[#1F2933]"
+                      ? "bg-[#D6A85F] text-[#1F2933] shadow-[0_6px_16px_rgba(214,168,95,0.14)]"
                       : "text-[#C6CDD3] hover:bg-[#313B45] hover:text-white"
                   }`}
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-xs">
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs transition ${
+                      active
+                        ? "bg-white/30 text-[#1F2933]"
+                        : "bg-white/10 text-[#C6CDD3] group-hover:bg-white/15 group-hover:text-white"
+                    }`}
+                  >
                     {item.icon}
                   </span>
 
@@ -99,33 +112,6 @@ function CustomerHeader() {
               );
             })}
           </nav>
-        </div>
-
-        <div className="mt-auto px-4 pb-5">
-          <div className="rounded-2xl border border-[#3C4650] bg-[#29333D] p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#D6A85F] text-[10px] font-bold text-[#1F2933]">
-                NV
-              </div>
-
-              <div className="min-w-0">
-                <p className="truncate text-[12px] font-semibold text-white">
-                  Tên người dùng
-                </p>
-
-                <p className="mt-0.5 text-[10px] text-[#AEB8C1]">
-                  Khách hàng
-                </p>
-              </div>
-            </div>
-
-            <Link
-              to="/"
-              className="mt-4 flex cursor-pointer items-center justify-center rounded-xl border border-[#4A5661] px-3 py-2.5 text-[11px] font-medium text-[#D5DBE0] transition hover:bg-[#313B45] hover:text-white"
-            >
-              Về trang chủ
-            </Link>
-          </div>
         </div>
       </div>
     </aside>
