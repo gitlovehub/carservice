@@ -1,18 +1,33 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  apiRequest,
+  getApiErrorMessage,
+  initializeCsrfCookie,
+} from "../../lib/api";
+
+type LoginResponse = {
+  token: string | null;
+};
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMessage = (
+    location.state as { successMessage?: string } | null
+  )?.successMessage;
 
   const [form, setForm] = useState({
-    username: "",
+    email: "",
     password: "",
   });
 
   const [errors, setErrors] = useState({
-    username: "",
+    email: "",
     password: "",
   });
+  const [requestError, setRequestError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -34,12 +49,14 @@ function Login() {
 
   const validate = () => {
     const newErrors = {
-      username: "",
+      email: "",
       password: "",
     };
 
-    if (!form.username.trim()) {
-      newErrors.username = "Vui lòng nhập tên đăng nhập.";
+    if (!form.email.trim()) {
+      newErrors.email = "Vui lòng nhập email.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = "Vui lòng nhập email hợp lệ.";
     }
 
     if (!form.password) {
@@ -53,15 +70,39 @@ function Login() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!validate()) {
       return;
     }
 
+    setSubmitting(true);
+    setRequestError("");
+    try {
+      await initializeCsrfCookie();
+      const response = await apiRequest<LoginResponse>("/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email: form.email.trim(),
+          password: form.password,
+          device_name: "CarService Web",
+        }),
+      });
+      if (response.token) {
+        localStorage.setItem("authToken", response.token);
+      } else {
+        localStorage.removeItem("authToken");
+      }
+    } catch (error) {
+      setRequestError(getApiErrorMessage(error));
+      setSubmitting(false);
+      return;
+    }
+
     localStorage.setItem("isLoggedIn", "true");
     navigate("/customer");
+    setSubmitting(false);
   };
 
   const inputClass = (error: string) =>
@@ -115,19 +156,25 @@ function Login() {
             className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_4px_20px_rgba(31,41,51,0.06)]"
           >
             <div className="space-y-4">
+              {successMessage && (
+                <p role="status" className="rounded-xl bg-green-50 px-4 py-3 text-sm text-green-800">
+                  {successMessage}
+                </p>
+              )}
               <div>
                 <input
                   type="text"
-                  name="username"
-                  value={form.username}
+                  name="email"
+                  value={form.email}
                   onChange={handleChange}
-                  placeholder="Tên đăng nhập"
-                  className={inputClass(errors.username)}
+                  placeholder="Email"
+                  autoComplete="email"
+                  className={inputClass(errors.email)}
                 />
 
-                {errors.username && (
+                {errors.email && (
                   <p className="mt-1.5 text-xs font-medium text-red-600">
-                    {errors.username}
+                    {errors.email}
                   </p>
                 )}
               </div>
@@ -140,6 +187,7 @@ function Login() {
                     value={form.password}
                     onChange={handleChange}
                     placeholder="Mật khẩu"
+                    autoComplete="current-password"
                     className={`${inputClass(errors.password)} pr-16`}
                   />
 
@@ -161,11 +209,18 @@ function Login() {
                 )}
               </div>
 
+              {requestError && (
+                <p role="alert" className="text-sm font-medium text-red-600">
+                  {requestError}
+                </p>
+              )}
+
               <button
                 type="submit"
+                disabled={submitting}
                 className="h-12 w-full rounded-xl bg-[#1F2933] text-sm font-semibold text-white transition hover:bg-[#151D24]"
               >
-                Đăng nhập
+                {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
               </button>
             </div>
 
@@ -176,6 +231,15 @@ function Login() {
               >
                 Quên mật khẩu?
               </Link>
+              <p className="mt-4 text-xs text-[#66717C]">
+                Đã đăng ký nhưng chưa xác thực email?{" "}
+                <Link
+                  to="/register?verify=1"
+                  className="font-semibold text-[#20252B] underline underline-offset-2 hover:text-[#D6A85F]"
+                >
+                  Nhập mã OTP
+                </Link>
+              </p>
             </div>
 
             <div className="my-6 border-t border-[#E5E7E9]" />

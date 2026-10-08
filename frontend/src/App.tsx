@@ -5,8 +5,8 @@ import CustomerDashboard from "./pages/customer/Dashboard";
 
 import Contact from "./pages/customer/Contact";
 import Services from "./pages/customer/Services";
-import Booking from "./pages/customer/Booking";
-import Appointments from "./pages/customer/Appointments";
+import Booking from "./pages/customer/BookingPage";
+import Appointments from "./pages/customer/AppointmentsPage";
 import Cars from "./pages/customer/Cars";
 import Account from "./pages/customer/Account";
 import RepairStatus from "./pages/customer/RepairStatus";
@@ -48,6 +48,7 @@ function App() {
         <Route path="/booking" element={<Booking />} />
 
         <Route path="/appointments" element={<Appointments />} />
+        <Route path="/lich-hen" element={<Appointments />} />
         <Route path="/cars" element={<Cars />} />
 
         <Route path="/customer/appointments" element={<Appointments />} />
