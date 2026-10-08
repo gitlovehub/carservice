@@ -25,46 +25,28 @@ function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("role");
+
     setIsLoggedIn(false);
     setOpen(false);
-    navigate("/login");
+
+    navigate("/");
   };
 
   const isCustomer =
     location.pathname === "/customer" ||
     location.pathname.startsWith("/customer/");
 
-  const isAdvisor =
-    location.pathname.startsWith("/advisor/") ||
-    location.pathname === "/customers" ||
-    location.pathname === "/customer-cars";
-
-  const isTechnician =
-    location.pathname === "/technician" ||
-    location.pathname === "/assigned-repairs" ||
-    location.pathname === "/vehicle-check" ||
-    location.pathname === "/diagnosis" ||
-    location.pathname === "/repair-progress" ||
-    location.pathname === "/checklist";
-
-  const isAdmin =
-    location.pathname === "/admin" ||
-    location.pathname.startsWith("/admin/");
-
-  const getRoleClass = (active: boolean) =>
-    active
-      ? "flex items-center gap-3 rounded-xl bg-[#f3f4f2] px-3 py-2.5 text-xs"
-      : "flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs transition hover:bg-[#f3f4f2]";
-
   return (
     <header className="sticky top-0 z-50 border-b border-[#e5e7eb] bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-[76px] max-w-[1280px] items-center justify-between px-6">
         <Link
           to="/"
-          className="group flex items-center gap-3 rounded-2xl px-2 py-2 transition hover:bg-[#f7f7f5]"
+          className="group flex cursor-pointer items-center gap-3 rounded-2xl px-2 py-2 transition hover:bg-[#f7f7f5]"
         >
           <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-[#1f2933] text-white shadow-sm">
             <span className="text-lg">🚗</span>
+
             <span className="absolute bottom-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-[#d6a85f] text-[7px]">
               +
             </span>
@@ -74,6 +56,7 @@ function Header() {
             <p className="text-[15px] font-bold tracking-tight text-[#20252b]">
               CarService
             </p>
+
             <p className="mt-0.5 text-[10px] font-medium text-[#7a838c]">
               Chăm sóc xe chuyên nghiệp
             </p>
@@ -121,6 +104,13 @@ function Header() {
           {!isLoggedIn ? (
             <>
               <Link
+                to="/role-selector"
+                className="hidden cursor-pointer rounded-xl border border-[#e1e4e6] px-4 py-2.5 text-[11px] font-semibold text-[#66717c] transition hover:border-[#d6a85f] hover:bg-[#f7f7f5] hover:text-[#20252b] lg:block"
+              >
+                Chọn giao diện
+              </Link>
+
+              <Link
                 to="/login"
                 className="rounded-xl border border-[#e1e4e6] px-4 py-2.5 text-[11px] font-semibold text-[#20252b] transition hover:border-[#d6a85f] hover:bg-[#f7f7f5]"
               >
@@ -139,7 +129,7 @@ function Header() {
               <button
                 type="button"
                 onClick={() => setOpen(!open)}
-                className="flex items-center gap-3 rounded-2xl border border-[#e1e4e6] bg-white px-3 py-2 transition hover:border-[#cfd4d8] hover:bg-[#f8f8f6]"
+                className="flex cursor-pointer items-center gap-3 rounded-2xl border border-[#e1e4e6] bg-white px-3 py-2 transition hover:border-[#cfd4d8] hover:bg-[#f8f8f6]"
               >
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1f2933] text-[10px] font-bold text-white">
                   NV
@@ -151,15 +141,7 @@ function Header() {
                   </p>
 
                   <p className="mt-0.5 text-[10px] text-[#7a838c]">
-                    {isCustomer
-                      ? "Khách hàng"
-                      : isAdvisor
-                        ? "Cố vấn dịch vụ"
-                        : isTechnician
-                          ? "Kỹ thuật viên"
-                          : isAdmin
-                            ? "Quản trị viên"
-                            : "Khách hàng"}
+                    Khách hàng
                   </p>
                 </div>
 
@@ -183,7 +165,7 @@ function Header() {
                   <Link
                     to="/customer"
                     onClick={() => setOpen(false)}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-3 transition ${
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                       isCustomer ? "bg-[#f3f4f2]" : "hover:bg-[#f3f4f2]"
                     }`}
                   >
@@ -205,7 +187,7 @@ function Header() {
                   <Link
                     to="/account"
                     onClick={() => setOpen(false)}
-                    className="mt-1 flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-[#f3f4f2]"
+                    className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-[#f3f4f2]"
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eceeed] text-xs text-[#374151]">
                       ◉
@@ -224,90 +206,10 @@ function Header() {
 
                   <div className="my-2 border-t border-[#eceeed]" />
 
-                  <div className="px-3 py-2">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#8a9299]">
-                      GIAO DIỆN THEO VAI TRÒ
-                    </p>
-                  </div>
-
-                  <Link
-                    to="/customer"
-                    onClick={() => setOpen(false)}
-                    className={getRoleClass(isCustomer)}
-                  >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f1ef]">
-                      👤
-                    </span>
-
-                    <span className="font-medium text-[#374151]">
-                      Khách hàng
-                    </span>
-
-                    {isCustomer && (
-                      <span className="ml-auto text-[#d6a85f]">✓</span>
-                    )}
-                  </Link>
-
-                  <Link
-                    to="/advisor/customers"
-                    onClick={() => setOpen(false)}
-                    className={getRoleClass(isAdvisor)}
-                  >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f1ef]">
-                      💬
-                    </span>
-
-                    <span className="font-medium text-[#374151]">
-                      Cố vấn dịch vụ
-                    </span>
-
-                    {isAdvisor && (
-                      <span className="ml-auto text-[#d6a85f]">✓</span>
-                    )}
-                  </Link>
-
-                  <Link
-                    to="/technician"
-                    onClick={() => setOpen(false)}
-                    className={getRoleClass(isTechnician)}
-                  >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f1ef]">
-                      🔧
-                    </span>
-
-                    <span className="font-medium text-[#374151]">
-                      Kỹ thuật viên
-                    </span>
-
-                    {isTechnician && (
-                      <span className="ml-auto text-[#d6a85f]">✓</span>
-                    )}
-                  </Link>
-
-                  <Link
-                    to="/admin"
-                    onClick={() => setOpen(false)}
-                    className={getRoleClass(isAdmin)}
-                  >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f1ef]">
-                      ⚙
-                    </span>
-
-                    <span className="font-medium text-[#374151]">
-                      Quản trị viên
-                    </span>
-
-                    {isAdmin && (
-                      <span className="ml-auto text-[#d6a85f]">✓</span>
-                    )}
-                  </Link>
-
-                  <div className="my-2 border-t border-[#eceeed]" />
-
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-[#fef2f2]"
+                    className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-[#fef2f2]"
                   >
                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#fef2f2] text-sm text-red-600">
                       ↪

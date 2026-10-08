@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
+import { setUserRole } from "../../pages/auth/auth";
+import type { UserRole } from "../../pages/auth/auth";
 function Login() {
   const navigate = useNavigate();
 
@@ -53,6 +54,24 @@ function Login() {
     );
   };
 
+  const getRoleFromUsername = (username: string): UserRole => {
+    const value = username.trim().toLowerCase();
+
+    if (value === "admin") {
+      return "ADMIN";
+    }
+
+    if (value === "advisor") {
+      return "ADVISOR";
+    }
+
+    if (value === "technician") {
+      return "TECHNICIAN";
+    }
+
+    return "CUSTOMER";
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -60,7 +79,26 @@ function Login() {
       return;
     }
 
+    const role = getRoleFromUsername(form.username);
+
     localStorage.setItem("isLoggedIn", "true");
+    setUserRole(role);
+
+    if (role === "ADMIN") {
+      navigate("/admin");
+      return;
+    }
+
+    if (role === "ADVISOR") {
+      navigate("/advisor/appointments");
+      return;
+    }
+
+    if (role === "TECHNICIAN") {
+      navigate("/technician");
+      return;
+    }
+
     navigate("/customer");
   };
 
@@ -82,6 +120,7 @@ function Login() {
 
             <div>
               <p className="text-sm font-bold">CarService</p>
+
               <p className="text-[10px] text-[#8A949E]">
                 Dịch vụ chăm sóc ô tô
               </p>
@@ -181,7 +220,6 @@ function Login() {
             <div className="my-6 border-t border-[#E5E7E9]" />
 
             <div className="text-center">
-
               <Link
                 to="/register"
                 className="mt-3 inline-flex h-11 items-center justify-center rounded-xl border border-[#D6A85F] px-6 text-sm font-semibold text-[#3A3020] transition hover:bg-[#F3E8D2]"

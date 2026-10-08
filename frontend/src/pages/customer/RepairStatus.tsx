@@ -27,7 +27,7 @@ function RepairStatus() {
       <main className="lg:ml-[250px]">
         <div className="mx-auto max-w-[1200px] px-6 py-10 md:px-8 md:py-14">
           <div className="mb-8">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
               KHÁCH HÀNG / THEO DÕI SỬA CHỮA
             </p>
 
@@ -37,13 +37,13 @@ function RepairStatus() {
                   Theo dõi tình trạng sửa chữa
                 </h1>
 
-                <p className="mt-2 max-w-2xl text-[12px] leading-6 text-[#66717C]">
+                <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#66717C]">
                   Theo dõi tiến độ sửa chữa và bảo dưỡng xe của bạn.
                 </p>
               </div>
 
               <div className="hidden rounded-xl border border-[#E1E4E6] bg-white px-4 py-3 sm:block">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                   PHIẾU ĐANG XỬ LÝ
                 </p>
 
@@ -58,7 +58,7 @@ function RepairStatus() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                     TỔNG PHIẾU
                   </p>
 
@@ -72,7 +72,7 @@ function RepairStatus() {
                 </div>
               </div>
 
-              <p className="mt-3 text-[10px] text-[#66717C]">
+              <p className="mt-3 text-[11px] text-[#66717C]">
                 Các phiếu sửa chữa hiện có.
               </p>
             </div>
@@ -80,7 +80,7 @@ function RepairStatus() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                     ĐANG TIẾP NHẬN
                   </p>
 
@@ -98,7 +98,7 @@ function RepairStatus() {
                 </div>
               </div>
 
-              <p className="mt-3 text-[10px] text-[#66717C]">
+              <p className="mt-3 text-[11px] text-[#66717C]">
                 Xe đang trong bước tiếp nhận.
               </p>
             </div>
@@ -106,7 +106,7 @@ function RepairStatus() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                     ĐANG SỬA CHỮA
                   </p>
 
@@ -124,7 +124,7 @@ function RepairStatus() {
                 </div>
               </div>
 
-              <p className="mt-3 text-[10px] text-[#66717C]">
+              <p className="mt-3 text-[11px] text-[#66717C]">
                 Xe đang được kỹ thuật viên xử lý.
               </p>
             </div>
@@ -133,16 +133,16 @@ function RepairStatus() {
           <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
             <div className="flex flex-col gap-3 border-b border-[#E1E4E6] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                   REPAIR STATUS
                 </p>
 
-                <h2 className="mt-1 text-[16px] font-bold text-[#20252B]">
+                <h2 className="mt-1 text-[17px] font-bold text-[#20252B]">
                   Danh sách phiếu sửa chữa
                 </h2>
               </div>
 
-              <span className="w-fit rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-semibold text-[#66717C]">
+              <span className="w-fit rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
                 {repairs.length} kết quả
               </span>
             </div>
@@ -150,7 +150,7 @@ function RepairStatus() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-left">
                 <thead>
-                  <tr className="border-b border-[#E1E4E6] bg-[#FAFAF9] text-[9px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                  <tr className="border-b border-[#E1E4E6] bg-[#FAFAF9] text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
                     <th className="px-6 py-4">STT</th>
                     <th className="px-6 py-4">Mã phiếu</th>
                     <th className="px-6 py-4">Xe</th>
@@ -167,12 +167,12 @@ function RepairStatus() {
                       key={repair.code}
                       className="border-b border-[#EEF0F2] last:border-b-0 transition hover:bg-[#FAFAF9]"
                     >
-                      <td className="px-6 py-5 text-[11px] text-[#8A949E]">
+                      <td className="px-6 py-5 text-[12px] text-[#8A949E]">
                         {String(index + 1).padStart(2, "0")}
                       </td>
 
                       <td className="px-6 py-5">
-                        <span className="rounded-lg bg-[#F3F4F2] px-3 py-2 text-[11px] font-bold text-[#20252B]">
+                        <span className="rounded-lg bg-[#F3F4F2] px-3 py-2 text-[12px] font-bold text-[#20252B]">
                           {repair.code}
                         </span>
                       </td>
@@ -183,32 +183,32 @@ function RepairStatus() {
                             🚗
                           </div>
 
-                          <p className="text-[12px] font-semibold text-[#20252B]">
+                          <p className="text-[13px] font-semibold text-[#20252B]">
                             {repair.car}
                           </p>
                         </div>
                       </td>
 
                       <td className="px-6 py-5">
-                        <p className="text-[11px] text-[#66717C]">
+                        <p className="text-[12px] text-[#66717C]">
                           {repair.service}
                         </p>
                       </td>
 
                       <td className="px-6 py-5">
-                        <p className="text-[11px] text-[#66717C]">
+                        <p className="text-[12px] text-[#66717C]">
                           {repair.date}
                         </p>
                       </td>
 
                       <td className="px-6 py-5">
                         {repair.status === "Đang sửa chữa" ? (
-                          <span className="inline-flex items-center gap-2 rounded-full bg-[#F3E8D2] px-3 py-1.5 text-[10px] font-semibold text-[#3A3020]">
+                          <span className="inline-flex items-center gap-2 rounded-full bg-[#F3E8D2] px-3 py-1.5 text-[11px] font-semibold text-[#3A3020]">
                             <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]" />
                             {repair.status}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-2 rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-semibold text-[#66717C]">
+                          <span className="inline-flex items-center gap-2 rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
                             <span className="h-1.5 w-1.5 rounded-full bg-[#8A949E]" />
                             {repair.status}
                           </span>
@@ -218,7 +218,7 @@ function RepairStatus() {
                       <td className="px-6 py-5">
                         <button
                           type="button"
-                          className="rounded-xl bg-[#1F2933] px-3.5 py-2.5 text-[10px] font-semibold text-white transition hover:bg-[#151D24]"
+                          className="cursor-pointer rounded-xl bg-[#1F2933] px-3.5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151D24]"
                         >
                           Xem chi tiết
                         </button>
@@ -237,23 +237,23 @@ function RepairStatus() {
               </div>
 
               <div>
-                <p className="text-xs font-bold text-[#20252B]">
+                <p className="text-[13px] font-bold text-[#20252B]">
                   Trạng thái sửa chữa
                 </p>
 
                 <div className="mt-3 flex flex-wrap gap-3">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-semibold text-[#66717C]">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#8A949E]" />
                     Đang tiếp nhận
                   </span>
 
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[#F3E8D2] px-3 py-1.5 text-[10px] font-semibold text-[#3A3020]">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[#F3E8D2] px-3 py-1.5 text-[11px] font-semibold text-[#3A3020]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]" />
                     Đang sửa chữa
                   </span>
                 </div>
 
-                <p className="mt-3 text-[10px] leading-5 text-[#66717C]">
+                <p className="mt-3 text-[11px] leading-5 text-[#66717C]">
                   Bạn có thể xem chi tiết từng phiếu để theo dõi quá trình xử lý
                   xe tại CarService.
                 </p>
