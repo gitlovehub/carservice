@@ -55,107 +55,125 @@ function RepairStatus() {
     return matchSearch && matchStatus;
   });
 
+  const completedCount = repairs.filter(
+    (item) => item.status === "Đã hoàn thành"
+  ).length;
+
+  const repairingCount = repairs.filter(
+    (item) => item.status === "Đang sửa chữa"
+  ).length;
+
   const getStatusClass = (value: string) => {
     if (value === "Đã hoàn thành") {
-      return "bg-[#eef7f0] text-[#39734a]";
+      return "bg-[#EEF7F0] text-[#39734A]";
     }
 
     if (value === "Đang sửa chữa") {
-      return "bg-[#f3e8d2] text-[#5b4630]";
+      return "bg-[#F3E8D2] text-[#5B4630]";
     }
 
-    return "bg-[#f3f4f2] text-[#66717c]";
+    return "bg-[#F3F4F2] text-[#66717C]";
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f7f5] text-[#20252b]">
+    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
       <AdvisorSidebar />
 
       <div className="lg:ml-[250px]">
         <AdvisorTopbar />
 
-        <main className="px-6 py-8 lg:px-8">
-          <div className="mx-auto max-w-[1200px]">
+        <main>
+          <div className="mx-auto max-w-[1200px] px-6 py-8 lg:px-8 lg:py-10">
             <div className="mb-8">
-              <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[#9aa1a7]">
+              <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
                 GARA / SỬA CHỮA
               </p>
 
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
                 <div>
-                  <h2 className="text-[24px] font-bold tracking-tight text-[#20252b]">
+                  <h2 className="text-[24px] font-bold tracking-tight text-[#20252B]">
                     Trạng thái sửa chữa
                   </h2>
 
-                  <p className="mt-1 text-[12px] text-[#8a9299]">
+                  <p className="mt-2 max-w-[620px] text-[12px] leading-5 text-[#8A949E]">
                     Theo dõi tiến độ sửa chữa xe của khách hàng.
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  className="rounded-xl bg-[#1f2933] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151d24]"
+                  className="w-fit rounded-xl bg-[#1F2933] px-4 py-2.5 text-[11px] font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#151D24] hover:shadow-md"
                 >
                   + Tạo phiếu sửa chữa
                 </button>
               </div>
             </div>
 
-            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-5">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#9aa1a7]">
+            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_4px_20px_rgba(31,41,51,0.04)] transition duration-300 hover:-translate-y-1 hover:border-[#D6A85F] hover:shadow-[0_12px_30px_rgba(31,41,51,0.08)]">
+                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                   PHIẾU SỬA CHỮA
                 </p>
 
-                <p className="mt-3 text-[22px] font-bold text-[#20252b]">
+                <p className="mt-3 text-[24px] font-bold">
                   {repairs.length}
                 </p>
 
-                <p className="mt-1 text-[10px] text-[#8a9299]">
+                <p className="mt-1 text-[10px] text-[#8A949E]">
                   Tổng số phiếu
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-5">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#9aa1a7]">
+              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_4px_20px_rgba(31,41,51,0.04)] transition duration-300 hover:-translate-y-1 hover:border-[#D6A85F] hover:shadow-[0_12px_30px_rgba(31,41,51,0.08)]">
+                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                   ĐANG SỬA
                 </p>
 
-                <p className="mt-3 text-[22px] font-bold text-[#20252b]">
-                  {
-                    repairs.filter(
-                      (item) => item.status === "Đang sửa chữa"
-                    ).length
-                  }
+                <p className="mt-3 text-[24px] font-bold">
+                  {repairingCount}
                 </p>
 
-                <p className="mt-1 text-[10px] text-[#8a9299]">
+                <p className="mt-1 text-[10px] text-[#8A949E]">
                   Đang xử lý tại gara
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-[#e1e4e6] bg-white p-5">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#9aa1a7]">
+              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_4px_20px_rgba(31,41,51,0.04)] transition duration-300 hover:-translate-y-1 hover:border-[#D6A85F] hover:shadow-[0_12px_30px_rgba(31,41,51,0.08)]">
+                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  HOÀN THÀNH
+                </p>
+
+                <p className="mt-3 text-[24px] font-bold">
+                  {completedCount}
+                </p>
+
+                <p className="mt-1 text-[10px] text-[#8A949E]">
+                  Đã hoàn tất sửa chữa
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_4px_20px_rgba(31,41,51,0.04)] transition duration-300 hover:-translate-y-1 hover:border-[#D6A85F] hover:shadow-[0_12px_30px_rgba(31,41,51,0.08)]">
+                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                   KẾT QUẢ
                 </p>
 
-                <p className="mt-3 text-[22px] font-bold text-[#20252b]">
+                <p className="mt-3 text-[24px] font-bold">
                   {filteredRepairs.length}
                 </p>
 
-                <p className="mt-1 text-[10px] text-[#8a9299]">
+                <p className="mt-1 text-[10px] text-[#8A949E]">
                   Phiếu đang hiển thị
                 </p>
               </div>
             </div>
 
-            <div className="mb-6 rounded-2xl border border-[#e1e4e6] bg-white p-5">
-              <div className="mb-4">
-                <p className="text-[13px] font-semibold text-[#20252b]">
+            <div className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_4px_20px_rgba(31,41,51,0.04)]">
+              <div className="mb-5">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Tìm kiếm phiếu sửa chữa
                 </p>
 
-                <p className="mt-1 text-[10px] text-[#8a9299]">
+                <p className="mt-1 text-[10px] text-[#8A949E]">
                   Tìm theo mã phiếu, khách hàng, biển số hoặc kỹ thuật viên.
                 </p>
               </div>
@@ -165,13 +183,13 @@ function RepairStatus() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Mã phiếu, khách hàng, biển số..."
-                  className="rounded-xl border border-[#d9dde1] bg-white px-4 py-3 text-[12px] outline-none transition focus:border-[#1f2933]"
+                  className="w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-[12px] outline-none transition duration-200 placeholder:text-[#A0A8AF] focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
                 />
 
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="rounded-xl border border-[#d9dde1] bg-white px-4 py-3 text-[12px] outline-none transition focus:border-[#1f2933]"
+                  className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-[12px] outline-none transition duration-200 focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
                 >
                   <option value="">Tất cả trạng thái</option>
                   <option value="Chờ sửa chữa">Chờ sửa chữa</option>
@@ -181,26 +199,41 @@ function RepairStatus() {
 
                 <button
                   type="button"
-                  className="rounded-xl bg-[#1f2933] px-5 py-3 text-[11px] font-semibold text-white transition hover:bg-[#151d24]"
+                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-[11px] font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:bg-[#151D24] hover:shadow-md"
                 >
                   Tìm kiếm
                 </button>
               </div>
+
+              <div className="mt-4 flex justify-end">
+                {(search || status) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch("");
+                      setStatus("");
+                    }}
+                    className="text-[10px] font-semibold text-[#66717C] transition hover:text-[#20252B]"
+                  >
+                    Xóa bộ lọc
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-[#e1e4e6] bg-white">
-              <div className="flex items-center justify-between border-b border-[#eef0f2] px-5 py-5">
+            <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_4px_20px_rgba(31,41,51,0.04)]">
+              <div className="flex flex-col gap-3 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-[13px] font-semibold text-[#20252b]">
+                  <p className="text-[13px] font-semibold text-[#20252B]">
                     Danh sách phiếu sửa chữa
                   </p>
 
-                  <p className="mt-1 text-[10px] text-[#8a9299]">
+                  <p className="mt-1 text-[10px] text-[#8A949E]">
                     Theo dõi tiến độ xử lý xe
                   </p>
                 </div>
 
-                <p className="rounded-lg bg-[#f3f4f2] px-3 py-1.5 text-[10px] font-semibold text-[#66717c]">
+                <p className="w-fit rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-semibold text-[#66717C]">
                   {filteredRepairs.length} phiếu
                 </p>
               </div>
@@ -208,32 +241,32 @@ function RepairStatus() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1050px] border-collapse">
                   <thead>
-                    <tr className="border-b border-[#e1e4e6] bg-[#f7f7f5] text-left">
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                    <tr className="border-b border-[#E1E4E6] bg-[#F7F7F5] text-left">
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
                         MÃ PHIẾU
                       </th>
 
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
                         KHÁCH HÀNG
                       </th>
 
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
                         XE
                       </th>
 
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
                         DỊCH VỤ
                       </th>
 
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
                         KỸ THUẬT VIÊN
                       </th>
 
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
                         NGÀY NHẬN
                       </th>
 
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8a9299]">
+                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
                         TRẠNG THÁI
                       </th>
                     </tr>
@@ -243,16 +276,16 @@ function RepairStatus() {
                     {filteredRepairs.map((repair) => (
                       <tr
                         key={repair.id}
-                        className="border-b border-[#eef0f2] last:border-0 hover:bg-[#fafbfb]"
+                        className="border-b border-[#EEF0F2] last:border-0 transition duration-200 hover:bg-[#FAFAF9]"
                       >
                         <td className="px-5 py-4">
-                          <span className="text-[11px] font-bold text-[#20252b]">
+                          <span className="rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-bold text-[#20252B]">
                             {repair.id}
                           </span>
                         </td>
 
                         <td className="px-5 py-4">
-                          <p className="text-[11px] font-semibold text-[#20252b]">
+                          <p className="text-[11px] font-semibold text-[#20252B]">
                             {repair.customer}
                           </p>
                         </td>
@@ -262,7 +295,7 @@ function RepairStatus() {
                             {repair.car}
                           </p>
 
-                          <p className="mt-1 text-[9px] text-[#8a9299]">
+                          <p className="mt-1 text-[9px] text-[#8A949E]">
                             {repair.plate}
                           </p>
                         </td>
@@ -295,12 +328,16 @@ function RepairStatus() {
               </div>
 
               {filteredRepairs.length === 0 && (
-                <div className="px-5 py-12 text-center">
-                  <p className="text-[12px] font-semibold text-[#20252b]">
+                <div className="px-5 py-14 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F3F4F2] text-[#66717C]">
+                    <span className="text-lg">⌕</span>
+                  </div>
+
+                  <p className="mt-4 text-[12px] font-semibold text-[#20252B]">
                     Không tìm thấy phiếu sửa chữa
                   </p>
 
-                  <p className="mt-1 text-[10px] text-[#8a9299]">
+                  <p className="mt-1 text-[10px] text-[#8A949E]">
                     Thử thay đổi từ khóa hoặc trạng thái.
                   </p>
                 </div>
