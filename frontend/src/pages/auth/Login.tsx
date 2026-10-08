@@ -1,20 +1,23 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { setUserRole } from "../../pages/auth/auth";
-import type { UserRole } from "../../pages/auth/auth";
+import { fetchApi } from "../../services/api";
+import { setUserRole } from "./auth";
+
 function Login() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    username: "",
+    email: "",
     password: "",
   });
 
   const [errors, setErrors] = useState({
-    username: "",
+    email: "",
     password: "",
   });
 
+  const [apiError, setApiError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (
@@ -31,16 +34,19 @@ function Login() {
       ...errors,
       [name]: "",
     });
+    setApiError("");
   };
 
   const validate = () => {
     const newErrors = {
-      username: "",
+      email: "",
       password: "",
     };
 
-    if (!form.username.trim()) {
-      newErrors.username = "Vui lòng nhập tên đăng nhập.";
+    if (!form.email.trim()) {
+      newErrors.email = "Vui lòng nhập email.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      newErrors.email = "Email không đúng định dạng.";
     }
 
     if (!form.password) {
@@ -49,57 +55,51 @@ function Login() {
 
     setErrors(newErrors);
 
-    return !Object.values(newErrors).some(
-      (error) => error !== ""
-    );
+    return !Object.values(newErrors).some((error) => error !== "");
   };
 
-  const getRoleFromUsername = (username: string): UserRole => {
-    const value = username.trim().toLowerCase();
-
-    if (value === "admin") {
-      return "ADMIN";
-    }
-
-    if (value === "advisor") {
-      return "ADVISOR";
-    }
-
-    if (value === "technician") {
-      return "TECHNICIAN";
-    }
-
-    return "CUSTOMER";
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!validate()) {
       return;
     }
 
-    const role = getRoleFromUsername(form.username);
+    setIsLoading(true);
+    setApiError("");
 
-    localStorage.setItem("isLoggedIn", "true");
-    setUserRole(role);
+    try {
+      const response = await fetchApi("/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          device_name: "web",
+        }),
+      });
 
-    if (role === "ADMIN") {
-      navigate("/admin");
-      return;
+      if (response.token && response.account) {
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("user", JSON.stringify(response.account));
+        setUserRole(response.account.role);
+
+        if (response.account.role === "ADMIN") {
+          navigate("/admin");
+        } else if (response.account.role === "ADVISOR") {
+          navigate("/advisor/appointments");
+        } else if (response.account.role === "TECHNICIAN") {
+          navigate("/technician");
+        } else {
+          navigate("/customer");
+        }
+      } else {
+        setApiError("Không nhận được token. Đăng nhập thất bại.");
+      }
+    } catch (error: any) {
+      setApiError(error.data?.message || error.data?.errors?.email?.[0] || "Đăng nhập thất bại.");
+    } finally {
+      setIsLoading(false);
     }
-
-    if (role === "ADVISOR") {
-      navigate("/advisor/appointments");
-      return;
-    }
-
-    if (role === "TECHNICIAN") {
-      navigate("/technician");
-      return;
-    }
-
-    navigate("/customer");
   };
 
   const inputClass = (error: string) =>
@@ -120,7 +120,6 @@ function Login() {
 
             <div>
               <p className="text-sm font-bold">CarService</p>
-
               <p className="text-[10px] text-[#8A949E]">
                 Dịch vụ chăm sóc ô tô
               </p>
@@ -153,20 +152,26 @@ function Login() {
             noValidate
             className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_4px_20px_rgba(31,41,51,0.06)]"
           >
+            {apiError && (
+              <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-600 border border-red-100 text-center">
+                {apiError}
+              </div>
+            )}
+
             <div className="space-y-4">
               <div>
                 <input
-                  type="text"
-                  name="username"
-                  value={form.username}
+                  type="email"
+                  name="email"
+                  value={form.email}
                   onChange={handleChange}
-                  placeholder="Tên đăng nhập"
-                  className={inputClass(errors.username)}
+                  placeholder="Địa chỉ email"
+                  className={inputClass(errors.email)}
                 />
 
-                {errors.username && (
+                {errors.email && (
                   <p className="mt-1.5 text-xs font-medium text-red-600">
-                    {errors.username}
+                    {errors.email}
                   </p>
                 )}
               </div>
@@ -184,9 +189,7 @@ function Login() {
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowPassword(!showPassword)
-                    }
+                    onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[#66717C] transition hover:text-[#20252B]"
                   >
                     {showPassword ? "Ẩn" : "Hiện"}
@@ -202,9 +205,10 @@ function Login() {
 
               <button
                 type="submit"
-                className="h-12 w-full rounded-xl bg-[#1F2933] text-sm font-semibold text-white transition hover:bg-[#151D24]"
+                disabled={isLoading}
+                className="h-12 w-full rounded-xl bg-[#1F2933] text-sm font-semibold text-white transition hover:bg-[#151D24] disabled:opacity-70"
               >
-                Đăng nhập
+                {isLoading ? "Đang xử lý..." : "Đăng nhập"}
               </button>
             </div>
 
@@ -222,7 +226,7 @@ function Login() {
             <div className="text-center">
               <Link
                 to="/register"
-                className="mt-3 inline-flex h-11 items-center justify-center rounded-xl border border-[#D6A85F] px-6 text-sm font-semibold text-[#3A3020] transition hover:bg-[#F3E8D2]"
+                className="mt-3 inline-flex h-11 items-center justify-center w-full rounded-xl border border-[#D6A85F] px-6 text-sm font-semibold text-[#3A3020] transition hover:bg-[#F3E8D2]"
               >
                 Đăng ký tài khoản
               </Link>

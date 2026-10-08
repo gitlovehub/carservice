@@ -6,6 +6,8 @@ function RoleAccountMenu() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  
+  const user = JSON.parse(localStorage.getItem("user") || "null");
 
   const handleLogout = () => {
     logout();
@@ -30,11 +32,11 @@ function RoleAccountMenu() {
 
         <div className="hidden min-w-0 text-left sm:block">
           <p className="max-w-[120px] truncate text-[11px] font-semibold text-[#20252B]">
-            Tên người dùng
+            {user?.full_name || user?.email || "Tên người dùng"}
           </p>
 
           <p className="mt-0.5 text-[10px] text-[#8A949E]">
-            Khách hàng
+            {user?.role || "Khách hàng"}
           </p>
         </div>
 
