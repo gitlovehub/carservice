@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import CustomerHeader from "../../components/CustomerHeader";
 import CustomerTopbar from "../../components/CustomerTopbar";
+import { getUserDisplayName } from "../auth/auth";
 
 function Dashboard() {
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+
   return (
     <div className="min-h-screen bg-[#F7F7F5]">
       <CustomerHeader />
@@ -17,7 +20,7 @@ function Dashboard() {
             </p>
 
             <h1 className="mt-2 text-2xl font-bold text-[#20252B]">
-              Xin chào, Tên người dùng
+              Xin chào, {getUserDisplayName(user)}
             </h1>
 
             <p className="mt-2 text-sm text-[#66717C]">

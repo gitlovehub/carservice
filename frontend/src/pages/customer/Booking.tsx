@@ -1,22 +1,114 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import { fetchApi } from "../../services/api";
+
+type Vehicle = {
+  id: number;
+  license_plate: string | null;
+  variant: string | null;
+  year: number | null;
+  model?: { name: string; brand?: { name: string } } | null;
+};
+
+type Service = {
+  id: number;
+  name: string;
+};
+
+const initialServiceOptions = [
+  "Bảo dưỡng định kỳ",
+  "Kiểm tra tổng quát",
+  "Thay dầu động cơ",
+];
+
+const getTomorrowDateString = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`;
+};
 
 function Booking() {
+  const navigate = useNavigate();
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [car, setCar] = useState("");
   const [service, setService] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleSubmit = () => {
+  useEffect(() => {
+    let active = true;
+    Promise.all([fetchApi("/me/vehicles/"), fetchApi("/services")])
+      .then(([vehicleResponse, serviceResponse]) => {
+        if (!active) return;
+        setVehicles(Array.isArray(vehicleResponse?.data) ? vehicleResponse.data : []);
+        setServices(Array.isArray(serviceResponse) ? serviceResponse : serviceResponse?.data ?? []);
+      })
+      .catch((requestError: unknown) => {
+        if (!active) return;
+        if ((requestError as { status?: number })?.status === 401) {
+          navigate("/login");
+          return;
+        }
+        setError(requestError instanceof Error ? requestError.message : "Không thể tải dữ liệu đặt lịch.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  const handleSubmit = async () => {
+    setError("");
+    setSuccess("");
     if (!car || !service || !date || !time) {
-      alert("Vui lòng nhập đầy đủ thông tin đặt lịch.");
+      setError("Vui lòng nhập đầy đủ thông tin đặt lịch.");
       return;
     }
 
-    alert("Đặt lịch thành công!");
+    if (date < getTomorrowDateString()) {
+      setError("Ngày hẹn phải sau ngày hiện tại.");
+      return;
+    }
+
+    const selectedService = services.find((item) => item.name === service);
+
+    setSubmitting(true);
+    try {
+      const response = await fetchApi("/appointments", {
+        method: "POST",
+        body: JSON.stringify({
+          vehicle_id: Number(car),
+          appointment_date: date,
+          appointment_time: time,
+          request_type: "MAINTENANCE",
+          note: note.trim() || null,
+          service_ids: selectedService ? [selectedService.id] : [],
+          service_name: service,
+        }),
+      });
+
+      setSuccess(`Đặt lịch thành công. Mã lịch hẹn: ${response?.data?.appointment_code ?? "đã được ghi nhận"}. Lịch đã được gửi đến admin và cố vấn.`);
+      setCar("");
+      setService("");
+      setDate("");
+      setTime("");
+      setNote("");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Không thể tạo lịch hẹn. Vui lòng thử lại.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -72,6 +164,17 @@ function Booking() {
           </div>
 
           <div className="p-6 md:p-7">
+            {error && (
+              <div role="alert" className="mb-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div role="status" className="mb-5 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-800">
+                {success}
+              </div>
+            )}
+
             <div className="grid gap-6 md:grid-cols-2">
               <div>
                 <label className="mb-2 block text-[13px] font-semibold text-[#20252B]">
@@ -80,18 +183,28 @@ function Booking() {
 
                 <select
                   value={car}
-                  onChange={(e) => setCar(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value === "ADD_NEW") {
+                      navigate("/customer/cars");
+                      return;
+                    }
+                    setCar(e.target.value);
+                  }}
+                  disabled={loading}
                   className="w-full cursor-pointer rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[13px] text-[#20252B] outline-none transition focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
                 >
-                  <option value="">Chọn xe</option>
-
-                  <option value="Toyota Vios · 30A-123.45">
-                    Toyota Vios · 30A-123.45
-                  </option>
-
-                  <option value="Honda City · 30F-678.90">
-                    Honda City · 30F-678.90
-                  </option>
+                  <option value="" disabled>{loading ? "Đang tải xe..." : "Chọn xe"}</option>
+                  {vehicles.map((vehicle) => {
+                    const name = [vehicle.model?.brand?.name, vehicle.model?.name, vehicle.variant, vehicle.year]
+                      .filter(Boolean)
+                      .join(" ");
+                    return (
+                      <option key={vehicle.id} value={vehicle.id}>
+                        {name || "Xe"}{vehicle.license_plate ? ` · ${vehicle.license_plate}` : ""}
+                      </option>
+                    );
+                  })}
+                  <option value="ADD_NEW">＋ Thêm xe mới</option>
                 </select>
 
                 <p className="mt-1.5 text-[11px] text-[#8A949E]">
@@ -107,21 +220,13 @@ function Booking() {
                 <select
                   value={service}
                   onChange={(e) => setService(e.target.value)}
+                  disabled={loading}
                   className="w-full cursor-pointer rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[13px] text-[#20252B] outline-none transition focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
                 >
-                  <option value="">Chọn dịch vụ</option>
-
-                  <option value="Bảo dưỡng định kỳ">
-                    Bảo dưỡng định kỳ
-                  </option>
-
-                  <option value="Kiểm tra tổng quát">
-                    Kiểm tra tổng quát
-                  </option>
-
-                  <option value="Thay dầu động cơ">
-                    Thay dầu động cơ
-                  </option>
+                  <option value="" disabled>{loading ? "Đang tải dịch vụ..." : "Chọn dịch vụ"}</option>
+                  {initialServiceOptions.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
                 </select>
 
                 <p className="mt-1.5 text-[11px] text-[#8A949E]">
@@ -138,6 +243,7 @@ function Booking() {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
+                  min={getTomorrowDateString()}
                   className="w-full cursor-pointer rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[13px] text-[#20252B] outline-none transition focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
                 />
 
@@ -156,12 +262,11 @@ function Booking() {
                   onChange={(e) => setTime(e.target.value)}
                   className="w-full cursor-pointer rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[13px] text-[#20252B] outline-none transition focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
                 >
-                  <option value="">Chọn khung giờ</option>
-
-                  <option value="08:00 – 10:00">08:00 – 10:00</option>
-                  <option value="10:00 – 12:00">10:00 – 12:00</option>
-                  <option value="13:00 – 15:00">13:00 – 15:00</option>
-                  <option value="15:00 – 17:00">15:00 – 17:00</option>
+                  <option value="" disabled>Chọn khung giờ</option>
+                  <option value="08:00">08:00 – 10:00</option>
+                  <option value="10:00">10:00 – 12:00</option>
+                  <option value="13:00">13:00 – 15:00</option>
+                  <option value="15:00">15:00 – 17:00</option>
                 </select>
 
                 <p className="mt-1.5 text-[11px] text-[#8A949E]">
@@ -209,10 +314,11 @@ function Booking() {
 
                 <button
                   type="button"
-                  onClick={handleSubmit}
+                  onClick={() => void handleSubmit()}
+                  disabled={loading || submitting}
                   className="cursor-pointer rounded-xl bg-[#1F2933] px-6 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[#151D24] hover:shadow-md"
                 >
-                  Tiếp tục xác nhận
+                  {submitting ? "Đang gửi..." : "Tiếp tục xác nhận"}
                 </button>
               </div>
             </div>
