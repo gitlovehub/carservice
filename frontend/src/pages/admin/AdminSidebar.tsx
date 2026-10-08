@@ -2,9 +2,24 @@ import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
   {
-    label: "Tài khoản",
+    label: "Admin",
     path: "/admin",
+    icon: "⌂",
+  },
+  {
+    label: "Tài khoản & nhân viên",
+    path: "/admin/accounts",
     icon: "♙",
+  },
+  {
+    label: "Khách hàng",
+    path: "/admin/customers",
+    icon: "◉",
+  },
+  {
+    label: "Lịch hẹn",
+    path: "/admin/appointments",
+    icon: "▣",
   },
   {
     label: "Dịch vụ",
@@ -19,7 +34,7 @@ const menuItems = [
   {
     label: "Báo cáo",
     path: "/admin/reports",
-    icon: "▣",
+    icon: "▤",
   },
 ];
 
@@ -30,7 +45,10 @@ function AdminSidebar() {
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] bg-[#1F2933] lg:block">
       <div className="flex h-full flex-col">
         <div className="border-b border-white/10 px-5 py-5">
-          <Link to="/" className="flex items-center gap-3">
+          <Link
+            to="/"
+            className="flex cursor-pointer items-center gap-3"
+          >
             <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#1F2933]">
               <span className="text-base">🚗</span>
 
@@ -53,18 +71,21 @@ function AdminSidebar() {
 
         <div className="px-4 py-5">
           <p className="mb-3 px-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[#AEB8C1]">
-            QUẢN TRỊ
+            QUẢN TRỊ HỆ THỐNG
           </p>
 
           <nav className="space-y-1">
             {menuItems.map((item) => {
-              const active = location.pathname === item.path;
+              const active =
+                location.pathname === item.path ||
+                (item.path !== "/admin" &&
+                  location.pathname.startsWith(`${item.path}/`));
 
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative flex items-center gap-3 rounded-xl px-3 py-3 text-[12px] transition ${
+                  className={`relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-[12px] transition ${
                     active
                       ? "bg-[#F3E8D2] font-semibold text-[#20252B]"
                       : "font-medium text-[#D5D9DC] hover:bg-white/10 hover:text-white"
@@ -116,7 +137,7 @@ function AdminSidebar() {
 
           <Link
             to="/"
-            className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[11px] font-medium text-[#AEB8C1] transition hover:bg-white/10 hover:text-white"
+            className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-[11px] font-medium text-[#AEB8C1] transition hover:bg-white/10 hover:text-white"
           >
             <span>←</span>
             <span>Về trang chủ</span>
