@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { logout } from "../pages/auth/auth";
+import { getUserDisplayName, logout } from "../pages/auth/auth";
 
 function RoleAccountMenu() {
   const [open, setOpen] = useState(false);
@@ -32,7 +32,7 @@ function RoleAccountMenu() {
 
         <div className="hidden min-w-0 text-left sm:block">
           <p className="max-w-[120px] truncate text-[11px] font-semibold text-[#20252B]">
-            {user?.full_name || user?.email || "Tên người dùng"}
+            {getUserDisplayName(user)}
           </p>
 
           <p className="mt-0.5 text-[10px] text-[#8A949E]">

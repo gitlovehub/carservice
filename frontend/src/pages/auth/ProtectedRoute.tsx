@@ -13,8 +13,9 @@ function ProtectedRoute({
 }: ProtectedRouteProps) {
   const isLoggedIn = localStorage.getItem("isLoggedIn");
   const role = getUserRole();
+  const token = localStorage.getItem("token");
 
-  if (isLoggedIn !== "true" || !role) {
+  if (isLoggedIn !== "true" || !role || !token) {
     return <Navigate to="/login" replace />;
   }
 

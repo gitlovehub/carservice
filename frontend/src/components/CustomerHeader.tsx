@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { getUserDisplayName } from "../pages/auth/auth";
 
 const menuItems = [
   {
@@ -50,6 +51,7 @@ const menuItems = [
 
 function CustomerHeader() {
   const location = useLocation();
+  const user = JSON.parse(localStorage.getItem("user") || "null");
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] border-r border-[#313B45] bg-[#1F2933] text-white lg:block">
@@ -110,7 +112,7 @@ function CustomerHeader() {
 
               <div className="min-w-0">
                 <p className="truncate text-[12px] font-semibold text-white">
-                  Tên người dùng
+                  {getUserDisplayName(user)}
                 </p>
 
                 <p className="mt-0.5 text-[10px] text-[#AEB8C1]">

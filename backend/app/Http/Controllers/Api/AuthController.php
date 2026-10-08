@@ -175,6 +175,7 @@ class AuthController extends Controller
             'email' => $account->email,
             'role' => $account->role,
             'status' => $account->status,
+            'created_at' => $account->created_at,
             'employee' => $account->employee ? [
                 'id' => $account->employee->id,
                 'full_name' => $account->employee->full_name,
@@ -184,6 +185,8 @@ class AuthController extends Controller
                 'id' => $account->customer->id,
                 'full_name' => $account->customer->full_name,
                 'phone' => $account->customer->phone,
+                'email' => $account->customer->email,
+                'address' => $account->customer->address,
             ] : null,
         ];
     }

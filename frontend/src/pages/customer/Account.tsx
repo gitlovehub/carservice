@@ -1,7 +1,68 @@
+import { useEffect, useState } from "react";
 import CustomerHeader from "../../components/CustomerHeader";
 import CustomerTopbar from "../../components/CustomerTopbar";
+import { fetchApi } from "../../services/api";
+
+const formatDate = (value?: string | null) => {
+  if (!value) return "Chưa cập nhật";
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Chưa cập nhật"
+    : date.toLocaleDateString("vi-VN");
+};
+
+const getInitials = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(-2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 
 function Account() {
+  const [account, setAccount] = useState<any>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  });
+  const [customer, setCustomer] = useState<any>(account?.customer || null);
+  const [vehicleCount, setVehicleCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadAccountDetails = async () => {
+      const [accountResult, customerResult, vehiclesResult] = await Promise.allSettled([
+        fetchApi("/me"),
+        fetchApi("/me/customer/"),
+        fetchApi("/me/vehicles/"),
+      ]);
+
+      if (accountResult.status === "fulfilled" && accountResult.value?.account) {
+        setAccount(accountResult.value.account);
+        localStorage.setItem("user", JSON.stringify(accountResult.value.account));
+      }
+
+      if (customerResult.status === "fulfilled" && customerResult.value?.data) {
+        setCustomer(customerResult.value.data);
+      }
+
+      if (vehiclesResult.status === "fulfilled" && Array.isArray(vehiclesResult.value?.data)) {
+        setVehicleCount(vehiclesResult.value.data.length);
+      }
+    };
+
+    loadAccountDetails();
+  }, []);
+
+  const fullName = customer?.full_name || account?.customer?.full_name || "Chưa cập nhật";
+  const email = customer?.email || account?.customer?.email || account?.email || "Chưa cập nhật";
+  const phone = customer?.phone || account?.customer?.phone || "Chưa cập nhật";
+  const address = customer?.address || account?.customer?.address || "Chưa cập nhật";
+  const status = account?.status === "ACTIVE" ? "Đang hoạt động" : account?.status || "Chưa cập nhật";
+
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
       <CustomerHeader />
@@ -31,11 +92,11 @@ function Account() {
               <div className="h-fit overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
                 <div className="bg-[#1F2933] px-6 py-7 text-center text-white">
                   <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border-4 border-[#3C4650] bg-[#D6A85F] text-2xl font-bold text-[#1F2933]">
-                    NV
+                    {fullName === "Chưa cập nhật" ? "KH" : getInitials(fullName)}
                   </div>
 
                   <h2 className="mt-4 text-[17px] font-bold">
-                    Nguyễn Văn A
+                    {fullName}
                   </h2>
 
                   <p className="mt-1 text-[13px] text-[#AEB8C1]">
@@ -46,7 +107,7 @@ function Account() {
                     <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]" />
 
                     <span className="text-[11px] font-semibold text-[#E8ECEF]">
-                      Tài khoản đang hoạt động
+                      Tài khoản {status.toLowerCase()}
                     </span>
                   </div>
                 </div>
@@ -63,7 +124,7 @@ function Account() {
                       </p>
 
                       <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
-                        KH-001
+                        {customer?.id ? `KH-${String(customer.id).padStart(3, "0")}` : "Chưa cập nhật"}
                       </p>
                     </div>
 
@@ -73,7 +134,7 @@ function Account() {
                       </p>
 
                       <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
-                        05/01/2026
+                        {formatDate(account?.created_at)}
                       </p>
                     </div>
 
@@ -83,7 +144,7 @@ function Account() {
                       </p>
 
                       <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
-                        2 xe
+                        {vehicleCount === null ? "Đang tải..." : `${vehicleCount} xe`}
                       </p>
                     </div>
                   </div>
@@ -129,7 +190,7 @@ function Account() {
                       </p>
 
                       <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
-                        Nguyễn Văn A
+                        {fullName}
                       </p>
                     </div>
 
@@ -139,7 +200,7 @@ function Account() {
                       </p>
 
                       <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
-                        0901 234 567
+                        {phone}
                       </p>
                     </div>
 
@@ -149,7 +210,7 @@ function Account() {
                       </p>
 
                       <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
-                        nguyenvana@gmail.com
+                        {email}
                       </p>
                     </div>
 
@@ -159,7 +220,7 @@ function Account() {
                       </p>
 
                       <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
-                        15/08/2000
+                        Chưa cập nhật
                       </p>
                     </div>
 
@@ -169,7 +230,7 @@ function Account() {
                       </p>
 
                       <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
-                        Hà Nội, Việt Nam
+                        {address}
                       </p>
                     </div>
                   </div>
@@ -197,7 +258,7 @@ function Account() {
                       </p>
 
                       <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
-                        nguyenvana
+                        {email}
                       </p>
                     </div>
 

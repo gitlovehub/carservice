@@ -6,6 +6,17 @@ export type UserRole =
   | "TECHNICIAN"
   | "ADMIN";
 
+export const getUserDisplayName = (user: any = null): string => {
+  return (
+    user?.full_name ||
+    user?.customer?.full_name ||
+    user?.employee?.full_name ||
+    user?.name ||
+    user?.email ||
+    "Tên người dùng"
+  );
+};
+
 export const getUserRole = (): UserRole | null => {
   const role = localStorage.getItem("role");
 

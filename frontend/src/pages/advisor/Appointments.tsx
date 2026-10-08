@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AdvisorSidebar from "./AdvisorSidebar";
 import AdvisorTopbar from "./AdvisorTopbar";
 import {
@@ -168,6 +169,7 @@ function getAppointmentPlate(appointment: Appointment) {
 }
 
 function Appointments() {
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
@@ -222,6 +224,14 @@ function Appointments() {
       setTotalAppointments(response.pagination?.total || 0);
       setTotalPages(response.pagination?.last_page || 1);
     } catch (error: any) {
+      if (error?.status === 401) {
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("role");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login");
+        return;
+      }
       setAppointments([]);
       setTotalAppointments(0);
       setTotalPages(1);

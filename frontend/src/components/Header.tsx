@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { fetchApi } from "../services/api";
+import { getUserDisplayName } from "../pages/auth/auth";
 
 function Header() {
   const [open, setOpen] = useState(false);
@@ -166,7 +167,7 @@ function Header() {
 
                 <div className="hidden text-left sm:block">
                   <p className="text-xs font-semibold text-[#20252b]">
-                    {user?.full_name || user?.email || "Tên người dùng"}
+                    {getUserDisplayName(user)}
                   </p>
 
                   <p className="mt-0.5 text-[10px] text-[#7a838c]">
