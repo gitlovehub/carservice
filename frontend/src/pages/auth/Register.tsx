@@ -160,7 +160,7 @@ function Register() {
     setApiError("");
 
     try {
-      const response = await fetchApi("/verify-email-otp", {
+      await fetchApi("/verify-email-otp", {
         method: "POST",
         body: JSON.stringify({
           email: form.email,
@@ -168,12 +168,8 @@ function Register() {
         }),
       });
 
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.account));
-      setUserRole(response.account.role);
-      
-      alert("Đăng ký thành công!");
-      navigate("/customer");
+      alert("Đăng ký thành công! Vui lòng đăng nhập.");
+      navigate("/login");
     } catch (error: any) {
       setApiError(error.data?.message || error.data?.errors?.otp?.[0] || "Xác thực OTP thất bại.");
     } finally {
@@ -453,6 +449,7 @@ function Register() {
                         setApiError("");
                       }}
                       placeholder="Mã OTP 6 số"
+                      autoComplete="one-time-code"
                       className={`${inputClass("")} text-center font-mono tracking-widest text-lg`}
                     />
                   </div>
