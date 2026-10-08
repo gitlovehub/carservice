@@ -1,3 +1,5 @@
+import { fetchApi } from "../../services/api";
+
 export type UserRole =
   | "CUSTOMER"
   | "ADVISOR"
@@ -24,7 +26,14 @@ export const setUserRole = (role: UserRole) => {
   localStorage.setItem("isLoggedIn", "true");
 };
 
-export const logout = () => {
+export const logout = async () => {
+  try {
+    await fetchApi("/logout", { method: "POST" });
+  } catch (e) {
+    // Ignore error
+  }
   localStorage.removeItem("role");
   localStorage.removeItem("isLoggedIn");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
 };

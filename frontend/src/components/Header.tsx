@@ -1,18 +1,39 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { fetchApi } from "../services/api";
 
 function Header() {
   const [open, setOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(
     localStorage.getItem("isLoggedIn") === "true",
   );
+  const [user, setUser] = useState<any>(null);
 
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkLogin = () => {
-      setIsLoggedIn(localStorage.getItem("isLoggedIn") === "true");
+    const checkLogin = async () => {
+      const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+      setIsLoggedIn(loggedIn);
+
+      if (loggedIn) {
+        try {
+          const storedUser = localStorage.getItem("user");
+          if (storedUser) {
+            setUser(JSON.parse(storedUser));
+          }
+          const response = await fetchApi("/me");
+          if (response?.account) {
+            setUser(response.account);
+            localStorage.setItem("user", JSON.stringify(response.account));
+          }
+        } catch (e) {
+          // Ignore
+        }
+      } else {
+        setUser(null);
+      }
     };
 
     checkLogin();
@@ -23,14 +44,22 @@ function Header() {
     };
   }, [location]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetchApi("/logout", { method: "POST" });
+    } catch (e) {
+      // Ignore logout errors, still proceed to clear local storage
+    }
+
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("role");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
 
     setIsLoggedIn(false);
     setOpen(false);
 
-    navigate("/");
+    navigate("/login");
   };
 
   const isCustomer =
@@ -137,11 +166,11 @@ function Header() {
 
                 <div className="hidden text-left sm:block">
                   <p className="text-xs font-semibold text-[#20252b]">
-                    Tên người dùng
+                    {user?.full_name || user?.email || "Tên người dùng"}
                   </p>
 
                   <p className="mt-0.5 text-[10px] text-[#7a838c]">
-                    Khách hàng
+                    {user?.role || "Khách hàng"}
                   </p>
                 </div>
 
