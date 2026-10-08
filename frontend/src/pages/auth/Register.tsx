@@ -45,6 +45,7 @@ function Register() {
       ...errors,
       [name]: "",
     });
+
     setApiError("");
   };
 
@@ -100,7 +101,8 @@ function Register() {
       newErrors.confirmPassword =
         "Vui lòng xác nhận lại mật khẩu.";
     } else if (form.confirmPassword !== form.password) {
-      newErrors.confirmPassword = "Mật khẩu xác nhận không trùng khớp.";
+      newErrors.confirmPassword =
+        "Mật khẩu xác nhận không trùng khớp.";
     }
 
     if (!form.agree) {
@@ -110,10 +112,50 @@ function Register() {
 
     setErrors(newErrors);
 
-    return !Object.values(newErrors).some((error) => error !== "");
+    return !Object.values(newErrors).some(
+      (error) => error !== ""
+    );
   };
 
-  const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const getErrorMessage = (error: unknown, defaultMessage: string) => {
+    const err = error as any;
+
+    if (err?.data?.errors) {
+      const validationErrors = err.data.errors;
+
+      const firstKey = Object.keys(validationErrors)[0];
+
+      if (firstKey) {
+        const firstError = validationErrors[firstKey];
+
+        if (Array.isArray(firstError) && firstError.length > 0) {
+          return firstError[0];
+        }
+
+        if (typeof firstError === "string") {
+          return firstError;
+        }
+      }
+    }
+
+    if (err?.data?.message) {
+      return err.data.message;
+    }
+
+    if (err?.message) {
+      if (err.message === "Failed to fetch") {
+        return "Không thể kết nối tới máy chủ. Hãy kiểm tra backend Laravel đã chạy chưa.";
+      }
+
+      return err.message;
+    }
+
+    return defaultMessage;
+  };
+
+  const handleRegisterSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
 
     if (!validate()) {
@@ -127,9 +169,9 @@ function Register() {
       await fetchApi("/register", {
         method: "POST",
         body: JSON.stringify({
-          full_name: form.fullName,
-          phone: form.phone,
-          email: form.email,
+          full_name: form.fullName.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim(),
           password: form.password,
           password_confirmation: form.confirmPassword,
           accept_terms: form.agree,
@@ -138,19 +180,22 @@ function Register() {
 
       setStep("OTP");
     } catch (error: unknown) {
-      const err = error as any;
-      setApiError(err.data?.message || "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.");
-      if (err.data?.errors) {
-        const firstErrorKey = Object.keys(err.data.errors)[0];
-        setApiError(err.data.errors[firstErrorKey][0]);
-      }
+      setApiError(
+        getErrorMessage(
+          error,
+          "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin."
+        )
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleOtpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleOtpSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
+
     if (!otp || otp.length !== 6) {
       setApiError("Vui lòng nhập đủ 6 chữ số OTP.");
       return;
@@ -171,8 +216,12 @@ function Register() {
       alert("Đăng ký thành công! Vui lòng đăng nhập.");
       navigate("/login");
     } catch (error: unknown) {
-      const err = error as any;
-      setApiError(err.data?.message || err.data?.errors?.otp?.[0] || "Xác thực OTP thất bại.");
+      setApiError(
+        getErrorMessage(
+          error,
+          "Xác thực OTP thất bại."
+        )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -181,15 +230,23 @@ function Register() {
   const handleResendOtp = async () => {
     setIsLoading(true);
     setApiError("");
+
     try {
       await fetchApi("/resend-email-otp", {
         method: "POST",
-        body: JSON.stringify({ email: form.email }),
+        body: JSON.stringify({
+          email: form.email,
+        }),
       });
+
       alert("Đã gửi lại mã OTP. Vui lòng kiểm tra email.");
     } catch (error: unknown) {
-      const err = error as any;
-      setApiError(err.data?.message || "Gửi lại OTP thất bại.");
+      setApiError(
+        getErrorMessage(
+          error,
+          "Gửi lại OTP thất bại."
+        )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -212,7 +269,10 @@ function Register() {
             </div>
 
             <div>
-              <p className="text-sm font-bold">CarService</p>
+              <p className="text-sm font-bold">
+                CarService
+              </p>
+
               <p className="text-[10px] text-[#8A949E]">
                 Dịch vụ chăm sóc ô tô
               </p>
@@ -232,26 +292,30 @@ function Register() {
         <div className="w-full max-w-[440px]">
           <div className="mb-6 text-center">
             <h1 className="text-[28px] font-bold tracking-tight text-[#20252B]">
-              {step === "REGISTER" ? "Tạo tài khoản" : "Xác thực Email"}
+              {step === "REGISTER"
+                ? "Tạo tài khoản"
+                : "Xác thực Email"}
             </h1>
 
             <p className="mt-2 text-sm text-[#66717C]">
-              {step === "REGISTER" 
+              {step === "REGISTER"
                 ? "Đăng ký tài khoản khách hàng để sử dụng dịch vụ CarService."
-                : `Vui lòng nhập mã OTP 6 số được gửi tới email ${form.email}`
-              }
+                : `Vui lòng nhập mã OTP 6 số được gửi tới email ${form.email}`}
             </p>
           </div>
 
           <div className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_4px_20px_rgba(31,41,51,0.06)]">
             {apiError && (
-              <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-600 border border-red-100">
+              <div className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-medium text-red-600">
                 {apiError}
               </div>
             )}
 
             {step === "REGISTER" ? (
-              <form onSubmit={handleRegisterSubmit} noValidate>
+              <form
+                onSubmit={handleRegisterSubmit}
+                noValidate
+              >
                 <div className="space-y-4">
                   <div>
                     <input
@@ -339,7 +403,9 @@ function Register() {
                     <div className="relative">
                       <input
                         type={
-                          showConfirmPassword ? "text" : "password"
+                          showConfirmPassword
+                            ? "text"
+                            : "password"
                         }
                         name="confirmPassword"
                         value={form.confirmPassword}
@@ -359,7 +425,9 @@ function Register() {
                         }
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[#66717C] transition hover:text-[#20252B]"
                       >
-                        {showConfirmPassword ? "Ẩn" : "Hiện"}
+                        {showConfirmPassword
+                          ? "Ẩn"
+                          : "Hiện"}
                       </button>
                     </div>
 
@@ -419,7 +487,9 @@ function Register() {
                     disabled={isLoading}
                     className="h-12 w-full rounded-xl bg-[#1F2933] text-sm font-semibold text-white transition hover:bg-[#151D24] disabled:opacity-70"
                   >
-                    {isLoading ? "Đang xử lý..." : "Đăng ký"}
+                    {isLoading
+                      ? "Đang xử lý..."
+                      : "Đăng ký"}
                   </button>
                 </div>
 
@@ -439,7 +509,10 @@ function Register() {
                 </div>
               </form>
             ) : (
-              <form onSubmit={handleOtpSubmit} noValidate>
+              <form
+                onSubmit={handleOtpSubmit}
+                noValidate
+              >
                 <div className="space-y-4">
                   <div>
                     <input
@@ -452,7 +525,9 @@ function Register() {
                       }}
                       placeholder="Mã OTP 6 số"
                       autoComplete="one-time-code"
-                      className={`${inputClass("")} text-center font-mono tracking-widest text-lg`}
+                      className={`${inputClass(
+                        ""
+                      )} text-center font-mono text-lg tracking-widest`}
                     />
                   </div>
 
@@ -461,17 +536,22 @@ function Register() {
                     disabled={isLoading}
                     className="h-12 w-full rounded-xl bg-[#1F2933] text-sm font-semibold text-white transition hover:bg-[#151D24] disabled:opacity-70"
                   >
-                    {isLoading ? "Đang xử lý..." : "Xác thực"}
+                    {isLoading
+                      ? "Đang xử lý..."
+                      : "Xác thực"}
                   </button>
                 </div>
-                
+
                 <div className="mt-6 text-center text-sm">
-                  <p className="text-[#66717C]">Không nhận được mã?</p>
+                  <p className="text-[#66717C]">
+                    Không nhận được mã?
+                  </p>
+
                   <button
                     type="button"
                     onClick={handleResendOtp}
                     disabled={isLoading}
-                    className="mt-1 font-medium text-[#D6A85F] hover:text-[#c4974f] disabled:opacity-70"
+                    className="mt-1 font-medium text-[#D6A85F] transition hover:text-[#C4974F] disabled:opacity-70"
                   >
                     Gửi lại mã
                   </button>
