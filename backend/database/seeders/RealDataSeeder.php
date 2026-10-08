@@ -30,8 +30,7 @@ class RealDataSeeder extends Seeder
                     'brand_id' => $brand->id,
                     'name' => $modelName
                 ], [
-                    'year' => 2022,
-                    'engine_type' => 'Xăng',
+                    'year_from' => 2022,
                     'status' => 'ACTIVE'
                 ]);
             }

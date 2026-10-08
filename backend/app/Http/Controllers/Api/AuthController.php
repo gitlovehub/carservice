@@ -349,7 +349,7 @@ class AuthController extends Controller
         $request->validate([
             'email' => ['required', 'email'],
             'otp' => ['required', 'digits:6'],
-            'password' => ['required', 'string', 'min:8', 'max:255', 'confirmed'],
+            'new_password' => ['required', 'string', 'min:6'],
         ]);
 
         $account = Account::whereRaw('LOWER(email) = ?', [
@@ -407,3 +407,4 @@ class AuthController extends Controller
     }
 
 }
+

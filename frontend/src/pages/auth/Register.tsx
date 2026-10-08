@@ -1,388 +1,473 @@
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import api from "../../services/api";
 
 function Register() {
   const navigate = useNavigate();
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const [form, setForm] = useState({
-    fullName: "",
+  
+  const [formData, setFormData] = useState({
+    full_name: "",
     phone: "",
     email: "",
-    username: "",
     password: "",
-    confirmPassword: "",
-    agree: false,
+    password_confirmation: "",
   });
+  
+  const [step, setStep] = useState<1 | 2>(1);
+  const [otp, setOtp] = useState("");
+  
+  // Validation errors
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [loading, setLoading] = useState(false);
+  
+  // Flashlight state
+  const [isFlashlightOn, setIsFlashlightOn] = useState(false);
+  
+  const inputRef = useRef<HTMLInputElement>(null);
+  const flashlightRef = useRef<HTMLButtonElement>(null);
 
-  const [errors, setErrors] = useState({
-    fullName: "",
-    phone: "",
-    email: "",
-    username: "",
-    password: "",
-    confirmPassword: "",
-    agree: "",
-  });
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value, type, checked } = e.target;
-
-    setForm({
-      ...form,
-      [name]: type === "checkbox" ? checked : value,
-    });
-
-    setErrors({
-      ...errors,
-      [name]: "",
-    });
-  };
-
-  const validate = () => {
-    const newErrors = {
-      fullName: "",
-      phone: "",
-      email: "",
-      username: "",
-      password: "",
-      confirmPassword: "",
-      agree: "",
-    };
-
-    const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const usernameRegex = /^[a-zA-Z0-9_]{4,20}$/;
-    const passwordUppercase = /[A-Z]/;
-    const passwordLowercase = /[a-z]/;
-    const passwordNumber = /[0-9]/;
-
-    if (!form.fullName.trim()) {
-      newErrors.fullName = "Vui lòng nhập họ và tên.";
-    } else if (form.fullName.trim().length < 2) {
-      newErrors.fullName = "Họ và tên phải có ít nhất 2 ký tự.";
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+    
+    if (!formData.full_name.trim()) newErrors.full_name = "Vui lòng nhập họ và tên";
+    
+    if (!formData.phone) {
+      newErrors.phone = "Vui lòng nhập số điện thoại";
+    } else if (!/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(formData.phone)) {
+      newErrors.phone = "Số điện thoại không đúng định dạng VN";
     }
 
-    if (!form.phone.trim()) {
-      newErrors.phone = "Vui lòng nhập số điện thoại.";
-    } else if (!phoneRegex.test(form.phone.trim())) {
-      newErrors.phone = "Số điện thoại không đúng định dạng.";
+    if (!formData.email) {
+      newErrors.email = "Vui lòng nhập email";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email không đúng định dạng";
+    }
+    
+    if (!formData.password) {
+      newErrors.password = "Vui lòng nhập mật khẩu";
+    } else {
+      if (formData.password.length < 10) newErrors.password = "Mật khẩu chưa đủ mạnh";
+      if (!/[A-Z]/.test(formData.password)) newErrors.password = "Mật khẩu chưa đủ mạnh";
+      if (!/[a-z]/.test(formData.password)) newErrors.password = "Mật khẩu chưa đủ mạnh";
+      if (!/[0-9]/.test(formData.password)) newErrors.password = "Mật khẩu chưa đủ mạnh";
+      if (!/[^A-Za-z0-9]/.test(formData.password)) newErrors.password = "Mật khẩu chưa đủ mạnh";
+      if (/\s/.test(formData.password)) newErrors.password = "Mật khẩu chưa đủ mạnh";
     }
 
-    if (!form.email.trim()) {
-      newErrors.email = "Vui lòng nhập email.";
-    } else if (!emailRegex.test(form.email.trim())) {
-      newErrors.email = "Email không đúng định dạng.";
-    }
-
-    if (!form.username.trim()) {
-      newErrors.username = "Vui lòng nhập tên đăng nhập.";
-    } else if (!usernameRegex.test(form.username)) {
-      newErrors.username =
-        "Tên đăng nhập gồm 4-20 ký tự, chỉ dùng chữ, số và dấu _.";
-    }
-
-    if (!form.password) {
-      newErrors.password = "Vui lòng nhập mật khẩu.";
-    } else if (form.password.length < 8) {
-      newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự.";
-    } else if (!passwordUppercase.test(form.password)) {
-      newErrors.password =
-        "Mật khẩu phải có ít nhất 1 chữ cái viết hoa.";
-    } else if (!passwordLowercase.test(form.password)) {
-      newErrors.password =
-        "Mật khẩu phải có ít nhất 1 chữ cái viết thường.";
-    } else if (!passwordNumber.test(form.password)) {
-      newErrors.password = "Mật khẩu phải có ít nhất 1 chữ số.";
-    }
-
-    if (!form.confirmPassword) {
-      newErrors.confirmPassword =
-        "Vui lòng xác nhận lại mật khẩu.";
-    } else if (form.confirmPassword !== form.password) {
-      newErrors.confirmPassword = "Mật khẩu xác nhận không trùng khớp.";
-    }
-
-    if (!form.agree) {
-      newErrors.agree =
-        "Bạn cần đồng ý với Chính sách và Điều khoản dịch vụ.";
+    if (formData.password !== formData.password_confirmation) {
+      newErrors.password_confirmation = "Mật khẩu xác nhận không khớp";
     }
 
     setErrors(newErrors);
-
-    return !Object.values(newErrors).some((error) => error !== "");
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setErrors({});
+    if (!validateForm()) return;
 
-    if (!validate()) {
-      return;
+    setLoading(true);
+    try {
+      await api.post("/register", { ...formData, device_name: "web" });
+      setStep(2);
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      if (err.response?.status === 422 && err.response?.data?.errors) {
+        const beErrors = err.response.data.errors;
+        const mappedErrors: Record<string, string> = {};
+        Object.keys(beErrors).forEach(key => { mappedErrors[key] = beErrors[key][0]; });
+        setErrors(mappedErrors);
+      } else {
+        setErrors({ form: err.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại sau." });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setErrors({});
+    if (!otp || otp.length !== 6) {
+        setErrors({ form: "Mã OTP phải có 6 chữ số." });
+        return;
     }
 
-    navigate("/login");
+    setLoading(true);
+    try {
+        await api.post("/verify-email-otp", { email: formData.email, otp: otp });
+        alert("Xác thực OTP thành công! Bạn có thể đăng nhập.");
+        navigate("/login");
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+        setErrors({ form: err.response?.data?.message || "Mã OTP không hợp lệ hoặc đã hết hạn." });
+    } finally {
+        setLoading(false);
+    }
   };
 
-  const inputClass = (error: string) =>
-    `h-12 w-full rounded-xl border px-4 text-sm text-[#20252B] outline-none transition placeholder:text-[#8A949E] ${
-      error
-        ? "border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100"
-        : "border-[#D9DDE1] focus:border-[#D6A85F] focus:ring-2 focus:ring-[#F3E8D2]"
-    }`;
+  const handleResendOtp = async () => {
+    try {
+        await api.post("/resend-email-otp", { email: formData.email });
+        alert("Đã gửi lại mã OTP mới vào email của bạn.");
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+        alert(err.response?.data?.message || "Không thể gửi lại mã OTP. Vui lòng thử lại.");
+    }
+  };
 
-  return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <header className="border-b border-[#E1E4E6] bg-white">
-        <div className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between px-6">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1F2933] text-white">
-              🚗
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: undefined as any })); // eslint-disable-line @typescript-eslint/no-explicit-any
+    }
+  };
+
+  const passwordRules = [
+    { id: 'length', label: 'Tối thiểu 10 ký tự', isValid: formData.password.length >= 10 },
+    { id: 'uppercase', label: 'Tối thiểu 1 chữ cái viết hoa', isValid: /[A-Z]/.test(formData.password) },
+    { id: 'lowercase', label: 'Tối thiểu 1 chữ cái thường', isValid: /[a-z]/.test(formData.password) },
+    { id: 'number', label: 'Tối thiểu 1 số', isValid: /[0-9]/.test(formData.password) },
+    { id: 'special', label: 'Tối thiểu 1 ký tự đặc biệt', isValid: /[^A-Za-z0-9]/.test(formData.password) },
+    { id: 'valid', label: 'Không có khoảng trắng', isValid: formData.password.length > 0 && !/\s/.test(formData.password) },
+  ];
+
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [flashlightPos, setFlashlightPos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (!isFlashlightOn || !flashlightRef.current) return;
+    
+    const updatePositions = () => {
+      const btnRect = flashlightRef.current!.getBoundingClientRect();
+      setFlashlightPos({
+        x: btnRect.left + btnRect.width / 2,
+        y: btnRect.top + btnRect.height / 2
+      });
+    };
+    updatePositions();
+    window.addEventListener('resize', updatePositions);
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    
+    // Default mouse pos slightly to the left of the button to start
+    setMousePos({
+        x: flashlightPos.x - 200,
+        y: flashlightPos.y
+    });
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('resize', updatePositions);
+    };
+  }, [isFlashlightOn, flashlightPos.x, flashlightPos.y]);
+
+  const getMaskStyle = () => {
+    const dx = mousePos.x - flashlightPos.x;
+    const dy = mousePos.y - flashlightPos.y;
+    const angleRad = Math.atan2(dy, dx);
+    const cssAngle = angleRad * (180 / Math.PI) + 90;
+    
+    // Spread 60 degrees, 15 degrees soft fade on each side
+    const startAngle = cssAngle - 30;
+
+    const mask = `conic-gradient(from ${startAngle}deg at ${flashlightPos.x}px ${flashlightPos.y}px, transparent 0deg, black 15deg, black 45deg, transparent 60deg)`;
+    return {
+        maskImage: mask,
+        WebkitMaskImage: mask,
+    };
+  };
+
+  const renderApp = (isDark: boolean, isMasked: boolean) => {
+    return (
+      <div 
+        className={`w-full min-h-screen flex items-center justify-center p-6 ${isDark ? 'bg-[#0a0d14]' : 'bg-[#eef2f5]'}`}
+        style={isMasked ? { 
+            ...getMaskStyle(),
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            pointerEvents: 'none',
+            zIndex: 50,
+            background: 'transparent'
+        } : {}}
+        aria-hidden={isMasked}
+      >
+        {isMasked && (
+            <div 
+                className="absolute inset-0 pointer-events-none mix-blend-overlay z-0"
+                style={{ 
+                    background: `radial-gradient(circle at ${flashlightPos.x}px ${flashlightPos.y}px, rgba(255,235,50,0.9) 0%, rgba(255,235,50,0.3) 30%, transparent 70%)`
+                }}
+            />
+        )}
+        
+        {isMasked && (
+            <div className="absolute inset-0 pointer-events-none bg-[#ffe066] opacity-10 mix-blend-color-dodge z-0" />
+        )}
+
+        <div className={`relative flex flex-col md:flex-row w-full max-w-[850px] min-h-[600px] rounded-[32px] overflow-hidden shadow-2xl z-10 ${isDark ? 'bg-[#0f1419]' : 'bg-[#f4f7f9]'}`}>
+          
+          {/* Left Side: Illustration */}
+          <div className={`relative w-full md:w-[40%] min-h-[200px] md:min-h-full overflow-hidden ${isDark ? 'bg-gradient-to-b from-[#1c2431] to-[#0f1419]' : 'bg-gradient-to-b from-[#b5d6d6] to-[#e6eceb]'} p-8 flex flex-col justify-end`}>
+            {/* Sky Elements */}
+            <div className="absolute top-0 left-0 w-full h-full">
+              {/* Sun / Moon */}
+              <div className={`absolute left-10 ${isDark ? 'top-10 scale-100 opacity-100' : 'top-16 scale-110 opacity-100'}`}>
+                <div className={`w-12 h-12 rounded-full ${isDark ? 'bg-[#e2e8f0] shadow-[0_0_20px_#e2e8f0]' : 'bg-gradient-to-br from-[#fff7c2] to-[#ffd700] shadow-[0_0_40px_#ffd700]'}`} />
+              </div>
+              
+              {/* Stars */}
+              <div className={`absolute top-6 left-24 text-white text-[10px] ${isDark ? 'opacity-100' : 'opacity-0'}`}>✨</div>
+              <div className={`absolute top-20 right-10 text-white text-[8px] ${isDark ? 'opacity-60' : 'opacity-0'}`}>✨</div>
+              <div className={`absolute top-12 left-1/2 text-white text-[12px] ${isDark ? 'opacity-80' : 'opacity-0'}`}>✦</div>
             </div>
 
-            <div>
-              <p className="text-sm font-bold">CarService</p>
-              <p className="text-[10px] text-[#8A949E]">
-                Dịch vụ chăm sóc ô tô
+            {/* Mountains */}
+            <div className="absolute bottom-0 left-0 w-full h-[60%]">
+              <div className={`absolute bottom-0 -left-10 w-0 h-0 border-l-[150px] border-r-[150px] border-b-[200px] border-l-transparent border-r-transparent ${isDark ? 'border-b-[#2c384a]' : 'border-b-[#8ea7aa]'}`} />
+              <div className={`absolute bottom-0 left-20 w-0 h-0 border-l-[120px] border-r-[120px] border-b-[160px] border-l-transparent border-r-transparent ${isDark ? 'border-b-[#1c2633]' : 'border-b-[#759093]'}`} />
+              <div className={`absolute bottom-0 right-[-50px] w-0 h-0 border-l-[180px] border-r-[180px] border-b-[250px] border-l-transparent border-r-transparent ${isDark ? 'border-b-[#232e3d]' : 'border-b-[#9fb9bc]'}`} />
+            </div>
+
+            {/* Ground */}
+            <div className={`absolute bottom-0 left-0 w-full h-[35%] bg-gradient-to-t from-black/60 to-transparent ${isDark ? 'opacity-80' : 'opacity-40'}`} />
+            
+            <div className="relative z-10 text-center pb-6">
+              <h2 className="text-white text-xl font-bold mb-2 tracking-wide">Gia nhập đội ngũ</h2>
+              <p className="text-white/80 text-xs px-4">
+                Khởi đầu hành trình mới tại CarService. Tạo tài khoản ngay hôm nay.
               </p>
             </div>
-          </Link>
-
-          <Link
-            to="/"
-            className="text-sm font-medium text-[#66717C] transition hover:text-[#20252B]"
-          >
-            ← Trang chủ
-          </Link>
-        </div>
-      </header>
-
-      <main className="flex min-h-[calc(100vh-72px)] items-center justify-center px-6 py-12">
-        <div className="w-full max-w-[440px]">
-          <div className="mb-6 text-center">
-            <h1 className="text-[28px] font-bold tracking-tight text-[#20252B]">
-              Tạo tài khoản
-            </h1>
-
-            <p className="mt-2 text-sm text-[#66717C]">
-              Đăng ký tài khoản khách hàng để sử dụng dịch vụ
-              CarService.
-            </p>
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            noValidate
-            className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_4px_20px_rgba(31,41,51,0.06)]"
-          >
-            <div className="space-y-4">
-              <div>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={form.fullName}
-                  onChange={handleChange}
-                  placeholder="Họ và tên"
-                  className={inputClass(errors.fullName)}
-                />
-
-                {errors.fullName && (
-                  <p className="mt-1.5 text-xs font-medium text-red-600">
-                    {errors.fullName}
-                  </p>
-                )}
+          {/* Right Side: Form */}
+          <div className={`w-full md:w-[60%] flex flex-col justify-center relative p-10 overflow-y-auto max-h-[80vh] md:max-h-full scrollbar-hide ${isDark ? 'bg-[#0f1419]' : 'bg-[#f4f7f9]'}`}>
+              {/* Owl */}
+              <div className={`absolute top-6 left-12 transform ${!isDark ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-0 opacity-20 scale-100'}`}>
+                <div className="text-4xl filter drop-shadow-lg" title="Owl">🦉</div>
               </div>
 
-              <div>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="Số điện thoại"
-                  className={inputClass(errors.phone)}
-                />
+              <h2 className={`text-2xl font-bold mb-6 text-center mt-4 ${!isDark ? 'text-[#1d2633]' : 'text-white'}`}>
+                {step === 1 ? 'Tạo tài khoản' : 'Xác thực tài khoản'}
+              </h2>
 
-                {errors.phone && (
-                  <p className="mt-1.5 text-xs font-medium text-red-600">
-                    {errors.phone}
-                  </p>
-                )}
-              </div>
+              {errors.form && (
+                <div className="mb-4 rounded-xl bg-red-500/10 p-3 text-xs text-red-500 border border-red-500/20 text-center">
+                  {errors.form}
+                </div>
+              )}
 
-              <div>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="Email"
-                  className={inputClass(errors.email)}
-                />
+              {step === 1 && (
+              <form onSubmit={handleSubmit} className="space-y-4 max-w-[360px] mx-auto w-full relative z-10 pb-4">
+                
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Họ tên */}
+                  <div>
+                    <input
+                      type="text"
+                      name="full_name"
+                      placeholder="Họ và tên"
+                      value={formData.full_name}
+                      onChange={handleChange}
+                      className={`w-full rounded-[14px] px-4 py-3 text-sm outline-none border ${!isDark ? 'bg-transparent border-[#d1dbdb] text-[#1d2633] focus:border-[#8ea7aa]' : 'bg-[#1c2431]/50 border-[#2c384a] text-white/50 focus:border-[#405269]'}`}
+                      tabIndex={isMasked ? -1 : 0}
+                    />
+                    {errors.full_name && <p className="text-red-500 text-[10px] mt-1 ml-2">{errors.full_name}</p>}
+                  </div>
 
-                {errors.email && (
-                  <p className="mt-1.5 text-xs font-medium text-red-600">
-                    {errors.email}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <input
-                  type="text"
-                  name="username"
-                  value={form.username}
-                  onChange={handleChange}
-                  placeholder="Tên đăng nhập"
-                  className={inputClass(errors.username)}
-                />
-
-                {errors.username && (
-                  <p className="mt-1.5 text-xs font-medium text-red-600">
-                    {errors.username}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    value={form.password}
-                    onChange={handleChange}
-                    placeholder="Mật khẩu"
-                    className={`${inputClass(
-                      errors.password
-                    )} pr-16`}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowPassword(!showPassword)
-                    }
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[#66717C] transition hover:text-[#20252B]"
-                  >
-                    {showPassword ? "Ẩn" : "Hiện"}
-                  </button>
+                  {/* SĐT */}
+                  <div>
+                    <input
+                      type="tel"
+                      name="phone"
+                      placeholder="Số điện thoại"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className={`w-full rounded-[14px] px-4 py-3 text-sm outline-none border ${!isDark ? 'bg-transparent border-[#d1dbdb] text-[#1d2633] focus:border-[#8ea7aa]' : 'bg-[#1c2431]/50 border-[#2c384a] text-white/50 focus:border-[#405269]'}`}
+                      tabIndex={isMasked ? -1 : 0}
+                    />
+                    {errors.phone && <p className="text-red-500 text-[10px] mt-1 ml-2">{errors.phone}</p>}
+                  </div>
                 </div>
 
-                {errors.password && (
-                  <p className="mt-1.5 text-xs font-medium text-red-600">
-                    {errors.password}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <div className="relative">
+                {/* Email */}
+                <div>
                   <input
-                    type={
-                      showConfirmPassword ? "text" : "password"
-                    }
-                    name="confirmPassword"
-                    value={form.confirmPassword}
+                    type="email"
+                    name="email"
+                    placeholder="Email đăng nhập"
+                    value={formData.email}
                     onChange={handleChange}
-                    placeholder="Xác nhận mật khẩu"
-                    className={`${inputClass(
-                      errors.confirmPassword
-                    )} pr-16`}
+                    className={`w-full rounded-[14px] px-4 py-3 text-sm outline-none border ${!isDark ? 'bg-transparent border-[#d1dbdb] text-[#1d2633] focus:border-[#8ea7aa]' : 'bg-[#1c2431]/50 border-[#2c384a] text-white/50 focus:border-[#405269]'}`}
+                    tabIndex={isMasked ? -1 : 0}
                   />
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowConfirmPassword(
-                        !showConfirmPassword
-                      )
-                    }
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[#66717C] transition hover:text-[#20252B]"
-                  >
-                    {showConfirmPassword ? "Ẩn" : "Hiện"}
-                  </button>
+                  {errors.email && <p className="text-red-500 text-[10px] mt-1 ml-2">{errors.email}</p>}
                 </div>
 
-                {errors.confirmPassword && (
-                  <p className="mt-1.5 text-xs font-medium text-red-600">
-                    {errors.confirmPassword}
-                  </p>
-                )}
-              </div>
-
-              <div
-                className={`rounded-xl border p-3 transition ${
-                  errors.agree
-                    ? "border-red-400 bg-red-50"
-                    : "border-transparent bg-[#F7F7F5]"
-                }`}
-              >
-                <label className="flex cursor-pointer items-start gap-3">
-                  <input
-                    type="checkbox"
-                    name="agree"
-                    checked={form.agree}
-                    onChange={handleChange}
-                    className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-[#1F2933]"
-                  />
-
-                  <span
-                    className={`text-sm leading-5 ${
-                      errors.agree
-                        ? "text-red-600"
-                        : "text-[#66717C]"
-                    }`}
-                  >
-                    Tôi đã đọc và đồng ý với{" "}
-                    <span
-                      className={
-                        errors.agree
-                          ? "font-medium text-red-700"
-                          : "font-medium text-[#20252B]"
-                      }
+                {/* Password Field with Flashlight Effect */}
+                <div className="relative group">
+                  <div className={`relative w-full rounded-[14px] border overflow-hidden flex items-center ${!isDark ? 'border-[#d1dbdb] bg-transparent focus-within:border-[#8ea7aa]' : 'border-[#2c384a] bg-[#1c2431]/50'}`}>
+                    <input
+                      ref={!isMasked ? inputRef : null}
+                      type={isMasked ? "text" : "password"}
+                      name="password"
+                      placeholder="Mật khẩu"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 text-sm outline-none bg-transparent font-mono ${!isDark ? 'text-[#1d2633] tracking-widest' : 'text-white/30 tracking-[0.3em]'}`}
+                      tabIndex={isMasked ? -1 : 0}
+                    />
+                    
+                    <button
+                      ref={!isMasked ? flashlightRef : null}
+                      type="button"
+                      onClick={() => setIsFlashlightOn(!isFlashlightOn)}
+                      className={`px-4 text-lg hover:scale-110 relative z-50 ${!isDark ? 'text-[#8ea7aa]' : 'text-white/30'}`}
+                      style={{ pointerEvents: isMasked ? 'none' : 'auto' }}
+                      tabIndex={-1}
                     >
-                      Chính sách và Điều khoản dịch vụ
-                    </span>{" "}
-                    của CarService.
-                  </span>
-                </label>
+                      {isFlashlightOn ? '🔦' : '👁️'}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-red-500 text-[10px] mt-1 ml-2">{errors.password}</p>}
+                  
+                  {/* Password Validation Rules UI */}
+                  {formData.password.length > 0 && (
+                    <div className={`mt-3 p-3 rounded-xl grid grid-cols-2 gap-y-2 gap-x-4 text-[10px] ${!isDark ? 'bg-white border border-[#e1e4e6]' : 'bg-[#1c2431]/80 border border-[#2c384a]'}`}>
+                      {passwordRules.map((rule) => (
+                        <div key={rule.id} className="flex items-center gap-2">
+                          {rule.isValid ? (
+                            <svg className={`w-3.5 h-3.5 ${!isDark ? 'text-[#21817f]' : 'text-[#299593]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          ) : (
+                            <svg className={`w-3.5 h-3.5 ${!isDark ? 'text-[#8a949e]' : 'text-white/30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          )}
+                          <span className={`${rule.isValid ? (!isDark ? 'text-[#20252b]' : 'text-white/90') : (!isDark ? 'text-[#8a949e]' : 'text-white/40')}`}>
+                            {rule.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Confirm Password */}
+                <div>
+                  <div className={`relative w-full rounded-[14px] border overflow-hidden flex items-center ${!isDark ? 'border-[#d1dbdb] bg-transparent focus-within:border-[#8ea7aa]' : 'border-[#2c384a] bg-[#1c2431]/50'}`}>
+                    <input
+                      type={isMasked ? "text" : "password"}
+                      name="password_confirmation"
+                      placeholder="Xác nhận mật khẩu"
+                      value={formData.password_confirmation}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 text-sm outline-none bg-transparent font-mono ${!isDark ? 'text-[#1d2633] tracking-widest' : 'text-white/30 tracking-[0.3em]'}`}
+                      tabIndex={isMasked ? -1 : 0}
+                    />
+                  </div>
+                  {errors.password_confirmation && <p className="text-red-500 text-[10px] mt-1 ml-2">{errors.password_confirmation}</p>}
+                </div>
 
-                {errors.agree && (
-                  <p className="mt-2 pl-7 text-xs font-medium text-red-600">
-                    {errors.agree}
-                  </p>
-                )}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full mt-4 rounded-[14px] px-4 py-3 text-sm font-semibold text-white ${!isDark ? 'bg-[#21817f] hover:bg-[#1a6664]' : 'bg-[#299593] hover:bg-[#207c7a]'} disabled:opacity-70 disabled:cursor-not-allowed`}
+                  tabIndex={isMasked ? -1 : 0}
+                >
+                  {loading ? "Đang xử lý..." : "Tạo tài khoản →"}
+                </button>
+              </form>
+              )}
+
+              {step === 2 && (
+              <form onSubmit={handleOtpSubmit} className="space-y-4 max-w-[360px] mx-auto w-full relative z-10 pb-4">
+                <p className={`text-xs text-center px-4 ${!isDark ? 'text-gray-600' : 'text-white/80'}`}>
+                    Vui lòng nhập mã OTP vừa được gửi đến số điện thoại <span className="font-bold">{formData.phone}</span> (Hoặc kiểm tra email {formData.email})
+                </p>
+                <div>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="000000"
+                    className={`w-full rounded-[14px] px-4 py-3 text-2xl tracking-[0.5em] text-center font-mono outline-none border ${!isDark ? 'bg-transparent border-[#d1dbdb] text-[#1d2633] focus:border-[#8ea7aa]' : 'bg-transparent border-[#2c384a] text-white focus:border-[#405269]'}`}
+                    tabIndex={isMasked ? -1 : 0}
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full mt-4 rounded-[14px] px-4 py-3 text-sm font-semibold text-white ${!isDark ? 'bg-[#21817f] hover:bg-[#1a6664]' : 'bg-[#299593] hover:bg-[#207c7a]'} disabled:opacity-70 disabled:cursor-not-allowed`}
+                  tabIndex={isMasked ? -1 : 0}
+                >
+                  {loading ? "Đang xác thực..." : "Xác nhận OTP"}
+                </button>
+
+                <div className="flex flex-col items-center gap-2 mt-4">
+                    <button type="button" onClick={handleResendOtp} className={`text-xs font-semibold ${!isDark ? 'text-[#1d2633] hover:text-[#21817f]' : 'text-white hover:text-[#299593]'}`} tabIndex={isMasked ? -1 : 0}>
+                        Gửi lại mã OTP
+                    </button>
+                    <button type="button" onClick={() => setStep(1)} className="text-[10px] text-red-500 hover:underline" tabIndex={isMasked ? -1 : 0}>
+                        Quay lại / Đổi thông tin
+                    </button>
+                </div>
+              </form>
+              )}
+
+              {step === 1 && (
+              <div className="mt-4 text-center relative z-20">
+                <p className={`text-[11px] ${!isDark ? 'text-[#5a6b73]' : 'text-white/60'}`}>
+                  Đã có tài khoản?{' '}
+                  <Link to="/login" className={`font-semibold relative z-30 ${!isDark ? 'text-[#1d2633] hover:text-[#21817f]' : 'text-white hover:text-[#299593]'}`} tabIndex={isMasked ? -1 : 0}>
+                    Đăng nhập
+                  </Link>
+                </p>
               </div>
+              )}
 
-              <button
-                type="submit"
-                className="h-12 w-full rounded-xl bg-[#1F2933] text-sm font-semibold text-white transition hover:bg-[#151D24]"
-              >
-                Đăng ký
+              <button onClick={() => navigate('/')} className={`absolute top-6 right-6 w-8 h-8 rounded-full flex items-center justify-center ${!isDark ? 'bg-[#eef2f5] text-[#1d2633]/50 hover:text-[#1d2633]' : 'bg-[#1c2431] text-white/50 hover:text-white'}`} tabIndex={isMasked ? -1 : 0}>
+                ✕
               </button>
-            </div>
-
-            <div className="my-6 border-t border-[#E5E7E9]" />
-
-            <div className="text-center">
-              <p className="text-sm text-[#66717C]">
-                Đã có tài khoản?
-              </p>
-
-              <Link
-                to="/login"
-                className="mt-3 inline-flex h-11 items-center justify-center rounded-xl border border-[#D6A85F] px-6 text-sm font-semibold text-[#3A3020] transition hover:bg-[#F3E8D2]"
-              >
-                Đăng nhập
-              </Link>
-            </div>
-          </form>
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {!isFlashlightOn ? (
+        renderApp(false, false)
+      ) : (
+        <div className="relative w-full min-h-screen">
+          <div className="absolute inset-0 z-0">
+            {renderApp(true, false)}
+          </div>
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            {renderApp(false, true)}
+          </div>
+        </div>
+      )}
+      
+      {/* Hide scrollbar styles */}
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+      `}</style>
+    </>
   );
 }
 

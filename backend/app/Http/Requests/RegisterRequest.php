@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
 {
@@ -41,7 +42,18 @@ class RegisterRequest extends FormRequest
                 'max:20',
             ],
             'email' => ['required', 'email', 'max:150', 'unique:accounts,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed', 'max:255'],
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                'max:255',
+                Password::min(10)
+                    ->mixedCase()
+                    ->letters()
+                    ->numbers()
+                    ->symbols(),
+                'regex:/^\S*$/u' // Không có khoảng trắng
+            ],
             'device_name' => ['nullable', 'string', 'max:100'],
             'accept_terms' => ['required', 'accepted'],
         ];
@@ -57,7 +69,12 @@ class RegisterRequest extends FormRequest
             'email.email' => 'Email không đúng định dạng.',
             'email.unique' => 'Email này đã được sử dụng.',
             'password.required' => 'Mật khẩu không được để trống.',
-            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
+            'password.min' => 'Mật khẩu phải có ít nhất 10 ký tự.',
+            'password.mixed' => 'Mật khẩu phải chứa ít nhất 1 chữ hoa và 1 chữ thường.',
+            'password.letters' => 'Mật khẩu phải chứa chữ cái.',
+            'password.numbers' => 'Mật khẩu phải chứa ít nhất 1 số.',
+            'password.symbols' => 'Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt.',
+            'password.regex' => 'Mật khẩu không được chứa khoảng trắng.',
             'password.confirmed' => 'Mật khẩu xác nhận không khớp.',
             'accept_terms.required' => 'Bạn phải đồng ý với điều khoản sử dụng.',
             'accept_terms.accepted' => 'Bạn phải đồng ý với điều khoản sử dụng.',
