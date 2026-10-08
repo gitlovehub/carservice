@@ -7,6 +7,11 @@ const menuItems = [
     icon: "⌂",
   },
   {
+    label: "Đặt lịch",
+    path: "/booking",
+    icon: "＋",
+  },
+  {
     label: "Lịch hẹn",
     path: "/customer/appointments",
     icon: "▣",
@@ -51,37 +56,35 @@ function CustomerHeader() {
       <div className="flex h-full flex-col">
         <Link
           to="/"
-          className="flex items-center gap-3 border-b border-[#3C4650] px-6 py-5"
+          className="flex cursor-pointer items-center gap-3 border-b border-[#3C4650] px-6 py-5"
         >
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#D6A85F] text-lg text-[#1F2933]">
             🚗
           </div>
 
           <div>
-            <p className="text-sm font-bold">CarService</p>
-            <p className="mt-0.5 text-[9px] text-[#AEB8C1]">
+            <p className="text-[13px] font-bold">CarService</p>
+
+            <p className="mt-0.5 text-[10px] text-[#AEB8C1]">
               Khu vực khách hàng
             </p>
           </div>
         </Link>
 
         <div className="px-4 py-5">
-          <p className="px-3 text-[9px] font-bold uppercase tracking-[0.14em] text-[#8F9AA4]">
+          <p className="px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#8F9AA4]">
             MENU KHÁCH HÀNG
           </p>
 
           <nav className="mt-3 space-y-1">
             {menuItems.map((item) => {
-              const active =
-                location.pathname === item.path ||
-                (item.path === "/customer" &&
-                  location.pathname === "/customer");
+              const active = location.pathname === item.path;
 
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-[11px] font-medium transition ${
+                  className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-[12px] font-medium transition ${
                     active
                       ? "bg-[#D6A85F] text-[#1F2933]"
                       : "text-[#C6CDD3] hover:bg-[#313B45] hover:text-white"
@@ -106,11 +109,11 @@ function CustomerHeader() {
               </div>
 
               <div className="min-w-0">
-                <p className="truncate text-[11px] font-semibold text-white">
+                <p className="truncate text-[12px] font-semibold text-white">
                   Tên người dùng
                 </p>
 
-                <p className="mt-0.5 text-[9px] text-[#AEB8C1]">
+                <p className="mt-0.5 text-[10px] text-[#AEB8C1]">
                   Khách hàng
                 </p>
               </div>
@@ -118,7 +121,7 @@ function CustomerHeader() {
 
             <Link
               to="/"
-              className="mt-4 flex items-center justify-center rounded-xl border border-[#4A5661] px-3 py-2.5 text-[10px] font-medium text-[#D5DBE0] transition hover:bg-[#313B45] hover:text-white"
+              className="mt-4 flex cursor-pointer items-center justify-center rounded-xl border border-[#4A5661] px-3 py-2.5 text-[11px] font-medium text-[#D5DBE0] transition hover:bg-[#313B45] hover:text-white"
             >
               Về trang chủ
             </Link>
