@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
 
@@ -30,9 +30,14 @@ import RepairProgress from "./pages/technician/RepairProgress";
 import Checklist from "./pages/technician/Checklist";
 
 import Login from "./pages/auth/Login";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 import Register from "./pages/auth/Register";
+import RoleSelector from "./pages/auth/RoleSelector";
 
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminAccounts from "./pages/admin/Accounts";
+import AdminCustomers from "./pages/admin/AdminCustomers";
+import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminServices from "./pages/admin/Services";
 import AdminInventory from "./pages/admin/Inventory";
 import AdminReports from "./pages/admin/Reports";
@@ -45,7 +50,14 @@ function App() {
 
         <Route path="/login" element={<Login />} />
 
+        <Route
+          path="/forgot-password"
+          element={<ForgotPassword />}
+        />
+
         <Route path="/register" element={<Register />} />
+
+        <Route path="/role-selector" element={<RoleSelector />} />
 
         <Route
           path="/customer"
@@ -93,19 +105,19 @@ function App() {
         />
 
         <Route
-          path="/cars"
+          path="/customer/appointments"
           element={
             <ProtectedRoute allowedRoles={["CUSTOMER"]}>
-              <Cars />
+              <Appointments />
             </ProtectedRoute>
           }
         />
 
         <Route
-          path="/customer/appointments"
+          path="/cars"
           element={
             <ProtectedRoute allowedRoles={["CUSTOMER"]}>
-              <Appointments />
+              <Cars />
             </ProtectedRoute>
           }
         />
@@ -294,7 +306,34 @@ function App() {
           path="/admin"
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/accounts"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
               <AdminAccounts />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/customers"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminCustomers />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/appointments"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminAppointments />
             </ProtectedRoute>
           }
         />
