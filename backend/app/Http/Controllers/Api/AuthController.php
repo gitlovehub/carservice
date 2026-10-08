@@ -388,9 +388,18 @@ class AuthController extends Controller
             ], 422);
         }
 
+        // Chặn đổi mật khẩu trùng mật khẩu cũ
+        if (Hash::check($request->new_password, $account->getAuthPassword())) {
+            return response()->json([
+                'errors' => [
+                    'new_password' => ['Mật khẩu mới không được trùng với mật khẩu cũ.']
+                ]
+            ], 422);
+        }
+
         DB::transaction(function () use ($account, $passwordResetOtp, $request) {
             // Đổi mật khẩu
-            $account->password_hash = Hash::make($request->password);
+            $account->password_hash = Hash::make($request->new_password);
             $account->save();
 
             // OTP không được sử dụng lại
