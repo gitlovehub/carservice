@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { getUserDisplayName, logout } from "../pages/auth/auth";
+import {
+  getRoleManagementPage,
+  getUserDisplayName,
+  logout,
+} from "../pages/auth/auth";
 
 function RoleAccountMenu() {
   const [open, setOpen] = useState(false);
@@ -8,6 +12,7 @@ function RoleAccountMenu() {
   const navigate = useNavigate();
   
   const user = JSON.parse(localStorage.getItem("user") || "null");
+  const managementPage = getRoleManagementPage(user?.role);
 
   const handleLogout = () => {
     logout();
@@ -53,31 +58,31 @@ function RoleAccountMenu() {
         <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[280px] overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_16px_40px_rgba(31,41,51,0.12)]">
           <div className="border-b border-[#E1E4E6] px-4 py-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
-              TÀI KHOẢN KHÁCH HÀNG
+              TÀI KHOẢN
             </p>
           </div>
 
           <div className="p-2">
             <Link
-              to="/customer"
+              to="/"
               onClick={() => setOpen(false)}
               className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
-                location.pathname === "/customer"
+                location.pathname === "/"
                   ? "bg-[#F3E8D2]"
                   : "hover:bg-[#F7F7F5]"
               }`}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D6A85F] text-[12px] text-[#3A3020]">
-                ✓
+                ⌂
               </span>
 
               <div>
                 <p className="text-[12px] font-semibold text-[#20252B]">
-                  Trang khách hàng
+                  Trang chủ
                 </p>
 
                 <p className="mt-0.5 text-[10px] text-[#8A949E]">
-                  Tổng quan tài khoản
+                  Trở về trang chính
                 </p>
               </div>
             </Link>
@@ -85,7 +90,7 @@ function RoleAccountMenu() {
             <Link
               to="/account"
               onClick={() => setOpen(false)}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
+              className={`mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                 location.pathname === "/account"
                   ? "bg-[#F3E8D2]"
                   : "hover:bg-[#F7F7F5]"
@@ -101,11 +106,37 @@ function RoleAccountMenu() {
                 </p>
 
                 <p className="mt-0.5 text-[10px] text-[#8A949E]">
-                  Cập nhật thông tin cá nhân
+                  Xem thông tin tài khoản
                 </p>
               </div>
             </Link>
 
+            {managementPage ? (
+              <Link
+                to={managementPage.path}
+                onClick={() => setOpen(false)}
+                className={`mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
+                  location.pathname === managementPage.path
+                    ? "bg-[#F3E8D2]"
+                    : "hover:bg-[#F7F7F5]"
+                }`}
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1F2933] text-[13px] text-white">
+                  ▦
+                </span>
+
+                <div>
+                  <p className="text-[12px] font-semibold text-[#20252B]">
+                    {managementPage.label}
+                  </p>
+
+                  <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                    Quay lại khu vực làm việc
+                  </p>
+                </div>
+              </Link>
+            ) : (
+              <>
             <Link
               to="/booking"
               onClick={() => setOpen(false)}
@@ -177,6 +208,8 @@ function RoleAccountMenu() {
                 </p>
               </div>
             </Link>
+              </>
+            )}
           </div>
 
           <div className="border-t border-[#E1E4E6] p-2">

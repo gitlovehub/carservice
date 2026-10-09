@@ -1,12 +1,46 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { fetchApi } from "../../services/api";
 import { setUserRole } from "./auth";
 
 type Step = "login" | "otp";
+type ApiErrorDetails = {
+  message?: string;
+  errors?: Record<string, string[]>;
+};
+
+const getApiErrorDetails = (error: unknown): ApiErrorDetails => {
+  if (typeof error !== "object" || error === null || !("data" in error)) {
+    return {};
+  }
+
+  const data = error.data;
+  if (typeof data !== "object" || data === null) {
+    return {};
+  }
+
+  const message =
+    "message" in data && typeof data.message === "string"
+      ? data.message
+      : undefined;
+  const errors: Record<string, string[]> = {};
+
+  if ("errors" in data && typeof data.errors === "object" && data.errors !== null) {
+    for (const [field, messages] of Object.entries(data.errors)) {
+      if (Array.isArray(messages)) {
+        errors[field] = messages.filter(
+          (value): value is string => typeof value === "string",
+        );
+      }
+    }
+  }
+
+  return { message, errors };
+};
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [step, setStep] = useState<Step>("login");
   const [pendingEmail, setPendingEmail] = useState("");
@@ -28,6 +62,16 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   const goToDashboard = (role: string) => {
+    const returnToBooking =
+      role === "CUSTOMER" &&
+      (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ===
+        "/booking";
+
+    if (returnToBooking) {
+      navigate("/booking", { replace: true });
+      return;
+    }
+
     if (role === "ADMIN") {
       navigate("/admin");
       return;
@@ -43,7 +87,7 @@ function Login() {
       return;
     }
 
-    navigate("/customer");
+    navigate("/");
   };
 
   const handleChange = (
@@ -113,27 +157,40 @@ function Login() {
         }),
       });
 
-      if (response?.account) {
-        await sendOtpForPendingAccount(
-          response.account.email || form.email.trim(),
-          response.token || ""
-        );
+      if (response?.account?.role) {
+        if (response.token) {
+          localStorage.setItem("token", response.token);
+        }
+        localStorage.setItem("user", JSON.stringify(response.account));
+        setUserRole(response.account.role);
+        goToDashboard(response.account.role);
         return;
       }
 
       setApiError("Không nhận được thông tin đăng nhập.");
-    } catch (error: any) {
-      const backendMessage = error?.data?.message || "";
-      const emailErrors = error?.data?.errors?.email || [];
-      const otpErrors = error?.data?.errors?.otp || [];
+    } catch (error: unknown) {
+      const details = getApiErrorDetails(error);
+      const backendMessage = details.message || "";
+      const emailErrors = details.errors?.email || [];
+      const otpErrors = details.errors?.otp || [];
 
       if (
-        backendMessage.toLowerCase().includes("xác thực") ||
+        backendMessage.toLowerCase().includes("chưa xác thực") ||
         backendMessage.toLowerCase().includes("otp") ||
-        emailErrors.some((msg: string) => /otp|xác thực|chưa/i.test(msg)) ||
+        emailErrors.some((msg: string) => /chưa xác thực|otp/i.test(msg)) ||
         otpErrors.length > 0
       ) {
-        await sendOtpForPendingAccount(form.email.trim());
+        try {
+          await sendOtpForPendingAccount(form.email.trim());
+        } catch (resendError: unknown) {
+          const resendDetails = getApiErrorDetails(resendError);
+          setPendingEmail(form.email.trim());
+          setStep("otp");
+          setApiError(
+            resendDetails.message ||
+              "Không gửi được mã OTP. Vui lòng thử gửi lại.",
+          );
+        }
         return;
       }
 
@@ -187,10 +244,11 @@ function Login() {
       }
 
       setApiError("Xác thực OTP thất bại.");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const details = getApiErrorDetails(error);
       setApiError(
-        error?.data?.errors?.otp?.[0] ||
-          error?.data?.message ||
+        details.errors?.otp?.[0] ||
+          details.message ||
           "Mã OTP không hợp lệ."
       );
     } finally {
@@ -214,8 +272,9 @@ function Login() {
       });
       setApiError("");
       alert("Mã OTP mới đã được gửi đến email của bạn.");
-    } catch (error: any) {
-      setApiError(error?.data?.message || "Không thể gửi lại OTP.");
+    } catch (error: unknown) {
+      const details = getApiErrorDetails(error);
+      setApiError(details.message || "Không thể gửi lại OTP.");
     } finally {
       setIsLoading(false);
     }

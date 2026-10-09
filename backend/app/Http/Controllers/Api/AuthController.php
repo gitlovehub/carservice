@@ -179,6 +179,7 @@ class AuthController extends Controller
             'employee' => $account->employee ? [
                 'id' => $account->employee->id,
                 'full_name' => $account->employee->full_name,
+                'phone' => $account->employee->phone,
                 'technician_profile_id' => $account->employee->technicianProfile?->id,
             ] : null,
             'customer' => $account->customer ? [
