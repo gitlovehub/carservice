@@ -323,10 +323,10 @@ function Home() {
                 </p>
 
                 <Link
-                  to="/customer"
+                  to="/booking"
                   className="mt-7 inline-flex rounded-xl bg-[#1F2933] px-5 py-3 text-[11px] font-semibold text-white transition hover:bg-[#151D24]"
                 >
-                  Khám phá hệ thống →
+                  Đặt lịch ngay →
                 </Link>
               </div>
 

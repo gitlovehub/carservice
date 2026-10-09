@@ -6,6 +6,21 @@ export type UserRole =
   | "TECHNICIAN"
   | "ADMIN";
 
+export const getRoleManagementPage = (
+  role: unknown,
+): { path: string; label: string } | null => {
+  switch (role) {
+    case "ADMIN":
+      return { path: "/admin", label: "Quản trị hệ thống" };
+    case "ADVISOR":
+      return { path: "/advisor/appointments", label: "Quản lý cố vấn" };
+    case "TECHNICIAN":
+      return { path: "/technician", label: "Khu vực kỹ thuật viên" };
+    default:
+      return null;
+  }
+};
+
 export const getUserDisplayName = (user: any = null): string => {
   return (
     user?.full_name ||

@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { fetchApi } from "../services/api";
-import { getUserDisplayName } from "../pages/auth/auth";
+import {
+  getRoleManagementPage,
+  getUserDisplayName,
+} from "../pages/auth/auth";
 
 function Header() {
   const [open, setOpen] = useState(false);
@@ -12,6 +15,7 @@ function Header() {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const managementPage = getRoleManagementPage(user?.role);
 
   useEffect(() => {
     const checkLogin = async () => {
@@ -63,9 +67,12 @@ function Header() {
     navigate("/login");
   };
 
-  const isCustomer =
-    location.pathname === "/customer" ||
-    location.pathname.startsWith("/customer/");
+  const navLinkClass = (isActive: boolean) =>
+    `rounded-xl px-4 py-2.5 text-[12px] font-semibold transition ${
+      isActive
+        ? "bg-[#f3f4f2] text-[#20252b] hover:bg-[#e9ebe8]"
+        : "text-[#66717c] hover:bg-[#f3f4f2] hover:text-[#20252b]"
+    }`;
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#e5e7eb] bg-white/95 backdrop-blur">
@@ -96,35 +103,39 @@ function Header() {
         <nav className="hidden items-center gap-1 lg:flex">
           <Link
             to="/"
-            className="rounded-xl bg-[#f3f4f2] px-4 py-2.5 text-[12px] font-semibold text-[#20252b] transition hover:bg-[#e9ebe8]"
+            className={navLinkClass(location.pathname === "/")}
           >
             Trang chủ
           </Link>
 
           <Link
             to="/services"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
+            className={navLinkClass(location.pathname === "/services")}
           >
             Dịch vụ
           </Link>
 
           <Link
             to="/booking"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
+            className={navLinkClass(location.pathname === "/booking")}
           >
             Đặt lịch
           </Link>
 
           <Link
             to="/appointments"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
+            className={navLinkClass(
+              ["/appointments", "/customer/appointments"].includes(location.pathname),
+            )}
           >
             Lịch hẹn
           </Link>
 
           <Link
             to="/cars"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
+            className={navLinkClass(
+              ["/cars", "/customer/cars"].includes(location.pathname),
+            )}
           >
             Xe của tôi
           </Link>
@@ -133,13 +144,6 @@ function Header() {
         <div className="flex items-center gap-2">
           {!isLoggedIn ? (
             <>
-              <Link
-                to="/role-selector"
-                className="hidden cursor-pointer rounded-xl border border-[#e1e4e6] px-4 py-2.5 text-[11px] font-semibold text-[#66717c] transition hover:border-[#d6a85f] hover:bg-[#f7f7f5] hover:text-[#20252b] lg:block"
-              >
-                Chọn giao diện
-              </Link>
-
               <Link
                 to="/login"
                 className="rounded-xl border border-[#e1e4e6] px-4 py-2.5 text-[11px] font-semibold text-[#20252b] transition hover:border-[#d6a85f] hover:bg-[#f7f7f5]"
@@ -193,26 +197,46 @@ function Header() {
                   </div>
 
                   <Link
-                    to="/customer"
+                    to="/"
                     onClick={() => setOpen(false)}
-                    className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
-                      isCustomer ? "bg-[#f3f4f2]" : "hover:bg-[#f3f4f2]"
-                    }`}
+                    className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-[#f3f4f2]"
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1f2933] text-xs text-white">
-                      ✓
+                      ⌂
                     </span>
 
                     <span>
                       <span className="block text-xs font-semibold text-[#20252b]">
-                        Trang khách hàng
+                        Trang chủ
                       </span>
 
                       <span className="mt-0.5 block text-[10px] text-[#7a838c]">
-                        Quản lý thông tin và lịch hẹn
+                        Trở về trang chính
                       </span>
                     </span>
                   </Link>
+
+                  {managementPage && (
+                    <Link
+                      to={managementPage.path}
+                      onClick={() => setOpen(false)}
+                      className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-[#f3f4f2]"
+                    >
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1f2933] text-xs text-white">
+                        ▦
+                      </span>
+
+                      <span>
+                        <span className="block text-xs font-semibold text-[#20252b]">
+                          {managementPage.label}
+                        </span>
+
+                        <span className="mt-0.5 block text-[10px] text-[#7a838c]">
+                          Quay lại khu vực làm việc
+                        </span>
+                      </span>
+                    </Link>
+                  )}
 
                   <Link
                     to="/account"
