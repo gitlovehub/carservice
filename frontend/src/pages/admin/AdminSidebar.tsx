@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { getUserDisplayName } from "../../pages/auth/auth";
 
 const menuItems = [
   {
@@ -40,6 +41,7 @@ const menuItems = [
 
 function AdminSidebar() {
   const location = useLocation();
+  const user = JSON.parse(localStorage.getItem("user") || "null");
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] bg-[#1F2933] lg:block">
@@ -125,7 +127,7 @@ function AdminSidebar() {
 
               <div className="min-w-0">
                 <p className="truncate text-[11px] font-semibold text-white">
-                  Tên người dùng
+                  {getUserDisplayName(user)}
                 </p>
 
                 <p className="mt-0.5 text-[9px] text-[#AEB8C1]">

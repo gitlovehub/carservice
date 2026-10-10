@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { getUserDisplayName } from "../auth/auth";
 
 function Customers() {
   const [address, setAddress] = useState("");
+  const user = JSON.parse(localStorage.getItem("user") || "null");
 
   const customers = [
     {
@@ -64,7 +66,7 @@ function Customers() {
 
             <div>
               <p className="text-[12px] font-semibold">
-                Tên người dùng
+                {getUserDisplayName(user)}
               </p>
 
               <p className="text-[10px] text-[#8a949e]">

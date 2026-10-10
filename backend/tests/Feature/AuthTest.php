@@ -50,6 +50,18 @@ class AuthTest extends TestCase
         $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 
+    public function test_verified_account_can_still_receive_a_fresh_otp_for_login(): void
+    {
+        $account = $this->createAccount(status: Account::STATUS_ACTIVE);
+        $account->forceFill(['email_verified_at' => now()])->save();
+
+        $this->postJson('/api/resend-email-otp', [
+            'email' => $account->email,
+        ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Mã OTP mới đã được gửi đến email.');
+    }
+
     public function test_inactive_account_cannot_log_in(): void
     {
         $account = $this->createAccount(status: Account::STATUS_LOCKED);

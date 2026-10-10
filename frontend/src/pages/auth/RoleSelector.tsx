@@ -1,16 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { setUserRole } from "./auth";
 
 function RoleSelector() {
   const navigate = useNavigate();
-
-  const handleSelectRole = (
-    role: "CUSTOMER" | "ADVISOR" | "TECHNICIAN" | "ADMIN",
-    path: string,
-  ) => {
-    setUserRole(role);
-    navigate(path);
-  };
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] px-6 py-10 text-[#20252B]">
@@ -32,7 +23,7 @@ function RoleSelector() {
         <div className="grid gap-4 md:grid-cols-2">
           <button
             type="button"
-            onClick={() => handleSelectRole("CUSTOMER", "/customer")}
+            onClick={() => navigate("/login")}
             className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-6 text-left transition hover:border-[#D6A85F] hover:shadow-sm"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F3F4F2] text-xl">
@@ -50,9 +41,7 @@ function RoleSelector() {
 
           <button
             type="button"
-            onClick={() =>
-              handleSelectRole("ADVISOR", "/advisor/appointments")
-            }
+            onClick={() => navigate("/login")}
             className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-6 text-left transition hover:border-[#D6A85F] hover:shadow-sm"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F3F4F2] text-xl">
@@ -70,9 +59,7 @@ function RoleSelector() {
 
           <button
             type="button"
-            onClick={() =>
-              handleSelectRole("TECHNICIAN", "/technician")
-            }
+            onClick={() => navigate("/login")}
             className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-6 text-left transition hover:border-[#D6A85F] hover:shadow-sm"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F3F4F2] text-xl">
@@ -90,7 +77,7 @@ function RoleSelector() {
 
           <button
             type="button"
-            onClick={() => handleSelectRole("ADMIN", "/admin")}
+            onClick={() => navigate("/login")}
             className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-6 text-left transition hover:border-[#D6A85F] hover:shadow-sm"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F3F4F2] text-xl">
