@@ -7,48 +7,46 @@ use App\Models\MaintenancePackage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * API công khai cho khách: chỉ trả gói ACTIVE, kèm dịch vụ/phụ tùng và giá ước tính.
+ * CRUD quản trị nằm ở AdminMaintenancePackageController.
+ */
 class MaintenancePackageController extends Controller
 {
     /**
-     * Display a listing of maintenance packages.
+     * GET /api/maintenance-packages
+     *
+     * ?model_id= : lấy gói của dòng xe đó và các gói dùng chung.
      */
     public function index(Request $request): JsonResponse
     {
         $query = MaintenancePackage::query()
-            ->with(['services' => function ($q) {
-                $q->select('services.id', 'services.name', 'services.category', 'services.base_price', 'maintenance_package_services.quantity');
-            }]);
-            
-        // The DB might not have 'status' column or it might be different, let's just get all or by model_id
-        if ($request->has('model_id') && !empty($request->model_id)) {
-            $query->where('vehicle_model_id', $request->model_id);
+            ->with(['services', 'parts'])
+            ->where('status', 'ACTIVE');
+
+        if ($request->filled('model_id')) {
+            $query->where(function ($query) use ($request): void {
+                $query->whereNull('vehicle_model_id')
+                    ->orWhere('vehicle_model_id', $request->input('model_id'));
+            });
         }
 
-        $packages = $query->get();
-        
-        // Add calculated price if needed, or format response
-        $packages->each(function ($pkg) {
-            $pkg->price = $pkg->services->sum(function ($svc) {
-                return $svc->base_price * ($svc->quantity ?? 1);
-            });
-            // Fake mileage_km for frontend compatibility if mileage_milestone is used
-            $pkg->mileage_km = $pkg->mileage_milestone;
-        });
+        $packages = $query->orderBy('mileage_milestone')
+            ->get()
+            ->each->withComputedFields();
 
         return response()->json($packages);
     }
 
     /**
-     * Display the specified maintenance package.
+     * GET /api/maintenance-packages/{maintenancePackage}
      */
     public function show(MaintenancePackage $maintenancePackage): JsonResponse
     {
-        $maintenancePackage->load(['services', 'parts']);
-        
-        $maintenancePackage->price = $maintenancePackage->services->sum(function ($svc) {
-            return $svc->base_price * ($svc->quantity ?? 1);
-        });
-        $maintenancePackage->mileage_km = $maintenancePackage->mileage_milestone;
+        abort_if($maintenancePackage->status !== 'ACTIVE', 404);
+
+        $maintenancePackage->load(['services', 'parts'])
+            ->withComputedFields();
 
         return response()->json($maintenancePackage);
     }

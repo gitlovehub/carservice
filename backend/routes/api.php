@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\WorkItemController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\MaintenancePackageController;
+use App\Http\Controllers\Api\AdminServiceController;
+use App\Http\Controllers\Api\AdminMaintenancePackageController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
 
@@ -147,6 +149,27 @@ Route::middleware('auth:sanctum')->group(function (): void {
             'customers/{customer}',
             [CustomerController::class, 'destroy']
         );
+
+        // Quản trị danh mục dịch vụ (DELETE = xóa mềm, status = INACTIVE)
+        Route::apiResource('admin/services', AdminServiceController::class)
+            ->parameters(['services' => 'service'])
+            ->names('admin.services');
+
+        // Quản trị gói bảo dưỡng (DELETE = xóa mềm, status = INACTIVE)
+        Route::prefix('admin/maintenance-packages')->group(function (): void {
+            Route::put(
+                '{maintenancePackage}/services',
+                [AdminMaintenancePackageController::class, 'syncServices']
+            );
+            Route::put(
+                '{maintenancePackage}/parts',
+                [AdminMaintenancePackageController::class, 'syncParts']
+            );
+        });
+
+        Route::apiResource('admin/maintenance-packages', AdminMaintenancePackageController::class)
+            ->parameters(['maintenance-packages' => 'maintenancePackage'])
+            ->names('admin.maintenance-packages');
     });
 
 
