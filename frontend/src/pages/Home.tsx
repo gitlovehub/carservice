@@ -2,296 +2,257 @@ import { Link } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
+// Bảng dịch vụ chính quy garage
 const services = [
   {
     number: "01",
-    icon: "🔧",
     title: "Bảo dưỡng định kỳ",
     description:
-      "Kiểm tra tổng thể và bảo dưỡng xe theo đúng lịch khuyến nghị.",
+      "Kiểm tra tổng quát theo các mốc 5.000km, 10.000km, 20.000km và 40.000km theo tiêu chuẩn hãng.",
+    icon: (
+      <svg className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
   },
   {
     number: "02",
-    icon: "🛞",
-    title: "Kiểm tra phanh",
+    title: "Hệ thống phanh & Lốp",
     description:
-      "Kiểm tra má phanh, đĩa phanh và hệ thống phanh an toàn.",
+      "Đo độ mòn má phanh, láng đĩa phanh điện tử, kiểm tra áp suất, đảo lốp và cân chỉnh thước lái.",
+    icon: (
+      <svg className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
   },
   {
     number: "03",
-    icon: "❄️",
-    title: "Sửa chữa điều hòa",
+    title: "Hệ thống điều hòa",
     description:
-      "Kiểm tra, sửa chữa và bảo dưỡng hệ thống điều hòa ô tô.",
+      "Vệ sinh giàn lạnh nội soi, đo áp suất gas, thay lọc gió điều hòa khử mùi ẩm mốc khoang cabin.",
+    icon: (
+      <svg className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    ),
   },
   {
     number: "04",
-    icon: "🛢️",
-    title: "Thay dầu động cơ",
+    title: "Thay dầu & Phụ gia động cơ",
     description:
-      "Thay dầu động cơ và kiểm tra các bộ phận liên quan.",
+      "Sử dụng dầu động cơ tổng hợp toàn phần chính hãng kèm thay lọc dầu và vòng đệm ốc xả.",
+    icon: (
+      <svg className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+      </svg>
+    ),
   },
 ];
 
-const process = [
+// Quy trình tiếp nhận thực tế tại xưởng
+const steps = [
   {
     number: "01",
-    title: "Đặt lịch",
-    description: "Chọn dịch vụ và thời gian phù hợp với bạn.",
+    title: "Đặt hẹn trực tuyến",
+    desc: "Chọn cơ sở dịch vụ, loại xe và khung giờ thuận tiện trên website.",
   },
   {
     number: "02",
-    title: "Tiếp nhận xe",
-    description: "Cố vấn tiếp nhận và kiểm tra thông tin xe.",
+    title: "Tiếp nhận & Giám định",
+    desc: "Cố vấn dịch vụ kiểm tra xe cùng khách hàng và báo giá chi tiết từng hạng mục.",
   },
   {
     number: "03",
-    title: "Kiểm tra & sửa chữa",
-    description: "Kỹ thuật viên kiểm tra và thực hiện dịch vụ.",
+    title: "Thực hiện dịch vụ",
+    desc: "Kỹ thuật viên thao tác kỹ thuật theo danh mục nghiệm thu được bạn đồng ý.",
   },
   {
     number: "04",
-    title: "Bàn giao xe",
-    description: "Kiểm tra kết quả và nhận lại xe.",
-  },
-];
-
-const benefits = [
-  {
-    title: "Kỹ thuật viên chuyên nghiệp",
-    description: "Đội ngũ kỹ thuật được phân công theo từng dịch vụ.",
-  },
-  {
-    title: "Theo dõi tiến độ rõ ràng",
-    description: "Khách hàng dễ dàng theo dõi tình trạng sửa chữa.",
-  },
-  {
-    title: "Báo giá minh bạch",
-    description: "Thông tin chi phí được trao đổi trước khi thực hiện.",
-  },
-  {
-    title: "Quản lý lịch sử xe",
-    description: "Lưu trữ thông tin bảo dưỡng và sửa chữa của xe.",
+    title: "Nghiệm thu & Bàn giao",
+    desc: "Khách hàng kiểm tra chất lượng xe thực tế, thanh toán và nhận phiếu bảo hành.",
   },
 ];
 
 function Home() {
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased">
       <Header />
 
       <main>
-        {/* HERO */}
-        <section className="overflow-hidden border-b border-[#E1E4E6] bg-white">
-          <div className="mx-auto max-w-[1280px] px-6 py-16 md:py-20 lg:py-24">
-            <div className="grid items-center gap-12 lg:grid-cols-[1fr_0.9fr]">
-
-              {/* Hero content */}
+        {/* HERO SECTION */}
+        <section className="border-b border-slate-200 bg-white">
+          <div className="mx-auto max-w-6xl px-6 py-14 lg:py-20">
+            <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+              {/* Cột thông tin */}
               <div>
-                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#E1E4E6] bg-[#F7F7F5] px-3 py-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]" />
-
-                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#66717C]">
-                    CarService · Chăm sóc xe chuyên nghiệp
-                  </span>
+                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3.5 py-1 text-xs font-semibold text-slate-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Xưởng dịch vụ mở cửa: 08:00 - 18:00 (Thứ 2 - Thứ 7)
                 </div>
 
-                <h1 className="max-w-[680px] text-[42px] font-bold leading-[1.08] tracking-[-1.8px] text-[#1F2933] md:text-[58px]">
-                  Chăm sóc xe
-                  <br />
-                  <span className="text-[#D6A85F]">đúng cách.</span>
+                <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl lg:leading-[1.15]">
+                  Dịch vụ bảo dưỡng & sửa chữa ô tô tiêu chuẩn
                 </h1>
 
-                <p className="mt-6 max-w-[570px] text-[14px] leading-7 text-[#66717C] md:text-[15px]">
-                  CarService giúp bạn đặt lịch bảo dưỡng, theo dõi quá trình
-                  sửa chữa và quản lý thông tin xe một cách thuận tiện,
-                  minh bạch và chuyên nghiệp.
+                <p className="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
+                  Quy trình chuẩn mực, kỹ thuật viên có chứng chỉ chuyên môn, phụ tùng chính hãng và báo giá minh bạch trước khi thực hiện.
                 </p>
 
-                <div className="mt-8 flex flex-wrap gap-3">
+                <div className="mt-8 flex flex-wrap items-center gap-4">
                   <Link
                     to="/booking"
-                    className="rounded-xl bg-[#1F2933] px-6 py-3.5 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#151D24]"
+                    className="inline-flex h-12 items-center justify-center rounded-xl bg-slate-900 px-7 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
                   >
-                    Đặt lịch ngay →
+                    Đặt lịch bảo dưỡng ngay
                   </Link>
 
                   <Link
                     to="/services"
-                    className="rounded-xl border border-[#D6A85F] bg-white px-6 py-3.5 text-[12px] font-semibold text-[#1F2933] transition hover:bg-[#F7F7F5]"
+                    className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                   >
-                    Xem dịch vụ
+                    Bảng giá dịch vụ
                   </Link>
                 </div>
 
-                {/* Trust points */}
-                <div className="mt-10 flex flex-wrap gap-x-7 gap-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F3F4F2] text-[10px]">
-                      ✓
-                    </span>
-
-                    <span className="text-[11px] font-medium text-[#66717C]">
-                      Minh bạch
-                    </span>
+                {/* Tiêu chí cam kết */}
+                <div className="mt-10 grid grid-cols-3 gap-4 border-t border-slate-100 pt-8">
+                  <div>
+                    <p className="text-xl font-bold text-slate-900">100%</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Phụ tùng chuẩn OEM/Chính hãng</p>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F3F4F2] text-[10px]">
-                      ✓
-                    </span>
-
-                    <span className="text-[11px] font-medium text-[#66717C]">
-                      Dễ theo dõi
-                    </span>
+                  <div>
+                    <p className="text-xl font-bold text-slate-900">Minh bạch</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Không phát sinh chi phí phụ</p>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F3F4F2] text-[10px]">
-                      ✓
-                    </span>
-
-                    <span className="text-[11px] font-medium text-[#66717C]">
-                      Chuyên nghiệp
-                    </span>
+                  <div>
+                    <p className="text-xl font-bold text-slate-900">Bảo hành</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Tối thiểu 6 tháng / 10.000km</p>
                   </div>
                 </div>
               </div>
 
-              {/* Hero visual */}
-              <div className="relative">
-                <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#F3E8D2] blur-3xl" />
+              {/* Form đặt lịch nhanh thực tế */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-lg shadow-slate-200/50">
+                <div className="border-b border-slate-100 pb-5">
+                  <h2 className="text-lg font-bold text-slate-900">Đặt hẹn dịch vụ nhanh</h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Chọn trước thông tin để trung tâm chuẩn bị cầu nâng và vật tư sẵn sàng
+                  </p>
+                </div>
 
-                <div className="relative overflow-hidden rounded-[28px] border border-[#E1E4E6] bg-[#1F2933] p-4 shadow-[0_20px_60px_rgba(31,41,51,0.15)]">
-                  <div className="rounded-[22px] border border-[#3C4650] bg-[#29333D] p-6">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    window.location.href = "/booking";
+                  }}
+                  className="mt-5 space-y-4"
+                >
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700">Dịch vụ yêu cầu</label>
+                    <select className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100">
+                      <option>Bảo dưỡng định kỳ theo số km</option>
+                      <option>Kiểm tra hệ thống phanh</option>
+                      <option>Bảo dưỡng hệ thống điều hòa</option>
+                      <option>Thay dầu & Lọc dầu nhớt</option>
+                      <option>Kiểm tra xe có tiếng kêu / sự cố khác</option>
+                    </select>
+                  </div>
 
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#AEB8C1]">
-                          CARSERVICE
-                        </p>
-
-                        <h2 className="mt-2 text-[22px] font-bold text-white">
-                          Chăm sóc xe toàn diện
-                        </h2>
-                      </div>
-
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#D6A85F] text-xl">
-                        🚗
-                      </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700">Hãng xe</label>
+                      <input
+                        type="text"
+                        placeholder="Vd: Toyota, Mazda..."
+                        className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                      />
                     </div>
-
-                    {/* Car visual */}
-                    <div className="my-8 flex h-36 items-center justify-center rounded-2xl border border-[#3C4650] bg-[#222B34]">
-                      <div className="text-center">
-                        <div className="text-6xl">🚘</div>
-
-                        <p className="mt-3 text-[9px] font-medium uppercase tracking-[0.15em] text-[#AEB8C1]">
-                          READY FOR SERVICE
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-xl border border-[#3C4650] bg-[#313B45] p-4">
-                        <p className="text-[9px] uppercase tracking-[0.1em] text-[#AEB8C1]">
-                          DỊCH VỤ
-                        </p>
-
-                        <p className="mt-2 text-[12px] font-semibold text-white">
-                          Bảo dưỡng & sửa chữa
-                        </p>
-                      </div>
-
-                      <div className="rounded-xl border border-[#3C4650] bg-[#313B45] p-4">
-                        <p className="text-[9px] uppercase tracking-[0.1em] text-[#AEB8C1]">
-                          ĐẶT LỊCH
-                        </p>
-
-                        <p className="mt-2 text-[12px] font-semibold text-white">
-                          Nhanh chóng
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between rounded-xl bg-[#D6A85F] px-4 py-3">
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#3A3020]">
-                          THEO DÕI DỊCH VỤ
-                        </p>
-
-                        <p className="mt-1 text-[11px] font-semibold text-[#1F2933]">
-                          Minh bạch từ A → Z
-                        </p>
-                      </div>
-
-                      <span className="text-lg">→</span>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700">Biển số xe</label>
+                      <input
+                        type="text"
+                        placeholder="Vd: 30A-123.45"
+                        className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                      />
                     </div>
                   </div>
-                </div>
-              </div>
 
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700">Thời gian mong muốn</label>
+                    <input
+                      type="date"
+                      className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="mt-2 h-12 w-full rounded-xl bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    Tiếp tục xác nhận lịch hẹn →
+                  </button>
+
+                  <p className="text-center text-[11px] text-slate-400">
+                    Cố vấn dịch vụ sẽ gọi điện thoại xác nhận trong vòng 15 phút làm việc.
+                  </p>
+                </form>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* SERVICES */}
-        <section className="bg-[#F7F7F5]">
-          <div className="mx-auto max-w-[1280px] px-6 py-16 md:py-20">
-
-            <div className="mb-9 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        {/* DỊCH VỤ NỔI BẬT */}
+        <section className="bg-slate-50 py-16 lg:py-20">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-                  DỊCH VỤ NỔI BẬT
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-600">
+                  Hạng mục kỹ thuật
                 </p>
-
-                <h2 className="mt-2 text-[30px] font-bold tracking-[-0.8px] text-[#1F2933] md:text-[34px]">
-                  Chăm sóc xe từ A đến Z
+                <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                  Dịch vụ bảo dưỡng tiêu chuẩn
                 </h2>
-
-                <p className="mt-2 max-w-[570px] text-[12px] leading-6 text-[#66717C]">
-                  Những dịch vụ phổ biến giúp xe luôn vận hành ổn định và an
-                  toàn trên mọi hành trình.
-                </p>
               </div>
-
               <Link
                 to="/services"
-                className="text-[11px] font-bold text-[#1F2933] transition hover:text-[#D6A85F]"
+                className="inline-flex items-center text-sm font-semibold text-slate-900 hover:text-amber-600"
               >
-                Xem tất cả dịch vụ →
+                Xem chi tiết tất cả dịch vụ →
               </Link>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {services.map((service) => (
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {services.map((item) => (
                 <div
-                  key={service.number}
-                  className="group rounded-2xl border border-[#E1E4E6] bg-white p-5 transition duration-300 hover:-translate-y-1 hover:border-[#D6A85F] hover:shadow-[0_12px_35px_rgba(31,41,51,0.08)]"
+                  key={item.number}
+                  className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 hover:shadow-md"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F3F4F2] text-lg transition group-hover:bg-[#F3E8D2]">
-                      {service.icon}
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 border border-amber-100">
+                        {item.icon}
+                      </div>
+                      <span className="font-mono text-xs font-bold text-slate-400">
+                        {item.number}
+                      </span>
                     </div>
 
-                    <span className="text-[10px] font-bold text-[#A0A8AE]">
-                      {service.number}
-                    </span>
+                    <h3 className="mt-5 text-base font-bold text-slate-900">
+                      {item.title}
+                    </h3>
+
+                    <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                      {item.description}
+                    </p>
                   </div>
 
-                  <h3 className="mt-6 text-[14px] font-bold text-[#20252B]">
-                    {service.title}
-                  </h3>
-
-                  <p className="mt-2 min-h-[48px] text-[11px] leading-5 text-[#66717C]">
-                    {service.description}
-                  </p>
-
                   <Link
-                    to="/services"
-                    className="mt-5 inline-flex text-[11px] font-bold text-[#1F2933] transition group-hover:text-[#D6A85F]"
+                    to="/booking"
+                    className="mt-6 inline-flex text-xs font-semibold text-slate-900 transition hover:text-amber-600"
                   >
-                    Xem chi tiết →
+                    Đặt hẹn hạng mục này →
                   </Link>
                 </div>
               ))}
@@ -299,106 +260,37 @@ function Home() {
           </div>
         </section>
 
-        {/* BENEFITS */}
-        <section className="border-y border-[#E1E4E6] bg-white">
-          <div className="mx-auto max-w-[1280px] px-6 py-16 md:py-20">
-            <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
-
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-                  VÌ SAO CHỌN CARSERVICE
-                </p>
-
-                <h2 className="mt-3 text-[30px] font-bold leading-tight tracking-[-0.8px] text-[#1F2933] md:text-[36px]">
-                  Không chỉ sửa xe.
-                  <br />
-                  <span className="text-[#66717C]">
-                    Chúng tôi chăm sóc cả hành trình.
-                  </span>
-                </h2>
-
-                <p className="mt-5 max-w-[450px] text-[12px] leading-6 text-[#66717C]">
-                  Mọi thông tin từ lịch hẹn, tình trạng xe đến quá trình sửa
-                  chữa đều được quản lý rõ ràng trong một hệ thống.
-                </p>
-
-                <Link
-                  to="/booking"
-                  className="mt-7 inline-flex rounded-xl bg-[#1F2933] px-5 py-3 text-[11px] font-semibold text-white transition hover:bg-[#151D24]"
-                >
-                  Đặt lịch ngay →
-                </Link>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                {benefits.map((benefit, index) => (
-                  <div
-                    key={benefit.title}
-                    className="rounded-2xl border border-[#E1E4E6] bg-[#F7F7F5] p-5 transition hover:border-[#D6A85F]"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-[#D6A85F]">
-                        0{index + 1}
-                      </div>
-
-                      <div>
-                        <h3 className="text-[12px] font-bold text-[#20252B]">
-                          {benefit.title}
-                        </h3>
-
-                        <p className="mt-2 text-[11px] leading-5 text-[#66717C]">
-                          {benefit.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-        {/* PROCESS */}
-        <section className="bg-[#F7F7F5]">
-          <div className="mx-auto max-w-[1280px] px-6 py-16 md:py-20">
-
-            <div className="mb-9">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-                QUY TRÌNH
+        {/* QUY TRÌNH 4 BƯỚC */}
+        <section className="border-t border-slate-200 bg-white py-16 lg:py-20">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="max-w-2xl">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-600">
+                Quy trình làm việc
               </p>
-
-              <h2 className="mt-2 text-[30px] font-bold tracking-[-0.8px] text-[#1F2933] md:text-[34px]">
-                Từ đặt lịch đến nhận xe
+              <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                4 bước bảo dưỡng minh bạch tại trạm
               </h2>
-
-              <p className="mt-2 text-[12px] text-[#66717C]">
-                Quy trình đơn giản, rõ ràng và dễ theo dõi.
+              <p className="mt-2 text-sm text-slate-500">
+                Toàn bộ quy trình được chuẩn hóa nhằm tối ưu thời gian chờ và đảm bảo bạn nắm rõ tình trạng xe trước khi chi trả.
               </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-4">
-              {process.map((item, index) => (
+            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {steps.map((st) => (
                 <div
-                  key={item.number}
-                  className="relative rounded-2xl border border-[#E1E4E6] bg-white p-5"
+                  key={st.number}
+                  className="relative rounded-2xl border border-slate-200 bg-slate-50/50 p-6"
                 >
-                  {index < process.length - 1 && (
-                    <div className="absolute right-[-17px] top-[42px] z-10 hidden text-[#D6A85F] lg:block">
-                      →
-                    </div>
-                  )}
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F3E8D2] text-[11px] font-bold text-[#1F2933]">
-                    {item.number}
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 font-mono text-xs font-bold text-white">
+                    {st.number}
                   </div>
 
-                  <h3 className="mt-5 text-[14px] font-bold text-[#20252B]">
-                    {item.title}
+                  <h3 className="mt-4 text-sm font-bold text-slate-900">
+                    {st.title}
                   </h3>
 
-                  <p className="mt-2 text-[11px] leading-5 text-[#66717C]">
-                    {item.description}
+                  <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                    {st.desc}
                   </p>
                 </div>
               ))}
@@ -406,37 +298,36 @@ function Home() {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="bg-[#1F2933]">
-          <div className="mx-auto max-w-[1280px] px-6 py-16 md:py-20">
+        {/* LIÊN HỆ & HỖ TRỢ KHẨN CẤP */}
+        <section className="border-t border-slate-200 bg-slate-900 py-14 text-white">
+          <div className="mx-auto max-w-6xl px-6">
             <div className="flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
-
               <div>
-                <div className="mb-3 inline-flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]" />
-
-                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#AEB8C1]">
-                    BẮT ĐẦU NGAY
-                  </span>
-                </div>
-
-                <h2 className="max-w-[700px] text-[30px] font-bold tracking-[-0.8px] text-white md:text-[36px]">
-                  Xe của bạn đã đến lúc được chăm sóc?
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                  Hỗ trợ kỹ thuật & Cứu hộ
+                </p>
+                <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
+                  Cần tư vấn trực tiếp hoặc tiếp nhận xe khẩn cấp?
                 </h2>
-
-                <p className="mt-3 max-w-[570px] text-[12px] leading-6 text-[#AEB8C1]">
-                  Đặt lịch bảo dưỡng ngay hôm nay và để CarService đồng hành
-                  cùng bạn trên mọi hành trình.
+                <p className="mt-2 text-sm text-slate-400">
+                  Cố vấn dịch vụ luôn sẵn sàng giải đáp thắc mắc về tình trạng hỏng hóc hoặc đặt lịch gấp.
                 </p>
               </div>
 
-              <Link
-                to="/booking"
-                className="shrink-0 rounded-xl bg-[#D6A85F] px-7 py-4 text-[12px] font-bold text-[#1F2933] transition hover:bg-[#E4C17E]"
-              >
-                Đặt lịch ngay →
-              </Link>
-
+              <div className="flex flex-wrap gap-4">
+                <a
+                  href="tel:19001234"
+                  className="inline-flex h-12 items-center justify-center rounded-xl bg-amber-500 px-6 text-sm font-semibold text-slate-950 transition hover:bg-amber-400"
+                >
+                  Hotline: 1900 1234
+                </a>
+                <Link
+                  to="/booking"
+                  className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 px-6 text-sm font-semibold text-white transition hover:bg-slate-700"
+                >
+                  Đặt hẹn trực tuyến
+                </Link>
+              </div>
             </div>
           </div>
         </section>
