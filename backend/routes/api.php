@@ -144,25 +144,32 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::middleware('role:' . Account::ROLE_ADMIN)->group(function (): void {
 
-        Route::apiResource('admin/services', AdminServiceController::class)
-            ->only(['index', 'store', 'show', 'update', 'destroy']);
-
-        Route::put(
-            'admin/maintenance-packages/{maintenancePackage}/services',
-            [AdminMaintenancePackageController::class, 'syncServices']
-        );
-        Route::put(
-            'admin/maintenance-packages/{maintenancePackage}/parts',
-            [AdminMaintenancePackageController::class, 'syncParts']
-        );
-        Route::apiResource('admin/maintenance-packages', AdminMaintenancePackageController::class)
-            ->only(['index', 'store', 'show', 'update', 'destroy']);
-
         // Xóa khách hàng
         Route::delete(
             'customers/{customer}',
             [CustomerController::class, 'destroy']
         );
+
+        // Quản trị danh mục dịch vụ (DELETE = xóa mềm, status = INACTIVE)
+        Route::apiResource('admin/services', AdminServiceController::class)
+            ->parameters(['services' => 'service'])
+            ->names('admin.services');
+
+        // Quản trị gói bảo dưỡng (DELETE = xóa mềm, status = INACTIVE)
+        Route::prefix('admin/maintenance-packages')->group(function (): void {
+            Route::put(
+                '{maintenancePackage}/services',
+                [AdminMaintenancePackageController::class, 'syncServices']
+            );
+            Route::put(
+                '{maintenancePackage}/parts',
+                [AdminMaintenancePackageController::class, 'syncParts']
+            );
+        });
+
+        Route::apiResource('admin/maintenance-packages', AdminMaintenancePackageController::class)
+            ->parameters(['maintenance-packages' => 'maintenancePackage'])
+            ->names('admin.maintenance-packages');
     });
 
 
