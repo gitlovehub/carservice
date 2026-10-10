@@ -2,6 +2,14 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { fetchApi } from "../../services/api";
 
+type ApiErrorResponse = {
+  message?: string;
+  data?: {
+    message?: string;
+    errors?: Record<string, string[] | string>;
+  };
+};
+
 function Register() {
   const navigate = useNavigate();
 
@@ -108,10 +116,14 @@ function Register() {
     return !Object.values(newErrors).some((error) => error !== "");
   };
 
-  const getErrorMessage = (error: unknown, defaultMessage: string) => {
-    const err = error as any;
+  const getErrorMessage = (error: unknown, defaultMessage: string): string => {
+    if (typeof error !== "object" || error === null) {
+      return defaultMessage;
+    }
 
-    if (err?.data?.errors) {
+    const err = error as ApiErrorResponse;
+
+    if (err.data?.errors) {
       const validationErrors = err.data.errors;
       const firstKey = Object.keys(validationErrors)[0];
 
@@ -128,15 +140,16 @@ function Register() {
       }
     }
 
-    if (err?.data?.message) {
+    if (err.data?.message) {
       return err.data.message;
     }
 
-    if (err?.message) {
-      if (err.message === "Failed to fetch") {
+    if ("message" in err && typeof (err as { message: unknown }).message === "string") {
+      const msg = (err as { message: string }).message;
+      if (msg === "Failed to fetch") {
         return "Không thể kết nối tới máy chủ. Hãy kiểm tra backend Laravel đã chạy chưa.";
       }
-      return err.message;
+      return msg;
     }
 
     return defaultMessage;
@@ -244,7 +257,25 @@ function Register() {
         <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
-              🚗
+              <svg
+                className="h-5 w-5 text-amber-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
+                />
+              </svg>
             </div>
 
             <div>
