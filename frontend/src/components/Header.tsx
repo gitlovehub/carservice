@@ -330,7 +330,7 @@ function Header() {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                    className="cursor-pointer flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50"
                   >
                     <svg
                       className="h-4 w-4 text-red-500"
