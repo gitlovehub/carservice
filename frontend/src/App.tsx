@@ -1,10 +1,9 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
 
 import Home from "./pages/Home";
 
-import CustomerDashboard from "./pages/customer/Dashboard";
 import Contact from "./pages/customer/Contact";
 import Services from "./pages/customer/Services";
 import Booking from "./pages/customer/Booking";
@@ -61,11 +60,7 @@ function App() {
 
         <Route
           path="/customer"
-          element={
-            <ProtectedRoute allowedRoles={["CUSTOMER"]}>
-              <CustomerDashboard />
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/" replace />}
         />
 
         <Route
@@ -79,11 +74,7 @@ function App() {
 
         <Route
           path="/services"
-          element={
-            <ProtectedRoute allowedRoles={["CUSTOMER"]}>
-              <Services />
-            </ProtectedRoute>
-          }
+          element={<Services />}
         />
 
         <Route
@@ -134,7 +125,9 @@ function App() {
         <Route
           path="/account"
           element={
-            <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+            <ProtectedRoute
+              allowedRoles={["CUSTOMER", "ADMIN", "ADVISOR", "TECHNICIAN"]}
+            >
               <Account />
             </ProtectedRoute>
           }

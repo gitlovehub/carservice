@@ -1,18 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { fetchApi } from "../services/api";
-import { getUserDisplayName } from "../pages/auth/auth";
+import {
+  getRoleManagementPage,
+  getUserDisplayName,
+} from "../pages/auth/auth";
+
+type AuthUser = {
+  id?: number | string;
+  full_name?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+};
 
 function Header() {
   const [open, setOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(
     localStorage.getItem("isLoggedIn") === "true",
   );
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   const location = useLocation();
   const navigate = useNavigate();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const managementPage = getRoleManagementPage(user?.role);
 
+  // Lắng nghe trạng thái đăng nhập và tải thông tin tài khoản
   useEffect(() => {
     const checkLogin = async () => {
       const loggedIn = localStorage.getItem("isLoggedIn") === "true";
@@ -29,8 +43,8 @@ function Header() {
             setUser(response.account);
             localStorage.setItem("user", JSON.stringify(response.account));
           }
-        } catch (e) {
-          // Ignore
+        } catch {
+          // Bỏ qua lỗi token hết hạn hoặc kết nối
         }
       } else {
         setUser(null);
@@ -45,11 +59,27 @@ function Header() {
     };
   }, [location]);
 
+  // Đóng dropdown khi nhấn ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
   const handleLogout = async () => {
     try {
       await fetchApi("/logout", { method: "POST" });
-    } catch (e) {
-      // Ignore logout errors, still proceed to clear local storage
+    } catch {
+      // Tiếp tục xóa dữ liệu cục bộ dù backend có lỗi
     }
 
     localStorage.removeItem("isLoggedIn");
@@ -59,195 +89,263 @@ function Header() {
 
     setIsLoggedIn(false);
     setOpen(false);
-
     navigate("/login");
   };
 
-  const isCustomer =
-    location.pathname === "/customer" ||
-    location.pathname.startsWith("/customer/");
+  const navLinkClass = (isActive: boolean) =>
+    `rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
+      isActive
+        ? "bg-slate-100 text-slate-900"
+        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+    }`;
+
+  // Lấy ký tự đại diện cho Avatar từ họ tên
+  const getInitials = (name?: string) => {
+    if (!name) return "KH";
+    const parts = name.trim().split(" ");
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#e5e7eb] bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-[76px] max-w-[1280px] items-center justify-between px-6">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
+      <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-6">
+        {/* LOGO */}
         <Link
           to="/"
-          className="group flex cursor-pointer items-center gap-3 rounded-2xl px-2 py-2 transition hover:bg-[#f7f7f5]"
+          className="group flex items-center gap-3 rounded-xl py-1 transition"
         >
-          <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-[#1f2933] text-white shadow-sm">
-            <span className="text-lg">🚗</span>
-
-            <span className="absolute bottom-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-[#d6a85f] text-[7px]">
-              +
-            </span>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm transition group-hover:bg-slate-800">
+            <svg
+              className="h-5 w-5 text-amber-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
+              />
+            </svg>
           </div>
 
           <div>
-            <p className="text-[15px] font-bold tracking-tight text-[#20252b]">
+            <p className="text-sm font-bold tracking-tight text-slate-900">
               CarService
             </p>
-
-            <p className="mt-0.5 text-[10px] font-medium text-[#7a838c]">
-              Chăm sóc xe chuyên nghiệp
+            <p className="text-[10px] text-slate-500">
+              Dịch vụ chăm sóc ô tô
             </p>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex">
+        {/* NAVIGATION DESKTOP */}
+        <nav className="hidden items-center gap-1.5 lg:flex">
           <Link
             to="/"
-            className="rounded-xl bg-[#f3f4f2] px-4 py-2.5 text-[12px] font-semibold text-[#20252b] transition hover:bg-[#e9ebe8]"
+            className={navLinkClass(location.pathname === "/")}
           >
             Trang chủ
           </Link>
 
           <Link
             to="/services"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
+            className={navLinkClass(location.pathname === "/services")}
           >
             Dịch vụ
           </Link>
 
           <Link
             to="/booking"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
+            className={navLinkClass(location.pathname === "/booking")}
           >
             Đặt lịch
           </Link>
 
           <Link
             to="/appointments"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
+            className={navLinkClass(
+              ["/appointments", "/customer/appointments"].includes(
+                location.pathname,
+              ),
+            )}
           >
             Lịch hẹn
           </Link>
 
           <Link
             to="/cars"
-            className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-[#66717c] transition hover:bg-[#f3f4f2] hover:text-[#20252b]"
+            className={navLinkClass(
+              ["/cars", "/customer/cars"].includes(location.pathname),
+            )}
           >
             Xe của tôi
           </Link>
         </nav>
 
+        {/* KHU VỰC TÀI KHOẢN */}
         <div className="flex items-center gap-2">
           {!isLoggedIn ? (
-            <>
-              <Link
-                to="/role-selector"
-                className="hidden cursor-pointer rounded-xl border border-[#e1e4e6] px-4 py-2.5 text-[11px] font-semibold text-[#66717c] transition hover:border-[#d6a85f] hover:bg-[#f7f7f5] hover:text-[#20252b] lg:block"
-              >
-                Chọn giao diện
-              </Link>
-
+            <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                className="rounded-xl border border-[#e1e4e6] px-4 py-2.5 text-[11px] font-semibold text-[#20252b] transition hover:border-[#d6a85f] hover:bg-[#f7f7f5]"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
               >
                 Đăng nhập
               </Link>
 
               <Link
                 to="/register"
-                className="rounded-xl bg-[#1f2933] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151d24]"
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
               >
                 Đăng ký
               </Link>
-            </>
+            </div>
           ) : (
-            <div className="relative">
+            <div className="relative" ref={menuRef}>
               <button
                 type="button"
                 onClick={() => setOpen(!open)}
-                className="flex cursor-pointer items-center gap-3 rounded-2xl border border-[#e1e4e6] bg-white px-3 py-2 transition hover:border-[#cfd4d8] hover:bg-[#f8f8f6]"
+                className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 transition hover:border-slate-300 hover:bg-slate-50"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1f2933] text-[10px] font-bold text-white">
-                  NV
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 font-mono text-xs font-bold text-amber-400">
+                  {getInitials(getUserDisplayName(user))}
                 </div>
 
                 <div className="hidden text-left sm:block">
-                  <p className="text-xs font-semibold text-[#20252b]">
+                  <p className="max-w-[120px] truncate text-xs font-semibold text-slate-900">
                     {getUserDisplayName(user)}
                   </p>
-
-                  <p className="mt-0.5 text-[10px] text-[#7a838c]">
+                  <p className="text-[10px] text-slate-500">
                     {user?.role || "Khách hàng"}
                   </p>
                 </div>
 
-                <span
-                  className={`ml-1 text-sm text-[#66717c] transition-transform ${
+                <svg
+                  className={`h-4 w-4 text-slate-400 transition-transform ${
                     open ? "rotate-180" : ""
                   }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  ⌄
-                </span>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
               </button>
 
+              {/* DROPDOWN MENU */}
               {open && (
-                <div className="absolute right-0 top-full z-50 mt-3 w-72 overflow-hidden rounded-2xl border border-[#e1e4e6] bg-white p-2 shadow-[0_12px_35px_rgba(31,41,51,0.12)]">
-                  <div className="px-3 py-3">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#8a9299]">
-                      TÀI KHOẢN
+                <div className="absolute right-0 top-full z-50 mt-2.5 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg shadow-slate-200/50">
+                  <div className="border-b border-slate-100 px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Tài khoản người dùng
+                    </p>
+                    <p className="mt-0.5 truncate text-xs font-semibold text-slate-800">
+                      {user?.email}
                     </p>
                   </div>
 
-                  <Link
-                    to="/customer"
-                    onClick={() => setOpen(false)}
-                    className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
-                      isCustomer ? "bg-[#f3f4f2]" : "hover:bg-[#f3f4f2]"
-                    }`}
-                  >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1f2933] text-xs text-white">
-                      ✓
-                    </span>
+                  <div className="mt-1 space-y-0.5">
+                    <Link
+                      to="/"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+                    >
+                      <svg
+                        className="h-4 w-4 text-slate-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                        />
+                      </svg>
+                      Trang chủ
+                    </Link>
 
-                    <span>
-                      <span className="block text-xs font-semibold text-[#20252b]">
-                        Trang khách hàng
-                      </span>
+                    {managementPage && (
+                      <Link
+                        to={managementPage.path}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-amber-700 transition hover:bg-amber-50"
+                      >
+                        <svg
+                          className="h-4 w-4 text-amber-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                          />
+                        </svg>
+                        {managementPage.label}
+                      </Link>
+                    )}
 
-                      <span className="mt-0.5 block text-[10px] text-[#7a838c]">
-                        Quản lý thông tin và lịch hẹn
-                      </span>
-                    </span>
-                  </Link>
+                    <Link
+                      to="/account"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+                    >
+                      <svg
+                        className="h-4 w-4 text-slate-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                      Thông tin tài khoản
+                    </Link>
+                  </div>
 
-                  <Link
-                    to="/account"
-                    onClick={() => setOpen(false)}
-                    className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-[#f3f4f2]"
-                  >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eceeed] text-xs text-[#374151]">
-                      ◉
-                    </span>
-
-                    <span>
-                      <span className="block text-xs font-semibold text-[#20252b]">
-                        Thông tin tài khoản
-                      </span>
-
-                      <span className="mt-0.5 block text-[10px] text-[#7a838c]">
-                        Cập nhật thông tin cá nhân
-                      </span>
-                    </span>
-                  </Link>
-
-                  <div className="my-2 border-t border-[#eceeed]" />
+                  <div className="my-1.5 border-t border-slate-100" />
 
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-[#fef2f2]"
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50"
                   >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#fef2f2] text-sm text-red-600">
-                      ↪
-                    </span>
-
-                    <span className="text-xs font-semibold text-red-600">
-                      Đăng xuất
-                    </span>
+                    <svg
+                      className="h-4 w-4 text-red-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                      />
+                    </svg>
+                    Đăng xuất
                   </button>
                 </div>
               )}
