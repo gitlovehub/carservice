@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Customer;
+use App\Models\Service;
 use App\Models\Vehicle;
 use Carbon\Carbon;
 use Exception;
@@ -62,10 +63,18 @@ class AppointmentController extends Controller
 
                 $workingHour = DB::table('working_hours')
                     ->where('day_of_week', $dayOfWeek)
-                    ->where('is_active', true)
                     ->first();
 
                 if (!$workingHour) {
+                    $workingHour = (object) [
+                        'open_time' => '08:00:00',
+                        'close_time' => $dayOfWeek === 8 ? '12:00:00' : '17:30:00',
+                        'max_slots' => $dayOfWeek === 8 ? 3 : 5,
+                        'is_active' => true,
+                    ];
+                }
+
+                if (!$workingHour->is_active) {
                     throw new Exception('Garage không làm việc vào ngày này trong tuần.');
                 }
 
@@ -84,6 +93,20 @@ class AppointmentController extends Controller
 
                 if ($bookedCount >= $workingHour->max_slots) {
                     throw new Exception('Khung giờ này đã đầy lịch hẹn. Quý khách vui lòng chọn khung giờ khác.');
+                }
+
+                $serviceIds = $validated['service_ids'] ?? [];
+                if (!empty($validated['service_name'])) {
+                    $serviceDefaults = [
+                        'Bảo dưỡng định kỳ' => ['category' => 'Bảo dưỡng định kỳ', 'base_price' => 500000, 'estimated_minutes' => 60, 'status' => 'ACTIVE'],
+                        'Kiểm tra tổng quát' => ['category' => 'Kiểm tra tổng quát', 'base_price' => 300000, 'estimated_minutes' => 60, 'status' => 'ACTIVE'],
+                        'Thay dầu động cơ' => ['category' => 'Bảo dưỡng định kỳ', 'base_price' => 350000, 'estimated_minutes' => 30, 'status' => 'ACTIVE'],
+                    ];
+                    $service = Service::firstOrCreate(
+                        ['name' => $validated['service_name']],
+                        $serviceDefaults[$validated['service_name']],
+                    );
+                    $serviceIds[] = $service->id;
                 }
 
                 // 6. Sinh mã lịch hẹn tự động (Ví dụ: APT-20261015-A1B2)
@@ -105,8 +128,8 @@ class AppointmentController extends Controller
                 ]);
 
                 // 8. Lưu dịch vụ dự kiến (nếu có chọn)
-                if (!empty($validated['service_ids'])) {
-                    $servicesData = collect($validated['service_ids'])->map(fn($sId) => [
+                if (!empty($serviceIds)) {
+                    $servicesData = collect(array_unique($serviceIds))->map(fn($sId) => [
                         'appointment_id' => $appointment->id,
                         'service_id'     => $sId,
                     ])->toArray();

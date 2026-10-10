@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\VehicleBrand;
 use App\Models\Vehicle;
+use App\Models\VehicleModel;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -304,10 +306,26 @@ class VehicleController extends Controller
             return $this->customerProfileNotFoundResponse();
         }
 
+        $modelNames = [
+            'Vios',
+            'Camry',
+            'Corolla Altis',
+            'Raize',
+            'Corolla Cross',
+            'Fortuner',
+            'Innova Cross',
+            'Hilux',
+        ];
         $validated = $request->validate([
             'model_id' => [
-                'required',
+                'nullable',
+                'required_without:model_name',
                 'exists:vehicle_models,id',
+            ],
+            'model_name' => [
+                'nullable',
+                'required_without:model_id',
+                Rule::in($modelNames),
             ],
 
             'variant' => [
@@ -348,6 +366,19 @@ class VehicleController extends Controller
                 'string',
             ],
         ]);
+
+        if (!empty($validated['model_name'])) {
+            $brand = VehicleBrand::firstOrCreate(
+                ['name' => 'Toyota'],
+                ['status' => 'ACTIVE'],
+            );
+            $model = VehicleModel::firstOrCreate([
+                'brand_id' => $brand->id,
+                'name' => $validated['model_name'],
+            ]);
+            $validated['model_id'] = $model->id;
+            unset($validated['model_name']);
+        }
 
         // Không cho client tự chọn customer_id.
         $validated['customer_id'] = $customer->id;

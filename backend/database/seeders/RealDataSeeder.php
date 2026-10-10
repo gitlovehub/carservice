@@ -15,7 +15,7 @@ class RealDataSeeder extends Seeder
     {
         // Hãng xe và Dòng xe phổ biến
         $brands = [
-            'Toyota' => ['Vios', 'Camry', 'Innova', 'Fortuner', 'Corolla Cross'],
+            'Toyota' => ['Vios', 'Camry', 'Corolla Altis', 'Raize', 'Corolla Cross', 'Fortuner', 'Innova Cross', 'Hilux'],
             'Honda' => ['City', 'Civic', 'CR-V', 'HR-V'],
             'Mazda' => ['Mazda 3', 'Mazda 6', 'CX-5', 'CX-8'],
             'Hyundai' => ['Accent', 'Elantra', 'Tucson', 'Santa Fe'],
@@ -40,6 +40,7 @@ class RealDataSeeder extends Seeder
         // Dịch vụ
         $servicesData = [
             ['name' => 'Bảo dưỡng định kỳ', 'category' => 'Bảo dưỡng định kỳ', 'base_price' => 500000, 'estimated_minutes' => 60],
+            ['name' => 'Kiểm tra tổng quát', 'category' => 'Kiểm tra tổng quát', 'base_price' => 300000, 'estimated_minutes' => 60],
             ['name' => 'Thay dầu động cơ', 'category' => 'Bảo dưỡng định kỳ', 'base_price' => 350000, 'estimated_minutes' => 30],
             ['name' => 'Kiểm tra phanh', 'category' => 'Gầm - Phanh', 'base_price' => 300000, 'estimated_minutes' => 45],
             ['name' => 'Kiểm tra điều hòa', 'category' => 'Điện - Điện lạnh', 'base_price' => 400000, 'estimated_minutes' => 60],

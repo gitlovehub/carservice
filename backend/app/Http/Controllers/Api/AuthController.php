@@ -175,15 +175,19 @@ class AuthController extends Controller
             'email' => $account->email,
             'role' => $account->role,
             'status' => $account->status,
+            'created_at' => $account->created_at,
             'employee' => $account->employee ? [
                 'id' => $account->employee->id,
                 'full_name' => $account->employee->full_name,
+                'phone' => $account->employee->phone,
                 'technician_profile_id' => $account->employee->technicianProfile?->id,
             ] : null,
             'customer' => $account->customer ? [
                 'id' => $account->customer->id,
                 'full_name' => $account->customer->full_name,
                 'phone' => $account->customer->phone,
+                'email' => $account->customer->email,
+                'address' => $account->customer->address,
             ] : null,
         ];
     }
@@ -204,13 +208,6 @@ class AuthController extends Controller
         if (! $account) {
             throw ValidationException::withMessages([
                 'email' => ['Không tìm thấy tài khoản.'],
-            ]);
-        }
-
-        if ($account->status === Account::STATUS_ACTIVE
-            && $account->email_verified_at !== null) {
-            return response()->json([
-                'message' => 'Email đã được xác thực.',
             ]);
         }
 
@@ -243,10 +240,12 @@ class AuthController extends Controller
                 'used_at' => now(),
             ]);
 
-            $account->update([
-                'email_verified_at' => now(),
-                'status' => Account::STATUS_ACTIVE,
-            ]);
+            if ($account->email_verified_at === null) {
+                $account->update([
+                    'email_verified_at' => now(),
+                    'status' => Account::STATUS_ACTIVE,
+                ]);
+            }
         });
 
         $token = $account->createToken('default')->plainTextToken;
@@ -254,7 +253,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Xác thực email thành công.',
             'token' => $token,
-            'account' => $this->formatAccount($account),
+            'account' => $this->formatAccount($account->fresh()),
         ]);
     }
 
@@ -273,12 +272,6 @@ class AuthController extends Controller
         if (! $account) {
             throw ValidationException::withMessages([
                 'email' => ['Không tìm thấy tài khoản.'],
-            ]);
-        }
-
-        if ($account->email_verified_at !== null) {
-            throw ValidationException::withMessages([
-                'email' => ['Email này đã được xác thực.'],
             ]);
         }
 
