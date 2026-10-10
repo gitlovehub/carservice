@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\WorkItemController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\MaintenancePackageController;
+use App\Http\Controllers\Api\AdminServiceController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
 
@@ -141,6 +142,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     */
 
     Route::middleware('role:' . Account::ROLE_ADMIN)->group(function (): void {
+
+        Route::apiResource('admin/services', AdminServiceController::class)
+            ->only(['index', 'store', 'show', 'update', 'destroy']);
 
         // Xóa khách hàng
         Route::delete(

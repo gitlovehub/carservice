@@ -7,33 +7,46 @@ use App\Models\MaintenancePackage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * API công khai cho khách: chỉ trả gói ACTIVE, kèm dịch vụ/phụ tùng và giá ước tính.
+ * CRUD quản trị nằm ở AdminMaintenancePackageController.
+ */
 class MaintenancePackageController extends Controller
 {
     /**
-     * Display a listing of maintenance packages.
+     * GET /api/maintenance-packages
+     *
+     * ?model_id= : lấy gói của dòng xe đó và các gói dùng chung.
      */
     public function index(Request $request): JsonResponse
     {
         $query = MaintenancePackage::query()
-            ->with(['services', 'parts']);
+            ->with(['services', 'parts'])
+            ->where('status', 'ACTIVE');
 
-        if ($request->has('model_id') && !empty($request->model_id)) {
-            $query->where('vehicle_model_id', $request->model_id);
+        if ($request->filled('model_id')) {
+            $query->where(function ($query) use ($request): void {
+                $query->whereNull('vehicle_model_id')
+                    ->orWhere('vehicle_model_id', $request->input('model_id'));
+            });
         }
 
-        $packages = $query->get()->map(fn (MaintenancePackage $package) => $package->withComputedFields());
+        $packages = $query->orderBy('mileage_milestone')
+            ->get()
+            ->each->withComputedFields();
 
         return response()->json($packages);
     }
 
     /**
-     * Display the specified maintenance package.
+     * GET /api/maintenance-packages/{maintenancePackage}
      */
     public function show(MaintenancePackage $maintenancePackage): JsonResponse
     {
-        $maintenancePackage->load(['services', 'parts']);
+        abort_if($maintenancePackage->status !== 'ACTIVE', 404);
 
-        $maintenancePackage->withComputedFields();
+        $maintenancePackage->load(['services', 'parts'])
+            ->withComputedFields();
 
         return response()->json($maintenancePackage);
     }
