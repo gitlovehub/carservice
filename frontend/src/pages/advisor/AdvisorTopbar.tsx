@@ -12,8 +12,7 @@ const pageNames: Record<string, string> = {
 function AdvisorTopbar() {
   const location = useLocation();
 
-  const pageName =
-    pageNames[location.pathname] || "Không gian làm việc";
+  const pageName = pageNames[location.pathname] ?? "Không gian làm việc";
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#E1E4E6] bg-white lg:ml-[250px]">
