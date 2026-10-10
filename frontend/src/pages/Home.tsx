@@ -120,84 +120,28 @@ function Home() {
                 <div className="mt-10 grid grid-cols-3 gap-4 border-t border-slate-100 pt-8">
                   <div>
                     <p className="text-xl font-bold text-slate-900">100%</p>
-                    <p className="mt-0.5 text-xs text-slate-500">Phụ tùng chuẩn OEM/Chính hãng</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Phụ tùng OEM chính hãng</p>
                   </div>
                   <div>
                     <p className="text-xl font-bold text-slate-900">Minh bạch</p>
-                    <p className="mt-0.5 text-xs text-slate-500">Không phát sinh chi phí phụ</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Không phí phát sinh</p>
                   </div>
                   <div>
                     <p className="text-xl font-bold text-slate-900">Bảo hành</p>
-                    <p className="mt-0.5 text-xs text-slate-500">Tối thiểu 6 tháng / 10.000km</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Từ 6 tháng / 10.000km</p>
                   </div>
                 </div>
               </div>
 
-              {/* Form đặt lịch nhanh thực tế */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-lg shadow-slate-200/50">
-                <div className="border-b border-slate-100 pb-5">
-                  <h2 className="text-lg font-bold text-slate-900">Đặt hẹn dịch vụ nhanh</h2>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Chọn trước thông tin để trung tâm chuẩn bị cầu nâng và vật tư sẵn sàng
-                  </p>
+              {/* KHUNG HÌNH ẢNH MINH HỌA XƯỞNG BẢO DƯỠNG */}
+              <div className="relative">
+                <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-xl shadow-slate-200/60">
+                  <img
+                    src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1200&q=80"
+                    alt="Xưởng bảo dưỡng ô tô chuyên nghiệp"
+                    className="h-[430px] w-full object-cover"
+                  />
                 </div>
-
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    window.location.href = "/booking";
-                  }}
-                  className="mt-5 space-y-4"
-                >
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700">Dịch vụ yêu cầu</label>
-                    <select className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100">
-                      <option>Bảo dưỡng định kỳ theo số km</option>
-                      <option>Kiểm tra hệ thống phanh</option>
-                      <option>Bảo dưỡng hệ thống điều hòa</option>
-                      <option>Thay dầu & Lọc dầu nhớt</option>
-                      <option>Kiểm tra xe có tiếng kêu / sự cố khác</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700">Hãng xe</label>
-                      <input
-                        type="text"
-                        placeholder="Vd: Toyota, Mazda..."
-                        className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700">Biển số xe</label>
-                      <input
-                        type="text"
-                        placeholder="Vd: 30A-123.45"
-                        className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700">Thời gian mong muốn</label>
-                    <input
-                      type="date"
-                      className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="mt-2 h-12 w-full rounded-xl bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-800"
-                  >
-                    Tiếp tục xác nhận lịch hẹn →
-                  </button>
-
-                  <p className="text-center text-[11px] text-slate-400">
-                    Cố vấn dịch vụ sẽ gọi điện thoại xác nhận trong vòng 15 phút làm việc.
-                  </p>
-                </form>
               </div>
             </div>
           </div>
