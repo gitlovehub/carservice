@@ -15,25 +15,13 @@ class MaintenancePackageController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = MaintenancePackage::query()
-            ->with(['services' => function ($q) {
-                $q->select('services.id', 'services.name', 'services.category', 'services.base_price', 'maintenance_package_services.quantity');
-            }]);
-            
-        // The DB might not have 'status' column or it might be different, let's just get all or by model_id
+            ->with(['services', 'parts']);
+
         if ($request->has('model_id') && !empty($request->model_id)) {
             $query->where('vehicle_model_id', $request->model_id);
         }
 
-        $packages = $query->get();
-        
-        // Add calculated price if needed, or format response
-        $packages->each(function ($pkg) {
-            $pkg->price = $pkg->services->sum(function ($svc) {
-                return $svc->base_price * ($svc->quantity ?? 1);
-            });
-            // Fake mileage_km for frontend compatibility if mileage_milestone is used
-            $pkg->mileage_km = $pkg->mileage_milestone;
-        });
+        $packages = $query->get()->map(fn (MaintenancePackage $package) => $package->withComputedFields());
 
         return response()->json($packages);
     }
@@ -44,11 +32,8 @@ class MaintenancePackageController extends Controller
     public function show(MaintenancePackage $maintenancePackage): JsonResponse
     {
         $maintenancePackage->load(['services', 'parts']);
-        
-        $maintenancePackage->price = $maintenancePackage->services->sum(function ($svc) {
-            return $svc->base_price * ($svc->quantity ?? 1);
-        });
-        $maintenancePackage->mileage_km = $maintenancePackage->mileage_milestone;
+
+        $maintenancePackage->withComputedFields();
 
         return response()->json($maintenancePackage);
     }
