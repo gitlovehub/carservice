@@ -5,7 +5,6 @@ function CustomerTopbar() {
   const location = useLocation();
 
   const pageNames: Record<string, string> = {
-    "/customer": "Tổng quan",
     "/customer/appointments": "Lịch hẹn",
     "/customer/cars": "Xe của tôi",
     "/quotation": "Báo giá",

@@ -3,11 +3,6 @@ import { getUserDisplayName } from "../pages/auth/auth";
 
 const menuItems = [
   {
-    label: "Tổng quan",
-    path: "/customer",
-    icon: "⌂",
-  },
-  {
     label: "Đặt lịch",
     path: "/booking",
     icon: "＋",
