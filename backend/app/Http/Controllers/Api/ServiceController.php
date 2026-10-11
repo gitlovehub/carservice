@@ -10,30 +10,32 @@ use Illuminate\Http\Request;
 class ServiceController extends Controller
 {
     /**
-     * Display a listing of services.
+     * GET /api/services
      */
     public function index(Request $request): JsonResponse
     {
         $query = Service::query()->where('status', 'ACTIVE');
 
-        if ($request->has('category') && $request->category !== 'Tất cả') {
+        // "Tất cả" là nhãn giao diện — coi như không lọc để FE cũ vẫn chạy.
+        if ($request->filled('category') && $request->category !== 'Tất cả') {
             $query->where('category', $request->category);
         }
 
-        if ($request->has('search') && !empty($request->search)) {
+        if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        $services = $query->get();
-
-        return response()->json($services);
+        return response()->json($query->orderBy('category')->orderBy('name')->get());
     }
 
     /**
-     * Display the specified service.
+     * GET /api/services/{service}
      */
     public function show(Service $service): JsonResponse
     {
+        // Dịch vụ đã ẩn không được lộ ra phía khách.
+        abort_if($service->status !== 'ACTIVE', 404);
+
         return response()->json($service);
     }
 }
