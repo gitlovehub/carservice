@@ -591,7 +591,7 @@ export default function Booking() {
           </Link>
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <i className="fa-solid fa-headset text-blue-600"></i>
-            <span>Hỗ trợ nhanh: <strong className="text-slate-800">1900 6868</strong></span>
+            <span>Hỗ trợ nhanh: <strong className="text-slate-800">033 240 5972</strong></span>
           </div>
         </div>
 
