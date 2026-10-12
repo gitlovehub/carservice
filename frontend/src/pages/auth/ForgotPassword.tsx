@@ -61,7 +61,8 @@ function ForgotPassword() {
       setResendCountdown(60);
       setStep("RESET");
       showToast("Mã OTP đặt lại mật khẩu đã được gửi đến email của bạn.", "info");
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string } };
       setErrorMsg(error.data?.message || "Đã xảy ra sự cố kết nối. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
@@ -119,7 +120,13 @@ function ForgotPassword() {
       });
       setStep("SUCCESS");
       showToast("Đặt lại mật khẩu thành công!", "success");
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as {
+        data?: {
+          message?: string;
+          errors?: Record<string, string[]>;
+        };
+      };
       setErrorMsg(
         error.data?.errors?.password?.[0] || 
         error.data?.errors?.otp?.[0] || 
@@ -144,7 +151,8 @@ function ForgotPassword() {
       });
       setResendCountdown(60);
       showToast("Mã OTP mới đã được gửi lại vào email của bạn.", "success");
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string } };
       setErrorMsg(error.data?.message || "Không thể gửi lại mã OTP lúc này.");
     } finally {
       setIsLoading(false);
