@@ -152,6 +152,87 @@ class AuthController extends Controller
         return response()->json(['message' => 'Đã đăng xuất.']);
     }
 
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $account = $this->authenticatedAccount($request);
+
+        $validated = $request->validate([
+            'full_name' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'address' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'avatar' => ['sometimes', 'nullable', 'string'],
+        ]);
+
+        if (array_key_exists('avatar', $validated)) {
+            $account->avatar = $validated['avatar'];
+            $account->save();
+        }
+
+        if ($account->role === Account::ROLE_CUSTOMER) {
+            $customer = $account->customer;
+            if (!$customer) {
+                Customer::query()->create([
+                    'account_id' => $account->id,
+                    'full_name' => $validated['full_name'] ?? 'Khách hàng',
+                    'phone' => $validated['phone'] ?? '',
+                    'email' => $account->email,
+                    'address' => $validated['address'] ?? null,
+                ]);
+            } else {
+                $customerUpdates = [];
+                if (isset($validated['full_name'])) $customerUpdates['full_name'] = $validated['full_name'];
+                if (isset($validated['phone'])) $customerUpdates['phone'] = $validated['phone'];
+                if (array_key_exists('address', $validated)) $customerUpdates['address'] = $validated['address'];
+                if (!empty($customerUpdates)) {
+                    $customer->update($customerUpdates);
+                }
+            }
+        } elseif ($account->employee) {
+            $employeeUpdates = [];
+            if (isset($validated['full_name'])) $employeeUpdates['full_name'] = $validated['full_name'];
+            if (isset($validated['phone'])) $employeeUpdates['phone'] = $validated['phone'];
+            if (!empty($employeeUpdates)) {
+                $account->employee->update($employeeUpdates);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật thông tin thành công.',
+            'account' => $this->formatAccount($account->fresh()),
+        ]);
+    }
+
+    public function changePassword(Request $request): JsonResponse
+    {
+        $account = $this->authenticatedAccount($request);
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if (!Hash::check($validated['current_password'], $account->getAuthPassword())) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Mật khẩu hiện tại không chính xác.'],
+            ]);
+        }
+
+        if (Hash::check($validated['new_password'], $account->getAuthPassword())) {
+            throw ValidationException::withMessages([
+                'new_password' => ['Mật khẩu mới không được trùng với mật khẩu hiện tại.'],
+            ]);
+        }
+
+        $account->password_hash = Hash::make($validated['new_password']);
+        $account->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đổi mật khẩu thành công.',
+        ]);
+    }
+
     private function authenticatedAccount(Request $request): Account
     {
         $account = $request->user();
@@ -175,6 +256,7 @@ class AuthController extends Controller
             'email' => $account->email,
             'role' => $account->role,
             'status' => $account->status,
+            'avatar' => $account->avatar,
             'created_at' => $account->created_at,
             'employee' => $account->employee ? [
                 'id' => $account->employee->id,
