@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\WorkItemController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\MaintenancePackageController;
+use App\Http\Controllers\Api\AdminPartController;
 use App\Http\Controllers\Api\AdminServiceController;
 use App\Http\Controllers\Api\AdminMaintenancePackageController;
 use App\Models\Account;
@@ -154,6 +155,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::apiResource('admin/services', AdminServiceController::class)
             ->parameters(['services' => 'service'])
             ->names('admin.services');
+
+        // Danh mục phụ tùng (read-only, phục vụ chọn phụ tùng cho gói bảo dưỡng)
+        Route::get('admin/parts', [AdminPartController::class, 'index']);
 
         // Quản trị gói bảo dưỡng (DELETE = xóa mềm, status = INACTIVE)
         Route::prefix('admin/maintenance-packages')->group(function (): void {

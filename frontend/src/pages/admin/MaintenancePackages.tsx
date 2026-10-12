@@ -53,6 +53,8 @@ type PackagePartRef = {
   id: number;
   sku: string;
   name: string;
+  unit: string;
+  category: string | null;
   sell_price: string;
 };
 
@@ -111,21 +113,6 @@ function collectVehicleModels(packages: MaintenancePackage[]): VehicleModelRef[]
   const seen = new Map<number, VehicleModelRef>();
   packages.forEach((pkg) => {
     if (pkg.vehicle_model) seen.set(pkg.vehicle_model.id, pkg.vehicle_model);
-  });
-  return Array.from(seen.values());
-}
-
-function collectParts(packages: MaintenancePackage[]): PackagePartRef[] {
-  const seen = new Map<number, PackagePartRef>();
-  packages.forEach((pkg) => {
-    pkg.parts.forEach((part) => {
-      seen.set(part.id, {
-        id: part.id,
-        sku: part.sku,
-        name: part.name,
-        sell_price: part.sell_price,
-      });
-    });
   });
   return Array.from(seen.values());
 }
@@ -216,14 +203,15 @@ function MaintenancePackages() {
 
     (async () => {
       try {
-        const [serviceList, firstPage] = await Promise.all([
+        const [serviceList, partsList, firstPage] = await Promise.all([
           fetchApi("/services") as Promise<PackageServiceRef[]>,
+          fetchApi("/admin/parts") as Promise<{ data: PackagePartRef[] }>,
           fetchApi(
             "/admin/maintenance-packages?page=1",
           ) as Promise<PackageIndexResponse>,
         ]);
 
-        // Gom toàn bộ gói (tất cả trang) để suy ra dòng xe & phụ tùng đang dùng.
+        // Gom toàn bộ gói (tất cả trang) để suy ra danh mục dòng xe đang dùng.
         const pages = [firstPage];
         for (
           let currentPage = 2;
@@ -241,7 +229,7 @@ function MaintenancePackages() {
 
         setServices(serviceList);
         setModels(collectVehicleModels(allPackages));
-        setParts(collectParts(allPackages));
+        setParts(partsList.data);
         setPackages(firstPage.data.data);
         setLastPage(firstPage.data.last_page);
         setTotal(firstPage.data.total);
@@ -948,6 +936,9 @@ function MaintenancePackages() {
                                 />
                                 <span className="min-w-0 truncate">
                                   {part.name}
+                                </span>
+                                <span className="shrink-0 text-[#8A949E]">
+                                  {part.unit}
                                 </span>
                                 <span className="shrink-0 text-[#8A949E]">
                                   {formatPrice(part.sell_price)}
