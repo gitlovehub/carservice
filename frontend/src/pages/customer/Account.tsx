@@ -229,8 +229,9 @@ function Account() {
 
       setIsEditProfileOpen(false);
       showToast("Cập nhật thông tin cá nhân thành công!", "success");
-    } catch (err: any) {
-      const msg = err?.data?.message || "Cập nhật thông tin thất bại.";
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string } };
+      const msg = error?.data?.message || "Cập nhật thông tin thất bại.";
       showToast(msg, "error");
     } finally {
       setIsSubmitting(false);
@@ -287,14 +288,23 @@ function Account() {
 
       setIsChangePasswordOpen(false);
       showToast("Đổi mật khẩu thành công!", "success");
-    } catch (err: any) {
-      const errs = err?.data?.errors;
+    } catch (err: unknown) {
+      const error = err as {
+        data?: {
+          message?: string;
+          errors?: {
+            current_password?: string[];
+            new_password?: string[];
+          };
+        };
+      };
+      const errs = error?.data?.errors;
       if (errs?.current_password) {
         setPasswordErrors({ currentPassword: errs.current_password[0] });
       } else if (errs?.new_password) {
         setPasswordErrors({ newPassword: errs.new_password[0] });
       } else {
-        showToast(err?.data?.message || "Đổi mật khẩu thất bại. Kiểm tra lại mật khẩu hiện tại.", "error");
+        showToast(error?.data?.message || "Đổi mật khẩu thất bại. Kiểm tra lại mật khẩu hiện tại.", "error");
       }
     } finally {
       setIsSubmitting(false);
@@ -350,8 +360,9 @@ function Account() {
 
       setIsAvatarModalOpen(false);
       showToast("Cập nhật ảnh đại diện thành công!", "success");
-    } catch (err: any) {
-      showToast(err?.data?.message || "Cập nhật ảnh đại diện thất bại.", "error");
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string } };
+      showToast(error?.data?.message || "Cập nhật ảnh đại diện thất bại.", "error");
     } finally {
       setIsSubmitting(false);
     }

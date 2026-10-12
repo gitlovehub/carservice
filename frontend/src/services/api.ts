@@ -19,9 +19,10 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const error = new Error(data?.message || "Something went wrong");
-    (error as any).status = response.status;
-    (error as any).data = data;
+    const error = Object.assign(new Error(data?.message || "Something went wrong"), {
+      status: response.status,
+      data,
+    });
     throw error;
   }
 
