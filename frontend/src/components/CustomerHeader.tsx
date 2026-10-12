@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { getUserDisplayName } from "../pages/auth/auth";
+import { getUserDisplayName, getUserInitials } from "../pages/auth/auth";
 
 const menuItems = [
   {
@@ -102,7 +102,7 @@ function CustomerHeader() {
           <div className="rounded-2xl border border-[#3C4650] bg-[#29333D] p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#D6A85F] text-[10px] font-bold text-[#1F2933]">
-                NV
+                {getUserInitials(user)}
               </div>
 
               <div className="min-w-0">
