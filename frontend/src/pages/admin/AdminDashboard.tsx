@@ -190,6 +190,23 @@ function AdminDashboard() {
                 </Link>
 
                 <Link
+                  to="/admin/maintenance-packages"
+                  className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
+                    GB
+                  </div>
+
+                  <p className="mt-4 text-xs font-semibold text-[#20252B]">
+                    Gói bảo dưỡng
+                  </p>
+
+                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                    Quản lý gói bảo dưỡng, dịch vụ & phụ tùng
+                  </p>
+                </Link>
+
+                <Link
                   to="/admin/reports"
                   className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
                 >

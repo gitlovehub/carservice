@@ -28,6 +28,11 @@ const menuItems = [
     icon: "◇",
   },
   {
+    label: "Gói bảo dưỡng",
+    path: "/admin/maintenance-packages",
+    icon: "◈",
+  },
+  {
     label: "Kho vật tư",
     path: "/admin/inventory",
     icon: "▰",
