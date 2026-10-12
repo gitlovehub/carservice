@@ -32,8 +32,12 @@ function RoleAccountMenu() {
             : "border-[#E1E4E6] bg-white hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
         }`}
       >
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F2933] text-[9px] font-bold text-white shadow-sm ring-1 ring-[#D6A85F]/30">
-          {getUserInitials(user)}
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F2933] text-[9px] font-bold text-white shadow-sm ring-1 ring-[#D6A85F]/30 overflow-hidden">
+          {user?.avatar ? (
+            <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
+          ) : (
+            getUserInitials(user)
+          )}
         </div>
 
         <div className="hidden min-w-0 text-left sm:block">

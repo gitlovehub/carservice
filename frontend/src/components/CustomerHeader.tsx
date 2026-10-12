@@ -101,8 +101,12 @@ function CustomerHeader() {
         <div className="mt-auto px-4 pb-5">
           <div className="rounded-2xl border border-[#3C4650] bg-[#29333D] p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#D6A85F] text-[10px] font-bold text-[#1F2933]">
-                {getUserInitials(user)}
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#D6A85F] text-[10px] font-bold text-[#1F2933] overflow-hidden">
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  getUserInitials(user)
+                )}
               </div>
 
               <div className="min-w-0">
