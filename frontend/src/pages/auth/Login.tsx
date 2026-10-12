@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { fetchApi } from "../../services/api";
 import { setUserRole } from "./auth";
 import OtpInput from "../../components/auth/OtpInput";
-import Toast, { ToastType } from "../../components/auth/Toast";
+import Toast, { type ToastType } from "../../components/auth/Toast";
 
 type Step = "login" | "otp";
 type ApiErrorDetails = {

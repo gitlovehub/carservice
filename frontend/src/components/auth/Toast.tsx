@@ -1,6 +1,11 @@
 import { useEffect } from "react";
 
 export type ToastType = "success" | "error" | "info";
+export const ToastType = {
+  SUCCESS: "success",
+  ERROR: "error",
+  INFO: "info",
+} as const;
 
 interface ToastProps {
   message: string;

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { fetchApi } from "../../services/api";
 import OtpInput from "../../components/auth/OtpInput";
-import Toast, { ToastType } from "../../components/auth/Toast";
+import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
 
 function ForgotPassword() {
