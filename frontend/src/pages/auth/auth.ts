@@ -21,7 +21,17 @@ export const getRoleManagementPage = (
   }
 };
 
-export const getUserDisplayName = (user: any = null): string => {
+export type AuthUserInfo = {
+  full_name?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  avatar?: string;
+  customer?: { full_name?: string };
+  employee?: { full_name?: string };
+} | null;
+
+export const getUserDisplayName = (user: AuthUserInfo = null): string => {
   return (
     user?.full_name ||
     user?.customer?.full_name ||
@@ -32,7 +42,7 @@ export const getUserDisplayName = (user: any = null): string => {
   );
 };
 
-export const getUserInitials = (user: any = null): string => {
+export const getUserInitials = (user: AuthUserInfo = null): string => {
   const name = getUserDisplayName(user);
   if (!name || name === "Tên người dùng") {
     const role = user?.role;
@@ -69,7 +79,7 @@ export const setUserRole = (role: UserRole) => {
 export const logout = async () => {
   try {
     await fetchApi("/logout", { method: "POST" });
-  } catch (e) {
+  } catch {
     // Ignore error
   }
   localStorage.removeItem("role");

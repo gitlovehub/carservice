@@ -25,6 +25,7 @@ export function OtpInput({
     const firstEmptyIndex = digits.findIndex((d) => !d);
     const indexToFocus = firstEmptyIndex === -1 ? 0 : firstEmptyIndex;
     inputRefs.current[indexToFocus]?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {

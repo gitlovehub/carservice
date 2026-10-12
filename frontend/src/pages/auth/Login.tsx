@@ -115,23 +115,26 @@ function Login() {
     return () => clearTimeout(timer);
   }, [resendCountdown]);
 
+  const showToast = (message: string, type: ToastType = "info") => {
+    setToast({ message, type });
+  };
+
   useEffect(() => {
     const prefillRole = (location.state as { prefillRole?: string } | null)?.prefillRole;
     if (prefillRole) {
       const demoAcc = DEMO_ACCOUNTS.find((d) => d.code === prefillRole);
       if (demoAcc) {
-        setForm({
-          email: demoAcc.email,
-          password: demoAcc.pass,
-        });
-        showToast(`Đã tự động chọn tài khoản ${demoAcc.role}!`, "info");
+        const timer = setTimeout(() => {
+          setForm({
+            email: demoAcc.email,
+            password: demoAcc.pass,
+          });
+          setToast({ message: `Đã tự động chọn tài khoản ${demoAcc.role}!`, type: "info" });
+        }, 0);
+        return () => clearTimeout(timer);
       }
     }
   }, [location.state]);
-
-  const showToast = (message: string, type: ToastType = "info") => {
-    setToast({ message, type });
-  };
 
   const goToDashboard = (role: string) => {
     const returnToBooking =
