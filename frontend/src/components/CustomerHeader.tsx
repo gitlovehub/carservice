@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getUserDisplayName, getUserInitials } from "../pages/auth/auth";
 
@@ -46,7 +47,23 @@ const menuItems = [
 
 function CustomerHeader() {
   const location = useLocation();
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const [user, setUser] = useState(() =>
+    JSON.parse(localStorage.getItem("user") || "null"),
+  );
+
+  useEffect(() => {
+    const syncUser = () => {
+      setUser(JSON.parse(localStorage.getItem("user") || "null"));
+    };
+
+    window.addEventListener("storage", syncUser);
+    window.addEventListener("user-updated", syncUser);
+
+    return () => {
+      window.removeEventListener("storage", syncUser);
+      window.removeEventListener("user-updated", syncUser);
+    };
+  }, [location]);
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] border-r border-[#313B45] bg-[#1F2933] text-white lg:block">

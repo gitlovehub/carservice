@@ -12,6 +12,7 @@ type AuthUser = {
   name?: string;
   email?: string;
   role?: string;
+  avatar?: string;
 };
 
 function Header() {
@@ -53,9 +54,11 @@ function Header() {
 
     checkLogin();
     window.addEventListener("storage", checkLogin);
+    window.addEventListener("user-updated", checkLogin);
 
     return () => {
       window.removeEventListener("storage", checkLogin);
+      window.removeEventListener("user-updated", checkLogin);
     };
   }, [location]);
 
@@ -216,8 +219,16 @@ function Header() {
                 onClick={() => setOpen(!open)}
                 className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 transition hover:border-slate-300 hover:bg-slate-50"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 font-mono text-xs font-bold text-amber-400">
-                  {getInitials(getUserDisplayName(user))}
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-mono text-xs font-bold text-amber-400 overflow-hidden ring-1 ring-amber-400/30">
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="Avatar"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    getInitials(getUserDisplayName(user))
+                  )}
                 </div>
 
                 <div className="hidden text-left sm:block">
@@ -249,13 +260,26 @@ function Header() {
               {/* DROPDOWN MENU */}
               {open && (
                 <div className="absolute right-0 top-full z-50 mt-2.5 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg shadow-slate-200/50">
-                  <div className="border-b border-slate-100 px-3 py-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Tài khoản người dùng
-                    </p>
-                    <p className="mt-0.5 truncate text-xs font-semibold text-slate-800">
-                      {user?.email}
-                    </p>
+                  <div className="flex items-center gap-3 border-b border-slate-100 px-3 py-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-mono text-xs font-bold text-amber-400 overflow-hidden ring-1 ring-amber-400/30">
+                      {user?.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt="Avatar"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        getInitials(getUserDisplayName(user))
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-bold text-slate-900">
+                        {getUserDisplayName(user)}
+                      </p>
+                      <p className="truncate text-[10px] text-slate-500">
+                        {user?.email}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="mt-1 space-y-0.5">
