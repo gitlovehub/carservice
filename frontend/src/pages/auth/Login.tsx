@@ -36,6 +36,14 @@ const DEMO_ACCOUNTS = [
     badge: "bg-amber-100 text-amber-800 border-amber-200",
     desc: "Kiểm tra thực tế, chẩn đoán và sửa chữa",
   },
+  {
+    role: "Khách hàng",
+    code: "CUSTOMER",
+    email: "customer.demo@carservice.test",
+    pass: "CarService123!",
+    badge: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    desc: "Đặt lịch, quản lý xe và theo dõi bảo dưỡng",
+  },
 ];
 
 const getApiErrorDetails = (error: unknown): ApiErrorDetails => {
@@ -555,7 +563,7 @@ function Login() {
                     </span>
                     <span className="text-[10px] text-[#A6ADB4]">Click để tự điền</span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {DEMO_ACCOUNTS.map((demo) => (
                       <button
                         key={demo.code}
@@ -734,7 +742,9 @@ function Login() {
             {/* Footer bản quyền */}
             <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
               <span>Hỗ trợ kỹ thuật 24/7</span>
-              <span className="font-semibold text-slate-300">Hotline: 1900 6868</span>
+              <a href="tel:0332405972" className="font-semibold text-slate-300 hover:text-[#D6A85F] transition">
+                Hotline: 033 240 5972
+              </a>
             </div>
           </div>
 
