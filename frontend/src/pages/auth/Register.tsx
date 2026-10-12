@@ -50,7 +50,7 @@ function Register() {
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (resendCountdown > 0) {
       timer = setTimeout(() => {
         setResendCountdown((prev) => prev - 1);
