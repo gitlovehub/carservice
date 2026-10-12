@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   getRoleManagementPage,
@@ -12,7 +12,24 @@ function RoleAccountMenu() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const [user, setUser] = useState(() =>
+    JSON.parse(localStorage.getItem("user") || "null"),
+  );
+
+  useEffect(() => {
+    const syncUser = () => {
+      setUser(JSON.parse(localStorage.getItem("user") || "null"));
+    };
+
+    window.addEventListener("storage", syncUser);
+    window.addEventListener("user-updated", syncUser);
+
+    return () => {
+      window.removeEventListener("storage", syncUser);
+      window.removeEventListener("user-updated", syncUser);
+    };
+  }, [location]);
+
   const managementPage = getRoleManagementPage(user?.role);
 
   const handleLogout = () => {
