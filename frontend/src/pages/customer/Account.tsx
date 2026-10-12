@@ -224,6 +224,7 @@ function Account() {
           setCustomer(response.account.customer);
         }
         localStorage.setItem("user", JSON.stringify(response.account));
+        window.dispatchEvent(new Event("user-updated"));
       }
 
       setIsEditProfileOpen(false);
@@ -344,6 +345,7 @@ function Account() {
       if (response?.account) {
         setAccount(response.account);
         localStorage.setItem("user", JSON.stringify(response.account));
+        window.dispatchEvent(new Event("user-updated"));
       }
 
       setIsAvatarModalOpen(false);
