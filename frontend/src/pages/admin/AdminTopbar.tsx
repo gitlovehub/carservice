@@ -4,6 +4,7 @@ import RoleAccountMenu from "../../components/RoleAccountMenu";
 const pageNames: Record<string, string> = {
   "/admin": "Tài khoản",
   "/admin/services": "Dịch vụ",
+  "/admin/maintenance-packages": "Gói bảo dưỡng",
   "/admin/inventory": "Kho vật tư",
   "/admin/reports": "Báo cáo",
 };

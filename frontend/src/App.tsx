@@ -38,6 +38,7 @@ import AdminAccounts from "./pages/admin/Accounts";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminServices from "./pages/admin/Services";
+import AdminMaintenancePackages from "./pages/admin/MaintenancePackages";
 import AdminInventory from "./pages/admin/Inventory";
 import AdminReports from "./pages/admin/Reports";
 
@@ -332,6 +333,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
               <AdminServices />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/maintenance-packages"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminMaintenancePackages />
             </ProtectedRoute>
           }
         />
