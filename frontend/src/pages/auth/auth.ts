@@ -32,6 +32,20 @@ export const getUserDisplayName = (user: any = null): string => {
   );
 };
 
+export const getUserInitials = (user: any = null): string => {
+  const name = getUserDisplayName(user);
+  if (!name || name === "Tên người dùng") {
+    const role = user?.role;
+    if (role === "ADMIN") return "AD";
+    if (role === "ADVISOR") return "CV";
+    if (role === "TECHNICIAN") return "KT";
+    return "KH";
+  }
+  const words = name.trim().split(/\s+/);
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+};
+
 export const getUserRole = (): UserRole | null => {
   const role = localStorage.getItem("role");
 
