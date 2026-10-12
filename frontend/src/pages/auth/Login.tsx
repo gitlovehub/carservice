@@ -107,6 +107,20 @@ function Login() {
     return () => clearTimeout(timer);
   }, [resendCountdown]);
 
+  useEffect(() => {
+    const prefillRole = (location.state as { prefillRole?: string } | null)?.prefillRole;
+    if (prefillRole) {
+      const demoAcc = DEMO_ACCOUNTS.find((d) => d.code === prefillRole);
+      if (demoAcc) {
+        setForm({
+          email: demoAcc.email,
+          password: demoAcc.pass,
+        });
+        showToast(`Đã tự động chọn tài khoản ${demoAcc.role}!`, "info");
+      }
+    }
+  }, [location.state]);
+
   const showToast = (message: string, type: ToastType = "info") => {
     setToast({ message, type });
   };
