@@ -185,6 +185,8 @@ function Login() {
       if (response?.account?.role) {
         if (response.token) {
           localStorage.setItem("token", response.token);
+        } else {
+          localStorage.setItem("token", "session_authenticated");
         }
         localStorage.setItem("user", JSON.stringify(response.account));
         setUserRole(response.account.role);

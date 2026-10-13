@@ -7,7 +7,7 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
   headers.set("Content-Type", "application/json");
   headers.set("Accept", "application/json");
   
-  if (token) {
+  if (token && token !== "session_authenticated") {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
