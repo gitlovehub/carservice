@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { getUserDisplayName, getUserInitials } from "../pages/auth/auth";
+import { getUserDisplayName } from "../pages/auth/auth";
+
+const getInitials = (name?: string) => {
+  if (!name) return "KH";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
 
 const menuItems = [
   {
@@ -47,23 +54,29 @@ const menuItems = [
 
 function CustomerHeader() {
   const location = useLocation();
-  const [user, setUser] = useState(() =>
-    JSON.parse(localStorage.getItem("user") || "null"),
-  );
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     const syncUser = () => {
-      setUser(JSON.parse(localStorage.getItem("user") || "null"));
+      try {
+        setUser(JSON.parse(localStorage.getItem("user") || "null"));
+      } catch {
+        setUser(null);
+      }
     };
-
     window.addEventListener("storage", syncUser);
     window.addEventListener("user-updated", syncUser);
-
     return () => {
       window.removeEventListener("storage", syncUser);
       window.removeEventListener("user-updated", syncUser);
     };
-  }, [location]);
+  }, []);
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] border-r border-[#313B45] bg-[#1F2933] text-white lg:block">
@@ -118,13 +131,17 @@ function CustomerHeader() {
         <div className="mt-auto px-4 pb-5">
           <div className="rounded-2xl border border-[#3C4650] bg-[#29333D] p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#D6A85F] text-[10px] font-bold text-[#1F2933] overflow-hidden">
-                {user?.avatar ? (
-                  <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
-                ) : (
-                  getUserInitials(user)
-                )}
-              </div>
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={getUserDisplayName(user)}
+                  className="h-9 w-9 shrink-0 rounded-full object-cover border border-[#D6A85F]/60 shadow-xs"
+                />
+              ) : (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#D6A85F] text-[10px] font-bold text-[#1F2933]">
+                  {getInitials(getUserDisplayName(user))}
+                </div>
+              )}
 
               <div className="min-w-0">
                 <p className="truncate text-[12px] font-semibold text-white">
