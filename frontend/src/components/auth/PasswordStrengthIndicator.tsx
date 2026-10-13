@@ -10,19 +10,19 @@ export function PasswordStrengthIndicator({
   const requirements = useMemo(() => {
     return [
       {
-        label: "Ít nhất 8 ký tự",
+        label: "Tối thiểu 8 ký tự",
         met: password.length >= 8,
       },
       {
-        label: "Chữ cái viết hoa (A-Z)",
+        label: "Chữ viết hoa (A-Z)",
         met: /[A-Z]/.test(password),
       },
       {
-        label: "Chữ cái viết thường (a-z)",
+        label: "Chữ viết thường (a-z)",
         met: /[a-z]/.test(password),
       },
       {
-        label: "Ít nhất 1 chữ số (0-9)",
+        label: "Chữ số (0-9)",
         met: /[0-9]/.test(password),
       },
     ];
@@ -33,29 +33,29 @@ export function PasswordStrengthIndicator({
   }
 
   const metCount = requirements.filter((r) => r.met).length;
-  const strengthLevels = ["Rất yếu", "Yếu", "Trung bình", "Khá", "Rất mạnh"];
+  const strengthLevels = ["Rất yếu", "Yếu", "Trung bình", "Khá tốt", "Rất mạnh"];
   const strengthText = strengthLevels[metCount];
 
   const colorStyles = [
     "bg-slate-200",
-    "bg-red-500",
+    "bg-rose-500",
     "bg-amber-500",
     "bg-blue-500",
     "bg-emerald-500",
   ][metCount];
 
   return (
-    <div className="mt-2 space-y-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+    <div className="mt-2 space-y-2 rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-3 text-left">
       <div className="flex items-center justify-between text-[11px]">
         <span className="text-slate-500 font-medium">Độ mạnh mật khẩu:</span>
         <span
           className={`font-semibold ${
             metCount <= 1
-              ? "text-red-500"
+              ? "text-rose-600"
               : metCount <= 2
-              ? "text-amber-500"
+              ? "text-amber-600"
               : metCount === 3
-              ? "text-blue-500"
+              ? "text-blue-600"
               : "text-emerald-600"
           }`}
         >
@@ -63,7 +63,7 @@ export function PasswordStrengthIndicator({
         </span>
       </div>
 
-      {/* Thanh tiến trình độ mạnh */}
+      {/* Progress Bars */}
       <div className="grid grid-cols-4 gap-1.5 h-1.5 w-full">
         {[1, 2, 3, 4].map((step) => (
           <div
@@ -75,13 +75,13 @@ export function PasswordStrengthIndicator({
         ))}
       </div>
 
-      {/* Danh sách tiêu chuẩn */}
+      {/* Rules checklist */}
       <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
         {requirements.map((req, index) => (
           <div
             key={index}
             className={`flex items-center gap-1.5 transition-colors ${
-              req.met ? "text-emerald-600 font-medium" : "text-slate-400"
+              req.met ? "text-emerald-700 font-medium" : "text-slate-400"
             }`}
           >
             <span
