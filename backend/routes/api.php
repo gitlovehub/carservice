@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdvisorAppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\PaymentController;
@@ -73,6 +74,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     */
 
     Route::middleware('role:' . Account::ROLE_CUSTOMER)->group(function (): void {
+
+        // Phiếu sửa chữa, báo giá và hóa đơn của khách hàng hiện tại
+        Route::controller(CustomerRepairOrderController::class)->prefix('me')->group(function (): void {
+            Route::get('repair-orders', 'index');
+            Route::get('repair-orders/{repairOrder}', 'show');
+            Route::get('repair-orders/{repairOrder}/invoice', 'invoice');
+            Route::post('quotations/{quotation}/respond', 'respondQuotation');
+        });
 
         // Hồ sơ cá nhân
         Route::controller(CustomerController::class)->prefix('me/customer')->group(function (): void {
