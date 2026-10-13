@@ -326,12 +326,10 @@ function Register() {
         </div>
       </header>
 
-      {/* Main Container - Split Layout */}
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-10">
-        <div className="w-full max-w-5xl overflow-hidden rounded-3xl border border-[#E1E4E6] bg-white shadow-[0_20px_50px_rgba(31,41,51,0.08)] grid grid-cols-1 lg:grid-cols-12">
-          
-          {/* CỘT TRÁI: FORM ĐĂNG KÝ / XÁC THỰC OTP */}
-          <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center">
+      {/* Main Container - Tối giản căn giữa */}
+      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
+        <div className="w-full max-w-[520px]">
+          <div className="rounded-3xl border border-[#E1E4E6] bg-white p-7 sm:p-9 shadow-[0_20px_50px_rgba(31,41,51,0.06)]">
             {step === "REGISTER" ? (
               <div>
                 <div className="mb-6">
@@ -642,78 +640,6 @@ function Register() {
               </div>
             )}
           </div>
-
-          {/* CỘT PHẢI: LỢI ÍCH KHI LÀ THÀNH VIÊN */}
-          <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-[#1F2933] to-[#11161B] text-white p-10 flex-col justify-between relative overflow-hidden">
-            <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#D6A85F]/10 blur-3xl pointer-events-none"></div>
-
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-1.5 backdrop-blur-md mb-6 border border-white/10">
-                <span className="text-amber-400">👑</span>
-                <span className="text-[11px] font-semibold text-slate-200">
-                  Đặc quyền hội viên
-                </span>
-              </div>
-
-              <h2 className="text-2xl font-bold tracking-tight leading-snug">
-                Gia nhập cộng đồng chăm sóc xe hơi thông minh
-              </h2>
-
-              <p className="mt-4 text-xs text-slate-300 leading-relaxed">
-                Đăng ký tài khoản miễn phí để nhận trọn bộ tiện ích và quyền lợi độc quyền từ CarService.
-              </p>
-            </div>
-
-            <div className="relative z-10 space-y-4 my-8">
-              <div className="flex items-start gap-3 rounded-2xl bg-white/5 border border-white/10 p-4 backdrop-blur-sm">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#D6A85F]/20 text-[#D6A85F] text-sm font-bold">
-                  01
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white">
-                    Sổ bảo dưỡng điện tử trọn đời
-                  </h3>
-                  <p className="mt-0.5 text-[11px] text-slate-400 leading-relaxed">
-                    Lưu trữ lịch sử thay dầu, phụ tùng và mốc bảo dưỡng định kỳ trên đám mây.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 rounded-2xl bg-white/5 border border-white/10 p-4 backdrop-blur-sm">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#D6A85F]/20 text-[#D6A85F] text-sm font-bold">
-                  02
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white">
-                    Ưu tiên giữ chỗ & nhắc hẹn tự động
-                  </h3>
-                  <p className="mt-0.5 text-[11px] text-slate-400 leading-relaxed">
-                    Không phải chờ đợi, nhận thông báo nhắc nhở khi đến chu kỳ kiểm tra định kỳ.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 rounded-2xl bg-white/5 border border-white/10 p-4 backdrop-blur-sm">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#D6A85F]/20 text-[#D6A85F] text-sm font-bold">
-                  03
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white">
-                    Tích lũy điểm & ưu đãi thành viên
-                  </h3>
-                  <p className="mt-0.5 text-[11px] text-slate-400 leading-relaxed">
-                    Giảm giá trực tiếp cho các gói vệ sinh khoang máy, nội thất và cân chỉnh góc đặt bánh xe.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative z-10 pt-4 border-t border-white/10 text-[11px] text-slate-400 flex items-center justify-between">
-              <span>Bảo mật dữ liệu tuyệt đối</span>
-              <span className="font-semibold text-slate-300">Cam kết không spam</span>
-            </div>
-          </div>
-
         </div>
       </main>
 
