@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   getRoleManagementPage,
   getUserDisplayName,
@@ -16,7 +16,6 @@ const getInitials = (name?: string) => {
 function RoleAccountMenu() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   
   const [user, setUser] = useState(() => {
     try {
@@ -45,9 +44,8 @@ function RoleAccountMenu() {
   const managementPage = getRoleManagementPage(user?.role);
 
   const handleLogout = () => {
-    logout();
     setOpen(false);
-    navigate("/login");
+    logout();
   };
 
   return (

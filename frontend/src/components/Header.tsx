@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { fetchApi } from "../services/api";
 import {
   getRoleManagementPage,
   getUserDisplayName,
+  logout,
 } from "../pages/auth/auth";
 
 type AuthUser = {
@@ -23,7 +24,6 @@ function Header() {
   const [user, setUser] = useState<AuthUser | null>(null);
 
   const location = useLocation();
-  const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
   const managementPage = getRoleManagementPage(user?.role);
 
@@ -78,21 +78,9 @@ function Header() {
     };
   }, [open]);
 
-  const handleLogout = async () => {
-    try {
-      await fetchApi("/logout", { method: "POST" });
-    } catch {
-      // Tiếp tục xóa dữ liệu cục bộ dù backend có lỗi
-    }
-
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("role");
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    setIsLoggedIn(false);
+  const handleLogout = () => {
     setOpen(false);
-    navigate("/login");
+    logout();
   };
 
   const navLinkClass = (isActive: boolean) =>

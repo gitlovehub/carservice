@@ -77,14 +77,19 @@ export const setUserRole = (role: UserRole) => {
   localStorage.setItem("isLoggedIn", "true");
 };
 
-export const logout = async () => {
-  try {
-    await fetchApi("/logout", { method: "POST" });
-  } catch {
-    // Ignore error
-  }
+export const logout = () => {
   localStorage.removeItem("role");
   localStorage.removeItem("isLoggedIn");
   localStorage.removeItem("token");
   localStorage.removeItem("user");
+  window.dispatchEvent(new Event("user-updated"));
+  window.dispatchEvent(new Event("storage"));
+
+  try {
+    void fetchApi("/logout", { method: "POST" });
+  } catch {
+    // Bỏ qua lỗi backend nếu có
+  }
+
+  window.location.href = "/login";
 };

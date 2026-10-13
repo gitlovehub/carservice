@@ -3,6 +3,7 @@ import Header from "../../components/Header";
 import { fetchApi } from "../../services/api";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
+import { logout } from "../auth/auth";
 
 type AccountInfo = {
   id: number;
@@ -542,10 +543,19 @@ function Account() {
                     </div>
                   </div>
 
-                  <div className="mt-6 border-t border-[#E1E4E6] pt-4">
+                  <div className="mt-6 border-t border-[#E1E4E6] pt-4 space-y-3">
                     <p className="text-[11px] leading-5 text-[#66717C]">
                       Thông tin này được sử dụng để định danh trong toàn bộ các quy trình dịch vụ và chăm sóc xe tại CarService.
                     </p>
+
+                    <button
+                      type="button"
+                      onClick={() => logout()}
+                      className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50/60 py-2.5 text-xs font-semibold text-red-600 transition hover:bg-red-600 hover:text-white"
+                    >
+                      <span>↪</span>
+                      Đăng xuất tài khoản
+                    </button>
                   </div>
                 </div>
               </div>
