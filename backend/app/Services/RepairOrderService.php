@@ -471,6 +471,7 @@ class RepairOrderService
                 ]);
             }
 
+            $invoice->discount_amount = $quotation?->discount_amount ?? 0;
             $subtotal = $invoice->items()->sum('amount');
             $invoice->subtotal = $subtotal;
             $invoice->total_amount = $subtotal - $invoice->discount_amount;
