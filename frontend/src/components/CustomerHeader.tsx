@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { getUserDisplayName } from "../pages/auth/auth";
+import { getUserDisplayName, logout } from "../pages/auth/auth";
 
 const getInitials = (name?: string) => {
   if (!name) return "KH";
@@ -154,12 +154,22 @@ function CustomerHeader() {
               </div>
             </div>
 
-            <Link
-              to="/"
-              className="mt-4 flex cursor-pointer items-center justify-center rounded-xl border border-[#4A5661] px-3 py-2.5 text-[11px] font-medium text-[#D5DBE0] transition hover:bg-[#313B45] hover:text-white"
-            >
-              Về trang chủ
-            </Link>
+            <div className="mt-3 flex gap-2">
+              <Link
+                to="/"
+                className="flex flex-1 cursor-pointer items-center justify-center rounded-xl border border-[#4A5661] py-2 text-[11px] font-medium text-[#D5DBE0] transition hover:bg-[#313B45] hover:text-white"
+              >
+                Trang chủ
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="flex flex-1 cursor-pointer items-center justify-center rounded-xl border border-red-500/40 bg-red-500/10 py-2 text-[11px] font-medium text-red-400 transition hover:bg-red-500 hover:text-white"
+              >
+                Đăng xuất
+              </button>
+            </div>
           </div>
         </div>
       </div>
