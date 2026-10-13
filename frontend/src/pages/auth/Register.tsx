@@ -190,7 +190,7 @@ function Register() {
     setApiError("");
 
     try {
-      await fetchApi("/register", {
+      const res = await fetchApi("/register", {
         method: "POST",
         body: JSON.stringify({
           full_name: form.fullName.trim(),
@@ -204,7 +204,11 @@ function Register() {
 
       setResendCountdown(60);
       setStep("OTP");
-      showToast("Đăng ký thành công! Mã xác thực OTP đã được gửi đến email của bạn.", "success");
+      if (res?.debug_otp) {
+        showToast(`Mã OTP của bạn là: ${res.debug_otp} (đã gửi đến email)`, "success");
+      } else {
+        showToast("Đăng ký thành công! Mã xác thực OTP đã được gửi đến email của bạn.", "success");
+      }
     } catch (error: unknown) {
       setApiError(
         getErrorMessage(
@@ -271,7 +275,7 @@ function Register() {
     setApiError("");
 
     try {
-      await fetchApi("/resend-email-otp", {
+      const res = await fetchApi("/resend-email-otp", {
         method: "POST",
         body: JSON.stringify({
           email: form.email.trim(),
@@ -279,7 +283,11 @@ function Register() {
       });
 
       setResendCountdown(60);
-      showToast("Mã OTP mới đã được gửi lại vào email của bạn.", "success");
+      if (res?.debug_otp) {
+        showToast(`Mã OTP mới của bạn là: ${res.debug_otp} (đã gửi đến email)`, "success");
+      } else {
+        showToast("Mã OTP mới đã được gửi lại vào email của bạn.", "success");
+      }
     } catch (error: unknown) {
       setApiError(
         getErrorMessage(error, "Không thể gửi lại mã OTP lúc này.")
