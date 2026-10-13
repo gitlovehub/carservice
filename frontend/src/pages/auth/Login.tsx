@@ -11,40 +11,7 @@ type ApiErrorDetails = {
   errors?: Record<string, string[]>;
 };
 
-const DEMO_ACCOUNTS = [
-  {
-    role: "Quản trị viên",
-    code: "ADMIN",
-    email: "admin.demo@carservice.test",
-    pass: "CarService123!",
-    badge: "bg-purple-100 text-purple-700 border-purple-200",
-    desc: "Toàn quyền quản trị hệ thống và cấu hình",
-  },
-  {
-    role: "Cố vấn dịch vụ",
-    code: "ADVISOR",
-    email: "advisor.demo@carservice.test",
-    pass: "CarService123!",
-    badge: "bg-blue-100 text-blue-700 border-blue-200",
-    desc: "Tiếp nhận xe, tư vấn và quản lý lịch hẹn",
-  },
-  {
-    role: "Kỹ thuật viên",
-    code: "TECHNICIAN",
-    email: "technician.demo@carservice.test",
-    pass: "CarService123!",
-    badge: "bg-amber-100 text-amber-800 border-amber-200",
-    desc: "Kiểm tra thực tế, chẩn đoán và sửa chữa",
-  },
-  {
-    role: "Khách hàng",
-    code: "CUSTOMER",
-    email: "customer.demo@carservice.test",
-    pass: "CarService123!",
-    badge: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    desc: "Đặt lịch, quản lý xe và theo dõi bảo dưỡng",
-  },
-];
+
 
 const getApiErrorDetails = (error: unknown): ApiErrorDetails => {
   if (typeof error !== "object" || error === null || !("data" in error)) {
@@ -119,23 +86,6 @@ function Login() {
     setToast({ message, type });
   };
 
-  useEffect(() => {
-    const prefillRole = (location.state as { prefillRole?: string } | null)?.prefillRole;
-    if (prefillRole) {
-      const demoAcc = DEMO_ACCOUNTS.find((d) => d.code === prefillRole);
-      if (demoAcc) {
-        const timer = setTimeout(() => {
-          setForm({
-            email: demoAcc.email,
-            password: demoAcc.pass,
-          });
-          setToast({ message: `Đã tự động chọn tài khoản ${demoAcc.role}!`, type: "info" });
-        }, 0);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [location.state]);
-
   const goToDashboard = (role: string) => {
     const returnToBooking =
       role === "CUSTOMER" &&
@@ -178,16 +128,6 @@ function Login() {
       [name]: "",
     });
     setApiError("");
-  };
-
-  const handleSelectDemoAccount = (demo: typeof DEMO_ACCOUNTS[0]) => {
-    setForm({
-      email: demo.email,
-      password: demo.pass,
-    });
-    setErrors({ email: "", password: "" });
-    setApiError("");
-    showToast(`Đã điền tài khoản mẫu ${demo.role}! Bấm "Đăng nhập" để truy cập.`, "info");
   };
 
   const validate = () => {
@@ -404,12 +344,6 @@ function Login() {
 
           <div className="flex items-center gap-4">
             <Link
-              to="/role-selector"
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-[#8A949E] hover:text-[#20252B] transition"
-            >
-              <span>🧭 Chọn vai trò</span>
-            </Link>
-            <Link
               to="/"
               className="inline-flex items-center gap-1 text-xs font-semibold text-[#8A949E] hover:text-[#20252B] transition"
             >
@@ -419,12 +353,10 @@ function Login() {
         </div>
       </header>
 
-      {/* Main Container - Split Layout */}
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-10">
-        <div className="w-full max-w-5xl overflow-hidden rounded-3xl border border-[#E1E4E6] bg-white shadow-[0_20px_50px_rgba(31,41,51,0.08)] grid grid-cols-1 lg:grid-cols-12">
-          
-          {/* CỘT TRÁI: FORM ĐĂNG NHẬP / XÁC THỰC OTP */}
-          <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center">
+      {/* Main Container - Tối giản căn giữa */}
+      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
+        <div className="w-full max-w-[480px]">
+          <div className="rounded-3xl border border-[#E1E4E6] bg-white p-7 sm:p-9 shadow-[0_20px_50px_rgba(31,41,51,0.06)]">
             {step === "login" ? (
               <div>
                 <div className="mb-8">
@@ -558,34 +490,7 @@ function Login() {
                   </Link>
                 </div>
 
-                {/* Panel Tài khoản mẫu dùng thử (Demo Quick Fill) */}
-                <div className="mt-8 pt-6 border-t border-[#E1E4E6]">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A949E]">
-                      ⚡ Tài khoản mẫu trải nghiệm (Demo)
-                    </span>
-                    <span className="text-[10px] text-[#A6ADB4]">Click để tự điền</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {DEMO_ACCOUNTS.map((demo) => (
-                      <button
-                        key={demo.code}
-                        type="button"
-                        onClick={() => handleSelectDemoAccount(demo)}
-                        className="text-left p-2.5 rounded-xl border border-[#E1E4E6] bg-[#FAF8F5]/60 hover:bg-[#FAF8F5] hover:border-[#D6A85F] transition group cursor-pointer"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[11px] font-bold text-[#20252B] group-hover:text-[#D6A85F]">
-                            {demo.role}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-[#8A949E] truncate">
-                          {demo.email}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
               </div>
             ) : (
               /* BƯỚC XÁC THỰC OTP */
@@ -673,84 +578,6 @@ function Login() {
               </div>
             )}
           </div>
-
-          {/* CỘT PHẢI: BANNER THƯƠNG HIỆU CARSERVICE ĐẲNG CẤP */}
-          <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-[#1F2933] to-[#11161B] text-white p-10 flex-col justify-between relative overflow-hidden">
-            {/* Họa tiết nền sang trọng */}
-            <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#D6A85F]/10 blur-3xl pointer-events-none"></div>
-            <div className="absolute -left-16 -bottom-16 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
-
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-1.5 backdrop-blur-md mb-6 border border-white/10">
-                <span className="text-amber-400">★ ★ ★ ★ ★</span>
-                <span className="text-[11px] font-semibold text-slate-200">
-                  Chuẩn dịch vụ 5 sao
-                </span>
-              </div>
-
-              <h2 className="text-2xl font-bold tracking-tight leading-snug">
-                Chăm sóc xế cưng với trải nghiệm kỹ thuật số hàng đầu
-              </h2>
-
-              <p className="mt-4 text-xs text-slate-300 leading-relaxed">
-                Theo dõi tiến trình bảo dưỡng minh bạch, đặt lịch hẹn nhanh chóng và nhận báo giá chuẩn xác theo phụ tùng chính hãng.
-              </p>
-            </div>
-
-            {/* Các cam kết dịch vụ */}
-            <div className="relative z-10 space-y-3.5 my-8">
-              <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 p-3.5 backdrop-blur-sm">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#D6A85F]/20 text-[#D6A85F]">
-                  ✓
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white">
-                    Minh bạch quy trình
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    Báo giá rõ ràng, duyệt từng hạng mục trước khi thực hiện.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 p-3.5 backdrop-blur-sm">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#D6A85F]/20 text-[#D6A85F]">
-                  ⚡
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white">
-                    Cập nhật tiến độ tức thì
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    Theo dõi trực tiếp xe đang ở khâu kiểm tra hay sửa chữa.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 p-3.5 backdrop-blur-sm">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#D6A85F]/20 text-[#D6A85F]">
-                  🛡️
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white">
-                    Phụ tùng 100% chính hãng
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    Bảo hành điện tử toàn diện cho mọi phụ tùng và gói dịch vụ.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer bản quyền */}
-            <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-              <span>Hỗ trợ kỹ thuật 24/7</span>
-              <a href="tel:0332405972" className="font-semibold text-slate-300 hover:text-[#D6A85F] transition">
-                Hotline: 033 240 5972
-              </a>
-            </div>
-          </div>
-
         </div>
       </main>
 
