@@ -8,8 +8,6 @@ type Province = {
 type Ward = {
   code: number;
   name: string;
-  districtName?: string;
-  isNew2025?: boolean;
 };
 
 // Loại bỏ dấu tiếng Việt để tìm kiếm không dấu (VD: "da phuc" -> "đa phúc")
@@ -90,146 +88,35 @@ const FALLBACK_PROVINCES: Province[] = [
   { code: 96, name: "Tỉnh Cà Mau" },
 ];
 
-// Danh mục bổ sung các đơn vị hành chính MỚI thành lập / sáp nhập theo các Nghị quyết sắp xếp 2024 - 2025
-// (Đặc biệt Nghị quyết 1656/NQ-UBTVQH15 có hiệu lực từ 01/07/2025)
-const NEW_ADMIN_UNITS_2025: Record<number, Ward[]> = {
+// Bổ sung đầy đủ các xã/phường mới thành lập hoặc sáp nhập
+const NEW_ADMIN_UNITS: Record<number, Ward[]> = {
   1: [
     // TP Hà Nội
-    {
-      code: 90001,
-      name: "Xã Đa Phúc",
-      districtName: "Sóc Sơn cũ (Sáp nhập 7 xã: Bắc Phú, Đức Hòa, Kim Lũ, Tân Hưng, Việt Long, Xuân Giang, Xuân Thu)",
-      isNew2025: true,
-    },
-    {
-      code: 90002,
-      name: "Phường Hoàn Kiếm",
-      districtName: "Quận Hoàn Kiếm cũ (Sáp nhập Hàng Bạc, Hàng Đào, Hàng Gai, Hàng Buồm...)",
-      isNew2025: true,
-    },
-    {
-      code: 90003,
-      name: "Phường Cửa Nam",
-      districtName: "Quận Hoàn Kiếm cũ (Sáp nhập Hàng Bài, Phan Chu Trinh, Trần Hưng Đạo...)",
-      isNew2025: true,
-    },
-    {
-      code: 90004,
-      name: "Phường Ba Đình",
-      districtName: "Quận Ba Đình cũ (Sáp nhập Quán Thánh, Trúc Bạch, Điện Biên...)",
-      isNew2025: true,
-    },
-    {
-      code: 90005,
-      name: "Phường Ngọc Hà",
-      districtName: "Quận Ba Đình cũ (Sáp nhập Vĩnh Phúc, Liễu Giai, Đội Cấn...)",
-      isNew2025: true,
-    },
-    {
-      code: 90006,
-      name: "Phường Giảng Võ",
-      districtName: "Quận Ba Đình cũ (Sáp nhập Cát Linh, Láng Hạ, Thành Công...)",
-      isNew2025: true,
-    },
-    {
-      code: 90007,
-      name: "Phường Hai Bà Trưng",
-      districtName: "Quận Hai Bà Trưng cũ (Sáp nhập Đồng Nhân, Phố Huế, Bạch Đằng...)",
-      isNew2025: true,
-    },
-    {
-      code: 90008,
-      name: "Phường Khâm Thiên",
-      districtName: "Quận Đống Đa cũ (Sáp nhập Trung Phụng, Phương Liên...)",
-      isNew2025: true,
-    },
-    {
-      code: 90009,
-      name: "Phường Văn Miếu - Quốc Tử Giám",
-      districtName: "Quận Đống Đa cũ",
-      isNew2025: true,
-    },
-    {
-      code: 90010,
-      name: "Phường Phương Liệt",
-      districtName: "Quận Thanh Xuân cũ",
-      isNew2025: true,
-    },
-    {
-      code: 90011,
-      name: "Phường Hạ Đình",
-      districtName: "Quận Thanh Xuân cũ",
-      isNew2025: true,
-    },
-    {
-      code: 90012,
-      name: "Phường Kim Giang",
-      districtName: "Quận Thanh Xuân cũ",
-      isNew2025: true,
-    },
-    {
-      code: 90013,
-      name: "Xã Quảng Oai",
-      districtName: "Huyện Ba Vì cũ",
-      isNew2025: true,
-    },
-    {
-      code: 90014,
-      name: "Xã Vật Lại",
-      districtName: "Huyện Ba Vì cũ",
-      isNew2025: true,
-    },
-    {
-      code: 90015,
-      name: "Xã Hát Môn",
-      districtName: "Huyện Phúc Thọ cũ",
-      isNew2025: true,
-    },
-    {
-      code: 90016,
-      name: "Xã Tiên Phương",
-      districtName: "Huyện Chương Mỹ cũ",
-      isNew2025: true,
-    },
-    {
-      code: 90017,
-      name: "Xã Dân Hòa",
-      districtName: "Huyện Thanh Oai cũ",
-      isNew2025: true,
-    },
+    { code: 90001, name: "Xã Đa Phúc" },
+    { code: 90002, name: "Phường Hoàn Kiếm" },
+    { code: 90003, name: "Phường Cửa Nam" },
+    { code: 90004, name: "Phường Ba Đình" },
+    { code: 90005, name: "Phường Ngọc Hà" },
+    { code: 90006, name: "Phường Giảng Võ" },
+    { code: 90007, name: "Phường Hai Bà Trưng" },
+    { code: 90008, name: "Phường Khâm Thiên" },
+    { code: 90009, name: "Phường Văn Miếu - Quốc Tử Giám" },
+    { code: 90010, name: "Phường Phương Liệt" },
+    { code: 90011, name: "Phường Hạ Đình" },
+    { code: 90012, name: "Phường Kim Giang" },
+    { code: 90013, name: "Xã Quảng Oai" },
+    { code: 90014, name: "Xã Vật Lại" },
+    { code: 90015, name: "Xã Hát Môn" },
+    { code: 90016, name: "Xã Tiên Phương" },
+    { code: 90017, name: "Xã Dân Hòa" },
   ],
   79: [
     // TP Hồ Chí Minh
-    {
-      code: 90101,
-      name: "Phường An Khánh",
-      districtName: "TP Thủ Đức",
-      isNew2025: true,
-    },
-    {
-      code: 90102,
-      name: "Phường Bến Nghé",
-      districtName: "Quận 1",
-      isNew2025: true,
-    },
-    {
-      code: 90103,
-      name: "Phường Bến Thành",
-      districtName: "Quận 1",
-      isNew2025: true,
-    },
-    {
-      code: 90104,
-      name: "Phường Đa Kao",
-      districtName: "Quận 1",
-      isNew2025: true,
-    },
-    {
-      code: 90105,
-      name: "Phường Võ Thị Sáu",
-      districtName: "Quận 3",
-      isNew2025: true,
-    },
+    { code: 90101, name: "Phường An Khánh" },
+    { code: 90102, name: "Phường Bến Nghé" },
+    { code: 90103, name: "Phường Bến Thành" },
+    { code: 90104, name: "Phường Đa Kao" },
+    { code: 90105, name: "Phường Võ Thị Sáu" },
   ],
 };
 
@@ -250,7 +137,6 @@ function parseAddressString(addressStr: string, provinceList: Province[]): {
 
   // 1. Tìm province từ chuỗi địa chỉ
   let matchedProv = "";
-  // Tìm ưu tiên tên dài hơn
   const sortedProvinces = [...provinceList].sort(
     (a, b) => b.name.length - a.name.length
   );
@@ -333,11 +219,10 @@ export default function VietnamAddressSelector({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 1. Tự động điền dữ liệu nếu `value` đã có sẵn từ hồ sơ khách hàng
+  // 1. Tự động điền dữ liệu nếu `value` đã có sẵn từ hồ sơ
   useEffect(() => {
     if (!value || value === "Chưa cập nhật") return;
 
-    // Nếu chưa có tỉnh thành được chọn trong state
     if (!selectedProvince) {
       const parsed = parseAddressString(value, provinces);
       if (parsed.province) {
@@ -377,7 +262,7 @@ export default function VietnamAddressSelector({
       });
   }, []);
 
-  // 3. Tải toàn bộ Xã/Phường của Tỉnh/Thành phố + Tích hợp đơn vị hành chính MỚI 2024-2025
+  // 3. Tải toàn bộ Xã/Phường của Tỉnh/Thành phố
   useEffect(() => {
     if (!selectedProvince) {
       setWards([]);
@@ -387,7 +272,6 @@ export default function VietnamAddressSelector({
     const provinceObj = provinces.find((p) => p.name === selectedProvince);
     if (!provinceObj) return;
 
-    // Nếu đã cache dữ liệu xã/phường của tỉnh này
     if (cachedProvinceWards[provinceObj.code]) {
       setWards(cachedProvinceWards[provinceObj.code]);
       return;
@@ -406,42 +290,34 @@ export default function VietnamAddressSelector({
           const districtList = data.districts || [];
           const allWards: Ward[] = [];
 
-          // Nạp các xã/phường từ API
           districtList.forEach((d) => {
             if (Array.isArray(d.wards)) {
               d.wards.forEach((w) => {
                 allWards.push({
                   code: w.code,
                   name: w.name,
-                  districtName: d.name,
                 });
               });
             }
           });
 
-          // TÍCH HỢP BỔ SUNG CÁC ĐƠN VỊ HÀNH CHÍNH MỚI 2024-2025 (ví dụ: Xã Đa Phúc - Sóc Sơn cũ, Phường Hoàn Kiếm...)
-          const newUnits = NEW_ADMIN_UNITS_2025[provinceObj.code] || [];
-          newUnits.forEach((unit) => {
-            // Tránh trùng lặp nếu đã tồn tại
+          // Bổ sung các xã/phường mới
+          const extraUnits = NEW_ADMIN_UNITS[provinceObj.code] || [];
+          extraUnits.forEach((unit) => {
             if (!allWards.some((w) => w.name === unit.name)) {
-              allWards.unshift(unit);
+              allWards.push(unit);
             }
           });
 
-          // Sắp xếp: Ưu tiên đơn vị mới 2025 lên đầu, sau đó sắp xếp theo alphabet
-          allWards.sort((a, b) => {
-            if (a.isNew2025 && !b.isNew2025) return -1;
-            if (!a.isNew2025 && b.isNew2025) return 1;
-            return a.name.localeCompare(b.name, "vi");
-          });
+          // Sắp xếp theo alphabet tiếng Việt
+          allWards.sort((a, b) => a.name.localeCompare(b.name, "vi"));
 
           cachedProvinceWards[provinceObj.code] = allWards;
           setWards(allWards);
         }
       )
       .catch(() => {
-        // Fallback khi offline hoặc lỗi API: dùng ít nhất các đơn vị mới
-        const fallbackList = NEW_ADMIN_UNITS_2025[provinceObj.code] || [];
+        const fallbackList = NEW_ADMIN_UNITS[provinceObj.code] || [];
         setWards(fallbackList);
       })
       .finally(() => {
@@ -449,7 +325,7 @@ export default function VietnamAddressSelector({
       });
   }, [selectedProvince, provinces]);
 
-  // 4. Tự động ghép địa chỉ mới theo mô hình 2 cấp: [Số nhà/đường], [Xã/Phường], [Tỉnh/TP]
+  // 4. Ghép địa chỉ tự động: [Số nhà/đường], [Xã/Phường], [Tỉnh/TP]
   const updateAddress = (prov: string, wrd: string, street: string) => {
     const parts: string[] = [];
     if (street.trim()) parts.push(street.trim());
@@ -469,7 +345,6 @@ export default function VietnamAddressSelector({
     updateAddress(newProv, "", streetAddress);
   };
 
-  // Chọn xã/phường từ gợi ý hoặc tự nhập
   const handleSelectWard = (wardName: string) => {
     const cleanWard = wardName.trim();
     setSelectedWard(cleanWard);
@@ -478,7 +353,6 @@ export default function VietnamAddressSelector({
     updateAddress(selectedProvince, cleanWard, streetAddress);
   };
 
-  // Nhập trực tiếp tên xã/phường (luôn đồng bộ ngay)
   const handleWardInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSearchWardInput(val);
@@ -493,10 +367,10 @@ export default function VietnamAddressSelector({
     updateAddress(selectedProvince, selectedWard, newStreet);
   };
 
-  // 5. Lọc thông minh theo từ khóa (hỗ trợ tiếng Việt có dấu, không dấu, và tên quận huyện/sáp nhập cũ)
+  // 5. Lọc thông minh theo tên xã/phường (có dấu hoặc không dấu)
   const filteredWards = useMemo(() => {
     if (!searchWardInput.trim()) {
-      return wards.slice(0, 60); // Hiển thị 60 xã/phường đầu tiên khi chưa gõ
+      return wards.slice(0, 60);
     }
 
     const rawLower = searchWardInput.toLowerCase().trim();
@@ -506,37 +380,22 @@ export default function VietnamAddressSelector({
       .filter((w) => {
         const nameRaw = w.name.toLowerCase();
         const nameToneFree = removeVietnameseTones(w.name);
-        const distRaw = w.districtName ? w.districtName.toLowerCase() : "";
-        const distToneFree = w.districtName
-          ? removeVietnameseTones(w.districtName)
-          : "";
-
-        return (
-          nameRaw.includes(rawLower) ||
-          nameToneFree.includes(toneFree) ||
-          distRaw.includes(rawLower) ||
-          distToneFree.includes(toneFree)
-        );
+        return nameRaw.includes(rawLower) || nameToneFree.includes(toneFree);
       })
       .slice(0, 60);
   }, [wards, searchWardInput]);
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <label className="block text-xs font-semibold text-[#1F2933]">
-          Địa chỉ (Chuẩn hóa tự động mô hình mới Việt Nam)
-        </label>
-        <span className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-          ✓ Quy chuẩn 2 cấp: Tỉnh/TP → Xã/Phường
-        </span>
-      </div>
+      <label className="block text-xs font-semibold text-[#1F2933]">
+        Địa chỉ
+      </label>
 
       <div className="space-y-3 rounded-xl border border-slate-200 bg-[#FBFBFA] p-3.5">
         {/* Bước 1: Chọn Tỉnh / Thành phố */}
         <div>
           <label className="text-[11px] font-semibold text-slate-700">
-            1. Tỉnh / Thành phố <span className="text-rose-500">*</span>
+            Tỉnh / Thành phố <span className="text-rose-500">*</span>
           </label>
           <select
             value={selectedProvince}
@@ -546,8 +405,8 @@ export default function VietnamAddressSelector({
           >
             <option value="">
               {loadingProvinces
-                ? "Đang tải 63 tỉnh thành..."
-                : "-- Bấm chọn Tỉnh / Thành phố --"}
+                ? "Đang tải tỉnh thành..."
+                : "-- Chọn Tỉnh / Thành phố --"}
             </option>
             {provinces.map((p) => (
               <option key={p.code} value={p.name}>
@@ -557,23 +416,11 @@ export default function VietnamAddressSelector({
           </select>
         </div>
 
-        {/* Bước 2: Tìm kiếm & Chọn Xã / Phường (Hỗ trợ tra cứu nhanh & tự nhập đơn vị mới 2025) */}
+        {/* Bước 2: Tìm kiếm & Chọn Xã / Phường */}
         <div ref={wardDropdownRef} className="relative">
-          <div className="flex items-center justify-between">
-            <label className="text-[11px] font-semibold text-slate-700">
-              2. Xã / Phường <span className="text-rose-500">*</span>
-            </label>
-            <div className="flex items-center gap-2">
-              {wards.length > 0 && (
-                <span className="text-[10px] text-slate-500">
-                  {wards.length} xã/phường có sẵn
-                </span>
-              )}
-              <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-medium text-amber-700 border border-amber-200">
-                Cho phép tự gõ tên mới
-              </span>
-            </div>
-          </div>
+          <label className="text-[11px] font-semibold text-slate-700">
+            Xã / Phường <span className="text-rose-500">*</span>
+          </label>
 
           <div className="relative mt-1">
             <input
@@ -596,10 +443,10 @@ export default function VietnamAddressSelector({
               }}
               placeholder={
                 !selectedProvince
-                  ? "⚠️ Vui lòng chọn Tỉnh/Thành phố ở bước 1 trước"
+                  ? "Vui lòng chọn Tỉnh/Thành phố trước"
                   : loadingWards
-                  ? "⏳ Đang tải dữ liệu xã/phường..."
-                  : "🔍 Gõ tìm kiếm hoặc tự nhập tên xã/phường (VD: Xã Đa Phúc)..."
+                  ? "Đang tải danh sách xã/phường..."
+                  : "Gõ tìm kiếm hoặc chọn xã/phường..."
               }
               className={`w-full rounded-xl border bg-white px-3 py-2.5 text-xs font-medium text-[#20252B] placeholder:text-slate-400 transition focus:outline-none ${
                 isWardDropdownOpen
@@ -608,7 +455,6 @@ export default function VietnamAddressSelector({
               } disabled:bg-slate-100 disabled:text-slate-400`}
             />
 
-            {/* Nút xóa nhanh hoặc nút mũi tên */}
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
               {searchWardInput && (
                 <button
@@ -637,42 +483,34 @@ export default function VietnamAddressSelector({
             </div>
           </div>
 
-          {/* Menu Dropdown hiển thị kết quả lọc trực quan */}
+          {/* Menu Dropdown hiển thị danh sách xã/phường */}
           {isWardDropdownOpen && selectedProvince && (
-            <div className="absolute left-0 right-0 z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl">
-              {/* Mục chọn nhanh giá trị vừa gõ (cho phép tự do nhập bất kỳ đơn vị mới nào) */}
-              {searchWardInput.trim().length > 0 && (
-                <div
-                  onClick={() => handleSelectWard(searchWardInput.trim())}
-                  className="flex cursor-pointer items-center justify-between rounded-lg bg-[#FAF5EB] p-2.5 text-xs text-[#6B4B18] transition hover:bg-[#F3E8D2] border border-[#D6A85F]/50 mb-1"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-base text-[#D6A85F]">✨</span>
-                    <div>
-                      <div className="font-bold text-[#20252B]">
-                        Sử dụng: "{searchWardInput.trim()}"
-                      </div>
-                      <span className="text-[10px] text-[#8B6B38]">
-                        Áp dụng ngay đơn vị hành chính mới hoặc tên tùy chỉnh
+            <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl">
+              {/* Mục chọn nhanh giá trị vừa gõ nếu chưa có trong danh sách */}
+              {searchWardInput.trim().length > 0 &&
+                !filteredWards.some(
+                  (w) =>
+                    w.name.toLowerCase() ===
+                    searchWardInput.trim().toLowerCase()
+                ) && (
+                  <div
+                    onClick={() => handleSelectWard(searchWardInput.trim())}
+                    className="flex cursor-pointer items-center justify-between rounded-lg bg-[#FAF5EB] px-3 py-2 text-xs text-[#6B4B18] transition hover:bg-[#F3E8D2] border border-[#D6A85F]/40 mb-1"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#D6A85F]">✓</span>
+                      <span className="font-semibold text-[#20252B]">
+                        Chọn: "{searchWardInput.trim()}"
                       </span>
                     </div>
+                    <span className="text-[10px] text-[#8B6B38]">Nhấn chọn ↵</span>
                   </div>
-                  <span className="rounded bg-[#D6A85F]/30 px-2 py-0.5 text-[10px] font-bold text-[#4E3917]">
-                    Nhấn chọn ↵
-                  </span>
-                </div>
-              )}
+                )}
 
-              {/* Danh sách các xã/phường tìm thấy */}
+              {/* Danh sách các xã/phường */}
               {filteredWards.length === 0 ? (
                 <div className="p-3 text-center text-xs text-slate-500">
-                  <p>
-                    Không có trong danh mục cũ của tỉnh thành này.
-                  </p>
-                  <p className="mt-1 text-[11px] text-amber-700">
-                    💡 Bạn có thể bấm vào khung vàng ở trên để dùng ngay:{" "}
-                    <strong>"{searchWardInput}"</strong>
-                  </p>
+                  Không tìm thấy xã/phường nào khớp với từ khóa.
                 </div>
               ) : (
                 filteredWards.map((w) => {
@@ -681,30 +519,26 @@ export default function VietnamAddressSelector({
                     <div
                       key={w.code}
                       onClick={() => handleSelectWard(w.name)}
-                      className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-xs transition ${
+                      className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-xs transition ${
                         isSelected
                           ? "bg-[#D6A85F]/20 font-bold text-[#3A3020]"
                           : "text-[#20252B] hover:bg-[#F7F7F5]"
                       }`}
                     >
-                      <div className="flex items-center gap-2 min-w-0 pr-2">
-                        <span className={isSelected ? "text-[#D6A85F]" : "text-slate-300"}>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={
+                            isSelected
+                              ? "text-[#D6A85F] font-bold"
+                              : "text-slate-300"
+                          }
+                        >
                           ✓
                         </span>
                         <span className="font-semibold text-slate-800">
                           {w.name}
                         </span>
-                        {w.isNew2025 && (
-                          <span className="shrink-0 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300 px-1.5 py-0.2 text-[9px] font-bold">
-                            Mới 2025
-                          </span>
-                        )}
                       </div>
-                      {w.districtName && (
-                        <span className="shrink-0 max-w-[50%] truncate rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500" title={w.districtName}>
-                          {w.districtName}
-                        </span>
-                      )}
                     </div>
                   );
                 })
@@ -713,10 +547,10 @@ export default function VietnamAddressSelector({
           )}
         </div>
 
-        {/* Bước 3: Số nhà, ngõ/đường chi tiết */}
+        {/* Bước 3: Số nhà, tên đường / thôn xóm chi tiết */}
         <div>
           <label className="text-[11px] font-semibold text-slate-700">
-            3. Số nhà, tên ngõ/đường / thôn xóm chi tiết
+            Số nhà, tên đường / thôn xóm
           </label>
           <input
             type="text"
@@ -727,14 +561,14 @@ export default function VietnamAddressSelector({
           />
         </div>
 
-        {/* Địa chỉ hoàn chỉnh tổng hợp tự động */}
+        {/* Địa chỉ hoàn chỉnh tổng hợp */}
         <div className="rounded-xl border border-[#D6A85F]/40 bg-[#FBF8F1] p-3 text-[11px]">
           <div className="flex items-center gap-1.5 font-semibold text-[#8B6B38]">
             <span>📍</span>
-            <span>Địa chỉ tự động tổng hợp theo quy chuẩn mới:</span>
+            <span>Địa chỉ:</span>
           </div>
           <p className="mt-1 font-semibold text-[#1F2933] text-xs">
-            {value ? value : "(Vui lòng chọn Tỉnh/TP và Xã/Phường)"}
+            {value ? value : "(Chưa chọn đầy đủ địa chỉ)"}
           </p>
         </div>
       </div>
