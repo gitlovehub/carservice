@@ -54,13 +54,17 @@ function ForgotPassword() {
     setErrorMsg("");
 
     try {
-      await fetchApi("/forgot-password", {
+      const res = await fetchApi("/forgot-password", {
         method: "POST",
         body: JSON.stringify({ email: email.trim() }),
       });
       setResendCountdown(60);
       setStep("RESET");
-      showToast("Mã OTP đặt lại mật khẩu đã được gửi đến email của bạn.", "info");
+      if (res?.debug_otp) {
+        showToast(`Mã OTP đặt lại mật khẩu: ${res.debug_otp} (đã gửi đến email)`, "info");
+      } else {
+        showToast("Mã OTP đặt lại mật khẩu đã được gửi đến email của bạn.", "info");
+      }
     } catch (err: unknown) {
       const error = err as { data?: { message?: string } };
       setErrorMsg(error.data?.message || "Đã xảy ra sự cố kết nối. Vui lòng thử lại.");
@@ -145,12 +149,16 @@ function ForgotPassword() {
     setErrorMsg("");
 
     try {
-      await fetchApi("/forgot-password", {
+      const res = await fetchApi("/forgot-password", {
         method: "POST",
         body: JSON.stringify({ email: email.trim() }),
       });
       setResendCountdown(60);
-      showToast("Mã OTP mới đã được gửi lại vào email của bạn.", "success");
+      if (res?.debug_otp) {
+        showToast(`Mã OTP mới của bạn: ${res.debug_otp} (đã gửi đến email)`, "success");
+      } else {
+        showToast("Mã OTP mới đã được gửi lại vào email của bạn.", "success");
+      }
     } catch (err: unknown) {
       const error = err as { data?: { message?: string } };
       setErrorMsg(error.data?.message || "Không thể gửi lại mã OTP lúc này.");

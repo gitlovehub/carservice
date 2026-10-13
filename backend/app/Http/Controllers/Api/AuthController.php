@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 use App\Mail\EmailVerificationOtpMail;
 use App\Models\EmailVerificationOtp;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PasswordResetOtpMail;
 use App\Models\PasswordResetOtp;
@@ -78,11 +79,18 @@ class AuthController extends Controller
             'expires_at' => now()->addMinutes(5),
         ]);
 
-        Mail::to($account->email)->send(new EmailVerificationOtpMail($otp));
+        Log::info("[OTP ĐĂNG KÝ] Email: {$account->email} | Mã OTP: {$otp}");
+
+        try {
+            Mail::to($account->email)->send(new EmailVerificationOtpMail($otp));
+        } catch (\Throwable $e) {
+            Log::error("[OTP EMAIL ERROR] " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để lấy mã OTP.',
             'email' => $account->email,
+            'debug_otp' => config('app.debug') ? $otp : null,
         ], 201);
     }
 
@@ -410,11 +418,17 @@ class AuthController extends Controller
             'expires_at' => now()->addMinutes(5),
         ]);
 
-        Mail::to($account->email)
-            ->send(new EmailVerificationOtpMail($otp));
+        Log::info("[OTP GỬI LẠI] Email: {$account->email} | Mã OTP: {$otp}");
+
+        try {
+            Mail::to($account->email)->send(new EmailVerificationOtpMail($otp));
+        } catch (\Throwable $e) {
+            Log::error("[OTP EMAIL ERROR] " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Mã OTP mới đã được gửi đến email.',
+            'debug_otp' => config('app.debug') ? $otp : null,
         ]);
     }
 
@@ -450,12 +464,17 @@ class AuthController extends Controller
             'expires_at' => now()->addMinutes(5),
         ]);
 
-        // Gửi OTP qua email
-        Mail::to($account->email)
-            ->send(new PasswordResetOtpMail($otp));
+        Log::info("[OTP QUÊN MẬT KHẨU] Email: {$account->email} | Mã OTP: {$otp}");
+
+        try {
+            Mail::to($account->email)->send(new PasswordResetOtpMail($otp));
+        } catch (\Throwable $e) {
+            Log::error("[OTP EMAIL ERROR] " . $e->getMessage());
+        }
 
         return response()->json([
-            'message' => 'Nếu email tồn tại trong hệ thống, mã OTP sẽ được gửi đến email.'
+            'message' => 'Nếu email tồn tại trong hệ thống, mã OTP sẽ được gửi đến email.',
+            'debug_otp' => config('app.debug') ? $otp : null,
         ]);
     }
 
