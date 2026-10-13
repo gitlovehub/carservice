@@ -3,6 +3,7 @@ import Header from "../../components/Header";
 import { fetchApi } from "../../services/api";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
+import VietnamAddressSelector from "../../components/common/VietnamAddressSelector";
 import { logout } from "../auth/auth";
 
 type AccountInfo = {
@@ -837,33 +838,17 @@ function Account() {
                 )}
               </div>
 
-              {/* Address */}
-              <div>
-                <label className="block text-xs font-semibold text-[#1F2933]">
-                  Địa chỉ
-                </label>
-                <textarea
-                  rows={2}
-                  value={profileForm.address}
-                  onChange={(e) => {
-                    setProfileForm({ ...profileForm, address: e.target.value });
-                    if (profileErrors.address) {
-                      setProfileErrors({ ...profileErrors, address: undefined });
-                    }
-                  }}
-                  placeholder="Nhập địa chỉ của bạn (số nhà, đường, quận/huyện, tỉnh/thành phố)"
-                  className={`mt-1 w-full rounded-xl border px-3.5 py-2.5 text-xs text-[#20252B] transition focus:outline-none ${
-                    profileErrors.address
-                      ? "border-rose-400 bg-rose-50/30 focus:border-rose-500"
-                      : "border-slate-300 focus:border-[#D6A85F] focus:ring-1 focus:ring-[#D6A85F]"
-                  }`}
-                />
-                {profileErrors.address && (
-                  <p className="mt-1 text-[11px] font-medium text-rose-500">
-                    {profileErrors.address}
-                  </p>
-                )}
-              </div>
+              {/* Address with VietnamAddressSelector */}
+              <VietnamAddressSelector
+                value={profileForm.address}
+                onChange={(newAddress) => {
+                  setProfileForm({ ...profileForm, address: newAddress });
+                  if (profileErrors.address) {
+                    setProfileErrors({ ...profileErrors, address: undefined });
+                  }
+                }}
+                error={profileErrors.address}
+              />
 
               {/* Form Buttons */}
               <div className="mt-6 flex items-center justify-end gap-3 border-t border-[#E1E4E6] pt-4">
