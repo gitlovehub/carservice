@@ -22,13 +22,14 @@ export const getRoleManagementPage = (
 };
 
 export type AuthUserInfo = {
-  full_name?: string;
-  name?: string;
-  email?: string;
-  role?: string;
-  avatar?: string;
-  customer?: { full_name?: string };
-  employee?: { full_name?: string };
+  id?: number | string;
+  full_name?: string | null;
+  name?: string | null;
+  email?: string | null;
+  role?: string | null;
+  avatar?: string | null;
+  customer?: { full_name?: string | null } | null;
+  employee?: { full_name?: string | null } | null;
 } | null;
 
 export const getUserDisplayName = (user: AuthUserInfo = null): string => {
