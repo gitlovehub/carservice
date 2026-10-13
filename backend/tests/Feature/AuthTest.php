@@ -87,7 +87,8 @@ class AuthTest extends TestCase
     {
         $this->seed();
 
-        $this->assertDatabaseCount('accounts', 0);
+        $this->assertDatabaseMissing('accounts', ['email' => 'users@example.com']);
+        $this->assertDatabaseHas('accounts', ['email' => 'admin@carservice.vn']);
     }
 
     public function test_authenticated_account_can_read_its_profile(): void
