@@ -90,7 +90,6 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để lấy mã OTP.',
             'email' => $account->email,
-            'debug_otp' => config('app.debug') ? $otp : null,
         ], 201);
     }
 
@@ -428,7 +427,6 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Mã OTP mới đã được gửi đến email.',
-            'debug_otp' => config('app.debug') ? $otp : null,
         ]);
     }
 
@@ -474,7 +472,6 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Nếu email tồn tại trong hệ thống, mã OTP sẽ được gửi đến email.',
-            'debug_otp' => config('app.debug') ? $otp : null,
         ]);
     }
 
