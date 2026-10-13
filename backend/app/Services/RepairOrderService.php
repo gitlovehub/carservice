@@ -471,6 +471,7 @@ class RepairOrderService
                 ]);
             }
 
+            $invoice->discount_amount = $quotation?->discount_amount ?? 0;
             $subtotal = $invoice->items()->sum('amount');
             $invoice->subtotal = $subtotal;
             $invoice->total_amount = $subtotal - $invoice->discount_amount;
@@ -491,6 +492,17 @@ class RepairOrderService
         }
 
         return DB::transaction(function () use ($invoice, $method, $amount) {
+            $invoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->id);
+
+            if ($invoice->status === Invoice::PAID) {
+                throw InvalidStatusTransitionException::because('Hóa đơn đã thanh toán đủ.');
+            }
+
+            $remaining = (float) $invoice->total_amount - (float) $invoice->totalPaid();
+            if ($amount > $remaining + 0.001) {
+                throw InvalidStatusTransitionException::because('Số tiền thanh toán vượt quá số còn phải trả.');
+            }
+
             $payment = Payment::create([
                 'invoice_id' => $invoice->id,
                 'amount' => $amount,

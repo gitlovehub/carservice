@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\MaintenancePackage;
 use App\Models\Service;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
-use App\Models\MaintenancePackage;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class RealDataSeeder extends Seeder
@@ -20,7 +20,7 @@ class RealDataSeeder extends Seeder
             'Mazda' => ['Mazda 3', 'Mazda 6', 'CX-5', 'CX-8'],
             'Hyundai' => ['Accent', 'Elantra', 'Tucson', 'Santa Fe'],
             'Ford' => ['Ranger', 'Everest', 'Territory'],
-            'VinFast' => ['Fadil', 'VF e34', 'VF 8', 'VF 9']
+            'VinFast' => ['Fadil', 'VF e34', 'VF 8', 'VF 9'],
         ];
 
         foreach ($brands as $brandName => $models) {
@@ -28,11 +28,11 @@ class RealDataSeeder extends Seeder
             foreach ($models as $modelName) {
                 VehicleModel::firstOrCreate([
                     'brand_id' => $brand->id,
-                    'name' => $modelName
+                    'name' => $modelName,
                 ], [
-                    'year' => 2022,
-                    'engine_type' => 'Xăng',
-                    'status' => 'ACTIVE'
+                    'year_from' => 2020,
+                    'year_to' => null,
+                    'status' => 'ACTIVE',
                 ]);
             }
         }
@@ -54,7 +54,7 @@ class RealDataSeeder extends Seeder
                 'category' => $svc['category'],
                 'base_price' => $svc['base_price'],
                 'estimated_minutes' => $svc['estimated_minutes'],
-                'status' => 'ACTIVE'
+                'status' => 'ACTIVE',
             ]);
         }
 
@@ -71,9 +71,9 @@ class RealDataSeeder extends Seeder
                 'mileage_milestone' => $pkgData['mileage_milestone'],
                 'month_milestone' => $pkgData['month_milestone'],
                 'description' => $pkgData['desc'],
-                'status' => 'ACTIVE'
+                'status' => 'ACTIVE',
             ]);
-            
+
             // Link services to package
             if ($pkg->wasRecentlyCreated) {
                 // Attach random services
@@ -82,7 +82,7 @@ class RealDataSeeder extends Seeder
                     DB::table('maintenance_package_services')->insertOrIgnore([
                         'package_id' => $pkg->id,
                         'service_id' => $services[$svcKey]->id,
-                        'quantity'   => 1,
+                        'quantity' => 1,
                     ]);
                 }
             }

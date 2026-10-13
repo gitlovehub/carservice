@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\InvalidStatusTransitionException;
 use App\Http\Middleware\EnsureAccountRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (InvalidStatusTransitionException $e, Request $request) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        });
+
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

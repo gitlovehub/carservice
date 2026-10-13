@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\EmailVerificationOtpMail;
 use App\Models\Account;
 use App\Models\Customer;
 use App\Models\Employee;
@@ -9,6 +10,7 @@ use App\Models\TechnicianProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
@@ -85,7 +87,8 @@ class AuthTest extends TestCase
     {
         $this->seed();
 
-        $this->assertDatabaseCount('accounts', 0);
+        $this->assertDatabaseMissing('accounts', ['email' => 'users@example.com']);
+        $this->assertDatabaseHas('accounts', ['email' => 'admin@carservice.vn']);
     }
 
     public function test_authenticated_account_can_read_its_profile(): void
@@ -227,8 +230,10 @@ class AuthTest extends TestCase
             ->assertHeader('Access-Control-Allow-Credentials', 'true');
     }
 
-    public function test_customer_can_register_and_receive_bearer_token(): void
+    public function test_customer_can_register_and_must_verify_email_before_receiving_a_token(): void
     {
+        Mail::fake();
+
         $response = $this->postJson('/api/register', [
             'full_name' => 'Nguyen Van B',
             'phone' => '0912345678',
@@ -236,21 +241,20 @@ class AuthTest extends TestCase
             'password' => 'Password123@',
             'password_confirmation' => 'Password123@',
             'device_name' => 'test-device',
+            'accept_terms' => true,
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('message', 'Đăng ký tài khoản thành công.')
-            ->assertJsonPath('account.email', 'customer_new@example.com')
-            ->assertJsonPath('account.role', Account::ROLE_CUSTOMER)
-            ->assertJsonPath('account.status', Account::STATUS_ACTIVE)
-            ->assertJsonPath('account.customer.full_name', 'Nguyen Van B')
-            ->assertJsonPath('account.customer.phone', '0912345678')
-            ->assertJsonPath('account.employee', null);
+            ->assertJsonPath('email', 'customer_new@example.com')
+            ->assertJsonPath('message', 'Đăng ký thành công. Vui lòng kiểm tra email để lấy mã OTP.');
 
-        $this->assertIsString($response->json('token'));
+        $this->assertNull($response->json('token'));
+        Mail::assertSent(EmailVerificationOtpMail::class);
         $this->assertDatabaseHas('accounts', [
             'email' => 'customer_new@example.com',
             'role' => Account::ROLE_CUSTOMER,
+            'status' => Account::STATUS_PENDING,
+            'email_verified_at' => null,
         ]);
         $this->assertDatabaseHas('customers', [
             'email' => 'customer_new@example.com',
@@ -269,6 +273,7 @@ class AuthTest extends TestCase
             'email' => 'existing@example.com',
             'password' => 'short',
             'password_confirmation' => 'mismatch',
+            'accept_terms' => true,
         ]);
 
         $response->assertUnprocessable()
@@ -277,6 +282,8 @@ class AuthTest extends TestCase
 
     public function test_registration_links_to_existing_walkin_customer_profile(): void
     {
+        Mail::fake();
+
         $walkinCustomer = Customer::query()->create([
             'account_id' => null,
             'full_name' => 'Khach Vang Lai',
@@ -291,21 +298,28 @@ class AuthTest extends TestCase
             'email' => 'khach@example.com',
             'password' => 'Password123@',
             'password_confirmation' => 'Password123@',
+            'accept_terms' => true,
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('account.customer.id', $walkinCustomer->id)
-            ->assertJsonPath('account.customer.full_name', 'Nguyen Khach');
+            ->assertJsonPath('email', 'khach@example.com');
 
         $this->assertDatabaseCount('customers', 1);
+        $this->assertNull($response->json('token'));
+        Mail::assertSent(EmailVerificationOtpMail::class);
 
         $walkinCustomer->refresh();
         $this->assertNotNull($walkinCustomer->account_id);
         $this->assertSame('khach@example.com', $walkinCustomer->email);
+        $this->assertDatabaseHas('accounts', [
+            'id' => $walkinCustomer->account_id,
+            'status' => Account::STATUS_PENDING,
+        ]);
     }
 
-    public function test_spa_registration_uses_session_and_logs_in(): void
+    public function test_spa_registration_waits_for_email_verification_without_logging_in(): void
     {
+        Mail::fake();
         config(['sanctum.stateful' => ['localhost:5173']]);
 
         $response = $this->withHeader('Origin', 'http://localhost:5173')
@@ -315,14 +329,16 @@ class AuthTest extends TestCase
                 'email' => 'spa_customer@example.com',
                 'password' => 'Password123@',
                 'password_confirmation' => 'Password123@',
+                'accept_terms' => true,
             ]);
 
         $response->assertCreated()
-            ->assertJsonPath('token', null);
+            ->assertJsonPath('email', 'spa_customer@example.com');
 
-        $account = Account::query()->where('email', 'spa_customer@example.com')->firstOrFail();
-        $this->assertAuthenticatedAs($account, 'web');
+        $this->assertNull($response->json('token'));
+        $this->assertGuest('web');
         $this->assertDatabaseCount('personal_access_tokens', 0);
+        Mail::assertSent(EmailVerificationOtpMail::class);
     }
 
     private function createAccount(
