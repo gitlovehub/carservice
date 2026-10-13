@@ -161,6 +161,10 @@ class AuthController extends Controller
             'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
             'address' => ['sometimes', 'nullable', 'string', 'max:255'],
             'avatar' => ['sometimes', 'nullable', 'string'],
+        ], [
+            'full_name.max' => 'Họ và tên không được vượt quá 100 ký tự.',
+            'phone.max' => 'Số điện thoại không được vượt quá 20 ký tự.',
+            'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.',
         ]);
 
         if (array_key_exists('avatar', $validated)) {
@@ -169,8 +173,7 @@ class AuthController extends Controller
         }
 
         if ($account->role === Account::ROLE_CUSTOMER) {
-            $customer = $account->customer;
-            if (!$customer) {
+            if (!$account->customer) {
                 Customer::query()->create([
                     'account_id' => $account->id,
                     'full_name' => $validated['full_name'] ?? 'Khách hàng',
@@ -180,26 +183,47 @@ class AuthController extends Controller
                 ]);
             } else {
                 $customerUpdates = [];
-                if (isset($validated['full_name'])) $customerUpdates['full_name'] = $validated['full_name'];
-                if (isset($validated['phone'])) $customerUpdates['phone'] = $validated['phone'];
-                if (array_key_exists('address', $validated)) $customerUpdates['address'] = $validated['address'];
+                if (array_key_exists('full_name', $validated) && $validated['full_name'] !== null) {
+                    $customerUpdates['full_name'] = $validated['full_name'];
+                }
+                if (array_key_exists('phone', $validated) && $validated['phone'] !== null) {
+                    $customerUpdates['phone'] = $validated['phone'];
+                }
+                if (array_key_exists('address', $validated)) {
+                    $customerUpdates['address'] = $validated['address'];
+                }
                 if (!empty($customerUpdates)) {
-                    $customer->update($customerUpdates);
+                    $account->customer->update($customerUpdates);
                 }
             }
-        } elseif ($account->employee) {
-            $employeeUpdates = [];
-            if (isset($validated['full_name'])) $employeeUpdates['full_name'] = $validated['full_name'];
-            if (isset($validated['phone'])) $employeeUpdates['phone'] = $validated['phone'];
-            if (!empty($employeeUpdates)) {
-                $account->employee->update($employeeUpdates);
+        } else {
+            if (!$account->employee) {
+                Employee::query()->create([
+                    'account_id' => $account->id,
+                    'full_name' => $validated['full_name'] ?? 'Nhân viên',
+                    'phone' => $validated['phone'] ?? '',
+                    'status' => 'ACTIVE',
+                ]);
+            } else {
+                $employeeUpdates = [];
+                if (array_key_exists('full_name', $validated) && $validated['full_name'] !== null) {
+                    $employeeUpdates['full_name'] = $validated['full_name'];
+                }
+                if (array_key_exists('phone', $validated) && $validated['phone'] !== null) {
+                    $employeeUpdates['phone'] = $validated['phone'];
+                }
+                if (!empty($employeeUpdates)) {
+                    $account->employee->update($employeeUpdates);
+                }
             }
         }
+
+        $freshAccount = $account->fresh(['employee.technicianProfile', 'customer']);
 
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật thông tin thành công.',
-            'account' => $this->formatAccount($account->fresh()),
+            'account' => $this->formatAccount($freshAccount),
         ]);
     }
 
@@ -209,7 +233,23 @@ class AuthController extends Controller
 
         $validated = $request->validate([
             'current_password' => ['required', 'string'],
-            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+            'new_password' => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+                'regex:/[a-z]/',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+            ],
+            'new_password_confirmation' => ['required', 'string'],
+        ], [
+            'current_password.required' => 'Vui lòng nhập mật khẩu hiện tại.',
+            'new_password.required' => 'Vui lòng nhập mật khẩu mới.',
+            'new_password.min' => 'Mật khẩu mới phải có ít nhất 8 ký tự.',
+            'new_password.confirmed' => 'Xác nhận mật khẩu mới không khớp.',
+            'new_password.regex' => 'Mật khẩu mới phải bao gồm chữ thường, chữ hoa và chữ số.',
+            'new_password_confirmation.required' => 'Vui lòng xác nhận mật khẩu mới.',
         ]);
 
         if (!Hash::check($validated['current_password'], $account->getAuthPassword())) {
