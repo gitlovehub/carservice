@@ -28,11 +28,11 @@ class RealDataSeeder extends Seeder
             foreach ($models as $modelName) {
                 VehicleModel::firstOrCreate([
                     'brand_id' => $brand->id,
-                    'name' => $modelName
+                    'name' => $modelName,
                 ], [
-                    'year' => 2022,
-                    'engine_type' => 'Xăng',
-                    'status' => 'ACTIVE'
+                    'year_from' => 2020,
+                    'year_to' => null,
+                    'status' => 'ACTIVE',
                 ]);
             }
         }

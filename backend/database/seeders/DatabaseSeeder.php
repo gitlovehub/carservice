@@ -44,16 +44,8 @@ class DatabaseSeeder extends Seeder
         Employee::factory()->count(3)->create();
         TechnicianProfile::factory()->count(5)->create();
 
-        // 3. MASTER DATA: XE (Hãng xe & Dòng xe)
-        $allModels = collect();
-        $brands = VehicleBrand::factory()->count(4)->create();
-
-        foreach ($brands as $brand) {
-            $models = VehicleModel::factory()->count(3)->create([
-                'brand_id' => $brand->id,
-            ]);
-            $allModels = $allModels->merge($models);
-        }
+        // 3. DÙNG LẠI HÃNG XE VÀ DÒNG XE TỪ RealDataSeeder
+        $allModels = VehicleModel::all();
 
         // 4. MASTER DATA: DỊCH VỤ GARAGE
         $allServices = Service::factory()->count(8)->create();
