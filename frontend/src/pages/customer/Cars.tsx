@@ -47,7 +47,7 @@ function Cars() {
 
   useEffect(() => {
     let active = true;
-    fetchApi("/me/vehicles/")
+    fetchApi("/me/vehicles")
       .then((vehicleResponse) => {
         if (!active) return;
         setCars(Array.isArray(vehicleResponse?.data) ? vehicleResponse.data : []);
@@ -77,7 +77,7 @@ function Cars() {
 
     setSaving(true);
     try {
-      const response = await fetchApi("/me/vehicles/", {
+      const response = await fetchApi("/me/vehicles", {
         method: "POST",
         body: JSON.stringify({
           model_name: modelId,
