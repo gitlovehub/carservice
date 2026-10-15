@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import BrandLogo from "./common/BrandLogo";
 
 function Footer() {
   return (
@@ -7,36 +8,7 @@ function Footer() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Cột 1: Thông tin thương hiệu */}
           <div className="lg:col-span-1">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
-                <svg
-                  className="h-5 w-5 text-amber-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
-                  />
-                </svg>
-              </div>
-
-              <div>
-                <p className="text-base font-bold text-slate-900">CarService</p>
-                <p className="text-[11px] text-slate-500">
-                  Dịch vụ chăm sóc ô tô
-                </p>
-              </div>
-            </Link>
+            <BrandLogo />
 
             <p className="mt-4 text-xs leading-relaxed text-slate-600">
               Hệ thống dịch vụ bảo dưỡng và sửa chữa ô tô tiêu chuẩn. Minh bạch

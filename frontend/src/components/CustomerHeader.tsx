@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getUserDisplayName, logout } from "../pages/auth/auth";
+import BrandLogo from "./common/BrandLogo";
 
 const getInitials = (name?: string) => {
   if (!name) return "KH";
@@ -10,6 +11,11 @@ const getInitials = (name?: string) => {
 };
 
 const menuItems = [
+  {
+    label: "Tổng quan",
+    path: "/customer/dashboard",
+    icon: "⊞",
+  },
   {
     label: "Đặt lịch",
     path: "/booking",
@@ -81,22 +87,9 @@ function CustomerHeader() {
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] border-r border-[#313B45] bg-[#1F2933] text-white lg:block">
       <div className="flex h-full flex-col">
-        <Link
-          to="/"
-          className="flex cursor-pointer items-center gap-3 border-b border-[#3C4650] px-6 py-5"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#D6A85F] text-lg text-[#1F2933]">
-            🚗
-          </div>
-
-          <div>
-            <p className="text-[13px] font-bold">CarService</p>
-
-            <p className="mt-0.5 text-[10px] text-[#AEB8C1]">
-              Khu vực khách hàng
-            </p>
-          </div>
-        </Link>
+        <div className="border-b border-[#3C4650] px-6 py-5">
+          <BrandLogo theme="dark" subtitle="Khu vực khách hàng" />
+        </div>
 
         <div className="px-4 py-5">
           <p className="px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#8F9AA4]">
