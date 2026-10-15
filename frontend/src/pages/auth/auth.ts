@@ -16,6 +16,8 @@ export const getRoleManagementPage = (
       return { path: "/advisor/appointments", label: "Quản lý cố vấn" };
     case "TECHNICIAN":
       return { path: "/technician", label: "Khu vực kỹ thuật viên" };
+    case "CUSTOMER":
+      return { path: "/customer/dashboard", label: "Dashboard khách hàng" };
     default:
       return null;
   }
