@@ -1,23 +1,51 @@
-import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   getRoleManagementPage,
   getUserDisplayName,
   logout,
 } from "../pages/auth/auth";
 
+const getInitials = (name?: string) => {
+  if (!name) return "NV";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 function RoleAccountMenu() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const syncUser = () => {
+      try {
+        setUser(JSON.parse(localStorage.getItem("user") || "null"));
+      } catch {
+        setUser(null);
+      }
+    };
+    window.addEventListener("storage", syncUser);
+    window.addEventListener("user-updated", syncUser);
+    return () => {
+      window.removeEventListener("storage", syncUser);
+      window.removeEventListener("user-updated", syncUser);
+    };
+  }, []);
+
   const managementPage = getRoleManagementPage(user?.role);
 
   const handleLogout = () => {
-    logout();
     setOpen(false);
-    navigate("/login");
+    logout();
   };
 
   return (
@@ -31,9 +59,17 @@ function RoleAccountMenu() {
             : "border-[#E1E4E6] bg-white hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
         }`}
       >
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F2933] text-[9px] font-bold text-white">
-          NV
-        </div>
+        {user?.avatar ? (
+          <img
+            src={user.avatar}
+            alt={getUserDisplayName(user)}
+            className="h-8 w-8 shrink-0 rounded-full object-cover border border-[#D6A85F]/50 shadow-xs"
+          />
+        ) : (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F2933] text-[9px] font-bold text-[#D6A85F]">
+            {getInitials(getUserDisplayName(user))}
+          </div>
+        )}
 
         <div className="hidden min-w-0 text-left sm:block">
           <p className="max-w-[120px] truncate text-[11px] font-semibold text-[#20252B]">
