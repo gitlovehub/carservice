@@ -119,11 +119,42 @@ export async function getMyVehicles(): Promise<CustomerVehicle[]> {
   return Array.isArray(res?.data) ? res.data : [];
 }
 
-export async function updateMyVehicleMileage(id: number, mileage: number) {
+export async function addMyVehicle(data: {
+  model_id?: number;
+  model_name?: string;
+  license_plate: string;
+  mileage?: number;
+  year?: number;
+}) {
+  return fetchApi("/me/vehicles", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateMyVehicle(
+  id: number,
+  data: {
+    license_plate?: string;
+    mileage?: number;
+    year?: number;
+    note?: string;
+  },
+) {
   return fetchApi(`/me/vehicles/${id}`, {
     method: "PATCH",
-    body: JSON.stringify({ mileage }),
+    body: JSON.stringify(data),
   });
+}
+
+export async function deleteMyVehicle(id: number) {
+  return fetchApi(`/me/vehicles/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function updateMyVehicleMileage(id: number, mileage: number) {
+  return updateMyVehicle(id, { mileage });
 }
 
 export async function getMyAppointments(params: {
