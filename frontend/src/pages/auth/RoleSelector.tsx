@@ -1,6 +1,63 @@
 import { useNavigate } from "react-router-dom";
 import { getUserRole } from "./auth";
 
+const roles = [
+  {
+    code: "CUSTOMER",
+    path: "/",
+    name: "Khách hàng",
+    description:
+      "Đặt lịch bảo dưỡng, quản lý thông tin xe và theo dõi tiến độ sửa chữa trực tuyến.",
+    features: ["Đặt lịch dịch vụ", "Quản lý xe", "Theo dõi lịch hẹn"],
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
+      </svg>
+    ),
+  },
+  {
+    code: "ADVISOR",
+    path: "/advisor/appointments",
+    name: "Cố vấn dịch vụ",
+    description:
+      "Tiếp nhận xe, quản lý lịch hẹn và tư vấn các gói dịch vụ phù hợp cho khách hàng.",
+    features: ["Tiếp nhận xe", "Duyệt lịch hẹn", "Tư vấn dịch vụ"],
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+        <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z" />
+      </svg>
+    ),
+  },
+  {
+    code: "TECHNICIAN",
+    path: "/technician",
+    name: "Kỹ thuật viên",
+    description:
+      "Kiểm tra tình trạng xe, cập nhật tiến độ sửa chữa và báo cáo phụ tùng cần thay thế.",
+    features: ["Kiểm tra xe", "Cập nhật tiến độ", "Báo cáo kỹ thuật"],
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+        <path d="M14.7 6.3a5 5 0 0 0-6.6 6.6L3 18l3 3 5.1-5.1a5 5 0 0 0 6.6-6.6L14 13l-3-3z" />
+      </svg>
+    ),
+  },
+  {
+    code: "ADMIN",
+    path: "/admin",
+    name: "Quản trị viên",
+    description:
+      "Quản lý tài khoản nhân sự, dịch vụ và các hoạt động vận hành của gara.",
+    features: ["Quản lý nhân sự", "Quản lý dịch vụ", "Theo dõi vận hành"],
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+        <path d="M12 2 20 6v5c0 5-3.4 8.5-8 11-4.6-2.5-8-6-8-11V6z" />
+        <path d="m9 12 2 2 4-4" />
+      </svg>
+    ),
+  },
+];
+
 function RoleSelector() {
   const navigate = useNavigate();
   const currentRole = getUserRole();
@@ -14,136 +71,188 @@ function RoleSelector() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] px-6 py-10 text-[#20252B] flex flex-col justify-between">
-      <div className="mx-auto max-w-[900px] w-full">
-        <div className="mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#FAF8F5] border border-[#E5B869]/40 px-3 py-1 mb-3">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]"></span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#D6A85F]">
-              CARSERVICE PORTAL
-            </span>
-          </div>
-
-          <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold text-[#20252B] tracking-tight">
-            Chọn giao diện trải nghiệm hệ thống
-          </h1>
-
-          <p className="mt-2 text-xs sm:text-sm text-[#7A838C]">
-            Hệ thống phân quyền 4 vai trò rõ ràng theo đúng nghiệp vụ gara ô tô. Chọn khu vực bạn muốn truy cập để kiểm tra tính năng.
-          </p>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          {/* KHÁCH HÀNG */}
-          <button
-            type="button"
-            onClick={() => handleSelect("CUSTOMER", "/")}
-            className="group cursor-pointer rounded-3xl border border-[#E1E4E6] bg-white p-7 text-left transition-all hover:border-[#D6A85F] hover:shadow-md hover:-translate-y-0.5"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FAF8F5] border border-[#E5B869]/40 text-2xl group-hover:scale-105 transition-transform">
-                👤
-              </div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A949E] group-hover:text-[#D6A85F]">
-                CUSTOMER →
-              </span>
-            </div>
-
-            <h2 className="mt-5 text-base font-bold text-[#20252B]">
-              Khách hàng
-            </h2>
-
-            <p className="mt-1.5 text-xs text-[#7A838C] leading-relaxed">
-              Đặt lịch hẹn bảo dưỡng, chọn gói dịch vụ, quản lý xe và theo dõi tiến độ sửa chữa trực tuyến.
-            </p>
-          </button>
-
-          {/* CỐ VẤN DỊCH VỤ */}
-          <button
-            type="button"
-            onClick={() => handleSelect("ADVISOR", "/advisor/appointments")}
-            className="group cursor-pointer rounded-3xl border border-[#E1E4E6] bg-white p-7 text-left transition-all hover:border-[#D6A85F] hover:shadow-md hover:-translate-y-0.5"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 border border-blue-200 text-2xl group-hover:scale-105 transition-transform">
-                💬
-              </div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">
-                ADVISOR →
-              </span>
-            </div>
-
-            <h2 className="mt-5 text-base font-bold text-[#20252B]">
-              Cố vấn dịch vụ
-            </h2>
-
-            <p className="mt-1.5 text-xs text-[#7A838C] leading-relaxed">
-              Tiếp nhận xe tại xưởng, duyệt lịch hẹn khách hàng, tạo phiếu kiểm tra và tư vấn gói dịch vụ.
-            </p>
-          </button>
-
-          {/* KỸ THUẬT VIÊN */}
-          <button
-            type="button"
-            onClick={() => handleSelect("TECHNICIAN", "/technician")}
-            className="group cursor-pointer rounded-3xl border border-[#E1E4E6] bg-white p-7 text-left transition-all hover:border-[#D6A85F] hover:shadow-md hover:-translate-y-0.5"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-2xl group-hover:scale-105 transition-transform">
-                🔧
-              </div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
-                TECHNICIAN →
-              </span>
-            </div>
-
-            <h2 className="mt-5 text-base font-bold text-[#20252B]">
-              Kỹ thuật viên
-            </h2>
-
-            <p className="mt-1.5 text-xs text-[#7A838C] leading-relaxed">
-              Thực hiện kiểm tra 36 hạng mục, cập nhật tiến độ công việc và báo cáo phụ tùng cần thay thế.
-            </p>
-          </button>
-
-          {/* QUẢN TRỊ VIÊN */}
-          <button
-            type="button"
-            onClick={() => handleSelect("ADMIN", "/admin")}
-            className="group cursor-pointer rounded-3xl border border-[#E1E4E6] bg-white p-7 text-left transition-all hover:border-[#D6A85F] hover:shadow-md hover:-translate-y-0.5"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-50 border border-purple-200 text-2xl group-hover:scale-105 transition-transform">
-                ⚙️
-              </div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700">
-                ADMIN →
-              </span>
-            </div>
-
-            <h2 className="mt-5 text-base font-bold text-[#20252B]">
-              Quản trị viên
-            </h2>
-
-            <p className="mt-1.5 text-xs text-[#7A838C] leading-relaxed">
-              Quản lý toàn diện tài khoản nhân sự, bảng giá dịch vụ, gói bảo dưỡng định kỳ và doanh thu gara.
-            </p>
-          </button>
-        </div>
-
-        <div className="mt-8">
+    <div className="flex min-h-screen flex-col bg-[#F7F7F5] text-[#20252B]">
+      <header className="border-b border-[#E1E4E6] bg-white">
+        <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">
           <button
             type="button"
             onClick={() => navigate("/")}
-            className="cursor-pointer text-xs font-bold text-[#66717C] hover:text-[#20252B] transition inline-flex items-center gap-1.5"
+            className="group flex items-center gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D6A85F]/30"
           >
-            <span>← Quay lại trang chủ</span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-[#D6A85F] transition group-hover:bg-[#303D49]">
+              CS
+            </span>
+            <span>
+              <span className="block text-base font-bold tracking-tight">
+                CarService
+              </span>
+              <span className="block text-[11px] font-medium text-[#7A838C]">
+                Chăm sóc xe chuyên nghiệp
+              </span>
+            </span>
           </button>
-        </div>
-      </div>
 
-      <footer className="py-6 text-center text-xs text-[#8A949E]">
-        © 2026 CarService System. Tất cả quyền được bảo lưu.
+          <span className="hidden text-xs font-medium text-[#7A838C] sm:block">
+            Cổng truy cập hệ thống
+          </span>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:px-8 sm:py-14">
+        <div className="mb-10 max-w-2xl">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#D6A85F]/30 bg-[#FAF8F5] px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#B58941]">
+              CarService Portal
+            </span>
+          </div>
+
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-4xl">
+            Chọn khu vực làm việc
+          </h1>
+
+          <p className="mt-3 text-sm leading-7 text-[#7A838C] sm:text-base">
+            Chọn vai trò phù hợp để truy cập giao diện và các chức năng tương
+            ứng trong hệ thống quản lý dịch vụ ô tô.
+          </p>
+
+          {currentRole && (
+            <div className="mt-5 inline-flex items-center gap-2 rounded-xl border border-[#E1E4E6] bg-white px-3 py-2 text-xs text-[#66717C]">
+              <span className="h-2 w-2 rounded-full bg-[#5B8C69]" />
+              Vai trò hiện tại:
+              <span className="font-bold text-[#20252B]">{currentRole}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="mb-6 flex items-center gap-3">
+          <span className="h-8 w-1 rounded-full bg-[#D6A85F]" />
+          <div>
+            <h2 className="text-sm font-bold">Các vai trò hệ thống</h2>
+            <p className="mt-0.5 text-xs text-[#8A949E]">
+              4 khu vực làm việc theo nghiệp vụ
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {roles.map((role, index) => {
+            const isCurrentRole = currentRole === role.code;
+
+            return (
+              <button
+                key={role.code}
+                type="button"
+                onClick={() => handleSelect(role.code, role.path)}
+                aria-label={`Chọn vai trò ${role.name}`}
+                className="group flex min-h-[250px] flex-col rounded-3xl border border-[#E1E4E6] bg-white p-6 text-left transition duration-200 hover:-translate-y-1 hover:border-[#D6A85F] hover:shadow-[0_18px_40px_rgba(31,41,51,0.08)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D6A85F]/30 sm:p-7"
+              >
+                <div className="flex w-full items-start justify-between gap-4">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D6A85F]/30 bg-[#FAF8F5] p-4 text-[#9A7334] transition group-hover:bg-[#F5ECD9]">
+                    {role.icon}
+                  </span>
+
+                  <span
+                    className={`flex h-9 w-9 items-center justify-center rounded-full border transition ${
+                      isCurrentRole
+                        ? "border-[#D6A85F] bg-[#FAF1DE] text-[#9A7334]"
+                        : "border-[#E1E4E6] text-[#8A949E] group-hover:border-[#D6A85F] group-hover:text-[#9A7334]"
+                    }`}
+                  >
+                    {isCurrentRole ? (
+                      <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="m5 12 4 4L19 6" />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                      </svg>
+                    )}
+                  </span>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-bold">{role.name}</h3>
+                  <span className="rounded-md bg-[#F7F7F5] px-2 py-1 text-[9px] font-bold tracking-wider text-[#7A838C]">
+                    {role.code}
+                  </span>
+                  {isCurrentRole && (
+                    <span className="rounded-md bg-[#F5ECD9] px-2 py-1 text-[9px] font-bold text-[#8F6A2D]">
+                      ĐANG SỬ DỤNG
+                    </span>
+                  )}
+                </div>
+
+                <p className="mt-2 text-xs leading-6 text-[#7A838C] sm:text-sm">
+                  {role.description}
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {role.features.map((feature) => (
+                    <span
+                      key={feature}
+                      className="rounded-lg border border-[#E8EAEC] bg-[#FAFAF9] px-2.5 py-1.5 text-[10px] font-medium text-[#66717C]"
+                    >
+                      {feature}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="mt-auto flex w-full items-center justify-between pt-6">
+                  <span className="text-xs font-semibold text-[#8A949E]">
+                    {String(index + 1).padStart(2, "0")} / 04
+                  </span>
+                  <span className="text-xs font-bold text-[#B58941] transition group-hover:text-[#8F6A2D]">
+                    Truy cập khu vực
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-[#E1E4E6] pt-6">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="inline-flex items-center gap-2 rounded-lg text-xs font-semibold text-[#66717C] transition hover:text-[#20252B] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D6A85F]/30"
+          >
+            <span aria-hidden="true">←</span>
+            Về trang chủ
+          </button>
+
+          <p className="text-xs text-[#8A949E]">
+            CarService · Hệ thống quản lý dịch vụ ô tô
+          </p>
+        </div>
+      </main>
+
+      <footer className="border-t border-[#E1E4E6] bg-white">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-5 text-xs text-[#8A949E] sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <span>© 2026 CarService. All rights reserved.</span>
+          <span>Chăm sóc xe chuyên nghiệp, tận tâm.</span>
+        </div>
       </footer>
     </div>
   );
