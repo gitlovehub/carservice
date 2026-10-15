@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Account;
 use App\Models\RepairOrder;
 use App\Models\WorkItem;
 use App\Services\RepairOrderService;
@@ -13,8 +14,20 @@ class WorkItemController extends Controller
 {
     public function __construct(private readonly RepairOrderService $service) {}
 
-    public function index(RepairOrder $repairOrder): JsonResponse
+    public function index(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        if ($request->user()?->role === Account::ROLE_TECHNICIAN) {
+            $employeeId = $request->user()->employee?->id;
+
+            if (! $employeeId || ! $repairOrder->assignments()->whereHas('technician', function ($q) use ($employeeId): void {
+                $q->where('employee_id', $employeeId);
+            })->exists()) {
+                return response()->json([
+                    'message' => 'Bạn không có quyền xem công việc của phiếu sửa chữa này.',
+                ], 403);
+            }
+        }
+
         return response()->json(
             $repairOrder->workItems()->with(['technician.employee', 'usedParts.part'])->get()
         );
@@ -22,6 +35,20 @@ class WorkItemController extends Controller
 
     public function updateStatus(Request $request, WorkItem $workItem): JsonResponse
     {
+        if ($request->user()?->role === Account::ROLE_TECHNICIAN) {
+            $employeeId = $request->user()->employee?->id;
+
+            $hasAccess = $workItem->repairOrder()->whereHas('assignments.technician', function ($q) use ($employeeId): void {
+                $q->where('employee_id', $employeeId);
+            })->exists();
+
+            if (! $employeeId || ! $hasAccess) {
+                return response()->json([
+                    'message' => 'Bạn không có quyền cập nhật trạng thái công việc này.',
+                ], 403);
+            }
+        }
+
         $data = $request->validate([
             'status' => ['required', 'string', 'in:PENDING,IN_PROGRESS,COMPLETED,CANCELLED'],
         ]);

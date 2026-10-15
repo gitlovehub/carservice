@@ -10,7 +10,6 @@ use App\Models\MaintenancePackage;
 use App\Models\Service;
 use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
-use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
 use App\Models\WorkingHour;
 use Illuminate\Database\Seeder;
@@ -25,7 +24,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RealDataSeeder::class);
-        
+
         $defaultPassword = Hash::make('password123');
 
         // 1. TÀI KHOẢN ADMIN MẪU
@@ -75,7 +74,7 @@ class DatabaseSeeder extends Seeder
                 DB::table('maintenance_package_services')->insertOrIgnore([
                     'package_id' => $package->id,
                     'service_id' => $service->id,
-                    'quantity'   => 1,
+                    'quantity' => 1,
                 ]);
             }
         }
@@ -85,10 +84,10 @@ class DatabaseSeeder extends Seeder
             WorkingHour::firstOrCreate(
                 ['day_of_week' => $day],
                 [
-                    'open_time'  => '08:00:00',
+                    'open_time' => '08:00:00',
                     'close_time' => $day === 8 ? '12:00:00' : '17:30:00', // Chủ nhật (8) làm nửa ngày
-                    'max_slots'  => $day === 8 ? 3 : 5,
-                    'is_active'  => true,
+                    'max_slots' => $day === 8 ? 3 : 5,
+                    'is_active' => true,
                 ]
             );
         }

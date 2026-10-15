@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Account;
 use App\Models\RepairOrder;
 use App\Services\RepairOrderService;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,18 @@ class RepairOrderController extends Controller
     {
         $query = RepairOrder::query()->with(['customer', 'vehicle', 'advisor']);
 
+        if ($request->user()?->role === Account::ROLE_TECHNICIAN) {
+            $employeeId = $request->user()->employee?->id;
+
+            if (! $employeeId) {
+                $query->whereRaw('0 = 1');
+            } else {
+                $query->whereHas('assignments.technician', function ($q) use ($employeeId): void {
+                    $q->where('employee_id', $employeeId);
+                });
+            }
+        }
+
         if ($status = $request->query('status')) {
             $query->where('status', $status);
         }
@@ -23,8 +36,20 @@ class RepairOrderController extends Controller
         return response()->json($query->latest('received_at')->paginate(20));
     }
 
-    public function show(RepairOrder $repairOrder): JsonResponse
+    public function show(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        if ($request->user()?->role === Account::ROLE_TECHNICIAN) {
+            $employeeId = $request->user()->employee?->id;
+
+            if (! $employeeId || ! $repairOrder->assignments()->whereHas('technician', function ($q) use ($employeeId): void {
+                $q->where('employee_id', $employeeId);
+            })->exists()) {
+                return response()->json([
+                    'message' => 'Bạn không có quyền xem phiếu sửa chữa này.',
+                ], 403);
+            }
+        }
+
         $repairOrder->load([
             'customer', 'vehicle', 'advisor', 'statusHistory.changedByAccount',
             'assignments.technician.employee', 'inspections.items', 'inspections.recommendations',
