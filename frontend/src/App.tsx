@@ -5,6 +5,7 @@ import ProtectedRoute from "./pages/auth/ProtectedRoute";
 import Home from "./pages/Home";
 
 import Contact from "./pages/customer/Contact";
+import CustomerDashboard from "./pages/customer/Dashboard";
 import Services from "./pages/customer/Services";
 import Booking from "./pages/customer/Booking";
 import Appointments from "./pages/customer/Appointments";
@@ -61,7 +62,16 @@ function App() {
 
         <Route
           path="/customer"
-          element={<Navigate to="/" replace />}
+          element={<Navigate to="/customer/dashboard" replace />}
+        />
+
+        <Route
+          path="/customer/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+              <CustomerDashboard />
+            </ProtectedRoute>
+          }
         />
 
         <Route
