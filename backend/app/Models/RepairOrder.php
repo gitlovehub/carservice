@@ -19,6 +19,8 @@ class RepairOrder extends Model
 
     public const INSPECTING = 'INSPECTING';
 
+    public const QUOTING = 'QUOTING';
+
     public const WAITING_APPROVAL = 'WAITING_APPROVAL';
 
     public const WAITING_FOR_PARTS = 'WAITING_FOR_PARTS';
@@ -35,7 +37,8 @@ class RepairOrder extends Model
 
     public const TRANSITIONS = [
         self::RECEIVED => [self::INSPECTING, self::CLOSED],
-        self::INSPECTING => [self::WAITING_APPROVAL, self::CLOSED],
+        self::INSPECTING => [self::QUOTING, self::WAITING_APPROVAL, self::CLOSED],
+        self::QUOTING => [self::WAITING_APPROVAL, self::CLOSED],
         self::WAITING_APPROVAL => [self::IN_PROGRESS, self::CLOSED],
         self::IN_PROGRESS => [self::WAITING_FOR_PARTS, self::COMPLETED, self::CLOSED],
         self::WAITING_FOR_PARTS => [self::IN_PROGRESS, self::CLOSED],
@@ -90,6 +93,11 @@ class RepairOrder extends Model
     public function inspections(): HasMany
     {
         return $this->hasMany(Inspection::class);
+    }
+
+    public function inspection(): HasOne
+    {
+        return $this->hasOne(Inspection::class)->latestOfMany();
     }
 
     public function quotations(): HasMany
