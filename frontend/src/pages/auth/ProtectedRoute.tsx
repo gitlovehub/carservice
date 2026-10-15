@@ -14,7 +14,9 @@ function ProtectedRoute({
   const location = useLocation();
   const isLoggedIn = localStorage.getItem("isLoggedIn");
   const role = getUserRole();
-  if (isLoggedIn !== "true" || !role) {
+  const token = localStorage.getItem("token");
+
+  if (isLoggedIn !== "true" || !role || !token) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

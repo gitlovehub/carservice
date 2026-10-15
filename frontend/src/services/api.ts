@@ -7,23 +7,21 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
   headers.set("Content-Type", "application/json");
   headers.set("Accept", "application/json");
   
-  if (token && token !== "session_authenticated") {
+  if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
-    credentials: "include",
   });
 
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const error = Object.assign(new Error(data?.message || "Something went wrong"), {
-      status: response.status,
-      data,
-    });
+    const error = new Error(data?.message || "Something went wrong");
+    (error as any).status = response.status;
+    (error as any).data = data;
     throw error;
   }
 

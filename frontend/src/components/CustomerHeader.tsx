@@ -1,13 +1,5 @@
-import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { getUserDisplayName, logout } from "../pages/auth/auth";
-
-const getInitials = (name?: string) => {
-  if (!name) return "KH";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-};
+import { getUserDisplayName } from "../pages/auth/auth";
 
 const menuItems = [
   {
@@ -54,29 +46,7 @@ const menuItems = [
 
 function CustomerHeader() {
   const location = useLocation();
-  const [user, setUser] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("user") || "null");
-    } catch {
-      return null;
-    }
-  });
-
-  useEffect(() => {
-    const syncUser = () => {
-      try {
-        setUser(JSON.parse(localStorage.getItem("user") || "null"));
-      } catch {
-        setUser(null);
-      }
-    };
-    window.addEventListener("storage", syncUser);
-    window.addEventListener("user-updated", syncUser);
-    return () => {
-      window.removeEventListener("storage", syncUser);
-      window.removeEventListener("user-updated", syncUser);
-    };
-  }, []);
+  const user = JSON.parse(localStorage.getItem("user") || "null");
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] border-r border-[#313B45] bg-[#1F2933] text-white lg:block">
@@ -131,17 +101,9 @@ function CustomerHeader() {
         <div className="mt-auto px-4 pb-5">
           <div className="rounded-2xl border border-[#3C4650] bg-[#29333D] p-4">
             <div className="flex items-center gap-3">
-              {user?.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt={getUserDisplayName(user)}
-                  className="h-9 w-9 shrink-0 rounded-full object-cover border border-[#D6A85F]/60 shadow-xs"
-                />
-              ) : (
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#D6A85F] text-[10px] font-bold text-[#1F2933]">
-                  {getInitials(getUserDisplayName(user))}
-                </div>
-              )}
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#D6A85F] text-[10px] font-bold text-[#1F2933]">
+                NV
+              </div>
 
               <div className="min-w-0">
                 <p className="truncate text-[12px] font-semibold text-white">
@@ -154,22 +116,12 @@ function CustomerHeader() {
               </div>
             </div>
 
-            <div className="mt-3 flex gap-2">
-              <Link
-                to="/"
-                className="flex flex-1 cursor-pointer items-center justify-center rounded-xl border border-[#4A5661] py-2 text-[11px] font-medium text-[#D5DBE0] transition hover:bg-[#313B45] hover:text-white"
-              >
-                Trang chủ
-              </Link>
-
-              <button
-                type="button"
-                onClick={() => logout()}
-                className="flex flex-1 cursor-pointer items-center justify-center rounded-xl border border-red-500/40 bg-red-500/10 py-2 text-[11px] font-medium text-red-400 transition hover:bg-red-500 hover:text-white"
-              >
-                Đăng xuất
-              </button>
-            </div>
+            <Link
+              to="/"
+              className="mt-4 flex cursor-pointer items-center justify-center rounded-xl border border-[#4A5661] px-3 py-2.5 text-[11px] font-medium text-[#D5DBE0] transition hover:bg-[#313B45] hover:text-white"
+            >
+              Về trang chủ
+            </Link>
           </div>
         </div>
       </div>
