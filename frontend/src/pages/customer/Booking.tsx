@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import confetti from "canvas-confetti";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
@@ -238,6 +238,7 @@ function isValidLicensePlate(plate: string): boolean {
 }
 
 export default function Booking() {
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Step 1: Khách hàng
@@ -335,23 +336,27 @@ export default function Booking() {
         });
 
       // Fetch saved vehicles
+      const paramVehicleId = searchParams.get("vehicle_id");
       fetchApi("/me/vehicles")
         .then((res) => {
-          const list = Array.isArray(res?.data) ? res.data : [];
+          const list: SavedVehicle[] = Array.isArray(res?.data) ? res.data : [];
           setSavedVehicles(list);
           if (list.length > 0) {
-            const first = list[0];
-            setSelectedSavedVehicleId(first.id);
-            if (first.model?.brand?.name) setVehicleBrand(first.model.brand.name);
-            if (first.model?.name) setVehicleModel(first.model.name);
-            if (first.license_plate) setVehiclePlate(first.license_plate);
+            const matched = paramVehicleId
+              ? list.find((item: SavedVehicle) => String(item.id) === paramVehicleId)
+              : null;
+            const target = matched ?? list[0];
+            setSelectedSavedVehicleId(target.id);
+            if (target.model?.brand?.name) setVehicleBrand(target.model.brand.name);
+            if (target.model?.name) setVehicleModel(target.model.name);
+            if (target.license_plate) setVehiclePlate(target.license_plate);
           }
         })
         .catch(() => {
           // guest mode or vehicle fetch error
         });
     }
-  }, []);
+  }, [searchParams]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);

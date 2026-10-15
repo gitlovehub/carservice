@@ -608,7 +608,7 @@ function CustomerDashboard() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigate("/booking");
+                                navigate(o.vehicle_id ? `/booking?vehicle_id=${o.vehicle_id}` : "/booking");
                               }}
                               className="cursor-pointer rounded-lg border border-[#E5B869]/50 bg-[#FAF8F5] px-3 py-1.5 text-[11px] font-bold text-[#8F641B] transition hover:bg-[#F3E8D2]"
                             >
