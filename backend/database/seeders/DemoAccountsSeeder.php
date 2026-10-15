@@ -35,6 +35,12 @@ class DemoAccountsSeeder extends Seeder
                     'name' => 'Kỹ thuật viên Demo',
                     'phone' => '0901000103',
                 ],
+                [
+                    'email' => 'customer.demo@carservice.test',
+                    'role' => Account::ROLE_CUSTOMER,
+                    'name' => 'Khách hàng Demo',
+                    'phone' => '0901000104',
+                ],
             ];
 
             foreach ($accounts as $data) {
@@ -47,6 +53,18 @@ class DemoAccountsSeeder extends Seeder
                         'status' => Account::STATUS_ACTIVE,
                     ],
                 );
+
+                if ($data['role'] === Account::ROLE_CUSTOMER) {
+                    \App\Models\Customer::query()->updateOrCreate(
+                        ['account_id' => $account->id],
+                        [
+                            'full_name' => $data['name'],
+                            'phone' => $data['phone'],
+                            'email' => $data['email'],
+                        ],
+                    );
+                    continue;
+                }
 
                 $employee = Employee::query()->updateOrCreate(
                     ['account_id' => $account->id],

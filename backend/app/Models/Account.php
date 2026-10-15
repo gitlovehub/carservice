@@ -15,7 +15,8 @@ use Laravel\Sanctum\HasApiTokens;
     'email_verified_at',
     'password_hash',
     'role',
-    'status'
+    'status',
+    'avatar',
 ])]
 
 #[Hidden(['password_hash'])]

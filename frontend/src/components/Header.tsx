@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { fetchApi } from "../services/api";
 import {
   getRoleManagementPage,
   getUserDisplayName,
+  logout,
 } from "../pages/auth/auth";
 
 type AuthUser = {
@@ -12,6 +13,7 @@ type AuthUser = {
   name?: string;
   email?: string;
   role?: string;
+  avatar?: string | null;
 };
 
 function Header() {
@@ -22,7 +24,6 @@ function Header() {
   const [user, setUser] = useState<AuthUser | null>(null);
 
   const location = useLocation();
-  const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
   const managementPage = getRoleManagementPage(user?.role);
 
@@ -53,9 +54,11 @@ function Header() {
 
     checkLogin();
     window.addEventListener("storage", checkLogin);
+    window.addEventListener("user-updated", checkLogin);
 
     return () => {
       window.removeEventListener("storage", checkLogin);
+      window.removeEventListener("user-updated", checkLogin);
     };
   }, [location]);
 
@@ -75,21 +78,9 @@ function Header() {
     };
   }, [open]);
 
-  const handleLogout = async () => {
-    try {
-      await fetchApi("/logout", { method: "POST" });
-    } catch {
-      // Tiếp tục xóa dữ liệu cục bộ dù backend có lỗi
-    }
-
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("role");
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    setIsLoggedIn(false);
+  const handleLogout = () => {
     setOpen(false);
-    navigate("/login");
+    logout();
   };
 
   const navLinkClass = (isActive: boolean) =>
@@ -216,9 +207,17 @@ function Header() {
                 onClick={() => setOpen(!open)}
                 className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 transition hover:border-slate-300 hover:bg-slate-50"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 font-mono text-xs font-bold text-amber-400">
-                  {getInitials(getUserDisplayName(user))}
-                </div>
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={getUserDisplayName(user)}
+                    className="h-8 w-8 rounded-xl object-cover border border-amber-400/40 shadow-xs"
+                  />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 font-mono text-xs font-bold text-amber-400">
+                    {getInitials(getUserDisplayName(user))}
+                  </div>
+                )}
 
                 <div className="hidden text-left sm:block">
                   <p className="max-w-[120px] truncate text-xs font-semibold text-slate-900">
