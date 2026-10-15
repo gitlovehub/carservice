@@ -74,9 +74,9 @@ function Contact() {
                             Điện thoại
                           </p>
 
-                          <a href="tel:0332405972" className="mt-1 block text-[13px] font-semibold text-[#20252B] hover:text-[#D6A85F] transition">
-                            033 240 5972
-                          </a>
+                          <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
+                            0123 456 789
+                          </p>
                         </div>
                       </div>
                     </div>

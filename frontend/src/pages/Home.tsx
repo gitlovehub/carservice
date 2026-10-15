@@ -260,10 +260,10 @@ function Home() {
 
               <div className="flex flex-wrap gap-4">
                 <a
-                  href="tel:0332405972"
+                  href="tel:19001234"
                   className="inline-flex h-12 items-center justify-center rounded-xl bg-amber-500 px-6 text-sm font-semibold text-slate-950 transition hover:bg-amber-400"
                 >
-                  Hotline: 033 240 5972
+                  Hotline: 1900 1234
                 </a>
                 <Link
                   to="/booking"
