@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdvisorAppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\PaymentController;
@@ -75,6 +76,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     */
 
     Route::middleware('role:' . Account::ROLE_CUSTOMER)->group(function (): void {
+
+        // Phiếu sửa chữa, báo giá và hóa đơn của khách hàng hiện tại
+        Route::controller(CustomerRepairOrderController::class)->prefix('me')->group(function (): void {
+            Route::get('repair-orders', 'index');
+            Route::get('repair-orders/{repairOrder}', 'show');
+            Route::get('repair-orders/{repairOrder}/invoice', 'invoice');
+            Route::post('quotations/{quotation}/respond', 'respondQuotation');
+        });
 
         // Hồ sơ cá nhân
         Route::controller(CustomerController::class)->prefix('me/customer')->group(function (): void {
@@ -177,6 +186,26 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     /*
     |--------------------------------------------------------------------------
+    | Advisor + Technician
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:' . Account::ROLE_ADVISOR . ',' . Account::ROLE_TECHNICIAN)->group(function (): void {
+
+        Route::controller(RepairOrderController::class)->group(function (): void {
+            Route::get('repair-orders', 'index');
+            Route::get('repair-orders/{repairOrder}', 'show');
+        });
+
+        Route::controller(WorkItemController::class)->group(function (): void {
+            Route::get('repair-orders/{repairOrder}/work-items', 'index');
+            Route::patch('work-items/{workItem}/status', 'updateStatus');
+        });
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Advisor
     |--------------------------------------------------------------------------
     */
@@ -191,9 +220,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::controller(RepairOrderController::class)->group(function (): void {
 
-            Route::get('repair-orders', 'index');
             Route::post('repair-orders', 'store');
-            Route::get('repair-orders/{repairOrder}', 'show');
 
             Route::prefix('repair-orders/{repairOrder}')->group(function (): void {
                 Route::post('assign-technician', 'assignTechnician');
@@ -236,19 +263,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::controller(WorkItemController::class)->group(function (): void {
 
-            Route::get(
-                'repair-orders/{repairOrder}/work-items',
-                'index'
-            );
-
             Route::post(
                 'repair-orders/{repairOrder}/used-parts',
                 'storeUsedPart'
-            );
-
-            Route::patch(
-                'work-items/{workItem}/status',
-                'updateStatus'
             );
         });
 
