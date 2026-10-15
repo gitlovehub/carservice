@@ -22,13 +22,6 @@ const GARAGE_BRANCHES = [
     address: "Số 36 Phố Dịch Vọng Hậu, Cầu Giấy, Hà Nội",
     status: "Còn chỗ",
   },
-  {
-    id: "branch-my-dinh",
-    name: "Cơ sở Mỹ Đình",
-    fullName: "CarService Nam Từ Liêm (Lê Quang Đạo)",
-    address: "Số 88 Lê Quang Đạo, Nam Từ Liêm, Hà Nội",
-    status: "Còn chỗ",
-  },
 ];
 
 const MORNING_SLOTS = ["08:00", "09:00", "09:30", "10:30", "11:15"];
@@ -146,6 +139,48 @@ const BRAND_MODELS: Record<string, string[]> = {
   "Hãng khác": ["Dòng xe khác"],
 };
 
+type VehicleType = "Sedan / Hatchback (4-5 chỗ)" | "SUV / Crossover (5-7 chỗ)" | "Bán tải / MPV (7-8 chỗ)";
+
+const VEHICLE_MODELS_BY_TYPE: Record<VehicleType, string[]> = {
+  "Sedan / Hatchback (4-5 chỗ)": [
+    "Vios", "Camry", "Corolla Altis", "Wigo", "City", "Civic", "Accord", "Brio",
+    "Accent", "Grand i10", "Elantra", "Morning", "Soluto", "K3", "K5", "Mazda 2",
+    "Mazda 3", "Mazda 6", "Fadil", "Lux A2.0", "Attrage", "C-Class (C200, C300)",
+    "E-Class (E200, E300)", "S-Class (S450)", "3 Series (320i, 330i)",
+    "5 Series (520i, 530i)", "7 Series", "Maybach",
+  ],
+  "SUV / Crossover (5-7 chỗ)": [
+    "Corolla Cross", "Raize", "Fortuner", "Yaris Cross", "Land Cruiser Prado", "Land Cruiser",
+    "CR-V", "HR-V", "Creta",
+    "Tucson", "Santa Fe", "Palisade", "Venue", "Sonet", "Seltos", "Sportage", "Sorento",
+    "CX-3", "CX-30", "CX-5", "CX-8", "Everest", "Territory", "Explorer", "Lux SA2.0",
+    "President", "VF 3", "VF 5", "VF 6", "VF 7", "VF 8", "VF 9", "VF e34", "Xforce",
+    "Outlander", "Pajero Sport", "GLC (GLC 200, GLC 300)", "GLE", "GLS", "X1", "X3", "X5", "X7",
+  ],
+  "Bán tải / MPV (7-8 chỗ)": [
+    "Innova", "Innova Cross", "Hilux", "Veloz Cross", "Avanza Premio", "BR-V", "Custin",
+    "Stargazer", "Carens", "Carnival", "BT-50", "Ranger",
+    "Ranger Raptor", "Transit", "Xpander", "Triton",
+  ],
+};
+
+function getVehicleTypeForModel(model: string): VehicleType | undefined {
+  return (Object.entries(VEHICLE_MODELS_BY_TYPE) as [VehicleType, string[]][])
+    .find(([, models]) => models.includes(model))?.[0];
+}
+
+function getModelsForVehicleType(brand: string, vehicleType: VehicleType): string[] {
+  return (BRAND_MODELS[brand] || []).filter(
+    (model) => getVehicleTypeForModel(model) === vehicleType || model === "Dòng xe khác",
+  );
+}
+
+function getBrandForModel(model: string): string | undefined {
+  return Object.entries(BRAND_MODELS).find(
+    ([brand, models]) => brand !== "Hãng khác" && models.includes(model),
+  )?.[0];
+}
+
 // Tự động format biển số xe theo chuẩn VN (VD: 30A-123.45 hoặc 51K-888.88 hoặc 29A-1234)
 function formatLicensePlate(input: string): string {
   const clean = input.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -191,7 +226,7 @@ export default function Booking() {
   const [customerNotes, setCustomerNotes] = useState("");
 
   // Step 2: Xe & Dịch vụ (Chỉ giữ xe ô tô, bỏ moto/xe máy và xe điện)
-  const [vehicleType, setVehicleType] = useState("Sedan / Hatchback (4-5 chỗ)");
+  const [vehicleType, setVehicleType] = useState<VehicleType>("Sedan / Hatchback (4-5 chỗ)");
   const [vehicleBrand, setVehicleBrand] = useState("Toyota");
   const [vehicleModel, setVehicleModel] = useState("Vios");
   const [customModel, setCustomModel] = useState("");
@@ -218,24 +253,24 @@ export default function Booking() {
   const [savedVehicles, setSavedVehicles] = useState<SavedVehicle[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Generate 7 upcoming dates
+  // Generate today and the next 7 days
   const upcomingDates = useMemo(() => {
     const dates = [];
     const weekdays = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
     const now = new Date();
 
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 0; i <= 7; i++) {
       const d = new Date(now);
       d.setDate(now.getDate() + i);
 
-      const dayName = i === 1 ? "Ngày mai" : weekdays[d.getDay()];
+      const dayName = i === 0 ? "Hôm nay" : i === 1 ? "Ngày mai" : weekdays[d.getDay()];
       const dayFormatted = `${d.getDate()}/${d.getMonth() + 1}`;
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, "0");
       const day = String(d.getDate()).padStart(2, "0");
 
       dates.push({
-        index: i - 1,
+        index: i,
         dayName,
         dayFormatted,
         fullLabel: `${dayName}, ${dayFormatted}/${year}`,
@@ -309,13 +344,6 @@ export default function Booking() {
         .then((res) => {
           const list = Array.isArray(res?.data) ? res.data : [];
           setSavedVehicles(list);
-          if (list.length > 0) {
-            const first = list[0];
-            setSelectedSavedVehicleId(first.id);
-            if (first.model?.brand?.name) setVehicleBrand(first.model.brand.name);
-            if (first.model?.name) setVehicleModel(first.model.name);
-            if (first.license_plate) setVehiclePlate(first.license_plate);
-          }
         })
         .catch(() => {
           // guest mode or vehicle fetch error
@@ -355,7 +383,7 @@ export default function Booking() {
   const handleBrandChange = (newBrand: string) => {
     setSelectedSavedVehicleId(null);
     setVehicleBrand(newBrand);
-    const brandModels = BRAND_MODELS[newBrand] || [];
+    const brandModels = getModelsForVehicleType(newBrand, vehicleType);
     setVehicleModel(brandModels.length > 0 ? brandModels[0] : "");
     setCustomModel("");
     if (errors.model) {
@@ -363,16 +391,41 @@ export default function Booking() {
     }
   };
 
+  const handleVehicleTypeChange = (newType: VehicleType) => {
+    setSelectedSavedVehicleId(null);
+    setVehicleType(newType);
+    const compatibleModels = getModelsForVehicleType(vehicleBrand, newType);
+    if (vehicleModel !== "Khác" && !compatibleModels.includes(vehicleModel)) {
+      setVehicleModel(compatibleModels[0] || "");
+      setCustomModel("");
+    }
+    if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
+  };
+
+  const handleModelChange = (newModel: string) => {
+    setSelectedSavedVehicleId(null);
+    setVehicleModel(newModel);
+    const inferredType = getVehicleTypeForModel(newModel);
+    if (inferredType) setVehicleType(inferredType);
+    if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
+  };
+
   const handleSelectSavedVehicle = (vId: number | null) => {
     setSelectedSavedVehicleId(vId);
-    if (!vId) return;
+    if (!vId) {
+      setVehiclePlate("");
+      return;
+    }
     const v = savedVehicles.find((item) => item.id === vId);
     if (v) {
-      if (v.model?.brand?.name) {
-        setVehicleBrand(v.model.brand.name);
-      }
       if (v.model?.name) {
         setVehicleModel(v.model.name);
+        const brandName = v.model.brand?.name || getBrandForModel(v.model.name);
+        if (brandName) setVehicleBrand(brandName);
+        const inferredType = getVehicleTypeForModel(v.model.name);
+        if (inferredType) setVehicleType(inferredType);
+      } else if (v.model?.brand?.name) {
+        setVehicleBrand(v.model.brand.name);
       }
       if (v.license_plate) {
         setVehiclePlate(formatLicensePlate(v.license_plate));
@@ -429,12 +482,17 @@ export default function Booking() {
   };
 
   // Kiểm tra khung giờ trong ngày có bị quá giờ so với thời điểm hiện tại hay không
-  const isSlotUnavailable = (timeStr: string) =>
-    upcomingDates[selectedDateIndex]?.dayOfWeek === 0 && timeStr > "12:00";
+  const isSlotUnavailable = (timeStr: string, dateIndex = selectedDateIndex) => {
+    const selectedDate = upcomingDates[dateIndex];
+    if (!selectedDate) return false;
+
+    const slotDateTime = new Date(`${selectedDate.isoDate}T${timeStr}:00`);
+    return slotDateTime <= new Date() || (selectedDate.dayOfWeek === 0 && timeStr > "12:00");
+  };
 
   const handleDateSelect = (index: number) => {
     setSelectedDateIndex(index);
-    if (upcomingDates[index]?.dayOfWeek === 0 && selectedTime > "12:00") {
+    if (selectedTime && isSlotUnavailable(selectedTime, index)) {
       setSelectedTime("");
     }
   };
@@ -445,7 +503,7 @@ export default function Booking() {
     if (!selectedTime) {
       newErrors.time = "Vui lòng chọn một khung giờ làm việc.";
     } else if (isSlotUnavailable(selectedTime)) {
-      newErrors.time = "Garage chỉ nhận lịch đến 12:00 vào Chủ nhật. Vui lòng chọn khung giờ khác.";
+      newErrors.time = "Khung giờ đã qua hoặc garage không phục vụ vào thời điểm này.";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -477,8 +535,8 @@ export default function Booking() {
   };
 
   const completeBooking = async () => {
-    if (!isLoggedIn || !selectedSavedVehicleId) {
-      setSubmissionError("Vui lòng đăng nhập và chọn xe đã lưu để CarService ghi nhận lịch hẹn.");
+    if (!isLoggedIn) {
+      setSubmissionError("Vui lòng đăng nhập để CarService ghi nhận lịch hẹn.");
       return;
     }
 
@@ -491,7 +549,16 @@ export default function Booking() {
       const response = await fetchApi("/appointments", {
         method: "POST",
         body: JSON.stringify({
-          vehicle_id: selectedSavedVehicleId,
+          ...(selectedSavedVehicleId
+            ? { vehicle_id: selectedSavedVehicleId }
+            : {
+                new_vehicle: {
+                  brand: vehicleBrand,
+                  model: finalModelName,
+                  license_plate: vehiclePlate.trim().toUpperCase(),
+                  vehicle_type: vehicleType,
+                },
+              }),
           appointment_date: selectedDateObj.isoDate,
           appointment_time: selectedTime,
           request_type: "MAINTENANCE",
@@ -936,7 +1003,7 @@ export default function Booking() {
                         name="vehicleType"
                         value={item.value}
                         checked={vehicleType === item.value}
-                        onChange={(e) => setVehicleType(e.target.value)}
+                        onChange={(e) => handleVehicleTypeChange(e.target.value as VehicleType)}
                         className="peer sr-only"
                       />
                       <div className="p-4 rounded-xl border-2 border-slate-200 bg-white text-center transition peer-checked:border-blue-600 peer-checked:bg-blue-50/50 hover:border-slate-300">
@@ -979,14 +1046,12 @@ export default function Booking() {
                     id="vehicleModel"
                     value={vehicleModel}
                     onChange={(e) => {
-                      setSelectedSavedVehicleId(null);
-                      setVehicleModel(e.target.value);
-                      if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
+                      handleModelChange(e.target.value);
                     }}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition bg-white"
                   >
                     <option value="">-- Chọn dòng xe của {vehicleBrand} --</option>
-                    {(BRAND_MODELS[vehicleBrand] || []).map((m) => (
+                    {getModelsForVehicleType(vehicleBrand, vehicleType).map((m) => (
                       <option key={m} value={m}>
                         {m}
                       </option>
@@ -1106,7 +1171,7 @@ export default function Booking() {
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
                   Chọn Garage / Trung tâm dịch vụ <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   {GARAGE_BRANCHES.map((b) => {
                     const isChecked = garageBranch === b.fullName;
                     return (
@@ -1142,10 +1207,10 @@ export default function Booking() {
                 </div>
               </div>
 
-              {/* Lịch ngày 7 ngày sắp tới */}
+              {/* Lịch hôm nay và 7 ngày tiếp theo */}
               <div className="mb-6">
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
-                  Chọn ngày hẹn (7 ngày sắp tới) <span className="text-red-500">*</span>
+                  Chọn ngày hẹn (hôm nay và 7 ngày tới) <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
                   {upcomingDates.map((d) => {
@@ -1198,11 +1263,11 @@ export default function Booking() {
                               key={slotTime}
                               type="button"
                               disabled
-                              title="CarService không nhận lịch vào khung giờ này Chủ nhật"
+                              title="Khung giờ đã qua hoặc garage không phục vụ vào thời điểm này"
                               className="p-2.5 rounded-xl border border-slate-100 bg-slate-100/70 text-xs font-semibold text-slate-400 cursor-not-allowed flex flex-col items-center justify-center opacity-60"
                             >
                               <span className="line-through">{slotTime}</span>
-                              <span className="text-[9px] text-slate-400 font-normal">Ngoài giờ</span>
+                              <span className="text-[9px] text-slate-400 font-normal">Không khả dụng</span>
                             </button>
                           );
                         }
@@ -1244,11 +1309,11 @@ export default function Booking() {
                               key={slotTime}
                               type="button"
                               disabled
-                              title="CarService không nhận lịch vào khung giờ này Chủ nhật"
+                              title="Khung giờ đã qua hoặc garage không phục vụ vào thời điểm này"
                               className="p-2.5 rounded-xl border border-slate-100 bg-slate-100/70 text-xs font-semibold text-slate-400 cursor-not-allowed flex flex-col items-center justify-center opacity-60"
                             >
                               <span className="line-through">{slotTime}</span>
-                              <span className="text-[9px] text-slate-400 font-normal">Ngoài giờ</span>
+                              <span className="text-[9px] text-slate-400 font-normal">Không khả dụng</span>
                             </button>
                           );
                         }
