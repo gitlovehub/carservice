@@ -50,8 +50,19 @@ const emptyForm: ServiceForm = {
 const fieldClass =
   "w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#1F2933]";
 
-function formatPrice(price: string): string {
-  return `${new Intl.NumberFormat("vi-VN").format(Number(price))} đ`;
+function formatPrice(price: string | number): string {
+  const value = Number(price);
+
+  if (!Number.isFinite(value)) return "Chưa có giá";
+
+  return `${new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 2,
+  }).format(value)} đ`;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
 }
 
 function Services() {
@@ -60,7 +71,11 @@ function Services() {
   const [lastPage, setLastPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [searchInput, setSearchInput] = useState("");
-  const [filters, setFilters] = useState({ search: "", category: "", status: "" });
+  const [filters, setFilters] = useState({
+    search: "",
+    category: "",
+    status: "",
+  });
   const [reloadKey, setReloadKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -68,31 +83,50 @@ function Services() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [form, setForm] = useState<ServiceForm>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
     let active = true;
+
     const query = new URLSearchParams({ page: String(page) });
+
     if (filters.search) query.set("search", filters.search);
     if (filters.category) query.set("category", filters.category);
     if (filters.status) query.set("status", filters.status);
 
     setIsLoading(true);
     setError("");
+
     fetchApi(`/admin/services?${query.toString()}`)
       .then((response: ServiceIndexResponse) => {
         if (!active) return;
+
+        if (
+          !Array.isArray(response?.data?.data) ||
+          !Number.isFinite(response.data.current_page) ||
+          !Number.isFinite(response.data.last_page) ||
+          !Number.isFinite(response.data.total)
+        ) {
+          throw new Error("Dữ liệu danh sách dịch vụ không hợp lệ.");
+        }
+
         setServices(response.data.data);
-        setPage(response.data.current_page);
-        setLastPage(response.data.last_page);
+        setLastPage(Math.max(1, response.data.last_page));
         setTotal(response.data.total);
+
+        if (response.data.current_page !== page) {
+          setPage(response.data.current_page);
+        }
       })
       .catch((requestError: unknown) => {
         if (active) {
+          setServices([]);
           setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Không thể tải danh sách dịch vụ.",
+            getErrorMessage(
+              requestError,
+              "Không thể tải danh sách dịch vụ.",
+            ),
           );
         }
       })
@@ -118,7 +152,7 @@ function Services() {
       name: service.name,
       category: service.category ?? "",
       description: service.description ?? "",
-      base_price: service.base_price,
+      base_price: String(service.base_price ?? ""),
       estimated_minutes: service.estimated_minutes?.toString() ?? "",
       status: service.status,
     });
@@ -127,42 +161,85 @@ function Services() {
   };
 
   const openDetailModal = async (service: Service) => {
+    setError("");
+    setIsLoadingDetail(true);
+    setSelectedService(service);
+    setModal("detail");
+
     try {
       const response: ServiceResponse = await fetchApi(
         `/admin/services/${service.id}`,
       );
+
+      if (!response?.data || response.data.id !== service.id) {
+        throw new Error("Dữ liệu chi tiết dịch vụ không hợp lệ.");
+      }
+
       setSelectedService(response.data);
-      setModal("detail");
     } catch (requestError: unknown) {
+      setModal(null);
       setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Không thể tải thông tin dịch vụ.",
+        getErrorMessage(
+          requestError,
+          "Không thể tải thông tin dịch vụ.",
+        ),
       );
+    } finally {
+      setIsLoadingDetail(false);
     }
   };
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPage(1);
-    setFilters((current) => ({ ...current, search: searchInput.trim() }));
+    setFilters((current) => ({
+      ...current,
+      search: searchInput.trim(),
+    }));
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsSaving(true);
     setFormError("");
 
+    const name = form.name.trim();
+    const price = Number(form.base_price);
+    const minutes = form.estimated_minutes.trim()
+      ? Number(form.estimated_minutes)
+      : null;
+
+    if (!name) {
+      setFormError("Vui lòng nhập tên dịch vụ.");
+      return;
+    }
+
+    if (
+      form.base_price.trim() === "" ||
+      !Number.isFinite(price) ||
+      price < 0
+    ) {
+      setFormError("Giá dịch vụ phải là số hợp lệ và không được âm.");
+      return;
+    }
+
+    if (
+      minutes !== null &&
+      (!Number.isInteger(minutes) || minutes < 1)
+    ) {
+      setFormError("Thời gian thực hiện phải là số nguyên lớn hơn 0.");
+      return;
+    }
+
     const payload = {
-      name: form.name.trim(),
+      name,
       category: form.category.trim() || null,
       description: form.description.trim() || null,
-      base_price: Number(form.base_price),
-      estimated_minutes: form.estimated_minutes
-        ? Number(form.estimated_minutes)
-        : null,
+      base_price: price,
+      estimated_minutes: minutes,
       status: form.status,
     };
+
+    setIsSaving(true);
 
     try {
       await fetchApi(
@@ -174,14 +251,14 @@ function Services() {
           body: JSON.stringify(payload),
         },
       );
+
       setModal(null);
+      setSelectedService(null);
       setPage(1);
       setReloadKey((current) => current + 1);
     } catch (requestError: unknown) {
       setFormError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Không thể lưu dịch vụ.",
+        getErrorMessage(requestError, "Không thể lưu dịch vụ."),
       );
     } finally {
       setIsSaving(false);
@@ -192,8 +269,12 @@ function Services() {
     if (!window.confirm(`Ẩn dịch vụ "${service.name}"?`)) return;
 
     setError("");
+
     try {
-      await fetchApi(`/admin/services/${service.id}`, { method: "DELETE" });
+      await fetchApi(`/admin/services/${service.id}`, {
+        method: "DELETE",
+      });
+
       if (services.length === 1 && page > 1) {
         setPage((current) => current - 1);
       } else {
@@ -201,9 +282,7 @@ function Services() {
       }
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Không thể ẩn dịch vụ.",
+        getErrorMessage(requestError, "Không thể ẩn dịch vụ."),
       );
     }
   };
@@ -338,7 +417,10 @@ function Services() {
               </div>
 
               {error && (
-                <p role="alert" className="m-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">
+                <p
+                  role="alert"
+                  className="m-5 rounded-xl bg-red-50 p-4 text-sm text-red-700"
+                >
                   {error}
                 </p>
               )}
@@ -485,7 +567,9 @@ function Services() {
           className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setModal(null);
+            if (event.target === event.currentTarget && !isSaving) {
+              setModal(null);
+            }
           }}
         >
           <section
@@ -499,7 +583,10 @@ function Services() {
                 <h2 id="service-modal-title" className="mb-5 text-xl font-bold">
                   {selectedService ? "Cập nhật dịch vụ" : "Thêm dịch vụ"}
                 </h2>
-                <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
+                <form
+                  onSubmit={(event) => void handleSubmit(event)}
+                  className="space-y-4"
+                >
                   <label className="block text-xs font-semibold">
                     Tên dịch vụ *
                     <input
@@ -507,7 +594,10 @@ function Services() {
                       maxLength={150}
                       value={form.name}
                       onChange={(event) =>
-                        setForm((current) => ({ ...current, name: event.target.value }))
+                        setForm((current) => ({
+                          ...current,
+                          name: event.target.value,
+                        }))
                       }
                       className={`${fieldClass} mt-2 font-normal`}
                     />
@@ -595,7 +685,10 @@ function Services() {
                     </label>
                   </div>
                   {formError && (
-                    <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+                    <p
+                      role="alert"
+                      className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+                    >
                       {formError}
                     </p>
                   )}
@@ -604,7 +697,7 @@ function Services() {
                       type="button"
                       onClick={() => setModal(null)}
                       disabled={isSaving}
-                      className="rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-xs font-semibold"
+                      className="rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-xs font-semibold disabled:opacity-50"
                     >
                       Hủy
                     </button>
@@ -623,22 +716,34 @@ function Services() {
                 <h2 id="service-modal-title" className="mb-5 text-xl font-bold">
                   Chi tiết dịch vụ
                 </h2>
-                {selectedService && (
+                {isLoadingDetail ? (
+                  <p className="py-8 text-center text-sm text-[#66717C]">
+                    Đang tải thông tin...
+                  </p>
+                ) : selectedService ? (
                   <dl className="space-y-4 text-sm">
                     <div>
                       <dt className="text-xs text-[#8A949E]">Tên dịch vụ</dt>
-                      <dd className="mt-1 font-semibold">{selectedService.name}</dd>
+                      <dd className="mt-1 font-semibold">
+                        {selectedService.name}
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-xs text-[#8A949E]">Danh mục</dt>
-                      <dd className="mt-1">{selectedService.category || "—"}</dd>
+                      <dd className="mt-1">
+                        {selectedService.category || "—"}
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-xs text-[#8A949E]">Mô tả</dt>
-                      <dd className="mt-1">{selectedService.description || "—"}</dd>
+                      <dd className="mt-1">
+                        {selectedService.description || "—"}
+                      </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-[#8A949E]">Giá / thời gian</dt>
+                      <dt className="text-xs text-[#8A949E]">
+                        Giá / thời gian
+                      </dt>
                       <dd className="mt-1">
                         {formatPrice(selectedService.base_price)} ·{" "}
                         {selectedService.estimated_minutes
@@ -655,6 +760,10 @@ function Services() {
                       </dd>
                     </div>
                   </dl>
+                ) : (
+                  <p className="text-sm text-[#66717C]">
+                    Không có thông tin dịch vụ.
+                  </p>
                 )}
                 <div className="mt-6 flex justify-end">
                   <button
