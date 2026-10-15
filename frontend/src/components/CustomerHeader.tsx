@@ -12,7 +12,7 @@ const getInitials = (name?: string) => {
 
 const menuItems = [
   {
-    label: "Dashboard",
+    label: "Tổng quan",
     path: "/customer/dashboard",
     icon: "⊞",
   },
