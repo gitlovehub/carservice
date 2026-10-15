@@ -220,6 +220,39 @@ export async function respondQuotation(
   });
 }
 
+export type CustomerReview = {
+  id: number;
+  repair_order_id: number;
+  customer_id: number;
+  overall_rating: number;
+  advisor_rating?: number | null;
+  technician_rating?: number | null;
+  comment?: string | null;
+  reply?: string | null;
+  replied_at?: string | null;
+  created_at?: string | null;
+  repair_order?: CustomerRepairOrder | null;
+  repairOrder?: CustomerRepairOrder | null;
+};
+
+export async function getMyReviews(): Promise<CustomerReview[]> {
+  const res = await fetchApi("/me/reviews");
+  return Array.isArray(res?.data) ? res.data : [];
+}
+
+export async function submitReview(data: {
+  repair_order_id: number;
+  overall_rating: number;
+  advisor_rating?: number;
+  technician_rating?: number;
+  comment?: string;
+}) {
+  return fetchApi("/me/reviews", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 /* ---------- Hiển thị ---------- */
 
 export const quotationStatusLabel: Record<string, string> = {
