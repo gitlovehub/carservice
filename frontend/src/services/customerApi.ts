@@ -62,6 +62,30 @@ export type InvoiceItem = {
   amount: number | string;
 };
 
+export type QuotationItem = {
+  id: number;
+  item_type?: "SERVICE" | "PART" | string;
+  description?: string | null;
+  quantity: number | string;
+  unit_price: number | string;
+  amount: number | string;
+  is_approved?: boolean | null;
+};
+
+export type CustomerQuotation = {
+  id: number;
+  repair_order_id: number;
+  quotation_code: string;
+  version: number;
+  subtotal: number | string;
+  discount_amount: number | string;
+  total_amount: number | string;
+  status: "DRAFT" | "SENT" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "CANCELLED" | string;
+  valid_until?: string | null;
+  customer_response_at?: string | null;
+  items?: QuotationItem[];
+};
+
 export type CustomerRepairOrder = {
   id: number;
   repair_order_code: string;
@@ -75,14 +99,16 @@ export type CustomerRepairOrder = {
   vehicle?: CustomerVehicle | null;
   work_items?: { id: number; description?: string | null; status?: string }[];
   workItems?: { id: number; description?: string | null; status?: string }[];
-  quotations?: { id: number; quotation_code: string; status: string; total_amount: number | string }[];
+  quotations?: CustomerQuotation[];
   invoice?: {
     id: number;
     invoice_code: string;
     total_amount: number | string;
-    status: string;
+    subtotal?: number | string;
+    discount_amount?: number | string;
+    status: "UNPAID" | "PARTIALLY_PAID" | "PAID" | "CANCELLED" | string;
     items?: InvoiceItem[];
-    payments?: { id: number; amount: number | string; status: string }[];
+    payments?: { id: number; amount: number | string; status: string; payment_date?: string; payment_method?: string }[];
   } | null;
 };
 
@@ -153,7 +179,33 @@ export async function getMyRepairOrderDetail(id: number): Promise<CustomerRepair
   return fetchApi(`/me/repair-orders/${id}`);
 }
 
+export async function respondQuotation(
+  quotationId: number,
+  responses: { item_id: number; is_approved: boolean }[],
+) {
+  return fetchApi(`/me/quotations/${quotationId}/respond`, {
+    method: "POST",
+    body: JSON.stringify({ responses }),
+  });
+}
+
 /* ---------- Hiển thị ---------- */
+
+export const quotationStatusLabel: Record<string, string> = {
+  DRAFT: "Bản nháp",
+  SENT: "Chờ bạn duyệt",
+  APPROVED: "Đã duyệt toàn bộ",
+  PARTIALLY_APPROVED: "Đã duyệt một phần",
+  REJECTED: "Đã từ chối",
+  CANCELLED: "Đã hủy",
+};
+
+export const invoiceStatusLabel: Record<string, string> = {
+  UNPAID: "Chưa thanh toán",
+  PARTIALLY_PAID: "Thanh toán một phần",
+  PAID: "Đã thanh toán",
+  CANCELLED: "Đã hủy",
+};
 
 export const appointmentStatusLabel: Record<string, string> = {
   PENDING: "Chờ xác nhận",
