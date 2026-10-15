@@ -4,6 +4,7 @@ import { fetchApi } from "../../services/api";
 import { setUserRole } from "./auth";
 import OtpInput from "../../components/auth/OtpInput";
 import Toast, { type ToastType } from "../../components/auth/Toast";
+import BrandLogo from "../../components/common/BrandLogo";
 
 type Step = "login" | "otp";
 type ApiErrorDetails = {
@@ -330,19 +331,7 @@ function Login() {
       {/* Header tối giản */}
       <header className="border-b border-[#E1E4E6] bg-white/80 backdrop-blur-md sticky top-0 z-30">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-6">
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1F2933] text-lg text-white shadow-sm transition-transform group-hover:scale-105">
-              🚗
-            </div>
-            <div>
-              <p className="text-base font-bold tracking-tight text-[#20252B]">
-                CarService
-              </p>
-              <p className="text-[11px] font-medium text-[#7A838C]">
-                Trung tâm dịch vụ & chăm sóc ô tô
-              </p>
-            </div>
-          </Link>
+          <BrandLogo />
 
           <div className="flex items-center gap-4">
             <Link

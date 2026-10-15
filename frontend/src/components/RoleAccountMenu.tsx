@@ -167,7 +167,9 @@ function RoleAccountMenu() {
                   </p>
 
                   <p className="mt-0.5 text-[10px] text-[#8A949E]">
-                    Quay lại khu vực làm việc
+                    {user?.role === "CUSTOMER"
+                      ? "Lịch sử bảo dưỡng & theo dõi xe"
+                      : "Quay lại khu vực làm việc"}
                   </p>
                 </div>
               </Link>

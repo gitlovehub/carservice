@@ -6,6 +6,7 @@ import {
   getUserDisplayName,
   logout,
 } from "../pages/auth/auth";
+import BrandLogo from "./common/BrandLogo";
 
 type AuthUser = {
   id?: number | string;
@@ -102,41 +103,7 @@ function Header() {
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
       <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-6">
         {/* LOGO */}
-        <Link
-          to="/"
-          className="group flex items-center gap-3 rounded-xl py-1 transition"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm transition group-hover:bg-slate-800">
-            <svg
-              className="h-5 w-5 text-amber-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
-              />
-            </svg>
-          </div>
-
-          <div>
-            <p className="text-sm font-bold tracking-tight text-slate-900">
-              CarService
-            </p>
-            <p className="text-[10px] text-slate-500">
-              Dịch vụ chăm sóc ô tô
-            </p>
-          </div>
-        </Link>
+        <BrandLogo className="py-1" />
 
         {/* NAVIGATION DESKTOP */}
         <nav className="hidden items-center gap-1.5 lg:flex">
@@ -283,10 +250,10 @@ function Header() {
                       <Link
                         to={managementPage.path}
                         onClick={() => setOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-amber-700 transition hover:bg-amber-50"
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
                       >
                         <svg
-                          className="h-4 w-4 text-amber-600"
+                          className="h-4 w-4 text-slate-400"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
