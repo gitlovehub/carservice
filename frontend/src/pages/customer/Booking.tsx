@@ -340,16 +340,27 @@ export default function Booking() {
 
 
       // Fetch saved vehicles
+      const paramVehicleId = searchParams.get("vehicle_id");
       fetchApi("/me/vehicles")
         .then((res) => {
-          const list = Array.isArray(res?.data) ? res.data : [];
+          const list: SavedVehicle[] = Array.isArray(res?.data) ? res.data : [];
           setSavedVehicles(list);
+          if (list.length > 0) {
+            const matched = paramVehicleId
+              ? list.find((item: SavedVehicle) => String(item.id) === paramVehicleId)
+              : null;
+            const target = matched ?? list[0];
+            setSelectedSavedVehicleId(target.id);
+            if (target.model?.brand?.name) setVehicleBrand(target.model.brand.name);
+            if (target.model?.name) setVehicleModel(target.model.name);
+            if (target.license_plate) setVehiclePlate(target.license_plate);
+          }
         })
         .catch(() => {
           // guest mode or vehicle fetch error
         });
     }
-  }, []);
+  }, [searchParams]);
 
   // \u0110\u1ecdc service query param t\u1eeb URL v\u00e0 auto-select g\u00f3i d\u1ecbch v\u1ee5 t\u01b0\u01a1ng \u1ee9ng
   useEffect(() => {
