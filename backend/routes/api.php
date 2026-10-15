@@ -63,6 +63,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::controller(AuthController::class)->group(function (): void {
         Route::get('me', 'me');
+        Route::patch('me/profile', 'updateProfile');
+        Route::post('me/change-password', 'changePassword');
         Route::post('logout', 'logout');
     });
 
