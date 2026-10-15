@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import CustomerHeader from "../../components/CustomerHeader";
 import CustomerTopbar from "../../components/CustomerTopbar";
 import {
@@ -297,13 +298,23 @@ export default function InvoicesPage() {
                             )}
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => setSelectedInvoiceRow({ invoice, order })}
-                            className="cursor-pointer rounded-xl border border-[#DDE1E4] bg-white px-3 py-2 text-[11px] font-semibold text-[#20252B] transition hover:border-[#1F2933] hover:bg-[#1F2933] hover:text-white"
-                          >
-                            Xem chi tiết
-                          </button>
+                          <div className="flex flex-col gap-2">
+                            {!isPaid && (
+                              <Link
+                                to={`/payment?invoice_id=${invoice.id}`}
+                                className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-center text-[11px] font-bold text-white shadow-sm transition hover:bg-amber-600"
+                              >
+                                Thanh toán ngay
+                              </Link>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedInvoiceRow({ invoice, order })}
+                              className="cursor-pointer rounded-xl border border-[#DDE1E4] bg-white px-3 py-2 text-[11px] font-semibold text-[#20252B] transition hover:border-[#1F2933] hover:bg-[#1F2933] hover:text-white"
+                            >
+                              Xem chi tiết
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
