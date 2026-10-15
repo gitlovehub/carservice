@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
@@ -9,7 +9,7 @@ type PackageStatus = "ACTIVE" | "INACTIVE";
 type PackageService = {
   id: number;
   name: string;
-  base_price: string;
+  base_price: string | number;
   pivot?: { quantity: number };
 };
 
@@ -17,7 +17,7 @@ type PackagePart = {
   id: number;
   sku: string;
   name: string;
-  sell_price: string;
+  sell_price: string | number;
   pivot?: { quantity: number };
 };
 
@@ -46,14 +46,14 @@ type PackageServiceRef = {
   id: number;
   name: string;
   category: string | null;
-  base_price: string;
+  base_price: string | number;
 };
 
 type PackagePartRef = {
   id: number;
   sku: string;
   name: string;
-  sell_price: string;
+  sell_price: string | number;
 };
 
 type PackageIndexResponse = {
@@ -98,7 +98,42 @@ const fieldClass =
   "w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#1F2933]";
 
 function formatPrice(value: number | string): string {
-  return `${new Intl.NumberFormat("vi-VN").format(Number(value) || 0)} đ`;
+  const price = Number(value);
+
+  if (!Number.isFinite(price)) return "Chưa có giá";
+
+  return `${new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 2,
+  }).format(price)} đ`;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
+
+function normalizeServiceList(response: unknown): PackageServiceRef[] {
+  if (Array.isArray(response)) {
+    return response as PackageServiceRef[];
+  }
+
+  if (response && typeof response === "object" && "data" in response) {
+    const data = response.data;
+
+    if (Array.isArray(data)) {
+      return data as PackageServiceRef[];
+    }
+
+    if (data && typeof data === "object" && "data" in data) {
+      const nestedData = data.data;
+
+      if (Array.isArray(nestedData)) {
+        return nestedData as PackageServiceRef[];
+      }
+    }
+  }
+
+  throw new Error("Dữ liệu danh sách dịch vụ không hợp lệ.");
 }
 
 function modelLabel(model: VehicleModelRef | null): string {
@@ -106,19 +141,27 @@ function modelLabel(model: VehicleModelRef | null): string {
   return model.brand ? `${model.brand.name} ${model.name}` : model.name;
 }
 
-// --- Gom danh mục (dòng xe, phụ tùng) từ danh sách gói, không trùng lặp ---
-function collectVehicleModels(packages: MaintenancePackage[]): VehicleModelRef[] {
+function collectVehicleModels(
+  packages: MaintenancePackage[],
+): VehicleModelRef[] {
   const seen = new Map<number, VehicleModelRef>();
+
   packages.forEach((pkg) => {
-    if (pkg.vehicle_model) seen.set(pkg.vehicle_model.id, pkg.vehicle_model);
+    if (pkg.vehicle_model) {
+      seen.set(pkg.vehicle_model.id, pkg.vehicle_model);
+    }
   });
-  return Array.from(seen.values());
+
+  return Array.from(seen.values()).sort((a, b) =>
+    modelLabel(a).localeCompare(modelLabel(b), "vi"),
+  );
 }
 
 function collectParts(packages: MaintenancePackage[]): PackagePartRef[] {
   const seen = new Map<number, PackagePartRef>();
+
   packages.forEach((pkg) => {
-    pkg.parts.forEach((part) => {
+    (pkg.parts ?? []).forEach((part) => {
       seen.set(part.id, {
         id: part.id,
         sku: part.sku,
@@ -127,12 +170,15 @@ function collectParts(packages: MaintenancePackage[]): PackagePartRef[] {
       });
     });
   });
-  return Array.from(seen.values());
+
+  return Array.from(seen.values()).sort((a, b) =>
+    a.name.localeCompare(b.name, "vi"),
+  );
 }
 
-// --- Thao tác chọn dịch vụ / phụ tùng trong form (hàm thuần, trả form mới) ---
 function withServiceToggled(form: PackageForm, serviceId: number): PackageForm {
   const exists = form.services.some((item) => item.service_id === serviceId);
+
   return {
     ...form,
     services: exists
@@ -158,6 +204,7 @@ function withServiceQuantity(
 
 function withPartToggled(form: PackageForm, partId: number): PackageForm {
   const exists = form.parts.some((item) => item.part_id === partId);
+
   return {
     ...form,
     parts: exists
@@ -194,76 +241,99 @@ function MaintenancePackages() {
   });
   const [reloadKey, setReloadKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
   const [error, setError] = useState("");
   const [modal, setModal] = useState<"form" | "detail" | null>(null);
   const [selectedPackage, setSelectedPackage] =
     useState<MaintenancePackage | null>(null);
   const [form, setForm] = useState<PackageForm>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [formError, setFormError] = useState("");
   const [serviceSearch, setServiceSearch] = useState("");
   const [partSearch, setPartSearch] = useState("");
-
   const [models, setModels] = useState<VehicleModelRef[]>([]);
   const [services, setServices] = useState<PackageServiceRef[]>([]);
   const [parts, setParts] = useState<PackagePartRef[]>([]);
-  const listReadyRef = useRef(false);
 
-  // 1) Lúc mở trang: nạp 1 lần danh mục (dịch vụ, dòng xe, phụ tùng)
-  //    và đổ luôn gói trang 1 để không gọi lại API theo effect #2.
   useEffect(() => {
     let active = true;
 
-    (async () => {
+    async function loadCatalog() {
+      setIsLoadingCatalog(true);
+
       try {
-        const [serviceList, firstPage] = await Promise.all([
-          fetchApi("/services") as Promise<PackageServiceRef[]>,
-          fetchApi(
-            "/admin/maintenance-packages?page=1",
-          ) as Promise<PackageIndexResponse>,
+        const [serviceResponse, firstPageResponse] = await Promise.all([
+          fetchApi("/services"),
+          fetchApi("/admin/maintenance-packages?page=1"),
         ]);
 
-        // Gom toàn bộ gói (tất cả trang) để suy ra dòng xe & phụ tùng đang dùng.
-        const pages = [firstPage];
+        const serviceList = normalizeServiceList(serviceResponse);
+        const firstPage = firstPageResponse as PackageIndexResponse;
+
+        if (
+          !Array.isArray(firstPage?.data?.data) ||
+          !Number.isFinite(firstPage.data.last_page)
+        ) {
+          throw new Error("Dữ liệu gói bảo dưỡng không hợp lệ.");
+        }
+
+        const allPackages = [...firstPage.data.data];
+
         for (
           let currentPage = 2;
           currentPage <= firstPage.data.last_page;
           currentPage += 1
         ) {
-          pages.push(
-            (await fetchApi(
-              `/admin/maintenance-packages?page=${currentPage}`,
-            )) as PackageIndexResponse,
-          );
+          const response = (await fetchApi(
+            `/admin/maintenance-packages?page=${currentPage}`,
+          )) as PackageIndexResponse;
+
+          if (!Array.isArray(response?.data?.data)) {
+            throw new Error("Không thể tải đầy đủ danh sách gói bảo dưỡng.");
+          }
+
+          allPackages.push(...response.data.data);
         }
-        const allPackages = pages.flatMap((response) => response.data.data);
+
         if (!active) return;
 
         setServices(serviceList);
         setModels(collectVehicleModels(allPackages));
         setParts(collectParts(allPackages));
         setPackages(firstPage.data.data);
-        setLastPage(firstPage.data.last_page);
+        setPage(firstPage.data.current_page);
+        setLastPage(Math.max(1, firstPage.data.last_page));
         setTotal(firstPage.data.total);
-        setIsLoading(false);
-      } catch {
-        if (active) setReloadKey((current) => current + 1);
+      } catch (requestError: unknown) {
+        if (active) {
+          setError(
+            getErrorMessage(
+              requestError,
+              "Không thể tải danh mục dịch vụ và gói bảo dưỡng.",
+            ),
+          );
+        }
       } finally {
-        listReadyRef.current = true;
+        if (active) {
+          setIsLoadingCatalog(false);
+          setIsLoading(false);
+        }
       }
-    })();
+    }
+
+    void loadCatalog();
 
     return () => {
       active = false;
     };
   }, []);
 
-  // 2) Tải danh sách gói theo bộ lọc / phân trang / lệnh tải lại.
   useEffect(() => {
-    if (!listReadyRef.current) return;
-
     let active = true;
+
     const query = new URLSearchParams({ page: String(page) });
+
     if (filters.search) query.set("search", filters.search);
     if (filters.status) query.set("status", filters.status);
     if (filters.vehicle_model_id) {
@@ -272,20 +342,36 @@ function MaintenancePackages() {
 
     setIsLoading(true);
     setError("");
+
     fetchApi(`/admin/maintenance-packages?${query.toString()}`)
       .then((response: PackageIndexResponse) => {
         if (!active) return;
+
+        if (
+          !Array.isArray(response?.data?.data) ||
+          !Number.isFinite(response.data.current_page) ||
+          !Number.isFinite(response.data.last_page) ||
+          !Number.isFinite(response.data.total)
+        ) {
+          throw new Error("Dữ liệu danh sách gói bảo dưỡng không hợp lệ.");
+        }
+
         setPackages(response.data.data);
-        setPage(response.data.current_page);
-        setLastPage(response.data.last_page);
+        setLastPage(Math.max(1, response.data.last_page));
         setTotal(response.data.total);
+
+        if (response.data.current_page !== page) {
+          setPage(response.data.current_page);
+        }
       })
       .catch((requestError: unknown) => {
         if (active) {
+          setPackages([]);
           setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Không thể tải danh sách gói bảo dưỡng.",
+            getErrorMessage(
+              requestError,
+              "Không thể tải danh sách gói bảo dưỡng.",
+            ),
           );
         }
       })
@@ -298,10 +384,11 @@ function MaintenancePackages() {
     };
   }, [filters, page, reloadKey]);
 
-  // Lọc danh sách dịch vụ / phụ tùng theo từ khoá trong bảng chọn
   const filteredServices = useMemo(() => {
     const keyword = serviceSearch.trim().toLowerCase();
+
     if (!keyword) return services;
+
     return services.filter(
       (service) =>
         service.name.toLowerCase().includes(keyword) ||
@@ -311,7 +398,9 @@ function MaintenancePackages() {
 
   const filteredParts = useMemo(() => {
     const keyword = partSearch.trim().toLowerCase();
+
     if (!keyword) return parts;
+
     return parts.filter(
       (part) =>
         part.name.toLowerCase().includes(keyword) ||
@@ -319,7 +408,6 @@ function MaintenancePackages() {
     );
   }, [parts, partSearch]);
 
-  // Mở modal thêm mới (form rỗng) & sửa gói (đổ sẵn dữ liệu gói vào form)
   const openCreateModal = () => {
     setSelectedPackage(null);
     setForm(emptyForm);
@@ -338,13 +426,13 @@ function MaintenancePackages() {
       month_milestone: pkg.month_milestone?.toString() ?? "",
       description: pkg.description ?? "",
       status: pkg.status,
-      services: pkg.services.map((service) => ({
+      services: (pkg.services ?? []).map((service) => ({
         service_id: service.id,
-        quantity: service.pivot?.quantity ?? 1,
+        quantity: Math.max(1, service.pivot?.quantity ?? 1),
       })),
-      parts: pkg.parts.map((part) => ({
+      parts: (pkg.parts ?? []).map((part) => ({
         part_id: part.id,
-        quantity: part.pivot?.quantity ?? 1,
+        quantity: Math.max(1, part.pivot?.quantity ?? 1),
       })),
     });
     setServiceSearch("");
@@ -353,31 +441,44 @@ function MaintenancePackages() {
     setModal("form");
   };
 
-  // Mở modal chi tiết: tải đầy đủ thông tin gói theo id
   const openDetailModal = async (pkg: MaintenancePackage) => {
+    setSelectedPackage(pkg);
+    setIsLoadingDetail(true);
+    setError("");
+    setModal("detail");
+
     try {
       const response: PackageResponse = await fetchApi(
         `/admin/maintenance-packages/${pkg.id}`,
       );
+
+      if (!response?.data || response.data.id !== pkg.id) {
+        throw new Error("Dữ liệu chi tiết gói bảo dưỡng không hợp lệ.");
+      }
+
       setSelectedPackage(response.data);
-      setModal("detail");
     } catch (requestError: unknown) {
+      setModal(null);
       setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Không thể tải thông tin gói bảo dưỡng.",
+        getErrorMessage(
+          requestError,
+          "Không thể tải thông tin gói bảo dưỡng.",
+        ),
       );
+    } finally {
+      setIsLoadingDetail(false);
     }
   };
 
-  // Bấm tìm kiếm: quay về trang 1 và cập nhật bộ lọc
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPage(1);
-    setFilters((current) => ({ ...current, search: searchInput.trim() }));
+    setFilters((current) => ({
+      ...current,
+      search: searchInput.trim(),
+    }));
   };
 
-  // Bật/tắt dịch vụ và cập nhật số lượng khi tích chọn trong form
   const toggleService = (serviceId: number) =>
     setForm((current) => withServiceToggled(current, serviceId));
 
@@ -390,28 +491,65 @@ function MaintenancePackages() {
   const setPartQuantity = (partId: number, quantity: number) =>
     setForm((current) => withPartQuantity(current, partId, quantity));
 
-  // Lưu gói (POST khi mới / PATCH khi sửa), xong tải lại danh sách
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsSaving(true);
     setFormError("");
 
+    const name = form.name.trim();
+    const mileage = form.mileage_milestone.trim()
+      ? Number(form.mileage_milestone)
+      : null;
+    const months = form.month_milestone.trim()
+      ? Number(form.month_milestone)
+      : null;
+
+    if (!name) {
+      setFormError("Vui lòng nhập tên gói bảo dưỡng.");
+      return;
+    }
+
+    if (name.length > 150) {
+      setFormError("Tên gói bảo dưỡng không được vượt quá 150 ký tự.");
+      return;
+    }
+
+    if (
+      mileage !== null &&
+      (!Number.isInteger(mileage) || mileage < 1)
+    ) {
+      setFormError("Mốc số km phải là số nguyên lớn hơn 0.");
+      return;
+    }
+
+    if (months !== null && (!Number.isInteger(months) || months < 1)) {
+      setFormError("Mốc tháng phải là số nguyên lớn hơn 0.");
+      return;
+    }
+
+    if (form.services.some((item) => item.quantity < 1)) {
+      setFormError("Số lượng dịch vụ phải lớn hơn 0.");
+      return;
+    }
+
+    if (form.parts.some((item) => item.quantity < 1)) {
+      setFormError("Số lượng phụ tùng phải lớn hơn 0.");
+      return;
+    }
+
     const payload = {
-      name: form.name.trim(),
+      name,
       vehicle_model_id: form.vehicle_model_id
         ? Number(form.vehicle_model_id)
         : null,
-      mileage_milestone: form.mileage_milestone
-        ? Number(form.mileage_milestone)
-        : null,
-      month_milestone: form.month_milestone
-        ? Number(form.month_milestone)
-        : null,
+      mileage_milestone: mileage,
+      month_milestone: months,
       description: form.description.trim() || null,
       status: form.status,
       services: form.services,
       parts: form.parts,
     };
+
+    setIsSaving(true);
 
     try {
       await fetchApi(
@@ -423,29 +561,33 @@ function MaintenancePackages() {
           body: JSON.stringify(payload),
         },
       );
+
       setModal(null);
+      setSelectedPackage(null);
       setPage(1);
       setReloadKey((current) => current + 1);
     } catch (requestError: unknown) {
       setFormError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Không thể lưu gói bảo dưỡng.",
+        getErrorMessage(
+          requestError,
+          "Không thể lưu gói bảo dưỡng.",
+        ),
       );
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Ẩn gói (DELETE): nếu là phần tử cuối của trang thì lùi lại trang trước
   const handleDelete = async (pkg: MaintenancePackage) => {
     if (!window.confirm(`Ẩn gói bảo dưỡng "${pkg.name}"?`)) return;
 
     setError("");
+
     try {
       await fetchApi(`/admin/maintenance-packages/${pkg.id}`, {
         method: "DELETE",
       });
+
       if (packages.length === 1 && page > 1) {
         setPage((current) => current - 1);
       } else {
@@ -453,9 +595,10 @@ function MaintenancePackages() {
       }
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Không thể ẩn gói bảo dưỡng.",
+        getErrorMessage(
+          requestError,
+          "Không thể ẩn gói bảo dưỡng.",
+        ),
       );
     }
   };
@@ -491,7 +634,8 @@ function MaintenancePackages() {
                 <button
                   type="button"
                   onClick={openCreateModal}
-                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24]"
+                  disabled={isLoadingCatalog}
+                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   + Thêm gói bảo dưỡng
                 </button>
@@ -499,7 +643,10 @@ function MaintenancePackages() {
             </div>
 
             <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-6">
-              <form onSubmit={handleSearch} className="grid gap-3 md:grid-cols-4">
+              <form
+                onSubmit={handleSearch}
+                className="grid gap-3 md:grid-cols-4"
+              >
                 <input
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
@@ -559,7 +706,9 @@ function MaintenancePackages() {
                     Danh sách gói bảo dưỡng
                   </h2>
                 </div>
-                <p className="text-[10px] text-[#8A949E]">{total} kết quả</p>
+                <p className="text-[10px] text-[#8A949E]">
+                  {total} kết quả
+                </p>
               </div>
 
               {error && (
@@ -614,8 +763,8 @@ function MaintenancePackages() {
                               {pkg.description || "Chưa có mô tả."}
                             </p>
                             <p className="mt-2 text-[10px] text-[#8A949E]">
-                              {pkg.services.length} dịch vụ ·{" "}
-                              {pkg.parts.length} phụ tùng
+                              {(pkg.services ?? []).length} dịch vụ ·{" "}
+                              {(pkg.parts ?? []).length} phụ tùng
                             </p>
                           </div>
                         </div>
@@ -728,7 +877,9 @@ function MaintenancePackages() {
           className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setModal(null);
+            if (event.target === event.currentTarget && !isSaving) {
+              setModal(null);
+            }
           }}
         >
           <section
@@ -857,7 +1008,7 @@ function MaintenancePackages() {
 
                   <div className="grid gap-4 lg:grid-cols-2">
                     <div className="rounded-2xl border border-[#E1E4E6] p-4">
-                      <div className="mb-3 flex items-center justify-between">
+                      <div className="mb-3 flex items-center justify-between gap-2">
                         <p className="text-xs font-bold">
                           Dịch vụ ({selectedServiceCount})
                         </p>
@@ -875,6 +1026,7 @@ function MaintenancePackages() {
                           const selected = form.services.find(
                             (item) => item.service_id === service.id,
                           );
+
                           return (
                             <div
                               key={service.id}
@@ -895,15 +1047,17 @@ function MaintenancePackages() {
                               </label>
                               {selected && (
                                 <input
+                                  aria-label={`Số lượng dịch vụ ${service.name}`}
                                   type="number"
                                   min="1"
+                                  step="1"
                                   value={selected.quantity}
-                                  onChange={(event) =>
-                                    setServiceQuantity(
-                                      service.id,
-                                      Number(event.target.value),
-                                    )
-                                  }
+                                  onChange={(event) => {
+                                    const value = Number(event.target.value);
+                                    if (Number.isInteger(value) && value >= 1) {
+                                      setServiceQuantity(service.id, value);
+                                    }
+                                  }}
                                   className="w-14 rounded-lg border border-[#D9DDE1] px-2 py-1 text-[11px] outline-none focus:border-[#1F2933]"
                                 />
                               )}
@@ -919,7 +1073,7 @@ function MaintenancePackages() {
                     </div>
 
                     <div className="rounded-2xl border border-[#E1E4E6] p-4">
-                      <div className="mb-3 flex items-center justify-between">
+                      <div className="mb-3 flex items-center justify-between gap-2">
                         <p className="text-xs font-bold">
                           Phụ tùng ({selectedPartCount})
                         </p>
@@ -935,6 +1089,7 @@ function MaintenancePackages() {
                           const selected = form.parts.find(
                             (item) => item.part_id === part.id,
                           );
+
                           return (
                             <div
                               key={part.id}
@@ -955,15 +1110,17 @@ function MaintenancePackages() {
                               </label>
                               {selected && (
                                 <input
+                                  aria-label={`Số lượng phụ tùng ${part.name}`}
                                   type="number"
                                   min="1"
+                                  step="1"
                                   value={selected.quantity}
-                                  onChange={(event) =>
-                                    setPartQuantity(
-                                      part.id,
-                                      Number(event.target.value),
-                                    )
-                                  }
+                                  onChange={(event) => {
+                                    const value = Number(event.target.value);
+                                    if (Number.isInteger(value) && value >= 1) {
+                                      setPartQuantity(part.id, value);
+                                    }
+                                  }}
                                   className="w-14 rounded-lg border border-[#D9DDE1] px-2 py-1 text-[11px] outline-none focus:border-[#1F2933]"
                                 />
                               )}
@@ -993,13 +1150,13 @@ function MaintenancePackages() {
                       type="button"
                       onClick={() => setModal(null)}
                       disabled={isSaving}
-                      className="rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-xs font-semibold"
+                      className="rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-xs font-semibold disabled:opacity-50"
                     >
                       Hủy
                     </button>
                     <button
                       type="submit"
-                      disabled={isSaving}
+                      disabled={isSaving || isLoadingCatalog}
                       className="rounded-xl bg-[#1F2933] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-60"
                     >
                       {isSaving ? "Đang lưu..." : "Lưu gói bảo dưỡng"}
@@ -1012,7 +1169,11 @@ function MaintenancePackages() {
                 <h2 id="package-modal-title" className="mb-5 text-xl font-bold">
                   Chi tiết gói bảo dưỡng
                 </h2>
-                {selectedPackage && (
+                {isLoadingDetail ? (
+                  <p className="py-8 text-center text-sm text-[#66717C]">
+                    Đang tải thông tin...
+                  </p>
+                ) : selectedPackage ? (
                   <div className="space-y-5 text-sm">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
@@ -1065,13 +1226,13 @@ function MaintenancePackages() {
 
                     <div>
                       <p className="mb-2 text-xs font-bold">
-                        Dịch vụ ({selectedPackage.services.length})
+                        Dịch vụ ({(selectedPackage.services ?? []).length})
                       </p>
                       <ul className="space-y-1">
-                        {selectedPackage.services.map((service) => (
+                        {(selectedPackage.services ?? []).map((service) => (
                           <li
                             key={service.id}
-                            className="flex items-center justify-between rounded-lg bg-[#FAFAF8] px-3 py-2 text-xs"
+                            className="flex items-center justify-between gap-3 rounded-lg bg-[#FAFAF8] px-3 py-2 text-xs"
                           >
                             <span>{service.name}</span>
                             <span className="text-[#66717C]">
@@ -1080,7 +1241,7 @@ function MaintenancePackages() {
                             </span>
                           </li>
                         ))}
-                        {selectedPackage.services.length === 0 && (
+                        {(selectedPackage.services ?? []).length === 0 && (
                           <li className="text-xs text-[#8A949E]">
                             Chưa gắn dịch vụ.
                           </li>
@@ -1090,13 +1251,13 @@ function MaintenancePackages() {
 
                     <div>
                       <p className="mb-2 text-xs font-bold">
-                        Phụ tùng ({selectedPackage.parts.length})
+                        Phụ tùng ({(selectedPackage.parts ?? []).length})
                       </p>
                       <ul className="space-y-1">
-                        {selectedPackage.parts.map((part) => (
+                        {(selectedPackage.parts ?? []).map((part) => (
                           <li
                             key={part.id}
-                            className="flex items-center justify-between rounded-lg bg-[#FAFAF8] px-3 py-2 text-xs"
+                            className="flex items-center justify-between gap-3 rounded-lg bg-[#FAFAF8] px-3 py-2 text-xs"
                           >
                             <span>
                               {part.name}{" "}
@@ -1110,7 +1271,7 @@ function MaintenancePackages() {
                             </span>
                           </li>
                         ))}
-                        {selectedPackage.parts.length === 0 && (
+                        {(selectedPackage.parts ?? []).length === 0 && (
                           <li className="text-xs text-[#8A949E]">
                             Chưa gắn phụ tùng.
                           </li>
@@ -1127,6 +1288,10 @@ function MaintenancePackages() {
                       </p>
                     </div>
                   </div>
+                ) : (
+                  <p className="text-sm text-[#66717C]">
+                    Không có thông tin gói bảo dưỡng.
+                  </p>
                 )}
                 <div className="mt-6 flex justify-end">
                   <button
