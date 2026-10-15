@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+﻿import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import CustomerHeader from "../../components/CustomerHeader";
 import CustomerTopbar from "../../components/CustomerTopbar";
@@ -77,7 +77,7 @@ function CustomerDashboard() {
   const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
   const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
   
-  // Lọc và tìm kiếm
+  // Lá»c vÃ  tÃ¬m kiáº¿m
   const [activeTab, setActiveTab] = useState<"ALL" | "MAINTENANCE" | "REPAIR">("ALL");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedCarFilter, setSelectedCarFilter] = useState("ALL");
@@ -96,105 +96,105 @@ function CustomerDashboard() {
     setToast({ message, type });
   };
 
-  // Dữ liệu mẫu thực tế chuẩn nghiệp vụ gara ô tô
+  // Dá»¯ liá»‡u máº«u thá»±c táº¿ chuáº©n nghiá»‡p vá»¥ gara Ã´ tÃ´
   const defaultHistory: MaintenanceHistoryItem[] = [
     {
       id: "1",
       code: "RO-2026-042",
       car: "Toyota Camry 2.5Q",
       licensePlate: "30G-888.66",
-      serviceName: "Bảo dưỡng định kỳ cấp 40.000 KM & Vệ sinh kim phun",
+      serviceName: "Báº£o dÆ°á»¡ng Ä‘á»‹nh ká»³ cáº¥p 40.000 KM & Vá»‡ sinh kim phun",
       odo: "41.250 km",
       date: "12/10/2026",
-      advisor: "Lê Văn Toàn (Cố vấn trưởng)",
-      technician: "Nguyễn Văn Hùng (Kỹ thuật viên bậc 4)",
+      advisor: "LÃª VÄƒn ToÃ n (Cá»‘ váº¥n trÆ°á»Ÿng)",
+      technician: "Nguyá»…n VÄƒn HÃ¹ng (Ká»¹ thuáº­t viÃªn báº­c 4)",
       cost: 3450000,
       laborCost: 450000,
       partsCost: 3000000,
       status: "COMPLETED",
       partsReplaced: [
-        "Dầu động cơ tổng hợp toàn phần Castrol EDGE 5W-30 (4.5L)",
-        "Lọc dầu chính hãng Toyota OEM",
-        "Lọc gió điều hòa than hoạt tính cao cấp",
-        "Dung dịch vệ sinh kim phun buồng đốt Liqui Moly",
+        "Dáº§u Ä‘á»™ng cÆ¡ tá»•ng há»£p toÃ n pháº§n Castrol EDGE 5W-30 (4.5L)",
+        "Lá»c dáº§u chÃ­nh hÃ£ng Toyota OEM",
+        "Lá»c giÃ³ Ä‘iá»u hÃ²a than hoáº¡t tÃ­nh cao cáº¥p",
+        "Dung dá»‹ch vá»‡ sinh kim phun buá»“ng Ä‘á»‘t Liqui Moly",
       ],
       detailedParts: [
-        { name: "Dầu động cơ Castrol EDGE 5W-30 (4.5L)", code: "CAS-5W30-4.5", quantity: 1, unitPrice: 1450000, warranty: "6 tháng / 10.000 km" },
-        { name: "Lọc dầu động cơ Toyota", code: "TOY-04152-YZZA6", quantity: 1, unitPrice: 350000, warranty: "12 tháng" },
-        { name: "Lọc gió điều hòa than hoạt tính", code: "AC-87139-50100", quantity: 1, unitPrice: 550000, warranty: "6 tháng" },
-        { name: "Dung dịch vệ sinh kim phun Liqui Moly", code: "LM-5110", quantity: 1, unitPrice: 650000, warranty: "Tiêu chuẩn" },
+        { name: "Dáº§u Ä‘á»™ng cÆ¡ Castrol EDGE 5W-30 (4.5L)", code: "CAS-5W30-4.5", quantity: 1, unitPrice: 1450000, warranty: "6 thÃ¡ng / 10.000 km" },
+        { name: "Lá»c dáº§u Ä‘á»™ng cÆ¡ Toyota", code: "TOY-04152-YZZA6", quantity: 1, unitPrice: 350000, warranty: "12 thÃ¡ng" },
+        { name: "Lá»c giÃ³ Ä‘iá»u hÃ²a than hoáº¡t tÃ­nh", code: "AC-87139-50100", quantity: 1, unitPrice: 550000, warranty: "6 thÃ¡ng" },
+        { name: "Dung dá»‹ch vá»‡ sinh kim phun Liqui Moly", code: "LM-5110", quantity: 1, unitPrice: 650000, warranty: "TiÃªu chuáº©n" },
       ],
-      technicianNotes: "Đã kiểm tra toàn bộ 36 hạng mục gầm, phanh và lốp. Má phanh trước còn 6mm (tốt), ắc quy điện áp 12.6V, lốp mòn đều.",
+      technicianNotes: "ÄÃ£ kiá»ƒm tra toÃ n bá»™ 36 háº¡ng má»¥c gáº§m, phanh vÃ  lá»‘p. MÃ¡ phanh trÆ°á»›c cÃ²n 6mm (tá»‘t), áº¯c quy Ä‘iá»‡n Ã¡p 12.6V, lá»‘p mÃ²n Ä‘á»u.",
     },
     {
       id: "2",
       code: "RO-2026-031",
       car: "Toyota Camry 2.5Q",
       licensePlate: "30G-888.66",
-      serviceName: "Thay má phanh trước & Láng đĩa phanh điện tử",
+      serviceName: "Thay mÃ¡ phanh trÆ°á»›c & LÃ¡ng Ä‘Ä©a phanh Ä‘iá»‡n tá»­",
       odo: "35.800 km",
       date: "18/07/2026",
-      advisor: "Nguyễn Minh Đức",
-      technician: "Trần Quốc Bảo",
+      advisor: "Nguyá»…n Minh Äá»©c",
+      technician: "Tráº§n Quá»‘c Báº£o",
       cost: 2150000,
       laborCost: 350000,
       partsCost: 1800000,
       status: "COMPLETED",
       partsReplaced: [
-        "Bộ má phanh đĩa trước OEM Akebono Nhật Bản",
-        "Dầu phanh tổng hợp DOT 4 Toyota",
+        "Bá»™ mÃ¡ phanh Ä‘Ä©a trÆ°á»›c OEM Akebono Nháº­t Báº£n",
+        "Dáº§u phanh tá»•ng há»£p DOT 4 Toyota",
       ],
       detailedParts: [
-        { name: "Bộ má phanh đĩa trước OEM Akebono", code: "AKE-AN-687WK", quantity: 1, unitPrice: 1550000, warranty: "12 tháng / 20.000 km" },
-        { name: "Dầu phanh DOT 4 chính hãng (1L)", code: "TOY-08823-80004", quantity: 1, unitPrice: 250000, warranty: "Tiêu chuẩn" },
+        { name: "Bá»™ mÃ¡ phanh Ä‘Ä©a trÆ°á»›c OEM Akebono", code: "AKE-AN-687WK", quantity: 1, unitPrice: 1550000, warranty: "12 thÃ¡ng / 20.000 km" },
+        { name: "Dáº§u phanh DOT 4 chÃ­nh hÃ£ng (1L)", code: "TOY-08823-80004", quantity: 1, unitPrice: 250000, warranty: "TiÃªu chuáº©n" },
       ],
-      technicianNotes: "Đã xả khí e dầu phanh toàn diện 4 bánh. Đĩa phanh phẳng mịn, hành trình chân phanh đạt chuẩn an toàn xuất xưởng.",
+      technicianNotes: "ÄÃ£ xáº£ khÃ­ e dáº§u phanh toÃ n diá»‡n 4 bÃ¡nh. ÄÄ©a phanh pháº³ng má»‹n, hÃ nh trÃ¬nh chÃ¢n phanh Ä‘áº¡t chuáº©n an toÃ n xuáº¥t xÆ°á»Ÿng.",
     },
     {
       id: "3",
       code: "RO-2026-018",
       car: "Honda CR-V 1.5L Turbo",
       licensePlate: "29A-678.90",
-      serviceName: "Bảo dưỡng định kỳ cấp 20.000 KM & Cân bằng động 4 bánh",
+      serviceName: "Báº£o dÆ°á»¡ng Ä‘á»‹nh ká»³ cáº¥p 20.000 KM & CÃ¢n báº±ng Ä‘á»™ng 4 bÃ¡nh",
       odo: "20.100 km",
       date: "05/04/2026",
-      advisor: "Lê Văn Toàn",
-      technician: "Phạm Văn Nam",
+      advisor: "LÃª VÄƒn ToÃ n",
+      technician: "Pháº¡m VÄƒn Nam",
       cost: 1890000,
       laborCost: 400000,
       partsCost: 1490000,
       status: "COMPLETED",
       partsReplaced: [
-        "Dầu động cơ Honda SN 0W-20 Turbo (3.8L)",
-        "Lọc nhớt & gioăng ốc xả các-te",
-        "Nước làm mát & nước rửa kính đậm đặc",
+        "Dáº§u Ä‘á»™ng cÆ¡ Honda SN 0W-20 Turbo (3.8L)",
+        "Lá»c nhá»›t & gioÄƒng á»‘c xáº£ cÃ¡c-te",
+        "NÆ°á»›c lÃ m mÃ¡t & nÆ°á»›c rá»­a kÃ­nh Ä‘áº­m Ä‘áº·c",
       ],
       detailedParts: [
-        { name: "Dầu động cơ Honda SN 0W-20 Turbo (4L)", code: "HON-08232-P99K4", quantity: 1, unitPrice: 1150000, warranty: "6 tháng / 10.000 km" },
-        { name: "Lọc nhớt chính hãng Honda", code: "HON-15400-RTA-003", quantity: 1, unitPrice: 240000, warranty: "12 tháng" },
-        { name: "Chì cân mâm & Nước làm mát", code: "ACC-WHEEL-WEIGHT", quantity: 1, unitPrice: 100000, warranty: "Tiêu chuẩn" },
+        { name: "Dáº§u Ä‘á»™ng cÆ¡ Honda SN 0W-20 Turbo (4L)", code: "HON-08232-P99K4", quantity: 1, unitPrice: 1150000, warranty: "6 thÃ¡ng / 10.000 km" },
+        { name: "Lá»c nhá»›t chÃ­nh hÃ£ng Honda", code: "HON-15400-RTA-003", quantity: 1, unitPrice: 240000, warranty: "12 thÃ¡ng" },
+        { name: "ChÃ¬ cÃ¢n mÃ¢m & NÆ°á»›c lÃ m mÃ¡t", code: "ACC-WHEEL-WEIGHT", quantity: 1, unitPrice: 100000, warranty: "TiÃªu chuáº©n" },
       ],
-      technicianNotes: "Cân bằng động bằng máy Hunter Hoa Kỳ đạt độ lệch 0g. Lốp xe áp suất chuẩn 2.3 bar.",
+      technicianNotes: "CÃ¢n báº±ng Ä‘á»™ng báº±ng mÃ¡y Hunter Hoa Ká»³ Ä‘áº¡t Ä‘á»™ lá»‡ch 0g. Lá»‘p xe Ã¡p suáº¥t chuáº©n 2.3 bar.",
     },
   ];
 
   const [historyList, setHistoryList] = useState<MaintenanceHistoryItem[]>(defaultHistory);
 
-  // Danh mục 36 hạng mục kiểm tra chẩn đoán thực tế
+  // Danh má»¥c 36 háº¡ng má»¥c kiá»ƒm tra cháº©n Ä‘oÃ¡n thá»±c táº¿
   const inspectionChecklist: InspectionItem[] = [
-    { category: "Hệ thống Động cơ", name: "Dầu động cơ & Lọc nhớt", status: "FAILED", note: "Dầu đen biến chất mốc 40.000km, cần xả thay mới ngay" },
-    { category: "Hệ thống Động cơ", name: "Dung dịch nước làm mát", status: "PASSED", note: "Mức nước ở vạch MAX, nhiệt độ sôi đạt chuẩn -35°C" },
-    { category: "Hệ thống Động cơ", name: "Dây curoa tổng & Buly tăng", status: "PASSED", note: "Không nứt rạn, độ căng đạt tiêu chuẩn" },
-    { category: "Hệ thống Động cơ", name: "Lọc gió động cơ & Buồng đốt", status: "ATTENTION", note: "Lọc gió nhiều bụi mịn, khuyến nghị vệ sinh hoặc thay mới" },
-    { category: "Hệ thống Phanh", name: "Độ dày má phanh trước", status: "ATTENTION", note: "Còn 4.5mm (mức cảnh báo, nên thay sau 5.000km)" },
-    { category: "Hệ thống Phanh", name: "Độ dày má phanh sau", status: "PASSED", note: "Còn 7.0mm, đĩa phanh mòn đều" },
-    { category: "Hệ thống Phanh", name: "Dầu phanh & Ống dẫn cao su", status: "PASSED", note: "Dầu trong, điểm sôi ẩm > 180°C an toàn" },
-    { category: "Hệ thống Treo & Gầm", name: "Giảm xóc trước & sau", status: "PASSED", note: "Khô ráo, không xì dầu, độ nhún đàn hồi tốt" },
-    { category: "Hệ thống Treo & Gầm", name: "Rô-tuyn lái & Rô-tuyn cân bằng", status: "PASSED", note: "Chụp bụi nguyên vẹn, khớp cầu không rơ lắc" },
-    { category: "Hệ thống Điện & Ắc quy", name: "Điện áp bình Ắc quy", status: "PASSED", note: "Điện áp tĩnh 12.6V, dòng khởi động CCA 520 đạt 94%" },
-    { category: "Hệ thống Điện & Ắc quy", name: "Hệ thống đèn pha, cos, xi-nhan", status: "PASSED", note: "Tất cả các bóng chiếu sáng hoạt động chuẩn" },
-    { category: "Lốp & Bánh xe", name: "Độ sâu gai lốp 4 bánh", status: "PASSED", note: "Độ sâu gai 5.2mm, áp suất cân chỉnh 2.3 bar" },
-    { category: "Nội thất & Điều hòa", name: "Lọc gió điều hòa cabin", status: "FAILED", note: "Màng lọc mốc đen ẩm ướt, đề xuất thay than hoạt tính" },
+    { category: "Há»‡ thá»‘ng Äá»™ng cÆ¡", name: "Dáº§u Ä‘á»™ng cÆ¡ & Lá»c nhá»›t", status: "FAILED", note: "Dáº§u Ä‘en biáº¿n cháº¥t má»‘c 40.000km, cáº§n xáº£ thay má»›i ngay" },
+    { category: "Há»‡ thá»‘ng Äá»™ng cÆ¡", name: "Dung dá»‹ch nÆ°á»›c lÃ m mÃ¡t", status: "PASSED", note: "Má»©c nÆ°á»›c á»Ÿ váº¡ch MAX, nhiá»‡t Ä‘á»™ sÃ´i Ä‘áº¡t chuáº©n -35Â°C" },
+    { category: "Há»‡ thá»‘ng Äá»™ng cÆ¡", name: "DÃ¢y curoa tá»•ng & Buly tÄƒng", status: "PASSED", note: "KhÃ´ng ná»©t ráº¡n, Ä‘á»™ cÄƒng Ä‘áº¡t tiÃªu chuáº©n" },
+    { category: "Há»‡ thá»‘ng Äá»™ng cÆ¡", name: "Lá»c giÃ³ Ä‘á»™ng cÆ¡ & Buá»“ng Ä‘á»‘t", status: "ATTENTION", note: "Lá»c giÃ³ nhiá»u bá»¥i má»‹n, khuyáº¿n nghá»‹ vá»‡ sinh hoáº·c thay má»›i" },
+    { category: "Há»‡ thá»‘ng Phanh", name: "Äá»™ dÃ y mÃ¡ phanh trÆ°á»›c", status: "ATTENTION", note: "CÃ²n 4.5mm (má»©c cáº£nh bÃ¡o, nÃªn thay sau 5.000km)" },
+    { category: "Há»‡ thá»‘ng Phanh", name: "Äá»™ dÃ y mÃ¡ phanh sau", status: "PASSED", note: "CÃ²n 7.0mm, Ä‘Ä©a phanh mÃ²n Ä‘á»u" },
+    { category: "Há»‡ thá»‘ng Phanh", name: "Dáº§u phanh & á»ng dáº«n cao su", status: "PASSED", note: "Dáº§u trong, Ä‘iá»ƒm sÃ´i áº©m > 180Â°C an toÃ n" },
+    { category: "Há»‡ thá»‘ng Treo & Gáº§m", name: "Giáº£m xÃ³c trÆ°á»›c & sau", status: "PASSED", note: "KhÃ´ rÃ¡o, khÃ´ng xÃ¬ dáº§u, Ä‘á»™ nhÃºn Ä‘Ã n há»“i tá»‘t" },
+    { category: "Há»‡ thá»‘ng Treo & Gáº§m", name: "RÃ´-tuyn lÃ¡i & RÃ´-tuyn cÃ¢n báº±ng", status: "PASSED", note: "Chá»¥p bá»¥i nguyÃªn váº¹n, khá»›p cáº§u khÃ´ng rÆ¡ láº¯c" },
+    { category: "Há»‡ thá»‘ng Äiá»‡n & áº®c quy", name: "Äiá»‡n Ã¡p bÃ¬nh áº®c quy", status: "PASSED", note: "Äiá»‡n Ã¡p tÄ©nh 12.6V, dÃ²ng khá»Ÿi Ä‘á»™ng CCA 520 Ä‘áº¡t 94%" },
+    { category: "Há»‡ thá»‘ng Äiá»‡n & áº®c quy", name: "Há»‡ thá»‘ng Ä‘Ã¨n pha, cos, xi-nhan", status: "PASSED", note: "Táº¥t cáº£ cÃ¡c bÃ³ng chiáº¿u sÃ¡ng hoáº¡t Ä‘á»™ng chuáº©n" },
+    { category: "Lá»‘p & BÃ¡nh xe", name: "Äá»™ sÃ¢u gai lá»‘p 4 bÃ¡nh", status: "PASSED", note: "Äá»™ sÃ¢u gai 5.2mm, Ã¡p suáº¥t cÃ¢n chá»‰nh 2.3 bar" },
+    { category: "Ná»™i tháº¥t & Äiá»u hÃ²a", name: "Lá»c giÃ³ Ä‘iá»u hÃ²a cabin", status: "FAILED", note: "MÃ ng lá»c má»‘c Ä‘en áº©m Æ°á»›t, Ä‘á» xuáº¥t thay than hoáº¡t tÃ­nh" },
   ];
 
   useEffect(() => {
@@ -214,7 +214,7 @@ function CustomerDashboard() {
             setSelectedVehicleForOdo(vehRes.data[0].license_plate);
           }
         } catch {
-          // Bỏ qua
+          // Bá» qua
         }
 
         try {
@@ -223,7 +223,7 @@ function CustomerDashboard() {
             setAppointments(appRes.data);
           }
         } catch {
-          // Bỏ qua
+          // Bá» qua
         }
 
         try {
@@ -234,32 +234,32 @@ function CustomerDashboard() {
               code: item.repair_order_code || `RO-2026-${String(item.id).padStart(3, "0")}`,
               car: item.vehicle?.model?.name ? `${item.vehicle?.model?.brand?.name || ""} ${item.vehicle.model.name}` : "Toyota Camry 2.5Q",
               licensePlate: item.vehicle?.license_plate || "30G-888.66",
-              serviceName: item.diagnosis || "Bảo dưỡng định kỳ & kiểm tra hệ thống",
+              serviceName: item.diagnosis || "Báº£o dÆ°á»¡ng Ä‘á»‹nh ká»³ & kiá»ƒm tra há»‡ thá»‘ng",
               odo: item.current_odo ? `${item.current_odo.toLocaleString("vi-VN")} km` : "41.250 km",
               date: item.received_at ? new Date(item.received_at).toLocaleDateString("vi-VN") : "12/10/2026",
-              advisor: item.advisor?.name || "Lê Văn Toàn (Cố vấn trưởng)",
-              technician: item.technician?.name || "Nguyễn Văn Hùng",
+              advisor: item.advisor?.name || "LÃª VÄƒn ToÃ n (Cá»‘ váº¥n trÆ°á»Ÿng)",
+              technician: item.technician?.name || "Nguyá»…n VÄƒn HÃ¹ng",
               cost: Number(item.total_cost || item.estimated_cost || 3450000),
               laborCost: 450000,
               partsCost: Number(item.total_cost || 3000000) - 450000,
               status: item.status === "COMPLETED" || item.status === "CLOSED" ? "COMPLETED" : "IN_PROGRESS",
               partsReplaced: item.parts?.map((p: any) => p.name) || [
-                "Dầu động cơ tổng hợp Castrol EDGE 5W-30",
-                "Lọc nhớt chính hãng",
+                "Dáº§u Ä‘á»™ng cÆ¡ tá»•ng há»£p Castrol EDGE 5W-30",
+                "Lá»c nhá»›t chÃ­nh hÃ£ng",
               ],
               detailedParts: [
-                { name: "Dầu động cơ Castrol EDGE 5W-30", code: "CAS-5W30", quantity: 1, unitPrice: 1450000, warranty: "6 tháng / 10.000 km" },
-                { name: "Lọc dầu chính hãng", code: "OEM-FILTER", quantity: 1, unitPrice: 350000, warranty: "12 tháng" },
+                { name: "Dáº§u Ä‘á»™ng cÆ¡ Castrol EDGE 5W-30", code: "CAS-5W30", quantity: 1, unitPrice: 1450000, warranty: "6 thÃ¡ng / 10.000 km" },
+                { name: "Lá»c dáº§u chÃ­nh hÃ£ng", code: "OEM-FILTER", quantity: 1, unitPrice: 350000, warranty: "12 thÃ¡ng" },
               ],
-              technicianNotes: "Hệ thống hoạt động ổn định sau bảo dưỡng.",
+              technicianNotes: "Há»‡ thá»‘ng hoáº¡t Ä‘á»™ng á»•n Ä‘á»‹nh sau báº£o dÆ°á»¡ng.",
             }));
             setHistoryList(mapped);
           }
         } catch {
-          // Dùng defaultHistory
+          // DÃ¹ng defaultHistory
         }
       } catch {
-        // Dự phòng
+        // Dá»± phÃ²ng
       } finally {
         setIsLoading(false);
       }
@@ -268,23 +268,23 @@ function CustomerDashboard() {
     void loadDashboardData();
   }, []);
 
-  // Lọc dữ liệu thông minh
+  // Lá»c dá»¯ liá»‡u thÃ´ng minh
   const filteredHistory = useMemo(() => {
     return historyList.filter((item) => {
-      // Lọc theo Tab
-      if (activeTab === "MAINTENANCE" && !item.serviceName.toLowerCase().includes("bảo dưỡng")) {
+      // Lá»c theo Tab
+      if (activeTab === "MAINTENANCE" && !item.serviceName.toLowerCase().includes("báº£o dÆ°á»¡ng")) {
         return false;
       }
-      if (activeTab === "REPAIR" && item.serviceName.toLowerCase().includes("bảo dưỡng")) {
+      if (activeTab === "REPAIR" && item.serviceName.toLowerCase().includes("báº£o dÆ°á»¡ng")) {
         return false;
       }
 
-      // Lọc theo xe
+      // Lá»c theo xe
       if (selectedCarFilter !== "ALL" && item.licensePlate !== selectedCarFilter) {
         return false;
       }
 
-      // Lọc theo từ khóa tìm kiếm
+      // Lá»c theo tá»« khÃ³a tÃ¬m kiáº¿m
       if (searchKeyword.trim()) {
         const query = searchKeyword.toLowerCase();
         const matchCode = item.code.toLowerCase().includes(query);
@@ -301,7 +301,7 @@ function CustomerDashboard() {
 
   const totalSpent = historyList.reduce((acc, cur) => acc + cur.cost, 0);
 
-  // Xử lý đặt lại lịch với dữ liệu prefill
+  // Xá»­ lÃ½ Ä‘áº·t láº¡i lá»‹ch vá»›i dá»¯ liá»‡u prefill
   const handleRebook = (item: MaintenanceHistoryItem) => {
     navigate("/booking", {
       state: {
@@ -312,20 +312,20 @@ function CustomerDashboard() {
     });
   };
 
-  // Xử lý sao chép hotline
+  // Xá»­ lÃ½ sao chÃ©p hotline
   const handleCopyHotline = () => {
     navigator.clipboard.writeText("1900 8888 68");
-    showToast("Đã sao chép số hotline 1900 8888 68 vào bộ nhớ tạm!", "success");
+    showToast("ÄÃ£ sao chÃ©p sá»‘ hotline 1900 8888 68 vÃ o bá»™ nhá»› táº¡m!", "success");
   };
 
-  // Xử lý cập nhật ODO
+  // Xá»­ lÃ½ cáº­p nháº­t ODO
   const handleSaveOdo = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newOdoInput || isNaN(Number(newOdoInput))) {
-      showToast("Vui lòng nhập số km hợp lệ.", "error");
+      showToast("Vui lÃ²ng nháº­p sá»‘ km há»£p lá»‡.", "error");
       return;
     }
-    showToast(`Đã cập nhật số ODO xe ${selectedVehicleForOdo} thành ${Number(newOdoInput).toLocaleString("vi-VN")} km thành công!`, "success");
+    showToast(`ÄÃ£ cáº­p nháº­t sá»‘ ODO xe ${selectedVehicleForOdo} thÃ nh ${Number(newOdoInput).toLocaleString("vi-VN")} km thÃ nh cÃ´ng!`, "success");
     setShowOdoModal(false);
   };
 
@@ -334,7 +334,7 @@ function CustomerDashboard() {
       <CustomerHeader />
       <CustomerTopbar />
 
-      {/* Toast thông báo */}
+      {/* Toast thÃ´ng bÃ¡o */}
       {toast && (
         <Toast
           message={toast.message}
@@ -344,597 +344,413 @@ function CustomerDashboard() {
       )}
 
       <main className="lg:ml-[250px]">
-        <div className="mx-auto max-w-[1240px] px-6 py-8 md:px-10 md:py-10">
-          
-          {/* 1. HERO BANNER CHÀO MỪNG */}
-          <div className="relative overflow-hidden rounded-3xl border border-[#E1E4E6] bg-gradient-to-r from-[#1F2933] via-[#2A3744] to-[#1F2933] p-7 md:p-9 text-white shadow-xl shadow-slate-900/5">
-            <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-[#E5B869] backdrop-blur-md">
-                  <span className={`h-1.5 w-1.5 rounded-full bg-[#D6A85F] ${isLoading ? "animate-spin" : "animate-pulse"}`}></span>
-                  {isLoading ? "ĐANG TẢI DỮ LIỆU BẢO DƯỠNG..." : "TRUNG TÂM DỊCH VỤ & BẢO DƯỠNG XE KHÁCH HÀNG"}
-                </div>
-                <h1 className="mt-3 text-2xl md:text-3xl font-extrabold tracking-tight">
-                  Xin chào, {getUserDisplayName(user)} 👋
-                </h1>
-                <p className="mt-2 text-xs md:text-sm text-slate-300 max-w-xl leading-relaxed">
-                  Quản lý hồ sơ xe, theo dõi tiến độ kỹ thuật viên sửa chữa trực tuyến và tra cứu lịch sử bảo dưỡng minh bạch.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <Link
-                  to="/booking"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-[#D6A85F] px-5 py-3 text-xs font-bold text-[#1F2933] shadow-md transition hover:bg-[#c9994f] hover:shadow-lg cursor-pointer"
-                >
-                  <span className="text-base">＋</span>
-                  <span>Đặt lịch bảo dưỡng ngay</span>
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={() => setShowOdoModal(true)}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/15 cursor-pointer"
-                >
-                  <span>⚡ Cập nhật ODO xe</span>
-                </button>
-
-                <Link
-                  to="/customer/cars"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/15 cursor-pointer"
-                >
-                  <span>▰ Quản lý xe</span>
-                </Link>
-              </div>
+        <div className="mx-auto max-w-[1240px] px-6 py-8 md:px-8 md:py-10">
+          {/* ===== TIÃŠU Äá»€ TRANG ===== */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+                KHÃCH HÃ€NG / Tá»”NG QUAN Dá»ŠCH Vá»¤
+              </p>
+              <h1 className="mt-2 text-[28px] font-bold tracking-[-0.6px] text-[#1F2933]">
+                Xin chÃ o, {getUserDisplayName(user)}
+              </h1>
+              <p className="mt-1.5 text-[13px] leading-6 text-[#66717C]">
+                {isLoading
+                  ? "Äang Ä‘á»“ng bá»™ dá»¯ liá»‡u báº£o dÆ°á»¡ng cá»§a báº¡n..."
+                  : "Theo dÃµi xe Ä‘ang á»Ÿ gara, lá»‹ch háº¹n vÃ  toÃ n bá»™ lá»‹ch sá»­ báº£o dÆ°á»¡ng táº¡i má»™t nÆ¡i."}
+              </p>
             </div>
 
-            {/* Họa tiết nền trừu tượng */}
-            <div className="pointer-events-none absolute -right-12 -top-16 h-64 w-64 rounded-full bg-[#D6A85F]/10 blur-3xl"></div>
-          </div>
-
-          {/* 2. CÁC THẺ THỐNG KÊ NHANH (KPI CARDS CÓ PHẢN HỒI HOVER VÀ CLICK RÕ RÀNG) */}
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Card 1: Xe đang theo dõi */}
-            <Link
-              to="/customer/cars"
-              className="group rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-xs transition duration-200 hover:border-[#D6A85F] hover:shadow-md cursor-pointer block"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A949E]">
-                  Xe đã đăng ký
-                </span>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 group-hover:scale-110 transition-transform">
-                  🚗
-                </div>
-              </div>
-              <p className="mt-3 text-2xl font-extrabold text-[#20252B]">
-                {vehicles.length > 0 ? `${vehicles.length} xe` : "2 xe"}
-              </p>
-              <p className="mt-1 text-xs text-[#8A949E] flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                <span>Toyota Camry & Honda CR-V</span>
-              </p>
-            </Link>
-
-            {/* Card 2: Lịch hẹn sắp tới */}
-            <Link
-              to="/customer/appointments"
-              className="group rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-xs transition duration-200 hover:border-[#D6A85F] hover:shadow-md cursor-pointer block"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A949E]">
-                  Lịch hẹn sắp tới
-                </span>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 group-hover:scale-110 transition-transform">
-                  📅
-                </div>
-              </div>
-              <p className="mt-3 text-2xl font-extrabold text-[#20252B]">
-                {appointments.length > 0 ? `${appointments.length} lịch` : "1 lịch hẹn"}
-              </p>
-              <p className="mt-1 text-xs text-blue-600 font-semibold truncate">
-                25/10/2026 - 09:00 (Đã xác nhận)
-              </p>
-            </Link>
-
-            {/* Card 3: Xe đang ở xưởng */}
-            <Link
-              to="/repair-status"
-              className="group rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-xs transition duration-200 hover:border-[#D6A85F] hover:shadow-md cursor-pointer block"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A949E]">
-                  Xe đang ở gara
-                </span>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 group-hover:scale-110 transition-transform">
-                  🔧
-                </div>
-              </div>
-              <p className="mt-3 text-2xl font-extrabold text-[#20252B]">
-                1 xe
-              </p>
-              <p className="mt-1 text-xs text-emerald-600 font-semibold">
-                Đang chẩn đoán 36 hạng mục
-              </p>
-            </Link>
-
-            {/* Card 4: Tổng chi tiêu tích lũy */}
-            <Link
-              to="/invoices"
-              className="group rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-xs transition duration-200 hover:border-[#D6A85F] hover:shadow-md cursor-pointer block"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A949E]">
-                  Tổng chi phí bảo dưỡng
-                </span>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 group-hover:scale-110 transition-transform">
-                  ₫
-                </div>
-              </div>
-              <p className="mt-3 text-2xl font-extrabold text-[#20252B]">
-                {totalSpent.toLocaleString("vi-VN")} đ
-              </p>
-              <p className="mt-1 text-xs text-[#8A949E]">
-                {historyList.length} lượt dịch vụ hoàn tất →
-              </p>
-            </Link>
-          </div>
-
-          {/* 3. TIẾN ĐỘ XE HIỆN TẠI ĐANG Ở XƯỞNG (CLICKABLE STEP WORKFLOW VÀ BIÊN BẢN CHẨN ĐOÁN) */}
-          <div className="mt-8 rounded-3xl border border-[#E1E4E6] bg-white p-6 md:p-8 shadow-xs">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-2.5 w-2.5 rounded-full bg-amber-500 animate-ping"></span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-amber-600">
-                    TIẾN ĐỘ DỊCH VỤ TRỰC TIẾP TẠI GARA
-                  </span>
-                </div>
-                <h2 className="mt-1 text-xl font-bold text-[#1F2933]">
-                  Toyota Camry 2.5Q • Biển số: <span className="text-[#D6A85F]">30G-888.66</span>
-                </h2>
-                <p className="mt-0.5 text-xs text-[#7A838C]">
-                  Tiếp nhận lúc: 08:30 sáng nay • Cố vấn phụ trách: <strong>Lê Văn Toàn</strong> (0901.000.102)
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setShowInspectionModal(true)}
-                  className="rounded-xl border border-amber-300 bg-amber-50/80 px-3.5 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100 transition cursor-pointer flex items-center gap-1.5"
-                >
-                  <span>📋</span>
-                  <span>Xem bảng kiểm tra 36 hạng mục</span>
-                </button>
-                <Link
-                  to="/quotation"
-                  className="rounded-xl border border-[#E1E4E6] px-3.5 py-2 text-xs font-semibold text-[#20252B] hover:bg-[#F7F7F5] transition cursor-pointer"
-                >
-                  Xem báo giá chờ duyệt
-                </Link>
-                <Link
-                  to="/repair-status"
-                  className="rounded-xl bg-[#1F2933] px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition cursor-pointer"
-                >
-                  Theo dõi trực tiếp →
-                </Link>
-              </div>
-            </div>
-
-            {/* Quy trình 5 bước dịch vụ (Mỗi bước có thể click xem chi tiết) */}
-            <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-5">
-              {/* Bước 1 */}
-              <div
-                onClick={() => showToast("Bước 1: Tiếp nhận xe đã hoàn tất lúc 08:35. KTV đã bàn giao phiếu tiếp nhận và bảo vệ xe.", "info")}
-                className="group relative rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 transition hover:shadow-md cursor-pointer"
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowOdoModal(true)}
+                className="h-10 cursor-pointer rounded-xl border border-[#E1E4E6] bg-white px-4 text-xs font-semibold text-[#20252B] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
               >
-                <div className="flex items-center gap-2 text-emerald-700">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs text-white font-bold">✓</span>
-                  <span className="text-xs font-bold uppercase">1. Tiếp nhận xe</span>
-                </div>
-                <p className="mt-2 text-xs text-emerald-800">
-                  Đã ghi nhận ODO 41.250km và bàn giao chìa khóa.
-                </p>
-                <span className="mt-2 inline-block text-[10px] text-emerald-600 font-medium">08:35 • Hoàn tất (Click xem)</span>
-              </div>
-
-              {/* Bước 2 - ĐANG XỬ LÝ */}
-              <div
-                onClick={() => setShowInspectionModal(true)}
-                className="group relative rounded-2xl border-2 border-amber-400 bg-amber-50/70 p-4 shadow-sm transition hover:shadow-md cursor-pointer hover:border-amber-500"
-              >
-                <div className="flex items-center gap-2 text-amber-800">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-xs text-white font-bold animate-spin">⚙</span>
-                  <span className="text-xs font-bold uppercase">2. Kiểm tra xe</span>
-                </div>
-                <p className="mt-2 text-xs font-semibold text-amber-900">
-                  KTV đang chẩn đoán 36 hạng mục gầm & phanh.
-                </p>
-                <span className="mt-2 inline-block text-[10px] font-bold text-amber-700 bg-amber-200/60 px-2 py-0.5 rounded">
-                  Đang thực hiện 75% • Xem chi tiết →
-                </span>
-              </div>
-
-              {/* Bước 3 */}
+                Cáº­p nháº­t sá»‘ ODO
+              </button>
               <Link
-                to="/quotation"
-                className="group relative rounded-2xl border border-slate-200 bg-slate-50/80 p-4 opacity-80 hover:opacity-100 hover:border-[#D6A85F] transition cursor-pointer block"
+                to="/booking"
+                className="inline-flex h-10 cursor-pointer items-center rounded-xl bg-[#1F2933] px-5 text-xs font-bold text-white transition hover:bg-slate-800"
               >
-                <div className="flex items-center gap-2 text-slate-600">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs text-slate-700 font-bold">3</span>
-                  <span className="text-xs font-bold uppercase">3. Báo giá & Duyệt</span>
-                </div>
-                <p className="mt-2 text-xs text-slate-600">
-                  Cố vấn lên phương án thay thế gửi bạn duyệt.
-                </p>
-                <span className="mt-2 inline-block text-[10px] text-slate-500">Mở trang Báo giá →</span>
+                + Äáº·t lá»‹ch báº£o dÆ°á»¡ng
               </Link>
-
-              {/* Bước 4 */}
-              <Link
-                to="/repair-status"
-                className="group relative rounded-2xl border border-slate-200 bg-slate-50/80 p-4 opacity-80 hover:opacity-100 hover:border-[#D6A85F] transition cursor-pointer block"
-              >
-                <div className="flex items-center gap-2 text-slate-600">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs text-slate-700 font-bold">4</span>
-                  <span className="text-xs font-bold uppercase">4. Sửa chữa</span>
-                </div>
-                <p className="mt-2 text-xs text-slate-600">
-                  Thay dầu, lọc dầu & vệ sinh kim phun.
-                </p>
-                <span className="mt-2 inline-block text-[10px] text-slate-500">Dự kiến 10:30</span>
-              </Link>
-
-              {/* Bước 5 */}
-              <div
-                onClick={() => showToast("Bước 5: Bàn giao xe và nghiệm thu chất lượng sau khi KTV hoàn thành các hạng mục sửa chữa.", "info")}
-                className="group relative rounded-2xl border border-slate-200 bg-slate-50/80 p-4 opacity-80 hover:opacity-100 hover:border-[#D6A85F] transition cursor-pointer"
-              >
-                <div className="flex items-center gap-2 text-slate-600">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs text-slate-700 font-bold">5</span>
-                  <span className="text-xs font-bold uppercase">5. Bàn giao</span>
-                </div>
-                <p className="mt-2 text-xs text-slate-600">
-                  Rửa xe miễn phí và bàn giao xe cho khách hàng.
-                </p>
-                <span className="mt-2 inline-block text-[10px] text-slate-500">Dự kiến 11:45</span>
-              </div>
             </div>
           </div>
 
-          {/* 4. SỔ BẢO DƯỠNG ĐIỆN TỬ & LỊCH SỬ CHI TIẾT (TỐI ƯU TÌM KIẾM, BỘ LỌC VÀ CLICK XEM CHI TIẾT) */}
-          <div className="mt-8 rounded-3xl border border-[#E1E4E6] bg-white p-6 md:p-8 shadow-xs">
-            <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-[#D6A85F]"></span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#D6A85F]">
-                    SỔ BẢO DƯỠNG ĐIỆN TỬ
-                  </span>
-                </div>
-                <h2 className="mt-1 text-xl font-bold text-[#1F2933]">
-                  Lịch sử bảo dưỡng & sửa chữa chi tiết
-                </h2>
-                <p className="mt-0.5 text-xs text-[#7A838C]">
-                  Toàn bộ các lần bảo dưỡng, phụ tùng thay thế và hóa đơn được lưu trữ an toàn, minh bạch.
-                </p>
-              </div>
-
-              {/* Filter tabs */}
-              <div className="inline-flex rounded-xl bg-[#F7F7F5] p-1 border border-[#E1E4E6] self-start lg:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("ALL")}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                    activeTab === "ALL"
-                      ? "bg-white text-[#1F2933] shadow-xs"
-                      : "text-[#7A838C] hover:text-[#20252B]"
-                  }`}
-                >
-                  Tất cả ({historyList.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("MAINTENANCE")}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                    activeTab === "MAINTENANCE"
-                      ? "bg-white text-[#1F2933] shadow-xs"
-                      : "text-[#7A838C] hover:text-[#20252B]"
-                  }`}
-                >
-                  Bảo dưỡng định kỳ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("REPAIR")}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                    activeTab === "REPAIR"
-                      ? "bg-white text-[#1F2933] shadow-xs"
-                      : "text-[#7A838C] hover:text-[#20252B]"
-                  }`}
-                >
-                  Sửa chữa & Phụ tùng
-                </button>
-              </div>
-            </div>
-
-            {/* Thanh tìm kiếm & Bộ lọc xe trực quan */}
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="sm:col-span-2 relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-                  🔍
-                </span>
-                <input
-                  type="text"
-                  value={searchKeyword}
-                  onChange={(e) => setSearchKeyword(e.target.value)}
-                  placeholder="Tìm theo mã phiếu (RO-...), tên xe, dịch vụ, hoặc phụ tùng đã thay..."
-                  className="h-10 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] pl-9 pr-8 text-xs text-[#20252B] outline-none transition focus:border-[#D6A85F] focus:bg-white"
-                />
-                {searchKeyword && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchKeyword("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-
-              <div>
-                <select
-                  value={selectedCarFilter}
-                  onChange={(e) => setSelectedCarFilter(e.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3 text-xs text-[#20252B] outline-none transition focus:border-[#D6A85F] focus:bg-white cursor-pointer"
-                >
-                  <option value="ALL">Tất cả xe ({vehicles.length > 0 ? vehicles.length : 2} xe)</option>
-                  <option value="30G-888.66">Toyota Camry (30G-888.66)</option>
-                  <option value="29A-678.90">Honda CR-V (29A-678.90)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Danh sách các lần bảo dưỡng */}
-            <div className="mt-6 space-y-4">
-              {filteredHistory.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-500">
-                  <p className="text-3xl">🔍</p>
-                  <p className="mt-2 text-sm font-semibold">Không tìm thấy lịch sử phù hợp</p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Hãy thử thay đổi từ khóa tìm kiếm hoặc chọn bộ lọc "Tất cả".
+          {/* ===== 4 THáºº THá»NG KÃŠ ===== */}
+          <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              {
+                to: "/customer/cars",
+                label: "Xe Ä‘Ã£ Ä‘Äƒng kÃ½",
+                value: `${vehicles.length > 0 ? vehicles.length : 2} xe`,
+                hint: "Quáº£n lÃ½ há»“ sÆ¡ xe",
+              },
+              {
+                to: "/customer/appointments",
+                label: "Lá»‹ch háº¹n sáº¯p tá»›i",
+                value: `${appointments.length > 0 ? appointments.length : 1} lá»‹ch`,
+                hint: "Gáº§n nháº¥t: 25/10/2026 Â· 09:00",
+              },
+              {
+                to: "/repair-status",
+                label: "Xe Ä‘ang á»Ÿ gara",
+                value: "1 xe",
+                hint: "Äang kiá»ƒm tra 36 háº¡ng má»¥c",
+              },
+              {
+                to: "/invoices",
+                label: "Tá»•ng chi phÃ­ báº£o dÆ°á»¡ng",
+                value: `${totalSpent.toLocaleString("vi-VN")} Ä‘`,
+                hint: `${historyList.length} lÆ°á»£t dá»‹ch vá»¥ hoÃ n táº¥t`,
+              },
+            ].map((kpi) => (
+              <Link
+                key={kpi.to}
+                to={kpi.to}
+                className="group flex min-h-[116px] cursor-pointer flex-col justify-between rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)] transition hover:border-[#D6A85F] hover:shadow-md"
+              >
+                <div className="flex items-start justify-between">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                    {kpi.label}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchKeyword("");
-                      setSelectedCarFilter("ALL");
-                      setActiveTab("ALL");
-                    }}
-                    className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition cursor-pointer"
-                  >
-                    Xóa bộ lọc
-                  </button>
+                  <span className="text-sm text-[#B5BDC5] transition group-hover:translate-x-0.5 group-hover:text-[#D6A85F]">
+                    â†’
+                  </span>
                 </div>
-              ) : (
-                filteredHistory.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => setSelectedHistory(item)}
-                    className="group rounded-2xl border border-[#E1E4E6] p-5 transition duration-200 hover:border-[#D6A85F] hover:shadow-md cursor-pointer bg-white"
-                  >
-                    <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-                      <div className="flex items-start gap-3.5">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-lg text-[#D6A85F] group-hover:scale-105 transition-transform">
-                          🚗
-                        </div>
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-md bg-[#FAF8F5] border border-[#E5B869]/50 text-[#8F641B]">
-                              {item.licensePlate}
-                            </span>
-                            <span className="text-xs font-bold text-slate-700">
-                              • {item.car}
-                            </span>
-                            <span className="text-xs text-slate-500">
-                              • ODO: {item.odo}
-                            </span>
-                            <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
-                              Đã hoàn tất
-                            </span>
-                          </div>
-
-                          <h3 className="mt-1 text-sm font-bold text-[#1F2933] group-hover:text-[#8F641B] transition-colors">
-                            {item.serviceName}
-                          </h3>
-
-                          <p className="mt-1 text-xs text-[#7A838C]">
-                            Mã phiếu: <strong>{item.code}</strong> • Ngày thực hiện: <strong>{item.date}</strong> • Cố vấn: <strong>{item.advisor}</strong>
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between md:flex-col md:items-end gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-                        <div>
-                          <p className="text-[11px] text-[#8A949E] text-right">Tổng thanh toán</p>
-                          <p className="text-base font-extrabold text-[#1F2933]">
-                            {item.cost.toLocaleString("vi-VN")} đ
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedHistory(item);
-                            }}
-                            className="rounded-lg border border-[#E1E4E6] px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-[#F7F7F5] transition cursor-pointer"
-                          >
-                            Xem chi tiết
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRebook(item);
-                            }}
-                            className="rounded-lg bg-[#FAF8F5] border border-[#E5B869]/40 px-3 py-1.5 text-xs font-bold text-[#8F641B] hover:bg-[#F3E8D2] transition cursor-pointer"
-                          >
-                            Đặt lại lịch này
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Chi tiết phụ tùng đã thay thế trong lần này */}
-                    {item.partsReplaced && item.partsReplaced.length > 0 && (
-                      <div className="mt-4 rounded-xl bg-[#F7F7F5] p-3.5 border border-slate-200/60">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                          Vật tư & Phụ tùng chính hãng đã thay:
-                        </p>
-                        <ul className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-slate-700">
-                          {item.partsReplaced.map((part, idx) => (
-                            <li key={idx} className="flex items-center gap-2">
-                              <span className="text-emerald-600 font-bold">✓</span>
-                              <span>{part}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
+                <div>
+                  <p className="text-2xl font-bold tracking-tight text-[#20252B]">{kpi.value}</p>
+                  <p className="mt-1 text-[11px] text-[#66717C]">{kpi.hint}</p>
+                </div>
+              </Link>
+            ))}
           </div>
 
-          {/* 5. CẢNH BÁO BẢO DƯỠNG & ĐĂNG KIỂM THÔNG MINH */}
-          <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
-            
-            {/* Cột 1 & 2: Nhắc nhở bảo dưỡng tiếp theo */}
-            <div className="lg:col-span-2 rounded-3xl border border-[#E1E4E6] bg-white p-6 md:p-8 shadow-xs">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-amber-600">
-                    CẢNH BÁO KỸ THUẬT & NHẮC LỊCH
-                  </span>
-                  <h2 className="mt-1 text-lg font-bold text-[#1F2933]">
-                    Hạng mục khuyến nghị cho xe của bạn
-                  </h2>
-                </div>
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
-                  2 khuyến nghị
-                </span>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {/* Khuyến nghị 1 */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/50 p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="text-xl">⚠️</span>
-                    <div>
-                      <h4 className="text-xs font-bold text-amber-900">
-                        Bảo dưỡng định kỳ mốc 45.000 KM (Còn ~3.750 km nữa)
-                      </h4>
-                      <p className="text-xs text-amber-800 mt-0.5">
-                        Toyota Camry 30G-888.66 dự kiến cần thay dầu động cơ mới và đảo lốp sau 2 tháng.
+          {/* ===== LÆ¯á»šI 2 Cá»˜T: Ná»˜I DUNG CHÃNH + Cá»˜T PHá»¤ ===== */}
+          <div className="mt-6 grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
+            {/* ---------- Cá»˜T TRÃI (2/3) ---------- */}
+            <div className="space-y-6 xl:col-span-2">
+              {/* Tiáº¿n Ä‘á»™ xe Ä‘ang á»Ÿ gara */}
+              <section className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-amber-500" />
+                      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-amber-600">
+                        Xe Ä‘ang Ä‘Æ°á»£c xá»­ lÃ½ táº¡i gara
                       </p>
                     </div>
+                    <h2 className="mt-2 text-lg font-bold text-[#1F2933]">
+                      Toyota Camry 2.5Q Â·{" "}
+                      <span className="font-mono text-[#8F641B]">30G-888.66</span>
+                    </h2>
+                    <p className="mt-1 text-xs text-[#66717C]">
+                      Tiáº¿p nháº­n 08:30 Â· Cá»‘ váº¥n: <strong>LÃª VÄƒn ToÃ n</strong> Â· 0901 000 102
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate("/booking", {
-                        state: {
-                          prefillService: "Bảo dưỡng định kỳ cấp 45.000 KM",
-                          car: "Toyota Camry 2.5Q",
-                          licensePlate: "30G-888.66",
-                        },
-                      });
-                    }}
-                    className="shrink-0 rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-amber-700 transition text-center cursor-pointer"
-                  >
-                    Đặt hẹn trước
-                  </button>
-                </div>
 
-                {/* Khuyến nghị 2 */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/50 p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="text-xl">📋</span>
-                    <div>
-                      <h4 className="text-xs font-bold text-blue-900">
-                        Hạn đăng kiểm định kỳ xe Honda CR-V (29A-678.90)
-                      </h4>
-                      <p className="text-xs text-blue-800 mt-0.5">
-                        Hạn đăng kiểm tới ngày 28/11/2026. Garage hỗ trợ kiểm tra an toàn trước khi đăng kiểm miễn phí.
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate("/contact", {
-                        state: {
-                          requestType: "Tư vấn kiểm tra đăng kiểm",
-                          car: "Honda CR-V 29A-678.90",
-                        },
-                      });
-                    }}
-                    className="shrink-0 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-700 transition text-center cursor-pointer"
-                  >
-                    Tư vấn ngay
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Cột 3: Hỗ trợ kỹ thuật & Hotline Gara */}
-            <div className="rounded-3xl border border-[#E1E4E6] bg-white p-6 md:p-8 shadow-xs flex flex-col justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  HỖ TRỢ CỨU HỘ & TƯ VẤN
-                </span>
-                <h2 className="mt-1 text-lg font-bold text-[#1F2933]">
-                  Cần trợ giúp khẩn cấp?
-                </h2>
-                <p className="mt-2 text-xs text-[#7A838C] leading-relaxed">
-                  Đội ngũ cố vấn kỹ thuật luôn sẵn sàng hỗ trợ bạn 24/7 khi xe gặp sự cố trên đường hoặc cần tư vấn báo giá.
-                </p>
-
-                <div className="mt-5 rounded-2xl bg-[#1F2933] p-4 text-white">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-[#E5B869] font-semibold">HOTLINE CỨU HỘ 24/7</p>
+                  <div className="flex shrink-0 gap-2">
                     <button
                       type="button"
-                      onClick={handleCopyHotline}
-                      className="text-[10px] text-slate-300 hover:text-white underline cursor-pointer"
+                      onClick={() => setShowInspectionModal(true)}
+                      className="h-9 cursor-pointer rounded-xl border border-[#E1E4E6] px-3.5 text-xs font-semibold text-[#20252B] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
                     >
-                      Sao chép số
+                      Báº£ng kiá»ƒm tra
+                    </button>
+                    <Link
+                      to="/repair-status"
+                      className="inline-flex h-9 cursor-pointer items-center rounded-xl bg-[#1F2933] px-3.5 text-xs font-bold text-white transition hover:bg-slate-800"
+                    >
+                      Theo dÃµi â†’
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Timeline 5 bÆ°á»›c */}
+                <ol className="mt-7 grid grid-cols-5 gap-2">
+                  {[
+                    { n: "1", title: "Tiáº¿p nháº­n", desc: "08:35", state: "done" },
+                    { n: "2", title: "Kiá»ƒm tra", desc: "Äang lÃ m Â· 75%", state: "active" },
+                    { n: "3", title: "BÃ¡o giÃ¡", desc: "Chá» duyá»‡t", state: "todo" },
+                    { n: "4", title: "Sá»­a chá»¯a", desc: "Dá»± kiáº¿n 10:30", state: "todo" },
+                    { n: "5", title: "BÃ n giao", desc: "Dá»± kiáº¿n 11:45", state: "todo" },
+                  ].map((step, idx, arr) => (
+                    <li key={step.n} className="relative flex flex-col items-center text-center">
+                      {idx < arr.length - 1 && (
+                        <span
+                          className={`absolute left-1/2 top-4 h-0.5 w-full ${
+                            step.state === "done" ? "bg-emerald-400" : "bg-[#E1E4E6]"
+                          }`}
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (step.n === "2") setShowInspectionModal(true);
+                          else if (step.n === "3") navigate("/quotation");
+                          else if (step.n === "4") navigate("/repair-status");
+                          else
+                            showToast(
+                              step.n === "1"
+                                ? "Xe Ä‘Ã£ Ä‘Æ°á»£c tiáº¿p nháº­n lÃºc 08:35 vÃ  ghi nháº­n ODO 41.250 km."
+                                : "Xe sáº½ Ä‘Æ°á»£c bÃ n giao sau khi hoÃ n táº¥t sá»­a chá»¯a vÃ  nghiá»‡m thu.",
+                              "info",
+                            );
+                        }}
+                        className={`relative z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 text-xs font-bold transition hover:scale-110 ${
+                          step.state === "done"
+                            ? "border-emerald-500 bg-emerald-500 text-white"
+                            : step.state === "active"
+                              ? "border-amber-500 bg-amber-50 text-amber-700 ring-4 ring-amber-100"
+                              : "border-[#E1E4E6] bg-white text-[#8A949E]"
+                        }`}
+                      >
+                        {step.state === "done" ? "âœ“" : step.n}
+                      </button>
+                      <p
+                        className={`mt-2 text-xs font-bold ${
+                          step.state === "todo" ? "text-[#8A949E]" : "text-[#20252B]"
+                        }`}
+                      >
+                        {step.title}
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-[#8A949E]">{step.desc}</p>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+
+              {/* Lá»‹ch sá»­ báº£o dÆ°á»¡ng */}
+              <section className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold text-[#1F2933]">Lá»‹ch sá»­ báº£o dÆ°á»¡ng</h2>
+                    <p className="mt-0.5 text-xs text-[#66717C]">
+                      Sá»• báº£o dÆ°á»¡ng Ä‘iá»‡n tá»­, phá»¥ tÃ¹ng thay tháº¿ vÃ  chi phÃ­ tá»«ng láº§n.
+                    </p>
+                  </div>
+
+                  <div className="inline-flex self-start rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-1">
+                    {[
+                      { key: "ALL", label: `Táº¥t cáº£ (${historyList.length})` },
+                      { key: "MAINTENANCE", label: "Äá»‹nh ká»³" },
+                      { key: "REPAIR", label: "Sá»­a chá»¯a" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setActiveTab(tab.key as "ALL" | "MAINTENANCE" | "REPAIR")}
+                        className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                          activeTab === tab.key
+                            ? "bg-white text-[#1F2933] shadow-sm"
+                            : "text-[#66717C] hover:text-[#20252B]"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="relative sm:col-span-2">
+                    <input
+                      type="text"
+                      value={searchKeyword}
+                      onChange={(e) => setSearchKeyword(e.target.value)}
+                      placeholder="TÃ¬m mÃ£ phiáº¿u, tÃªn xe, dá»‹ch vá»¥, phá»¥ tÃ¹ng..."
+                      className="h-10 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3.5 pr-8 text-xs text-[#20252B] outline-none transition focus:border-[#D6A85F] focus:bg-white"
+                    />
+                    {searchKeyword && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchKeyword("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-[#8A949E] hover:text-[#20252B]"
+                      >
+                        âœ•
+                      </button>
+                    )}
+                  </div>
+                  <select
+                    value={selectedCarFilter}
+                    onChange={(e) => setSelectedCarFilter(e.target.value)}
+                    className="h-10 w-full cursor-pointer rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3 text-xs text-[#20252B] outline-none transition focus:border-[#D6A85F] focus:bg-white"
+                  >
+                    <option value="ALL">Táº¥t cáº£ xe</option>
+                    <option value="30G-888.66">Toyota Camry Â· 30G-888.66</option>
+                    <option value="29A-678.90">Honda CR-V Â· 29A-678.90</option>
+                  </select>
+                </div>
+
+                <div className="mt-5 divide-y divide-[#EEF0F2] rounded-xl border border-[#E1E4E6]">
+                  {filteredHistory.length === 0 ? (
+                    <div className="p-10 text-center">
+                      <p className="text-sm font-semibold text-[#20252B]">
+                        KhÃ´ng cÃ³ lá»‹ch sá»­ phÃ¹ há»£p
+                      </p>
+                      <p className="mt-1 text-xs text-[#8A949E]">
+                        Thá»­ Ä‘á»•i tá»« khÃ³a hoáº·c bá»™ lá»c Ä‘á»ƒ xem thÃªm.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchKeyword("");
+                          setSelectedCarFilter("ALL");
+                          setActiveTab("ALL");
+                        }}
+                        className="mt-4 cursor-pointer rounded-xl bg-[#1F2933] px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                      >
+                        XÃ³a bá»™ lá»c
+                      </button>
+                    </div>
+                  ) : (
+                    filteredHistory.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => setSelectedHistory(item)}
+                        className="flex cursor-pointer flex-col gap-3 p-4 transition hover:bg-[#FAF8F5] md:flex-row md:items-center md:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                            <span className="rounded-md border border-[#E5B869]/50 bg-[#FAF8F5] px-2 py-0.5 font-mono font-bold text-[#8F641B]">
+                              {item.licensePlate}
+                            </span>
+                            <span className="font-semibold text-[#20252B]">{item.car}</span>
+                            <span className="text-[#8A949E]">Â· {item.odo}</span>
+                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                              HoÃ n táº¥t
+                            </span>
+                          </div>
+                          <p className="mt-1.5 truncate text-sm font-bold text-[#1F2933]">
+                            {item.serviceName}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-[#66717C]">
+                            {item.code} Â· {item.date} Â· {item.advisor}
+                          </p>
+                        </div>
+
+                        <div className="flex shrink-0 items-center justify-between gap-4 md:flex-col md:items-end md:gap-2">
+                          <p className="text-base font-bold text-[#1F2933]">
+                            {item.cost.toLocaleString("vi-VN")} Ä‘
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedHistory(item);
+                              }}
+                              className="cursor-pointer rounded-lg border border-[#E1E4E6] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#20252B] transition hover:border-[#D6A85F]"
+                            >
+                              Chi tiáº¿t
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRebook(item);
+                              }}
+                              className="cursor-pointer rounded-lg border border-[#E5B869]/50 bg-[#FAF8F5] px-3 py-1.5 text-[11px] font-bold text-[#8F641B] transition hover:bg-[#F3E8D2]"
+                            >
+                              Äáº·t láº¡i
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </section>
+            </div>
+
+            {/* ---------- Cá»˜T PHáº¢I (1/3) ---------- */}
+            <aside className="space-y-6">
+              {/* Nháº¯c báº£o dÆ°á»¡ng */}
+              <section className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
+                <h2 className="text-base font-bold text-[#1F2933]">Nháº¯c nhá»Ÿ sáº¯p tá»›i</h2>
+                <p className="mt-0.5 text-xs text-[#66717C]">Dá»±a trÃªn sá»‘ km vÃ  háº¡n Ä‘Äƒng kiá»ƒm.</p>
+
+                <div className="mt-4 space-y-3">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                    <p className="text-xs font-bold text-amber-900">Báº£o dÆ°á»¡ng má»‘c 45.000 km</p>
+                    <p className="mt-1 text-[11px] leading-5 text-amber-800">
+                      Camry 30G-888.66 cÃ²n khoáº£ng 3.750 km ná»¯a lÃ  Ä‘áº¿n má»‘c thay dáº§u vÃ  Ä‘áº£o lá»‘p.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate("/booking", {
+                          state: {
+                            prefillService: "Báº£o dÆ°á»¡ng Ä‘á»‹nh ká»³ cáº¥p 45.000 KM",
+                            car: "Toyota Camry 2.5Q",
+                            licensePlate: "30G-888.66",
+                          },
+                        })
+                      }
+                      className="mt-3 cursor-pointer rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-amber-700"
+                    >
+                      Äáº·t háº¹n trÆ°á»›c
                     </button>
                   </div>
-                  <p className="mt-1 text-xl font-extrabold tracking-wider">1900 8888 68</p>
-                  <p className="mt-1 text-[11px] text-slate-300">Cố vấn trưởng: 0901.000.102</p>
-                </div>
-              </div>
 
-              <div className="mt-5">
+                  <div className="rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4">
+                    <p className="text-xs font-bold text-[#20252B]">Háº¡n Ä‘Äƒng kiá»ƒm 28/11/2026</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#66717C]">
+                      Honda CR-V 29A-678.90. Gara há»— trá»£ kiá»ƒm tra an toÃ n miá»…n phÃ­ trÆ°á»›c khi Ä‘Äƒng kiá»ƒm.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate("/contact", {
+                          state: {
+                            requestType: "TÆ° váº¥n kiá»ƒm tra Ä‘Äƒng kiá»ƒm",
+                            car: "Honda CR-V 29A-678.90",
+                          },
+                        })
+                      }
+                      className="mt-3 cursor-pointer rounded-lg border border-[#E1E4E6] bg-white px-3 py-1.5 text-[11px] font-bold text-[#20252B] transition hover:border-[#D6A85F]"
+                    >
+                      Nháº­n tÆ° váº¥n
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              {/* Há»— trá»£ */}
+              <section className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
+                <h2 className="text-base font-bold text-[#1F2933]">Cáº§n há»— trá»£?</h2>
+                <p className="mt-0.5 text-xs leading-5 text-[#66717C]">
+                  Cá»‘ váº¥n ká»¹ thuáº­t sáºµn sÃ ng 24/7 khi xe gáº·p sá»± cá»‘ hoáº·c cáº§n bÃ¡o giÃ¡.
+                </p>
+
+                <div className="mt-4 rounded-xl bg-[#1F2933] p-4 text-white">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#E5B869]">
+                    Hotline cá»©u há»™ 24/7
+                  </p>
+                  <p className="mt-1 text-xl font-bold tracking-wider">1900 8888 68</p>
+                  <button
+                    type="button"
+                    onClick={handleCopyHotline}
+                    className="mt-2 cursor-pointer text-[11px] text-slate-300 underline underline-offset-2 transition hover:text-white"
+                  >
+                    Sao chÃ©p sá»‘
+                  </button>
+                </div>
+
                 <Link
                   to="/contact"
-                  className="block w-full rounded-xl border border-[#E1E4E6] py-2.5 text-center text-xs font-bold text-slate-800 hover:bg-[#F7F7F5] transition cursor-pointer"
+                  className="mt-3 block cursor-pointer rounded-xl border border-[#E1E4E6] py-2.5 text-center text-xs font-bold text-[#20252B] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
                 >
-                  Gửi yêu cầu hỗ trợ trực tuyến
+                  Gá»­i yÃªu cáº§u há»— trá»£
                 </Link>
-              </div>
-            </div>
+              </section>
+            </aside>
           </div>
-
         </div>
       </main>
 
-      {/* MODAL 1: CHI TIẾT PHIẾU BẢO DƯỠNG (KHI CLICK VÀO LỊCH SỬ) */}
+      {/* MODAL 1: CHI TIáº¾T PHIáº¾U Báº¢O DÆ¯á» NG (KHI CLICK VÃ€O Lá»ŠCH Sá»¬) */}
       {selectedHistory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 md:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
@@ -942,13 +758,13 @@ function CustomerDashboard() {
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#D6A85F]">
-                  CHI TIẾT PHIẾU BẢO DƯỠNG & SỬA CHỮA
+                  CHI TIáº¾T PHIáº¾U Báº¢O DÆ¯á» NG & Sá»¬A CHá»®A
                 </span>
                 <h3 className="text-xl font-extrabold text-[#1F2933]">
-                  {selectedHistory.code} • {selectedHistory.car}
+                  {selectedHistory.code} â€¢ {selectedHistory.car}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Biển số: <strong>{selectedHistory.licensePlate}</strong> • ODO ghi nhận: <strong>{selectedHistory.odo}</strong>
+                  Biá»ƒn sá»‘: <strong>{selectedHistory.licensePlate}</strong> â€¢ ODO ghi nháº­n: <strong>{selectedHistory.odo}</strong>
                 </p>
               </div>
 
@@ -957,45 +773,45 @@ function CustomerDashboard() {
                 onClick={() => setSelectedHistory(null)}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition cursor-pointer"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
-            {/* Thông tin cố vấn & kỹ thuật viên */}
+            {/* ThÃ´ng tin cá»‘ váº¥n & ká»¹ thuáº­t viÃªn */}
             <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl bg-[#F7F7F5] p-4 text-xs">
               <div>
-                <p className="text-slate-400 font-medium">Cố vấn dịch vụ:</p>
+                <p className="text-slate-400 font-medium">Cá»‘ váº¥n dá»‹ch vá»¥:</p>
                 <p className="font-bold text-slate-800 mt-0.5">{selectedHistory.advisor}</p>
               </div>
               <div>
-                <p className="text-slate-400 font-medium">Kỹ thuật viên chính:</p>
+                <p className="text-slate-400 font-medium">Ká»¹ thuáº­t viÃªn chÃ­nh:</p>
                 <p className="font-bold text-slate-800 mt-0.5">{selectedHistory.technician}</p>
               </div>
               <div>
-                <p className="text-slate-400 font-medium">Ngày tiếp nhận & hoàn tất:</p>
+                <p className="text-slate-400 font-medium">NgÃ y tiáº¿p nháº­n & hoÃ n táº¥t:</p>
                 <p className="font-bold text-slate-800 mt-0.5">{selectedHistory.date}</p>
               </div>
               <div>
-                <p className="text-slate-400 font-medium">Trạng thái thanh toán:</p>
+                <p className="text-slate-400 font-medium">Tráº¡ng thÃ¡i thanh toÃ¡n:</p>
                 <span className="inline-block mt-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                  Đã thanh toán đủ (Chuyển khoản)
+                  ÄÃ£ thanh toÃ¡n Ä‘á»§ (Chuyá»ƒn khoáº£n)
                 </span>
               </div>
             </div>
 
-            {/* Bảng chi tiết phụ tùng & tiền công */}
+            {/* Báº£ng chi tiáº¿t phá»¥ tÃ¹ng & tiá»n cÃ´ng */}
             <div className="mt-5">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                Hạng mục công việc & Phụ tùng thay thế:
+                Háº¡ng má»¥c cÃ´ng viá»‡c & Phá»¥ tÃ¹ng thay tháº¿:
               </p>
               <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-[#FAF8F5] text-slate-500 font-bold border-b border-slate-200">
                     <tr>
-                      <th className="py-2.5 px-3">Tên vật tư / Công việc</th>
+                      <th className="py-2.5 px-3">TÃªn váº­t tÆ° / CÃ´ng viá»‡c</th>
                       <th className="py-2.5 px-3 text-center">SL</th>
-                      <th className="py-2.5 px-3 text-right">Đơn giá</th>
-                      <th className="py-2.5 px-3 text-right">Thành tiền</th>
+                      <th className="py-2.5 px-3 text-right">ÄÆ¡n giÃ¡</th>
+                      <th className="py-2.5 px-3 text-right">ThÃ nh tiá»n</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1003,31 +819,31 @@ function CustomerDashboard() {
                       <tr key={idx} className="hover:bg-slate-50">
                         <td className="py-2.5 px-3">
                           <p className="font-semibold text-slate-800">{part.name}</p>
-                          <p className="text-[10px] text-slate-400">Mã: {part.code} • Bảo hành: {part.warranty}</p>
+                          <p className="text-[10px] text-slate-400">MÃ£: {part.code} â€¢ Báº£o hÃ nh: {part.warranty}</p>
                         </td>
                         <td className="py-2.5 px-3 text-center font-medium">{part.quantity}</td>
-                        <td className="py-2.5 px-3 text-right text-slate-600">{part.unitPrice.toLocaleString("vi-VN")} đ</td>
+                        <td className="py-2.5 px-3 text-right text-slate-600">{part.unitPrice.toLocaleString("vi-VN")} Ä‘</td>
                         <td className="py-2.5 px-3 text-right font-bold text-slate-800">
-                          {(part.quantity * part.unitPrice).toLocaleString("vi-VN")} đ
+                          {(part.quantity * part.unitPrice).toLocaleString("vi-VN")} Ä‘
                         </td>
                       </tr>
                     ))}
                     <tr className="bg-slate-50/50">
                       <td colSpan={3} className="py-2.5 px-3 font-semibold text-slate-700">
-                        Tiền công thợ bảo dưỡng kỹ thuật
+                        Tiá»n cÃ´ng thá»£ báº£o dÆ°á»¡ng ká»¹ thuáº­t
                       </td>
                       <td className="py-2.5 px-3 text-right font-bold text-slate-800">
-                        {selectedHistory.laborCost.toLocaleString("vi-VN")} đ
+                        {selectedHistory.laborCost.toLocaleString("vi-VN")} Ä‘
                       </td>
                     </tr>
                   </tbody>
                   <tfoot className="border-t border-slate-200 bg-[#FAF8F5] font-bold">
                     <tr>
                       <td colSpan={3} className="py-3 px-3 text-right text-slate-700">
-                        TỔNG CỘNG THANH TOÁN (Đã gồm VAT):
+                        Tá»”NG Cá»˜NG THANH TOÃN (ÄÃ£ gá»“m VAT):
                       </td>
                       <td className="py-3 px-3 text-right text-base text-[#1F2933]">
-                        {selectedHistory.cost.toLocaleString("vi-VN")} đ
+                        {selectedHistory.cost.toLocaleString("vi-VN")} Ä‘
                       </td>
                     </tr>
                   </tfoot>
@@ -1035,10 +851,10 @@ function CustomerDashboard() {
               </div>
             </div>
 
-            {/* Ghi chú KTV */}
+            {/* Ghi chÃº KTV */}
             {selectedHistory.technicianNotes && (
               <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 text-xs text-emerald-900">
-                <strong>Ghi chú xuất xưởng từ KTV:</strong> {selectedHistory.technicianNotes}
+                <strong>Ghi chÃº xuáº¥t xÆ°á»Ÿng tá»« KTV:</strong> {selectedHistory.technicianNotes}
               </div>
             )}
 
@@ -1047,11 +863,11 @@ function CustomerDashboard() {
               <button
                 type="button"
                 onClick={() => {
-                  showToast("Đã tải hóa đơn điện tử PDF thành công!", "success");
+                  showToast("ÄÃ£ táº£i hÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­ PDF thÃ nh cÃ´ng!", "success");
                 }}
                 className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5"
               >
-                <span>📥 Tải phiếu PDF</span>
+                <span>ðŸ“¥ Táº£i phiáº¿u PDF</span>
               </button>
 
               <div className="flex items-center gap-2">
@@ -1063,14 +879,14 @@ function CustomerDashboard() {
                   }}
                   className="rounded-xl bg-[#D6A85F] px-4 py-2 text-xs font-bold text-[#1F2933] hover:bg-[#c9994f] transition cursor-pointer"
                 >
-                  Đặt lại gói này
+                  Äáº·t láº¡i gÃ³i nÃ y
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedHistory(null)}
                   className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition cursor-pointer"
                 >
-                  Đóng
+                  ÄÃ³ng
                 </button>
               </div>
             </div>
@@ -1078,20 +894,20 @@ function CustomerDashboard() {
         </div>
       )}
 
-      {/* MODAL 2: BẢNG CHẨN ĐOÁN 36 HẠNG MỤC XE TRỰC TIẾP TẠI XƯỞNG */}
+      {/* MODAL 2: Báº¢NG CHáº¨N ÄOÃN 36 Háº NG Má»¤C XE TRá»°C TIáº¾P Táº I XÆ¯á»žNG */}
       {showInspectionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 md:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
-                  BIÊN BẢN CHẨN ĐOÁN TIÊU CHUẨN OEM
+                  BIÃŠN Báº¢N CHáº¨N ÄOÃN TIÃŠU CHUáº¨N OEM
                 </span>
                 <h3 className="text-xl font-extrabold text-[#1F2933]">
-                  Kiểm tra 36 hạng mục an toàn xe Toyota Camry (30G-888.66)
+                  Kiá»ƒm tra 36 háº¡ng má»¥c an toÃ n xe Toyota Camry (30G-888.66)
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Kỹ thuật viên thực hiện: <strong>Nguyễn Văn Hùng</strong> • Cập nhật lúc: <strong>09:15 hôm nay</strong>
+                  Ká»¹ thuáº­t viÃªn thá»±c hiá»‡n: <strong>Nguyá»…n VÄƒn HÃ¹ng</strong> â€¢ Cáº­p nháº­t lÃºc: <strong>09:15 hÃ´m nay</strong>
                 </p>
               </div>
 
@@ -1100,27 +916,27 @@ function CustomerDashboard() {
                 onClick={() => setShowInspectionModal(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition cursor-pointer"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
-            {/* Tóm tắt tình trạng */}
+            {/* TÃ³m táº¯t tÃ¬nh tráº¡ng */}
             <div className="mt-4 grid grid-cols-3 gap-3">
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center">
                 <p className="text-xl font-extrabold text-emerald-700">28/36</p>
-                <p className="text-[11px] font-bold text-emerald-800">Đạt chuẩn an toàn (PASSED)</p>
+                <p className="text-[11px] font-bold text-emerald-800">Äáº¡t chuáº©n an toÃ n (PASSED)</p>
               </div>
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center">
                 <p className="text-xl font-extrabold text-amber-700">5/36</p>
-                <p className="text-[11px] font-bold text-amber-800">Cần lưu ý theo dõi (ATTENTION)</p>
+                <p className="text-[11px] font-bold text-amber-800">Cáº§n lÆ°u Ã½ theo dÃµi (ATTENTION)</p>
               </div>
               <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center">
                 <p className="text-xl font-extrabold text-red-700">3/36</p>
-                <p className="text-[11px] font-bold text-red-800">Cần thay thế gấp (FAILED)</p>
+                <p className="text-[11px] font-bold text-red-800">Cáº§n thay tháº¿ gáº¥p (FAILED)</p>
               </div>
             </div>
 
-            {/* Chi tiết danh mục */}
+            {/* Chi tiáº¿t danh má»¥c */}
             <div className="mt-5 space-y-2.5">
               {inspectionChecklist.map((item, idx) => (
                 <div
@@ -1137,7 +953,7 @@ function CustomerDashboard() {
                           : "bg-red-100 text-red-700"
                       }`}
                     >
-                      {item.status === "PASSED" ? "✓" : item.status === "ATTENTION" ? "!" : "✕"}
+                      {item.status === "PASSED" ? "âœ“" : item.status === "ATTENTION" ? "!" : "âœ•"}
                     </span>
                     <div>
                       <p className="font-bold text-slate-800">
@@ -1157,7 +973,7 @@ function CustomerDashboard() {
                           : "bg-red-50 text-red-700 border border-red-200"
                       }`}
                     >
-                      {item.status === "PASSED" ? "ĐẠT" : item.status === "ATTENTION" ? "LƯU Ý" : "THAY THẾ"}
+                      {item.status === "PASSED" ? "Äáº T" : item.status === "ATTENTION" ? "LÆ¯U Ã" : "THAY THáº¾"}
                     </span>
                   </div>
                 </div>
@@ -1170,31 +986,31 @@ function CustomerDashboard() {
                 onClick={() => setShowInspectionModal(false)}
                 className="rounded-xl bg-[#D6A85F] px-4 py-2.5 text-xs font-bold text-[#1F2933] hover:bg-[#c9994f] transition cursor-pointer"
               >
-                Xem báo giá các hạng mục cần thay →
+                Xem bÃ¡o giÃ¡ cÃ¡c háº¡ng má»¥c cáº§n thay â†’
               </Link>
               <button
                 type="button"
                 onClick={() => setShowInspectionModal(false)}
                 className="rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition cursor-pointer"
               >
-                Đã hiểu & Đóng
+                ÄÃ£ hiá»ƒu & ÄÃ³ng
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL 3: CẬP NHẬT NHANH SỐ KM (ODO) CỦA XE */}
+      {/* MODAL 3: Cáº¬P NHáº¬T NHANH Sá» KM (ODO) Cá»¦A XE */}
       {showOdoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 md:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#D6A85F]">
-                  QUẢN LÝ XE THÔNG MINH
+                  QUáº¢N LÃ XE THÃ”NG MINH
                 </span>
                 <h3 className="text-lg font-bold text-[#1F2933]">
-                  Cập nhật số ODO xe
+                  Cáº­p nháº­t sá»‘ ODO xe
                 </h3>
               </div>
               <button
@@ -1202,14 +1018,14 @@ function CustomerDashboard() {
                 onClick={() => setShowOdoModal(false)}
                 className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer text-xs"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
             <form onSubmit={handleSaveOdo} className="mt-4 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Chọn xe cập nhật:
+                  Chá»n xe cáº­p nháº­t:
                 </label>
                 <select
                   value={selectedVehicleForOdo}
@@ -1223,17 +1039,17 @@ function CustomerDashboard() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Số km hiện tại trên đồng hồ (km):
+                  Sá»‘ km hiá»‡n táº¡i trÃªn Ä‘á»“ng há»“ (km):
                 </label>
                 <input
                   type="number"
                   value={newOdoInput}
                   onChange={(e) => setNewOdoInput(e.target.value)}
-                  placeholder="Ví dụ: 41500"
+                  placeholder="VÃ­ dá»¥: 41500"
                   className="w-full h-11 rounded-xl border border-slate-200 px-3 text-xs text-slate-800 outline-none focus:border-[#D6A85F]"
                 />
                 <p className="mt-1 text-[11px] text-slate-400">
-                  Hệ thống sẽ dựa trên số km này để tự động tính ngày nhắc bảo dưỡng chuẩn xác nhất cho bạn.
+                  Há»‡ thá»‘ng sáº½ dá»±a trÃªn sá»‘ km nÃ y Ä‘á»ƒ tá»± Ä‘á»™ng tÃ­nh ngÃ y nháº¯c báº£o dÆ°á»¡ng chuáº©n xÃ¡c nháº¥t cho báº¡n.
                 </p>
               </div>
 
@@ -1243,13 +1059,13 @@ function CustomerDashboard() {
                   onClick={() => setShowOdoModal(false)}
                   className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                 >
-                  Hủy
+                  Há»§y
                 </button>
                 <button
                   type="submit"
                   className="rounded-xl bg-[#1F2933] px-5 py-2 text-xs font-bold text-white hover:bg-slate-800 transition cursor-pointer"
                 >
-                  Lưu số ODO
+                  LÆ°u sá»‘ ODO
                 </button>
               </div>
             </form>
