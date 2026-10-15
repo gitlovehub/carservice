@@ -1,24 +1,23 @@
 <?php
 
+use App\Http\Controllers\Api\AdminMaintenancePackageController;
+use App\Http\Controllers\Api\AdminServiceController;
 use App\Http\Controllers\Api\AdvisorAppointmentController;
+use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\MaintenancePackageController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\QuotationController;
 use App\Http\Controllers\Api\RepairOrderController;
+use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\WorkItemController;
-use App\Http\Controllers\Api\AppointmentController;
-use App\Http\Controllers\Api\ServiceController;
-use App\Http\Controllers\Api\MaintenancePackageController;
-use App\Http\Controllers\Api\AdminServiceController;
-use App\Http\Controllers\Api\AdminMaintenancePackageController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -37,7 +36,7 @@ Route::controller(AuthController::class)->group(function (): void {
     Route::post('resend-email-otp', 'resendEmailOtp')->middleware('throttle:3,1');
 
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
-    
+
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 });
 
@@ -45,7 +44,6 @@ Route::get('services', [ServiceController::class, 'index']);
 Route::get('services/{service}', [ServiceController::class, 'show']);
 Route::get('maintenance-packages', [MaintenancePackageController::class, 'index']);
 Route::get('maintenance-packages/{maintenancePackage}', [MaintenancePackageController::class, 'show']);
-
 
 /*
 |--------------------------------------------------------------------------
@@ -68,14 +66,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('logout', 'logout');
     });
 
-
     /*
     |--------------------------------------------------------------------------
     | Customer
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('role:' . Account::ROLE_CUSTOMER)->group(function (): void {
+    Route::middleware('role:'.Account::ROLE_CUSTOMER)->group(function (): void {
 
         // Phiếu sửa chữa, báo giá và hóa đơn của khách hàng hiện tại
         Route::controller(CustomerRepairOrderController::class)->prefix('me')->group(function (): void {
@@ -110,7 +107,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         });
     });
 
-
     /*
     |--------------------------------------------------------------------------
     | Advisor + Admin
@@ -118,7 +114,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     */
 
     Route::middleware(
-        'role:' . Account::ROLE_ADVISOR . ',' . Account::ROLE_ADMIN
+        'role:'.Account::ROLE_ADVISOR.','.Account::ROLE_ADMIN
     )->group(function (): void {
 
         // Quản lý lịch hẹn của cố vấn
@@ -146,14 +142,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         );
     });
 
-
     /*
     |--------------------------------------------------------------------------
     | Admin
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('role:' . Account::ROLE_ADMIN)->group(function (): void {
+    Route::middleware('role:'.Account::ROLE_ADMIN)->group(function (): void {
 
         // Xóa khách hàng
         Route::delete(
@@ -183,14 +178,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
             ->names('admin.maintenance-packages');
     });
 
-
     /*
     |--------------------------------------------------------------------------
     | Advisor + Technician
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('role:' . Account::ROLE_ADVISOR . ',' . Account::ROLE_TECHNICIAN)->group(function (): void {
+    Route::middleware('role:'.Account::ROLE_ADVISOR.','.Account::ROLE_TECHNICIAN)->group(function (): void {
 
         Route::controller(RepairOrderController::class)->group(function (): void {
             Route::get('repair-orders', 'index');
@@ -201,8 +195,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('repair-orders/{repairOrder}/work-items', 'index');
             Route::patch('work-items/{workItem}/status', 'updateStatus');
         });
-    });
 
+        Route::get('repair-orders/{repairOrder}/inspections', [InspectionController::class, 'show']);
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -210,7 +205,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('role:' . Account::ROLE_ADVISOR)->group(function (): void {
+    Route::middleware('role:'.Account::ROLE_ADVISOR)->group(function (): void {
 
         /*
         |--------------------------------------------------------------------------
@@ -234,7 +229,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
             });
         });
 
-
         /*
         |--------------------------------------------------------------------------
         | Quotations
@@ -254,7 +248,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
             });
         });
 
-
         /*
         |--------------------------------------------------------------------------
         | Work Items / Used Parts
@@ -269,7 +262,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
             );
         });
 
-
         /*
         |--------------------------------------------------------------------------
         | Invoice
@@ -280,7 +272,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('/', 'show');
             Route::post('/', 'store');
         });
-
 
         /*
         |--------------------------------------------------------------------------
@@ -304,14 +295,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         });
     });
 
-
     /*
     |--------------------------------------------------------------------------
     | Technician
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('role:' . Account::ROLE_TECHNICIAN)->group(function (): void {
+    Route::middleware('role:'.Account::ROLE_TECHNICIAN)->group(function (): void {
 
         /*
         |--------------------------------------------------------------------------
@@ -324,6 +314,16 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post(
                 'repair-orders/{repairOrder}/inspections',
                 'store'
+            );
+
+            Route::post(
+                'repair-orders/{repairOrder}/inspections/recommendations',
+                'addRecommendation'
+            );
+
+            Route::post(
+                'repair-orders/{repairOrder}/inspections/complete',
+                'complete'
             );
         });
     });

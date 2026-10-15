@@ -99,20 +99,27 @@ class RepairOrderService
             );
         }
 
+        if ($ro->inspections()->exists()) {
+            throw InvalidStatusTransitionException::because(
+                'Mỗi lệnh sửa chữa chỉ thuộc về 1 phiếu kiểm tra tổng thể.'
+            );
+        }
+
         return DB::transaction(function () use ($ro, $technician, $data) {
             $inspection = Inspection::create([
                 'repair_order_id' => $ro->id,
                 'technician_id' => $technician->id,
                 'condition_description' => $data['condition_description'] ?? null,
                 'diagnosis' => $data['diagnosis'] ?? null,
-                'inspected_at' => now(),
+                'inspected_at' => null,
             ]);
 
-            foreach ($data['items'] ?? [] as $item) {
+            $items = $data['inspection_items'] ?? $data['items'] ?? [];
+            foreach ($items as $item) {
                 InspectionItem::create([
                     'inspection_id' => $inspection->id,
                     'item_name' => $item['item_name'],
-                    'condition_status' => $item['condition_status'] ?? null,
+                    'condition_status' => $item['status'] ?? $item['condition_status'] ?? null,
                     'condition_description' => $item['condition_description'] ?? null,
                     'note' => $item['note'] ?? null,
                 ]);
@@ -137,7 +144,43 @@ class RepairOrderService
                 $this->logHistory($ro, RepairOrder::INSPECTING, null, 'KTV bắt đầu kiểm tra.');
             }
 
-            return $inspection->load('items', 'recommendations');
+            return $inspection->load(['items', 'recommendations.service', 'recommendations.part', 'technician.employee']);
+        });
+    }
+
+    public function addInspectionRecommendation(Inspection $inspection, array $rec): InspectionRecommendation
+    {
+        $this->assertRecommendationIsWellFormed($rec);
+
+        return InspectionRecommendation::create([
+            'inspection_id' => $inspection->id,
+            'item_type' => $rec['item_type'],
+            'service_id' => $rec['item_type'] === InspectionRecommendation::TYPE_SERVICE ? $rec['service_id'] : null,
+            'part_id' => $rec['item_type'] === InspectionRecommendation::TYPE_PART ? $rec['part_id'] : null,
+            'quantity' => $rec['quantity'] ?? 1,
+            'note' => $rec['note'] ?? null,
+        ])->load(['service', 'part']);
+    }
+
+    public function completeInspection(RepairOrder $ro, ?Account $actor): Inspection
+    {
+        $inspection = $ro->inspections()->latest()->first();
+
+        if (! $inspection) {
+            throw InvalidStatusTransitionException::because(
+                'Lệnh sửa chữa này chưa có phiếu kiểm tra để hoàn tất.'
+            );
+        }
+
+        return DB::transaction(function () use ($ro, $inspection, $actor) {
+            $inspection->inspected_at = now();
+            $inspection->save();
+
+            if ($ro->status === RepairOrder::INSPECTING) {
+                $this->transition($ro, RepairOrder::QUOTING, $actor, 'KTV hoàn tất chẩn đoán, chuyển sang lập báo giá.');
+            }
+
+            return $inspection->load(['items', 'recommendations.service', 'recommendations.part', 'technician.employee']);
         });
     }
 
@@ -158,9 +201,9 @@ class RepairOrderService
     ): Quotation {
         $this->assertAdvisor($advisor);
 
-        if (! in_array($ro->status, [RepairOrder::INSPECTING, RepairOrder::WAITING_APPROVAL], true)) {
+        if (! in_array($ro->status, [RepairOrder::INSPECTING, RepairOrder::QUOTING, RepairOrder::WAITING_APPROVAL], true)) {
             throw InvalidStatusTransitionException::because(
-                'Chỉ lập báo giá khi Phiếu sửa chữa đang INSPECTING (báo giá đầu) hoặc WAITING_APPROVAL (báo giá lại).'
+                'Chỉ lập báo giá khi Phiếu sửa chữa đang INSPECTING, QUOTING (báo giá đầu) hoặc WAITING_APPROVAL (báo giá lại).'
             );
         }
 
@@ -223,7 +266,7 @@ class RepairOrderService
             $quotation->save();
 
             $ro = $quotation->repairOrder;
-            if ($ro->status === RepairOrder::INSPECTING) {
+            if (in_array($ro->status, [RepairOrder::INSPECTING, RepairOrder::QUOTING], true)) {
                 $this->transition($ro, RepairOrder::WAITING_APPROVAL, $actor,
                     "Đã gửi báo giá {$quotation->quotation_code} cho khách.");
             }
