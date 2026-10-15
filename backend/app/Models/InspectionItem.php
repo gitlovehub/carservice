@@ -11,9 +11,13 @@ class InspectionItem extends Model
 {
     public const UPDATED_AT = null;
 
-    public const NORMAL = 'NORMAL';
+    public const PASSED = 'PASSED';
 
     public const WARNING = 'WARNING';
+
+    public const FAILED = 'FAILED';
+
+    public const NORMAL = 'NORMAL';
 
     public const NEEDS_SERVICE = 'NEEDS_SERVICE';
 
