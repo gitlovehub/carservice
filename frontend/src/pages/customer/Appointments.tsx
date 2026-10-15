@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
@@ -19,46 +19,39 @@ type Appointment = {
   licensePlate: string;
 };
 
+const statusLabels: Record<string, string> = {
+  pending: "Chờ xác nhận",
+  pending_confirmation: "Chờ xác nhận",
+  confirmed: "Đã xác nhận",
+  approved: "Đã xác nhận",
+  confirmed_by_advisor: "Đã xác nhận",
+  in_progress: "Đang thực hiện",
+  processing: "Đang thực hiện",
+  completed: "Hoàn thành",
+  complete: "Hoàn thành",
+  finished: "Hoàn thành",
+  cancelled: "Đã hủy",
+  canceled: "Đã hủy",
+  rejected: "Từ chối",
+  declined: "Từ chối",
+};
+
+const statusStyles: Record<string, string> = {
+  "Chờ xác nhận": "bg-[#F3F4F2] text-[#66717C]",
+  "Đã xác nhận": "bg-[#E5EFE7] text-[#356344]",
+  "Đang thực hiện": "bg-[#FFF0D9] text-[#93611D]",
+  "Hoàn thành": "bg-[#E8EAF5] text-[#444D88]",
+  "Đã hủy": "bg-[#FBE9E7] text-[#A33E36]",
+  "Từ chối": "bg-[#FBE9E7] text-[#A33E36]",
+};
+
 function getStatusLabel(status: string) {
-  const value = status.toLowerCase();
-
-  if (["confirmed", "approved", "đã xác nhận", "confirmed_by_advisor"].includes(value)) {
-    return "Đã xác nhận";
-  }
-
-  if (["completed", "complete", "finished", "đã hoàn thành", "completed"].includes(value)) {
-    return "Hoàn thành";
-  }
-
-  if (["cancelled", "canceled", "đã hủy", "đã huỷ"].includes(value)) {
-    return "Đã hủy";
-  }
-
-  if (["in_progress", "processing", "đang thực hiện"].includes(value)) {
-    return "Đang thực hiện";
-  }
-
-  if (["rejected", "declined", "từ chối"].includes(value)) {
-    return "Từ chối";
-  }
-
-  return "Chờ xác nhận";
+  const value = status.trim().toLowerCase();
+  return statusLabels[value] ?? status;
 }
 
 function getStatusStyle(status: string) {
-  switch (status) {
-    case "Đã xác nhận":
-      return "bg-[#E5EFE7] text-[#356344]";
-    case "Hoàn thành":
-      return "bg-[#E8EAF5] text-[#444D88]";
-    case "Đã hủy":
-    case "Từ chối":
-      return "bg-[#FBE9E7] text-[#A33E36]";
-    case "Đang thực hiện":
-      return "bg-[#FFF0D9] text-[#93611D]";
-    default:
-      return "bg-[#F3F4F2] text-[#66717C]";
-  }
+  return statusStyles[status] ?? statusStyles["Chờ xác nhận"];
 }
 
 function formatDate(value: unknown) {
@@ -76,6 +69,14 @@ function formatDate(value: unknown) {
   return date.toLocaleDateString("vi-VN");
 }
 
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 function Appointments() {
   const location = useLocation();
   const isCustomerPage = location.pathname === "/customer/appointments";
@@ -88,10 +89,9 @@ function Appointments() {
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
-  const [cancelLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
 
-  const loadAppointments = async () => {
+  const loadAppointments = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -109,22 +109,36 @@ function Appointments() {
 
       const formatted: Appointment[] = items.map((item: any) => {
         const vehicle = item.vehicle ?? item.car ?? {};
-        const model = vehicle.model ?? {};
-        const brand = model.brand ?? vehicle.brand ?? {};
+        const model =
+          typeof vehicle.model === "object" && vehicle.model !== null
+            ? vehicle.model
+            : {};
+        const brand =
+          typeof model.brand === "object" && model.brand !== null
+            ? model.brand
+            : typeof vehicle.brand === "object" && vehicle.brand !== null
+              ? vehicle.brand
+              : {};
 
         const carName =
           [brand.name, model.name ?? vehicle.model_name]
             .filter(Boolean)
             .join(" ") ||
-          vehicle.name ||
+          (typeof vehicle.name === "string" ? vehicle.name : "") ||
           vehicle.license_plate ||
           "Chưa có thông tin xe";
 
         const rawStatus = String(item.status ?? "pending");
 
         return {
-          id: String(item.appointment_code ?? item.code ?? item.id ?? ""),
-          rawId: item.id ?? item.appointment_id ?? item.appointment_code ?? "",
+          id: String(
+            item.appointment_code ?? item.code ?? item.id ?? "Chưa có mã",
+          ),
+          rawId:
+            item.id ??
+            item.appointment_id ??
+            item.appointment_code ??
+            "",
           car: carName,
           service:
             item.service_name ??
@@ -145,43 +159,47 @@ function Appointments() {
       setError(
         err instanceof Error
           ? err.message
-          : "Không thể tải danh sách lịch hẹn. Vui lòng thử lại."
+          : "Không thể tải danh sách lịch hẹn. Vui lòng thử lại.",
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadAppointments();
-  }, []);
+  }, [loadAppointments]);
 
   const filteredAppointments = useMemo(() => {
-    const search = keyword.trim().toLowerCase();
+    const search = normalizeText(keyword);
 
     return appointments.filter((appointment) => {
       const matchStatus = !status || appointment.status === status;
 
-      const matchKeyword =
-        !search ||
-        appointment.id.toLowerCase().includes(search) ||
-        appointment.car.toLowerCase().includes(search) ||
-        appointment.service.toLowerCase().includes(search) ||
-        appointment.licensePlate.toLowerCase().includes(search);
+      const searchableText = normalizeText(
+        [
+          appointment.id,
+          appointment.car,
+          appointment.service,
+          appointment.licensePlate,
+          appointment.note,
+        ].join(" "),
+      );
 
-      return matchStatus && matchKeyword;
+      return matchStatus && (!search || searchableText.includes(search));
     });
   }, [appointments, keyword, status]);
 
-  const handleCancel = async () => {
-    if (!cancelTarget) {
-      return;
-    }
-
+  const handleCancel = () => {
     setActionMessage(
-      "Chức năng hủy lịch cần endpoint hủy lịch được hỗ trợ bởi API."
+      "Chức năng hủy lịch chưa được kết nối. Cần xác nhận endpoint và quy tắc hủy từ API trước khi thực hiện.",
     );
     setCancelTarget(null);
+  };
+
+  const resetFilters = () => {
+    setKeyword("");
+    setStatus("");
   };
 
   return (
@@ -225,11 +243,15 @@ function Appointments() {
           </div>
 
           {actionMessage && (
-            <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-[#E9D7B5] bg-[#FFF8EA] px-4 py-3 text-[13px] text-[#765526]">
+            <div
+              role="status"
+              className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-[#E9D7B5] bg-[#FFF8EA] px-4 py-3 text-[13px] text-[#765526]"
+            >
               <p>{actionMessage}</p>
               <button
                 type="button"
                 onClick={() => setActionMessage("")}
+                aria-label="Đóng thông báo"
                 className="font-bold"
               >
                 ×
@@ -272,16 +294,20 @@ function Appointments() {
                 Tìm kiếm lịch hẹn
               </h2>
               <p className="mt-1 text-[11px] text-[#66717C]">
-                Tìm theo mã lịch hẹn, tên xe, biển số hoặc dịch vụ.
+                Tìm theo mã lịch hẹn, tên xe, biển số, dịch vụ hoặc ghi chú.
               </p>
             </div>
 
             <div className="grid gap-4 p-6 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-[13px] font-semibold text-[#20252B]">
+                <label
+                  htmlFor="appointment-keyword"
+                  className="mb-2 block text-[13px] font-semibold text-[#20252B]"
+                >
                   Từ khóa
                 </label>
                 <input
+                  id="appointment-keyword"
                   type="text"
                   value={keyword}
                   onChange={(event) => setKeyword(event.target.value)}
@@ -291,24 +317,39 @@ function Appointments() {
               </div>
 
               <div>
-                <label className="mb-2 block text-[13px] font-semibold text-[#20252B]">
+                <label
+                  htmlFor="appointment-status"
+                  className="mb-2 block text-[13px] font-semibold text-[#20252B]"
+                >
                   Trạng thái
                 </label>
                 <select
+                  id="appointment-status"
                   value={status}
                   onChange={(event) => setStatus(event.target.value)}
                   className="w-full cursor-pointer rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[13px] text-[#20252B] outline-none transition focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
                 >
                   <option value="">Tất cả trạng thái</option>
-                  <option value="Chờ xác nhận">Chờ xác nhận</option>
-                  <option value="Đã xác nhận">Đã xác nhận</option>
-                  <option value="Đang thực hiện">Đang thực hiện</option>
-                  <option value="Hoàn thành">Hoàn thành</option>
-                  <option value="Đã hủy">Đã hủy</option>
-                  <option value="Từ chối">Từ chối</option>
+                  {Object.keys(statusStyles).map((label) => (
+                    <option key={label} value={label}>
+                      {label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
+
+            {(keyword || status) && (
+              <div className="flex justify-end border-t border-[#EEF0F2] px-6 py-3">
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="text-[12px] font-semibold text-[#66717C] transition hover:text-[#D6A85F]"
+                >
+                  Xóa bộ lọc
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
@@ -343,7 +384,10 @@ function Appointments() {
                 <tbody>
                   {loading && (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-sm text-[#66717C]">
+                      <td
+                        colSpan={7}
+                        className="px-6 py-12 text-center text-sm text-[#66717C]"
+                      >
                         Đang tải danh sách lịch hẹn...
                       </td>
                     </tr>
@@ -352,7 +396,9 @@ function Appointments() {
                   {!loading && error && (
                     <tr>
                       <td colSpan={7} className="px-6 py-12 text-center">
-                        <p className="text-sm font-semibold text-red-600">{error}</p>
+                        <p role="alert" className="text-sm font-semibold text-red-600">
+                          {error}
+                        </p>
                         <button
                           type="button"
                           onClick={() => void loadAppointments()}
@@ -364,74 +410,80 @@ function Appointments() {
                     </tr>
                   )}
 
-                  {!loading && !error && filteredAppointments.map((appointment, index) => (
-                    <tr
-                      key={`${appointment.id}-${index}`}
-                      className="border-b border-[#EEF0F2] last:border-b-0 transition hover:bg-[#FAFAF9]"
-                    >
-                      <td className="px-6 py-5 text-[12px] text-[#8A949E]">
-                        {String(index + 1).padStart(2, "0")}
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="text-[12px] font-bold text-[#20252B]">
-                          {appointment.id || "Chưa có mã"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1F2933] text-sm text-white">
-                            🚗
+                  {!loading &&
+                    !error &&
+                    filteredAppointments.map((appointment, index) => (
+                      <tr
+                        key={`${appointment.rawId}-${appointment.id}-${index}`}
+                        className="border-b border-[#EEF0F2] transition last:border-b-0 hover:bg-[#FAFAF9]"
+                      >
+                        <td className="px-6 py-5 text-[12px] text-[#8A949E]">
+                          {String(index + 1).padStart(2, "0")}
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="text-[12px] font-bold text-[#20252B]">
+                            {appointment.id}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1F2933] text-sm text-white">
+                              🚗
+                            </div>
+                            <div>
+                              <p className="text-[13px] font-bold text-[#20252B]">
+                                {appointment.car}
+                              </p>
+                              <p className="mt-1 text-[11px] text-[#8A949E]">
+                                {appointment.licensePlate || "Phương tiện cá nhân"}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-[13px] font-bold text-[#20252B]">
-                              {appointment.car}
-                            </p>
+                        </td>
+                        <td className="px-6 py-5 text-[12px] text-[#66717C]">
+                          {appointment.service}
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="text-[12px] font-semibold text-[#20252B]">
+                            {appointment.date}
+                          </span>
+                          {appointment.time && (
                             <p className="mt-1 text-[11px] text-[#8A949E]">
-                              {appointment.licensePlate || "Phương tiện cá nhân"}
+                              {appointment.time.slice(0, 5)}
                             </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5 text-[12px] text-[#66717C]">
-                        {appointment.service}
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="text-[12px] font-semibold text-[#20252B]">
-                          {appointment.date}
-                        </span>
-                        {appointment.time && (
-                          <p className="mt-1 text-[11px] text-[#8A949E]">
-                            {appointment.time.slice(0, 5)}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${getStatusStyle(appointment.status)}`}>
-                          {appointment.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedAppointment(appointment)}
-                            className="cursor-pointer rounded-xl bg-[#1F2933] px-3.5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151D24]"
+                          )}
+                        </td>
+                        <td className="px-6 py-5">
+                          <span
+                            className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${getStatusStyle(appointment.status)}`}
                           >
-                            Xem chi tiết
-                          </button>
-                          {["Chờ xác nhận", "Đã xác nhận"].includes(appointment.status) && (
+                            {appointment.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
-                              onClick={() => setCancelTarget(appointment)}
-                              className="cursor-pointer rounded-xl border border-[#DDE1E4] bg-white px-3.5 py-2.5 text-[11px] font-medium text-[#20252B] transition hover:border-red-300 hover:text-red-600"
+                              onClick={() => setSelectedAppointment(appointment)}
+                              className="cursor-pointer rounded-xl bg-[#1F2933] px-3.5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151D24]"
                             >
-                              Hủy lịch
+                              Xem chi tiết
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            {["Chờ xác nhận", "Đã xác nhận"].includes(
+                              appointment.status,
+                            ) && (
+                              <button
+                                type="button"
+                                onClick={() => setCancelTarget(appointment)}
+                                className="cursor-pointer rounded-xl border border-[#DDE1E4] bg-white px-3.5 py-2.5 text-[11px] font-medium text-[#20252B] transition hover:border-red-300 hover:text-red-600"
+                              >
+                                Hủy lịch
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
 
                   {!loading && !error && filteredAppointments.length === 0 && (
                     <tr>
@@ -463,9 +515,12 @@ function Appointments() {
                 i
               </div>
               <div>
-                <p className="text-sm font-bold text-[#20252B]">Quản lý lịch hẹn</p>
+                <p className="text-sm font-bold text-[#20252B]">
+                  Quản lý lịch hẹn
+                </p>
                 <p className="mt-1 text-[11px] leading-5 text-[#66717C]">
-                  Theo dõi ngày hẹn, dịch vụ và trạng thái xử lý lịch hẹn tại CarService.
+                  Theo dõi ngày hẹn, dịch vụ và trạng thái xử lý lịch hẹn tại
+                  CarService.
                 </p>
               </div>
             </div>
@@ -476,19 +531,32 @@ function Appointments() {
       {!isCustomerPage && <Footer />}
 
       {selectedAppointment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setSelectedAppointment(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="appointment-details-title"
+            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                   APPOINTMENT DETAILS
                 </p>
-                <h2 className="mt-2 text-xl font-bold text-[#1F2933]">
+                <h2
+                  id="appointment-details-title"
+                  className="mt-2 text-xl font-bold text-[#1F2933]"
+                >
                   Chi tiết lịch hẹn
                 </h2>
               </div>
               <button
                 type="button"
+                aria-label="Đóng chi tiết"
                 onClick={() => setSelectedAppointment(null)}
                 className="text-2xl text-[#66717C]"
               >
@@ -500,14 +568,20 @@ function Appointments() {
               {[
                 ["Mã lịch hẹn", selectedAppointment.id],
                 ["Xe", selectedAppointment.car],
-                ["Biển số", selectedAppointment.licensePlate || "Chưa có thông tin"],
+                [
+                  "Biển số",
+                  selectedAppointment.licensePlate || "Chưa có thông tin",
+                ],
                 ["Dịch vụ", selectedAppointment.service],
                 ["Ngày hẹn", selectedAppointment.date],
                 ["Giờ hẹn", selectedAppointment.time || "Chưa có thông tin"],
                 ["Trạng thái", selectedAppointment.status],
                 ["Ghi chú", selectedAppointment.note || "Không có ghi chú"],
               ].map(([label, value]) => (
-                <div key={label} className="flex justify-between gap-4 border-b border-[#EEF0F2] pb-3">
+                <div
+                  key={label}
+                  className="flex justify-between gap-4 border-b border-[#EEF0F2] pb-3"
+                >
                   <span className="text-[12px] text-[#66717C]">{label}</span>
                   <span className="max-w-[65%] text-right text-[12px] font-semibold text-[#20252B]">
                     {value}
@@ -528,15 +602,33 @@ function Appointments() {
       )}
 
       {cancelTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-bold text-[#1F2933]">Xác nhận hủy lịch</h2>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setCancelTarget(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-appointment-title"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2
+              id="cancel-appointment-title"
+              className="text-lg font-bold text-[#1F2933]"
+            >
+              Xác nhận hủy lịch
+            </h2>
             <p className="mt-3 text-sm leading-6 text-[#66717C]">
               Cậu có chắc muốn hủy lịch hẹn{" "}
-              <span className="font-bold text-[#20252B]">{cancelTarget.id}</span> không?
+              <span className="font-bold text-[#20252B]">
+                {cancelTarget.id}
+              </span>{" "}
+              không?
             </p>
             <p className="mt-2 text-xs leading-5 text-[#8A949E]">
-              Thao tác hủy chưa được kết nối vì cần xác định endpoint hủy lịch của API.
+              Hiện tại thao tác hủy chưa được kết nối với API nên lịch hẹn sẽ
+              chưa bị thay đổi trên hệ thống.
             </p>
             <div className="mt-6 flex gap-3">
               <button
@@ -548,9 +640,8 @@ function Appointments() {
               </button>
               <button
                 type="button"
-                onClick={() => void handleCancel()}
-                disabled={cancelLoading}
-                className="flex-1 rounded-xl bg-[#1F2933] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                onClick={handleCancel}
+                className="flex-1 rounded-xl bg-[#1F2933] px-4 py-3 text-sm font-semibold text-white"
               >
                 Xác nhận
               </button>
