@@ -1,47 +1,14 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-
-const services = [
-  {
-    title: "Bảo dưỡng định kỳ",
-    description:
-      "Kiểm tra và bảo dưỡng xe theo định kỳ để xe luôn hoạt động ổn định.",
-    price: "Từ 500.000đ",
-  },
-  {
-    title: "Thay dầu động cơ",
-    description:
-      "Thay dầu động cơ và kiểm tra các bộ phận liên quan đến hệ thống bôi trơn.",
-    price: "Từ 350.000đ",
-  },
-  {
-    title: "Kiểm tra phanh",
-    description:
-      "Kiểm tra má phanh, đĩa phanh và hệ thống phanh để đảm bảo an toàn.",
-    price: "Từ 300.000đ",
-  },
-  {
-    title: "Kiểm tra điều hòa",
-    description:
-      "Kiểm tra hệ thống điều hòa và xử lý các vấn đề về làm mát trong xe.",
-    price: "Từ 400.000đ",
-  },
-  {
-    title: "Kiểm tra động cơ",
-    description:
-      "Kiểm tra tổng quát động cơ và phát hiện các vấn đề cần sửa chữa.",
-    price: "Từ 600.000đ",
-  },
-  {
-    title: "Chăm sóc xe",
-    description:
-      "Vệ sinh và chăm sóc tổng thể giúp xe sạch sẽ và giữ được tình trạng tốt.",
-    price: "Từ 300.000đ",
-  },
-];
+import { SERVICE_PRODUCTS } from "../../services/serviceCatalog";
 
 function Services() {
+  const navigate = useNavigate();
+
+  const handleBooking = (serviceId: string) => {
+    navigate(`/booking?service=${serviceId}`);
+  };
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
       <Header />
@@ -65,12 +32,12 @@ function Services() {
                 </p>
               </div>
 
-              <Link
-                to="/booking"
+              <button
+                onClick={() => navigate("/booking")}
                 className="inline-flex w-fit cursor-pointer rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[#151D24]"
               >
                 Đặt lịch ngay
-              </Link>
+              </button>
             </div>
           </div>
         </section>
@@ -94,7 +61,7 @@ function Services() {
             </div>
 
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {services.map((service, index) => (
+              {SERVICE_PRODUCTS.map((service, index) => (
                 <div
                   key={service.title}
                   className="group flex flex-col rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)] transition duration-200 hover:-translate-y-1 hover:border-[#D6A85F] hover:shadow-[0_12px_30px_rgba(31,41,51,0.08)]"
@@ -128,12 +95,12 @@ function Services() {
                       </p>
                     </div>
 
-                    <Link
-                      to="/booking"
+                    <button
+                      onClick={() => handleBooking(service.id)}
                       className="cursor-pointer rounded-xl border border-[#DDE1E4] px-3.5 py-2.5 text-[11px] font-semibold text-[#20252B] transition hover:border-[#1F2933] hover:bg-[#1F2933] hover:text-white"
                     >
                       Đặt lịch
-                    </Link>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -156,12 +123,12 @@ function Services() {
                   </p>
                 </div>
 
-                <Link
-                  to="/booking"
+                <button
+                  onClick={() => navigate("/booking")}
                   className="shrink-0 cursor-pointer rounded-xl bg-white px-5 py-3 text-xs font-semibold text-[#20252B] transition hover:bg-[#F3E8D2]"
                 >
                   Đặt lịch kiểm tra
-                </Link>
+                </button>
               </div>
             </div>
           </div>

@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import confetti from "canvas-confetti";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { fetchApi } from "../../services/api";
+import { SERVICE_PRODUCTS, type ServiceProduct } from "../../services/serviceCatalog";
 
 type SavedVehicle = {
   id: number;
@@ -12,65 +13,6 @@ type SavedVehicle = {
   year: number | null;
   model?: { name: string; brand?: { name: string } } | null;
 };
-
-type ServicePackage = {
-  id: string;
-  name: string;
-  backendServiceName: string;
-  title: string;
-  price: string;
-  time: string;
-  description: string;
-  icon: string;
-  iconColor: string;
-};
-
-const SERVICE_PACKAGES: ServicePackage[] = [
-  {
-    id: "std-maintenance",
-    name: "Bảo dưỡng định kỳ cấp tiêu chuẩn",
-    backendServiceName: "Bảo dưỡng định kỳ",
-    title: "Bảo dưỡng định kỳ tiêu chuẩn",
-    price: "650.000đ",
-    time: "45 - 60 phút",
-    description: "Kiểm tra 32 hạng mục, bổ sung dung dịch, siết gầm, cân lốp.",
-    icon: "fa-solid fa-wrench",
-    iconColor: "text-blue-600",
-  },
-  {
-    id: "oil-filter",
-    name: "Thay dầu & Thay lọc toàn diện",
-    backendServiceName: "Thay dầu động cơ",
-    title: "Thay dầu & Lọc cao cấp",
-    price: "950.000đ",
-    time: "30 - 45 phút",
-    description: "Dầu động cơ tổng hợp chính hãng + lọc gió + lọc nhớt mới.",
-    icon: "fa-solid fa-oil-can",
-    iconColor: "text-amber-500",
-  },
-  {
-    id: "detailing-spa",
-    name: "Chăm sóc & Detailing chuyên sâu",
-    backendServiceName: "Kiểm tra tổng quát",
-    title: "Chăm sóc & Detailing Spa",
-    price: "1.800.000đ",
-    time: "90 - 120 phút",
-    description: "Rửa khoang máy, vệ sinh nội thất hơi nước nóng, phủ bóng sơn.",
-    icon: "fa-solid fa-spray-can-sparkles",
-    iconColor: "text-purple-500",
-  },
-  {
-    id: "diagnostics",
-    name: "Kiểm tra tổng quát & Chẩn đoán lỗi",
-    backendServiceName: "Kiểm tra tổng quát",
-    title: "Chẩn đoán điện tử chuyên sâu",
-    price: "350.000đ",
-    time: "30 phút",
-    description: "Đọc lỗi máy tính ECU tử tế, kiểm tra ắc quy, hệ thống phanh ABS.",
-    icon: "fa-solid fa-laptop-medical",
-    iconColor: "text-emerald-500",
-  },
-];
 
 const GARAGE_BRANCHES = [
   {
@@ -238,6 +180,7 @@ function isValidLicensePlate(plate: string): boolean {
 }
 
 export default function Booking() {
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Step 1: Khách hàng
@@ -253,7 +196,7 @@ export default function Booking() {
   const [vehicleModel, setVehicleModel] = useState("Vios");
   const [customModel, setCustomModel] = useState("");
   const [vehiclePlate, setVehiclePlate] = useState("");
-  const [selectedService, setSelectedService] = useState<ServicePackage>(SERVICE_PACKAGES[0]);
+  const [selectedService, setSelectedService] = useState<ServiceProduct>(SERVICE_PRODUCTS[0]);
   const [selectedSavedVehicleId, setSelectedSavedVehicleId] = useState<number | null>(null);
 
   // Step 3: Ngày & Giờ
@@ -310,29 +253,56 @@ export default function Booking() {
     setIsLoggedIn(Boolean(token && logged));
 
     if (token && logged) {
-      // Fetch customer details
-      fetchApi("/me/customer")
+      // B1: \u0110i\u1ec1n ngay t\u1eeb localStorage (\u0111\u1ec3 form hi\u1ec7n th\u00f4ng tin t\u1ee9c th\u1eddi, kh\u00f4ng ch\u1edd API)
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const u = JSON.parse(storedUser);
+          // user object: { id, email, role, customer: { full_name, phone, email, address } }
+          const c = u?.customer;
+          if (c?.full_name) setCustomerName(c.full_name);
+          if (c?.phone) setCustomerPhone(c.phone);
+          if (c?.email) setCustomerEmail(c.email);
+          else if (u?.email) setCustomerEmail(u.email);
+          if (c?.address) setCustomerCity(c.address);
+        } catch {
+          // ignore
+        }
+      }
+
+      // B2: G\u1ecdi API /me \u0111\u1ec3 l\u1ea5y d\u1eef li\u1ec7u m\u1edbi nh\u1ea5t (account.customer)
+      fetchApi("/me")
         .then((res) => {
-          if (res?.data) {
-            if (res.data.full_name) setCustomerName(res.data.full_name);
-            if (res.data.phone) setCustomerPhone(res.data.phone);
-            if (res.data.email) setCustomerEmail(res.data.email);
-            if (res.data.address) setCustomerCity(res.data.address);
+          const c = res?.account?.customer;
+          if (c) {
+            if (c.full_name) setCustomerName(c.full_name);
+            if (c.phone) setCustomerPhone(c.phone);
+            if (c.email) setCustomerEmail(c.email);
+            if (c.address) setCustomerCity(c.address);
+            // C\u1eadp nh\u1eadt l\u1ea1i localStorage \u0111\u1ec3 l\u1ea7n sau nhanh h\u01a1n
+            try {
+              const stored = JSON.parse(localStorage.getItem("user") || "{}");
+              stored.customer = c;
+              localStorage.setItem("user", JSON.stringify(stored));
+            } catch { /* ignore */ }
+          } else if (res?.account?.email && !res?.account?.customer) {
+            // Kh\u00f4ng c\u00f3 customer profile, fallback sang /me/customer
+            fetchApi("/me/customer")
+              .then((r) => {
+                if (r?.data) {
+                  if (r.data.full_name) setCustomerName(r.data.full_name);
+                  if (r.data.phone) setCustomerPhone(r.data.phone);
+                  if (r.data.email) setCustomerEmail(r.data.email);
+                  if (r.data.address) setCustomerCity(r.data.address);
+                }
+              })
+              .catch(() => { /* ignore */ });
           }
         })
         .catch(() => {
-          const storedUser = localStorage.getItem("user");
-          if (storedUser) {
-            try {
-              const u = JSON.parse(storedUser);
-              if (u.name || u.full_name) setCustomerName(u.name || u.full_name);
-              if (u.email) setCustomerEmail(u.email);
-              if (u.phone) setCustomerPhone(u.phone);
-            } catch {
-              // ignore
-            }
-          }
+          // /me th\u1ea5t b\u1ea1i, th\u00f4ng tin t\u1eeb localStorage \u0111\u00e3 \u0111\u01b0\u1ee3c \u0111i\u1ec1n \u1edf B1
         });
+
 
       // Fetch saved vehicles
       fetchApi("/me/vehicles")
@@ -352,6 +322,28 @@ export default function Booking() {
         });
     }
   }, []);
+
+  // \u0110\u1ecdc service query param t\u1eeb URL v\u00e0 auto-select g\u00f3i d\u1ecbch v\u1ee5 t\u01b0\u01a1ng \u1ee9ng
+  useEffect(() => {
+    const serviceParam = searchParams.get("service");
+    if (!serviceParam) return;
+    const matchedProduct = SERVICE_PRODUCTS.find((product) => product.id === serviceParam);
+    if (matchedProduct) {
+      setSelectedService(matchedProduct);
+    }
+  }, [searchParams]);
+
+  // Khi \u0111\u00e3 \u0111\u0103ng nh\u1eadp + c\u00f3 service param + th\u00f4ng tin kh\u00e1ch h\u00e0ng \u0111\u00e3 \u0111\u01b0\u1ee3c \u0111i\u1ec1n \u2192 t\u1ef1 \u0111\u1ed9ng nh\u1ea3y sang b\u01b0\u1edbc 2
+  useEffect(() => {
+    const serviceParam = searchParams.get("service");
+    if (!serviceParam) return;
+    if (!isLoggedIn) return;
+    if (!customerName || !customerPhone || !customerEmail) return;
+    if (currentStep === 1) {
+      goToStep(2);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, customerName, customerPhone, customerEmail]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -523,7 +515,7 @@ export default function Booking() {
           customerCity,
           vehicle: `${vehicleBrand} ${finalModelName} (${vehiclePlate})`,
           vehicleType,
-          service: selectedService.name,
+          service: selectedService.title,
           price: selectedService.price,
           garage: garageBranch,
           datetime: `${selectedTime} - ${selectedDateObj.fullLabel}`,
@@ -751,7 +743,7 @@ export default function Booking() {
                 </div>
 
                 {isLoggedIn && (
-                  <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
                     <i className="fa-solid fa-check-circle"></i> Đã đồng bộ tài khoản
                   </span>
                 )}
@@ -777,7 +769,11 @@ export default function Booking() {
                         if (errors.name) setErrors({ ...errors, name: "" });
                       }}
                       placeholder="Ví dụ: Nguyễn Văn An"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition ${
+                        isLoggedIn && customerName
+                          ? "border-emerald-300 bg-emerald-50/40"
+                          : "border-slate-200"
+                      }`}
                     />
                   </div>
                   {errors.name && <p className="text-[11px] text-red-500 mt-1">{errors.name}</p>}
@@ -802,7 +798,11 @@ export default function Booking() {
                         if (errors.phone) setErrors({ ...errors, phone: "" });
                       }}
                       placeholder="Ví dụ: 0912 345 678"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition ${
+                        isLoggedIn && customerPhone
+                          ? "border-emerald-300 bg-emerald-50/40"
+                          : "border-slate-200"
+                      }`}
                     />
                   </div>
                   {errors.phone && <p className="text-[11px] text-red-500 mt-1">{errors.phone}</p>}
@@ -827,7 +827,11 @@ export default function Booking() {
                         if (errors.email) setErrors({ ...errors, email: "" });
                       }}
                       placeholder="Ví dụ: vanan@gmail.com"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition ${
+                        isLoggedIn && customerEmail
+                          ? "border-emerald-300 bg-emerald-50/40"
+                          : "border-slate-200"
+                      }`}
                     />
                   </div>
                   {errors.email && <p className="text-[11px] text-red-500 mt-1">{errors.email}</p>}
@@ -1040,7 +1044,7 @@ export default function Booking() {
                   Chọn gói dịch vụ dự kiến <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {SERVICE_PACKAGES.map((pkg) => {
+                  {SERVICE_PRODUCTS.map((pkg) => {
                     const isChecked = selectedService.id === pkg.id;
                     return (
                       <label key={pkg.id} className="cursor-pointer">
@@ -1369,7 +1373,7 @@ export default function Booking() {
                       <div className="flex items-center gap-2">
                         <i className="fa-solid fa-circle-check text-blue-600"></i>
                         <span className="font-bold text-slate-800 text-sm">
-                          {selectedService.name}
+                          {selectedService.title}
                         </span>
                       </div>
                       <span className="font-extrabold text-slate-900">{selectedService.price}</span>
@@ -1537,7 +1541,7 @@ export default function Booking() {
               </div>
               <div className="flex justify-between items-center pt-0.5">
                 <span className="text-slate-500 font-medium">Gói dịch vụ:</span>
-                <span className="font-bold text-emerald-600">{selectedService.name} ({selectedService.price})</span>
+                <span className="font-bold text-emerald-600">{selectedService.title} ({selectedService.price})</span>
               </div>
             </div>
 
