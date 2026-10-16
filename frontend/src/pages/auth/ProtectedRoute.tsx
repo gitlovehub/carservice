@@ -1,5 +1,6 @@
+
 import { Navigate, useLocation } from "react-router-dom";
-import { getUserRole } from "./auth";
+import { getUserRole, getRoleManagementPage } from "./auth";
 import type { UserRole } from "./auth";
 
 type ProtectedRouteProps = {
@@ -14,15 +15,23 @@ function ProtectedRoute({
   const location = useLocation();
   const isLoggedIn = localStorage.getItem("isLoggedIn");
   const role = getUserRole();
+
   if (isLoggedIn !== "true" || !role) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   if (!allowedRoles.includes(role)) {
-    return <Navigate to="/login" replace />;
+    const managementPage = getRoleManagementPage(role);
+
+    return (
+      <Navigate
+        to={managementPage?.path || "/login"}
+        replace
+      />
+    );
   }
 
-  return children;
+  return <>{children}</>;
 }
 
 export default ProtectedRoute;
