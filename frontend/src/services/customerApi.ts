@@ -322,3 +322,81 @@ export function formatDate(value?: string | null): string {
 export function formatTime(value?: string | null): string {
   return value ? value.slice(0, 5) : "—";
 }
+export type AdvisorCustomer = {
+  id: number;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  address: string | null;
+};
+
+export type AdvisorCustomerInput = {
+  full_name: string;
+  phone: string;
+  email?: string | null;
+  address?: string | null;
+};
+
+export type AdvisorCustomerPage = {
+  data: AdvisorCustomer[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+};
+
+export async function getAdvisorCustomers(params: {
+  search?: string;
+  page?: number;
+} = {}): Promise<AdvisorCustomerPage> {
+  const query = new URLSearchParams();
+  const search = params.search?.trim();
+
+  if (search) {
+    query.set("search", search);
+  }
+
+  query.set("page", String(params.page ?? 1));
+
+  const res = await fetchApi(`/customers?${query.toString()}`);
+  const result = res?.data;
+
+  return {
+    data: Array.isArray(result?.data) ? result.data : [],
+    current_page: result?.current_page ?? 1,
+    last_page: result?.last_page ?? 1,
+    per_page: result?.per_page ?? 10,
+    total: result?.total ?? 0,
+  };
+}
+
+export async function createAdvisorCustomer(
+  data: AdvisorCustomerInput,
+): Promise<AdvisorCustomer> {
+  const res = await fetchApi("/customers", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  return res.data;
+}
+
+export async function updateAdvisorCustomer(
+  id: number,
+  data: Partial<AdvisorCustomerInput>,
+): Promise<AdvisorCustomer> {
+  const res = await fetchApi(`/customers/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+
+  return res.data;
+}
+
+export async function getAdvisorCustomerDetail(
+  id: number,
+): Promise<AdvisorCustomer> {
+  const res = await fetchApi(`/customers/${id}`);
+
+  return res.data;
+}
