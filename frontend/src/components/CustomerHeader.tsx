@@ -1,14 +1,13 @@
+
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { getUserDisplayName, logout } from "../pages/auth/auth";
+import {
+  getUserDisplayName,
+  getUserInitials,
+  logout,
+  type AuthUserInfo,
+} from "../pages/auth/auth";
 import BrandLogo from "./common/BrandLogo";
-
-const getInitials = (name?: string) => {
-  if (!name) return "KH";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-};
 
 const menuItems = [
   {
@@ -60,7 +59,8 @@ const menuItems = [
 
 function CustomerHeader() {
   const location = useLocation();
-  const [user, setUser] = useState(() => {
+
+  const [user, setUser] = useState<AuthUserInfo>(() => {
     try {
       return JSON.parse(localStorage.getItem("user") || "null");
     } catch {
@@ -76,8 +76,10 @@ function CustomerHeader() {
         setUser(null);
       }
     };
+
     window.addEventListener("storage", syncUser);
     window.addEventListener("user-updated", syncUser);
+
     return () => {
       window.removeEventListener("storage", syncUser);
       window.removeEventListener("user-updated", syncUser);
@@ -98,13 +100,16 @@ function CustomerHeader() {
 
           <nav className="mt-3 space-y-1">
             {menuItems.map((item) => {
-              const active = location.pathname === item.path;
+              const active =
+                location.pathname === item.path ||
+                location.pathname.startsWith(`${item.path}/`);
 
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-[12px] font-medium transition ${
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-[12px] font-medium transition ${
                     active
                       ? "bg-[#D6A85F] text-[#1F2933]"
                       : "text-[#C6CDD3] hover:bg-[#313B45] hover:text-white"
@@ -128,11 +133,11 @@ function CustomerHeader() {
                 <img
                   src={user.avatar}
                   alt={getUserDisplayName(user)}
-                  className="h-9 w-9 shrink-0 rounded-full object-cover border border-[#D6A85F]/60 shadow-xs"
+                  className="h-9 w-9 shrink-0 rounded-full border border-[#D6A85F]/60 object-cover shadow-xs"
                 />
               ) : (
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#D6A85F] text-[10px] font-bold text-[#1F2933]">
-                  {getInitials(getUserDisplayName(user))}
+                  {getUserInitials(user)}
                 </div>
               )}
 
@@ -150,15 +155,15 @@ function CustomerHeader() {
             <div className="mt-3 flex gap-2">
               <Link
                 to="/"
-                className="flex flex-1 cursor-pointer items-center justify-center rounded-xl border border-[#4A5661] py-2 text-[11px] font-medium text-[#D5DBE0] transition hover:bg-[#313B45] hover:text-white"
+                className="flex flex-1 items-center justify-center rounded-xl border border-[#4A5661] py-2 text-[11px] font-medium text-[#D5DBE0] transition hover:bg-[#313B45] hover:text-white"
               >
                 Trang chủ
               </Link>
 
               <button
                 type="button"
-                onClick={() => logout()}
-                className="flex flex-1 cursor-pointer items-center justify-center rounded-xl border border-red-500/40 bg-red-500/10 py-2 text-[11px] font-medium text-red-400 transition hover:bg-red-500 hover:text-white"
+                onClick={logout}
+                className="flex flex-1 items-center justify-center rounded-xl border border-red-500/40 bg-red-500/10 py-2 text-[11px] font-medium text-red-400 transition hover:bg-red-500 hover:text-white"
               >
                 Đăng xuất
               </button>

@@ -79,19 +79,17 @@ export const setUserRole = (role: UserRole) => {
   localStorage.setItem("isLoggedIn", "true");
 };
 
+
 export const logout = () => {
   localStorage.removeItem("role");
   localStorage.removeItem("isLoggedIn");
   localStorage.removeItem("token");
   localStorage.removeItem("user");
+
   window.dispatchEvent(new Event("user-updated"));
   window.dispatchEvent(new Event("storage"));
 
-  try {
-    void fetchApi("/logout", { method: "POST" });
-  } catch {
-    // Bỏ qua lỗi backend nếu có
-  }
+  void fetchApi("/logout", { method: "POST" }).catch(() => {});
 
   window.location.href = "/login";
 };
