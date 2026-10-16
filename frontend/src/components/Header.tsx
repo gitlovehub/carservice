@@ -1,168 +1,220 @@
+
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { fetchApi } from "../services/api";
 import {
   getRoleManagementPage,
   getUserDisplayName,
+  getUserInitials,
   logout,
+  type AuthUserInfo,
 } from "../pages/auth/auth";
 import BrandLogo from "./common/BrandLogo";
 
-type AuthUser = {
-  id?: number | string;
-  full_name?: string;
-  name?: string;
-  email?: string;
-  role?: string;
-  avatar?: string | null;
-};
+const navItems = [
+  { label: "Trang chủ", path: "/" },
+  { label: "Dịch vụ", path: "/services" },
+  { label: "Đặt lịch", path: "/booking" },
+  { label: "Lịch hẹn", path: "/appointments" },
+  { label: "Xe của tôi", path: "/cars" },
+];
 
 function Header() {
+  const location = useLocation();
+  const menuRef = useRef<HTMLDivElement>(null);
+
   const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(
     localStorage.getItem("isLoggedIn") === "true",
   );
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUserInfo>(null);
 
-  const location = useLocation();
-  const menuRef = useRef<HTMLDivElement>(null);
   const managementPage = getRoleManagementPage(user?.role);
 
-  // Lắng nghe trạng thái đăng nhập và tải thông tin tài khoản
   useEffect(() => {
+    let active = true;
+
     const checkLogin = async () => {
       const loggedIn = localStorage.getItem("isLoggedIn") === "true";
       setIsLoggedIn(loggedIn);
 
-      if (loggedIn) {
-        try {
-          const storedUser = localStorage.getItem("user");
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
-          }
-          const response = await fetchApi("/me");
-          if (response?.account) {
-            setUser(response.account);
-            localStorage.setItem("user", JSON.stringify(response.account));
-          }
-        } catch {
-          // Bỏ qua lỗi token hết hạn hoặc kết nối
+      if (!loggedIn) {
+        setUser(null);
+        return;
+      }
+
+      try {
+        const storedUser = localStorage.getItem("user");
+
+        if (storedUser && active) {
+          setUser(JSON.parse(storedUser));
         }
-      } else {
+
+        const response = await fetchApi("/me");
+
+        if (active && response?.account) {
+          setUser(response.account);
+          localStorage.setItem("user", JSON.stringify(response.account));
+        }
+      } catch {
+        const storedUser = localStorage.getItem("user");
+
+        if (active && storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch {
+            setUser(null);
+          }
+        }
+      }
+    };
+
+    const syncUser = () => {
+      const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+      setIsLoggedIn(loggedIn);
+
+      if (!loggedIn) {
+        setUser(null);
+        return;
+      }
+
+      try {
+        setUser(JSON.parse(localStorage.getItem("user") || "null"));
+      } catch {
         setUser(null);
       }
     };
 
-    checkLogin();
-    window.addEventListener("storage", checkLogin);
-    window.addEventListener("user-updated", checkLogin);
+    void checkLogin();
+
+    window.addEventListener("storage", syncUser);
+    window.addEventListener("user-updated", syncUser);
 
     return () => {
-      window.removeEventListener("storage", checkLogin);
-      window.removeEventListener("user-updated", checkLogin);
+      active = false;
+      window.removeEventListener("storage", syncUser);
+      window.removeEventListener("user-updated", syncUser);
     };
-  }, [location]);
+  }, [location.pathname]);
 
-  // Đóng dropdown khi nhấn ra ngoài
+  useEffect(() => {
+    setOpen(false);
+    setMobileOpen(false);
+  }, [location.pathname]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node)
+      ) {
         setOpen(false);
       }
     };
 
-    if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        setMobileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
     };
-  }, [open]);
+  }, []);
+
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+
+    if (path === "/appointments") {
+      return [
+        "/appointments",
+        "/customer/appointments",
+      ].includes(location.pathname);
+    }
+
+    if (path === "/cars") {
+      return ["/cars", "/customer/cars"].includes(location.pathname);
+    }
+
+    return (
+      location.pathname === path ||
+      location.pathname.startsWith(`${path}/`)
+    );
+  };
+
+  const navLinkClass = (active: boolean) =>
+    `rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
+      active
+        ? "bg-[#F5E8D0] text-[#1F2933]"
+        : "text-[#58636E] hover:bg-[#F7F7F5] hover:text-[#1F2933]"
+    }`;
 
   const handleLogout = () => {
     setOpen(false);
+    setMobileOpen(false);
     logout();
   };
 
-  const navLinkClass = (isActive: boolean) =>
-    `rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
-      isActive
-        ? "bg-slate-100 text-slate-900"
-        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-    }`;
-
-  // Lấy ký tự đại diện cho Avatar từ họ tên
-  const getInitials = (name?: string) => {
-    if (!name) return "KH";
-    const parts = name.trim().split(" ");
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
+  const renderNavigation = (mobile = false) => (
+    <nav
+      className={
+        mobile
+          ? "flex flex-col gap-1 border-t border-[#E5E7EB] px-5 py-3 lg:hidden"
+          : "hidden items-center gap-1.5 lg:flex"
+      }
+    >
+      {navItems.map((item) => (
+        <Link
+          key={item.path}
+          to={item.path}
+          aria-current={isActive(item.path) ? "page" : undefined}
+          className={
+            mobile
+              ? `rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                  isActive(item.path)
+                    ? "bg-[#F5E8D0] text-[#1F2933]"
+                    : "text-[#58636E] hover:bg-[#F7F7F5] hover:text-[#1F2933]"
+                }`
+              : navLinkClass(isActive(item.path))
+          }
+        >
+          {item.label}
+        </Link>
+      ))}
+    </nav>
+  );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
-      <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-6">
-        {/* LOGO */}
-        <BrandLogo className="py-1" />
+    <header className="sticky top-0 z-50 border-b border-[#E1E4E6] bg-white/95 backdrop-blur-sm">
+      <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+        <Link to="/" aria-label="CarService - Trang chủ">
+          <BrandLogo className="py-1" />
+        </Link>
 
-        {/* NAVIGATION DESKTOP */}
-        <nav className="hidden items-center gap-1.5 lg:flex">
-          <Link
-            to="/"
-            className={navLinkClass(location.pathname === "/")}
-          >
-            Trang chủ
-          </Link>
+        {renderNavigation()}
 
-          <Link
-            to="/services"
-            className={navLinkClass(location.pathname === "/services")}
-          >
-            Dịch vụ
-          </Link>
-
-          <Link
-            to="/booking"
-            className={navLinkClass(location.pathname === "/booking")}
-          >
-            Đặt lịch
-          </Link>
-
-          <Link
-            to="/appointments"
-            className={navLinkClass(
-              ["/appointments", "/customer/appointments"].includes(
-                location.pathname,
-              ),
-            )}
-          >
-            Lịch hẹn
-          </Link>
-
-          <Link
-            to="/cars"
-            className={navLinkClass(
-              ["/cars", "/customer/cars"].includes(location.pathname),
-            )}
-          >
-            Xe của tôi
-          </Link>
-        </nav>
-
-        {/* KHU VỰC TÀI KHOẢN */}
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {!isLoggedIn ? (
             <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D9DEE2] bg-white px-3 text-xs font-semibold text-[#1F2933] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5] sm:px-4"
               >
                 Đăng nhập
               </Link>
 
               <Link
                 to="/register"
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-[#D6A85F] px-3 text-xs font-semibold text-[#1F2933] shadow-sm transition hover:bg-[#C3974F] sm:px-4"
               >
                 Đăng ký
               </Link>
@@ -171,32 +223,34 @@ function Header() {
             <div className="relative" ref={menuRef}>
               <button
                 type="button"
-                onClick={() => setOpen(!open)}
-                className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 transition hover:border-slate-300 hover:bg-slate-50"
+                onClick={() => setOpen((previous) => !previous)}
+                aria-expanded={open}
+                aria-haspopup="menu"
+                className="flex items-center gap-2 rounded-xl border border-[#E1E4E6] bg-white px-2 py-1.5 transition hover:border-[#D6A85F] hover:bg-[#F7F7F5] sm:gap-3 sm:px-3"
               >
                 {user?.avatar ? (
                   <img
                     src={user.avatar}
                     alt={getUserDisplayName(user)}
-                    className="h-8 w-8 rounded-xl object-cover border border-amber-400/40 shadow-xs"
+                    className="h-8 w-8 rounded-xl border border-[#D6A85F]/40 object-cover"
                   />
                 ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 font-mono text-xs font-bold text-amber-400">
-                    {getInitials(getUserDisplayName(user))}
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#1F2933] text-xs font-bold text-[#D6A85F]">
+                    {getUserInitials(user)}
                   </div>
                 )}
 
                 <div className="hidden text-left sm:block">
-                  <p className="max-w-[120px] truncate text-xs font-semibold text-slate-900">
+                  <p className="max-w-[120px] truncate text-xs font-semibold text-[#1F2933]">
                     {getUserDisplayName(user)}
                   </p>
-                  <p className="text-[10px] text-slate-500">
+                  <p className="text-[10px] text-[#7A838C]">
                     {user?.role || "Khách hàng"}
                   </p>
                 </div>
 
                 <svg
-                  className={`h-4 w-4 text-slate-400 transition-transform ${
+                  className={`h-4 w-4 text-[#7A838C] transition-transform ${
                     open ? "rotate-180" : ""
                   }`}
                   fill="none"
@@ -207,118 +261,131 @@ function Header() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
+                    d="m19 9-7 7-7-7"
                   />
                 </svg>
               </button>
 
-              {/* DROPDOWN MENU */}
               {open && (
-                <div className="absolute right-0 top-full z-50 mt-2.5 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg shadow-slate-200/50">
-                  <div className="border-b border-slate-100 px-3 py-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-50 mt-2.5 w-64 rounded-2xl border border-[#E1E4E6] bg-white p-2 shadow-xl shadow-slate-900/10"
+                >
+                  <div className="border-b border-[#EEF0F2] px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A949E]">
                       Tài khoản người dùng
                     </p>
-                    <p className="mt-0.5 truncate text-xs font-semibold text-slate-800">
-                      {user?.email}
+                    <p className="mt-1 truncate text-xs font-semibold text-[#1F2933]">
+                      {user?.email || getUserDisplayName(user)}
                     </p>
                   </div>
 
                   <div className="mt-1 space-y-0.5">
                     <Link
+                      role="menuitem"
                       to="/"
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+                      className="flex items-center rounded-xl px-3 py-2.5 text-xs font-medium text-[#58636E] transition hover:bg-[#F7F7F5] hover:text-[#1F2933]"
                     >
-                      <svg
-                        className="h-4 w-4 text-slate-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                        />
-                      </svg>
                       Trang chủ
                     </Link>
 
                     {managementPage && (
                       <Link
+                        role="menuitem"
                         to={managementPage.path}
-                        onClick={() => setOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+                        className="flex items-center rounded-xl px-3 py-2.5 text-xs font-medium text-[#58636E] transition hover:bg-[#F7F7F5] hover:text-[#1F2933]"
                       >
-                        <svg
-                          className="h-4 w-4 text-slate-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                          />
-                        </svg>
                         {managementPage.label}
                       </Link>
                     )}
 
                     <Link
+                      role="menuitem"
                       to="/account"
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+                      className="flex items-center rounded-xl px-3 py-2.5 text-xs font-medium text-[#58636E] transition hover:bg-[#F7F7F5] hover:text-[#1F2933]"
                     >
-                      <svg
-                        className="h-4 w-4 text-slate-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
                       Thông tin tài khoản
                     </Link>
                   </div>
 
-                  <div className="my-1.5 border-t border-slate-100" />
+                  <div className="my-1.5 border-t border-[#EEF0F2]" />
 
                   <button
+                    role="menuitem"
                     type="button"
                     onClick={handleLogout}
-                    className="cursor-pointer flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                    className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-red-600 transition hover:bg-red-50"
                   >
-                    <svg
-                      className="h-4 w-4 text-red-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                      />
-                    </svg>
                     Đăng xuất
                   </button>
                 </div>
               )}
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={() => setMobileOpen((previous) => !previous)}
+            aria-label={mobileOpen ? "Đóng menu" : "Mở menu"}
+            aria-expanded={mobileOpen}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E1E4E6] text-[#1F2933] transition hover:bg-[#F7F7F5] lg:hidden"
+          >
+            {mobileOpen ? (
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 6l12 12M18 6 6 18"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
+
+      {mobileOpen && (
+        <div className="border-t border-[#E1E4E6] bg-white">
+          {renderNavigation(true)}
+
+          {!isLoggedIn && (
+            <div className="flex gap-2 px-5 pb-4 lg:hidden">
+              <Link
+                to="/login"
+                className="flex flex-1 items-center justify-center rounded-xl border border-[#D9DEE2] px-4 py-3 text-sm font-semibold text-[#1F2933] transition hover:bg-[#F7F7F5]"
+              >
+                Đăng nhập
+              </Link>
+
+              <Link
+                to="/register"
+                className="flex flex-1 items-center justify-center rounded-xl bg-[#D6A85F] px-4 py-3 text-sm font-semibold text-[#1F2933] transition hover:bg-[#C3974F]"
+              >
+                Đăng ký
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 }
