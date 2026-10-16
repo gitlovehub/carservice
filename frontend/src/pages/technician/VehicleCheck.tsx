@@ -1,12 +1,20 @@
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import TechnicianSidebar from "./TechnicianSidebar";
 import TechnicianTopbar from "./TechnicianTopbar";
+import {
+  createInspection,
+  getRepairOrders,
+  getVehicleName,
+  latestInspection,
+  type ApiRepairOrder,
+} from "../../services/technicianApi";
 
 type CheckStatus = "Đã kiểm tra" | "Đang kiểm tra" | "Chưa kiểm tra";
 
 type VehicleCheckItem = {
+  orderId: number;
   id: string;
   customer: string;
   car: string;
@@ -18,41 +26,60 @@ type VehicleCheckItem = {
   notes: string;
 };
 
-const initialChecks: VehicleCheckItem[] = [
-  {
-    id: "PSC-001",
-    customer: "Nguyễn Tiến Hiền",
-    car: "Toyota Vios",
-    plate: "30A-123.45",
-    mileage: "32.500 km",
-    status: "Đã kiểm tra",
-    date: "03/10/2026",
-    condition: "Xe hoạt động bình thường",
-    notes: "Cần theo dõi tình trạng lốp xe.",
-  },
-  {
-    id: "PSC-003",
-    customer: "Bùi Việt",
-    car: "Mazda 3",
-    plate: "30F-111.11",
-    mileage: "45.800 km",
-    status: "Đang kiểm tra",
-    date: "03/10/2026",
-    condition: "",
-    notes: "",
-  },
-  {
-    id: "PSC-005",
-    customer: "Trần Thị B",
-    car: "Honda City",
-    plate: "30G-222.22",
-    mileage: "18.200 km",
-    status: "Chưa kiểm tra",
-    date: "03/10/2026",
-    condition: "",
-    notes: "",
-  },
-];
+const CHECK_ITEM_NAME = "Kiểm tra tổng thể";
+
+function formatCheckDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString("vi-VN");
+}
+
+function conditionStatusFor(condition: string): string {
+  switch (condition) {
+    case "Xe hoạt động bình thường":
+      return "NORMAL";
+    case "Có hư hỏng cần sửa chữa":
+      return "NEEDS_SERVICE";
+    case "Cần kiểm tra chuyên sâu":
+    case "Có dấu hiệu bất thường":
+    default:
+      return "WARNING";
+  }
+}
+
+function toCheckItem(order: ApiRepairOrder): VehicleCheckItem {
+  const vehicle = order.vehicle ?? null;
+  const inspection = latestInspection(order);
+  const noteItem = inspection?.items?.find(
+    (item) => item.item_name === CHECK_ITEM_NAME,
+  );
+  const mileageValue = order.mileage_received ?? vehicle?.mileage ?? null;
+
+  let status: CheckStatus;
+  if (inspection?.condition_description) {
+    status = "Đã kiểm tra";
+  } else if (order.status === "INSPECTING") {
+    status = "Đang kiểm tra";
+  } else {
+    status = "Chưa kiểm tra";
+  }
+
+  return {
+    orderId: order.id,
+    id: order.repair_order_code,
+    customer: order.customer?.full_name ?? "Khách hàng",
+    car: getVehicleName(vehicle),
+    plate: vehicle?.license_plate ?? "—",
+    mileage:
+      mileageValue === null
+        ? "—"
+        : `${Number(mileageValue).toLocaleString("vi-VN")} km`,
+    status,
+    date: formatCheckDate(inspection?.inspected_at ?? order.received_at),
+    condition: inspection?.condition_description ?? "",
+    notes: noteItem?.note ?? "",
+  };
+}
 
 const statusStyles: Record<CheckStatus, string> = {
   "Đã kiểm tra": "bg-[#eef7f0] text-[#39734a]",
@@ -95,7 +122,10 @@ const quickLinks = [
 ];
 
 function VehicleCheck() {
-  const [checks, setChecks] = useState(initialChecks);
+  const [checks, setChecks] = useState<VehicleCheckItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("Tất cả");
   const [selectedCheck, setSelectedCheck] =
@@ -105,6 +135,25 @@ function VehicleCheck() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getRepairOrders()
+      .then((orders) => {
+        if (isMounted) setChecks(orders.map(toCheckItem));
+      })
+      .catch((loadErr: Error) => {
+        if (isMounted) setLoadError(loadErr.message);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredChecks = useMemo(() => {
     const search = keyword.trim().toLowerCase();
@@ -161,23 +210,47 @@ function VehicleCheck() {
       return;
     }
 
-    setChecks((currentChecks) =>
-      currentChecks.map((check) =>
-        check.id === selectedCheck.id
-          ? {
-              ...check,
-              mileage: `${Number(mileage).toLocaleString("vi-VN")} km`,
-              condition,
-              notes: notes.trim(),
-              status: "Đã kiểm tra",
-            }
-          : check,
-      ),
-    );
-
-    setMessage(`Đã cập nhật phiếu ${selectedCheck.id}.`);
-    setSelectedCheck(null);
+    const numericMileage = Number(mileage);
+    const trimmedNotes = notes.trim();
+    setIsSaving(true);
     setError("");
+
+    createInspection(selectedCheck.orderId, {
+      condition_description: condition,
+      items: [
+        {
+          item_name: CHECK_ITEM_NAME,
+          condition_status: conditionStatusFor(condition),
+          condition_description: condition,
+          note: trimmedNotes || undefined,
+        },
+      ],
+    })
+      .then(() => {
+        setChecks((currentChecks) =>
+          currentChecks.map((check) =>
+            check.id === selectedCheck.id
+              ? {
+                  ...check,
+                  mileage: `${numericMileage.toLocaleString("vi-VN")} km`,
+                  condition,
+                  notes: trimmedNotes,
+                  status: "Đã kiểm tra",
+                  date: formatCheckDate(new Date().toISOString()),
+                }
+              : check,
+          ),
+        );
+
+        setMessage(`Đã cập nhật phiếu ${selectedCheck.id}.`);
+        setSelectedCheck(null);
+      })
+      .catch((saveErr: Error) => {
+        setError(saveErr.message);
+      })
+      .finally(() => {
+        setIsSaving(false);
+      });
   };
 
   const resetFilters = () => {
@@ -194,6 +267,18 @@ function VehicleCheck() {
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
+            {isLoading && (
+              <div className="mb-5 rounded-xl border border-[#e1e4e6] bg-white px-4 py-3 text-[12px] text-[#66717c]">
+                Đang tải danh sách phiếu kiểm tra...
+              </div>
+            )}
+
+            {loadError && (
+              <div className="mb-5 rounded-xl border border-[#f0d0cb] bg-[#fdf1ef] px-4 py-3 text-[12px] text-[#a44a3f]">
+                Không tải được dữ liệu: {loadError}
+              </div>
+            )}
+
             <div className="mb-8">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a9299]">
                 KỸ THUẬT VIÊN / KIỂM TRA XE
@@ -586,9 +671,10 @@ function VehicleCheck() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-[#1f2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151d24]"
+                  disabled={isSaving}
+                  className="rounded-xl bg-[#1f2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151d24] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Lưu kết quả kiểm tra
+                  {isSaving ? "Đang lưu..." : "Lưu kết quả kiểm tra"}
                 </button>
               </div>
             </form>

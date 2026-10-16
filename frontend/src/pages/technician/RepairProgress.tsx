@@ -1,12 +1,25 @@
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import TechnicianSidebar from "./TechnicianSidebar";
 import TechnicianTopbar from "./TechnicianTopbar";
+import {
+  getRepairOrders,
+  getVehicleName,
+  getWorkItems,
+  progressGroup,
+  repairStatusLabel,
+  statusProgress,
+  updateWorkItemStatus,
+  type ApiRepairOrder,
+  type ApiWorkItem,
+  type WorkItemStatus,
+} from "../../services/technicianApi";
 
 type ProgressStatus = "Chờ sửa chữa" | "Đang sửa chữa" | "Hoàn thành";
 
 type ProgressItem = {
+  orderId: number;
   id: string;
   customer: string;
   car: string;
@@ -14,37 +27,61 @@ type ProgressItem = {
   progress: number;
   status: ProgressStatus;
   currentStep: string;
+  rawStatus: string;
+  workItems: ApiWorkItem[];
 };
 
-const initialProgressList: ProgressItem[] = [
-  {
-    id: "PSC-001",
-    customer: "Nguyễn Tiến Hiền",
-    car: "Toyota Vios - 30A-123.45",
-    service: "Bảo dưỡng định kỳ",
-    progress: 70,
-    status: "Đang sửa chữa",
-    currentStep: "Thay dầu và kiểm tra động cơ",
-  },
-  {
-    id: "PSC-003",
-    customer: "Bùi Việt",
-    car: "Mazda 3 - 30F-111.11",
-    service: "Sửa chữa điều hòa",
-    progress: 45,
-    status: "Đang sửa chữa",
-    currentStep: "Bổ sung gas điều hòa",
-  },
-  {
-    id: "PSC-005",
-    customer: "Trần Thị B",
-    car: "Honda City - 30G-222.22",
-    service: "Kiểm tra phanh",
-    progress: 100,
-    status: "Hoàn thành",
-    currentStep: "Hoàn tất kiểm tra và chạy thử",
-  },
-];
+function workItemProgress(items: ApiWorkItem[], status: string): number {
+  if (items.length > 0) {
+    const completed = items.filter((item) => item.status === "COMPLETED").length;
+    return Math.round((completed / items.length) * 100);
+  }
+
+  return statusProgress(status);
+}
+
+function currentStepOf(items: ApiWorkItem[], status: string): string {
+  const active = items.find((item) => item.status === "IN_PROGRESS");
+
+  if (active) {
+    return active.description || active.service?.name || "Đang thực hiện";
+  }
+
+  if (status === "WAITING_FOR_PARTS") return "Chờ phụ tùng";
+  if (status === "RECEIVED") return "Chưa bắt đầu";
+
+  const lastCompleted = [...items]
+    .reverse()
+    .find((item) => item.status === "COMPLETED");
+
+  return (
+    lastCompleted?.description ||
+    lastCompleted?.service?.name ||
+    repairStatusLabel[status] ||
+    "—"
+  );
+}
+
+function toProgressItem(
+  order: ApiRepairOrder,
+  items: ApiWorkItem[],
+): ProgressItem {
+  const vehicle = order.vehicle ?? null;
+  const percent = workItemProgress(items, order.status);
+
+  return {
+    orderId: order.id,
+    id: order.repair_order_code,
+    customer: order.customer?.full_name ?? "Khách hàng",
+    car: getVehicleName(vehicle),
+    service: order.initial_condition?.trim() || "Chưa xác định hạng mục",
+    progress: percent,
+    status: progressGroup(percent),
+    currentStep: currentStepOf(items, order.status),
+    rawStatus: order.status,
+    workItems: items,
+  };
+}
 
 const statusStyles: Record<ProgressStatus, string> = {
   "Chờ sửa chữa": "bg-[#f0f1f2] text-[#66717c]",
@@ -87,14 +124,48 @@ const quickLinks = [
 ];
 
 function RepairProgress() {
-  const [progressList, setProgressList] = useState(initialProgressList);
+  const [progressList, setProgressList] = useState<ProgressItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("Tất cả");
   const [selectedItem, setSelectedItem] = useState<ProgressItem | null>(null);
-  const [progress, setProgress] = useState("0");
-  const [currentStep, setCurrentStep] = useState("");
+  const [workItemStatuses, setWorkItemStatuses] = useState<
+    Record<number, WorkItemStatus>
+  >({});
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const orders = await getRepairOrders();
+        const withItems = await Promise.all(
+          orders.map(async (order) => ({
+            order,
+            items: await getWorkItems(order.id).catch(() => [] as ApiWorkItem[]),
+          })),
+        );
+
+        if (isMounted) {
+          setProgressList(
+            withItems.map(({ order, items }) => toProgressItem(order, items)),
+          );
+        }
+      } catch (loadErr) {
+        if (isMounted) setLoadError((loadErr as Error).message);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredList = useMemo(() => {
     const searchText = keyword.trim().toLowerCase();
@@ -137,14 +208,21 @@ function RepairProgress() {
 
   function openUpdateForm(item: ProgressItem) {
     setSelectedItem(item);
-    setProgress(String(item.progress));
-    setCurrentStep(item.currentStep);
+    setWorkItemStatuses(
+      Object.fromEntries(
+        item.workItems.map((workItem) => [
+          workItem.id,
+          workItem.status as WorkItemStatus,
+        ]),
+      ),
+    );
     setError("");
     setMessage("");
   }
 
   function closeUpdateForm() {
     setSelectedItem(null);
+    setWorkItemStatuses({});
     setError("");
   }
 
@@ -155,46 +233,56 @@ function RepairProgress() {
       return;
     }
 
-    const progressValue = Number(progress);
-
-    if (
-      progress.trim() === "" ||
-      !Number.isInteger(progressValue) ||
-      progressValue < 0 ||
-      progressValue > 100
-    ) {
-      setError("Tiến độ phải là số nguyên từ 0 đến 100.");
-      return;
-    }
-
-    if (!currentStep.trim()) {
-      setError("Vui lòng nhập công việc hiện tại.");
-      return;
-    }
-
-    const nextStatus: ProgressStatus =
-      progressValue === 100
-        ? "Hoàn thành"
-        : progressValue === 0
-          ? "Chờ sửa chữa"
-          : "Đang sửa chữa";
-
-    setProgressList((current) =>
-      current.map((item) =>
-        item.id === selectedItem.id
-          ? {
-              ...item,
-              progress: progressValue,
-              currentStep: currentStep.trim(),
-              status: nextStatus,
-            }
-          : item,
-      ),
+    const changedItems = selectedItem.workItems.filter(
+      (workItem) =>
+        workItemStatuses[workItem.id] &&
+        workItemStatuses[workItem.id] !== workItem.status,
     );
 
-    setMessage(`Đã cập nhật tiến độ phiếu ${selectedItem.id}.`);
-    setSelectedItem(null);
+    if (changedItems.length === 0) {
+      setError("Chưa có thay đổi trạng thái công việc nào.");
+      return;
+    }
+
+    setIsSaving(true);
     setError("");
+
+    Promise.all(
+      changedItems.map((workItem) =>
+        updateWorkItemStatus(workItem.id, workItemStatuses[workItem.id]),
+      ),
+    )
+      .then(() => {
+        const updatedItems = selectedItem.workItems.map((workItem) => ({
+          ...workItem,
+          status: workItemStatuses[workItem.id] ?? workItem.status,
+        }));
+        const percent = workItemProgress(updatedItems, selectedItem.rawStatus);
+
+        setProgressList((current) =>
+          current.map((item) =>
+            item.id === selectedItem.id
+              ? {
+                  ...item,
+                  workItems: updatedItems,
+                  progress: percent,
+                  status: progressGroup(percent),
+                  currentStep: currentStepOf(updatedItems, item.rawStatus),
+                }
+              : item,
+          ),
+        );
+
+        setMessage(`Đã cập nhật tiến độ phiếu ${selectedItem.id}.`);
+        setSelectedItem(null);
+        setWorkItemStatuses({});
+      })
+      .catch((saveErr: Error) => {
+        setError(saveErr.message);
+      })
+      .finally(() => {
+        setIsSaving(false);
+      });
   }
 
   return (
@@ -206,6 +294,18 @@ function RepairProgress() {
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
+            {isLoading && (
+              <div className="mb-5 rounded-xl border border-[#e1e4e6] bg-white px-4 py-3 text-[12px] text-[#66717c]">
+                Đang tải tiến độ sửa chữa...
+              </div>
+            )}
+
+            {loadError && (
+              <div className="mb-5 rounded-xl border border-[#f0d0cb] bg-[#fdf1ef] px-4 py-3 text-[12px] text-[#a44a3f]">
+                Không tải được dữ liệu: {loadError}
+              </div>
+            )}
+
             <div className="mb-8">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a9299]">
                 KỸ THUẬT VIÊN / TIẾN ĐỘ
@@ -533,53 +633,52 @@ function RepairProgress() {
             </div>
 
             <form onSubmit={saveProgress} className="space-y-5 p-5 sm:p-6">
-              <div>
-                <label
-                  htmlFor="progress-value"
-                  className="mb-2 block text-[11px] font-semibold"
-                >
-                  Tiến độ hoàn thành (%)
-                </label>
-                <input
-                  id="progress-value"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={progress}
-                  onChange={(event) => setProgress(event.target.value)}
-                  className="w-full rounded-xl border border-[#e1e4e6] px-4 py-3 text-[12px] outline-none focus:border-[#8a9299]"
-                />
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eef0f2]">
-                  <div
-                    className="h-full rounded-full bg-[#1f2933] transition-all"
-                    style={{
-                      width: `${Math.min(100, Math.max(0, Number(progress) || 0))}%`,
-                    }}
-                  />
-                </div>
-              </div>
+              {selectedItem.workItems.length === 0 ? (
+                <p className="rounded-xl bg-[#f3f4f2] px-4 py-3 text-[11px] text-[#66717c]">
+                  Phiếu này chưa có hạng mục công việc để cập nhật tiến độ.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {selectedItem.workItems.map((workItem) => (
+                    <div
+                      key={workItem.id}
+                      className="rounded-xl border border-[#e5e8ea] bg-[#fafbfb] p-4"
+                    >
+                      <p className="text-[12px] font-semibold">
+                        {workItem.description ||
+                          workItem.service?.name ||
+                          `Hạng mục #${workItem.id}`}
+                      </p>
 
-              <div>
-                <label
-                  htmlFor="progress-step"
-                  className="mb-2 block text-[11px] font-semibold"
-                >
-                  Công việc hiện tại
-                </label>
-                <textarea
-                  id="progress-step"
-                  rows={3}
-                  value={currentStep}
-                  onChange={(event) => setCurrentStep(event.target.value)}
-                  placeholder="Nhập công việc đang thực hiện..."
-                  className="w-full rounded-xl border border-[#e1e4e6] px-4 py-3 text-[12px] outline-none focus:border-[#8a9299]"
-                />
-              </div>
+                      <label
+                        htmlFor={`progress-work-item-${workItem.id}`}
+                        className="mt-3 mb-1 block text-[10px] font-semibold text-[#66717c]"
+                      >
+                        Trạng thái công việc
+                      </label>
+                      <select
+                        id={`progress-work-item-${workItem.id}`}
+                        value={workItemStatuses[workItem.id] ?? workItem.status}
+                        onChange={(event) =>
+                          setWorkItemStatuses((current) => ({
+                            ...current,
+                            [workItem.id]: event.target.value as WorkItemStatus,
+                          }))
+                        }
+                        className="w-full rounded-xl border border-[#e1e4e6] bg-white px-4 py-3 text-[12px] outline-none focus:border-[#8a9299]"
+                      >
+                        <option value="PENDING">Chờ thực hiện</option>
+                        <option value="IN_PROGRESS">Đang thực hiện</option>
+                        <option value="COMPLETED">Hoàn thành</option>
+                        <option value="CANCELLED">Đã hủy</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <p className="rounded-xl bg-[#f3f4f2] px-4 py-3 text-[11px] text-[#66717c]">
-                Trạng thái sẽ tự cập nhật theo tiến độ: 0% là chờ sửa chữa,
-                từ 1% đến 99% là đang sửa chữa, 100% là hoàn thành.
+                Tiến độ được tính theo tỉ lệ hạng mục công việc đã hoàn thành.
               </p>
 
               {error && (
@@ -598,9 +697,10 @@ function RepairProgress() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-[#1f2933] px-5 py-3 text-[11px] font-semibold text-white transition hover:bg-[#151d24]"
+                  disabled={isSaving}
+                  className="rounded-xl bg-[#1f2933] px-5 py-3 text-[11px] font-semibold text-white transition hover:bg-[#151d24] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Lưu tiến độ
+                  {isSaving ? "Đang lưu..." : "Lưu tiến độ"}
                 </button>
               </div>
             </form>

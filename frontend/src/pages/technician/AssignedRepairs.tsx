@@ -1,8 +1,15 @@
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import TechnicianSidebar from "./TechnicianSidebar";
 import TechnicianTopbar from "./TechnicianTopbar";
+import {
+  getRepairOrders,
+  getVehicleName,
+  statusProgress,
+  technicianStatusGroup,
+  type ApiRepairOrder,
+} from "../../services/technicianApi";
 
 type RepairStatus = "Chờ thực hiện" | "Đang thực hiện" | "Hoàn thành";
 
@@ -17,38 +24,20 @@ type Repair = {
   progress: number;
 };
 
-const repairs: Repair[] = [
-  {
-    id: "PSC-001",
-    customer: "Nguyễn Tiến Hiền",
-    car: "Toyota Vios",
-    plate: "30A-123.45",
-    service: "Bảo dưỡng định kỳ",
+function toRepair(order: ApiRepairOrder): Repair {
+  const vehicle = order.vehicle ?? null;
+
+  return {
+    id: order.repair_order_code,
+    customer: order.customer?.full_name ?? "Khách hàng",
+    car: getVehicleName(vehicle),
+    plate: vehicle?.license_plate ?? "—",
+    service: order.initial_condition?.trim() || "Chưa xác định hạng mục",
     priority: "Bình thường",
-    status: "Đang thực hiện",
-    progress: 70,
-  },
-  {
-    id: "PSC-003",
-    customer: "Bùi Việt",
-    car: "Mazda 3",
-    plate: "30F-111.11",
-    service: "Sửa chữa điều hòa",
-    priority: "Ưu tiên",
-    status: "Chờ thực hiện",
-    progress: 0,
-  },
-  {
-    id: "PSC-005",
-    customer: "Trần Thị B",
-    car: "Honda City",
-    plate: "30G-222.22",
-    service: "Kiểm tra phanh",
-    priority: "Bình thường",
-    status: "Hoàn thành",
-    progress: 100,
-  },
-];
+    status: technicianStatusGroup(order.status),
+    progress: statusProgress(order.status),
+  };
+}
 
 const statusStyles: Record<RepairStatus, string> = {
   "Chờ thực hiện": "bg-[#eef0f2] text-[#5f6871]",
@@ -102,11 +91,33 @@ function TechnicianQuickLink({
 }
 
 function AssignedRepairs() {
+  const [repairs, setRepairs] = useState<Repair[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("Tất cả trạng thái");
   const [selectedRepairId, setSelectedRepairId] = useState<string | null>(
     null,
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getRepairOrders()
+      .then((orders) => {
+        if (isMounted) setRepairs(orders.map(toRepair));
+      })
+      .catch((error: Error) => {
+        if (isMounted) setLoadError(error.message);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredRepairs = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
@@ -126,7 +137,7 @@ function AssignedRepairs() {
 
       return matchesKeyword && matchesStatus;
     });
-  }, [keyword, statusFilter]);
+  }, [repairs, keyword, statusFilter]);
 
   const statistics = [
     {
@@ -167,6 +178,18 @@ function AssignedRepairs() {
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
+            {isLoading && (
+              <div className="mb-5 rounded-xl border border-[#e1e4e6] bg-white px-4 py-3 text-[12px] text-[#66717c]">
+                Đang tải danh sách phiếu sửa chữa...
+              </div>
+            )}
+
+            {loadError && (
+              <div className="mb-5 rounded-xl border border-[#f0d0cb] bg-[#fdf1ef] px-4 py-3 text-[12px] text-[#a44a3f]">
+                Không tải được dữ liệu: {loadError}
+              </div>
+            )}
+
             <div className="mb-8">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a9299]">
                 GARA / KỸ THUẬT VIÊN

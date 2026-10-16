@@ -1,12 +1,21 @@
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import TechnicianSidebar from "./TechnicianSidebar";
 import TechnicianTopbar from "./TechnicianTopbar";
+import {
+  createInspection,
+  getRepairOrders,
+  getVehicleName,
+  inspectionItem,
+  latestInspection,
+  type ApiRepairOrder,
+} from "../../services/technicianApi";
 
 type DiagnosisStatus = "Chưa chẩn đoán" | "Đang chẩn đoán" | "Đã chẩn đoán";
 
 type DiagnosisItem = {
+  orderId: number;
   id: string;
   customer: string;
   car: string;
@@ -17,38 +26,34 @@ type DiagnosisItem = {
   status: DiagnosisStatus;
 };
 
-const initialDiagnoses: DiagnosisItem[] = [
-  {
-    id: "PSC-001",
-    customer: "Nguyễn Tiến Hiền",
-    car: "Toyota Vios - 30A-123.45",
-    problem: "Động cơ rung nhẹ khi chạy không tải",
-    cause: "Có thể liên quan đến hệ thống đánh lửa",
-    result: "Cần kiểm tra bugi và cuộn đánh lửa",
-    recommendation: "Kiểm tra bugi, cuộn đánh lửa và hệ thống cấp nhiên liệu",
-    status: "Đã chẩn đoán",
-  },
-  {
-    id: "PSC-003",
-    customer: "Bùi Việt",
-    car: "Mazda 3 - 30F-111.11",
-    problem: "Điều hòa không lạnh",
-    cause: "Nghi ngờ thiếu gas điều hòa",
-    result: "Cần kiểm tra lượng gas và độ kín của hệ thống",
-    recommendation: "Kiểm tra đường ống, phát hiện rò rỉ và bổ sung gas nếu cần",
-    status: "Đã chẩn đoán",
-  },
-  {
-    id: "PSC-005",
-    customer: "Trần Thị B",
-    car: "Honda City - 30G-222.22",
-    problem: "Phanh có tiếng kêu",
-    cause: "",
-    result: "Đang kiểm tra má phanh",
-    recommendation: "",
-    status: "Đang chẩn đoán",
-  },
-];
+function toDiagnosisItem(order: ApiRepairOrder): DiagnosisItem {
+  const vehicle = order.vehicle ?? null;
+  const inspection = latestInspection(order);
+  const plate = vehicle?.license_plate ?? "—";
+
+  let status: DiagnosisStatus;
+  if (inspection?.diagnosis) {
+    status = "Đã chẩn đoán";
+  } else if (order.status === "INSPECTING") {
+    status = "Đang chẩn đoán";
+  } else {
+    status = "Chưa chẩn đoán";
+  }
+
+  return {
+    orderId: order.id,
+    id: order.repair_order_code,
+    customer: order.customer?.full_name ?? "Khách hàng",
+    car: `${getVehicleName(vehicle)} - ${plate}`,
+    problem: inspection?.condition_description ?? "",
+    cause:
+      inspectionItem(inspection, "Nguyên nhân")?.condition_description ?? "",
+    result: inspection?.diagnosis ?? "",
+    recommendation:
+      inspectionItem(inspection, "Đề xuất")?.condition_description ?? "",
+    status,
+  };
+}
 
 const statusStyles: Record<DiagnosisStatus, string> = {
   "Chưa chẩn đoán": "bg-[#f0f1f2] text-[#66717c]",
@@ -99,7 +104,10 @@ const emptyForm = {
 };
 
 function Diagnosis() {
-  const [diagnoses, setDiagnoses] = useState(initialDiagnoses);
+  const [diagnoses, setDiagnoses] = useState<DiagnosisItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("Tất cả");
   const [selectedDiagnosis, setSelectedDiagnosis] =
@@ -107,6 +115,25 @@ function Diagnosis() {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getRepairOrders()
+      .then((orders) => {
+        if (isMounted) setDiagnoses(orders.map(toDiagnosisItem));
+      })
+      .catch((loadErr: Error) => {
+        if (isMounted) setLoadError(loadErr.message);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredDiagnoses = useMemo(() => {
     const searchText = keyword.trim().toLowerCase();
@@ -163,34 +190,69 @@ function Diagnosis() {
       return;
     }
 
-    if (
-      !form.problem.trim() ||
-      !form.cause.trim() ||
-      !form.result.trim() ||
-      !form.recommendation.trim()
-    ) {
-      setError("Vui lòng nhập đầy đủ thông tin chẩn đoán.");
+    if (!form.problem.trim() || !form.result.trim()) {
+      setError("Vui lòng nhập hiện tượng lỗi và kết quả chẩn đoán.");
       return;
     }
 
-    setDiagnoses((current) =>
-      current.map((diagnosis) =>
-        diagnosis.id === selectedDiagnosis.id
-          ? {
-              ...diagnosis,
-              problem: form.problem.trim(),
-              cause: form.cause.trim(),
-              result: form.result.trim(),
-              recommendation: form.recommendation.trim(),
-              status: form.status,
-            }
-          : diagnosis,
-      ),
+    const extraItems = [
+      form.cause.trim()
+        ? {
+            item_name: "Nguyên nhân",
+            condition_status: "WARNING",
+            condition_description: form.cause.trim(),
+          }
+        : null,
+      form.recommendation.trim()
+        ? {
+            item_name: "Đề xuất",
+            condition_status: "NEEDS_SERVICE",
+            condition_description: form.recommendation.trim(),
+          }
+        : null,
+    ].filter(
+      (
+        item,
+      ): item is {
+        item_name: string;
+        condition_status: string;
+        condition_description: string;
+      } => item !== null,
     );
 
-    setMessage(`Đã cập nhật chẩn đoán ${selectedDiagnosis.id}.`);
-    setSelectedDiagnosis(null);
+    setIsSaving(true);
     setError("");
+
+    createInspection(selectedDiagnosis.orderId, {
+      condition_description: form.problem.trim(),
+      diagnosis: form.result.trim(),
+      items: extraItems,
+    })
+      .then(() => {
+        setDiagnoses((current) =>
+          current.map((diagnosis) =>
+            diagnosis.id === selectedDiagnosis.id
+              ? {
+                  ...diagnosis,
+                  problem: form.problem.trim(),
+                  cause: form.cause.trim(),
+                  result: form.result.trim(),
+                  recommendation: form.recommendation.trim(),
+                  status: "Đã chẩn đoán",
+                }
+              : diagnosis,
+          ),
+        );
+
+        setMessage(`Đã cập nhật chẩn đoán ${selectedDiagnosis.id}.`);
+        setSelectedDiagnosis(null);
+      })
+      .catch((saveErr: Error) => {
+        setError(saveErr.message);
+      })
+      .finally(() => {
+        setIsSaving(false);
+      });
   }
 
   return (
@@ -202,6 +264,18 @@ function Diagnosis() {
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
+            {isLoading && (
+              <div className="mb-5 rounded-xl border border-[#e1e4e6] bg-white px-4 py-3 text-[12px] text-[#66717c]">
+                Đang tải danh sách chẩn đoán...
+              </div>
+            )}
+
+            {loadError && (
+              <div className="mb-5 rounded-xl border border-[#f0d0cb] bg-[#fdf1ef] px-4 py-3 text-[12px] text-[#a44a3f]">
+                Không tải được dữ liệu: {loadError}
+              </div>
+            )}
+
             <div className="mb-8">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a9299]">
                 KỸ THUẬT VIÊN / CHẨN ĐOÁN
@@ -575,30 +649,6 @@ function Diagnosis() {
                 />
               </div>
 
-              <div>
-                <label
-                  htmlFor="diagnosis-status-edit"
-                  className="mb-2 block text-[11px] font-semibold"
-                >
-                  Trạng thái chẩn đoán
-                </label>
-                <select
-                  id="diagnosis-status-edit"
-                  value={form.status}
-                  onChange={(event) =>
-                    setForm({
-                      ...form,
-                      status: event.target.value as DiagnosisStatus,
-                    })
-                  }
-                  className="w-full rounded-xl border border-[#e1e4e6] bg-white px-4 py-3 text-[12px] outline-none focus:border-[#8a9299]"
-                >
-                  <option value="Chưa chẩn đoán">Chưa chẩn đoán</option>
-                  <option value="Đang chẩn đoán">Đang chẩn đoán</option>
-                  <option value="Đã chẩn đoán">Đã chẩn đoán</option>
-                </select>
-              </div>
-
               {error && (
                 <p role="alert" className="text-[11px] font-medium text-red-600">
                   {error}
@@ -615,9 +665,10 @@ function Diagnosis() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-[#1f2933] px-5 py-3 text-[11px] font-semibold text-white transition hover:bg-[#151d24]"
+                  disabled={isSaving}
+                  className="rounded-xl bg-[#1f2933] px-5 py-3 text-[11px] font-semibold text-white transition hover:bg-[#151d24] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Lưu chẩn đoán
+                  {isSaving ? "Đang lưu..." : "Lưu chẩn đoán"}
                 </button>
               </div>
             </form>
