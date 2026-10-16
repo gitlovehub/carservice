@@ -79,3 +79,36 @@ export async function deleteAdvisorVehicle(id: number): Promise<void> {
     method: "DELETE",
   });
 }
+export type AdvisorVehicleInput = {
+  customer_id: number;
+  model_id: number;
+  license_plate?: string | null;
+  variant?: string | null;
+  year?: number | null;
+  mileage?: number | null;
+  vin?: string | null;
+  note?: string | null;
+};
+
+export async function createAdvisorVehicle(
+  data: AdvisorVehicleInput,
+): Promise<AdvisorVehicle> {
+  const response = await fetchApi("/vehicles", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  return response.data;
+}
+
+export async function updateAdvisorVehicle(
+  id: number,
+  data: Partial<AdvisorVehicleInput>,
+): Promise<AdvisorVehicle> {
+  const response = await fetchApi(`/vehicles/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+  return response.data;
+}
