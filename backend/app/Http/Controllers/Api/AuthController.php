@@ -121,11 +121,15 @@ class AuthController extends Controller
 
         $token = null;
 
+        // Cấp Sanctum Token cho Frontend React
+        $token = $account->createToken(
+            $data['device_name'] ?? 'carservice-web'
+        )->plainTextToken;
+
+        // Giữ đăng nhập session nếu request hỗ trợ
         if ($request->hasSession()) {
             Auth::guard('web')->login($account);
             $request->session()->regenerate();
-        } else {
-            $token = $account->createToken($data['device_name'] ?? 'default')->plainTextToken;
         }
 
         return response()->json([
