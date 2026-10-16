@@ -1,11 +1,7 @@
+
 import { useMemo, useState } from "react";
 import AdvisorSidebar from "./AdvisorSidebar";
 import AdvisorTopbar from "./AdvisorTopbar";
-
-type RepairStatusType =
-  | "Chờ sửa chữa"
-  | "Đang sửa chữa"
-  | "Đã hoàn thành";
 
 type Repair = {
   id: string;
@@ -15,10 +11,7 @@ type Repair = {
   service: string;
   technician: string;
   startDate: string;
-  status: RepairStatusType;
-  mileage: string;
-  description: string;
-  note: string;
+  status: string;
 };
 
 const initialRepairs: Repair[] = [
@@ -31,9 +24,6 @@ const initialRepairs: Repair[] = [
     technician: "Trần Văn Nam",
     startDate: "24/06/2026",
     status: "Đang sửa chữa",
-    mileage: "45000",
-    description: "Bảo dưỡng định kỳ, kiểm tra động cơ và hệ thống phanh",
-    note: "",
   },
   {
     id: "SC-002",
@@ -44,9 +34,6 @@ const initialRepairs: Repair[] = [
     technician: "Lê Minh Tuấn",
     startDate: "25/06/2026",
     status: "Chờ sửa chữa",
-    mileage: "32000",
-    description: "Kiểm tra tiếng kêu bất thường khi vận hành",
-    note: "",
   },
   {
     id: "SC-003",
@@ -57,17 +44,13 @@ const initialRepairs: Repair[] = [
     technician: "Nguyễn Văn Hùng",
     startDate: "26/06/2026",
     status: "Đã hoàn thành",
-    mileage: "51000",
-    description: "Thay dầu động cơ và kiểm tra các dung dịch",
-    note: "Đã hoàn thành công việc",
   },
 ];
 
-const statusOptions: RepairStatusType[] = [
-  "Chờ sửa chữa",
-  "Đang sửa chữa",
-  "Đã hoàn thành",
-];
+const inputClass =
+  "w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-[12px] outline-none transition placeholder:text-[#A0A8AF] focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10";
+
+const statuses = ["Chờ sửa chữa", "Đang sửa chữa", "Đã hoàn thành"];
 
 const emptyForm = {
   customer: "",
@@ -75,20 +58,19 @@ const emptyForm = {
   plate: "",
   service: "",
   technician: "",
-  mileage: "",
-  description: "",
-  note: "",
+  startDate: new Date().toLocaleDateString("vi-VN"),
+  status: "Chờ sửa chữa",
 };
 
 function RepairStatus() {
   const [repairs, setRepairs] = useState<Repair[]>(initialRepairs);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [status, setStatus] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRepair, setSelectedRepair] = useState<Repair | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [formError, setFormError] = useState("");
 
   const filteredRepairs = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -97,18 +79,15 @@ function RepairStatus() {
       const matchSearch = [
         repair.id,
         repair.customer,
-        repair.car,
         repair.plate,
+        repair.car,
         repair.technician,
         repair.service,
       ].some((value) => value.toLowerCase().includes(keyword));
 
-      const matchStatus =
-        statusFilter === "" || repair.status === statusFilter;
-
-      return matchSearch && matchStatus;
+      return matchSearch && (!status || repair.status === status);
     });
-  }, [repairs, search, statusFilter]);
+  }, [repairs, search, status]);
 
   const completedCount = repairs.filter(
     (repair) => repair.status === "Đã hoàn thành",
@@ -122,98 +101,108 @@ function RepairStatus() {
     (repair) => repair.status === "Chờ sửa chữa",
   ).length;
 
-  const getStatusClass = (value: RepairStatusType) => {
+  const getStatusClass = (value: string) => {
     if (value === "Đã hoàn thành") {
       return "bg-[#EEF7F0] text-[#39734A]";
     }
 
     if (value === "Đang sửa chữa") {
-      return "bg-[#F3E8D2] text-[#805D24]";
+      return "bg-[#F3E8D2] text-[#5B4630]";
     }
 
     return "bg-[#F3F4F2] text-[#66717C]";
   };
 
-  const updateStatus = (
-    id: string,
-    nextStatus: RepairStatusType,
-  ) => {
+  const openCreateModal = () => {
+    setEditingId(null);
+    setForm({ ...emptyForm });
+    setFormError("");
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (repair: Repair) => {
+    setEditingId(repair.id);
+    setForm({
+      customer: repair.customer,
+      car: repair.car,
+      plate: repair.plate,
+      service: repair.service,
+      technician: repair.technician,
+      startDate: repair.startDate,
+      status: repair.status,
+    });
+    setFormError("");
+    setIsModalOpen(true);
+  };
+
+  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormError("");
+
+    if (
+      !form.customer.trim() ||
+      !form.car.trim() ||
+      !form.plate.trim() ||
+      !form.service.trim() ||
+      !form.technician.trim() ||
+      !form.startDate.trim()
+    ) {
+      setFormError("Vui lòng nhập đầy đủ thông tin phiếu sửa chữa.");
+      return;
+    }
+
+    if (editingId) {
+      setRepairs((current) =>
+        current.map((repair) =>
+          repair.id === editingId
+            ? { ...repair, ...form }
+            : repair,
+        ),
+      );
+    } else {
+      const nextNumber =
+        repairs.reduce((max, repair) => {
+          const number = Number(repair.id.replace("SC-", ""));
+          return Number.isNaN(number) ? max : Math.max(max, number);
+        }, 0) + 1;
+
+      const newRepair: Repair = {
+        id: `SC-${String(nextNumber).padStart(3, "0")}`,
+        ...form,
+      };
+
+      setRepairs((current) => [newRepair, ...current]);
+    }
+
+    setIsModalOpen(false);
+    setEditingId(null);
+    setForm({ ...emptyForm });
+  };
+
+  const handleDelete = (repair: Repair) => {
+    if (!window.confirm(`Bạn có chắc muốn xóa phiếu ${repair.id}?`)) {
+      return;
+    }
+
+    setRepairs((current) =>
+      current.filter((item) => item.id !== repair.id),
+    );
+
+    if (selectedRepair?.id === repair.id) {
+      setSelectedRepair(null);
+    }
+  };
+
+  const updateStatus = (id: string, value: string) => {
     setRepairs((current) =>
       current.map((repair) =>
-        repair.id === id
-          ? { ...repair, status: nextStatus }
-          : repair,
+        repair.id === id ? { ...repair, status: value } : repair,
       ),
     );
 
     setSelectedRepair((current) =>
-      current?.id === id
-        ? { ...current, status: nextStatus }
-        : current,
+      current?.id === id ? { ...current, status: value } : current,
     );
-
-    setSuccess(`Đã cập nhật trạng thái phiếu ${id}.`);
-    setError("");
-  };
-
-  const handleCreateRepair = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError("");
-    setSuccess("");
-
-    const plate = form.plate.trim().toUpperCase();
-
-    if (!form.customer.trim() || !form.car.trim() || !plate) {
-      setError("Vui lòng nhập đầy đủ tên khách hàng, xe và biển số.");
-      return;
-    }
-
-    if (!form.service.trim() || !form.technician.trim()) {
-      setError("Vui lòng nhập dịch vụ và kỹ thuật viên phụ trách.");
-      return;
-    }
-
-    if (form.mileage.trim() && Number(form.mileage) < 0) {
-      setError("Số km hiện tại không hợp lệ.");
-      return;
-    }
-
-    const duplicatePlate = repairs.some(
-      (repair) => repair.plate.toLowerCase() === plate.toLowerCase()
-        && repair.status !== "Đã hoàn thành",
-    );
-
-    if (duplicatePlate) {
-      setError("Xe này đã có phiếu chưa hoàn thành.");
-      return;
-    }
-
-    const nextNumber =
-      repairs.reduce((max, repair) => {
-        const number = Number(repair.id.replace("SC-", ""));
-        return Number.isNaN(number) ? max : Math.max(max, number);
-      }, 0) + 1;
-
-    const newRepair: Repair = {
-      id: `SC-${String(nextNumber).padStart(3, "0")}`,
-      customer: form.customer.trim(),
-      car: form.car.trim(),
-      plate,
-      service: form.service.trim(),
-      technician: form.technician.trim(),
-      startDate: new Date().toLocaleDateString("vi-VN"),
-      status: "Chờ sửa chữa",
-      mileage: form.mileage.trim(),
-      description: form.description.trim(),
-      note: form.note.trim(),
-    };
-
-    setRepairs((current) => [newRepair, ...current]);
-    setForm(emptyForm);
-    setShowForm(false);
-    setSearch("");
-    setStatusFilter("");
-    setSuccess(`Đã tạo phiếu ${newRepair.id} trên giao diện.`);
   };
 
   return (
@@ -223,299 +212,296 @@ function RepairStatus() {
       <div className="lg:ml-[250px]">
         <AdvisorTopbar />
 
-        <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-          <div className="mb-8">
-            <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
-              GARA / SỬA CHỮA
-            </p>
-
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">
-                  Trạng thái sửa chữa
-                </h1>
-                <p className="mt-2 text-xs leading-5 text-[#8A949E]">
-                  Quản lý phiếu sửa chữa và theo dõi tiến độ xử lý xe.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(true);
-                  setError("");
-                  setSuccess("");
-                }}
-                className="w-fit rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24]"
-              >
-                + Tạo phiếu sửa chữa
-              </button>
-            </div>
-          </div>
-
-          {success && (
-            <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-[#CDE6D2] bg-[#EEF7F0] px-4 py-3 text-xs text-[#39734A]">
-              <span>{success}</span>
-              <button
-                type="button"
-                onClick={() => setSuccess("")}
-                className="font-bold"
-              >
-                Đóng
-              </button>
-            </div>
-          )}
-
-          {error && !showForm && (
-            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
-              {error}
-            </div>
-          )}
-
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              {
-                label: "TỔNG PHIẾU",
-                value: repairs.length,
-                description: "Tổng số phiếu sửa chữa",
-              },
-              {
-                label: "CHỜ SỬA CHỮA",
-                value: waitingCount,
-                description: "Chờ kỹ thuật viên tiếp nhận",
-              },
-              {
-                label: "ĐANG SỬA",
-                value: repairingCount,
-                description: "Đang xử lý tại gara",
-              },
-              {
-                label: "HOÀN THÀNH",
-                value: completedCount,
-                description: "Đã hoàn tất sửa chữa",
-              },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#D6A85F]"
-              >
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
-                  {item.label}
-                </p>
-                <p className="mt-3 text-3xl font-bold">{item.value}</p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  {item.description}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm">
-            <div className="mb-5">
-              <h2 className="text-sm font-semibold">
-                Tìm kiếm phiếu sửa chữa
-              </h2>
-              <p className="mt-1 text-[10px] text-[#8A949E]">
-                Tìm theo mã phiếu, khách hàng, biển số, xe hoặc kỹ thuật viên.
+        <main>
+          <div className="mx-auto max-w-[1200px] px-6 py-8 lg:px-8 lg:py-10">
+            <div className="mb-8">
+              <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
+                GARA / SỬA CHỮA
               </p>
+
+              <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+                <div>
+                  <h2 className="text-[24px] font-bold tracking-tight">
+                    Trạng thái sửa chữa
+                  </h2>
+                  <p className="mt-2 max-w-[620px] text-[12px] leading-5 text-[#8A949E]">
+                    Theo dõi và cập nhật tiến độ sửa chữa xe của khách hàng.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="w-fit rounded-xl bg-[#1F2933] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151D24]"
+                >
+                  + Tạo phiếu sửa chữa
+                </button>
+              </div>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr_auto]">
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Nhập thông tin cần tìm..."
-                className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
-              />
-
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#D6A85F]"
-              >
-                <option value="">Tất cả trạng thái</option>
-                {statusOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSearch("");
-                  setStatusFilter("");
-                }}
-                className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold transition hover:border-[#D6A85F]"
-              >
-                Xóa bộ lọc
-              </button>
+            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                {
+                  label: "PHIẾU SỬA CHỮA",
+                  value: repairs.length,
+                  description: "Tổng số phiếu",
+                },
+                {
+                  label: "ĐANG SỬA",
+                  value: repairingCount,
+                  description: "Đang xử lý tại gara",
+                },
+                {
+                  label: "HOÀN THÀNH",
+                  value: completedCount,
+                  description: "Đã hoàn tất sửa chữa",
+                },
+                {
+                  label: "CHỜ SỬA",
+                  value: waitingCount,
+                  description: "Chưa bắt đầu sửa chữa",
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:-translate-y-1 hover:border-[#D6A85F]"
+                >
+                  <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                    {item.label}
+                  </p>
+                  <p className="mt-3 text-[24px] font-bold">{item.value}</p>
+                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
             </div>
 
-            <p className="mt-3 text-[10px] text-[#8A949E]">
-              Tìm thấy {filteredRepairs.length} trên {repairs.length} phiếu.
-            </p>
-          </section>
-
-          <section className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-sm">
-            <div className="flex flex-col gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-sm font-semibold">
-                  Danh sách phiếu sửa chữa
-                </h2>
+            <div className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-5">
+              <div className="mb-5">
+                <p className="text-[13px] font-semibold">
+                  Tìm kiếm phiếu sửa chữa
+                </p>
                 <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Xem chi tiết hoặc cập nhật tiến độ từng phiếu.
+                  Tìm theo mã phiếu, khách hàng, biển số hoặc kỹ thuật viên.
                 </p>
               </div>
-              <span className="w-fit rounded-lg bg-[#F3F4F2] px-3 py-2 text-[10px] font-semibold text-[#66717C]">
-                {filteredRepairs.length} phiếu
-              </span>
-            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1100px] border-collapse text-left">
-                <thead>
-                  <tr className="border-b border-[#E1E4E6] bg-[#F7F7F5]">
-                    {[
-                      "MÃ PHIẾU",
-                      "KHÁCH HÀNG",
-                      "XE",
-                      "DỊCH VỤ",
-                      "KỸ THUẬT VIÊN",
-                      "NGÀY NHẬN",
-                      "TRẠNG THÁI",
-                      "THAO TÁC",
-                    ].map((heading) => (
-                      <th
-                        key={heading}
-                        className="whitespace-nowrap px-5 py-3 text-[9px] font-bold text-[#8A949E]"
-                      >
-                        {heading}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
+              <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr_auto]">
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Mã phiếu, khách hàng, biển số..."
+                  className={inputClass}
+                />
 
-                <tbody>
-                  {filteredRepairs.map((repair) => (
-                    <tr
-                      key={repair.id}
-                      className="border-b border-[#EEF0F2] last:border-0 hover:bg-[#FAFAF9]"
-                    >
-                      <td className="px-5 py-4">
-                        <span className="rounded-lg bg-[#F3F4F2] px-3 py-2 text-[10px] font-bold">
-                          {repair.id}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-xs font-semibold">
-                        {repair.customer}
-                      </td>
-                      <td className="px-5 py-4">
-                        <p className="text-xs font-semibold">{repair.car}</p>
-                        <p className="mt-1 text-[10px] text-[#8A949E]">
-                          {repair.plate}
-                        </p>
-                      </td>
-                      <td className="px-5 py-4 text-xs">{repair.service}</td>
-                      <td className="px-5 py-4 text-xs">
-                        {repair.technician}
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-4 text-xs">
-                        {repair.startDate}
-                      </td>
-                      <td className="px-5 py-4">
-                        <select
-                          aria-label={`Trạng thái ${repair.id}`}
-                          value={repair.status}
-                          onChange={(event) =>
-                            updateStatus(
-                              repair.id,
-                              event.target.value as RepairStatusType,
-                            )
-                          }
-                          className={`rounded-lg border-0 px-3 py-2 text-[10px] font-semibold outline-none ${getStatusClass(repair.status)}`}
-                        >
-                          {statusOptions.map((item) => (
-                            <option key={item} value={item}>
-                              {item}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-5 py-4">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedRepair(repair)}
-                          className="whitespace-nowrap rounded-lg border border-[#D9DDE1] px-3 py-2 text-[10px] font-semibold transition hover:border-[#D6A85F] hover:bg-[#FBF7EF]"
-                        >
-                          Chi tiết
-                        </button>
-                      </td>
-                    </tr>
+                <select
+                  value={status}
+                  onChange={(event) => setStatus(event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Tất cả trạng thái</option>
+                  {statuses.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
                   ))}
-                </tbody>
-              </table>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch("");
+                    setStatus("");
+                  }}
+                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-[11px] font-semibold text-white hover:bg-[#151D24]"
+                >
+                  Xóa bộ lọc
+                </button>
+              </div>
             </div>
 
-            {filteredRepairs.length === 0 && (
-              <div className="px-5 py-14 text-center">
-                <p className="text-sm font-semibold">
-                  Không tìm thấy phiếu sửa chữa
-                </p>
-                <p className="mt-2 text-xs text-[#8A949E]">
-                  Thử thay đổi từ khóa hoặc trạng thái lọc.
+            <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
+              <div className="flex flex-col gap-3 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[13px] font-semibold">
+                    Danh sách phiếu sửa chữa
+                  </p>
+                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                    Theo dõi tiến độ xử lý xe
+                  </p>
+                </div>
+                <p className="w-fit rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-semibold text-[#66717C]">
+                  {filteredRepairs.length} phiếu
                 </p>
               </div>
-            )}
-          </section>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1150px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#E1E4E6] bg-[#F7F7F5] text-left">
+                      {[
+                        "MÃ PHIẾU",
+                        "KHÁCH HÀNG",
+                        "XE",
+                        "DỊCH VỤ",
+                        "KỸ THUẬT VIÊN",
+                        "NGÀY NHẬN",
+                        "TRẠNG THÁI",
+                        "THAO TÁC",
+                      ].map((heading) => (
+                        <th
+                          key={heading}
+                          className="px-5 py-3 text-[9px] font-bold text-[#8A949E]"
+                        >
+                          {heading}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filteredRepairs.map((repair) => (
+                      <tr
+                        key={repair.id}
+                        className="border-b border-[#EEF0F2] last:border-0 hover:bg-[#FAFAF9]"
+                      >
+                        <td className="px-5 py-4">
+                          <span className="rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-bold">
+                            {repair.id}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-4 text-[11px] font-semibold">
+                          {repair.customer}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <p className="text-[11px] font-semibold">
+                            {repair.car}
+                          </p>
+                          <p className="mt-1 text-[9px] text-[#8A949E]">
+                            {repair.plate}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4 text-[11px]">
+                          {repair.service}
+                        </td>
+
+                        <td className="px-5 py-4 text-[11px]">
+                          {repair.technician}
+                        </td>
+
+                        <td className="px-5 py-4 text-[11px]">
+                          {repair.startDate}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <select
+                            value={repair.status}
+                            onChange={(event) =>
+                              updateStatus(repair.id, event.target.value)
+                            }
+                            className={`rounded-lg border-0 px-3 py-2 text-[10px] font-semibold outline-none ${getStatusClass(repair.status)}`}
+                          >
+                            {statuses.map((item) => (
+                              <option key={item} value={item}>
+                                {item}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedRepair(repair)}
+                              className="rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[10px] font-semibold hover:border-[#D6A85F]"
+                            >
+                              Chi tiết
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(repair)}
+                              className="rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[10px] font-semibold hover:border-[#D6A85F]"
+                            >
+                              Sửa
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(repair)}
+                              className="rounded-lg border border-red-200 px-3 py-1.5 text-[10px] font-semibold text-red-600 hover:bg-red-50"
+                            >
+                              Xóa
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {filteredRepairs.length === 0 && (
+                <div className="px-5 py-14 text-center">
+                  <p className="text-[12px] font-semibold">
+                    Không tìm thấy phiếu sửa chữa
+                  </p>
+                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                    Thử thay đổi từ khóa hoặc trạng thái.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </main>
       </div>
 
-      {showForm && (
+      {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="my-auto w-full max-w-2xl rounded-2xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-[#EEF0F2] px-6 py-5">
               <div>
-                <h2 className="text-lg font-bold">Tạo phiếu sửa chữa</h2>
+                <h3 className="text-lg font-bold">
+                  {editingId ? "Cập nhật phiếu sửa chữa" : "Tạo phiếu sửa chữa"}
+                </h3>
                 <p className="mt-1 text-xs text-[#8A949E]">
-                  Nhập thông tin xe và công việc cần thực hiện.
+                  Điền thông tin xe và tiến độ sửa chữa.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setShowForm(false);
-                  setError("");
-                }}
-                className="rounded-lg px-3 py-2 text-sm hover:bg-[#F3F4F2]"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm text-[#66717C] hover:bg-[#F3F4F2]"
               >
-                ✕
+                Đóng
               </button>
             </div>
 
-            <form onSubmit={handleCreateRepair} className="space-y-4 p-6">
-              {error && (
+            <form onSubmit={handleSave} className="space-y-5 p-6">
+              {formError && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
-                  {error}
+                  {formError}
                 </div>
               )}
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="space-y-2 text-xs font-semibold">
-                  Khách hàng *
+                <label className="text-xs font-semibold">
+                  Tên khách hàng *
                   <input
                     required
                     value={form.customer}
                     onChange={(event) =>
                       setForm({ ...form, customer: event.target.value })
                     }
-                    className="w-full rounded-xl border border-[#D9DDE1] px-3 py-3 font-normal outline-none focus:border-[#D6A85F]"
-                    placeholder="Tên khách hàng"
+                    className={`${inputClass} mt-2`}
+                    placeholder="Nhập tên khách hàng"
                   />
                 </label>
 
-                <label className="space-y-2 text-xs font-semibold">
+                <label className="text-xs font-semibold">
                   Tên xe *
                   <input
                     required
@@ -523,39 +509,25 @@ function RepairStatus() {
                     onChange={(event) =>
                       setForm({ ...form, car: event.target.value })
                     }
-                    className="w-full rounded-xl border border-[#D9DDE1] px-3 py-3 font-normal outline-none focus:border-[#D6A85F]"
+                    className={`${inputClass} mt-2`}
                     placeholder="Ví dụ: Toyota Vios"
                   />
                 </label>
 
-                <label className="space-y-2 text-xs font-semibold">
-                  Biển số xe *
+                <label className="text-xs font-semibold">
+                  Biển số *
                   <input
                     required
                     value={form.plate}
                     onChange={(event) =>
                       setForm({ ...form, plate: event.target.value })
                     }
-                    className="w-full rounded-xl border border-[#D9DDE1] px-3 py-3 font-normal uppercase outline-none focus:border-[#D6A85F]"
+                    className={`${inputClass} mt-2`}
                     placeholder="30A-123.45"
                   />
                 </label>
 
-                <label className="space-y-2 text-xs font-semibold">
-                  Số km hiện tại
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.mileage}
-                    onChange={(event) =>
-                      setForm({ ...form, mileage: event.target.value })
-                    }
-                    className="w-full rounded-xl border border-[#D9DDE1] px-3 py-3 font-normal outline-none focus:border-[#D6A85F]"
-                    placeholder="Số km trên đồng hồ"
-                  />
-                </label>
-
-                <label className="space-y-2 text-xs font-semibold">
+                <label className="text-xs font-semibold">
                   Dịch vụ *
                   <input
                     required
@@ -563,12 +535,12 @@ function RepairStatus() {
                     onChange={(event) =>
                       setForm({ ...form, service: event.target.value })
                     }
-                    className="w-full rounded-xl border border-[#D9DDE1] px-3 py-3 font-normal outline-none focus:border-[#D6A85F]"
+                    className={`${inputClass} mt-2`}
                     placeholder="Tên dịch vụ sửa chữa"
                   />
                 </label>
 
-                <label className="space-y-2 text-xs font-semibold">
+                <label className="text-xs font-semibold">
                   Kỹ thuật viên *
                   <input
                     required
@@ -576,46 +548,47 @@ function RepairStatus() {
                     onChange={(event) =>
                       setForm({ ...form, technician: event.target.value })
                     }
-                    className="w-full rounded-xl border border-[#D9DDE1] px-3 py-3 font-normal outline-none focus:border-[#D6A85F]"
+                    className={`${inputClass} mt-2`}
                     placeholder="Tên kỹ thuật viên"
                   />
                 </label>
+
+                <label className="text-xs font-semibold">
+                  Ngày nhận xe *
+                  <input
+                    required
+                    value={form.startDate}
+                    onChange={(event) =>
+                      setForm({ ...form, startDate: event.target.value })
+                    }
+                    className={`${inputClass} mt-2`}
+                    placeholder="dd/mm/yyyy"
+                  />
+                </label>
+
+                <label className="text-xs font-semibold sm:col-span-2">
+                  Trạng thái
+                  <select
+                    value={form.status}
+                    onChange={(event) =>
+                      setForm({ ...form, status: event.target.value })
+                    }
+                    className={`${inputClass} mt-2`}
+                  >
+                    {statuses.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
-              <label className="block space-y-2 text-xs font-semibold">
-                Nội dung sửa chữa
-                <textarea
-                  rows={3}
-                  value={form.description}
-                  onChange={(event) =>
-                    setForm({ ...form, description: event.target.value })
-                  }
-                  className="w-full rounded-xl border border-[#D9DDE1] px-3 py-3 font-normal outline-none focus:border-[#D6A85F]"
-                  placeholder="Mô tả yêu cầu của khách hàng..."
-                />
-              </label>
-
-              <label className="block space-y-2 text-xs font-semibold">
-                Ghi chú
-                <textarea
-                  rows={2}
-                  value={form.note}
-                  onChange={(event) =>
-                    setForm({ ...form, note: event.target.value })
-                  }
-                  className="w-full rounded-xl border border-[#D9DDE1] px-3 py-3 font-normal outline-none focus:border-[#D6A85F]"
-                  placeholder="Ghi chú thêm..."
-                />
-              </label>
-
-              <div className="flex flex-col-reverse gap-3 border-t border-[#EEF0F2] pt-5 sm:flex-row sm:justify-end">
+              <div className="flex justify-end gap-3 border-t border-[#EEF0F2] pt-5">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setError("");
-                  }}
-                  className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold hover:bg-[#F7F7F5]"
+                  onClick={() => setIsModalOpen(false)}
+                  className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold"
                 >
                   Hủy
                 </button>
@@ -623,7 +596,7 @@ function RepairStatus() {
                   type="submit"
                   className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white hover:bg-[#151D24]"
                 >
-                  Tạo phiếu
+                  {editingId ? "Lưu thay đổi" : "Tạo phiếu"}
                 </button>
               </div>
             </form>
@@ -632,84 +605,62 @@ function RepairStatus() {
       )}
 
       {selectedRepair && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
-          <div className="my-auto w-full max-w-xl rounded-2xl bg-white shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-[#EEF0F2] px-6 py-5">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A949E]">
                   CHI TIẾT PHIẾU
                 </p>
-                <h2 className="mt-1 text-lg font-bold">
-                  {selectedRepair.id}
-                </h2>
+                <h3 className="mt-1 text-lg font-bold">{selectedRepair.id}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedRepair(null)}
                 className="rounded-lg px-3 py-2 text-sm hover:bg-[#F3F4F2]"
               >
-                ✕
+                Đóng
               </button>
             </div>
 
-            <div className="grid gap-4 p-6 sm:grid-cols-2">
+            <div className="space-y-4 p-6">
               {[
                 ["Khách hàng", selectedRepair.customer],
-                ["Tên xe", selectedRepair.car],
+                ["Xe", selectedRepair.car],
                 ["Biển số", selectedRepair.plate],
-                ["Số km", selectedRepair.mileage || "Chưa cập nhật"],
                 ["Dịch vụ", selectedRepair.service],
                 ["Kỹ thuật viên", selectedRepair.technician],
                 ["Ngày nhận", selectedRepair.startDate],
-                ["Trạng thái", selectedRepair.status],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-xl bg-[#F7F7F5] p-4">
-                  <p className="text-[10px] text-[#8A949E]">{label}</p>
-                  <p className="mt-2 text-xs font-semibold">{value}</p>
+                <div
+                  key={label}
+                  className="flex items-start justify-between gap-4 border-b border-[#EEF0F2] pb-3"
+                >
+                  <span className="text-xs text-[#8A949E]">{label}</span>
+                  <span className="text-right text-xs font-semibold">
+                    {value}
+                  </span>
                 </div>
               ))}
 
-              <div className="rounded-xl bg-[#F7F7F5] p-4 sm:col-span-2">
-                <p className="text-[10px] text-[#8A949E]">
-                  Nội dung sửa chữa
-                </p>
-                <p className="mt-2 whitespace-pre-wrap text-xs">
-                  {selectedRepair.description || "Chưa có nội dung"}
-                </p>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-[#8A949E]">Trạng thái</span>
+                <span
+                  className={`rounded-lg px-3 py-1.5 text-[10px] font-semibold ${getStatusClass(selectedRepair.status)}`}
+                >
+                  {selectedRepair.status}
+                </span>
               </div>
-
-              <div className="rounded-xl bg-[#F7F7F5] p-4 sm:col-span-2">
-                <p className="text-[10px] text-[#8A949E]">Ghi chú</p>
-                <p className="mt-2 whitespace-pre-wrap text-xs">
-                  {selectedRepair.note || "Không có ghi chú"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col-reverse gap-3 border-t border-[#EEF0F2] p-6 sm:flex-row sm:items-center sm:justify-between">
-              <select
-                value={selectedRepair.status}
-                onChange={(event) =>
-                  updateStatus(
-                    selectedRepair.id,
-                    event.target.value as RepairStatusType,
-                  )
-                }
-                className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#D6A85F]"
-              >
-                {statusOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
 
               <button
                 type="button"
-                onClick={() => setSelectedRepair(null)}
-                className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white hover:bg-[#151D24]"
+                onClick={() => {
+                  openEditModal(selectedRepair);
+                  setSelectedRepair(null);
+                }}
+                className="w-full rounded-xl bg-[#1F2933] px-4 py-3 text-xs font-semibold text-white hover:bg-[#151D24]"
               >
-                Đóng chi tiết
+                Chỉnh sửa phiếu
               </button>
             </div>
           </div>

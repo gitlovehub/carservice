@@ -48,21 +48,14 @@ const emptyForm: ServiceForm = {
 };
 
 const fieldClass =
-  "w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#1F2933]";
+  "w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#1F2933] focus:ring-2 focus:ring-[#D6A85F]/20";
 
 function formatPrice(price: string | number): string {
   const value = Number(price);
 
   if (!Number.isFinite(value)) return "Chưa có giá";
 
-  return `${new Intl.NumberFormat("vi-VN", {
-    maximumFractionDigits: 2,
-  }).format(value)} đ`;
-}
-
-function getErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
+  return `${new Intl.NumberFormat("vi-VN").format(value)} đ`;
 }
 
 function Services() {
@@ -79,16 +72,18 @@ function Services() {
   const [reloadKey, setReloadKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [modal, setModal] = useState<"form" | "detail" | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [form, setForm] = useState<ServiceForm>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
     let active = true;
-
     const query = new URLSearchParams({ page: String(page) });
 
     if (filters.search) query.set("search", filters.search);
@@ -102,33 +97,25 @@ function Services() {
       .then((response: ServiceIndexResponse) => {
         if (!active) return;
 
-        if (
-          !Array.isArray(response?.data?.data) ||
-          !Number.isFinite(response.data.current_page) ||
-          !Number.isFinite(response.data.last_page) ||
-          !Number.isFinite(response.data.total)
-        ) {
-          throw new Error("Dữ liệu danh sách dịch vụ không hợp lệ.");
-        }
+        const result = response.data;
 
-        setServices(response.data.data);
-        setLastPage(Math.max(1, response.data.last_page));
-        setTotal(response.data.total);
+        setServices(Array.isArray(result.data) ? result.data : []);
+        setLastPage(Math.max(1, Number(result.last_page) || 1));
+        setTotal(Number(result.total) || 0);
 
-        if (response.data.current_page !== page) {
-          setPage(response.data.current_page);
+        if (page > Math.max(1, Number(result.last_page) || 1)) {
+          setPage(Math.max(1, Number(result.last_page) || 1));
         }
       })
       .catch((requestError: unknown) => {
-        if (active) {
-          setServices([]);
-          setError(
-            getErrorMessage(
-              requestError,
-              "Không thể tải danh sách dịch vụ.",
-            ),
-          );
-        }
+        if (!active) return;
+
+        setServices([]);
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Không thể tải danh sách dịch vụ.",
+        );
       })
       .finally(() => {
         if (active) setIsLoading(false);
@@ -138,6 +125,14 @@ function Services() {
       active = false;
     };
   }, [filters, page, reloadKey]);
+
+  const activeCount = services.filter(
+    (service) => service.status === "ACTIVE",
+  ).length;
+
+  const inactiveCount = services.filter(
+    (service) => service.status === "INACTIVE",
+  ).length;
 
   const openCreateModal = () => {
     setSelectedService(null);
@@ -162,27 +157,21 @@ function Services() {
 
   const openDetailModal = async (service: Service) => {
     setError("");
-    setIsLoadingDetail(true);
+    setNotice("");
     setSelectedService(service);
     setModal("detail");
+    setIsLoadingDetail(true);
 
     try {
       const response: ServiceResponse = await fetchApi(
         `/admin/services/${service.id}`,
       );
-
-      if (!response?.data || response.data.id !== service.id) {
-        throw new Error("Dữ liệu chi tiết dịch vụ không hợp lệ.");
-      }
-
       setSelectedService(response.data);
     } catch (requestError: unknown) {
-      setModal(null);
       setError(
-        getErrorMessage(
-          requestError,
-          "Không thể tải thông tin dịch vụ.",
-        ),
+        requestError instanceof Error
+          ? requestError.message
+          : "Không thể tải thông tin dịch vụ.",
       );
     } finally {
       setIsLoadingDetail(false);
@@ -196,15 +185,25 @@ function Services() {
       ...current,
       search: searchInput.trim(),
     }));
+    setNotice("");
+  };
+
+  const clearFilters = () => {
+    setSearchInput("");
+    setPage(1);
+    setFilters({ search: "", category: "", status: "" });
+    setError("");
+    setNotice("");
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError("");
+    setNotice("");
 
     const name = form.name.trim();
-    const price = Number(form.base_price);
-    const minutes = form.estimated_minutes.trim()
+    const basePrice = Number(form.base_price);
+    const estimatedMinutes = form.estimated_minutes
       ? Number(form.estimated_minutes)
       : null;
 
@@ -215,18 +214,18 @@ function Services() {
 
     if (
       form.base_price.trim() === "" ||
-      !Number.isFinite(price) ||
-      price < 0
+      !Number.isFinite(basePrice) ||
+      basePrice < 0
     ) {
-      setFormError("Giá dịch vụ phải là số hợp lệ và không được âm.");
+      setFormError("Giá dịch vụ phải là số hợp lệ và không âm.");
       return;
     }
 
     if (
-      minutes !== null &&
-      (!Number.isInteger(minutes) || minutes < 1)
+      estimatedMinutes !== null &&
+      (!Number.isInteger(estimatedMinutes) || estimatedMinutes <= 0)
     ) {
-      setFormError("Thời gian thực hiện phải là số nguyên lớn hơn 0.");
+      setFormError("Thời gian phải là số nguyên lớn hơn 0.");
       return;
     }
 
@@ -234,8 +233,8 @@ function Services() {
       name,
       category: form.category.trim() || null,
       description: form.description.trim() || null,
-      base_price: price,
-      estimated_minutes: minutes,
+      base_price: basePrice,
+      estimated_minutes: estimatedMinutes,
       status: form.status,
     };
 
@@ -253,12 +252,20 @@ function Services() {
       );
 
       setModal(null);
-      setSelectedService(null);
       setPage(1);
+      setSearchInput("");
+      setFilters({ search: "", category: "", status: "" });
+      setNotice(
+        selectedService
+          ? "Cập nhật dịch vụ thành công."
+          : "Thêm dịch vụ thành công.",
+      );
       setReloadKey((current) => current + 1);
     } catch (requestError: unknown) {
       setFormError(
-        getErrorMessage(requestError, "Không thể lưu dịch vụ."),
+        requestError instanceof Error
+          ? requestError.message
+          : "Không thể lưu dịch vụ.",
       );
     } finally {
       setIsSaving(false);
@@ -266,14 +273,25 @@ function Services() {
   };
 
   const handleDelete = async (service: Service) => {
-    if (!window.confirm(`Ẩn dịch vụ "${service.name}"?`)) return;
+    if (isDeleting) return;
+
+    const confirmed = window.confirm(
+      `Bạn có chắc muốn ẩn dịch vụ "${service.name}" không?`,
+    );
+
+    if (!confirmed) return;
 
     setError("");
+    setNotice("");
+    setIsDeleting(true);
+    setDeletingId(service.id);
 
     try {
       await fetchApi(`/admin/services/${service.id}`, {
         method: "DELETE",
       });
+
+      setNotice(`Đã xử lý yêu cầu ẩn dịch vụ "${service.name}".`);
 
       if (services.length === 1 && page > 1) {
         setPage((current) => current - 1);
@@ -282,36 +300,46 @@ function Services() {
       }
     } catch (requestError: unknown) {
       setError(
-        getErrorMessage(requestError, "Không thể ẩn dịch vụ."),
+        requestError instanceof Error
+          ? requestError.message
+          : "Không thể ẩn dịch vụ.",
       );
+    } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
       <AdminSidebar />
+
       <div className="lg:ml-[250px]">
         <AdminTopbar />
-        <main className="px-6 py-8 lg:px-8">
+
+        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
             <div className="mb-8">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#B68A43]">
                 KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
               </p>
-              <div className="flex flex-wrap items-center justify-between gap-4">
+
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
                     AD
                   </div>
+
                   <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
+                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
                       Quản lý dịch vụ
                     </h1>
                     <p className="mt-1 text-xs text-[#66717C]">
-                      Thêm, cập nhật và quản lý trạng thái dịch vụ.
+                      Quản lý thông tin, giá và trạng thái dịch vụ sửa chữa.
                     </p>
                   </div>
                 </div>
+
                 <button
                   type="button"
                   onClick={openCreateModal}
@@ -322,28 +350,83 @@ function Services() {
               </div>
             </div>
 
+            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-[#66717C]">
+                    Tổng dịch vụ
+                  </p>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3E8D2] text-sm font-bold text-[#6D542A]">
+                    T
+                  </span>
+                </div>
+                <p className="mt-4 text-2xl font-bold">
+                  {isLoading ? "—" : total}
+                </p>
+                <p className="mt-1 text-[10px] text-[#8A949E]">
+                  Tổng số kết quả theo bộ lọc
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-[#66717C]">
+                    Đang hoạt động
+                  </p>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E7F3E8] text-sm font-bold text-[#397044]">
+                    ✓
+                  </span>
+                </div>
+                <p className="mt-4 text-2xl font-bold">
+                  {isLoading ? "—" : activeCount}
+                </p>
+                <p className="mt-1 text-[10px] text-[#8A949E]">
+                  Trên trang đang hiển thị
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:col-span-2 xl:col-span-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-[#66717C]">
+                    Ngừng hoạt động
+                  </p>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F2F3] text-sm font-bold text-[#66717C]">
+                    —
+                  </span>
+                </div>
+                <p className="mt-4 text-2xl font-bold">
+                  {isLoading ? "—" : inactiveCount}
+                </p>
+                <p className="mt-1 text-[10px] text-[#8A949E]">
+                  Trên trang đang hiển thị
+                </p>
+              </div>
+            </div>
+
             <div className="mb-6 grid gap-4 md:grid-cols-3">
               <Link
                 to="/admin"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
+                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F]"
               >
                 <p className="text-xs font-semibold">Tài khoản & nhân viên</p>
                 <p className="mt-1 text-[10px] text-[#8A949E]">
                   Quản lý tài khoản
                 </p>
               </Link>
+
               <Link
                 to="/admin/inventory"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
+                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F]"
               >
                 <p className="text-xs font-semibold">Phụ tùng & tồn kho</p>
                 <p className="mt-1 text-[10px] text-[#8A949E]">
                   Quản lý kho
                 </p>
               </Link>
+
               <Link
                 to="/admin/reports"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
+                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F]"
               >
                 <p className="text-xs font-semibold">Báo cáo & thống kê</p>
                 <p className="mt-1 text-[10px] text-[#8A949E]">
@@ -352,11 +435,15 @@ function Services() {
               </Link>
             </div>
 
-            <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-6">
-              <form
-                onSubmit={handleSearch}
-                className="grid gap-3 md:grid-cols-4"
-              >
+            <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-4 sm:p-6">
+              <div className="mb-4">
+                <h2 className="text-sm font-bold">Tìm kiếm và lọc</h2>
+                <p className="mt-1 text-xs text-[#8A949E]">
+                  Nhập thông tin hoặc chọn trạng thái để tìm dịch vụ.
+                </p>
+              </div>
+
+              <form onSubmit={handleSearch} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <input
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
@@ -364,6 +451,7 @@ function Services() {
                   placeholder="Tên dịch vụ..."
                   className={fieldClass}
                 />
+
                 <input
                   value={filters.category}
                   onChange={(event) => {
@@ -377,6 +465,7 @@ function Services() {
                   placeholder="Danh mục..."
                   className={fieldClass}
                 />
+
                 <select
                   value={filters.status}
                   onChange={(event) => {
@@ -392,69 +481,121 @@ function Services() {
                   <option value="ACTIVE">Đang hoạt động</option>
                   <option value="INACTIVE">Ngừng hoạt động</option>
                 </select>
-                <button
-                  type="submit"
-                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24]"
-                >
-                  Tìm kiếm
-                </button>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 rounded-xl bg-[#1F2933] px-4 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24]"
+                  >
+                    Tìm kiếm
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold transition hover:bg-[#F3F4F2]"
+                  >
+                    Xóa lọc
+                  </button>
+                </div>
               </form>
             </section>
 
+            {notice && (
+              <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-[#D8E8D9] bg-[#F0F7F0] px-4 py-3 text-sm text-[#35633B]">
+                <p>{notice}</p>
+                <button
+                  type="button"
+                  onClick={() => setNotice("")}
+                  className="font-bold"
+                  aria-label="Đóng thông báo"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
             <section className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
-              <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-6 py-5 sm:flex-row sm:items-center">
+              <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#B68A43]">
                     SERVICE MANAGEMENT
                   </p>
                   <h2 className="mt-1 text-base font-bold">
                     Danh sách dịch vụ
                   </h2>
                 </div>
-                <p className="text-[10px] text-[#8A949E]">
+
+                <p className="text-xs text-[#8A949E]">
                   {total} kết quả
                 </p>
               </div>
 
               {error && (
-                <p
+                <div
                   role="alert"
-                  className="m-5 rounded-xl bg-red-50 p-4 text-sm text-red-700"
+                  className="m-5 flex items-start justify-between gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-700"
                 >
-                  {error}
-                </p>
+                  <p>{error}</p>
+                  <button
+                    type="button"
+                    onClick={() => setError("")}
+                    className="font-bold"
+                    aria-label="Đóng thông báo lỗi"
+                  >
+                    ×
+                  </button>
+                </div>
               )}
 
               {isLoading ? (
-                <p className="p-8 text-center text-sm text-[#66717C]">
-                  Đang tải dịch vụ...
-                </p>
+                <div className="p-10 text-center">
+                  <p className="text-sm font-medium text-[#66717C]">
+                    Đang tải dịch vụ...
+                  </p>
+                </div>
               ) : services.length === 0 ? (
-                <p className="p-8 text-center text-sm text-[#66717C]">
-                  Không tìm thấy dịch vụ phù hợp.
-                </p>
+                <div className="px-5 py-14 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F3F4F2] text-lg">
+                    —
+                  </div>
+                  <p className="mt-4 text-sm font-semibold">
+                    Không tìm thấy dịch vụ
+                  </p>
+                  <p className="mt-1 text-xs text-[#8A949E]">
+                    Thử thay đổi từ khóa hoặc xóa bộ lọc.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="mt-4 rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-xs font-semibold hover:bg-[#F3F4F2]"
+                  >
+                    Xóa bộ lọc
+                  </button>
+                </div>
               ) : (
-                <div className="space-y-3 p-5">
+                <div className="space-y-3 p-4 sm:p-5">
                   {services.map((service, index) => (
                     <article
                       key={service.id}
-                      className="rounded-2xl border border-[#E5E8EA] bg-[#FAFAF8] p-5 transition hover:border-[#D5D9DC]"
+                      className="rounded-2xl border border-[#E5E8EA] bg-[#FAFAF8] p-4 transition hover:border-[#D5D9DC] sm:p-5"
                     >
                       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                        <div className="flex items-start gap-4">
+                        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-white">
                             {String((page - 1) * 10 + index + 1).padStart(2, "0")}
                           </div>
-                          <div>
+
+                          <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-sm font-bold">
+                              <h3 className="break-words text-sm font-bold">
                                 {service.name}
                               </h3>
                               <span
                                 className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${
                                   service.status === "ACTIVE"
                                     ? "bg-[#F3E8D2] text-[#3A3020]"
-                                    : "bg-[#F3F4F2] text-[#66717C]"
+                                    : "bg-[#F1F2F3] text-[#66717C]"
                                 }`}
                               >
                                 {service.status === "ACTIVE"
@@ -462,17 +603,19 @@ function Services() {
                                   : "Ngừng hoạt động"}
                               </span>
                             </div>
+
                             <p className="mt-1 text-[10px] text-[#8A949E]">
                               DV-{String(service.id).padStart(3, "0")}
                               {service.category ? ` · ${service.category}` : ""}
                             </p>
-                            <p className="mt-2 max-w-md text-xs leading-5 text-[#66717C]">
+
+                            <p className="mt-2 max-w-md break-words text-xs leading-5 text-[#66717C]">
                               {service.description || "Chưa có mô tả."}
                             </p>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 xl:min-w-[330px]">
                           <div>
                             <p className="text-[10px] text-[#8A949E]">
                               GIÁ THAM KHẢO
@@ -481,6 +624,7 @@ function Services() {
                               {formatPrice(service.base_price)}
                             </p>
                           </div>
+
                           <div>
                             <p className="text-[10px] text-[#8A949E]">
                               THỜI GIAN
@@ -491,6 +635,7 @@ function Services() {
                                 : "Chưa xác định"}
                             </p>
                           </div>
+
                           <div>
                             <p className="text-[10px] text-[#8A949E]">
                               MÃ DỊCH VỤ
@@ -505,24 +650,30 @@ function Services() {
                           <button
                             type="button"
                             onClick={() => void openDetailModal(service)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2 text-[10px] font-semibold hover:bg-[#F3F4F2]"
+                            disabled={isLoadingDetail}
+                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[10px] font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-50"
                           >
                             Chi tiết
                           </button>
+
                           <button
                             type="button"
                             onClick={() => openEditModal(service)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2 text-[10px] font-semibold hover:bg-[#F3F4F2]"
+                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[10px] font-semibold transition hover:bg-[#F3F4F2]"
                           >
                             Chỉnh sửa
                           </button>
+
                           {service.status === "ACTIVE" && (
                             <button
                               type="button"
+                              disabled={isDeleting}
                               onClick={() => void handleDelete(service)}
-                              className="rounded-xl border border-red-200 bg-white px-4 py-2 text-[10px] font-semibold text-red-700 hover:bg-red-50"
+                              className="rounded-xl border border-red-200 bg-white px-4 py-2.5 text-[10px] font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
                             >
-                              Ẩn dịch vụ
+                              {deletingId === service.id
+                                ? "Đang xử lý..."
+                                : "Ẩn dịch vụ"}
                             </button>
                           )}
                         </div>
@@ -532,26 +683,28 @@ function Services() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between border-t border-[#EEF0F2] px-5 py-4">
+              <div className="flex flex-col gap-3 border-t border-[#EEF0F2] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-xs text-[#66717C]">
-                  Trang {page} / {lastPage}
+                  Trang {page} / {lastPage} · {total} dịch vụ
                 </span>
+
                 <div className="flex gap-2">
                   <button
                     type="button"
                     disabled={page <= 1 || isLoading}
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    className="rounded-lg border border-[#D9DDE1] px-3 py-2 text-xs disabled:opacity-40"
+                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-40"
                   >
                     Trước
                   </button>
+
                   <button
                     type="button"
                     disabled={page >= lastPage || isLoading}
                     onClick={() =>
                       setPage((current) => Math.min(lastPage, current + 1))
                     }
-                    className="rounded-lg border border-[#D9DDE1] px-3 py-2 text-xs disabled:opacity-40"
+                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-40"
                   >
                     Tiếp
                   </button>
@@ -576,13 +729,14 @@ function Services() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="service-modal-title"
-            className="my-auto w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl"
+            className="my-auto max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6"
           >
             {modal === "form" ? (
               <>
                 <h2 id="service-modal-title" className="mb-5 text-xl font-bold">
                   {selectedService ? "Cập nhật dịch vụ" : "Thêm dịch vụ"}
                 </h2>
+
                 <form
                   onSubmit={(event) => void handleSubmit(event)}
                   className="space-y-4"
@@ -602,6 +756,7 @@ function Services() {
                       className={`${fieldClass} mt-2 font-normal`}
                     />
                   </label>
+
                   <label className="block text-xs font-semibold">
                     Danh mục
                     <input
@@ -616,10 +771,12 @@ function Services() {
                       className={`${fieldClass} mt-2 font-normal`}
                     />
                   </label>
+
                   <label className="block text-xs font-semibold">
                     Mô tả
                     <textarea
                       rows={3}
+                      maxLength={1000}
                       value={form.description}
                       onChange={(event) =>
                         setForm((current) => ({
@@ -630,6 +787,7 @@ function Services() {
                       className={`${fieldClass} mt-2 font-normal`}
                     />
                   </label>
+
                   <div className="grid gap-4 sm:grid-cols-3">
                     <label className="block text-xs font-semibold">
                       Giá tham khảo *
@@ -648,6 +806,7 @@ function Services() {
                         className={`${fieldClass} mt-2 font-normal`}
                       />
                     </label>
+
                     <label className="block text-xs font-semibold">
                       Thời gian (phút)
                       <input
@@ -664,6 +823,7 @@ function Services() {
                         className={`${fieldClass} mt-2 font-normal`}
                       />
                     </label>
+
                     <label className="block text-xs font-semibold">
                       Trạng thái
                       <select
@@ -684,6 +844,7 @@ function Services() {
                       </select>
                     </label>
                   </div>
+
                   {formError && (
                     <p
                       role="alert"
@@ -692,7 +853,8 @@ function Services() {
                       {formError}
                     </p>
                   )}
-                  <div className="flex justify-end gap-2 pt-2">
+
+                  <div className="flex flex-wrap justify-end gap-2 pt-2">
                     <button
                       type="button"
                       onClick={() => setModal(null)}
@@ -701,10 +863,11 @@ function Services() {
                     >
                       Hủy
                     </button>
+
                     <button
                       type="submit"
                       disabled={isSaving}
-                      className="rounded-xl bg-[#1F2933] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-60"
+                      className="rounded-xl bg-[#1F2933] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#151D24] disabled:opacity-60"
                     >
                       {isSaving ? "Đang lưu..." : "Lưu dịch vụ"}
                     </button>
@@ -716,6 +879,7 @@ function Services() {
                 <h2 id="service-modal-title" className="mb-5 text-xl font-bold">
                   Chi tiết dịch vụ
                 </h2>
+
                 {isLoadingDetail ? (
                   <p className="py-8 text-center text-sm text-[#66717C]">
                     Đang tải thông tin...
@@ -723,34 +887,49 @@ function Services() {
                 ) : selectedService ? (
                   <dl className="space-y-4 text-sm">
                     <div>
+                      <dt className="text-xs text-[#8A949E]">Mã dịch vụ</dt>
+                      <dd className="mt-1 font-semibold">
+                        DV-{String(selectedService.id).padStart(3, "0")}
+                      </dd>
+                    </div>
+
+                    <div>
                       <dt className="text-xs text-[#8A949E]">Tên dịch vụ</dt>
                       <dd className="mt-1 font-semibold">
                         {selectedService.name}
                       </dd>
                     </div>
+
                     <div>
                       <dt className="text-xs text-[#8A949E]">Danh mục</dt>
                       <dd className="mt-1">
-                        {selectedService.category || "—"}
+                        {selectedService.category || "Chưa phân loại"}
                       </dd>
                     </div>
+
                     <div>
                       <dt className="text-xs text-[#8A949E]">Mô tả</dt>
-                      <dd className="mt-1">
-                        {selectedService.description || "—"}
+                      <dd className="mt-1 whitespace-pre-wrap">
+                        {selectedService.description || "Chưa có mô tả."}
                       </dd>
                     </div>
+
                     <div>
-                      <dt className="text-xs text-[#8A949E]">
-                        Giá / thời gian
-                      </dt>
+                      <dt className="text-xs text-[#8A949E]">Giá tham khảo</dt>
+                      <dd className="mt-1 font-semibold">
+                        {formatPrice(selectedService.base_price)}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt className="text-xs text-[#8A949E]">Thời gian dự kiến</dt>
                       <dd className="mt-1">
-                        {formatPrice(selectedService.base_price)} ·{" "}
                         {selectedService.estimated_minutes
                           ? `${selectedService.estimated_minutes} phút`
                           : "Chưa xác định"}
                       </dd>
                     </div>
+
                     <div>
                       <dt className="text-xs text-[#8A949E]">Trạng thái</dt>
                       <dd className="mt-1">
@@ -761,10 +940,11 @@ function Services() {
                     </div>
                   </dl>
                 ) : (
-                  <p className="text-sm text-[#66717C]">
+                  <p className="py-6 text-sm text-[#66717C]">
                     Không có thông tin dịch vụ.
                   </p>
                 )}
+
                 <div className="mt-6 flex justify-end">
                   <button
                     type="button"
