@@ -1,6 +1,104 @@
+
 import { Link } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
+
+const managementItems = [
+  {
+    code: "NV",
+    title: "Tài khoản & nhân viên",
+    description: "Quản lý tài khoản và phân quyền nhân viên",
+    path: "/admin/accounts",
+  },
+  {
+    code: "KH",
+    title: "Khách hàng",
+    description: "Quản lý thông tin khách hàng",
+    path: "/admin/customers",
+  },
+  {
+    code: "LH",
+    title: "Lịch hẹn",
+    description: "Theo dõi và quản lý lịch hẹn toàn hệ thống",
+    path: "/admin/appointments",
+  },
+  {
+    code: "DV",
+    title: "Dịch vụ",
+    description: "Quản lý danh sách dịch vụ sửa chữa",
+    path: "/admin/services",
+  },
+  {
+    code: "PT",
+    title: "Kho vật tư",
+    description: "Quản lý phụ tùng và số lượng tồn kho",
+    path: "/admin/inventory",
+  },
+  {
+    code: "GB",
+    title: "Gói bảo dưỡng",
+    description: "Quản lý gói bảo dưỡng và dịch vụ đi kèm",
+    path: "/admin/maintenance-packages",
+  },
+  {
+    code: "BC",
+    title: "Báo cáo & thống kê",
+    description: "Theo dõi số liệu hoạt động hệ thống",
+    path: "/admin/reports",
+  },
+];
+
+const statistics = [
+  {
+    title: "Khách hàng",
+    value: "128",
+    description: "Khách hàng trong hệ thống",
+    code: "KH",
+    path: "/admin/customers",
+  },
+  {
+    title: "Lịch hẹn hôm nay",
+    value: "24",
+    description: "Lịch hẹn cần theo dõi",
+    code: "LH",
+    path: "/admin/appointments",
+  },
+  {
+    title: "Xe đang sửa",
+    value: "15",
+    description: "Xe đang được xử lý",
+    code: "SC",
+    path: "/admin/appointments",
+  },
+  {
+    title: "Doanh thu tháng",
+    value: "86M",
+    description: "Doanh thu mẫu trong tháng",
+    code: "DT",
+    path: "/admin/reports",
+  },
+];
+
+const dailyActivities = [
+  {
+    title: "Lịch hẹn chờ xác nhận",
+    value: 6,
+    color: "bg-[#D6A85F]",
+    width: "40%",
+  },
+  {
+    title: "Xe đang tiếp nhận",
+    value: 4,
+    color: "bg-[#7893A6]",
+    width: "27%",
+  },
+  {
+    title: "Xe đang sửa chữa",
+    value: 15,
+    color: "bg-[#719779]",
+    width: "100%",
+  },
+];
 
 function AdminDashboard() {
   return (
@@ -10,287 +108,186 @@ function AdminDashboard() {
       <div className="lg:ml-[250px]">
         <AdminTopbar />
 
-        <main className="px-6 py-8 lg:px-8">
+        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
-            <div className="mb-8">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
-                KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ HỆ THỐNG
-              </p>
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
+                AD
+              </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
-                  AD
-                </div>
+              <div>
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
+                  KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ HỆ THỐNG
+                </p>
 
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-[#20252B]">
-                    Tổng quan hệ thống
-                  </h1>
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                  Tổng quan hệ thống
+                </h1>
 
-                  <p className="mt-1 text-xs text-[#66717C]">
-                    Quản lý tổng thể hoạt động của CarService.
+                <p className="mt-2 text-xs text-[#66717C]">
+                  Theo dõi và quản lý các hoạt động của CarService.
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {statistics.map((item) => (
+                <Link
+                  key={item.code}
+                  to={item.path}
+                  className="group rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:-translate-y-1 hover:border-[#D6A85F] hover:shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                      {item.title}
+                    </p>
+
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B] transition group-hover:bg-[#F8EBD6]">
+                      {item.code}
+                    </span>
+                  </div>
+
+                  <p className="mt-4 text-2xl font-bold">{item.value}</p>
+
+                  <p className="mt-2 text-[10px] text-[#8A949E]">
+                    {item.description}
                   </p>
-                </div>
-              </div>
+
+                  <p className="mt-4 text-[10px] font-semibold text-[#B28A49]">
+                    Xem chi tiết →
+                  </p>
+                </Link>
+              ))}
             </div>
 
-            <div className="mb-6 grid gap-4 md:grid-cols-4">
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Khách hàng
-                </p>
-
-                <p className="mt-4 text-2xl font-bold text-[#20252B]">
-                  128
-                </p>
-
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Khách hàng trong hệ thống
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Lịch hẹn hôm nay
-                </p>
-
-                <p className="mt-4 text-2xl font-bold text-[#20252B]">
-                  24
-                </p>
-
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Lịch hẹn cần xử lý
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Xe đang sửa
-                </p>
-
-                <p className="mt-4 text-2xl font-bold text-[#20252B]">
-                  15
-                </p>
-
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Xe đang được xử lý
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Doanh thu
-                </p>
-
-                <p className="mt-4 text-2xl font-bold text-[#20252B]">
-                  86M
-                </p>
-
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Doanh thu tháng này
-                </p>
-              </div>
-            </div>
-
-            <div className="mb-6">
+            <section className="mb-8">
               <div className="mb-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                   QUẢN LÝ HỆ THỐNG
                 </p>
 
-                <h2 className="mt-1 text-base font-bold text-[#20252B]">
+                <h2 className="mt-1 text-base font-bold">
                   Các khu vực quản lý
                 </h2>
+
+                <p className="mt-1 text-xs text-[#8A949E]">
+                  Chọn một chức năng để xem và quản lý dữ liệu.
+                </p>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <Link
-                  to="/admin/accounts"
-                  className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
-                    NV
-                  </div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {managementItems.map((item) => (
+                  <Link
+                    key={item.code}
+                    to={item.path}
+                    className="group rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:-translate-y-1 hover:border-[#D6A85F] hover:bg-[#FCFCFA] hover:shadow-sm"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B] transition group-hover:bg-[#F8EBD6]">
+                        {item.code}
+                      </div>
 
-                  <p className="mt-4 text-xs font-semibold text-[#20252B]">
-                    Tài khoản & nhân viên
-                  </p>
+                      <span className="text-sm text-[#A0A8AE] transition group-hover:translate-x-1 group-hover:text-[#B28A49]">
+                        →
+                      </span>
+                    </div>
 
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
-                    Quản lý tài khoản và phân quyền nhân viên
-                  </p>
-                </Link>
+                    <h3 className="mt-4 text-xs font-semibold">
+                      {item.title}
+                    </h3>
 
-                <Link
-                  to="/admin/customers"
-                  className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
-                    KH
-                  </div>
-
-                  <p className="mt-4 text-xs font-semibold text-[#20252B]">
-                    Khách hàng
-                  </p>
-
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
-                    Quản lý thông tin khách hàng
-                  </p>
-                </Link>
-
-                <Link
-                  to="/admin/appointments"
-                  className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
-                    LH
-                  </div>
-
-                  <p className="mt-4 text-xs font-semibold text-[#20252B]">
-                    Lịch hẹn
-                  </p>
-
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
-                    Theo dõi và quản lý lịch hẹn toàn hệ thống
-                  </p>
-                </Link>
-
-                <Link
-                  to="/admin/services"
-                  className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
-                    DV
-                  </div>
-
-                  <p className="mt-4 text-xs font-semibold text-[#20252B]">
-                    Dịch vụ
-                  </p>
-
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
-                    Quản lý dịch vụ và gói bảo dưỡng
-                  </p>
-                </Link>
-
-                <Link
-                  to="/admin/inventory"
-                  className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
-                    PT
-                  </div>
-
-                  <p className="mt-4 text-xs font-semibold text-[#20252B]">
-                    Kho vật tư
-                  </p>
-
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
-                    Quản lý phụ tùng và tồn kho
-                  </p>
-                </Link>
-
-                <Link
-                  to="/admin/maintenance-packages"
-                  className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
-                    GB
-                  </div>
-
-                  <p className="mt-4 text-xs font-semibold text-[#20252B]">
-                    Gói bảo dưỡng
-                  </p>
-
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
-                    Quản lý gói bảo dưỡng, dịch vụ & phụ tùng
-                  </p>
-                </Link>
-
-                <Link
-                  to="/admin/reports"
-                  className="cursor-pointer rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
-                    BC
-                  </div>
-
-                  <p className="mt-4 text-xs font-semibold text-[#20252B]">
-                    Báo cáo & thống kê
-                  </p>
-
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
-                    Theo dõi số liệu hoạt động hệ thống
-                  </p>
-                </Link>
+                    <p className="mt-2 text-[10px] leading-5 text-[#8A949E]">
+                      {item.description}
+                    </p>
+                  </Link>
+                ))}
               </div>
-            </div>
+            </section>
 
             <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-6">
-                <div className="mb-5">
+              <section className="rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:p-6">
+                <div className="mb-6">
                   <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     HOẠT ĐỘNG
                   </p>
 
-                  <h2 className="mt-1 text-base font-bold text-[#20252B]">
+                  <h2 className="mt-1 text-base font-bold">
                     Tình hình hôm nay
                   </h2>
+
+                  <p className="mt-1 text-xs text-[#8A949E]">
+                    Tổng hợp số liệu minh họa theo từng trạng thái.
+                  </p>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between rounded-xl bg-[#F7F7F5] px-4 py-3">
-                    <span className="text-xs text-[#66717C]">
-                      Lịch hẹn chờ xác nhận
-                    </span>
+                <div className="space-y-6">
+                  {dailyActivities.map((activity) => (
+                    <div key={activity.title}>
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <p className="text-xs text-[#66717C]">
+                          {activity.title}
+                        </p>
 
-                    <span className="text-xs font-bold text-[#20252B]">
-                      6
-                    </span>
-                  </div>
+                        <span className="text-xs font-bold">
+                          {activity.value}
+                        </span>
+                      </div>
 
-                  <div className="flex items-center justify-between rounded-xl bg-[#F7F7F5] px-4 py-3">
-                    <span className="text-xs text-[#66717C]">
-                      Xe đang tiếp nhận
-                    </span>
-
-                    <span className="text-xs font-bold text-[#20252B]">
-                      4
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-xl bg-[#F7F7F5] px-4 py-3">
-                    <span className="text-xs text-[#66717C]">
-                      Xe đang sửa chữa
-                    </span>
-
-                    <span className="text-xs font-bold text-[#20252B]">
-                      15
-                    </span>
-                  </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-[#F0F1EF]">
+                        <div
+                          className={`h-full rounded-full ${activity.color}`}
+                          style={{ width: activity.width }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-[#1F2933] p-6 text-white">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                  QUẢN TRỊ
-                </p>
-
-                <h2 className="mt-2 text-xl font-bold">
-                  Quản lý tổng thể CarService
-                </h2>
-
-                <p className="mt-2 text-xs leading-6 text-[#AEB8C1]">
-                  Admin có quyền theo dõi hoạt động, quản lý người dùng,
-                  dịch vụ, lịch hẹn, kho vật tư và báo cáo của toàn hệ thống.
-                </p>
 
                 <Link
-                  to="/admin/reports"
-                  className="mt-5 inline-flex cursor-pointer rounded-xl bg-[#D6A85F] px-4 py-2.5 text-[11px] font-semibold text-[#3A3020] transition hover:bg-[#E0B973]"
+                  to="/admin/appointments"
+                  className="mt-7 inline-flex items-center gap-2 text-xs font-semibold text-[#9A7336] transition hover:text-[#20252B]"
                 >
-                  Xem báo cáo
+                  Quản lý lịch hẹn
+                  <span>→</span>
                 </Link>
-              </div>
+              </section>
+
+              <section className="flex flex-col justify-between rounded-2xl bg-[#1F2933] p-6 text-white sm:p-7">
+                <div>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-sm font-bold text-[#D6A85F]">
+                    CS
+                  </div>
+
+                  <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                    QUẢN TRỊ HỆ THỐNG
+                  </p>
+
+                  <h2 className="mt-2 text-xl font-bold">
+                    Quản lý tổng thể CarService
+                  </h2>
+
+                  <p className="mt-3 text-xs leading-6 text-[#AEB8C1]">
+                    Theo dõi hoạt động, quản lý tài khoản, khách hàng, lịch
+                    hẹn, dịch vụ, kho vật tư và báo cáo trên cùng một hệ thống.
+                  </p>
+                </div>
+
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <Link
+                    to="/admin/reports"
+                    className="inline-flex items-center rounded-xl bg-[#D6A85F] px-4 py-3 text-[11px] font-semibold text-[#3A3020] transition hover:bg-[#E0B973]"
+                  >
+                    Xem báo cáo
+                  </Link>
+
+                  <Link
+                    to="/admin/appointments"
+                    className="inline-flex items-center rounded-xl border border-white/20 px-4 py-3 text-[11px] font-semibold text-white transition hover:bg-white/10"
+                  >
+                    Xem lịch hẹn
+                  </Link>
+                </div>
+              </section>
             </div>
           </div>
         </main>
