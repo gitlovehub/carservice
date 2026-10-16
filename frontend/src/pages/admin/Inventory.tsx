@@ -1,15 +1,28 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
 
-const parts = [
+type PartStatus = "Còn hàng" | "Sắp hết" | "Hết hàng";
+
+type Part = {
+  id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  price: number;
+  status: PartStatus;
+};
+
+const initialParts: Part[] = [
   {
     id: "PT-001",
     name: "Dầu động cơ 5W-30",
     category: "Dầu nhớt",
     quantity: 24,
     unit: "Chai",
-    price: "450.000 đ",
+    price: 450000,
     status: "Còn hàng",
   },
   {
@@ -18,7 +31,7 @@ const parts = [
     category: "Hệ thống phanh",
     quantity: 8,
     unit: "Bộ",
-    price: "1.200.000 đ",
+    price: 1200000,
     status: "Sắp hết",
   },
   {
@@ -27,7 +40,7 @@ const parts = [
     category: "Bộ lọc",
     quantity: 32,
     unit: "Cái",
-    price: "180.000 đ",
+    price: 180000,
     status: "Còn hàng",
   },
   {
@@ -36,12 +49,164 @@ const parts = [
     category: "Điều hòa",
     quantity: 3,
     unit: "Bình",
-    price: "650.000 đ",
+    price: 650000,
     status: "Sắp hết",
   },
 ];
 
+const categories = [
+  "Dầu nhớt",
+  "Hệ thống phanh",
+  "Bộ lọc",
+  "Điều hòa",
+];
+
+function getPartStatus(quantity: number): PartStatus {
+  if (quantity <= 0) return "Hết hàng";
+  if (quantity <= 10) return "Sắp hết";
+  return "Còn hàng";
+}
+
+function formatPrice(price: number) {
+  return `${price.toLocaleString("vi-VN")} đ`;
+}
+
 function Inventory() {
+  const [parts, setParts] = useState<Part[]>(initialParts);
+  const [keyword, setKeyword] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Tất cả danh mục");
+  const [selectedStatus, setSelectedStatus] = useState("Tất cả trạng thái");
+  const [message, setMessage] = useState("");
+  const [modal, setModal] = useState<"add" | "edit" | "detail" | null>(null);
+  const [selectedPart, setSelectedPart] = useState<Part | null>(null);
+  const [form, setForm] = useState({
+    name: "",
+    category: categories[0],
+    quantity: "0",
+    unit: "Cái",
+    price: "0",
+  });
+
+  const filteredParts = useMemo(() => {
+    return parts.filter((part) => {
+      const matchesKeyword = `${part.id} ${part.name}`
+        .toLowerCase()
+        .includes(keyword.trim().toLowerCase());
+
+      const matchesCategory =
+        selectedCategory === "Tất cả danh mục" ||
+        part.category === selectedCategory;
+
+      const matchesStatus =
+        selectedStatus === "Tất cả trạng thái" ||
+        part.status === selectedStatus;
+
+      return matchesKeyword && matchesCategory && matchesStatus;
+    });
+  }, [parts, keyword, selectedCategory, selectedStatus]);
+
+  const totalQuantity = parts.reduce((sum, part) => sum + part.quantity, 0);
+  const lowStockCount = parts.filter(
+    (part) => part.status === "Sắp hết",
+  ).length;
+  const outOfStockCount = parts.filter(
+    (part) => part.status === "Hết hàng",
+  ).length;
+  const activeStockCount = parts.filter(
+    (part) => part.status === "Còn hàng",
+  ).length;
+
+  function openAddModal() {
+    setSelectedPart(null);
+    setForm({
+      name: "",
+      category: categories[0],
+      quantity: "0",
+      unit: "Cái",
+      price: "0",
+    });
+    setMessage("");
+    setModal("add");
+  }
+
+  function openEditModal(part: Part) {
+    setSelectedPart(part);
+    setForm({
+      name: part.name,
+      category: part.category,
+      quantity: String(part.quantity),
+      unit: part.unit,
+      price: String(part.price),
+    });
+    setMessage("");
+    setModal("edit");
+  }
+
+  function handleSave() {
+    const quantity = Number(form.quantity);
+    const price = Number(form.price);
+    const name = form.name.trim();
+    const unit = form.unit.trim();
+
+    if (
+      !name ||
+      !unit ||
+      form.quantity.trim() === "" ||
+      form.price.trim() === "" ||
+      !Number.isFinite(quantity) ||
+      !Number.isFinite(price) ||
+      quantity < 0 ||
+      price < 0
+    ) {
+      setMessage("Vui lòng nhập đầy đủ thông tin hợp lệ.");
+      return;
+    }
+
+    if (modal === "add") {
+      const nextNumber =
+        Math.max(
+          0,
+          ...parts.map((part) => Number(part.id.replace("PT-", "")) || 0),
+        ) + 1;
+
+      const newPart: Part = {
+        id: `PT-${String(nextNumber).padStart(3, "0")}`,
+        name,
+        category: form.category,
+        quantity,
+        unit,
+        price,
+        status: getPartStatus(quantity),
+      };
+
+      setParts((current) => [...current, newPart]);
+      setKeyword("");
+      setSelectedCategory("Tất cả danh mục");
+      setSelectedStatus("Tất cả trạng thái");
+      setMessage("Đã thêm phụ tùng mới.");
+    } else if (modal === "edit" && selectedPart) {
+      setParts((current) =>
+        current.map((part) =>
+          part.id === selectedPart.id
+            ? {
+                ...part,
+                name,
+                category: form.category,
+                quantity,
+                unit,
+                price,
+                status: getPartStatus(quantity),
+              }
+            : part,
+        ),
+      );
+      setMessage("Đã cập nhật thông tin phụ tùng.");
+    }
+
+    setModal(null);
+    setSelectedPart(null);
+  }
+
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
       <AdminSidebar />
@@ -49,101 +214,102 @@ function Inventory() {
       <div className="lg:ml-[250px]">
         <AdminTopbar />
 
-        <main className="px-6 py-8 lg:px-8">
+        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
             <div className="mb-8">
               <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
                 KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
               </p>
 
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
-                  AD
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
+                  PT
                 </div>
 
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-[#20252B]">
+                  <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
                     Phụ tùng & tồn kho
                   </h1>
-
                   <p className="mt-1 text-xs text-[#66717C]">
                     Quản lý phụ tùng, số lượng và tình trạng tồn kho của gara.
                   </p>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={openAddModal}
+                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24] sm:ml-auto"
+                >
+                  + Nhập phụ tùng
+                </button>
               </div>
             </div>
 
-            <div className="mb-6 grid gap-4 md:grid-cols-4">
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Tổng phụ tùng
-                </p>
-
-                <p className="mt-4 text-2xl font-bold text-[#20252B]">
-                  86
-                </p>
-
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Mặt hàng trong kho
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Còn hàng
-                </p>
-
-                <p className="mt-4 text-2xl font-bold text-[#20252B]">
-                  72
-                </p>
-
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Mặt hàng đủ số lượng
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Sắp hết
-                </p>
-
-                <p className="mt-4 text-2xl font-bold text-[#20252B]">
-                  10
-                </p>
-
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Cần nhập thêm
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Hết hàng
-                </p>
-
-                <p className="mt-4 text-2xl font-bold text-[#20252B]">
-                  4
-                </p>
-
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Cần bổ sung ngay
-                </p>
-              </div>
-            </div>
-
-            <div className="mb-6 grid gap-4 md:grid-cols-4">
-              <Link
-                to="/admin"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
+            {message && (
+              <div
+                role="status"
+                className="mb-5 rounded-xl border border-[#E1E4E6] bg-white px-4 py-3 text-sm text-[#20252B]"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
+                {message}
+                <button
+                  type="button"
+                  onClick={() => setMessage("")}
+                  className="ml-3 font-semibold text-[#8A949E] hover:text-[#20252B]"
+                >
+                  Đóng
+                </button>
+              </div>
+            )}
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                {
+                  label: "Tổng phụ tùng",
+                  value: parts.length,
+                  description: "Mặt hàng trong kho",
+                },
+                {
+                  label: "Còn hàng",
+                  value: activeStockCount,
+                  description: "Mặt hàng đủ số lượng",
+                },
+                {
+                  label: "Sắp hết",
+                  value: lowStockCount,
+                  description: "Cần nhập thêm",
+                },
+                {
+                  label: "Hết hàng",
+                  value: outOfStockCount,
+                  description: "Cần bổ sung ngay",
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
+                >
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                    {item.label}
+                  </p>
+                  <p className="mt-4 text-2xl font-bold">{item.value}</p>
+                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <Link
+                to="/admin/accounts"
+                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F3F4F2]"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold">
                   NV
                 </div>
-
-                <p className="mt-4 text-xs font-semibold text-[#20252B]">
+                <p className="mt-4 text-xs font-semibold">
                   Tài khoản & nhân viên
                 </p>
-
                 <p className="mt-1 text-[10px] text-[#8A949E]">
                   Quản lý tài khoản
                 </p>
@@ -151,92 +317,82 @@ function Inventory() {
 
               <Link
                 to="/admin/services"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
+                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F3F4F2]"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold">
                   DV
                 </div>
-
-                <p className="mt-4 text-xs font-semibold text-[#20252B]">
+                <p className="mt-4 text-xs font-semibold">
                   Dịch vụ & gói bảo dưỡng
                 </p>
-
                 <p className="mt-1 text-[10px] text-[#8A949E]">
                   Quản lý dịch vụ
                 </p>
               </Link>
 
-              <Link
-                to="/admin/inventory"
-                className="rounded-2xl border border-[#1F2933] bg-[#1F2933] p-5 text-white transition hover:bg-[#151D24]"
-              >
+              <div className="rounded-2xl border border-[#1F2933] bg-[#1F2933] p-5 text-white">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D6A85F] text-[10px] font-bold text-[#3A3020]">
                   PT
                 </div>
-
                 <p className="mt-4 text-xs font-semibold">
                   Phụ tùng & tồn kho
                 </p>
-
                 <p className="mt-1 text-[10px] text-[#AEB8C1]">
-                  Quản lý kho
+                  {totalQuantity} đơn vị hàng trong kho
                 </p>
-              </Link>
+              </div>
 
               <Link
                 to="/admin/reports"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
+                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F3F4F2]"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold">
                   BC
                 </div>
-
-                <p className="mt-4 text-xs font-semibold text-[#20252B]">
+                <p className="mt-4 text-xs font-semibold">
                   Báo cáo & thống kê
                 </p>
-
                 <p className="mt-1 text-[10px] text-[#8A949E]">
                   Theo dõi số liệu
                 </p>
               </Link>
             </div>
 
-            <div className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-6">
-              <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                    GARA / PHỤ TÙNG & TỒN KHO
-                  </p>
-
-                  <h2 className="mt-1 text-base font-bold text-[#20252B]">
-                    Tìm kiếm phụ tùng
-                  </h2>
-                </div>
-
-                <button
-                  type="button"
-                  className="rounded-xl bg-[#1F2933] px-5 py-2.5 text-[10px] font-semibold text-white transition hover:bg-[#151D24]"
-                >
-                  + Nhập phụ tùng
-                </button>
+            <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:p-6">
+              <div className="mb-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  GARA / PHỤ TÙNG & TỒN KHO
+                </p>
+                <h2 className="mt-1 text-base font-bold">
+                  Tìm kiếm phụ tùng
+                </h2>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <input
                   type="text"
-                  placeholder="Tên phụ tùng..."
-                  className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none transition focus:border-[#1F2933]"
+                  value={keyword}
+                  onChange={(event) => setKeyword(event.target.value)}
+                  placeholder="Tên hoặc mã phụ tùng..."
+                  className="min-w-0 rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#D6A85F]"
                 />
 
-                <select className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#1F2933]">
+                <select
+                  value={selectedCategory}
+                  onChange={(event) => setSelectedCategory(event.target.value)}
+                  className="min-w-0 rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#D6A85F]"
+                >
                   <option>Tất cả danh mục</option>
-                  <option>Dầu nhớt</option>
-                  <option>Hệ thống phanh</option>
-                  <option>Bộ lọc</option>
-                  <option>Điều hòa</option>
+                  {categories.map((category) => (
+                    <option key={category}>{category}</option>
+                  ))}
                 </select>
 
-                <select className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#1F2933]">
+                <select
+                  value={selectedStatus}
+                  onChange={(event) => setSelectedStatus(event.target.value)}
+                  className="min-w-0 rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#D6A85F]"
+                >
                   <option>Tất cả trạng thái</option>
                   <option>Còn hàng</option>
                   <option>Sắp hết</option>
@@ -245,130 +401,318 @@ function Inventory() {
 
                 <button
                   type="button"
-                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24]"
+                  onClick={() => {
+                    setKeyword("");
+                    setSelectedCategory("Tất cả danh mục");
+                    setSelectedStatus("Tất cả trạng thái");
+                  }}
+                  className="rounded-xl border border-[#D9DDE1] bg-white px-5 py-3 text-xs font-semibold transition hover:bg-[#F3F4F2]"
                 >
-                  Tìm kiếm
+                  Xóa bộ lọc
                 </button>
               </div>
-            </div>
+            </section>
 
-            <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
-              <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-6 py-5 sm:flex-row sm:items-center">
+            <section className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
+              <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     INVENTORY MANAGEMENT
                   </p>
-
-                  <h2 className="mt-1 text-base font-bold text-[#20252B]">
+                  <h2 className="mt-1 text-base font-bold">
                     Danh sách phụ tùng
                   </h2>
                 </div>
-
-                <p className="text-[10px] text-[#8A949E]">
-                  {parts.length} kết quả
+                <p className="text-xs text-[#8A949E]">
+                  {filteredParts.length} / {parts.length} mặt hàng
                 </p>
               </div>
 
-              <div className="space-y-3 p-5">
-                {parts.map((part, index) => (
-                  <div
-                    key={part.id}
-                    className="rounded-2xl border border-[#E5E8EA] bg-[#FAFAF8] p-5 transition hover:border-[#D5D9DC] hover:bg-[#F7F7F5]"
-                  >
-                    <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                      <div className="flex items-start gap-4">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-white">
-                          {String(index + 1).padStart(2, "0")}
-                        </div>
-
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-bold text-[#20252B]">
-                              {part.name}
-                            </p>
-
-                            <span
-                              className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${
-                                part.status === "Còn hàng"
-                                  ? "bg-[#F3E8D2] text-[#3A3020]"
-                                  : "bg-[#F3F4F2] text-[#66717C]"
-                              }`}
-                            >
-                              {part.status}
-                            </span>
+              {filteredParts.length === 0 ? (
+                <div className="px-6 py-14 text-center">
+                  <p className="text-sm font-semibold">
+                    Không tìm thấy phụ tùng
+                  </p>
+                  <p className="mt-2 text-xs text-[#8A949E]">
+                    Thử thay đổi từ khóa hoặc điều kiện lọc.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 p-4 sm:p-5">
+                  {filteredParts.map((part, index) => (
+                    <article
+                      key={part.id}
+                      className="rounded-2xl border border-[#E5E8EA] bg-[#FAFAF8] p-4 transition hover:border-[#D5D9DC] sm:p-5"
+                    >
+                      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                        <div className="flex min-w-0 items-start gap-4">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-white">
+                            {String(index + 1).padStart(2, "0")}
                           </div>
 
-                          <p className="mt-1 text-[10px] text-[#8A949E]">
-                            {part.id} · {part.category}
-                          </p>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-bold">{part.name}</p>
+                              <span
+                                className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${
+                                  part.status === "Còn hàng"
+                                    ? "bg-[#E6F2E8] text-[#28643B]"
+                                    : part.status === "Sắp hết"
+                                      ? "bg-[#F8EBD3] text-[#8A5A13]"
+                                      : "bg-[#FBE5E5] text-[#A12B2B]"
+                                }`}
+                              >
+                                {part.status}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[10px] text-[#8A949E]">
+                              {part.id} · {part.category}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:min-w-[480px]">
+                          <div>
+                            <p className="text-[10px] text-[#8A949E]">
+                              SỐ LƯỢNG
+                            </p>
+                            <p className="mt-1 text-xs font-bold">
+                              {part.quantity} {part.unit}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] text-[#8A949E]">
+                              ĐƠN GIÁ
+                            </p>
+                            <p className="mt-1 text-xs font-bold">
+                              {formatPrice(part.price)}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] text-[#8A949E]">
+                              DANH MỤC
+                            </p>
+                            <p className="mt-1 text-xs font-semibold">
+                              {part.category}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] text-[#8A949E]">
+                              MÃ PHỤ TÙNG
+                            </p>
+                            <p className="mt-1 text-xs font-semibold">
+                              {part.id}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 xl:shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPart(part);
+                              setModal("detail");
+                            }}
+                            className="flex-1 rounded-xl border border-[#D9DDE1] bg-white px-3 py-2.5 text-[10px] font-semibold transition hover:bg-[#F3F4F2] sm:flex-none"
+                          >
+                            Chi tiết
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(part)}
+                            className="flex-1 rounded-xl bg-[#1F2933] px-3 py-2.5 text-[10px] font-semibold text-white transition hover:bg-[#151D24] sm:flex-none"
+                          >
+                            Cập nhật
+                          </button>
                         </div>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-                        <div>
-                          <p className="text-[10px] text-[#8A949E]">
-                            SỐ LƯỢNG
-                          </p>
-
-                          <p className="mt-1 text-xs font-bold text-[#20252B]">
-                            {part.quantity} {part.unit}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-[10px] text-[#8A949E]">
-                            ĐƠN GIÁ
-                          </p>
-
-                          <p className="mt-1 text-xs font-bold text-[#20252B]">
-                            {part.price}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-[10px] text-[#8A949E]">
-                            DANH MỤC
-                          </p>
-
-                          <p className="mt-1 text-xs font-semibold text-[#20252B]">
-                            {part.category}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-[10px] text-[#8A949E]">
-                            MÃ PHỤ TÙNG
-                          </p>
-
-                          <p className="mt-1 text-xs font-semibold text-[#20252B]">
-                            {part.id}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2 text-[10px] font-semibold text-[#20252B] transition hover:bg-[#F3F4F2]"
-                        >
-                          Chi tiết
-                        </button>
-
-                        <button
-                          type="button"
-                          className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2 text-[10px] font-semibold text-[#20252B] transition hover:bg-[#F3F4F2]"
-                        >
-                          Cập nhật
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         </main>
       </div>
+
+      {modal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setModal(null);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="inventory-modal-title"
+            className="my-auto w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-7"
+          >
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+                  QUẢN LÝ KHO
+                </p>
+                <h2
+                  id="inventory-modal-title"
+                  className="mt-2 text-xl font-bold"
+                >
+                  {modal === "add"
+                    ? "Nhập phụ tùng"
+                    : modal === "edit"
+                      ? "Cập nhật phụ tùng"
+                      : "Chi tiết phụ tùng"}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModal(null)}
+                aria-label="Đóng"
+                className="rounded-lg px-3 py-2 text-lg text-[#66717C] hover:bg-[#F3F4F2]"
+              >
+                ×
+              </button>
+            </div>
+
+            {modal === "detail" && selectedPart ? (
+              <div className="space-y-4">
+                {[
+                  ["Mã phụ tùng", selectedPart.id],
+                  ["Tên phụ tùng", selectedPart.name],
+                  ["Danh mục", selectedPart.category],
+                  ["Số lượng", `${selectedPart.quantity} ${selectedPart.unit}`],
+                  ["Đơn giá", formatPrice(selectedPart.price)],
+                  ["Trạng thái", selectedPart.status],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="flex items-start justify-between gap-4 border-b border-[#EEF0F2] pb-3"
+                  >
+                    <span className="text-xs text-[#8A949E]">{label}</span>
+                    <span className="text-right text-xs font-semibold">
+                      {value}
+                    </span>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => openEditModal(selectedPart)}
+                  className="mt-3 w-full rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white hover:bg-[#151D24]"
+                >
+                  Cập nhật phụ tùng
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-xs font-semibold">
+                    Tên phụ tùng
+                  </label>
+                  <input
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm({ ...form, name: event.target.value })
+                    }
+                    placeholder="Nhập tên phụ tùng"
+                    className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-sm outline-none focus:border-[#D6A85F]"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-semibold">
+                    Danh mục
+                  </label>
+                  <select
+                    value={form.category}
+                    onChange={(event) =>
+                      setForm({ ...form, category: event.target.value })
+                    }
+                    className="w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-sm outline-none focus:border-[#D6A85F]"
+                  >
+                    {categories.map((category) => (
+                      <option key={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold">
+                      Số lượng
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={form.quantity}
+                      onChange={(event) =>
+                        setForm({ ...form, quantity: event.target.value })
+                      }
+                      className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-sm outline-none focus:border-[#D6A85F]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold">
+                      Đơn vị
+                    </label>
+                    <input
+                      value={form.unit}
+                      onChange={(event) =>
+                        setForm({ ...form, unit: event.target.value })
+                      }
+                      placeholder="Cái, Bộ..."
+                      className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-sm outline-none focus:border-[#D6A85F]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-semibold">
+                    Đơn giá (VNĐ)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={form.price}
+                    onChange={(event) =>
+                      setForm({ ...form, price: event.target.value })
+                    }
+                    className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-sm outline-none focus:border-[#D6A85F]"
+                  />
+                </div>
+
+                {message && (
+                  <p role="alert" className="text-xs text-red-600">
+                    {message}
+                  </p>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setModal(null)}
+                    className="flex-1 rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold hover:bg-[#F3F4F2]"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    className="flex-1 rounded-xl bg-[#1F2933] px-4 py-3 text-xs font-semibold text-white hover:bg-[#151D24]"
+                  >
+                    Lưu thông tin
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }

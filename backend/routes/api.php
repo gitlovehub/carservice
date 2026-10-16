@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerRepairOrderController;
+use App\Http\Controllers\Api\CustomerReviewController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\MaintenancePackageController;
@@ -80,6 +81,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('repair-orders/{repairOrder}', 'show');
             Route::get('repair-orders/{repairOrder}/invoice', 'invoice');
             Route::post('quotations/{quotation}/respond', 'respondQuotation');
+        });
+
+        // Đánh giá dịch vụ
+        Route::controller(CustomerReviewController::class)->prefix('me/reviews')->group(function (): void {
+            Route::get('/', 'index');
+            Route::post('/', 'store');
         });
 
         // Hồ sơ cá nhân
