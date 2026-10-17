@@ -1,6 +1,5 @@
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import BrandLogo from "../../components/common/BrandLogo";
 import { getUserDisplayName } from "../../pages/auth/auth";
 
 const menuItems = [
@@ -75,7 +74,19 @@ function AdminSidebar() {
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] bg-[#1F2933] lg:block">
       <div className="flex h-full flex-col">
         <div className="border-b border-white/10 px-5 py-5">
-          <BrandLogo to="/admin" theme="dark" subtitle="Quản trị hệ thống" />
+          <Link to="/admin" className="flex items-center gap-3">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#1F2933]">
+              <span className="text-lg">🚗</span>
+              <span className="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full border border-white bg-[#D6A85F]" />
+            </div>
+
+            <div>
+              <p className="text-sm font-bold text-white">CarService</p>
+              <p className="mt-0.5 text-[9px] font-medium text-[#AEB8C1]">
+                Quản trị hệ thống
+              </p>
+            </div>
+          </Link>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-5">

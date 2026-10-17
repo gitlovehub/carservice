@@ -1,5 +1,4 @@
 import { Link, useLocation } from "react-router-dom";
-import BrandLogo from "../../components/common/BrandLogo";
 import { getUserDisplayName } from "../../pages/auth/auth";
 
 const menuItems = [
@@ -38,7 +37,25 @@ function TechnicianSidebar() {
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] bg-[#1F2933] lg:block">
       <div className="flex h-full flex-col">
         <div className="border-b border-white/10 px-5 py-5">
-          <BrandLogo to="/" theme="dark" subtitle="Kỹ thuật viên" />
+          <Link to="/" className="flex items-center gap-3">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#1F2933]">
+              <span className="text-base">🚗</span>
+
+              <span className="absolute bottom-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-[#D6A85F] text-[7px] text-[#3A3020]">
+                +
+              </span>
+            </div>
+
+            <div>
+              <p className="text-[14px] font-bold text-white">
+                CarService
+              </p>
+
+              <p className="mt-0.5 text-[9px] font-medium text-[#AEB8C1]">
+                Kỹ thuật viên
+              </p>
+            </div>
+          </Link>
         </div>
 
         <div className="px-4 py-5">
