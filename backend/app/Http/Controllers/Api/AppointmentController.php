@@ -46,14 +46,17 @@ class AppointmentController extends Controller
                     throw \Illuminate\Validation\ValidationException::withMessages(['appointment_date' => 'Garage nghỉ lễ ngày này.']);
                 }
 
-                $day = $when->dayOfWeek === 0 ? 8 : $when->dayOfWeek + 1;
+                $day = $when->dayOfWeek;
                 $hours = DB::table('working_hours')->where('day_of_week', $day)->first();
                 if (! $hours) {
-                    $hours = (object) ['is_active' => true, 'open_time' => '08:00:00', 'close_time' => $day === 8 ? '12:00:00' : '17:30:00', 'max_slots' => 5];
+                    throw \Illuminate\Validation\ValidationException::withMessages(['appointment_date' => 'Garage chưa cấu hình giờ làm việc cho ngày này.']);
                 }
-                if (! $hours->is_active || $time < substr($hours->open_time, 0, 8) || $time > substr($hours->close_time, 0, 8)) {
+                if (! $hours->is_active || $time < substr($hours->open_time, 0, 8) || $time >= substr($hours->close_time, 0, 8)) {
                     throw \Illuminate\Validation\ValidationException::withMessages(['appointment_time' => 'Ngoài giờ làm việc của garage.']);
                 }
+
+                // Khóa ngày làm việc trước khi kiểm tra số slot (thứ tự khóa nhất quán).
+                DB::table('working_hours')->where('day_of_week', $day)->lockForUpdate()->first();
 
                 // Khóa bản ghi customer để tuần tự hóa các request của cùng khách hàng.
                 Customer::whereKey($customer->id)->lockForUpdate()->firstOrFail();
@@ -88,8 +91,6 @@ class AppointmentController extends Controller
                     ]);
                 }
 
-                // Khóa một dòng chung để tránh vượt số slot khi nhiều khách đặt đồng thời.
-                DB::table('working_hours')->where('day_of_week', $day)->lockForUpdate()->first();
                 $booked = DB::table('appointments')
                     ->where('appointment_date', $date)
                     ->where('appointment_time', $time)
@@ -218,6 +219,10 @@ class AppointmentController extends Controller
         $account = $request->user();
         $customer = Customer::where('account_id', $account->id)->first();
 
+        if (! $customer) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy hồ sơ khách hàng.'], 404);
+        }
+
         $appointment = Appointment::with([
             'vehicle.model.brand',
             'services:id,name,base_price,estimated_minutes',
@@ -248,6 +253,9 @@ class AppointmentController extends Controller
         try {
             $account = $request->user();
             $customer = Customer::where('account_id', $account->id)->first();
+            if (! $customer) {
+                return response()->json(['success' => false, 'message' => 'Không tìm thấy hồ sơ khách hàng.'], 404);
+            }
             $appointment = Appointment::where('id', $id)->where('customer_id', $customer->id)->first();
 
             if (! $appointment) {
@@ -294,10 +302,10 @@ class AppointmentController extends Controller
                     // Kiểm tra giờ làm việc (hệ 0..6 hoặc 2..8 theo seeder của bạn)
                     $bookingDate = Carbon::parse($newDate);
                     $rawDay = $bookingDate->dayOfWeek;
-                    $dayOfWeek = ($rawDay === 0) ? 8 : ($rawDay + 1);
+                    $dayOfWeek = $rawDay;
 
-                    $wh = DB::table('working_hours')->where('day_of_week', $dayOfWeek)->where('is_active', true)->first();
-                    if (! $wh || $newTime < $wh->open_time || $newTime > $wh->close_time) {
+                    $wh = DB::table('working_hours')->where('day_of_week', $dayOfWeek)->where('is_active', true)->lockForUpdate()->first();
+                    if (Carbon::parse($newDate.' '.$newTime)->lessThanOrEqualTo(now()) || ! $wh || $newTime < $wh->open_time || $newTime >= $wh->close_time) {
                         throw new Exception('Giờ hẹn không nằm trong khung giờ làm việc.');
                     }
 
@@ -347,6 +355,10 @@ class AppointmentController extends Controller
     {
         $account = $request->user();
         $customer = Customer::where('account_id', $account->id)->first();
+
+        if (! $customer) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy hồ sơ khách hàng.'], 404);
+        }
 
         $appointment = Appointment::where('id', $id)
             ->where('customer_id', $customer->id)
