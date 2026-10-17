@@ -39,9 +39,28 @@ class DatabaseSeeder extends Seeder
             'phone' => '0901000001',
         ]);
 
-        // 2. NHÂN SỰ NỘI BỘ (Advisor & Technician)
-        Employee::factory()->count(3)->create();
-        TechnicianProfile::factory()->count(5)->create();
+        // 2. NHÂN SỰ NỘI BỘ (Advisor & Technician) - tài khoản cố định
+        $advisorAccount = Account::factory()->advisor()->create([
+            'email' => 'advisor1@carservice.vn',
+            'password_hash' => $defaultPassword,
+        ]);
+
+        Employee::factory()->create([
+            'account_id' => $advisorAccount->id,
+        ]);
+
+        $technicianAccount = Account::factory()->technician()->create([
+            'email' => 'tech1@carservice.vn',
+            'password_hash' => $defaultPassword,
+        ]);
+
+        $technicianEmployee = Employee::factory()->technicianRole()->create([
+            'account_id' => $technicianAccount->id,
+        ]);
+
+        TechnicianProfile::factory()->create([
+            'employee_id' => $technicianEmployee->id,
+        ]);
 
         // 3. DÙNG LẠI HÃNG XE VÀ DÒNG XE TỪ RealDataSeeder
         $allModels = VehicleModel::all();
@@ -50,7 +69,25 @@ class DatabaseSeeder extends Seeder
         $allServices = Service::factory()->count(8)->create();
 
         // 5. KHÁCH HÀNG ONLINE & XE CỦA HỌ
-        Customer::factory()->count(10)->create()->each(function ($customer) use ($allModels) {
+        // Tài khoản khách hàng cố định để đăng nhập thử.
+        $customerAccount = Account::factory()->customer()->create([
+            'email' => 'customer@carservice.vn',
+            'password_hash' => $defaultPassword,
+        ]);
+
+        $demoCustomer = Customer::factory()->create([
+            'account_id' => $customerAccount->id,
+            'full_name' => 'Khách hàng mẫu',
+            'phone' => '0900000001',
+            'email' => 'customer@carservice.vn',
+        ]);
+
+        Vehicle::factory()->count(2)->create([
+            'customer_id' => $demoCustomer->id,
+            'model_id' => $allModels->random()->id,
+        ]);
+
+        Customer::factory()->count(9)->create()->each(function ($customer) use ($allModels) {
             Vehicle::factory()->count(rand(1, 2))->create([
                 'customer_id' => $customer->id,
                 'model_id' => $allModels->random()->id,
