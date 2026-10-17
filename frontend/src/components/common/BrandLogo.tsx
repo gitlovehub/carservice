@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import BrandMark from "./BrandMark";
 
 type BrandLogoProps = {
   to?: string;
@@ -15,70 +16,49 @@ export default function BrandLogo({
   theme = "light",
   size = "md",
 }: BrandLogoProps) {
-  const iconSizeClass =
-    size === "sm"
-      ? "h-8 w-8 rounded-lg"
-      : size === "lg"
-      ? "h-11 w-11 rounded-2xl"
-      : "h-10 w-10 rounded-xl";
-
-  const svgSizeClass =
-    size === "sm" ? "h-4 w-4" : size === "lg" ? "h-6 w-6" : "h-5 w-5";
+  const markSize = size === "sm" ? 34 : size === "lg" ? 48 : 40;
 
   const titleClass =
     size === "sm"
-      ? "text-xs font-bold tracking-tight"
+      ? "text-[15px]"
       : size === "lg"
-      ? "text-base font-bold tracking-tight"
-      : "text-sm font-bold tracking-tight";
+      ? "text-[20px]"
+      : "text-[17px]";
 
-  const subtitleClass = size === "lg" ? "text-[11px]" : "text-[10px]";
+  const subtitleClass =
+    size === "lg"
+      ? "text-[10px] tracking-[0.2em]"
+      : "text-[9px] tracking-[0.18em]";
 
   const isDark = theme === "dark";
 
   return (
     <Link
       to={to}
-      className={`group flex items-center gap-3 transition ${className}`}
+      aria-label="CarService - Trang chủ"
+      className={`group flex items-center gap-3 ${className}`}
     >
-      <div
-        className={`flex items-center justify-center shadow-sm transition ${iconSizeClass} ${
-          isDark
-            ? "bg-[#D6A85F] text-[#1F2933] group-hover:bg-[#c49852]"
-            : "bg-slate-900 text-white group-hover:bg-slate-800"
-        }`}
-      >
-        <svg
-          className={`${svgSizeClass} ${
-            isDark ? "text-slate-900" : "text-amber-500"
-          }`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
-          />
-        </svg>
-      </div>
+      <BrandMark
+        size={markSize}
+        className="transition duration-300 group-hover:-translate-y-0.5 group-hover:drop-shadow-[0_6px_14px_rgba(214,168,95,0.35)]"
+      />
 
-      <div>
-        <p className={`${titleClass} ${isDark ? "text-white" : "text-slate-900"}`}>
-          CarService
+      <div className="leading-none">
+        <p
+          className={`font-extrabold tracking-tight ${titleClass} ${
+            isDark ? "text-white" : "text-[#1F2933]"
+          }`}
+        >
+          Car
+          <span className={isDark ? "text-[#D6A85F]" : "text-[#B68A43]"}>
+            Service
+          </span>
         </p>
+
         {subtitle && (
           <p
-            className={`${subtitleClass} ${
-              isDark ? "text-[#AEB8C1]" : "text-slate-500"
+            className={`mt-1.5 font-semibold uppercase ${subtitleClass} ${
+              isDark ? "text-[#AEB8C1]" : "text-[#8A949E]"
             }`}
           >
             {subtitle}
