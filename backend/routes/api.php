@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\RepairOrderController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\WorkItemController;
+use App\Http\Controllers\Api\WorkingHoursController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
 
@@ -45,6 +46,8 @@ Route::get('services', [ServiceController::class, 'index']);
 Route::get('services/{service}', [ServiceController::class, 'show']);
 Route::get('maintenance-packages', [MaintenancePackageController::class, 'index']);
 Route::get('maintenance-packages/{maintenancePackage}', [MaintenancePackageController::class, 'show']);
+
+Route::get('/working-hours', [WorkingHoursController::class, 'index']);
 
 /*
 |--------------------------------------------------------------------------
@@ -183,6 +186,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::apiResource('admin/maintenance-packages', AdminMaintenancePackageController::class)
             ->parameters(['maintenance-packages' => 'maintenancePackage'])
             ->names('admin.maintenance-packages');
+
+        Route::get('/admin/working-hours', [WorkingHoursController::class, 'index']);
+
+        Route::put('/admin/working-hours/{id}', [WorkingHoursController::class, 'update']);
     });
 
     /*
