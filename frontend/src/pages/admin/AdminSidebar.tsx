@@ -24,6 +24,11 @@ const menuItems = [
     icon: "▣",
   },
   {
+    label: "Lịch làm việc",
+    path: "/admin/working-hours",
+    icon: "◷",
+  },
+  {
     label: "Dịch vụ",
     path: "/admin/services",
     icon: "◇",
