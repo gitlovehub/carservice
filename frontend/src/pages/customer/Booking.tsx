@@ -646,7 +646,7 @@ export default function Booking() {
   const finalModelDisplayName = vehicleModel === "Khác" ? customModel.trim() || "Xe riêng" : vehicleModel;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 antialiased font-sans flex flex-col justify-between selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-800 antialiased font-sans flex flex-col justify-between selection:bg-[#1F2933] selection:text-white">
       <Header />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 w-full flex-grow">
@@ -654,20 +654,20 @@ export default function Booking() {
         <div className="mb-6 flex items-center justify-between">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-blue-600 transition"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#B68A43] transition"
           >
             <i className="fa-solid fa-arrow-left text-xs"></i>
             <span>Trở về trang chủ</span>
           </Link>
           <div className="flex items-center gap-2 text-xs text-slate-500">
-            <i className="fa-solid fa-headset text-blue-600"></i>
+            <i className="fa-solid fa-headset text-[#B68A43]"></i>
             <span>Hỗ trợ nhanh: <strong className="text-slate-800">033 240 5972</strong></span>
           </div>
         </div>
 
         {/* Title Section */}
         <div className="text-center mb-8">
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full mb-2">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#B68A43] bg-[#F3E8D2] px-3 py-1 rounded-full mb-2">
             <i className="fa-solid fa-bolt-lightning text-amber-500"></i> Nhanh chóng & Tiện lợi
           </span>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -685,7 +685,7 @@ export default function Booking() {
             <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-1 bg-slate-100 z-0"></div>
             {/* Dynamic Progress Line */}
             <div
-              className="absolute left-6 top-1/2 -translate-y-1/2 h-1 bg-blue-600 z-0 transition-all duration-500 ease-out"
+              className="absolute left-6 top-1/2 -translate-y-1/2 h-1 bg-[#1F2933] z-0 transition-all duration-500 ease-out"
               style={{
                 width: `${((currentStep - 1) / 3) * 100}%`,
               }}
@@ -701,7 +701,7 @@ export default function Booking() {
                   currentStep > 1
                     ? "bg-emerald-600 text-white shadow-sm"
                     : currentStep === 1
-                    ? "bg-blue-600 text-white ring-4 ring-blue-100 shadow-md"
+                    ? "bg-[#1F2933] text-white ring-4 ring-[#F3E8D2] shadow-md"
                     : "bg-slate-200 text-slate-500"
                 }`}
               >
@@ -712,7 +712,7 @@ export default function Booking() {
                   currentStep > 1
                     ? "font-semibold text-emerald-700"
                     : currentStep === 1
-                    ? "font-bold text-blue-600"
+                    ? "font-bold text-[#B68A43]"
                     : "font-medium text-slate-400"
                 }`}
               >
@@ -730,7 +730,7 @@ export default function Booking() {
                   currentStep > 2
                     ? "bg-emerald-600 text-white shadow-sm"
                     : currentStep === 2
-                    ? "bg-blue-600 text-white ring-4 ring-blue-100 shadow-md"
+                    ? "bg-[#1F2933] text-white ring-4 ring-[#F3E8D2] shadow-md"
                     : "bg-slate-200 text-slate-500"
                 }`}
               >
@@ -741,7 +741,7 @@ export default function Booking() {
                   currentStep > 2
                     ? "font-semibold text-emerald-700"
                     : currentStep === 2
-                    ? "font-bold text-blue-600"
+                    ? "font-bold text-[#B68A43]"
                     : "font-medium text-slate-400"
                 }`}
               >
@@ -759,7 +759,7 @@ export default function Booking() {
                   currentStep > 3
                     ? "bg-emerald-600 text-white shadow-sm"
                     : currentStep === 3
-                    ? "bg-blue-600 text-white ring-4 ring-blue-100 shadow-md"
+                    ? "bg-[#1F2933] text-white ring-4 ring-[#F3E8D2] shadow-md"
                     : "bg-slate-200 text-slate-500"
                 }`}
               >
@@ -770,7 +770,7 @@ export default function Booking() {
                   currentStep > 3
                     ? "font-semibold text-emerald-700"
                     : currentStep === 3
-                    ? "font-bold text-blue-600"
+                    ? "font-bold text-[#B68A43]"
                     : "font-medium text-slate-400"
                 }`}
               >
@@ -811,7 +811,7 @@ export default function Booking() {
             <div>
               <div className="flex flex-col items-start justify-between gap-3 mb-6 pb-4 border-b border-slate-100 sm:flex-row sm:items-center">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-[#F3E8D2] text-[#B68A43] flex items-center justify-center font-bold text-sm">
                     <i className="fa-regular fa-user"></i>
                   </div>
                   <div>
@@ -847,7 +847,7 @@ export default function Booking() {
                         if (errors.name) setErrors({ ...errors, name: "" });
                       }}
                       placeholder="Ví dụ: Nguyễn Văn An"
-                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition ${
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition ${
                         isLoggedIn && customerName
                           ? "border-emerald-300 bg-emerald-50/40"
                           : "border-slate-200"
@@ -876,7 +876,7 @@ export default function Booking() {
                         if (errors.phone) setErrors({ ...errors, phone: "" });
                       }}
                       placeholder="Ví dụ: 0912 345 678"
-                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition ${
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition ${
                         isLoggedIn && customerPhone
                           ? "border-emerald-300 bg-emerald-50/40"
                           : "border-slate-200"
@@ -905,7 +905,7 @@ export default function Booking() {
                         if (errors.email) setErrors({ ...errors, email: "" });
                       }}
                       placeholder="Ví dụ: vanan@gmail.com"
-                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition ${
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition ${
                         isLoggedIn && customerEmail
                           ? "border-emerald-300 bg-emerald-50/40"
                           : "border-slate-200"
@@ -928,7 +928,7 @@ export default function Booking() {
                       id="customerCity"
                       value={customerCity}
                       onChange={(e) => setCustomerCity(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition bg-white text-slate-800"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition bg-white text-slate-800"
                     >
                       <option value="TP. Hà Nội">TP. Hà Nội</option>
                       <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
@@ -952,7 +952,7 @@ export default function Booking() {
                     value={customerNotes}
                     onChange={(e) => setCustomerNotes(e.target.value)}
                     placeholder="Ví dụ: Xe phát ra tiếng kêu lạ ở trục bánh trước khi vào cua, cần kiểm tra phanh..."
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition"
                   ></textarea>
                 </div>
               </div>
@@ -966,7 +966,7 @@ export default function Booking() {
             <div>
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-[#F3E8D2] text-[#B68A43] flex items-center justify-center font-bold text-sm">
                     <i className="fa-solid fa-car"></i>
                   </div>
                   <div>
@@ -1017,7 +1017,7 @@ export default function Booking() {
                         onChange={(e) => handleVehicleTypeChange(e.target.value as VehicleType)}
                         className="peer sr-only"
                       />
-                      <div className="p-4 rounded-xl border-2 border-slate-200 bg-white text-center transition peer-checked:border-blue-600 peer-checked:bg-blue-50/50 hover:border-slate-300">
+                      <div className="p-4 rounded-xl border-2 border-slate-200 bg-white text-center transition peer-checked:border-[#1F2933] peer-checked:bg-[#F3E8D2]/50 hover:border-slate-300">
                         <i className={`${item.icon} text-2xl text-slate-600 mb-2 block`}></i>
                         <span className="text-xs font-bold block text-slate-800">{item.label}</span>
                       </div>
@@ -1037,7 +1037,7 @@ export default function Booking() {
                     id="vehicleBrand"
                     value={vehicleBrand}
                     onChange={(e) => handleBrandChange(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition bg-white"
                   >
                     {Object.keys(BRAND_MODELS).map((b) => (
                       <option key={b} value={b}>
@@ -1059,7 +1059,7 @@ export default function Booking() {
                     onChange={(e) => {
                       handleModelChange(e.target.value);
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition bg-white"
                   >
                     <option value="">-- Chọn dòng xe của {vehicleBrand} --</option>
                     {getModelsForVehicleType(vehicleBrand, vehicleType).map((m) => (
@@ -1081,7 +1081,7 @@ export default function Booking() {
                         setCustomModel(e.target.value);
                         if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
                       }}
-                      className="mt-2 w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
+                      className="mt-2 w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition"
                     />
                   )}
                   {errors.model && <p className="text-[11px] text-red-500 mt-1">{errors.model}</p>}
@@ -1105,7 +1105,7 @@ export default function Booking() {
                     }}
                     placeholder="VD: 30A-123.45 hoặc 51K-888.88"
                     maxLength={12}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm uppercase font-mono font-bold tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm uppercase font-mono font-bold tracking-wider focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
                     Chuẩn form: <strong>30A-123.45</strong> hoặc <strong>51K-888.88</strong>
@@ -1135,7 +1135,7 @@ export default function Booking() {
                         <div
                           className={`p-4 rounded-2xl border-2 transition relative ${
                             isChecked
-                              ? "border-blue-600 bg-blue-50/40"
+                              ? "border-[#1F2933] bg-[#F3E8D2]/40"
                               : "border-slate-200 bg-white hover:border-slate-300"
                           }`}
                         >
@@ -1146,7 +1146,7 @@ export default function Booking() {
                               </h3>
                               <p className="text-xs text-slate-500 mt-1">{pkg.description}</p>
                             </div>
-                            <span className="text-sm font-extrabold text-blue-600 whitespace-nowrap ml-2">
+                            <span className="text-sm font-extrabold text-[#B68A43] whitespace-nowrap ml-2">
                               {pkg.price}
                             </span>
                           </div>
@@ -1168,7 +1168,7 @@ export default function Booking() {
           {currentStep === 3 && (
             <div>
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                <div className="w-8 h-8 rounded-lg bg-[#F3E8D2] text-[#B68A43] flex items-center justify-center font-bold text-sm">
                   <i className="fa-regular fa-calendar-check"></i>
                 </div>
                 <div>
@@ -1198,7 +1198,7 @@ export default function Booking() {
                         <div
                           className={`p-3.5 rounded-xl border-2 transition ${
                             isChecked
-                              ? "border-blue-600 bg-blue-50/40"
+                              ? "border-[#1F2933] bg-[#F3E8D2]/40"
                               : "border-slate-200 bg-white hover:border-slate-300"
                           }`}
                         >
@@ -1209,7 +1209,7 @@ export default function Booking() {
                             </span>
                           </div>
                           <p className="text-xs text-slate-500 mt-1">
-                            <i className="fa-solid fa-map-pin text-blue-600 mr-1"></i> {b.address}
+                            <i className="fa-solid fa-map-pin text-[#B68A43] mr-1"></i> {b.address}
                           </p>
                         </div>
                       </label>
@@ -1233,13 +1233,13 @@ export default function Booking() {
                         onClick={() => handleDateSelect(d.index)}
                         className={`flex-shrink-0 w-24 py-3 px-2 rounded-2xl border-2 text-center transition cursor-pointer ${
                           isSelected
-                            ? "border-blue-600 bg-blue-50/60 font-bold text-blue-700 ring-2 ring-blue-100"
+                            ? "border-[#1F2933] bg-[#F3E8D2]/60 font-bold text-[#6D542A] ring-2 ring-[#F3E8D2]"
                             : "border-slate-200 bg-white hover:border-slate-300 text-slate-700"
                         }`}
                       >
                         <span
                           className={`block text-[11px] uppercase tracking-wider ${
-                            isSelected ? "text-blue-600 font-bold" : "text-slate-400"
+                            isSelected ? "text-[#B68A43] font-bold" : "text-slate-400"
                           }`}
                         >
                           {d.dayName}
@@ -1293,8 +1293,8 @@ export default function Booking() {
                             }}
                             className={`p-2.5 rounded-xl border text-xs font-bold cursor-pointer active:scale-95 transition ${
                               isSelected
-                                ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-200 shadow-sm"
-                                : "border-slate-200 text-slate-700 hover:border-blue-500 bg-white hover:bg-blue-50/30"
+                                ? "bg-[#1F2933] text-white border-[#1F2933] ring-2 ring-[#E8D3A8] shadow-sm"
+                                : "border-slate-200 text-slate-700 hover:border-[#D6A85F] bg-white hover:bg-[#F3E8D2]/30"
                             }`}
                           >
                             {slotTime}
@@ -1339,8 +1339,8 @@ export default function Booking() {
                             }}
                             className={`p-2.5 rounded-xl border text-xs font-bold cursor-pointer active:scale-95 transition ${
                               isSelected
-                                ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-200 shadow-sm"
-                                : "border-slate-200 text-slate-700 hover:border-blue-500 bg-white hover:bg-blue-50/30"
+                                ? "bg-[#1F2933] text-white border-[#1F2933] ring-2 ring-[#E8D3A8] shadow-sm"
+                                : "border-slate-200 text-slate-700 hover:border-[#D6A85F] bg-white hover:bg-[#F3E8D2]/30"
                             }`}
                           >
                             {slotTime}
@@ -1387,7 +1387,7 @@ export default function Booking() {
                     <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">
                       Mã phiếu hẹn
                     </span>
-                    <p className="text-lg font-mono font-extrabold text-blue-600">{bookingCode}</p>
+                    <p className="text-lg font-mono font-extrabold text-[#B68A43]">{bookingCode}</p>
                   </div>
                   <div className="text-right">
                     <span className="text-xs text-slate-400 font-medium">Trạng thái</span>
@@ -1424,8 +1424,8 @@ export default function Booking() {
                     <span className="text-xs text-slate-500 font-semibold uppercase block">
                       Thời gian hẹn:
                     </span>
-                    <p className="font-bold text-blue-700 flex items-center gap-1.5 mt-0.5">
-                      <i className="fa-regular fa-clock text-blue-600"></i>
+                    <p className="font-bold text-[#6D542A] flex items-center gap-1.5 mt-0.5">
+                      <i className="fa-regular fa-clock text-[#B68A43]"></i>
                       <span>
                         {selectedTime} - {selectedDateObj.fullLabel}
                       </span>
@@ -1447,7 +1447,7 @@ export default function Booking() {
                     </span>
                     <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200/70">
                       <div className="flex items-center gap-2">
-                        <i className="fa-solid fa-circle-check text-blue-600"></i>
+                        <i className="fa-solid fa-circle-check text-[#B68A43]"></i>
                         <span className="font-bold text-slate-800 text-sm">
                           {selectedService.title}
                         </span>
@@ -1487,7 +1487,7 @@ export default function Booking() {
                 <button
                   type="button"
                   onClick={resetFormToStart}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-sm text-white transition flex items-center gap-2 shadow-sm cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-[#1F2933] hover:bg-[#151D24] font-bold text-sm text-white transition flex items-center gap-2 shadow-sm cursor-pointer"
                 >
                   <i className="fa-solid fa-plus"></i> Đặt lịch hẹn khác
                 </button>
@@ -1515,7 +1515,7 @@ export default function Booking() {
                   type="button"
                   disabled={submitting}
                   onClick={handleNextClick}
-                  className="px-7 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 active:scale-95 transition flex items-center gap-2 cursor-pointer"
+                  className="px-7 py-2.5 rounded-xl font-bold text-sm bg-[#1F2933] hover:bg-[#151D24] text-white shadow-lg shadow-[#1F2933]/25 active:scale-95 transition flex items-center gap-2 cursor-pointer"
                 >
                   {submitting ? (
                     <span>Đang xử lý...</span>
@@ -1547,7 +1547,7 @@ export default function Booking() {
             <i className="fa-solid fa-shield-halved text-emerald-500 text-base"></i> Phụ tùng chính hãng 100%
           </div>
           <div className="bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-center gap-2.5 text-xs font-semibold text-slate-700">
-            <i className="fa-solid fa-clock-rotate-left text-blue-500 text-base"></i> Đúng hẹn, không chờ lâu
+            <i className="fa-solid fa-clock-rotate-left text-[#B68A43] text-base"></i> Đúng hẹn, không chờ lâu
           </div>
           <div className="bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-center gap-2.5 text-xs font-semibold text-slate-700">
             <i className="fa-solid fa-file-invoice-dollar text-amber-500 text-base"></i> Minh bạch chi phí
@@ -1578,7 +1578,7 @@ export default function Booking() {
 
             {/* Tiêu đề & Icon */}
             <div className="flex items-center gap-3.5 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shadow-inner shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-[#F3E8D2] text-[#B68A43] flex items-center justify-center text-xl shadow-inner shrink-0">
                 <i className="fa-solid fa-calendar-check"></i>
               </div>
               <div>
@@ -1609,7 +1609,7 @@ export default function Booking() {
               </div>
               <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
                 <span className="text-slate-500 font-medium">Thời gian hẹn:</span>
-                <span className="font-bold text-blue-600">{selectedTime} - {selectedDateObj.fullLabel}</span>
+                <span className="font-bold text-[#B68A43]">{selectedTime} - {selectedDateObj.fullLabel}</span>
               </div>
               <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
                 <span className="text-slate-500 font-medium">Chi nhánh:</span>
@@ -1637,7 +1637,7 @@ export default function Booking() {
                 type="button"
                 onClick={handleConfirmSubmit}
                 disabled={submitting}
-                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-xs sm:text-sm text-white shadow-lg shadow-blue-500/25 transition cursor-pointer flex items-center gap-2"
+                className="px-5 py-2.5 rounded-xl bg-[#1F2933] hover:bg-[#151D24] font-bold text-xs sm:text-sm text-white shadow-lg shadow-[#1F2933]/25 transition cursor-pointer flex items-center gap-2"
               >
                 {submitting ? (
                   <span>Đang xử lý...</span>

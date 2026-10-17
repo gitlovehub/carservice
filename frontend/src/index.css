@@ -58,9 +58,11 @@ textarea:focus-visible {
   outline-offset: 3px;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+@layer base {
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 img {
