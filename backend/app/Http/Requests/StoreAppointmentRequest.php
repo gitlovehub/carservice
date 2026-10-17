@@ -15,8 +15,19 @@ class StoreAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'vehicle_id' => ['required_without:new_vehicle', 'prohibited_with:new_vehicle', 'integer', Rule::exists('vehicles', 'id')->whereNull('deleted_at')],
-            'new_vehicle' => ['required_without:vehicle_id', 'prohibited_with:vehicle_id', 'array'],
+            'vehicle_id' => [
+                'required_without:new_vehicle',
+                'prohibited_unless:new_vehicle,null',
+                'integer',
+                'exists:vehicles,id',
+            ],
+
+            'new_vehicle' => [
+                'required_without:vehicle_id',
+                'prohibited_unless:vehicle_id,null',
+                'array',
+            ],
+
             'new_vehicle.brand' => ['required_with:new_vehicle', 'string', 'max:100'],
             'new_vehicle.model' => ['required_with:new_vehicle', 'string', 'max:100'],
             'new_vehicle.vehicle_type' => ['required_with:new_vehicle', Rule::in(['Sedan / Hatchback (4-5 chỗ)', 'SUV / Crossover (5-7 chỗ)', 'MPV', 'PICKUP'])],
