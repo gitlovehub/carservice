@@ -15,7 +15,7 @@ class StoreAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'vehicle_id' => ['required_without:new_vehicle', 'prohibited_with:new_vehicle', 'integer', 'exists:vehicles,id'],
+            'vehicle_id' => ['required_without:new_vehicle', 'prohibited_with:new_vehicle', 'integer', Rule::exists('vehicles', 'id')->whereNull('deleted_at')],
             'new_vehicle' => ['required_without:vehicle_id', 'prohibited_with:vehicle_id', 'array'],
             'new_vehicle.brand' => ['required_with:new_vehicle', 'string', 'max:100'],
             'new_vehicle.model' => ['required_with:new_vehicle', 'string', 'max:100'],
