@@ -1,269 +1,146 @@
-import CustomerHeader from "../../components/CustomerHeader";
-import CustomerTopbar from "../../components/CustomerTopbar";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  getMyRepairOrders,
+  getMyRepairOrderDetail,
+  getVehicleName,
+  repairStatusLabel,
+  type CustomerRepairOrder,
+} from "../../services/customerApi";
+import "../../styles/atelier-customer-pages.css";
 
-function RepairStatus() {
-  const repairs = [
-    {
-      code: "SC-001",
-      car: "Toyota Vios",
-      service: "Bảo dưỡng định kỳ",
-      date: "24/06/2026",
-      status: "Đang tiếp nhận",
-    },
-    {
-      code: "SC-002",
-      car: "Honda City",
-      service: "Kiểm tra tổng quát",
-      date: "25/06/2026",
-      status: "Đang sửa chữa",
-    },
-  ];
+// Presentation stages follow the ATELIER timeline, mapped to the actual Laravel
+// repair-order state machine. No demo statuses are sent to the backend.
+const stages = [
+  { status: "RECEIVED", label: "Đã tiếp nhận", color: "blue" },
+  { status: "INSPECTING", label: "Đang chẩn đoán", color: "blue" },
+  { status: "WAITING_APPROVAL", label: "Chờ khách duyệt", color: "amber" },
+  { status: "IN_PROGRESS", label: "Đang sửa chữa", color: "blue" },
+  { status: "COMPLETED", label: "Sẵn sàng bàn giao", color: "green" },
+  { status: "HANDED_OVER", label: "Đã bàn giao", color: "green" },
+  { status: "CLOSED", label: "Đã đóng phiếu", color: "muted" },
+] as const;
+
+function stageIndex(status: string): number {
+  if (status === "QUOTING") return 1;
+  if (status === "WAITING_FOR_PARTS" || status === "REVIEW_TEST") return 3;
+  return stages.findIndex(stage => stage.status === status);
+}
+
+function statusColor(status: string) {
+  if (status === "WAITING_APPROVAL" || status === "WAITING_FOR_PARTS" || status === "QUOTING") return "amber";
+  if (status === "COMPLETED" || status === "HANDED_OVER") return "green";
+  if (status === "CLOSED") return "muted";
+  return "blue";
+}
+
+function formatEventTime(date?: string | null) {
+  if (!date) return "";
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleString("vi-VN");
+}
+
+function TrackingCard({ order }: { order: CustomerRepairOrder }) {
+  const [detail, setDetail] = useState<CustomerRepairOrder | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [historyError, setHistoryError] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setLoadingHistory(true);
+    setHistoryError(false);
+    getMyRepairOrderDetail(order.id)
+      .then(data => { if (active) setDetail(data); })
+      .catch(() => { if (active) setHistoryError(true); })
+      .finally(() => { if (active) setLoadingHistory(false); });
+    return () => { active = false; };
+  }, [order.id]);
+
+  const status = detail?.status ?? order.status;
+  const current = stageIndex(status);
+  const history = (detail?.statusHistory ?? detail?.status_history ?? [])
+    .slice()
+    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))
+    .slice(0, 5);
+  const recordedStatuses = new Set(history.map(item => item.status));
+  const isEarlyClosed = status === "CLOSED" && !recordedStatuses.has("COMPLETED") && !recordedStatuses.has("HANDED_OVER");
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <CustomerHeader />
-      <CustomerTopbar />
-
-      <main className="lg:ml-[250px]">
-        <div className="mx-auto max-w-[1200px] px-6 py-10 md:px-8 md:py-14">
-          <div className="mb-8">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-              KHÁCH HÀNG / THEO DÕI SỬA CHỮA
-            </p>
-
-            <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h1 className="text-[30px] font-bold tracking-[-0.8px] text-[#1F2933]">
-                  Theo dõi tình trạng sửa chữa
-                </h1>
-
-                <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#66717C]">
-                  Theo dõi tiến độ sửa chữa và bảo dưỡng xe của bạn.
-                </p>
-              </div>
-
-              <div className="hidden rounded-xl border border-[#E1E4E6] bg-white px-4 py-3 sm:block">
-                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
-                  PHIẾU ĐANG XỬ LÝ
-                </p>
-
-                <p className="mt-1 text-[14px] font-bold text-[#20252B]">
-                  {repairs.length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-7 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
-                    TỔNG PHIẾU
-                  </p>
-
-                  <p className="mt-2 text-2xl font-bold tracking-tight text-[#20252B]">
-                    {repairs.length}
-                  </p>
-                </div>
-
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1F2933] text-sm text-white">
-                  #
-                </div>
-              </div>
-
-              <p className="mt-3 text-[11px] text-[#66717C]">
-                Các phiếu sửa chữa hiện có.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
-                    ĐANG TIẾP NHẬN
-                  </p>
-
-                  <p className="mt-2 text-2xl font-bold tracking-tight text-[#20252B]">
-                    {
-                      repairs.filter(
-                        (repair) => repair.status === "Đang tiếp nhận"
-                      ).length
-                    }
-                  </p>
-                </div>
-
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#F3F4F2] text-sm text-[#66717C]">
-                  01
-                </div>
-              </div>
-
-              <p className="mt-3 text-[11px] text-[#66717C]">
-                Xe đang trong bước tiếp nhận.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
-                    ĐANG SỬA CHỮA
-                  </p>
-
-                  <p className="mt-2 text-2xl font-bold tracking-tight text-[#20252B]">
-                    {
-                      repairs.filter(
-                        (repair) => repair.status === "Đang sửa chữa"
-                      ).length
-                    }
-                  </p>
-                </div>
-
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#F3E8D2] text-sm font-bold text-[#3A3020]">
-                  02
-                </div>
-              </div>
-
-              <p className="mt-3 text-[11px] text-[#66717C]">
-                Xe đang được kỹ thuật viên xử lý.
-              </p>
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
-            <div className="flex flex-col gap-3 border-b border-[#E1E4E6] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                  REPAIR STATUS
-                </p>
-
-                <h2 className="mt-1 text-[17px] font-bold text-[#20252B]">
-                  Danh sách phiếu sửa chữa
-                </h2>
-              </div>
-
-              <span className="w-fit rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
-                {repairs.length} kết quả
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left">
-                <thead>
-                  <tr className="border-b border-[#E1E4E6] bg-[#FAFAF9] text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
-                    <th className="px-6 py-4">STT</th>
-                    <th className="px-6 py-4">Mã phiếu</th>
-                    <th className="px-6 py-4">Xe</th>
-                    <th className="px-6 py-4">Dịch vụ</th>
-                    <th className="px-6 py-4">Ngày</th>
-                    <th className="px-6 py-4">Trạng thái</th>
-                    <th className="px-6 py-4">Thao tác</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {repairs.map((repair, index) => (
-                    <tr
-                      key={repair.code}
-                      className="border-b border-[#EEF0F2] last:border-b-0 transition hover:bg-[#FAFAF9]"
-                    >
-                      <td className="px-6 py-5 text-[12px] text-[#8A949E]">
-                        {String(index + 1).padStart(2, "0")}
-                      </td>
-
-                      <td className="px-6 py-5">
-                        <span className="rounded-lg bg-[#F3F4F2] px-3 py-2 text-[12px] font-bold text-[#20252B]">
-                          {repair.code}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1F2933] text-xs text-white">
-                            🚗
-                          </div>
-
-                          <p className="text-[13px] font-semibold text-[#20252B]">
-                            {repair.car}
-                          </p>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-5">
-                        <p className="text-[12px] text-[#66717C]">
-                          {repair.service}
-                        </p>
-                      </td>
-
-                      <td className="px-6 py-5">
-                        <p className="text-[12px] text-[#66717C]">
-                          {repair.date}
-                        </p>
-                      </td>
-
-                      <td className="px-6 py-5">
-                        {repair.status === "Đang sửa chữa" ? (
-                          <span className="inline-flex items-center gap-2 rounded-full bg-[#F3E8D2] px-3 py-1.5 text-[11px] font-semibold text-[#3A3020]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]" />
-                            {repair.status}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-2 rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#8A949E]" />
-                            {repair.status}
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-6 py-5">
-                        <button
-                          type="button"
-                          className="cursor-pointer rounded-xl bg-[#1F2933] px-3.5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151D24]"
-                        >
-                          Xem chi tiết
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-[#E1E4E6] bg-white p-5">
-            <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F3E8D2] text-xs font-bold text-[#1F2933]">
-                i
-              </div>
-
-              <div>
-                <p className="text-[13px] font-bold text-[#20252B]">
-                  Trạng thái sửa chữa
-                </p>
-
-                <div className="mt-3 flex flex-wrap gap-3">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#8A949E]" />
-                    Đang tiếp nhận
-                  </span>
-
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[#F3E8D2] px-3 py-1.5 text-[11px] font-semibold text-[#3A3020]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]" />
-                    Đang sửa chữa
-                  </span>
-                </div>
-
-                <p className="mt-3 text-[11px] leading-5 text-[#66717C]">
-                  Bạn có thể xem chi tiết từng phiếu để theo dõi quá trình xử lý
-                  xe tại CarService.
-                </p>
-              </div>
-            </div>
-          </div>
+    <article className="at-tracking-card">
+      <div className="at-appointment-top">
+        <div>
+          <p className="at-appointment-code">{order.repair_order_code}</p>
+          <h2>{getVehicleName(order.vehicle)}</h2>
+          <p className="at-appointment-description">
+            {order.vehicle?.license_plate ?? "Chưa có biển số"}
+            {order.received_at ? ` · Tiếp nhận ${formatEventTime(order.received_at)}` : ""}
+          </p>
         </div>
-      </main>
-    </div>
+        <span className={`at-customer-status at-track-status-${statusColor(status)}`}>
+          ● {repairStatusLabel[status] ?? status}
+        </span>
+      </div>
+      <div className="at-tracking-details">
+        <section aria-label="Tiến độ công việc">
+          <h3>Tiến độ công việc</h3>
+          {status === "WAITING_FOR_PARTS" && <p className="at-tracking-waiting">Đang tạm dừng do chờ phụ tùng. Gara sẽ tiếp tục khi có vật tư.</p>}
+          {status === "QUOTING" && <p className="at-tracking-waiting">Gara đang lập báo giá để bạn xem xét.</p>}
+          <ol className="at-tracking-timeline">
+            {stages.map((stage, index) => {
+              const isCurrent = stage.status === status || (status === "QUOTING" && stage.status === "INSPECTING") ||
+                ((status === "WAITING_FOR_PARTS" || status === "REVIEW_TEST") && stage.status === "IN_PROGRESS");
+              const isPast = current > index && !(isEarlyClosed && index > 0) && !["CLOSED"].includes(status);
+              const isVisible = isCurrent || isPast;
+              return <li key={stage.status} className={`${isCurrent ? "is-current" : ""} ${isPast ? "is-done" : ""} ${!isVisible ? "is-future" : ""}`}>
+                <span className={`at-tracking-pill at-track-status-${stage.color}`}>{stage.label}</span>
+                {isCurrent && <small>{status === "WAITING_FOR_PARTS" ? "Đang chờ phụ tùng" : status === "REVIEW_TEST" ? "Đang kiểm tra lại" : "Đang ở bước này"}</small>}
+              </li>;
+            })}
+          </ol>
+        </section>
+        <section aria-label="Nhật ký gần đây" className="at-tracking-journal">
+          <h3>Nhật ký gần đây</h3>
+          {loadingHistory && <p className="at-tracking-note">Đang tải nhật ký...</p>}
+          {!loadingHistory && historyError && <p className="at-tracking-note">Chưa tải được nhật ký. Vui lòng thử tải lại trang.</p>}
+          {!loadingHistory && !historyError && history.length === 0 && <p className="at-tracking-note">Chưa có cập nhật mới.</p>}
+          {!loadingHistory && !historyError && history.map(event => <div className="at-tracking-event" key={event.id}>
+            <strong>{event.note?.trim() || repairStatusLabel[event.status] || "Cập nhật trạng thái phiếu"}</strong>
+            <span>{formatEventTime(event.created_at)}</span>
+          </div>)}
+          {!loadingHistory && !historyError && !history.length && (detail?.note || order.note) &&
+            <p className="at-tracking-note">{detail?.note || order.note}</p>}
+        </section>
+      </div>
+    </article>
   );
 }
 
-export default RepairStatus;
+export default function RepairStatus() {
+  const [orders, setOrders] = useState<CustomerRepairOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    getMyRepairOrders()
+      .then(data => { if (active) { setOrders(data); setError(""); } })
+      .catch((err: unknown) => { if (active) setError(err instanceof Error ? err.message : "Không thể tải tiến độ xe."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [reload]);
+
+  return <section className="at-customer-page at-customer-tracking">
+    <div className="at-customer-container">
+      <header className="at-customer-heading"><div>
+        <p className="at-customer-eyebrow">MY GARAGE / TRACKING</p>
+        <h1>Hành trình sửa chữa</h1>
+        <p>Biết xe đang ở công đoạn nào và công việc tiếp theo là gì.</p>
+      </div></header>
+      {loading && <div className="at-customer-empty">Đang tải hành trình sửa chữa...</div>}
+      {error && <div role="alert" className="at-customer-notice at-customer-error"><span>{error}</span><button type="button" onClick={() => setReload(x => x + 1)}>Thử lại</button></div>}
+      {!loading && !error && orders.length === 0 && <div className="at-customer-empty"><h2>Chưa có phiếu sửa chữa</h2><p>Khi gara tiếp nhận xe, trạng thái công việc sẽ xuất hiện tại đây.</p><Link to="/customer/appointments" className="at-customer-primary">Xem lịch hẹn của tôi</Link></div>}
+      {!loading && !error && orders.map(order => <TrackingCard key={order.id} order={order} />)}
+    </div>
+  </section>;
+}

@@ -5,7 +5,7 @@ import { fetchApi } from "../../services/api";
 import { getRoleManagementPage, setUserRole } from "./auth";
 import OtpInput from "../../components/auth/OtpInput";
 import Toast, { type ToastType } from "../../components/auth/Toast";
-import BrandLogo from "../../components/common/BrandLogo";
+import { AtelierAuthError, AtelierAuthLayout, AtelierField } from "../../components/AtelierPublic";
 
 type Step = "login" | "otp";
 
@@ -139,8 +139,7 @@ function Login() {
           ].includes(requestedPath)
         : role === "ADMIN"
           ? requestedPath.startsWith("/admin/") ||
-            requestedPath === "/admin" ||
-            requestedPath.startsWith("/advisor/")
+            requestedPath === "/admin"
           : role === "ADVISOR"
             ? requestedPath.startsWith("/advisor/")
             : role === "TECHNICIAN"
@@ -347,13 +346,6 @@ function Login() {
         return;
       }
 
-      if (finalToken) {
-        localStorage.setItem("token", finalToken);
-        setUserRole("CUSTOMER");
-        goToDashboard("CUSTOMER");
-        return;
-      }
-
       setApiError("Xác thực OTP không thành công.");
     } catch (error: unknown) {
       const details = getApiErrorDetails(error);
@@ -395,247 +387,23 @@ function Login() {
     }
   };
 
-  return (
-    <div className="flex min-h-screen flex-col justify-between bg-[#F7F7F5] text-[#20252B]">
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+  return <AtelierAuthLayout title={step === "login" ? "Chào mừng trở lại." : "Xác thực email."} description={step === "login" ? "Đăng nhập để tiếp tục công việc hoặc theo dõi xe của bạn." : `Nhập mã OTP được gửi tới ${pendingEmail}.`}>
+    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+    {apiError && <AtelierAuthError message={apiError} />}
+    {step === "login" ? <>
+      <form className="at-form-stack" onSubmit={handleSubmit} noValidate>
+        <AtelierField htmlFor="login-email" label="Địa chỉ email" error={errors.email}><input id="login-email" name="email" type="email" autoComplete="username" className="at-control" placeholder="you@example.com" value={form.email} onChange={handleChange} aria-invalid={!!errors.email}/></AtelierField>
+        <AtelierField htmlFor="login-password" label="Mật khẩu" error={errors.password}><div className="at-password-wrap"><input id="login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" className="at-control" placeholder="Nhập mật khẩu" value={form.password} onChange={handleChange} aria-invalid={!!errors.password}/><button type="button" className="at-show-password" onClick={() => setShowPassword(s => !s)}>{showPassword ? "Ẩn" : "Hiện"}</button></div></AtelierField>
+        <div className="at-form-meta"><Link to="/forgot-password">Quên mật khẩu?</Link><span>Đăng nhập bảo mật</span></div>
+        <button type="submit" className="at-btn at-btn-primary at-large at-full" disabled={isLoading}>{isLoading ? "Đang đăng nhập..." : "Đăng nhập →"}</button>
+      </form>
+      <p className="at-auth-switch">Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link></p>
+    </> : <>
+      <form className="at-form-stack" onSubmit={handleOtpSubmit} noValidate><OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!apiError}/><button className="at-btn at-btn-primary at-large at-full" type="submit" disabled={isLoading || otp.length !== 6}>{isLoading ? "Đang xác thực..." : "Xác nhận mã OTP →"}</button></form>
+      <div className="at-otp-tools">{resendCountdown > 0 ? <span>Gửi lại mã sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại mã OTP</button>}<button type="button" onClick={() => {setStep("login");setOtp("");setApiError("");}}>← Quay lại đăng nhập</button></div>
+    </>}
+  </AtelierAuthLayout>;
 
-      <header className="sticky top-0 z-30 border-b border-[#E1E4E6] bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-6">
-          <BrandLogo />
-
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[#8A949E] transition hover:text-[#20252B]"
-          >
-            ← Về trang chủ
-          </Link>
-        </div>
-      </header>
-
-      <main className="flex flex-1 items-center justify-center px-4 py-8 sm:py-12">
-        <div className="w-full max-w-[480px]">
-          <div className="rounded-3xl border border-[#E1E4E6] bg-white p-7 shadow-[0_20px_50px_rgba(31,41,51,0.06)] sm:p-9">
-            {step === "login" ? (
-              <div>
-                <div className="mb-8">
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#E5B869]/40 bg-[#FAF8F5] px-3 py-1">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#D6A85F]" />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-                      HỆ THỐNG XÁC THỰC AN TOÀN
-                    </span>
-                  </div>
-
-                  <h1 className="text-2xl font-extrabold tracking-tight text-[#20252B] sm:text-3xl">
-                    Đăng nhập tài khoản
-                  </h1>
-
-                  <p className="mt-2 text-xs text-[#7A838C] sm:text-sm">
-                    Chào mừng bạn quay trở lại. Vui lòng đăng nhập để quản lý
-                    lịch bảo dưỡng và xe của bạn.
-                  </p>
-                </div>
-
-                {apiError && (
-                  <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50/70 p-4 text-xs font-medium text-red-700">
-                    <span className="shrink-0 text-base">⚠️</span>
-                    <div className="flex-1 leading-relaxed">{apiError}</div>
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit} noValidate className="space-y-4">
-                  <div>
-                    <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#66717C]">
-                      Địa chỉ Email <span className="text-red-500">*</span>
-                    </label>
-
-                    <input
-                      type="email"
-                      name="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      placeholder="vidu@carservice.vn"
-                      className={`h-12 w-full rounded-xl border px-4 text-sm text-[#20252B] outline-none transition duration-200 placeholder:text-[#9EA8B3] ${
-                        errors.email
-                          ? "border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-4 focus:ring-red-100"
-                          : "border-[#E1E4E6] bg-[#F7F7F5] focus:border-[#D6A85F] focus:bg-white focus:ring-4 focus:ring-[#D6A85F]/15"
-                      }`}
-                    />
-
-                    {errors.email && (
-                      <p className="mt-1 text-[11px] font-semibold text-red-600">
-                        {errors.email}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#66717C]">
-                        Mật khẩu <span className="text-red-500">*</span>
-                      </label>
-
-                      <Link
-                        to="/forgot-password"
-                        className="text-[11px] font-semibold text-[#D6A85F] transition hover:text-[#B58941]"
-                      >
-                        Quên mật khẩu?
-                      </Link>
-                    </div>
-
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        value={form.password}
-                        onChange={handleChange}
-                        placeholder="Nhập mật khẩu"
-                        className={`h-12 w-full rounded-xl border px-4 pr-14 text-sm text-[#20252B] outline-none transition duration-200 placeholder:text-[#9EA8B3] ${
-                          errors.password
-                            ? "border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-4 focus:ring-red-100"
-                            : "border-[#E1E4E6] bg-[#F7F7F5] focus:border-[#D6A85F] focus:bg-white focus:ring-4 focus:ring-[#D6A85F]/15"
-                        }`}
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((previous) => !previous)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#8A949E] transition hover:text-[#20252B]"
-                      >
-                        {showPassword ? "Ẩn" : "Hiện"}
-                      </button>
-                    </div>
-
-                    {errors.password && (
-                      <p className="mt-1 text-[11px] font-semibold text-red-600">
-                        {errors.password}
-                      </p>
-                    )}
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="mt-2 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#1F2933] text-sm font-bold text-white transition-all hover:bg-slate-800 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isLoading ? (
-                      <>
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                        <span>Đang xử lý đăng nhập...</span>
-                      </>
-                    ) : (
-                      <span>Đăng nhập ngay</span>
-                    )}
-                  </button>
-                </form>
-
-                <div className="mt-6 text-center text-xs text-[#7A838C]">
-                  Chưa có tài khoản khách hàng?{" "}
-                  <Link
-                    to="/register"
-                    className="font-bold text-[#D6A85F] transition hover:text-[#B58941]"
-                  >
-                    Đăng ký tài khoản mới
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="mb-6 text-center">
-                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#E5B869] bg-[#FAF8F5] text-2xl text-[#D6A85F]">
-                    ✉️
-                  </div>
-
-                  <h2 className="text-2xl font-bold tracking-tight text-[#20252B]">
-                    Xác thực mã OTP
-                  </h2>
-
-                  <p className="mx-auto mt-2 max-w-sm text-xs text-[#7A838C] sm:text-sm">
-                    Mã xác thực 6 chữ số đã được gửi tới email:
-                    <br />
-                    <strong className="text-[#20252B]">{pendingEmail}</strong>
-                  </p>
-                </div>
-
-                {apiError && (
-                  <div className="mb-6 rounded-2xl border border-red-200 bg-red-50/70 p-4 text-center text-xs font-medium text-red-700">
-                    {apiError}
-                  </div>
-                )}
-
-                <form onSubmit={handleOtpSubmit} noValidate className="space-y-6">
-                  <OtpInput
-                    value={otp}
-                    onChange={setOtp}
-                    disabled={isLoading}
-                    hasError={Boolean(apiError)}
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={isLoading || otp.length !== 6}
-                    className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#1F2933] text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <>
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                        <span>Đang xác nhận mã...</span>
-                      </>
-                    ) : (
-                      <span>Xác nhận &amp; Tiếp tục</span>
-                    )}
-                  </button>
-
-                  <div className="text-center text-xs">
-                    {resendCountdown > 0 ? (
-                      <span className="font-medium text-[#8A949E]">
-                        Gửi lại mã mới sau:{" "}
-                        <strong className="text-[#D6A85F]">
-                          {resendCountdown}s
-                        </strong>
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleResendOtp}
-                        disabled={isLoading}
-                        className="cursor-pointer font-bold text-[#D6A85F] underline underline-offset-4 transition hover:text-[#B58941] disabled:opacity-50"
-                      >
-                        Chưa nhận được mã? Gửi lại OTP
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="pt-2 text-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStep("login");
-                        setOtp("");
-                        setApiError("");
-                      }}
-                      className="cursor-pointer text-xs font-semibold text-[#8A949E] transition hover:text-[#20252B]"
-                    >
-                      ← Quay lại màn hình đăng nhập
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      <footer className="py-4 text-center text-xs text-[#8A949E]">
-        © 2026 CarService System. Tất cả quyền được bảo lưu.
-      </footer>
-    </div>
-  );
 }
 
 export default Login;

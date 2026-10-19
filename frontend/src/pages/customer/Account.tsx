@@ -399,7 +399,7 @@ function Account() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="at-customer-account min-h-screen bg-[#F7F7F5] text-[#20252B]">
       <Header />
 
       {/* Toast Notification */}
@@ -416,15 +416,15 @@ function Account() {
         <section className="border-b border-[#E1E4E6] bg-white">
           <div className="mx-auto max-w-[1280px] px-6 py-14 md:px-8 md:py-16">
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-              CARSERVICE / TÀI KHOẢN
+              MY GARAGE / ACCOUNT
             </p>
 
             <h1 className="mt-3 text-[38px] font-bold tracking-[-1.4px] text-[#1F2933] md:text-[50px]">
-              Thông tin tài khoản
+              Hồ sơ của tôi
             </h1>
 
             <p className="mt-3 max-w-[620px] text-[13px] leading-6 text-[#66717C]">
-              Quản lý thông tin cá nhân, cập nhật ảnh đại diện và bảo mật tài khoản sử dụng dịch vụ CarService.
+              Quản lý thông tin cá nhân và các cài đặt tài khoản.
             </p>
           </div>
         </section>

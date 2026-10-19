@@ -46,6 +46,8 @@ export type Pagination = {
 export type RepairOrderStatus =
   | "RECEIVED"
   | "INSPECTING"
+  | "QUOTING"
+  | "REVIEW_TEST"
   | "WAITING_APPROVAL"
   | "WAITING_FOR_PARTS"
   | "IN_PROGRESS"
@@ -97,6 +99,8 @@ export type CustomerRepairOrder = {
   handed_over_at?: string | null;
   note?: string | null;
   vehicle?: CustomerVehicle | null;
+  statusHistory?: { id: number; status: string; note?: string | null; created_at?: string | null }[];
+  status_history?: { id: number; status: string; note?: string | null; created_at?: string | null }[];
   work_items?: { id: number; description?: string | null; status?: string }[];
   workItems?: { id: number; description?: string | null; status?: string }[];
   quotations?: CustomerQuotation[];
@@ -289,6 +293,8 @@ export const requestTypeLabel: Record<string, string> = {
 export const repairStatusLabel: Record<string, string> = {
   RECEIVED: "Đã tiếp nhận",
   INSPECTING: "Đang kiểm tra",
+  QUOTING: "Đang lập báo giá",
+  REVIEW_TEST: "Đang kiểm tra lại",
   WAITING_APPROVAL: "Chờ khách duyệt báo giá",
   WAITING_FOR_PARTS: "Chờ phụ tùng",
   IN_PROGRESS: "Đang sửa chữa",

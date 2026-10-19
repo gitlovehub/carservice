@@ -1,37 +1,22 @@
-
 import { Navigate, useLocation } from "react-router-dom";
-import { getUserRole, getRoleManagementPage } from "./auth";
+import { getRoleManagementPage } from "./auth";
 import type { UserRole } from "./auth";
+import { useAuthSession } from "../../contexts/AuthContext";
+import { LoadingState } from "../../components/ui";
 
-type ProtectedRouteProps = {
-  allowedRoles: UserRole[];
-  children: React.ReactNode;
-};
-
-function ProtectedRoute({
-  allowedRoles,
-  children,
-}: ProtectedRouteProps) {
+type Props = { allowedRoles: UserRole[]; children: React.ReactNode };
+export default function ProtectedRoute({ allowedRoles, children }: Props) {
   const location = useLocation();
-  const isLoggedIn = localStorage.getItem("isLoggedIn");
-  const role = getUserRole();
-
-  if (isLoggedIn !== "true" || !role) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+  const session = useAuthSession();
+  if (session.status === "checking") return <LoadingState/>;
+  if (session.status === "error") return <div role="alert" className="cs-auth-error">
+    <p>Không thể xác minh phiên đăng nhập với máy chủ CarService.</p>
+    <button type="button" onClick={() => window.dispatchEvent(new Event("user-updated"))}>Thử kết nối lại</button>
+  </div>;
+  if (session.status === "guest") return <Navigate to="/login" state={{ from: location }} replace/>;
+  const role = session.account.role;
+  if (!role || !allowedRoles.includes(role as UserRole)) {
+    return <Navigate to={getRoleManagementPage(role)?.path ?? "/login"} replace/>;
   }
-
-  if (!allowedRoles.includes(role)) {
-    const managementPage = getRoleManagementPage(role);
-
-    return (
-      <Navigate
-        to={managementPage?.path || "/login"}
-        replace
-      />
-    );
-  }
-
   return <>{children}</>;
 }
-
-export default ProtectedRoute;
