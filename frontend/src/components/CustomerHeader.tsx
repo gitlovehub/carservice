@@ -1,3 +1,4 @@
+import { useInAppShell } from "../layouts/ShellContext";
 
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -58,6 +59,7 @@ const menuItems = [
 ];
 
 function CustomerHeader() {
+  const inShell = useInAppShell();
   const location = useLocation();
 
   const [user, setUser] = useState<AuthUserInfo>(() => {
@@ -85,6 +87,8 @@ function CustomerHeader() {
       window.removeEventListener("user-updated", syncUser);
     };
   }, []);
+
+  if (inShell) return null;
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] border-r border-[#313B45] bg-[#1F2933] text-white lg:block">
