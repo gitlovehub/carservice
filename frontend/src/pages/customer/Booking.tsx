@@ -1,8 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import confetti from "canvas-confetti";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
+import "../../styles/atelier-booking.css";
 import { fetchApi } from "../../services/api";
 import { SERVICE_PRODUCTS, type ServiceProduct } from "../../services/serviceCatalog";
 
@@ -583,28 +582,7 @@ export default function Booking() {
       }
 
       setBookingCode(finalCode);
-      try {
-        const existing = JSON.parse(localStorage.getItem("recent_bookings") || "[]");
-        const record = {
-          code: finalCode,
-          customerName,
-          customerPhone,
-          customerEmail,
-          customerCity,
-          vehicle: `${vehicleBrand} ${finalModelName} (${vehiclePlate})`,
-          vehicleType,
-          service: selectedService.title,
-          price: selectedService.price,
-          garage: garageBranch,
-          datetime: `${selectedTime} - ${selectedDateObj.fullLabel}`,
-          notes: customerNotes,
-          createdAt: new Date().toISOString(),
-        };
-        existing.unshift(record);
-        localStorage.setItem("recent_bookings", JSON.stringify(existing.slice(0, 10)));
-      } catch (storageError) {
-        console.warn("Could not save recent booking locally:", storageError);
-      }
+      // Lịch đặt thành công chỉ lưu tại Laravel/MySQL; không nhân bản thông tin khách và xe vào localStorage.
 
       setShowConfirmModal(false);
       goToStep(4);
@@ -646,8 +624,7 @@ export default function Booking() {
   const finalModelDisplayName = vehicleModel === "Khác" ? customModel.trim() || "Xe riêng" : vehicleModel;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 antialiased font-sans flex flex-col justify-between selection:bg-[#1F2933] selection:text-white">
-      <Header />
+    <div className="at-booking-legacy min-h-screen bg-slate-50 text-slate-800 antialiased font-sans flex flex-col justify-between selection:bg-[#1F2933] selection:text-white">
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 w-full flex-grow">
         {/* Navigation Breadcrumb */}
@@ -671,10 +648,10 @@ export default function Booking() {
             <i className="fa-solid fa-bolt-lightning text-amber-500"></i> Nhanh chóng & Tiện lợi
           </span>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Đặt Lịch Hẹn Bảo Dưỡng
+            Lịch bảo dưỡng mới
           </h1>
           <p className="text-slate-500 text-sm mt-1 max-w-lg mx-auto">
-            Chỉ 4 bước đơn giản để lựa chọn dịch vụ chuẩn xác và tiết kiệm thời gian chờ đợi tại Garage.
+            Chọn xe, gói chăm sóc và thời gian bạn muốn mang xe đến gara.
           </p>
         </div>
 
@@ -802,6 +779,8 @@ export default function Booking() {
           </div>
         </div>
 
+        {/* Bố cục ATELIER: quy trình API hiện tại vẫn giữ nguyên bốn bước */}
+        <div className="at-booking-grid">
         {/* Main Card Container */}
         <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-200/90 relative overflow-hidden">
           {/* ============================================== */}
@@ -1008,7 +987,7 @@ export default function Booking() {
                     { label: "SUV / Crossover (5-7 chỗ)", value: "SUV / Crossover (5-7 chỗ)", icon: "fa-solid fa-car" },
                     { label: "Bán tải / MPV (7-8 chỗ)", value: "Bán tải / MPV (7-8 chỗ)", icon: "fa-solid fa-truck-pickup" },
                   ].map((item) => (
-                    <label key={item.value} className="cursor-pointer">
+                    <label key={item.value} className="at-vehicle-type-option cursor-pointer">
                       <input
                         type="radio"
                         name="vehicleType"
@@ -1017,7 +996,7 @@ export default function Booking() {
                         onChange={(e) => handleVehicleTypeChange(e.target.value as VehicleType)}
                         className="peer sr-only"
                       />
-                      <div className="p-4 rounded-xl border-2 border-slate-200 bg-white text-center transition peer-checked:border-[#1F2933] peer-checked:bg-[#F3E8D2]/50 hover:border-slate-300">
+                      <div className="at-vehicle-type-card p-4 rounded-xl border-2 border-slate-200 bg-white text-center transition">
                         <i className={`${item.icon} text-2xl text-slate-600 mb-2 block`}></i>
                         <span className="text-xs font-bold block text-slate-800">{item.label}</span>
                       </div>
@@ -1123,7 +1102,7 @@ export default function Booking() {
                   {SERVICE_PRODUCTS.map((pkg) => {
                     const isChecked = selectedService.id === pkg.id;
                     return (
-                      <label key={pkg.id} className="cursor-pointer">
+                      <label key={pkg.id} className="at-service-package-option cursor-pointer">
                         <input
                           type="radio"
                           name="servicePackage"
@@ -1133,7 +1112,7 @@ export default function Booking() {
                           className="peer sr-only"
                         />
                         <div
-                          className={`p-4 rounded-2xl border-2 transition relative ${
+                          className={`at-service-package-card p-4 rounded-2xl border-2 transition relative ${
                             isChecked
                               ? "border-[#1F2933] bg-[#F3E8D2]/40"
                               : "border-slate-200 bg-white hover:border-slate-300"
@@ -1541,6 +1520,19 @@ export default function Booking() {
           )}
         </div>
 
+        <aside className="at-booking-help" aria-label="Hướng dẫn đặt lịch">
+          <p className="at-booking-help-label">BOOKING NOTES</p>
+          <h2>Đặt lịch thật đơn giản.</h2>
+          <ol>
+            <li><strong>Thông tin liên hệ</strong><small>Kiểm tra hồ sơ để gara liên hệ với bạn.</small></li>
+            <li><strong>Chọn xe và dịch vụ</strong><small>Chọn xe đã lưu hoặc khai xe mới theo form.</small></li>
+            <li><strong>Chọn khung giờ</strong><small>Gara sẽ kiểm tra và xác nhận lịch tiếp nhận.</small></li>
+            <li><strong>Kiểm tra & xác nhận</strong><small>Chỉ gửi lịch khi bạn đã kiểm tra thông tin.</small></li>
+          </ol>
+          <p className="at-booking-note-bottom">Lịch hẹn chỉ giữ khung giờ tiếp nhận; chi phí sửa chữa phát sinh phải có báo giá và sự chấp thuận của bạn.</p>
+        </aside>
+        </div>
+
         {/* Trust Badges & Guarantee */}
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div className="bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-center gap-2.5 text-xs font-semibold text-slate-700">
@@ -1558,7 +1550,6 @@ export default function Booking() {
         </div>
       </main>
 
-      <Footer />
 
       {/* Modal xác nhận đặt lịch hẹn */}
       {showConfirmModal && (

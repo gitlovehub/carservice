@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import CustomerHeader from "../../components/CustomerHeader";
-import CustomerTopbar from "../../components/CustomerTopbar";
 import { Toast, type ToastType } from "../../components/auth/Toast";
 import { fetchApi } from "../../services/api";
 import { getUserDisplayName } from "../auth/auth";
@@ -300,9 +298,7 @@ function CustomerDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <CustomerHeader />
-      <CustomerTopbar />
+    <div className="at-customer-dashboard min-h-screen bg-[#F7F7F5] text-[#20252B]">
 
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />

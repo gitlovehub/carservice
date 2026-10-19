@@ -1,5 +1,5 @@
+import AdminHubNav from "../../components/AdminHubNav";
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
 import { fetchApi } from "../../services/api";
@@ -403,37 +403,7 @@ function Services() {
               </div>
             </div>
 
-            <div className="mb-6 grid gap-4 md:grid-cols-3">
-              <Link
-                to="/admin"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F]"
-              >
-                <p className="text-xs font-semibold">Tài khoản & nhân viên</p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Quản lý tài khoản
-                </p>
-              </Link>
-
-              <Link
-                to="/admin/inventory"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F]"
-              >
-                <p className="text-xs font-semibold">Phụ tùng & tồn kho</p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Quản lý kho
-                </p>
-              </Link>
-
-              <Link
-                to="/admin/reports"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:border-[#D6A85F]"
-              >
-                <p className="text-xs font-semibold">Báo cáo & thống kê</p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Theo dõi số liệu
-                </p>
-              </Link>
-            </div>
+            <AdminHubNav />
 
             <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-4 sm:p-6">
               <div className="mb-4">

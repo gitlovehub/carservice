@@ -13,11 +13,11 @@ export const getRoleManagementPage = (
     case "ADMIN":
       return { path: "/admin", label: "Quản trị hệ thống" };
     case "ADVISOR":
-      return { path: "/advisor/appointments", label: "Quản lý cố vấn" };
+      return { path: "/advisor", label: "Quản lý cố vấn" };
     case "TECHNICIAN":
       return { path: "/technician", label: "Khu vực kỹ thuật viên" };
     case "CUSTOMER":
-      return { path: "/customer/dashboard", label: "Tổng quan dịch vụ" };
+      return { path: "/customer/appointments", label: "Lịch hẹn của tôi" };
     default:
       return null;
   }
@@ -29,6 +29,7 @@ export type AuthUserInfo = {
   name?: string | null;
   email?: string | null;
   role?: string | null;
+  status?: string | null;
   avatar?: string | null;
   customer?: { full_name?: string | null } | null;
   employee?: { full_name?: string | null } | null;
@@ -77,19 +78,24 @@ export const getUserRole = (): UserRole | null => {
 export const setUserRole = (role: UserRole) => {
   localStorage.setItem("role", role);
   localStorage.setItem("isLoggedIn", "true");
+  window.dispatchEvent(new Event("user-updated"));
 };
 
 
-export const logout = () => {
-  localStorage.removeItem("role");
-  localStorage.removeItem("isLoggedIn");
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-
-  window.dispatchEvent(new Event("user-updated"));
-  window.dispatchEvent(new Event("storage"));
-
-  void fetchApi("/logout", { method: "POST" }).catch(() => {});
-
-  window.location.href = "/login";
+export const logout = async () => {
+  try {
+    if (localStorage.getItem("token")) {
+      // Revoke bearer token while it is still present; then clear the session.
+      await fetchApi("/logout", { method: "POST" });
+    }
+  } catch { /* Xóa phiên ở Frontend kể cả khi mất kết nối. */ }
+  finally {
+    localStorage.removeItem("role");
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("token");
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    window.dispatchEvent(new Event("user-updated"));
+    window.location.assign("/login");
+  }
 };

@@ -428,7 +428,7 @@ function CustomerCars() {
                       filteredCars.map((car, index) => (
                         <tr
                           key={car.id}
-                          className="border-b border-[#EEF0F2] last:border-0 hover:bg-[#FAFAF9]"
+                          className="border-b border-[#EEF0F2] last:border-0 hover:bg-transparent cs-readable-row"
                         >
                           <td className="px-5 py-4 text-[11px] text-[#66717C]">
                             {(page - 1) * 10 + index + 1}
