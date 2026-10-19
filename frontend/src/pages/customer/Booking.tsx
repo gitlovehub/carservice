@@ -657,21 +657,21 @@ export default function Booking() {
 
         {/* Stepper Navigation */}
         <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200/80 mb-8">
-          <div className="relative flex items-center justify-between max-w-3xl mx-auto">
+          <div className="at-booking-stepper relative flex items-center justify-between max-w-3xl mx-auto">
             {/* Background Track Line */}
-            <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-1 bg-slate-100 z-0"></div>
+            <div className="at-booking-stepper-track absolute h-1 bg-slate-100 z-0"></div>
             {/* Dynamic Progress Line */}
             <div
-              className="absolute left-6 top-1/2 -translate-y-1/2 h-1 bg-[#1F2933] z-0 transition-all duration-500 ease-out"
+              className="at-booking-stepper-progress absolute h-1 bg-[#1F2933] z-0 transition-all duration-500 ease-out"
               style={{
-                width: `${((currentStep - 1) / 3) * 100}%`,
+                width: `${((currentStep - 1) / 3) * 75}%`,
               }}
             ></div>
 
             {/* Step 1 Indicator */}
             <div
               onClick={() => currentStep > 1 && currentStep !== 4 && goToStep(1)}
-              className={`relative z-10 flex flex-col items-center group ${currentStep > 1 && currentStep !== 4 ? "cursor-pointer" : "cursor-default"}`}
+              className={`relative z-10 flex flex-1 flex-col items-center group ${currentStep > 1 && currentStep !== 4 ? "cursor-pointer" : "cursor-default"}`}
             >
               <div
                 className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
@@ -700,7 +700,7 @@ export default function Booking() {
             {/* Step 2 Indicator */}
             <div
               onClick={() => currentStep > 2 && currentStep !== 4 && goToStep(2)}
-              className={`relative z-10 flex flex-col items-center group ${currentStep > 2 && currentStep !== 4 ? "cursor-pointer" : "cursor-default"}`}
+              className={`relative z-10 flex flex-1 flex-col items-center group ${currentStep > 2 && currentStep !== 4 ? "cursor-pointer" : "cursor-default"}`}
             >
               <div
                 className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
@@ -729,7 +729,7 @@ export default function Booking() {
             {/* Step 3 Indicator */}
             <div
               onClick={() => currentStep > 3 && currentStep !== 4 && goToStep(3)}
-              className={`relative z-10 flex flex-col items-center group ${currentStep > 3 && currentStep !== 4 ? "cursor-pointer" : "cursor-default"}`}
+              className={`relative z-10 flex flex-1 flex-col items-center group ${currentStep > 3 && currentStep !== 4 ? "cursor-pointer" : "cursor-default"}`}
             >
               <div
                 className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
@@ -756,7 +756,7 @@ export default function Booking() {
             </div>
 
             {/* Step 4 Indicator */}
-            <div className="relative z-10 flex flex-col items-center group cursor-default">
+            <div className="relative z-10 flex flex-1 flex-col items-center group cursor-default">
               <div
                 className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
                   currentStep === 4
@@ -1165,7 +1165,7 @@ export default function Booking() {
                   {GARAGE_BRANCHES.map((b) => {
                     const isChecked = garageBranch === b.fullName;
                     return (
-                      <label key={b.id} className="cursor-pointer">
+                      <label key={b.id} className="at-booking-branch-option cursor-pointer">
                         <input
                           type="radio"
                           name="garageBranch"
@@ -1174,16 +1174,10 @@ export default function Booking() {
                           onChange={(e) => setGarageBranch(e.target.value)}
                           className="peer sr-only"
                         />
-                        <div
-                          className={`p-3.5 rounded-xl border-2 transition ${
-                            isChecked
-                              ? "border-[#1F2933] bg-[#F3E8D2]/40"
-                              : "border-slate-200 bg-white hover:border-slate-300"
-                          }`}
-                        >
+                        <div className={`at-booking-branch-card p-3.5 rounded-xl border-2 transition ${isChecked ? "is-selected" : ""}`}>
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-sm text-slate-800">{b.name}</span>
-                            <span className="text-[10px] bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
+                            <span className="at-booking-branch-status text-[10px] bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
                               {b.status}
                             </span>
                           </div>
@@ -1210,16 +1204,10 @@ export default function Booking() {
                         key={d.index}
                         type="button"
                         onClick={() => handleDateSelect(d.index)}
-                        className={`flex-shrink-0 w-24 py-3 px-2 rounded-2xl border-2 text-center transition cursor-pointer ${
-                          isSelected
-                            ? "border-[#1F2933] bg-[#F3E8D2]/60 font-bold text-[#6D542A] ring-2 ring-[#F3E8D2]"
-                            : "border-slate-200 bg-white hover:border-slate-300 text-slate-700"
-                        }`}
+                        className={`at-booking-date-option flex-shrink-0 w-24 py-3 px-2 rounded-2xl border-2 text-center transition cursor-pointer ${isSelected ? "is-selected font-bold" : ""}`}
                       >
                         <span
-                          className={`block text-[11px] uppercase tracking-wider ${
-                            isSelected ? "text-[#B68A43] font-bold" : "text-slate-400"
-                          }`}
+                          className={`at-booking-date-day block text-[11px] uppercase tracking-wider ${isSelected ? "font-bold" : ""}`}
                         >
                           {d.dayName}
                         </span>
