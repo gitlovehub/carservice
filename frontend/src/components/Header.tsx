@@ -1,3 +1,4 @@
+import { useInAppShell } from "../layouts/ShellContext";
 
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -20,6 +21,7 @@ const navItems = [
 ];
 
 function Header() {
+  const inShell = useInAppShell();
   const location = useLocation();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -192,6 +194,8 @@ function Header() {
       ))}
     </nav>
   );
+
+  if (inShell) return null;
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#E1E4E6] bg-white/95 backdrop-blur-sm">
