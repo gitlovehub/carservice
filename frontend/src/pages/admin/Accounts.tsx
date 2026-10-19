@@ -1,5 +1,5 @@
+import AdminHubNav from "../../components/AdminHubNav";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
 
@@ -263,67 +263,7 @@ function Accounts() {
               ))}
             </div>
 
-            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <Link
-                to="/admin"
-                className="rounded-2xl border border-[#1F2933] bg-[#1F2933] p-5 text-white transition hover:bg-[#151D24]"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D6A85F] text-[10px] font-bold text-[#3A3020]">
-                  NV
-                </div>
-                <p className="mt-4 text-xs font-semibold">
-                  Tài khoản & nhân viên
-                </p>
-                <p className="mt-1 text-[10px] text-[#AEB8C1]">
-                  Quản lý tài khoản
-                </p>
-              </Link>
-
-              <Link
-                to="/admin/services"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
-                  DV
-                </div>
-                <p className="mt-4 text-xs font-semibold text-[#20252B]">
-                  Dịch vụ & gói bảo dưỡng
-                </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Quản lý dịch vụ
-                </p>
-              </Link>
-
-              <Link
-                to="/admin/inventory"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
-                  PT
-                </div>
-                <p className="mt-4 text-xs font-semibold text-[#20252B]">
-                  Phụ tùng & tồn kho
-                </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Quản lý kho
-                </p>
-              </Link>
-
-              <Link
-                to="/admin/reports"
-                className="rounded-2xl border border-[#E1E4E6] bg-white p-5 transition hover:bg-[#F7F7F5]"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F2] text-[10px] font-bold text-[#20252B]">
-                  BC
-                </div>
-                <p className="mt-4 text-xs font-semibold text-[#20252B]">
-                  Báo cáo & thống kê
-                </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Theo dõi số liệu
-                </p>
-              </Link>
-            </div>
+            <AdminHubNav />
 
             {message && (
               <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[#D9E8D8] bg-[#F0F7EF] px-4 py-3 text-xs text-[#315B35]">
