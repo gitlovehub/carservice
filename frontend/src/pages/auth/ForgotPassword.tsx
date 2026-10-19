@@ -4,7 +4,7 @@ import { fetchApi } from "../../services/api";
 import OtpInput from "../../components/auth/OtpInput";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
-import BrandLogo from "../../components/common/BrandLogo";
+import { AtelierAuthError, AtelierAuthLayout, AtelierField } from "../../components/AtelierPublic";
 
 function ForgotPassword() {
   const navigate = useNavigate();
@@ -160,278 +160,25 @@ function ForgotPassword() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B] flex flex-col justify-between">
-      {/* Toast thông báo */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+  return <AtelierAuthLayout title={step === "FORGOT" ? "Khôi phục mật khẩu." : step === "RESET" ? "Đặt lại mật khẩu." : "Hoàn tất xác thực."} description={step === "FORGOT" ? "Nhập email đã đăng ký để nhận mã OTP đặt lại mật khẩu." : step === "RESET" ? `Mã OTP đã gửi tới ${email}.` : "Mật khẩu của bạn đã được cập nhật thành công."}>
+    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+    {errorMsg && <AtelierAuthError message={errorMsg} />}
+    {step === "FORGOT" && <><form className="at-form-stack" onSubmit={handleForgotSubmit}>
+      <AtelierField label="Email đã đăng ký"><input type="email" className="at-control" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => {setEmail(e.target.value); setErrorMsg("");}} /></AtelierField>
+      <button type="submit" className="at-btn at-btn-primary at-large at-full" disabled={isLoading || !email.trim()}>{isLoading ? "Đang gửi mã..." : "Gửi mã xác thực OTP →"}</button></form>
+      <p className="at-auth-switch">Nhớ mật khẩu? <Link to="/login">Đăng nhập ngay</Link></p>
+    </>}
+    {step === "RESET" && <><form className="at-form-stack" onSubmit={handleResetSubmit}>
+      <AtelierField label="Mã OTP 6 số"><OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!errorMsg}/></AtelierField>
+      <AtelierField label="Mật khẩu mới"><div className="at-password-wrap"><input className="at-control" type={showPassword ? "text" : "password"} autoComplete="new-password" placeholder="Ít nhất 8 ký tự" value={newPassword} onChange={e => {setNewPassword(e.target.value);setErrorMsg("");}}/><button type="button" className="at-show-password" onClick={() => setShowPassword(s => !s)}>{showPassword ? "Ẩn" : "Hiện"}</button></div></AtelierField>
+      <PasswordStrengthIndicator password={newPassword}/>
+      <AtelierField label="Nhập lại mật khẩu"><div className="at-password-wrap"><input className="at-control" type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" placeholder="Nhập lại mật khẩu mới" value={confirmPassword} onChange={e => {setConfirmPassword(e.target.value);setErrorMsg("");}}/><button type="button" className="at-show-password" onClick={() => setShowConfirmPassword(s => !s)}>{showConfirmPassword ? "Ẩn" : "Hiện"}</button></div></AtelierField>
+      <button type="submit" className="at-btn at-btn-primary at-large at-full" disabled={isLoading || otp.length !== 6 || !newPassword}>{isLoading ? "Đang đặt lại mật khẩu..." : "Lưu mật khẩu mới →"}</button></form>
+      <div className="at-otp-tools">{resendCountdown > 0 ? <span>Gửi lại mã sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại mã OTP</button>}<button type="button" onClick={() => {setStep("FORGOT");setOtp("");setErrorMsg("");}}>← Thay đổi email</button></div>
+    </>}
+    {step === "SUCCESS" && <><div className="at-success-message">✓ Mật khẩu đã cập nhật thành công.</div><button type="button" className="at-btn at-btn-primary at-large at-full" onClick={() => navigate('/login')}>Đăng nhập vào hệ thống →</button></>}
+  </AtelierAuthLayout>;
 
-      {/* Header tối giản */}
-      <header className="border-b border-[#E1E4E6] bg-white/80 backdrop-blur-md sticky top-0 z-30">
-        <div className="mx-auto flex h-[72px] max-w-5xl items-center justify-between px-6">
-          <BrandLogo />
-
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[#8A949E] hover:text-[#20252B] transition"
-          >
-            <span>← Quay lại Đăng nhập</span>
-          </Link>
-        </div>
-      </header>
-
-      {/* Main Form Container */}
-      <main className="flex-1 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-[480px]">
-          <div className="rounded-3xl border border-[#E1E4E6] bg-white p-7 sm:p-9 shadow-[0_20px_50px_rgba(31,41,51,0.06)]">
-            
-            {errorMsg && (
-              <div className="mb-6 rounded-2xl border border-red-200 bg-red-50/70 p-4 text-xs font-medium text-red-700 flex items-start gap-2.5">
-                <span className="text-base shrink-0">⚠️</span>
-                <div className="flex-1 leading-relaxed">{errorMsg}</div>
-              </div>
-            )}
-
-            {/* BƯỚC 1: NHẬP EMAIL */}
-            {step === "FORGOT" && (
-              <div>
-                <div className="mb-6">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-[#FAF8F5] border border-[#E5B869]/40 px-3 py-1 mb-3">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]"></span>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-                      KHÔI PHỤC TÀI KHOẢN
-                    </span>
-                  </div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[#20252B]">
-                    Quên mật khẩu?
-                  </h1>
-                  <p className="mt-2 text-xs text-[#7A838C] leading-relaxed">
-                    Nhập địa chỉ email đã đăng ký của bạn. Hệ thống sẽ gửi mã xác thực OTP 6 số để bạn tiến hành đặt lại mật khẩu mới an toàn.
-                  </p>
-                </div>
-
-                <form onSubmit={handleForgotSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#66717C] mb-1.5">
-                      Địa chỉ Email tài khoản
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(event) => {
-                        setEmail(event.target.value);
-                        setErrorMsg("");
-                      }}
-                      placeholder="vidu@carservice.vn"
-                      className="h-12 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-4 text-sm text-[#20252B] placeholder:text-[#9EA8B3] outline-none transition duration-200 focus:bg-white focus:border-[#D6A85F] focus:ring-4 focus:ring-[#D6A85F]/15"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading || !email.trim()}
-                    className="mt-2 h-12 w-full cursor-pointer rounded-xl bg-[#1F2933] text-sm font-bold text-white transition-all hover:bg-slate-800 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? (
-                      <>
-                        <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        <span>Đang gửi mã xác thực...</span>
-                      </>
-                    ) : (
-                      <span>Gửi mã xác thực OTP</span>
-                    )}
-                  </button>
-                </form>
-
-                <div className="mt-6 text-center text-xs text-[#7A838C]">
-                  Nhớ lại mật khẩu?{" "}
-                  <Link
-                    to="/login"
-                    className="font-bold text-[#D6A85F] hover:text-[#B58941] transition"
-                  >
-                    Đăng nhập ngay
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {/* BƯỚC 2: NHẬP OTP 6 SỐ & MẬT KHẨU MỚI */}
-            {step === "RESET" && (
-              <div>
-                <div className="mb-6 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FAF8F5] border border-[#E5B869] text-xl text-[#D6A85F]">
-                    🔐
-                  </div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[#20252B]">
-                    Đặt lại mật khẩu mới
-                  </h1>
-                  <p className="mt-1.5 text-xs text-[#7A838C]">
-                    Mã OTP đã gửi tới <strong className="text-[#20252B]">{email}</strong>
-                  </p>
-                </div>
-
-                <form onSubmit={handleResetSubmit} className="space-y-4">
-                  {/* OTP 6 số tự động nhảy ô */}
-                  <div>
-                    <label className="block text-center text-[11px] font-bold uppercase tracking-wider text-[#66717C] mb-2.5">
-                      Nhập mã OTP 6 số
-                    </label>
-                    <OtpInput
-                      value={otp}
-                      onChange={setOtp}
-                      disabled={isLoading}
-                      hasError={Boolean(errorMsg && errorMsg.includes("OTP"))}
-                    />
-                  </div>
-
-                  {/* Nút gửi lại OTP */}
-                  <div className="text-center text-xs pb-1">
-                    {resendCountdown > 0 ? (
-                      <span className="text-[#8A949E] font-medium">
-                        Gửi lại mã mới sau:{" "}
-                        <strong className="text-[#D6A85F]">{resendCountdown}s</strong>
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleResendOtp}
-                        disabled={isLoading}
-                        className="font-bold text-[#D6A85F] hover:text-[#B58941] transition cursor-pointer underline underline-offset-4"
-                      >
-                        Chưa nhận được mã? Gửi lại OTP
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Mật khẩu mới */}
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#66717C] mb-1.5">
-                      Mật khẩu mới <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={newPassword}
-                        onChange={(e) => {
-                          setNewPassword(e.target.value);
-                          setErrorMsg("");
-                        }}
-                        placeholder="Mật khẩu mới (>= 8 ký tự)"
-                        className="h-11 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3.5 pr-12 text-sm text-[#20252B] placeholder:text-[#9EA8B3] outline-none transition duration-200 focus:bg-white focus:border-[#D6A85F] focus:ring-4 focus:ring-[#D6A85F]/15"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#8A949E] hover:text-[#20252B] transition"
-                      >
-                        {showPassword ? "Ẩn" : "Hiện"}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Nhập lại mật khẩu mới */}
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#66717C] mb-1.5">
-                      Xác nhận mật khẩu mới <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={confirmPassword}
-                        onChange={(e) => {
-                          setConfirmPassword(e.target.value);
-                          setErrorMsg("");
-                        }}
-                        placeholder="Nhập lại mật khẩu mới"
-                        className="h-11 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3.5 pr-12 text-sm text-[#20252B] placeholder:text-[#9EA8B3] outline-none transition duration-200 focus:bg-white focus:border-[#D6A85F] focus:ring-4 focus:ring-[#D6A85F]/15"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#8A949E] hover:text-[#20252B] transition"
-                      >
-                        {showConfirmPassword ? "Ẩn" : "Hiện"}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Thanh đo độ mạnh mật khẩu */}
-                  <PasswordStrengthIndicator password={newPassword} />
-
-                  <button
-                    type="submit"
-                    disabled={isLoading || otp.length !== 6 || !newPassword}
-                    className="mt-3 h-12 w-full cursor-pointer rounded-xl bg-[#1F2933] text-sm font-bold text-white transition-all hover:bg-slate-800 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? (
-                      <>
-                        <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        <span>Đang cập nhật mật khẩu...</span>
-                      </>
-                    ) : (
-                      <span>Lưu mật khẩu mới</span>
-                    )}
-                  </button>
-
-                  <div className="text-center pt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStep("FORGOT");
-                        setOtp("");
-                        setErrorMsg("");
-                      }}
-                      className="text-xs font-semibold text-[#8A949E] hover:text-[#20252B] transition cursor-pointer"
-                    >
-                      ← Nhập lại địa chỉ email
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* BƯỚC 3: THÀNH CÔNG */}
-            {step === "SUCCESS" && (
-              <div className="text-center py-4">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-100 text-3xl text-emerald-600 shadow-inner">
-                  ✓
-                </div>
-
-                <h2 className="text-2xl font-bold tracking-tight text-[#20252B]">
-                  Đổi mật khẩu thành công!
-                </h2>
-
-                <p className="mt-2 text-xs sm:text-sm text-[#7A838C] leading-relaxed max-w-sm mx-auto">
-                  Mật khẩu tài khoản của bạn đã được cập nhật thành công. Bạn có thể sử dụng mật khẩu mới này để đăng nhập ngay bây giờ.
-                </p>
-
-                <div className="mt-8">
-                  <button
-                    type="button"
-                    onClick={() => navigate("/login")}
-                    className="h-12 w-full cursor-pointer rounded-xl bg-[#1F2933] text-sm font-bold text-white transition hover:bg-slate-800 shadow-md"
-                  >
-                    Đăng nhập vào hệ thống →
-                  </button>
-                </div>
-              </div>
-            )}
-
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="py-4 text-center text-xs text-[#8A949E]">
-        © 2026 CarService System. Tất cả quyền được bảo lưu.
-      </footer>
-    </div>
-  );
 }
 
 export default ForgotPassword;

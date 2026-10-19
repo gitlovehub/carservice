@@ -98,7 +98,7 @@ function Reviews() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="at-customer-reviews min-h-screen bg-[#F7F7F5] text-[#20252B]">
       <CustomerHeader />
       <CustomerTopbar />
 

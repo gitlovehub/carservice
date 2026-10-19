@@ -1,5 +1,7 @@
+import { useInAppShell } from "../../layouts/ShellContext";
+import { logout } from "../auth/auth";
 
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import BrandLogo from "../../components/common/BrandLogo";
 import { getUserDisplayName } from "../../pages/auth/auth";
 
@@ -52,8 +54,8 @@ const menuItems = [
 ];
 
 function AdminSidebar() {
+  const inShell = useInAppShell();
   const location = useLocation();
-  const navigate = useNavigate();
 
   let user = null;
 
@@ -68,13 +70,10 @@ function AdminSidebar() {
 
     if (!confirmed) return;
 
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("role");
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    navigate("/login", { replace: true });
+    void logout();
   };
+
+  if (inShell) return null;
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] bg-[#1F2933] lg:block">

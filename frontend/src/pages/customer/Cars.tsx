@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import CustomerHeader from "../../components/CustomerHeader";
-import CustomerTopbar from "../../components/CustomerTopbar";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
+import { Link } from "react-router-dom";
 import { Toast, type ToastType } from "../../components/auth/Toast";
+import { Icon } from "../../components/ui/Icon";
+import "../../styles/atelier-garage.css";
 import {
   addMyVehicle,
   deleteMyVehicle,
@@ -15,28 +13,13 @@ import {
   type CustomerVehicle,
 } from "../../services/customerApi";
 
-const toyotaModels = [
-  "Vios",
-  "Camry",
-  "Corolla Altis",
-  "Raize",
-  "Corolla Cross",
-  "Fortuner",
-  "Innova Cross",
-  "Hilux",
-  "Yaris Cross",
-  "Veloz Cross",
-];
+// Những model được POST /api/me/vehicles chấp nhận theo Laravel hiện tại.
+const supportedVehicleModels = ["Vios", "Camry", "Corolla Altis", "Raize", "Corolla Cross", "Fortuner", "Innova Cross", "Hilux"];
 
 function Cars() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const isCustomerPage = location.pathname === "/customer/cars";
-
   const [cars, setCars] = useState<CustomerVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [plateFilter, setPlateFilter] = useState("");
 
   // Form Thêm xe
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
@@ -172,94 +155,46 @@ function Cars() {
     }
   };
 
-  const filteredCars = cars.filter((car) => {
-    return plateFilter === "" || car.license_plate === plateFilter;
-  });
-
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      {isCustomerPage ? (
-        <>
-          <CustomerHeader />
-          <CustomerTopbar />
-        </>
-      ) : (
-        <Header />
-      )}
-
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
-
-      <main className={isCustomerPage ? "lg:ml-[250px]" : ""}>
-        <div className="mx-auto max-w-[1200px] px-6 py-10 md:px-8 md:py-14">
-          <div className="mb-8">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-              KHÁCH HÀNG / XE CỦA TÔI
-            </p>
-
-            <div className="mt-3 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h1 className="text-[30px] font-bold tracking-[-0.8px] text-[#1F2933]">
-                  Xe của tôi
-                </h1>
-                <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#66717C]">
-                  Quản lý thông tin hồ sơ phương tiện, số km đồng hồ và theo dõi lịch sử dịch vụ.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-2.5">
-                <Link
-                  to="/booking"
-                  className="inline-flex cursor-pointer items-center rounded-xl border border-[#DDE1E4] bg-white px-4 py-2.5 text-xs font-semibold text-[#20252B] transition hover:border-[#D6A85F]"
-                >
-                  Đặt lịch bảo dưỡng
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError("");
-                    setIsAddFormOpen((open) => !open);
-                  }}
-                  className="flex cursor-pointer items-center gap-2 rounded-xl bg-[#1F2933] px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#151D24]"
-                >
-                  <span className="text-sm">+</span>
-                  {isAddFormOpen ? "Đóng form" : "Thêm xe mới"}
-                </button>
-              </div>
-            </div>
+    <div className="cs-garage" data-testid="customer-garage">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <main className="cs-garage-container">
+        <div className="cs-garage-heading">
+          <div>
+            <p className="cs-garage-eyebrow">MY GARAGE / VEHICLES</p>
+            <h1>Garage của tôi</h1>
+            <p className="cs-garage-subtitle">Quản lý danh sách xe để đặt lịch nhanh hơn.</p>
           </div>
+          <button type="button" className="cs-garage-primary" onClick={() => {
+            setError(""); setIsAddFormOpen((previous) => !previous);
+          }}>
+            <Icon name="plus" size={17} /> {isAddFormOpen ? "Đóng biểu mẫu" : "Thêm xe"}
+          </button>
+        </div>
 
-          {error && (
-            <div role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-xs font-semibold text-red-700">
-              {error}
-            </div>
-          )}
-
+        {error && <div role="alert" className="cs-garage-error">{error}</div>}
           {/* FORM THÊM XE MỚI */}
           {isAddFormOpen && (
             <form
               onSubmit={handleAddVehicle}
-              className="mb-7 rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]"
+              className="cs-garage-add-form mb-7 rounded-2xl border border-[#E1E4E6] bg-white p-6"
             >
               <h2 className="text-[17px] font-bold text-[#20252B]">Thêm phương tiện mới</h2>
               <div className="mt-5 grid gap-5 sm:grid-cols-2 md:grid-cols-4">
                 <div>
-                  <label htmlFor="toyota-model" className="mb-2 block text-xs font-bold text-[#20252B]">
+                  <label htmlFor="vehicle-model" className="mb-2 block text-xs font-bold text-[#20252B]">
                     Dòng xe Toyota *
                   </label>
                   <select
-                    id="toyota-model"
+                    id="vehicle-model"
                     required
                     value={newModel}
                     onChange={(e) => setNewModel(e.target.value)}
                     disabled={loading || saving}
-                    className="h-11 w-full cursor-pointer rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-3.5 text-xs outline-none focus:border-[#D6A85F] focus:bg-white"
+                    className="h-11 w-full rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-3.5 text-xs outline-none"
                   >
                     <option value="" disabled>Chọn dòng xe</option>
-                    {toyotaModels.map((m) => (
-                      <option key={m} value={m}>Toyota {m}</option>
-                    ))}
+                    {supportedVehicleModels.map((model) => <option key={model} value={model}>Toyota {model}</option>)}
                   </select>
                 </div>
 
@@ -332,198 +267,49 @@ function Cars() {
             </form>
           )}
 
-          {/* 2 THẺ THỐNG KÊ */}
-          <div className="mb-7 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
-                    XE ĐÃ ĐĂNG KÝ
-                  </p>
-                  <p className="mt-2 text-2xl font-bold tracking-tight text-[#20252B]">
-                    {loading ? "…" : cars.length} xe
-                  </p>
-                </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1F2933] text-lg text-white">
-                  🚗
-                </div>
-              </div>
-              <p className="mt-3 text-[11px] text-[#66717C]">
-                Tổng số phương tiện cá nhân của bạn trên hệ thống.
-              </p>
-            </div>
 
-            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
-                    BỘ LỌC HIỆN TẠI
-                  </p>
-                  <p className="mt-2 text-2xl font-bold tracking-tight text-[#20252B]">
-                    {loading ? "…" : filteredCars.length} xe
-                  </p>
-                </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#F3E8D2] text-sm font-bold text-[#3A3020]">
-                  ✓
-                </div>
-              </div>
-              <p className="mt-3 text-[11px] text-[#66717C]">Số xe phù hợp với bộ lọc hiển thị.</p>
-            </div>
+        {loading ? (
+          <div className="cs-garage-empty" role="status">Đang tải xe từ hệ thống...</div>
+        ) : cars.length === 0 ? (
+          <div className="cs-garage-empty">
+            <Icon name="car" size={38}/>
+            <h2>Garage đang trống</h2>
+            <p>Thêm chiếc xe đầu tiên để đặt lịch bảo dưỡng.</p>
+            <button type="button" className="cs-garage-primary" onClick={() => setIsAddFormOpen(true)}>Thêm xe</button>
           </div>
-
-          {/* BẢNG DANH SÁCH XE */}
-          <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
-            <div className="flex flex-col gap-3 border-b border-[#E1E4E6] p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-1 items-center gap-3">
-                <select
-                  value={plateFilter}
-                  onChange={(e) => setPlateFilter(e.target.value)}
-                  className="h-10 w-full sm:w-64 cursor-pointer rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-3.5 text-xs text-[#20252B] outline-none transition focus:border-[#D6A85F]"
-                >
-                  <option value="">Tất cả biển số</option>
-                  {cars
-                    .filter((car) => car.license_plate)
-                    .map((car) => (
-                      <option key={car.id} value={car.license_plate ?? ""}>
-                        {getVehicleName(car)} · {car.license_plate}
-                      </option>
-                    ))}
-                </select>
-                {plateFilter && (
-                  <button
-                    type="button"
-                    onClick={() => setPlateFilter("")}
-                    className="cursor-pointer text-xs font-bold text-[#8A949E] hover:text-[#20252B]"
-                  >
-                    Xóa lọc
-                  </button>
-                )}
-              </div>
-
-              <span className="w-fit rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
-                {filteredCars.length} xe
-              </span>
-            </div>
-
-            {loading ? (
-              <p className="p-12 text-center text-xs text-[#8A949E]">Đang tải danh sách xe...</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] text-left">
-                  <thead>
-                    <tr className="border-b border-[#E1E4E6] bg-[#FAFAF9] text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
-                      <th className="px-6 py-4">STT</th>
-                      <th className="px-6 py-4">Xe / Dòng xe</th>
-                      <th className="px-6 py-4">Biển số</th>
-                      <th className="px-6 py-4">Số Km (ODO)</th>
-                      <th className="px-6 py-4">Năm SX</th>
-                      <th className="px-6 py-4 text-right">Thao tác</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {filteredCars.map((car, index) => (
-                      <tr
-                        key={car.id}
-                        className="border-b border-[#EEF0F2] last:border-b-0 transition hover:bg-[#FAFAF9]"
-                      >
-                        <td className="px-6 py-5 text-[12px] text-[#8A949E]">
-                          {String(index + 1).padStart(2, "0")}
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1F2933] text-sm text-white">
-                              🚗
-                            </div>
-                            <div>
-                              <p className="text-[13px] font-bold text-[#20252B]">
-                                {getVehicleName(car)}
-                              </p>
-                              <p className="mt-0.5 text-[11px] text-[#8A949E]">
-                                {car.variant ? `Phiên bản: ${car.variant}` : "Toyota chính hãng"}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <span className="rounded-lg border border-[#E5B869]/50 bg-[#FAF8F5] px-3 py-1.5 font-mono text-[12px] font-bold text-[#8F641B]">
-                            {car.license_plate || "Chưa có"}
-                          </span>
-                        </td>
-
-                        <td className="px-6 py-5 text-xs font-semibold text-slate-700">
-                          {car.mileage != null
-                            ? `${Number(car.mileage).toLocaleString("vi-VN")} km`
-                            : "—"}
-                        </td>
-
-                        <td className="px-6 py-5 text-xs text-slate-600">
-                          {car.year ?? "—"}
-                        </td>
-
-                        <td className="px-6 py-5 text-right">
-                          <div className="flex flex-wrap justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setDetailVehicle(car)}
-                              className="cursor-pointer rounded-xl bg-[#1F2933] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-slate-800"
-                            >
-                              Chi tiết
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => navigate(`/customer/dashboard`)}
-                              className="cursor-pointer rounded-xl border border-[#DDE1E4] bg-white px-3 py-1.5 text-[11px] font-medium text-[#20252B] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
-                            >
-                              Lịch sử
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(car)}
-                              className="cursor-pointer rounded-xl border border-[#DDE1E4] bg-white px-3 py-1.5 text-[11px] font-medium text-[#20252B] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
-                            >
-                              Sửa
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => setDeletingVehicle(car)}
-                              className="cursor-pointer rounded-xl border border-red-200 bg-white px-3 py-1.5 text-[11px] font-medium text-red-600 transition hover:bg-red-50"
-                            >
-                              Xóa
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-
-                    {filteredCars.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="px-6 py-14 text-center">
-                          <p className="text-sm font-semibold text-[#20252B]">
-                            Chưa có xe nào phù hợp
-                          </p>
-                          <p className="mt-1 text-[11px] text-[#8A949E]">
-                            Bấm "+ Thêm xe mới" để thêm phương tiện của bạn.
-                          </p>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+        ) : (
+          <div className="cs-garage-grid">
+            {cars.map((car) => {
+              const brand = car.model?.brand?.name || "PHƯƠNG TIỆN";
+              const mileage = car.mileage != null ? Number(car.mileage).toLocaleString("vi-VN") : "—";
+              return (
+                <article className="cs-garage-vehicle" key={car.id}>
+                  <div className="cs-garage-card-top">
+                    <span className="cs-garage-eyebrow">{brand.toUpperCase()}</span>
+                    <span className="cs-garage-year">{car.year ?? "—"}</span>
+                  </div>
+                  <div className="cs-garage-car-icon"><Icon name="car" size={40}/></div>
+                  <h2>{getVehicleName(car)}</h2>
+                  <p className="cs-garage-vehicle-note">{car.variant || "Hồ sơ phương tiện đã đăng ký"}</p>
+                  <span className="cs-garage-plate">{car.license_plate || "CHƯA CÓ BIỂN"}</span>
+                  <div className="cs-garage-card-bottom">
+                    <span>{mileage} km</span>
+                    <div className="cs-garage-card-actions">
+                      <button type="button" onClick={() => setDetailVehicle(car)}>Chi tiết</button>
+                      <button type="button" onClick={() => openEditModal(car)}>Sửa</button>
+                      <button type="button" onClick={() => setDeletingVehicle(car)}>Xóa</button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
-        </div>
+        )}
+        <div className="cs-garage-footer-link"><Link to="/customer/booking">Đặt lịch bảo dưỡng cho xe của tôi <Icon name="arrow" size={15}/></Link></div>
       </main>
-
       {/* MODAL SỬA THÔNG TIN XE */}
       {editingVehicle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="cs-garage-dialog fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-[#1F2933]">
@@ -604,7 +390,7 @@ function Cars() {
 
       {/* MODAL XÁC NHẬN XÓA XE */}
       {deletingVehicle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="cs-garage-dialog fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
             <h3 className="text-base font-bold text-[#1F2933]">Xác nhận xóa xe?</h3>
             <p className="mt-2 text-xs text-slate-600">
@@ -636,7 +422,7 @@ function Cars() {
 
       {/* MODAL CHI TIẾT XE */}
       {detailVehicle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="cs-garage-dialog fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
@@ -710,7 +496,6 @@ function Cars() {
         </div>
       )}
 
-      {!isCustomerPage && <Footer />}
     </div>
   );
 }

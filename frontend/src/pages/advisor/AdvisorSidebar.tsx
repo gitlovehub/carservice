@@ -1,3 +1,4 @@
+import { useInAppShell } from "../../layouts/ShellContext";
 import { Link, useLocation } from "react-router-dom";
 import BrandLogo from "../../components/common/BrandLogo";
 
@@ -30,8 +31,11 @@ const menuItems = [
 ];
 
 function AdvisorSidebar() {
+  const inShell = useInAppShell();
   const location = useLocation();
   const username = localStorage.getItem("username") || "Cố vấn";
+
+  if (inShell) return null;
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] bg-[#1F2933] lg:block">
