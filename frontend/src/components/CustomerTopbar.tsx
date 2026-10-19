@@ -1,7 +1,9 @@
+import { useInAppShell } from "../layouts/ShellContext";
 import { Link, useLocation } from "react-router-dom";
 import RoleAccountMenu from "./RoleAccountMenu";
 
 function CustomerTopbar() {
+  const inShell = useInAppShell();
   const location = useLocation();
 
   const pageNames: Record<string, string> = {
@@ -18,6 +20,8 @@ function CustomerTopbar() {
 
   const currentPage =
     pageNames[location.pathname] || "Khu vực khách hàng";
+
+  if (inShell) return null;
 
   return (
     <header className="sticky top-0 z-40 flex h-[76px] items-center border-b border-[#E1E4E6] bg-white">
