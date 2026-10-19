@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #d6a85f;
-  --color-brand-dark: #b98b43;
+  --color-brand: #cf2935;
+  --color-brand-dark: #a91e29;
   --color-ink: #1f2933;
   --color-muted: #66717c;
   --color-page: #f7f7f5;
@@ -54,7 +54,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #d6a85f;
+  outline: 2px solid #cf2935;
   outline-offset: 3px;
 }
 

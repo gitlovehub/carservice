@@ -1,3 +1,4 @@
+import { useInAppShell } from "../../layouts/ShellContext";
 import { Link, useLocation } from "react-router-dom";
 import RoleAccountMenu from "../../components/RoleAccountMenu";
 
@@ -10,9 +11,12 @@ const pageNames: Record<string, string> = {
 };
 
 function AdvisorTopbar() {
+  const inShell = useInAppShell();
   const location = useLocation();
 
   const pageName = pageNames[location.pathname] ?? "Không gian làm việc";
+
+  if (inShell) return null;
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#E1E4E6] bg-white lg:ml-[250px]">

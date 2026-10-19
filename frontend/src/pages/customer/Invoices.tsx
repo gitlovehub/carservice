@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import CustomerHeader from "../../components/CustomerHeader";
-import CustomerTopbar from "../../components/CustomerTopbar";
 import {
   formatDate,
   formatMoney,
@@ -88,9 +86,7 @@ export default function InvoicesPage() {
     .reduce((sum, r) => sum + Number(r.invoice.total_amount), 0);
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <CustomerHeader />
-      <CustomerTopbar />
+    <div className="at-customer-invoices min-h-screen bg-[#F7F7F5] text-[#20252B]">
 
       <main className="lg:ml-[250px]">
         <div className="mx-auto max-w-[1200px] px-6 py-10 md:px-8 md:py-14">

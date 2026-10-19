@@ -438,7 +438,7 @@ function AdminAppointments() {
                       return (
                         <tr
                           key={appointment.recordId}
-                          className="border-b border-[#F0F1EF] last:border-b-0 hover:bg-[#FAFAF8]"
+                          className="border-b border-[#F0F1EF] last:border-b-0 hover:bg-transparent cs-readable-row"
                         >
                           <td className="px-3 py-4 text-xs font-semibold">
                             {appointment.id}

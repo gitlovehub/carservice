@@ -7,7 +7,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:base": "node tests/base-smoke.mjs",
+    "test:atelier": "node tests/atelier-public-smoke.mjs",
+    "test:workspace": "node tests/workspace-theme-smoke.mjs",
+    "test:nav": "node tests/navigation-regression.mjs",
+    "test:contrast": "node tests/ui-contrast-regression.mjs",
+    "test:customer": "node tests/customer-atelier-parity.mjs",
+    "test:tracking-booking": "node tests/customer-tracking-booking.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

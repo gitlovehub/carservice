@@ -1,0 +1,15 @@
+/* Services mirror the ATELIER editorial collection, using live Laravel data. */
+.at-services-hero{background:radial-gradient(ellipse at 88% 45%,#71232b88,transparent 53%),#1d1114;color:#fff;padding:94px 0 85px}
+.at-services-hero .at-eyebrow{color:#ff9fa5}
+.at-services-hero h1{font-size:clamp(40px,5vw,70px);margin:22px 0 20px;line-height:1.08}
+.at-services-hero h1 em{font-style:normal;color:#fd646e}
+.at-services-hero p{max-width:600px;color:#c7bfc2;line-height:1.85;margin:0 0 26px;font-size:15px}
+.at-services-list{padding-top:65px;padding-bottom:90px;min-height:430px}
+.at-services-list .at-section-title{margin-bottom:24px}
+.at-services-caption{color:var(--at-muted);font-size:12px;font-weight:600}
+.at-service-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;flex-wrap:wrap}
+.at-service-kind{font-size:11px;font-weight:800;color:var(--at-muted);background:var(--at-surface2);padding:6px 10px;border-radius:30px}
+.at-service-price{font:800 23px Manrope,system-ui,sans-serif;color:var(--at-ink)}
+.at-services-state{padding:60px 25px;background:var(--at-surface);border:1px solid var(--at-border);border-radius:16px;color:var(--at-muted);text-align:center}
+.at-services-state button{border:0;background:transparent;text-decoration:underline;color:var(--at-accent);font-weight:800;cursor:pointer}
+@media(max-width:600px){.at-services-hero{padding:64px 0}.at-services-list{padding-top:40px;padding-bottom:60px}}
