@@ -75,4 +75,43 @@ html[data-theme="dark"] .at-booking-legacy input[type=date]{color-scheme:dark}
 .at-booking-legacy .at-service-package-option input:focus-visible + .at-service-package-card {
   outline:2px solid var(--cs-accent);outline-offset:3px;
 }
+.at-booking-legacy .at-booking-branch-card {
+  background:var(--cs-surface)!important;color:var(--cs-text)!important;border-color:var(--cs-border)!important;
+  transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.at-booking-legacy .at-booking-branch-option:hover .at-booking-branch-card {
+  background:var(--cs-surface-2)!important;border-color:var(--cs-accent)!important;
+}
+.at-booking-legacy .at-booking-branch-card.is-selected {
+  background:var(--cs-soft)!important;border-color:var(--cs-accent)!important;box-shadow:0 0 0 1px var(--cs-accent)!important;
+}
+.at-booking-legacy .at-booking-branch-card :is(.text-slate-800,.text-slate-500) {color:var(--cs-text)!important}
+.at-booking-legacy .at-booking-branch-status {color:#000!important}
+html[data-theme="dark"] .cs-customer-layout .at-booking-legacy .at-booking-branch-status {color:#000!important}
+.at-booking-legacy .at-booking-branch-option input:focus-visible + .at-booking-branch-card {
+  outline:2px solid var(--cs-accent);outline-offset:3px;
+}
+.at-booking-legacy .at-booking-date-option {
+  background:var(--cs-surface)!important;border-color:var(--cs-border)!important;color:var(--cs-text)!important;
+  transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.at-booking-legacy .at-booking-date-option:not(.is-selected):hover {
+  background:var(--cs-surface-2)!important;border-color:var(--cs-accent)!important;
+}
+.at-booking-legacy .at-booking-date-option.is-selected {
+  background:var(--cs-accent)!important;border-color:var(--cs-accent)!important;color:#fff!important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--cs-accent) 22%,transparent)!important;
+}
+.at-booking-legacy .at-booking-date-option .at-booking-date-day {color:var(--cs-muted)!important}
+.at-booking-legacy .at-booking-date-option.is-selected .at-booking-date-day {color:#fff!important}
+.at-booking-legacy .at-booking-date-option:focus-visible {outline:2px solid var(--cs-accent);outline-offset:3px}
+.at-booking-legacy .at-booking-stepper-track,
+.at-booking-legacy .at-booking-stepper-progress {
+  left:12.5%;top:20px;transform:translateY(-50%);
+}
+.at-booking-legacy .at-booking-stepper-track {right:12.5%}
+@media(min-width:640px) {
+  .at-booking-legacy .at-booking-stepper-track,
+  .at-booking-legacy .at-booking-stepper-progress {top:22px}
+}
 @media (prefers-reduced-motion:reduce){.at-booking-legacy .at-vehicle-type-card,.at-booking-legacy .at-service-package-card{transition:none!important;transform:none!important}}
