@@ -1,12 +1,6 @@
 import { Link } from "react-router-dom";
 import { AtelierCar, AtelierPublicFooter, AtelierPublicHeader } from "../components/AtelierPublic";
 
-const highlights = [
-  { symbol: "▦", title: "Đặt lịch chủ động", description: "Chọn xe, dịch vụ, khung giờ đến gara." },
-  { symbol: "◇", title: "Duyệt trước khi sửa", description: "Kiểm soát toàn bộ hạng mục và chi phí." },
-  { symbol: "◷", title: "Theo dõi xuyên suốt", description: "Tra cứu tiến độ và lịch sử chăm sóc xe." },
-];
-
 const services = [
   { code: "01", title: "Bảo dưỡng định kỳ", description: "Kiểm tra và bảo dưỡng xe theo từng giai đoạn sử dụng." },
   { code: "02", title: "Phanh và lốp xe", description: "Đánh giá tình trạng phanh, lốp, hỗ trợ vận hành an toàn." },
