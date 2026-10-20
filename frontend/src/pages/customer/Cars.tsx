@@ -3,7 +3,6 @@ import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Toast, type ToastType } from "../../components/auth/Toast";
 import { Icon } from "../../components/ui/Icon";
-import "../../styles/atelier-garage.css";
 import {
   addMyVehicle,
   deleteMyVehicle,
@@ -156,28 +155,28 @@ function Cars() {
   };
 
   return (
-    <div className="cs-garage" data-testid="customer-garage">
+    <div className="min-h-[calc(100dvh-200px)] [&_button:not(:disabled)]:cursor-pointer [&_a]:cursor-pointer bg-[var(--cs-bg,#f7f7f6)] text-[var(--cs-text,#191919)]" data-testid="customer-garage">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      <main className="cs-garage-container">
-        <div className="cs-garage-heading">
+      <main className="mx-auto max-w-[1250px] px-[18px] pb-[60px] pt-[34px] sm:px-[34px] sm:pb-[82px] sm:pt-12">
+        <div className="mb-8 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
           <div>
-            <p className="cs-garage-eyebrow">MY GARAGE / VEHICLES</p>
+            <p className="text-[11px] font-extrabold leading-relaxed tracking-[0.145em] text-[#cf2935]">MY GARAGE / VEHICLES</p>
             <h1>Garage của tôi</h1>
-            <p className="cs-garage-subtitle">Quản lý danh sách xe để đặt lịch nhanh hơn.</p>
+            <p className="text-sm leading-7 text-[var(--cs-muted,#757575)]">Quản lý danh sách xe để đặt lịch nhanh hơn.</p>
           </div>
-          <button type="button" className="cs-garage-primary" onClick={() => {
+          <button type="button" className="inline-flex min-h-[45px] w-max cursor-pointer items-center justify-center gap-2.5 whitespace-nowrap rounded-xl border border-[#cf2935] bg-[#cf2935] px-5 py-3 text-[13px] font-extrabold text-white transition-colors hover:bg-[#af202b] disabled:cursor-not-allowed disabled:opacity-50" onClick={() => {
             setError(""); setIsAddFormOpen((previous) => !previous);
           }}>
             <Icon name="plus" size={17} /> {isAddFormOpen ? "Đóng biểu mẫu" : "Thêm xe"}
           </button>
         </div>
 
-        {error && <div role="alert" className="cs-garage-error">{error}</div>}
+        {error && <div role="alert" className="mb-5 rounded-xl border border-red-400/60 bg-red-50 px-4 py-3.5 text-[13px] text-red-700 dark:bg-[#44262d] dark:text-[#ffc0c8]">{error}</div>}
           {/* FORM THÊM XE MỚI */}
           {isAddFormOpen && (
             <form
               onSubmit={handleAddVehicle}
-              className="cs-garage-add-form mb-7 rounded-2xl border border-[#E1E4E6] bg-white p-6"
+              className="border-[var(--cs-border,#e9e9e6)]! bg-[var(--cs-surface,#fff)]! text-[var(--cs-text,#191919)] [&_h2]:text-[var(--cs-text,#191919)] [&_label]:text-[var(--cs-text,#191919)] [&_input]:border-[var(--cs-border,#e9e9e6)] [&_input]:bg-[var(--cs-surface-2,#f1f1ef)] [&_input]:text-[var(--cs-text,#191919)] [&_select]:border-[var(--cs-border,#e9e9e6)] [&_select]:bg-[var(--cs-surface-2,#f1f1ef)] [&_select]:text-[var(--cs-text,#191919)] [&_button:disabled]:cursor-not-allowed mb-7 rounded-2xl border border-[#E1E4E6] bg-white p-6"
             >
               <h2 className="text-[17px] font-bold text-[#20252B]">Thêm phương tiện mới</h2>
               <div className="mt-5 grid gap-5 sm:grid-cols-2 md:grid-cols-4">
@@ -269,32 +268,32 @@ function Cars() {
 
 
         {loading ? (
-          <div className="cs-garage-empty" role="status">Đang tải xe từ hệ thống...</div>
+          <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-[18px] border border-[var(--cs-border,#e9e9e6)] bg-[var(--cs-surface,#fff)] p-8 text-center text-[var(--cs-muted,#757575)] [&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:text-[var(--cs-text,#191919)]" role="status">Đang tải xe từ hệ thống...</div>
         ) : cars.length === 0 ? (
-          <div className="cs-garage-empty">
+          <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-[18px] border border-[var(--cs-border,#e9e9e6)] bg-[var(--cs-surface,#fff)] p-8 text-center text-[var(--cs-muted,#757575)] [&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:text-[var(--cs-text,#191919)]">
             <Icon name="car" size={38}/>
             <h2>Garage đang trống</h2>
             <p>Thêm chiếc xe đầu tiên để đặt lịch bảo dưỡng.</p>
-            <button type="button" className="cs-garage-primary" onClick={() => setIsAddFormOpen(true)}>Thêm xe</button>
+            <button type="button" className="inline-flex min-h-[45px] w-max cursor-pointer items-center justify-center gap-2.5 whitespace-nowrap rounded-xl border border-[#cf2935] bg-[#cf2935] px-5 py-3 text-[13px] font-extrabold text-white transition-colors hover:bg-[#af202b] disabled:cursor-not-allowed disabled:opacity-50" onClick={() => setIsAddFormOpen(true)}>Thêm xe</button>
           </div>
         ) : (
-          <div className="cs-garage-grid">
+          <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {cars.map((car) => {
               const brand = car.model?.brand?.name || "PHƯƠNG TIỆN";
               const mileage = car.mileage != null ? Number(car.mileage).toLocaleString("vi-VN") : "—";
               return (
-                <article className="cs-garage-vehicle" key={car.id}>
-                  <div className="cs-garage-card-top">
-                    <span className="cs-garage-eyebrow">{brand.toUpperCase()}</span>
-                    <span className="cs-garage-year">{car.year ?? "—"}</span>
+                <article className="min-w-0 rounded-[19px] border border-[var(--cs-border,#e9e9e6)] bg-[var(--cs-surface,#fff)] p-5 transition-colors hover:border-[#cf2935]/60 sm:p-6 [&_h2]:break-words [&_h2]:text-[19px] [&_h2]:font-extrabold [&_h2]:leading-snug [&_h2]:tracking-tight" key={car.id}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-extrabold leading-relaxed tracking-[0.145em] text-[#cf2935]">{brand.toUpperCase()}</span>
+                    <span className="rounded-lg bg-[var(--cs-surface-2,#f1f1ef)] px-2.5 py-1.5 text-[11px] font-extrabold text-[var(--cs-muted,#757575)]">{car.year ?? "—"}</span>
                   </div>
-                  <div className="cs-garage-car-icon"><Icon name="car" size={40}/></div>
+                  <div className="my-6 text-[#cf2935]"><Icon name="car" size={40}/></div>
                   <h2>{getVehicleName(car)}</h2>
-                  <p className="cs-garage-vehicle-note">{car.variant || "Hồ sơ phương tiện đã đăng ký"}</p>
-                  <span className="cs-garage-plate">{car.license_plate || "CHƯA CÓ BIỂN"}</span>
-                  <div className="cs-garage-card-bottom">
+                  <p className="mt-2 min-h-9 text-xs leading-5 text-[var(--cs-muted,#757575)]">{car.variant || "Hồ sơ phương tiện đã đăng ký"}</p>
+                  <span className="mt-3 inline-block rounded-lg bg-[var(--cs-surface-2,#f1f1ef)] px-3 py-2.5 text-xs font-extrabold tracking-wide text-[var(--cs-text,#191919)]">{car.license_plate || "CHƯA CÓ BIỂN"}</span>
+                  <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--cs-border,#e9e9e6)] pt-5 text-xs text-[var(--cs-muted,#757575)]">
                     <span>{mileage} km</span>
-                    <div className="cs-garage-card-actions">
+                    <div className="flex flex-wrap items-center gap-4 [&_button]:cursor-pointer [&_button]:py-1.5 [&_button]:text-xs [&_button]:font-extrabold [&_button]:text-[var(--cs-text,#191919)] [&_button:hover]:text-[#cf2935] [&_button:disabled]:cursor-not-allowed">
                       <button type="button" onClick={() => setDetailVehicle(car)}>Chi tiết</button>
                       <button type="button" onClick={() => openEditModal(car)}>Sửa</button>
                       <button type="button" onClick={() => setDeletingVehicle(car)}>Xóa</button>
@@ -305,11 +304,11 @@ function Cars() {
             })}
           </div>
         )}
-        <div className="cs-garage-footer-link"><Link to="/customer/booking">Đặt lịch bảo dưỡng cho xe của tôi <Icon name="arrow" size={15}/></Link></div>
+        <div className="mt-7 text-xs font-extrabold text-[#cf2935] [&_a]:inline-flex [&_a]:cursor-pointer [&_a]:items-center [&_a]:gap-2"><Link to="/customer/booking">Đặt lịch bảo dưỡng cho xe của tôi <Icon name="arrow" size={15}/></Link></div>
       </main>
       {/* MODAL SỬA THÔNG TIN XE */}
       {editingVehicle && (
-        <div className="cs-garage-dialog fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="[&>div]:border [&>div]:border-[var(--cs-border,#e9e9e6)] [&>div]:bg-[var(--cs-surface,#fff)] [&>div]:text-[var(--cs-text,#191919)] [&_h3]:text-[var(--cs-text,#191919)] [&_label]:text-[var(--cs-text,#191919)] [&_input]:border-[var(--cs-border,#e9e9e6)] [&_input]:bg-[var(--cs-surface-2,#f1f1ef)] [&_input]:text-[var(--cs-text,#191919)] [&_p]:text-[var(--cs-muted,#757575)] [&_button:disabled]:cursor-not-allowed fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-[#1F2933]">
@@ -390,7 +389,7 @@ function Cars() {
 
       {/* MODAL XÁC NHẬN XÓA XE */}
       {deletingVehicle && (
-        <div className="cs-garage-dialog fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="[&>div]:border [&>div]:border-[var(--cs-border,#e9e9e6)] [&>div]:bg-[var(--cs-surface,#fff)] [&>div]:text-[var(--cs-text,#191919)] [&_h3]:text-[var(--cs-text,#191919)] [&_label]:text-[var(--cs-text,#191919)] [&_input]:border-[var(--cs-border,#e9e9e6)] [&_input]:bg-[var(--cs-surface-2,#f1f1ef)] [&_input]:text-[var(--cs-text,#191919)] [&_p]:text-[var(--cs-muted,#757575)] [&_button:disabled]:cursor-not-allowed fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
             <h3 className="text-base font-bold text-[#1F2933]">Xác nhận xóa xe?</h3>
             <p className="mt-2 text-xs text-slate-600">
@@ -422,7 +421,7 @@ function Cars() {
 
       {/* MODAL CHI TIẾT XE */}
       {detailVehicle && (
-        <div className="cs-garage-dialog fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="[&>div]:border [&>div]:border-[var(--cs-border,#e9e9e6)] [&>div]:bg-[var(--cs-surface,#fff)] [&>div]:text-[var(--cs-text,#191919)] [&_h3]:text-[var(--cs-text,#191919)] [&_label]:text-[var(--cs-text,#191919)] [&_input]:border-[var(--cs-border,#e9e9e6)] [&_input]:bg-[var(--cs-surface-2,#f1f1ef)] [&_input]:text-[var(--cs-text,#191919)] [&_p]:text-[var(--cs-muted,#757575)] [&_button:disabled]:cursor-not-allowed fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
