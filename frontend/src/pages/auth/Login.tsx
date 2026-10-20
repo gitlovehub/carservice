@@ -90,8 +90,6 @@ function Login() {
   const [apiError, setApiError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  // Defer activating the password field until the user interacts with it.
-  const [passwordActive, setPasswordActive] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
 
   const [toast, setToast] = useState<{
@@ -232,11 +230,6 @@ function Login() {
     setResendCountdown(60);
     setStep("otp");
     showToast("Mã xác thực OTP đã được gửi đến email của bạn.", "info");
-  };
-
-  const handleRememberChange = (checked: boolean) => {
-    setRememberMe(checked);
-    if (!checked) localStorage.removeItem(REMEMBER_EMAIL_KEY);
   };
 
   const saveRememberedEmail = (email: string) => {
