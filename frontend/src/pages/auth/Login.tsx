@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { fetchApi } from "../../services/api";
@@ -6,6 +5,8 @@ import { getRoleManagementPage, setUserRole } from "./auth";
 import OtpInput from "../../components/auth/OtpInput";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import { AtelierAuthError, AtelierAuthLayout, AtelierField } from "../../components/AtelierPublic";
+
+const REMEMBER_EMAIL_KEY = "carservice_remembered_email";
 
 type Step = "login" | "otp";
 
@@ -65,13 +66,21 @@ function Login() {
 
   const [step, setStep] = useState<Step>("login");
   const [pendingEmail, setPendingEmail] = useState("");
-  const [pendingToken, setPendingToken] = useState("");
   const [otp, setOtp] = useState("");
 
-  const [form, setForm] = useState({
-    email: "",
+  // Only the email is remembered locally; never store a plaintext password.
+  const [rememberMe, setRememberMe] = useState(() =>
+    typeof window !== "undefined" &&
+    localStorage.getItem(REMEMBER_EMAIL_KEY) !== null,
+  );
+
+  const [form, setForm] = useState(() => ({
+    email:
+      typeof window !== "undefined"
+        ? localStorage.getItem(REMEMBER_EMAIL_KEY) || ""
+        : "",
     password: "",
-  });
+  }));
 
   const [errors, setErrors] = useState({
     email: "",
@@ -81,6 +90,8 @@ function Login() {
   const [apiError, setApiError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Defer activating the password field until the user interacts with it.
+  const [passwordActive, setPasswordActive] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
 
   const [toast, setToast] = useState<{
@@ -212,7 +223,6 @@ function Login() {
 
   const sendOtpForPendingAccount = async (email: string) => {
     setPendingEmail(email);
-    setPendingToken("");
 
     await fetchApi("/resend-email-otp", {
       method: "POST",
@@ -222,6 +232,19 @@ function Login() {
     setResendCountdown(60);
     setStep("otp");
     showToast("Mã xác thực OTP đã được gửi đến email của bạn.", "info");
+  };
+
+  const handleRememberChange = (checked: boolean) => {
+    setRememberMe(checked);
+    if (!checked) localStorage.removeItem(REMEMBER_EMAIL_KEY);
+  };
+
+  const saveRememberedEmail = (email: string) => {
+    if (rememberMe) {
+      localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+    } else {
+      localStorage.removeItem(REMEMBER_EMAIL_KEY);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -243,6 +266,8 @@ function Login() {
       });
 
       if (response?.account?.role) {
+        saveRememberedEmail(form.email.trim());
+
         localStorage.setItem(
           "token",
           response.token || "session_authenticated",
@@ -326,10 +351,12 @@ function Login() {
         }),
       });
 
-      const finalToken = response?.token || pendingToken;
+      const finalToken = response?.token;
       const finalAccount = response?.account || null;
 
       if (finalAccount?.role) {
+        saveRememberedEmail(pendingEmail);
+
         if (finalToken) {
           localStorage.setItem("token", finalToken);
         }
@@ -387,23 +414,54 @@ function Login() {
     }
   };
 
-  return <AtelierAuthLayout title={step === "login" ? "Chào mừng trở lại." : "Xác thực email."} description={step === "login" ? "Đăng nhập để tiếp tục công việc hoặc theo dõi xe của bạn." : `Nhập mã OTP được gửi tới ${pendingEmail}.`}>
-    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    {apiError && <AtelierAuthError message={apiError} />}
-    {step === "login" ? <>
-      <form className="at-form-stack" onSubmit={handleSubmit} noValidate>
-        <AtelierField htmlFor="login-email" label="Địa chỉ email" error={errors.email}><input id="login-email" name="email" type="email" autoComplete="username" className="at-control" placeholder="you@example.com" value={form.email} onChange={handleChange} aria-invalid={!!errors.email}/></AtelierField>
-        <AtelierField htmlFor="login-password" label="Mật khẩu" error={errors.password}><div className="at-password-wrap"><input id="login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" className="at-control" placeholder="Nhập mật khẩu" value={form.password} onChange={handleChange} aria-invalid={!!errors.password}/><button type="button" className="at-show-password" onClick={() => setShowPassword(s => !s)}>{showPassword ? "Ẩn" : "Hiện"}</button></div></AtelierField>
-        <div className="at-form-meta"><Link to="/forgot-password">Quên mật khẩu?</Link><span>Đăng nhập bảo mật</span></div>
-        <button type="submit" className="at-btn at-btn-primary at-large at-full" disabled={isLoading}>{isLoading ? "Đang đăng nhập..." : "Đăng nhập →"}</button>
-      </form>
-      <p className="at-auth-switch">Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link></p>
-    </> : <>
-      <form className="at-form-stack" onSubmit={handleOtpSubmit} noValidate><OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!apiError}/><button className="at-btn at-btn-primary at-large at-full" type="submit" disabled={isLoading || otp.length !== 6}>{isLoading ? "Đang xác thực..." : "Xác nhận mã OTP →"}</button></form>
-      <div className="at-otp-tools">{resendCountdown > 0 ? <span>Gửi lại mã sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại mã OTP</button>}<button type="button" onClick={() => {setStep("login");setOtp("");setApiError("");}}>← Quay lại đăng nhập</button></div>
-    </>}
-  </AtelierAuthLayout>;
+  const fieldClass = "block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]";
+  const primaryClass = "flex min-h-14 w-full cursor-pointer items-center justify-center rounded-xl bg-[#cf2935] px-6 py-4 text-sm font-bold !font-semibold !font-sans text-white transition hover:bg-[#b92430] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] disabled:cursor-not-allowed disabled:opacity-55";
 
+  return (
+    <AtelierAuthLayout
+      title={step === "login" ? "Đăng nhập." : "Xác thực email."}
+      description={step === "login" ? "Vui lòng nhập địa chỉ email và mật khẩu của bạn:" : `Nhập mã OTP được gửi tới ${pendingEmail}.`}
+    >
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {apiError && <AtelierAuthError message={apiError} />}
+      {step === "login" ? (
+        <>
+          <form className="grid gap-4" onSubmit={handleSubmit} noValidate>
+            <AtelierField htmlFor="login-email" label="Địa chỉ email" error={errors.email}>
+              <input id="login-email" name="email" type="email" autoComplete="username" placeholder="you@example.com" value={form.email} onChange={handleChange} aria-invalid={!!errors.email} className={fieldClass} />
+            </AtelierField>
+            <AtelierField htmlFor="login-password" label="Mật khẩu" error={errors.password}>
+              <div className="relative">
+                <input id="login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Nhập mật khẩu" value={form.password} onChange={handleChange} aria-invalid={!!errors.password} className={`${fieldClass} pr-16`} />
+                <button type="button" aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"} onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-[#757575] hover:text-[#cf2935]">{showPassword ? "Ẩn" : "Hiện"}</button>
+              </div>
+            </AtelierField>
+            <div className="flex flex-wrap items-center justify-between gap-3 py-1 text-xs text-[#757575]">
+              <label htmlFor="login-remember" className="inline-flex cursor-pointer items-center gap-2.5">
+                <input id="login-remember" type="checkbox" checked={rememberMe} onChange={e => { setRememberMe(e.target.checked); if (!e.target.checked) localStorage.removeItem(REMEMBER_EMAIL_KEY); }} className="size-4 cursor-pointer accent-[#cf2935]" />
+                Ghi nhớ đăng nhập
+              </label>
+              <Link to="/forgot-password" className="cursor-pointer font-bold hover:text-[#cf2935] hover:underline">Quên mật khẩu?</Link>
+            </div>
+            <button type="submit" disabled={isLoading} className={primaryClass}>{isLoading ? "Đang đăng nhập..." : "Đăng nhập"}</button>
+          </form>
+          <p className="mt-5 mb-3 text-center text-sm text-[#757575]">Chưa có tài khoản?</p>
+          <Link to="/register" className="flex min-h-14 w-full cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-[#252525] px-6 py-4 text-sm font-bold text-white transition hover:bg-[#393939] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935]">Đăng ký</Link>
+        </>
+      ) : (
+        <>
+          <form className="grid gap-4" onSubmit={handleOtpSubmit} noValidate>
+            <OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!apiError} />
+            <button type="submit" disabled={isLoading || otp.length !== 6} className={primaryClass}>{isLoading ? "Đang xác thực..." : "Xác thực email →"}</button>
+          </form>
+          <div className="mt-5 grid gap-3 text-xs text-[#757575] [&_button]:cursor-pointer [&_button]:text-left [&_button]:font-extrabold [&_button]:text-[#cf2935] [&_button:disabled]:cursor-not-allowed">
+            {resendCountdown > 0 ? <span>Gửi lại OTP sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại OTP</button>}
+            <button type="button" onClick={() => { setStep("login"); setOtp(""); setApiError(""); }}>← Quay lại đăng nhập</button>
+          </div>
+        </>
+      )}
+    </AtelierAuthLayout>
+  );
 }
 
 export default Login;
