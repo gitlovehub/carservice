@@ -48,7 +48,7 @@ export function AtelierPublicHeader() {
 }
 
 export function AtelierPublicFooter() {
-  return <footer className="flex flex-wrap justify-between gap-5 border-t border-[#e9e9e6] bg-white px-5 py-7 text-xs text-[#757575] sm:px-[5vw] xl:px-[76px] dark:border-[#34373a] dark:bg-[#191b1e]"><span>© {new Date().getFullYear()} CarService Atelier — Thiết kế vì trải nghiệm chăm sóc ô tô.</span><span>Website quản lý dịch vụ bảo dưỡng ô tô</span></footer>;
+  return <footer className="flex flex-wrap justify-between gap-5 border-t border-[#e9e9e6] bg-white px-5 py-7 text-xs text-[#757575] sm:px-[5vw] xl:px-[76px] dark:border-[#34373a] dark:bg-[#191b1e]"><span>© {new Date().getFullYear()} CarService — Thiết kế trải nghiệm chăm sóc ô tô.</span><span>Website quản lý dịch vụ bảo dưỡng ô tô</span></footer>;
 }
 
 export function AtelierCar({ className = "" }: { className?: string }) {
