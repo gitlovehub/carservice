@@ -160,13 +160,13 @@ function ForgotPassword() {
     }
   };
 
-  return <AtelierAuthLayout title={step === "FORGOT" ? "Khôi phục mật khẩu." : step === "RESET" ? "Đặt lại mật khẩu." : "Hoàn tất xác thực."} description={step === "FORGOT" ? "Nhập email đã đăng ký để nhận mã OTP đặt lại mật khẩu." : step === "RESET" ? `Mã OTP đã gửi tới ${email}.` : "Mật khẩu của bạn đã được cập nhật thành công."}>
+  return <AtelierAuthLayout title={step === "FORGOT" ? "Khôi phục mật khẩu" : step === "RESET" ? "Đặt lại mật khẩu" : "Hoàn tất xác thực"} description={step === "FORGOT" ? "Nhập email đã đăng ký để nhận mã OTP đặt lại mật khẩu." : step === "RESET" ? `Mã OTP đã gửi tới ${email}.` : "Mật khẩu của bạn đã được cập nhật thành công."}>
     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     {errorMsg && <AtelierAuthError message={errorMsg} />}
     {step === "FORGOT" && <><form className="grid gap-4" onSubmit={handleForgotSubmit}>
       <AtelierField label="Email đã đăng ký"><input type="email" className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => {setEmail(e.target.value); setErrorMsg("");}} /></AtelierField>
-      <button type="submit" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-transparent bg-[#cf2935] text-white hover:bg-[#b92430] min-h-14 px-6 py-4 text-sm w-full" disabled={isLoading || !email.trim()}>{isLoading ? "Đang gửi mã..." : "Gửi mã xác thực OTP →"}</button></form>
-      <p className="mt-5 mb-3 text-xs text-[#757575] [&_a]:font-extrabold [&_a]:text-[#cf2935] [&_a]:hover:underline">Nhớ mật khẩu? <Link to="/login">Đăng nhập ngay</Link></p>
+      <button type="submit" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold !font-semibold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-transparent bg-[#cf2935] text-white hover:bg-[#b92430] min-h-14 px-6 py-4 text-sm w-full" disabled={isLoading || !email.trim()}>{isLoading ? "Đang gửi mã..." : "Gửi mã xác thực OTP →"}</button></form>
+      <p className="mt-5 mb-3 text-base text-[#757575] [&_a]:font-extrabold [&_a]:text-[#cf2935] [&_a]:hover:underline">Nhớ mật khẩu? <Link to="/login">Đăng nhập ngay</Link></p>
     </>}
     {step === "RESET" && <><form className="grid gap-4" onSubmit={handleResetSubmit}>
       <AtelierField label="Mã OTP 6 số"><OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!errorMsg}/></AtelierField>
