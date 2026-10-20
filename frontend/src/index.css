@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Use the same manual theme selector as ThemeContext.tsx */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --color-brand: #cf2935;
   --color-brand-dark: #a91e29;
@@ -88,4 +91,29 @@ img {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+/* Global interactive affordance; disabled controls remain non-clickable. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    @apply cursor-pointer;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    @apply cursor-not-allowed;
+  }
+}
+
+/* Match the root page background to the current CarService theme. */
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+  background: #111214;
+  color-scheme: dark;
+}
+
+html[data-theme="light"],
+html[data-theme="light"] body {
+  background: #f7f7f5;
+  color-scheme: light;
 }
