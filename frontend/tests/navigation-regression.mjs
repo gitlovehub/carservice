@@ -9,7 +9,7 @@ const auth=src('pages/auth/auth.ts'), guard=src('pages/auth/ProtectedRoute.tsx')
 const login=src('pages/auth/Login.tsx'), boundary=src('components/AppErrorBoundary.tsx');
 assert.ok(dashboard.indexOf('const advisor = role === "advisor";') < dashboard.indexOf('const upcoming = items.filter('),'Dashboard must not use advisor before declaration');
 assert.match(app, /<AppErrorBoundary><FeedbackProvider><Routes>/);
-assert.match(app, /<\/Routes><\/FeedbackProvider>/);
+assert.match(app, /<\/Routes><ChatWidget\/><\/FeedbackProvider>/);
 assert.match(boundary, /getDerivedStateFromError/);
 assert.match(header, /label: "Dịch vụ", href: "\/services"/);
 assert.doesNotMatch(header, /href: "\/#services"/);

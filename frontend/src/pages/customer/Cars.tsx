@@ -308,7 +308,7 @@ function Cars() {
       </main>
       {/* MODAL SỬA THÔNG TIN XE */}
       {editingVehicle && (
-        <div className="[&>div]:border [&>div]:border-cs-border [&>div]:bg-cs-surface! [&>div]:text-cs-text! [&_h3]:text-cs-text! [&_label]:text-cs-text! [&_p]:text-cs-text [&_input]:border-cs-border [&_input]:bg-cs-surface-2 [&_input]:text-cs-text [&_textarea]:border-cs-border [&_textarea]:bg-cs-surface-2 [&_textarea]:text-cs-text fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="cs-garage-dialog fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-[#1F2933]">
@@ -389,7 +389,7 @@ function Cars() {
 
       {/* MODAL XÁC NHẬN XÓA XE */}
       {deletingVehicle && (
-        <div className="[&>div]:border [&>div]:border-cs-border [&>div]:bg-cs-surface! [&>div]:text-cs-text! [&_h3]:text-cs-text! [&_label]:text-cs-text! [&_p]:text-cs-text [&_input]:border-cs-border [&_input]:bg-cs-surface-2 [&_input]:text-cs-text [&_textarea]:border-cs-border [&_textarea]:bg-cs-surface-2 [&_textarea]:text-cs-text fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="cs-garage-dialog fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
             <h3 className="text-base font-bold text-[#1F2933]">Xác nhận xóa xe?</h3>
             <p className="mt-2 text-xs text-slate-600">
@@ -421,7 +421,7 @@ function Cars() {
 
       {/* MODAL CHI TIẾT XE */}
       {detailVehicle && (
-        <div className="[&>div]:border [&>div]:border-cs-border [&>div]:bg-cs-surface! [&>div]:text-cs-text! [&_h3]:text-cs-text! [&_label]:text-cs-text! [&_p]:text-cs-text [&_input]:border-cs-border [&_input]:bg-cs-surface-2 [&_input]:text-cs-text [&_textarea]:border-cs-border [&_textarea]:bg-cs-surface-2 [&_textarea]:text-cs-text fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="cs-garage-dialog fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>

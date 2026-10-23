@@ -800,7 +800,7 @@ function Appointments() {
 
       {/* Chi tiết lịch theo tokens của role; không đặt chữ trắng trên nền xám sáng. */}
       {selectedAppointment && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/65 px-4 py-6 backdrop-blur-sm" onMouseDown={event => { if (event.currentTarget === event.target) setSelectedAppointment(null); }}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 px-4 py-6 backdrop-blur-sm" onMouseDown={event => { if (event.currentTarget === event.target) setSelectedAppointment(null); }}>
           <section role="dialog" aria-modal="true" aria-labelledby="advisor-appointment-title" className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[20px] border border-cs-border bg-cs-surface text-cs-text shadow-2xl">
             <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-cs-border bg-cs-surface px-6 py-5">
               <div><h2 id="advisor-appointment-title" className="text-lg font-extrabold">Chi tiết lịch hẹn</h2><p className="mt-1 font-mono text-xs text-cs-muted">{selectedAppointment.appointment_code}</p></div>
@@ -811,7 +811,7 @@ function Appointments() {
                 ["Khách hàng", getAppointmentCustomer(selectedAppointment), getAppointmentPhone(selectedAppointment)],
                 ["Xe / Biển số", getVehicleName(selectedAppointment.vehicle), getAppointmentPlate(selectedAppointment)],
                 ["Ngày hẹn", formatDate(selectedAppointment.appointment_date), selectedAppointment.appointment_time],
-              ].map(([label,value,extra]) => <div key={label} className="cs-info-panel min-w-0 p-4"><p className="text-xs font-bold uppercase tracking-wide text-cs-muted">{label}</p><p className="mt-2 break-words text-sm font-bold text-cs-text">{value}</p><p className="mt-1 break-all text-xs text-cs-muted">{extra}</p></div>)}
+              ].map(([label,value,extra]) => <div key={label} className="cs-info-panel min-w-0 p-4"><p className="text-xs font-bold uppercase tracking-wide text-cs-muted">{label}</p><p className="mt-2 break-words text-sm font-bold text-cs-text">{value}</p><p className="mt-1 break-all text-xs text-cs-muted">{extra}</p>{label === "Khách hàng" && selectedAppointment.customer?.email && <p className="mt-1 break-all text-xs text-cs-muted">{selectedAppointment.customer.email}</p>}</div>)}
               <div className="cs-info-panel p-4"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-cs-muted">Trạng thái</p><span className={`inline-flex rounded-lg px-3 py-1.5 text-xs font-bold ${getStatusClass(selectedAppointment.status)}`}>{getStatusText(selectedAppointment.status)}</span></div>
               <div className="cs-info-panel p-4 sm:col-span-2"><p className="text-xs font-bold uppercase tracking-wide text-cs-muted">Dịch vụ đã chọn</p><p className="mt-2 text-sm text-cs-text">{getServiceName(selectedAppointment)}</p></div>
               {(selectedAppointment.symptom_description || selectedAppointment.note) && <div className="cs-info-panel p-4 sm:col-span-2"><p className="text-xs font-bold uppercase tracking-wide text-cs-muted">Yêu cầu / Ghi chú</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-cs-text">{selectedAppointment.symptom_description}{selectedAppointment.symptom_description && selectedAppointment.note ? " · " : ""}{selectedAppointment.note}</p></div>}
@@ -824,14 +824,14 @@ function Appointments() {
 
       {/* MODAL TỪ CHỐI */}
       {cancelAppointment && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/65 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 px-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-cs-border bg-cs-surface text-cs-text shadow-xl">
-            <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
+            <div className="flex items-start justify-between border-b border-cs-border px-6 py-4">
               <div>
-                <p className="text-base font-bold text-slate-900">
+                <p className="text-base font-bold text-cs-text">
                   Từ chối lịch hẹn
                 </p>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-cs-muted">
                   {cancelAppointment.appointment_code} -{" "}
                   {getAppointmentCustomer(cancelAppointment)}
                 </p>
@@ -843,21 +843,21 @@ function Appointments() {
                   setCancelAppointment(null);
                   setCancelReason("");
                 }}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-cs-muted transition hover:bg-cs-surface-2 hover:text-cs-text"
               >
                 ✕
               </button>
             </div>
 
             <div className="p-6">
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5">
-                <p className="text-xs font-semibold text-rose-800">Lưu ý</p>
-                <p className="mt-0.5 text-xs text-rose-700">
+              <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3.5">
+                <p className="text-xs font-semibold text-rose-400">Lưu ý</p>
+                <p className="mt-0.5 text-xs text-cs-text">
                   Vui lòng nhập lý do cụ thể để khách hàng nắm rõ nguyên nhân lịch hẹn bị từ chối.
                 </p>
               </div>
 
-              <label className="mt-4 block text-xs font-semibold text-slate-700">
+              <label className="mt-4 block text-xs font-semibold text-cs-text">
                 Lý do từ chối
               </label>
               <textarea
@@ -865,18 +865,18 @@ function Appointments() {
                 onChange={(e) => setCancelReason(e.target.value)}
                 rows={4}
                 placeholder="Nhập lý do từ chối lịch hẹn..."
-                className="mt-1.5 w-full resize-none rounded-xl border border-slate-200 p-3 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                className="mt-1.5 w-full resize-none rounded-xl border border-cs-border bg-cs-surface-2 p-3 text-sm text-cs-text placeholder:text-cs-muted outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
               />
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4">
+            <div className="flex justify-end gap-2 border-t border-cs-border px-6 py-4">
               <button
                 type="button"
                 onClick={() => {
                   setCancelAppointment(null);
                   setCancelReason("");
                 }}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                className="rounded-xl border border-cs-border bg-cs-surface px-4 py-2 text-xs font-semibold text-cs-muted transition hover:bg-cs-surface-2"
               >
                 Hủy bỏ
               </button>
