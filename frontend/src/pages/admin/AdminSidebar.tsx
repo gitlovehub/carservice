@@ -1,3 +1,4 @@
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { useInAppShell } from "../../layouts/ShellContext";
 import { logout } from "../auth/auth";
 
@@ -54,6 +55,7 @@ const menuItems = [
 ];
 
 function AdminSidebar() {
+  const { confirm } = useAppFeedback();
   const inShell = useInAppShell();
   const location = useLocation();
 
@@ -65,8 +67,8 @@ function AdminSidebar() {
     user = null;
   }
 
-  const handleLogout = () => {
-    const confirmed = window.confirm("Bạn có chắc muốn đăng xuất?");
+  const handleLogout = async () => {
+    const confirmed = await confirm({ title: "Đăng xuất", description: "Kết thúc phiên làm việc quản trị và quay về trang đăng nhập?", confirmText: "Đăng xuất" });
 
     if (!confirmed) return;
 
