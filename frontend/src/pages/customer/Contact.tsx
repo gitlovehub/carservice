@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
 function Contact() {
+  const { notify } = useAppFeedback();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -10,11 +12,12 @@ function Contact() {
 
   const handleSubmit = () => {
     if (!name || !phone || !message) {
-      alert("Vui lòng nhập đầy đủ thông tin.");
+      notify("Vui lòng điền đầy đủ họ tên, số điện thoại và nội dung.", "error");
       return;
     }
 
-    alert("Gửi liên hệ thành công!");
+    notify("Biểu mẫu liên hệ chưa được nối API gửi tin. Bạn hãy gọi số hotline để được hỗ trợ; thông tin chưa được gửi.", "info");
+    return;
 
     setName("");
     setPhone("");
