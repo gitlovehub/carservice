@@ -1,3 +1,4 @@
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useMemo, useState } from "react";
 import AdvisorSidebar from "./AdvisorSidebar";
@@ -67,6 +68,7 @@ function formatMoney(amount: number) {
 }
 
 function Quotation() {
+  const { confirm } = useAppFeedback();
   const [quotations, setQuotations] =
     useState<QuotationItem[]>(initialQuotations);
   const [search, setSearch] = useState("");
@@ -192,8 +194,8 @@ function Quotation() {
     setForm({ ...emptyForm });
   };
 
-  const handleDelete = (quotation: QuotationItem) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa báo giá ${quotation.id}?`)) {
+  const handleDelete = async (quotation: QuotationItem) => {
+    if (!await confirm({ title: "Xóa báo giá", description: `Xóa báo giá #${quotation.id} khỏi danh sách hiện tại?`, variant: "danger", confirmText: "Xóa báo giá" })) {
       return;
     }
 

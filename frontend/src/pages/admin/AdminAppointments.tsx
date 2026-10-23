@@ -1,3 +1,4 @@
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -64,6 +65,7 @@ function mapAppointment(item: ApiAppointment): Appointment {
 }
 
 function AdminAppointments() {
+  const { confirm } = useAppFeedback();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [search, setSearch] = useState("");
@@ -145,12 +147,7 @@ function AdminAppointments() {
   ) => {
     if (updatingId !== null) return;
 
-    if (
-      newStatus === "Đã hủy" &&
-      !window.confirm(`Cậu có chắc muốn hủy lịch ${appointment.id} không?`)
-    ) {
-      return;
-    }
+    if (newStatus === "Đã hủy" && !await confirm({ title: "Xác nhận hủy lịch hẹn", description: `Bạn sắp hủy lịch #${appointment.id}. Hãy kiểm tra lại thông tin và quyền thực hiện.`, variant: "danger", confirmText: "Hủy lịch" })) return;
 
     setUpdatingId(appointment.recordId);
     setError("");

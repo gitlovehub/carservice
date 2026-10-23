@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppErrorBoundary from "./components/AppErrorBoundary";
+import { FeedbackProvider } from "./components/ui/FeedbackProvider";
 import ChatWidget from "./components/ChatWidget";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -28,11 +29,19 @@ import AdvisorCustomerCars from "./pages/advisor/Customer-cars";
 import AdvisorAppointments from "./pages/advisor/Appointments";
 import AdvisorRepairStatus from "./pages/advisor/RepairStatus";
 import AdvisorQuotation from "./pages/advisor/Quotation";
-import AssignedRepairs from "./pages/technician/AssignedRepairs";
-import VehicleCheck from "./pages/technician/VehicleCheck";
-import Diagnosis from "./pages/technician/Diagnosis";
-import RepairProgress from "./pages/technician/RepairProgress";
-import Checklist from "./pages/technician/Checklist";
+import ReceptionWorkflow from "./pages/advisor/ReceptionWorkflow";
+import AdvisorRepairOrders from "./pages/advisor/AdvisorRepairOrders";
+import AdvisorRepairOrderDetail from "./pages/advisor/AdvisorRepairOrderDetail";
+
+
+
+
+
+import TechnicianLayout from "./pages/technician/atelier/TechnicianLayout";
+import TechnicianDashboard from "./pages/technician/atelier/TechnicianDashboard";
+import TechnicianOrders from "./pages/technician/atelier/TechnicianOrders";
+import TechnicianDetail from "./pages/technician/atelier/TechnicianDetail";
+import TechnicianInspection from "./pages/technician/atelier/TechnicianInspection";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import WorkspaceDashboard from "./pages/shared/WorkspaceDashboard";
 import AdminAccounts from "./pages/admin/Accounts";
@@ -45,7 +54,7 @@ import AdminInventory from "./pages/admin/Inventory";
 import AdminReports from "./pages/admin/Reports";
 
 function App() {
-  return <BrowserRouter><ThemeProvider><AuthProvider><AppErrorBoundary><Routes>
+  return <BrowserRouter><ThemeProvider><AuthProvider><AppErrorBoundary><FeedbackProvider><Routes>
     {/* Public pages continue using their existing components. */}
     <Route path="/" element={<Home/>}/>
     <Route path="/login" element={<Login/>}/>
@@ -79,8 +88,9 @@ function App() {
     <Route path="/advisor" element={<ProtectedRoute allowedRoles={["ADVISOR"]}><AdvisorLayout/></ProtectedRoute>}>
       <Route index element={<WorkspaceDashboard role="advisor"/>}/>
       <Route path="appointments" element={<AdvisorAppointments/>}/>
-      <Route path="reception" element={<ModulePlaceholder area="Cố vấn" title="Tiếp nhận xe" description="Khung tiếp nhận xe theo lịch xác nhận hoặc khách walk-in." owner="Nhóm module tiếp nhận"/>}/>
-      <Route path="service-orders" element={<ModulePlaceholder area="Cố vấn" title="Phiếu sửa chữa" description="Danh sách và chi tiết phiếu sửa chữa sẽ được tích hợp sau." owner="Nhóm module phiếu sửa chữa"/>}/>
+      <Route path="reception" element={<ReceptionWorkflow/>}/>
+      <Route path="service-orders" element={<AdvisorRepairOrders/>}/>
+      <Route path="service-orders/:orderId" element={<AdvisorRepairOrderDetail/>}/>
       <Route path="customers" element={<AdvisorCustomers/>}/>
       <Route path="customer-cars" element={<AdvisorCustomerCars/>}/>
       <Route path="create-booking" element={<ModulePlaceholder area="Cố vấn" title="Đặt lịch hộ" description="Chỉ là màn hình tham chiếu demo; chưa cấp quyền tạo lịch hộ khi chưa có nghiệp vụ và API được nhóm trưởng chốt." owner="Nhóm module lịch hẹn"/>}/>
@@ -105,14 +115,21 @@ function App() {
       <Route path="staff" element={<ModulePlaceholder area="Quản trị" title="Nhân sự" description="Trang khung để tích hợp quản lý nhân sự khi có API và card triển khai." owner="Frontend module Admin"/>}/>
     </Route>
 
-    {/* Existing technician module is preserved; Task 01 does not add a technician login/layout. */}
-    <Route path="/technician" element={<ProtectedRoute allowedRoles={["TECHNICIAN", "ADMIN"]}><AssignedRepairs/></ProtectedRoute>}/>
-    <Route path="/assigned-repairs" element={<ProtectedRoute allowedRoles={["TECHNICIAN", "ADMIN"]}><AssignedRepairs/></ProtectedRoute>}/>
-    <Route path="/vehicle-check" element={<ProtectedRoute allowedRoles={["TECHNICIAN", "ADMIN"]}><VehicleCheck/></ProtectedRoute>}/>
-    <Route path="/diagnosis" element={<ProtectedRoute allowedRoles={["TECHNICIAN", "ADMIN"]}><Diagnosis/></ProtectedRoute>}/>
-    <Route path="/repair-progress" element={<ProtectedRoute allowedRoles={["TECHNICIAN", "ADMIN"]}><RepairProgress/></ProtectedRoute>}/>
-    <Route path="/checklist" element={<ProtectedRoute allowedRoles={["TECHNICIAN", "ADMIN"]}><Checklist/></ProtectedRoute>}/>
+    {/* Technician: protected Laravel role and real assigned-work APIs only. */}
+    <Route path="/technician" element={<ProtectedRoute allowedRoles={["TECHNICIAN"]}><TechnicianLayout/></ProtectedRoute>}>
+      <Route index element={<TechnicianDashboard/>}/>
+      <Route path="orders" element={<TechnicianOrders/>}/>
+      <Route path="orders/:orderId" element={<TechnicianDetail/>}/>
+      <Route path="orders/:orderId/inspection" element={<TechnicianInspection/>}/>
+      <Route path="work" element={<TechnicianOrders focusWork/>}/>
+    </Route>
+    {/* Keep legacy links but require genuine TECHNICIAN role (not ADMIN). */}
+    <Route path="/assigned-repairs" element={<Navigate to="/technician/orders" replace/>}/>
+    <Route path="/vehicle-check" element={<Navigate to="/technician/orders" replace/>}/>
+    <Route path="/diagnosis" element={<Navigate to="/technician/orders" replace/>}/>
+    <Route path="/repair-progress" element={<Navigate to="/technician/work" replace/>}/>
+    <Route path="/checklist" element={<Navigate to="/technician/orders" replace/>}/>
     <Route path="*" element={<div style={{ padding: 30 }}>Không tìm thấy trang. <a href="/">Về trang chủ</a></div>}/>
-  </Routes><ChatWidget/></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;
+  </Routes><ChatWidget/></FeedbackProvider></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;
 }
 export default App;
