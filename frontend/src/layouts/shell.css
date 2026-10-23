@@ -63,21 +63,12 @@ html[data-theme="dark"] .cs-shell[data-area="admin"] { --cs-accent: #c5ff64; --c
 .cs-public-footer{background:var(--cs-surface);border-top:1px solid var(--cs-border);padding:30px clamp(20px,5vw,76px);font-size:12px;color:var(--cs-muted);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;}
 .cs-mobile-public-nav {display:none;}
 /* Reusable components in src/components/ui */
-.cs-button {background:var(--cs-accent);color:var(--cs-accent-contrast);border:0;padding:10px 18px;border-radius:11px;font-weight:700;cursor:pointer;}
-.cs-button:disabled{opacity:.55;cursor:not-allowed;}
-.cs-card{background:var(--cs-surface);border:1px solid var(--cs-border);border-radius:16px;padding:24px;}
-.cs-card+.cs-card{margin-top:16px;}
-.cs-page-head {margin-bottom:28px;}
-.cs-page-head h1 {font:800 clamp(25px,3vw,36px) Manrope,system-ui,sans-serif;line-height:1.2;letter-spacing:-.04em;}
-.cs-page-head p:not(.cs-eyebrow){color:var(--cs-muted);font-size:14px;margin-top:9px;}
-.cs-eyebrow{font-size:10px;font-weight:800;color:var(--cs-accent);letter-spacing:.16em;margin-bottom:10px;}
-.cs-empty{text-align:center;min-height:235px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
-.cs-empty-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:var(--cs-soft);color:var(--cs-accent);font-size:27px;}
-.cs-empty h2,.cs-card-title{font-size:17px;font-weight:800;}
-.cs-empty p,.cs-card-note{color:var(--cs-muted);font-size:13px;line-height:1.7;max-width:570px;}
-.cs-pill,.cs-status-badge{font-size:11px;font-weight:800;color:var(--cs-accent);background:var(--cs-soft);border-radius:999px;padding:6px 11px;}
+/* Shared Button, Card, PageHeading and EmptyState are now Tailwind v4
+   utilities in components/ui/index.tsx. The card spacing contract remains. */
+.cs-card + .cs-card {margin-top:16px}
+.cs-pill{font-size:11px;font-weight:800;color:var(--cs-accent);background:var(--cs-soft);border-radius:999px;padding:6px 11px;}
 .cs-text-link{display:inline-block;color:var(--cs-accent);font-size:13px;font-weight:700;margin-top:15px;}
-.cs-loading{padding:25px;text-align:center;color:var(--cs-muted);}
+
 .cs-placeholder{width:min(100%,1100px);margin:0 auto;padding:30px clamp(16px,3vw,42px);}
 /* Dark scheme for the legacy Tailwind pages embedded inside the shell. */
 html[data-theme="dark"] .cs-shell .bg-white,html[data-theme="dark"] .cs-shell .bg-\[\#F7F7F5\],html[data-theme="dark"] .cs-shell .bg-slate-50 {background-color:var(--cs-surface)!important;}
@@ -284,21 +275,7 @@ html[data-theme="dark"] .cs-workspace[data-area="admin"] .ws-button-primary{back
 html[data-theme="dark"] .cs-workspace[data-area="admin"] :is(.bg-\[\#D6A85F\]).text-white{color:#182414!important}
 
 /* Admin module-switch cards, role-safe hover colors (ATELIER). */
-.cs-admin-hub{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 22px}
-.cs-admin-hub-item{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:17px 16px;min-height:104px;border:1px solid var(--cs-border);background:var(--cs-surface);color:var(--cs-text)!important;border-radius:16px;transition:background .16s,border-color .16s,transform .16s}
-.cs-admin-hub-item:hover{background:var(--cs-surface-2);border-color:#657d62;transform:translateY(-1px)}
-.cs-admin-hub-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:var(--cs-surface-2);font-size:11px;font-weight:800;color:var(--cs-text)}
-.cs-admin-hub-item strong{margin-top:8px;font-size:12px;font-weight:800;line-height:1.35}
-.cs-admin-hub-item small{font-size:11px;color:var(--cs-muted);line-height:1.45}
-.cs-admin-hub-item.is-current{background:#284c32!important;border-color:#3b6346!important;color:#f7fff6!important}
-.cs-admin-hub-item.is-current:hover{background:#315a3c!important}
-.cs-admin-hub-item.is-current .cs-admin-hub-icon{background:#416a4a;color:#f4ffe9}
-.cs-admin-hub-item.is-current strong{color:#f7fff6!important}
-.cs-admin-hub-item.is-current small{color:#c3d5c4!important}
-html[data-theme="light"] .cs-admin-hub-item.is-current{background:#507b2c!important;border-color:#507b2c!important}
-html[data-theme="light"] .cs-admin-hub-item.is-current .cs-admin-hub-icon{background:#d7ebc6;color:#25401d}
-@media(max-width:1060px){.cs-admin-hub{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.cs-admin-hub{gap:10px}.cs-admin-hub-item{padding:12px;min-height:105px}.cs-admin-hub-item strong{font-size:11px}}
+/* AdminHubNav is styled with Tailwind v4 utilities in AdminHubNav.tsx. */
 /* Customer navigation: persist active treatment at booking and alias routes. */
 .cs-customer-layout .cs-public-nav .cs-nav-link{position:relative;color:var(--cs-muted);transition:color .15s}
 .cs-customer-layout .cs-public-nav .cs-nav-link:is(:hover,.is-active){color:var(--cs-text)}
@@ -311,3 +288,56 @@ html[data-theme="light"] .cs-admin-hub-item.is-current .cs-admin-hub-icon{backgr
 html[data-theme="dark"] .cs-workspace[data-area="admin"] tbody tr:hover{background:#222c25!important}
 .cs-workspace[data-area="admin"] tbody tr:hover :is(td,th){color:var(--cs-text)!important;background:transparent!important}
 .cs-workspace[data-area="admin"] :is(.hover\:bg-\[\#FAFAF8\],.hover\:bg-\[\#FAFAF9\],.hover\:bg-\[\#F7F7F5\]):hover{background:var(--cs-surface-2)!important}
+
+/* Demo polish 2026-10-23 — semantic controls, accessible contrast, consistent sizing. */
+.cs-feedback-layer { --cs-bg:#f7f7f6; --cs-surface:#fff; --cs-surface-2:#f1f1ef; --cs-text:#191919; --cs-muted:#60676b; --cs-border:#dedfdd; --cs-accent:#cf2935; --cs-accent-contrast:#fff; --cs-soft:#fff1f1; color:var(--cs-text); }
+.cs-feedback-layer[data-area="advisor"] { --cs-accent:#a77a2e; --cs-accent-contrast:#fff; --cs-soft:#fbf2de; }
+.cs-feedback-layer[data-area="admin"] { --cs-accent:#507b2c; --cs-accent-contrast:#fff; --cs-soft:#f0f8e9; }
+.cs-feedback-layer[data-area="technician"] { --cs-accent:#0369a1; --cs-soft:#e5f2fb; }
+html[data-theme="dark"] .cs-feedback-layer { --cs-bg:#111214; --cs-surface:#191b1e; --cs-surface-2:#22252a; --cs-text:#f5f5f4; --cs-muted:#b0b5ba; --cs-border:#363b40; --cs-soft:#382226; }
+html[data-theme="dark"] .cs-feedback-layer[data-area="advisor"] { --cs-accent:#e9bf72; --cs-accent-contrast:#1e1b14; --cs-soft:#302719; }
+html[data-theme="dark"] .cs-feedback-layer[data-area="admin"] { --cs-accent:#c5ff64; --cs-accent-contrast:#141a0e; --cs-soft:#26351c; }
+html[data-theme="dark"] .cs-feedback-layer[data-area="technician"] { --cs-accent:#7dd3fc; --cs-accent-contrast:#06152a; --cs-soft:#162b43; --cs-bg:#0a1223; --cs-surface:#131f35; --cs-surface-2:#17263e; --cs-border:#41526b; }
+.cs-unified-btn {display:inline-flex;align-items:center;justify-content:center;min-height:40px;min-width:86px;gap:8px;padding:9px 16px;border:1px solid transparent;border-radius:11px;font-size:13px;font-weight:750;line-height:20px;white-space:normal;text-align:center;transition:background .18s ease,border-color .18s ease,transform .18s ease;cursor:pointer;}
+.cs-unified-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.cs-unified-btn:focus-visible{outline:2px solid var(--cs-accent);outline-offset:3px}
+.cs-unified-primary {background:var(--cs-accent);color:var(--cs-accent-contrast)}
+.cs-unified-primary:hover:not(:disabled) {filter:brightness(.92)}
+.cs-unified-secondary {background:var(--cs-surface-2);color:var(--cs-text);border-color:var(--cs-border)}
+.cs-unified-secondary:hover:not(:disabled) {background:var(--cs-soft);border-color:var(--cs-accent)}
+.cs-unified-danger {background:#b91c1c;color:white}
+.cs-unified-danger:hover:not(:disabled) {background:#991b1b}
+.cs-appointment-page :is(button,a){min-height:36px}
+.cs-appointment-page :is(button,a).cs-unified-btn{min-height:40px}
+.cs-info-panel {background:var(--cs-surface-2)!important;border:1px solid var(--cs-border)!important;color:var(--cs-text)!important;border-radius:13px}
+.cs-info-panel :is(p,dd,dt,span){color:inherit}
+.cs-info-panel .cs-muted-label{color:var(--cs-muted)!important}
+.cs-appointment-page .cs-status-pending{background:#3d3018;color:#f9cf74;border:1px solid #76582e}
+.cs-appointment-page .cs-status-confirmed{background:#1a3455;color:#a2cbff;border:1px solid #31557f}
+.cs-appointment-page .cs-status-checked{background:#153d32;color:#90e6bc;border:1px solid #306c55}
+.cs-appointment-page .cs-status-cancelled{background:#4d222c;color:#ffb2be;border:1px solid #7b3642}
+html[data-theme="light"] .cs-appointment-page .cs-status-pending{background:#fff3d7;color:#7d5717;border-color:#e5c47a}
+html[data-theme="light"] .cs-appointment-page .cs-status-confirmed{background:#e9f2ff;color:#214c86;border-color:#b3cef5}
+html[data-theme="light"] .cs-appointment-page .cs-status-checked{background:#e5f7ed;color:#1b6540;border-color:#a6dab8}
+html[data-theme="light"] .cs-appointment-page .cs-status-cancelled{background:#ffedf0;color:#8c253c;border-color:#edafbb}
+/* Fix white/light backgrounds on cards and hover in legacy forms without flattening their status badges. */
+html[data-theme="dark"] .cs-workspace .cs-appointment-page .bg-slate-50\/60,
+html[data-theme="dark"] .cs-workspace .cs-appointment-page .bg-slate-50\/70{background-color:var(--cs-surface-2)!important}
+html[data-theme="dark"] .cs-workspace .cs-appointment-page :is(.border-slate-100,.border-slate-200){border-color:var(--cs-border)!important}
+html[data-theme="dark"] .cs-workspace .cs-appointment-page :is(.text-slate-700,.text-slate-600,.text-slate-500){color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .cs-appointment-page .text-slate-900 {color:var(--cs-text)!important}
+.cs-workspace :is(button,a,select,input,textarea){transition:background-color .18s ease,color .18s ease,border-color .18s ease}
+.cs-workspace :is(button,a):focus-visible{outline:2px solid var(--cs-accent);outline-offset:2px}
+/* Interactive items may be hovered in dark mode without turning light grey or hiding labels. */
+html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-slate-50:hover,
+html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-slate-100:hover{background:var(--cs-surface-2)!important;color:var(--cs-text)!important}
+@media(max-width:640px){.cs-unified-btn{min-height:42px}.cs-appointment-page .cs-unified-btn{min-height:42px}}
+/* Remaining contextual alert panels in legacy forms must never become pastel-on-white in Dark Mode. */
+html[data-theme="dark"] .cs-workspace .bg-rose-50 {background:#382327!important}
+html[data-theme="dark"] .cs-workspace :is(.text-rose-700,.text-rose-800){color:#ffbbc3!important}
+html[data-theme="dark"] .cs-workspace .bg-amber-50 {background:#393021!important}
+html[data-theme="dark"] .cs-workspace :is(.text-amber-700,.text-amber-800,.text-amber-900){color:#f4d399!important}
+html[data-theme="dark"] .cs-workspace .bg-emerald-50 {background:#203b30!important}
+html[data-theme="dark"] .cs-workspace :is(.text-emerald-700,.text-emerald-800){color:#b4f1ce!important}
+html[data-theme="dark"] .cs-workspace .bg-blue-50 {background:#1d324a!important}
+html[data-theme="dark"] .cs-workspace :is(.text-blue-700,.text-blue-800){color:#b2d7ff!important}
