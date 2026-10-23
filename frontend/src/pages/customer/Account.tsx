@@ -739,9 +739,9 @@ function Account() {
       {/* MODAL 1: CHỈNH SỬA THÔNG TIN CÁ NHÂN                     */}
       {/* ========================================================= */}
       {isEditProfileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-2xl transition-all">
-            <div className="flex items-center justify-between border-b border-[#E1E4E6] pb-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#E1E4E6] bg-white shadow-2xl transition-all">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#E1E4E6] bg-white px-6 py-4">
               <div>
                 <h3 className="text-lg font-bold text-[#1F2933]">
                   Chỉnh sửa thông tin cá nhân
@@ -760,7 +760,7 @@ function Account() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="mt-5 space-y-4">
+            <form onSubmit={handleSaveProfile} className="space-y-4 px-6 pb-6 pt-5">
               {/* Email (Readonly) */}
               <div>
                 <label className="block text-xs font-semibold text-[#1F2933]">
@@ -885,9 +885,9 @@ function Account() {
       {/* MODAL 2: ĐỔI MẬT KHẨU                                     */}
       {/* ========================================================= */}
       {isChangePasswordOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-2xl transition-all">
-            <div className="flex items-center justify-between border-b border-[#E1E4E6] pb-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#E1E4E6] bg-white shadow-2xl transition-all">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#E1E4E6] bg-white px-6 py-4">
               <div>
                 <h3 className="text-lg font-bold text-[#1F2933]">
                   Đổi mật khẩu tài khoản
@@ -906,7 +906,7 @@ function Account() {
               </button>
             </div>
 
-            <form onSubmit={handleSavePassword} className="mt-5 space-y-4">
+            <form onSubmit={handleSavePassword} className="space-y-4 px-6 pb-6 pt-5">
               {/* Current Password */}
               <div>
                 <label className="block text-xs font-semibold text-[#1F2933]">
@@ -1074,9 +1074,9 @@ function Account() {
       {/* MODAL 3: ĐỔI ẢNH ĐẠI DIỆN (AVATAR)                        */}
       {/* ========================================================= */}
       {isAvatarModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-2xl transition-all">
-            <div className="flex items-center justify-between border-b border-[#E1E4E6] pb-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#E1E4E6] bg-white shadow-2xl transition-all">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#E1E4E6] bg-white px-6 py-4">
               <div>
                 <h3 className="text-lg font-bold text-[#1F2933]">
                   Thay đổi ảnh đại diện
@@ -1095,7 +1095,7 @@ function Account() {
               </button>
             </div>
 
-            <div className="mt-5 space-y-5">
+            <div className="space-y-5 px-6 pb-6 pt-5">
               {/* Preview Avatar */}
               <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 border border-slate-100">
                 <div className="relative h-24 w-24">
