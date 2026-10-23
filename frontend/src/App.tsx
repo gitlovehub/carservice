@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import { FeedbackProvider } from "./components/ui/FeedbackProvider";
+import ChatWidget from "./components/ChatWidget";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
@@ -129,6 +130,6 @@ function App() {
     <Route path="/repair-progress" element={<Navigate to="/technician/work" replace/>}/>
     <Route path="/checklist" element={<Navigate to="/technician/orders" replace/>}/>
     <Route path="*" element={<div style={{ padding: 30 }}>Không tìm thấy trang. <a href="/">Về trang chủ</a></div>}/>
-  </Routes></FeedbackProvider></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;
+  </Routes><ChatWidget/></FeedbackProvider></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;
 }
 export default App;
