@@ -1,3 +1,4 @@
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useMemo, useState } from "react";
 import AdvisorSidebar from "./AdvisorSidebar";
@@ -63,6 +64,7 @@ const emptyForm = {
 };
 
 function RepairStatus() {
+  const { confirm } = useAppFeedback();
   const [repairs, setRepairs] = useState<Repair[]>(initialRepairs);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -179,8 +181,8 @@ function RepairStatus() {
     setForm({ ...emptyForm });
   };
 
-  const handleDelete = (repair: Repair) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa phiếu ${repair.id}?`)) {
+  const handleDelete = async (repair: Repair) => {
+    if (!await confirm({ title: "Xóa phiếu", description: `Bạn có chắc muốn xóa phiếu #${repair.id}?`, variant: "danger", confirmText: "Xóa phiếu" })) {
       return;
     }
 

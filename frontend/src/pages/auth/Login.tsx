@@ -143,15 +143,8 @@ function Login() {
           : role === "ADVISOR"
             ? requestedPath.startsWith("/advisor/")
             : role === "TECHNICIAN"
-              ? [
-                  "/technician",
-                  "/assigned-repairs",
-                  "/vehicle-check",
-                  "/diagnosis",
-                  "/repair-progress",
-                  "/checklist",
-                  "/account",
-                ].includes(requestedPath)
+              ? requestedPath === "/technician" ||
+                requestedPath.startsWith("/technician/")
               : false;
 
     if (isBooking && role !== "CUSTOMER") {
