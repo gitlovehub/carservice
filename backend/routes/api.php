@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AdminServiceController;
 use App\Http\Controllers\Api\AdvisorAppointmentController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChatbotController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\CustomerReviewController;
@@ -48,6 +49,8 @@ Route::get('maintenance-packages', [MaintenancePackageController::class, 'index'
 Route::get('maintenance-packages/{maintenancePackage}', [MaintenancePackageController::class, 'show']);
 
 Route::get('/working-hours', [WorkingHoursController::class, 'index']);
+
+Route::post('chatbot', [ChatbotController::class, 'chat'])->middleware('throttle:20,1');
 
 /*
 |--------------------------------------------------------------------------
