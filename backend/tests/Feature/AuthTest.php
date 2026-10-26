@@ -410,7 +410,7 @@ class AuthTest extends TestCase
             ->assertJsonValidationErrors(['full_name', 'phone', 'email', 'password']);
     }
 
-    public function test_registration_does_not_link_walkin_customer_by_phone(): void
+    public function test_verifying_otp_does_not_link_walkin_customer_matched_only_by_phone(): void
     {
         Mail::fake();
 
@@ -418,18 +418,49 @@ class AuthTest extends TestCase
             'account_id' => null,
             'full_name' => 'Khach Vang Lai',
             'phone' => '0988776655',
-            'email' => null,
+            'email' => 'victim@example.com',
             'address' => '123 Ha Noi',
         ]);
 
         $this->postJson('/api/register', $this->registerPayload('attacker@example.com', '0988776655'))
             ->assertCreated();
 
-        $victim->refresh();
-        $this->assertNull($victim->account_id, 'Hồ sơ walk-in không được gắn chỉ vì trùng SĐT.');
-        $this->assertSame('Khach Vang Lai', $victim->full_name);
+        $this->verifyEmailWithSentOtp('attacker@example.com');
+
+        $this->assertNull($victim->fresh()->account_id);
         $this->assertDatabaseCount('customers', 2);
-        Mail::assertSent(EmailVerificationOtpMail::class);
+    }
+
+    public function test_walkin_customer_is_linked_only_after_matching_email_is_verified(): void
+    {
+        Mail::fake();
+
+        $walkInCustomer = Customer::query()->create([
+            'account_id' => null,
+            'full_name' => 'Khach Vang Lai',
+            'phone' => '0988776655',
+            'email' => 'Khach@Example.com',
+            'address' => '123 Ha Noi',
+        ]);
+
+        $this->postJson('/api/register', $this->registerPayload('khach@example.com', '0900000001'))
+            ->assertCreated();
+
+        $this->assertNull($walkInCustomer->fresh()->account_id);
+
+        $this->verifyEmailWithSentOtp('khach@example.com');
+
+        $account = Account::query()->where('email', 'khach@example.com')->firstOrFail();
+        $walkInCustomer->refresh();
+
+        $this->assertSame($account->id, $walkInCustomer->account_id);
+        $this->assertSame('Khach Vang Lai', $walkInCustomer->full_name);
+        $this->assertSame(
+            '0988776655',
+            $walkInCustomer->phone,
+            'Không ghi đè SĐT của hồ sơ cũ bằng dữ liệu chưa xác thực.'
+        );
+        $this->assertDatabaseCount('customers', 1);
     }
 
     public function test_spa_registration_waits_for_email_verification_without_logging_in(): void
