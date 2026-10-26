@@ -378,6 +378,8 @@ class AuthController extends Controller
                     'email_verified_at' => now(),
                     'status' => Account::STATUS_ACTIVE,
                 ]);
+
+                $this->linkWalkInCustomerByVerifiedEmail($account);
             }
         });
 
@@ -388,6 +390,22 @@ class AuthController extends Controller
             'token' => $token,
             'account' => $this->formatAccount($account->fresh()),
         ]);
+    }
+
+    private function linkWalkInCustomerByVerifiedEmail(Account $account): void
+    {
+        if ($account->customer()->exists()) {
+            return;
+        }
+
+        $walkInCustomer = Customer::query()
+            ->whereNull('account_id')
+            ->whereRaw('LOWER(email) = ?', [strtolower(trim($account->email))])
+            ->first();
+
+        if ($walkInCustomer) {
+            $walkInCustomer->update(['account_id' => $account->id]);
+        }
     }
 
     public function resendEmailOtp(Request $request): JsonResponse
@@ -547,5 +565,4 @@ class AuthController extends Controller
             'message' => 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.'
         ]);
     }
-
 }
