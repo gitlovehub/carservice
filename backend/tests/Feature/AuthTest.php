@@ -410,11 +410,11 @@ class AuthTest extends TestCase
             ->assertJsonValidationErrors(['full_name', 'phone', 'email', 'password']);
     }
 
-    public function test_registration_links_to_existing_walkin_customer_profile(): void
+    public function test_registration_does_not_link_walkin_customer_by_phone(): void
     {
         Mail::fake();
 
-        $walkinCustomer = Customer::query()->create([
+        $victim = Customer::query()->create([
             'account_id' => null,
             'full_name' => 'Khach Vang Lai',
             'phone' => '0988776655',
@@ -422,29 +422,14 @@ class AuthTest extends TestCase
             'address' => '123 Ha Noi',
         ]);
 
-        $response = $this->postJson('/api/register', [
-            'full_name' => 'Nguyen Khach',
-            'phone' => '0988776655',
-            'email' => 'khach@example.com',
-            'password' => 'Password123@',
-            'password_confirmation' => 'Password123@',
-            'accept_terms' => true,
-        ]);
+        $this->postJson('/api/register', $this->registerPayload('attacker@example.com', '0988776655'))
+            ->assertCreated();
 
-        $response->assertCreated()
-            ->assertJsonPath('email', 'khach@example.com');
-
-        $this->assertDatabaseCount('customers', 1);
-        $this->assertNull($response->json('token'));
+        $victim->refresh();
+        $this->assertNull($victim->account_id, 'Hồ sơ walk-in không được gắn chỉ vì trùng SĐT.');
+        $this->assertSame('Khach Vang Lai', $victim->full_name);
+        $this->assertDatabaseCount('customers', 2);
         Mail::assertSent(EmailVerificationOtpMail::class);
-
-        $walkinCustomer->refresh();
-        $this->assertNotNull($walkinCustomer->account_id);
-        $this->assertSame('khach@example.com', $walkinCustomer->email);
-        $this->assertDatabaseHas('accounts', [
-            'id' => $walkinCustomer->account_id,
-            'status' => Account::STATUS_PENDING,
-        ]);
     }
 
     public function test_spa_registration_waits_for_email_verification_without_logging_in(): void
