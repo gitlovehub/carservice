@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Mail\EmailVerificationOtpMail;
 use App\Models\Account;
 use App\Models\Customer;
+use App\Models\EmailVerificationOtp;
 use App\Models\Employee;
 use App\Models\TechnicianProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -263,6 +264,32 @@ class AuthTest extends TestCase
         ]);
     }
 
+    public function test_customer_can_verify_email_with_the_otp_sent_during_registration(): void
+    {
+        Mail::fake();
+        $email = 'customer_verified@example.com';
+
+        $response = $this->postJson('/api/register', $this->registerPayload($email, '0912345678'));
+
+        $response->assertCreated()
+            ->assertJsonPath('email', $email);
+        $this->assertNull($response->json('token'));
+
+        $this->verifyEmailWithSentOtp($email);
+
+        $account = Account::query()->where('email', $email)->firstOrFail();
+
+        $this->assertSame(Account::STATUS_ACTIVE, $account->status);
+        $this->assertNotNull($account->email_verified_at);
+        $this->assertDatabaseCount('personal_access_tokens', 1);
+        $this->assertNotNull(
+            EmailVerificationOtp::query()
+                ->where('account_id', $account->id)
+                ->sole()
+                ->used_at
+        );
+    }
+
     public function test_registration_validation_rules(): void
     {
         $this->createAccount(email: 'existing@example.com');
@@ -431,6 +458,37 @@ class AuthTest extends TestCase
 
         $account->refresh();
         $this->assertTrue(Hash::check('NewSecret123', $account->getAuthPassword()));
+    }
+
+    private function registerPayload(string $email, string $phone): array
+    {
+        return [
+            'full_name' => 'Nguoi Dang Ky',
+            'phone' => $phone,
+            'email' => $email,
+            'password' => 'Password123@',
+            'password_confirmation' => 'Password123@',
+            'accept_terms' => true,
+        ];
+    }
+
+    /** Lấy OTP thật từ mail đã gửi để xác thực email trong test. */
+    private function verifyEmailWithSentOtp(string $email): void
+    {
+        $otp = null;
+        Mail::assertSent(EmailVerificationOtpMail::class, function ($mail) use ($email, &$otp) {
+            if (! $mail->hasTo($email)) {
+                return false;
+            }
+
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->assertNotNull($otp);
+
+        $this->postJson('/api/verify-email-otp', ['email' => $email, 'otp' => (string) $otp])->assertOk();
     }
 
     private function createAccount(
