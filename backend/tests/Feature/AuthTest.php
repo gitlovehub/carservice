@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\EmailVerificationOtp;
 use App\Models\Employee;
 use App\Models\TechnicianProfile;
+use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -321,7 +322,43 @@ class AuthTest extends TestCase
         $this->assertSame('0988776655', $walkInCustomer->phone);
     }
 
-    public function test_email_verification_does_not_link_a_second_customer_to_account(): void
+    public function test_email_verification_replaces_empty_account_customer_with_walk_in_profile(): void
+    {
+        $account = $this->createAccount(
+            email: 'walkin_replace@example.com',
+            role: Account::ROLE_CUSTOMER,
+            status: Account::STATUS_PENDING,
+        );
+        $existingCustomer = Customer::query()->create([
+            'account_id' => $account->id,
+            'full_name' => 'Tai Khoan',
+            'phone' => '0911111111',
+            'email' => $account->email,
+        ]);
+        $walkInCustomer = Customer::query()->create([
+            'account_id' => null,
+            'full_name' => 'Khach Vang Lai',
+            'phone' => '0922222222',
+            'email' => $account->email,
+        ]);
+        EmailVerificationOtp::query()->create([
+            'account_id' => $account->id,
+            'otp_hash' => Hash::make('123456'),
+            'expires_at' => now()->addMinutes(5),
+        ]);
+
+        $this->postJson('/api/verify-email-otp', [
+            'email' => $account->email,
+            'otp' => '123456',
+        ])->assertOk();
+
+        $this->assertDatabaseMissing('customers', ['id' => $existingCustomer->id]);
+        $this->assertSame($account->id, $walkInCustomer->refresh()->account_id);
+        $this->assertSame('Khach Vang Lai', $walkInCustomer->full_name);
+        $this->assertSame('0922222222', $walkInCustomer->phone);
+    }
+
+    public function test_email_verification_keeps_existing_customer_when_it_has_a_soft_deleted_vehicle(): void
     {
         $account = $this->createAccount(
             email: 'customer_with_profile@example.com',
@@ -340,6 +377,7 @@ class AuthTest extends TestCase
             'phone' => '0922222222',
             'email' => $account->email,
         ]);
+        Vehicle::factory()->for($existingCustomer)->create()->delete();
         EmailVerificationOtp::query()->create([
             'account_id' => $account->id,
             'otp_hash' => Hash::make('123456'),
