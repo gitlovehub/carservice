@@ -290,6 +290,71 @@ class AuthTest extends TestCase
         );
     }
 
+    public function test_email_verification_links_walk_in_customer_by_verified_email_when_account_has_no_customer(): void
+    {
+        $account = $this->createAccount(
+            email: 'walkin_verified@example.com',
+            role: Account::ROLE_CUSTOMER,
+            status: Account::STATUS_PENDING,
+        );
+        $walkInCustomer = Customer::query()->create([
+            'account_id' => null,
+            'full_name' => 'Khach Vang Lai',
+            'phone' => '0988776655',
+            'email' => 'WALKIN_VERIFIED@example.com',
+            'address' => '123 Ha Noi',
+        ]);
+        EmailVerificationOtp::query()->create([
+            'account_id' => $account->id,
+            'otp_hash' => Hash::make('123456'),
+            'expires_at' => now()->addMinutes(5),
+        ]);
+
+        $this->postJson('/api/verify-email-otp', [
+            'email' => $account->email,
+            'otp' => '123456',
+        ])->assertOk();
+
+        $walkInCustomer->refresh();
+        $this->assertSame($account->id, $walkInCustomer->account_id);
+        $this->assertSame('Khach Vang Lai', $walkInCustomer->full_name);
+        $this->assertSame('0988776655', $walkInCustomer->phone);
+    }
+
+    public function test_email_verification_does_not_link_a_second_customer_to_account(): void
+    {
+        $account = $this->createAccount(
+            email: 'customer_with_profile@example.com',
+            role: Account::ROLE_CUSTOMER,
+            status: Account::STATUS_PENDING,
+        );
+        $existingCustomer = Customer::query()->create([
+            'account_id' => $account->id,
+            'full_name' => 'Tai Khoan',
+            'phone' => '0911111111',
+            'email' => $account->email,
+        ]);
+        $walkInCustomer = Customer::query()->create([
+            'account_id' => null,
+            'full_name' => 'Khach Vang Lai',
+            'phone' => '0922222222',
+            'email' => $account->email,
+        ]);
+        EmailVerificationOtp::query()->create([
+            'account_id' => $account->id,
+            'otp_hash' => Hash::make('123456'),
+            'expires_at' => now()->addMinutes(5),
+        ]);
+
+        $this->postJson('/api/verify-email-otp', [
+            'email' => $account->email,
+            'otp' => '123456',
+        ])->assertOk();
+
+        $this->assertSame($account->id, $existingCustomer->refresh()->account_id);
+        $this->assertNull($walkInCustomer->refresh()->account_id);
+    }
+
     public function test_registration_validation_rules(): void
     {
         $this->createAccount(email: 'existing@example.com');
