@@ -394,18 +394,36 @@ class AuthController extends Controller
 
     private function linkWalkInCustomerByVerifiedEmail(Account $account): void
     {
-        if ($account->customer()->exists()) {
-            return;
-        }
-
         $walkInCustomer = Customer::query()
             ->whereNull('account_id')
             ->whereRaw('LOWER(email) = ?', [strtolower(trim($account->email))])
+            ->lockForUpdate()
             ->first();
 
-        if ($walkInCustomer) {
-            $walkInCustomer->update(['account_id' => $account->id]);
+        if (! $walkInCustomer) {
+            return;
         }
+
+        $existingCustomer = Customer::withTrashed()
+            ->where('account_id', $account->id)
+            ->first();
+
+        if ($existingCustomer) {
+            $hasData = $existingCustomer->vehicles()->withTrashed()->exists()
+                || $existingCustomer->appointments()->exists()
+                || $existingCustomer->repairOrders()->exists();
+
+            if ($hasData) {
+                return;
+            }
+
+            $existingCustomer->forceDelete();
+        }
+
+        $walkInCustomer->update([
+            'account_id' => $account->id,
+            'email' => strtolower(trim((string) $account->email)),
+        ]);
     }
 
     public function resendEmailOtp(Request $request): JsonResponse
