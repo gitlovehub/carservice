@@ -39,29 +39,13 @@ class AuthController extends Controller
                 'status' => Account::STATUS_PENDING,
             ]);
 
-            $existingCustomer = Customer::query()
-                ->whereNull('account_id')
-                ->where(function ($query) use ($data) {
-                    $query->where('phone', $data['phone'])
-                        ->orWhere('email', $data['email']);
-                })
-                ->first();
-
-            if ($existingCustomer) {
-                $existingCustomer->update([
-                    'account_id' => $account->id,
-                    'full_name' => $data['full_name'],
-                    'phone' => $data['phone'],
-                    'email' => $data['email'],
-                ]);
-            } else {
-                Customer::query()->create([
-                    'account_id' => $account->id,
-                    'full_name' => $data['full_name'],
-                    'phone' => $data['phone'],
-                    'email' => $data['email'],
-                ]);
-            }
+            // Luôn tạo hồ sơ riêng; chỉ liên kết hồ sơ walk-in sau khi xác thực OTP email.
+            Customer::query()->create([
+                'account_id' => $account->id,
+                'full_name' => $data['full_name'],
+                'phone' => $data['phone'],
+                'email' => $data['email'],
+            ]);
 
             return $account;
         });
