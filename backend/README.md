@@ -90,6 +90,137 @@ Authorization: Bearer <token>
 
 Gọi `POST /api/logout` với token này để thu hồi token của thiết bị hiện tại.
 
+## API danh mục dịch vụ và gói bảo dưỡng
+
+Base URL khi chạy Laravel cục bộ thường là `http://127.0.0.1:8000`. Các endpoint
+dành cho khách không yêu cầu đăng nhập; endpoint bắt đầu bằng
+`/api/admin/` yêu cầu token Sanctum của tài khoản `ADMIN`.
+
+### Dịch vụ
+
+| Phương thức | Endpoint | Chức năng | Quyền |
+| --- | --- | --- | --- |
+| `GET` | `/api/services` | Danh sách dịch vụ đang `ACTIVE` | Công khai |
+| `GET` | `/api/services/{id}` | Chi tiết dịch vụ đang `ACTIVE` | Công khai |
+| `GET` | `/api/admin/services` | Danh sách quản trị, phân trang | `ADMIN` |
+| `POST` | `/api/admin/services` | Thêm dịch vụ | `ADMIN` |
+| `GET` | `/api/admin/services/{id}` | Chi tiết, kể cả dịch vụ `INACTIVE` | `ADMIN` |
+| `PUT`, `PATCH` | `/api/admin/services/{id}` | Cập nhật dịch vụ | `ADMIN` |
+| `DELETE` | `/api/admin/services/{id}` | Ẩn dịch vụ (`status = INACTIVE`) | `ADMIN` |
+
+Danh sách công khai hỗ trợ `category` và `search`, ví dụ:
+`GET /api/services?category=B%E1%BA%A3o+d%C6%B0%E1%BB%A1ng&search=d%E1%BA%A7u`.
+Giá trị category `Tất cả` được xem như không lọc. API công khai không trả dịch
+vụ đã ẩn; yêu cầu chi tiết dịch vụ đã ẩn trả về `404`.
+
+Admin có thể lọc danh sách bằng `status`, `category`, `search` và `page`.
+Danh sách admin trả dữ liệu phân trang trong `data.data`; các response quản trị
+đều có dạng `{ "success": true, "message": "...", "data": ... }`.
+
+Ví dụ body `POST /api/admin/services`:
+
+```json
+{
+  "name": "Thay dầu động cơ",
+  "category": "Bảo dưỡng",
+  "description": "Thay dầu và kiểm tra động cơ.",
+  "base_price": 500000,
+  "estimated_minutes": 45,
+  "status": "ACTIVE"
+}
+```
+
+`name` là bắt buộc, tối đa 150 ký tự và không trùng; `base_price` là số không
+âm; `estimated_minutes` nếu có phải là số nguyên dương. `category` và
+`description` có thể bỏ trống. `status` chỉ nhận `ACTIVE` hoặc `INACTIVE` và
+mặc định là `ACTIVE`.
+
+Ví dụ dữ liệu dịch vụ trả về từ endpoint công khai:
+
+```json
+{
+  "id": 1,
+  "name": "Thay dầu động cơ",
+  "category": "Bảo dưỡng",
+  "description": "Thay dầu và kiểm tra động cơ.",
+  "base_price": "500000.00",
+  "estimated_minutes": 45,
+  "status": "ACTIVE"
+}
+```
+
+### Gói bảo dưỡng
+
+| Phương thức | Endpoint | Chức năng | Quyền |
+| --- | --- | --- | --- |
+| `GET` | `/api/maintenance-packages` | Danh sách gói đang `ACTIVE` | Công khai |
+| `GET` | `/api/maintenance-packages/{id}` | Chi tiết gói đang `ACTIVE` | Công khai |
+| `GET` | `/api/admin/maintenance-packages` | Danh sách quản trị, phân trang | `ADMIN` |
+| `POST` | `/api/admin/maintenance-packages` | Thêm gói và cấu phần tùy chọn | `ADMIN` |
+| `GET` | `/api/admin/maintenance-packages/{id}` | Chi tiết gói | `ADMIN` |
+| `PUT`, `PATCH` | `/api/admin/maintenance-packages/{id}` | Cập nhật gói/cấu phần | `ADMIN` |
+| `DELETE` | `/api/admin/maintenance-packages/{id}` | Ẩn gói (`status = INACTIVE`) | `ADMIN` |
+| `PUT` | `/api/admin/maintenance-packages/{id}/services` | Thay toàn bộ danh sách dịch vụ trong gói | `ADMIN` |
+| `PUT` | `/api/admin/maintenance-packages/{id}/parts` | Thay toàn bộ danh sách phụ tùng trong gói | `ADMIN` |
+
+`GET /api/maintenance-packages?model_id={vehicle_model_id}` trả về gói dùng
+chung (`vehicle_model_id = null`) cùng các gói dành cho model xe được chỉ định.
+Không truyền `model_id` để lấy tất cả gói đang hoạt động. Gói công khai trả về
+các `services`, `parts` cùng `pivot.quantity`; các trường `price` và
+`estimated_price` được tính từ giá dịch vụ/phụ tùng hiện tại nhân số lượng,
+không được lưu thành giá cố định. `mileage_km` là tên tương thích với
+`mileage_milestone`. Gói đã ẩn không xuất hiện trong API công khai và chi tiết
+của gói đó trả về `404`.
+
+Ví dụ body tạo gói. `vehicle_model_id` có thể là `null` để áp dụng chung;
+`services` và `parts` là các mảng tùy chọn:
+
+```json
+{
+  "vehicle_model_id": 1,
+  "name": "Bảo dưỡng 10.000 km",
+  "mileage_milestone": 10000,
+  "month_milestone": 6,
+  "description": "Bảo dưỡng định kỳ.",
+  "services": [
+    { "service_id": 1, "quantity": 1 },
+    { "service_id": 2, "quantity": 1 }
+  ],
+  "parts": [
+    { "part_id": 1, "quantity": 1 }
+  ]
+}
+```
+
+`name` là bắt buộc; model xe, dịch vụ và phụ tùng phải tồn tại. Các mốc km/tháng
+nếu có và số lượng phải là số nguyên dương. Không được lặp lại cùng một ID dịch
+vụ hoặc phụ tùng trong mảng. Khi cập nhật, chỉ các mảng được gửi mới bị thay
+thế; gửi mảng rỗng để xóa hết cấu phần tương ứng. Hai endpoint `PUT .../services`
+và `PUT .../parts` cũng thay toàn bộ danh sách nhận được; body lần lượt có dạng
+`{"services":[{"service_id":1,"quantity":1}]}` và
+`{"parts":[{"part_id":1,"quantity":1}]}`.
+
+### Chạy thử bằng Postman
+
+1. Khởi chạy backend bằng `php artisan serve` trong thư mục `backend`.
+2. Tạo Environment với `base_url` là `http://127.0.0.1:8000` và
+   `admin_token` là token Sanctum của tài khoản quản trị.
+3. Gửi `GET {{base_url}}/api/services` và
+   `GET {{base_url}}/api/maintenance-packages` để kiểm tra danh sách công khai.
+   Gọi tiếp endpoint `/{id}` với ID lấy từ danh sách để kiểm tra chi tiết.
+4. Tạo các request quản trị trong bảng endpoint ở trên. Thêm header
+   `Authorization` với token Sanctum của admin (có thể cấu hình trong tab
+   Authorization của Postman), cùng header `Accept: application/json`; request
+   có body dùng `Content-Type: application/json`.
+5. Kiểm tra các thao tác tạo, sửa và ẩn; sau `DELETE`, xác nhận bản ghi vẫn
+   tồn tại với `status: INACTIVE` nhưng không còn trong API công khai. Gửi dữ
+   liệu sai (ví dụ giá âm hoặc quantity bằng 0) để xác nhận API trả `422` cùng
+   lỗi validation.
+
+Response validation theo định dạng Laravel gồm `message` và `errors`; truy cập
+không có token trả `401`, sai vai trò trả `403`, bản ghi không tồn tại hoặc đã
+ẩn khỏi API công khai trả `404`.
+
 ## Phân quyền theo vai trò
 
 Đặt `auth:sanctum` trên các route cần đăng nhập. Thêm middleware `role` để giới
