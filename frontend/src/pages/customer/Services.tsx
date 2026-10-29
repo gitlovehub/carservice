@@ -12,7 +12,7 @@ function money(value: number | string | null | undefined) {
 export default function Services() {
   const [items, setItems] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState(false);  
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     let alive = true;
