@@ -1,4 +1,18 @@
+
 @import "tailwindcss";
+
+/* =========================================================
+   CARSERVICE - GLOBAL STYLES
+   Tailwind CSS v4
+   Light / Dark Mode Support
+========================================================= */
+
+/* Kích hoạt dark: khi thẻ html có class dark */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =========================================================
+   1. GLOBAL DESIGN TOKENS
+========================================================= */
 
 @theme {
   --color-brand: #cf2935;
@@ -8,11 +22,14 @@
   --color-page: #f7f7f5;
   --color-surface: #ffffff;
   --color-line: #e1e4e6;
+
   --font-sans: "Inter", "Segoe UI", sans-serif;
 }
 
-/* Tailwind v4 design tokens. Theme variables are defined by the existing
-   role layouts; the same utilities therefore work in light and dark mode. */
+/* =========================================================
+   2. APPLICATION DESIGN TOKENS
+========================================================= */
+
 @theme inline {
   --color-cs-bg: var(--cs-bg);
   --color-cs-surface: var(--cs-surface);
@@ -23,6 +40,7 @@
   --color-cs-accent: var(--cs-accent);
   --color-cs-soft: var(--cs-soft);
   --color-cs-accent-contrast: var(--cs-accent-contrast);
+
   --color-at-ink: var(--at-ink);
   --color-at-muted: var(--at-muted);
   --color-at-surface: var(--at-surface);
@@ -31,16 +49,53 @@
   --color-at-accent: var(--at-accent);
 }
 
+/* =========================================================
+   3. ROOT - LIGHT MODE
+========================================================= */
+
 :root {
   font-family: "Inter", "Segoe UI", sans-serif;
+
   color: #20252b;
   background: #f7f7f5;
+
+  color-scheme: light;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-optical-sizing: auto;
+
+  /* Global theme variables */
+  --app-bg: #f7f7f5;
+  --app-text: #20252b;
+  --app-surface: #ffffff;
+  --app-border: #e1e4e6;
+  --app-muted: #66717c;
 }
+
+/* =========================================================
+   4. ROOT - DARK MODE
+========================================================= */
+
+:root.dark,
+:root[data-theme="dark"] {
+  color: #f5f5f4;
+  background: #111214;
+
+  color-scheme: dark;
+
+  --app-bg: #111214;
+  --app-text: #f5f5f4;
+  --app-surface: #1b1d21;
+  --app-border: #34373a;
+  --app-muted: #a1a5ad;
+}
+
+/* =========================================================
+   5. GLOBAL RESET
+========================================================= */
 
 * {
   box-sizing: border-box;
@@ -55,8 +110,22 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #f7f7f5;
+
+  background: var(--app-bg);
+  color: var(--app-text);
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
+
+#root {
+  min-height: 100vh;
+}
+
+/* =========================================================
+   6. FORM ELEMENTS
+========================================================= */
 
 button,
 input,
@@ -90,14 +159,24 @@ img {
   max-width: 100%;
 }
 
+/* =========================================================
+   7. TEXT SELECTION
+========================================================= */
+
 ::selection {
   color: #1f2933;
   background: #f3e8d2;
 }
 
-#root {
-  min-height: 100vh;
+:root.dark ::selection,
+:root[data-theme="dark"] ::selection {
+  color: #ffffff;
+  background: #9f2530;
 }
+
+/* =========================================================
+   8. ANIMATION ACCESSIBILITY
+========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -110,8 +189,10 @@ img {
   }
 }
 
-/* KTV: role-scoped semantic palette for Tailwind CSS v4.
-   Only color tokens live in CSS; all spacing, layout and states use utilities. */
+/* =========================================================
+   9. TECHNICIAN DESIGN TOKENS
+========================================================= */
+
 @theme inline {
   --color-ktv-page: var(--ktv-page);
   --color-ktv-sidebar: var(--ktv-sidebar);
@@ -120,24 +201,34 @@ img {
   --color-ktv-inset: var(--ktv-inset);
   --color-ktv-panel-alt: var(--ktv-panel-alt);
   --color-ktv-hover: var(--ktv-hover);
+
   --color-ktv-text: var(--ktv-text);
   --color-ktv-strong: var(--ktv-strong);
   --color-ktv-muted: var(--ktv-muted);
   --color-ktv-subtle: var(--ktv-subtle);
+
   --color-ktv-line: var(--ktv-line);
+
   --color-ktv-accent: var(--ktv-accent);
   --color-ktv-accent-hover: var(--ktv-accent-hover);
   --color-ktv-highlight: var(--ktv-highlight);
   --color-ktv-accent-soft: var(--ktv-accent-soft);
   --color-ktv-contrast: var(--ktv-contrast);
+
   --color-ktv-hero-from: var(--ktv-hero-from);
   --color-ktv-hero-to: var(--ktv-hero-to);
   --color-ktv-hero-text: var(--ktv-hero-text);
   --color-ktv-hero-muted: var(--ktv-hero-muted);
+
   --color-ktv-positive: var(--ktv-positive);
   --color-ktv-danger: var(--ktv-danger);
   --color-ktv-warning: var(--ktv-warning);
 }
+
+/* =========================================================
+   10. TECHNICIAN DARK MODE
+========================================================= */
+
 [data-area="technician"][data-ktv-theme="dark"] {
   --ktv-page: #0a1223;
   --ktv-sidebar: #0d192d;
@@ -146,24 +237,34 @@ img {
   --ktv-inset: #0d192d;
   --ktv-panel-alt: #16243b;
   --ktv-hover: #203653;
+
   --ktv-text: #f1f5f9;
   --ktv-strong: #ffffff;
   --ktv-muted: #a7b8cd;
   --ktv-subtle: #94a3b8;
+
   --ktv-line: #41526b;
+
   --ktv-accent: #38bdf8;
   --ktv-accent-hover: #7dd3fc;
   --ktv-highlight: #7dd3fc;
   --ktv-accent-soft: #17304b;
   --ktv-contrast: #06152a;
+
   --ktv-hero-from: #17365a;
   --ktv-hero-to: #10243e;
   --ktv-hero-text: #ffffff;
   --ktv-hero-muted: #cbd5e1;
+
   --ktv-positive: #6ee7b7;
   --ktv-danger: #fda4af;
   --ktv-warning: #fcd34d;
 }
+
+/* =========================================================
+   11. TECHNICIAN LIGHT MODE
+========================================================= */
+
 [data-area="technician"][data-ktv-theme="light"] {
   --ktv-page: #f3f7fc;
   --ktv-sidebar: #e6f0fa;
@@ -172,36 +273,64 @@ img {
   --ktv-inset: #f4f8fd;
   --ktv-panel-alt: #e4eef8;
   --ktv-hover: #d6e8fa;
+
   --ktv-text: #18304b;
   --ktv-strong: #10263e;
   --ktv-muted: #4b637d;
   --ktv-subtle: #566d85;
+
   --ktv-line: #c8d7e6;
+
   --ktv-accent: #0369a1;
   --ktv-accent-hover: #075985;
   --ktv-highlight: #075985;
   --ktv-accent-soft: #d4eafa;
   --ktv-contrast: #ffffff;
+
   --ktv-hero-from: #deefff;
   --ktv-hero-to: #f3f9ff;
   --ktv-hero-text: #123456;
   --ktv-hero-muted: #3c5572;
+
   --ktv-positive: #047857;
   --ktv-danger: #be123c;
   --ktv-warning: #92400e;
 }
 
-/* Print only the real repair-order details, not the advisor application shell. */
+/* =========================================================
+   12. PRINT REPAIR ORDER
+========================================================= */
+
 @media print {
   body:has([data-print-repair-order]) .cs-work-sidebar,
   body:has([data-print-repair-order]) .cs-work-top,
-  body:has([data-print-repair-order]) .print\:hidden { display: none !important; }
-  body:has([data-print-repair-order]) .cs-work-main { margin: 0 !important; width: 100% !important; }
-  body:has([data-print-repair-order]) .cs-work-content { padding: 0 !important; overflow: visible !important; }
-  body:has([data-print-repair-order]) [data-print-repair-order] {
-    --cs-surface: #ffffff; --cs-surface-2: #ffffff; --cs-text: #151515;
-    --cs-muted: #444444; --cs-border: #cccccc; --cs-soft: #f5f5f5;
-    color: #151515 !important; background: #ffffff !important;
+  body:has([data-print-repair-order]) .print\:hidden {
+    display: none !important;
   }
-  body:has([data-print-repair-order]) { background: white !important; }
+
+  body:has([data-print-repair-order]) .cs-work-main {
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  body:has([data-print-repair-order]) .cs-work-content {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body:has([data-print-repair-order]) [data-print-repair-order] {
+    --cs-surface: #ffffff;
+    --cs-surface-2: #ffffff;
+    --cs-text: #151515;
+    --cs-muted: #444444;
+    --cs-border: #cccccc;
+    --cs-soft: #f5f5f5;
+
+    color: #151515 !important;
+    background: #ffffff !important;
+  }
+
+  body:has([data-print-repair-order]) {
+    background: white !important;
+  }
 }
