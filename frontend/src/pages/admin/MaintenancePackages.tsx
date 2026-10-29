@@ -1,3 +1,4 @@
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 import {
   useCallback,
   useEffect,
@@ -213,6 +214,7 @@ function withPartQuantity(
 }
 
 function MaintenancePackages() {
+  const { confirm } = useAppFeedback();
   const [packages, setPackages] = useState<MaintenancePackage[]>([]);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
@@ -564,7 +566,7 @@ function MaintenancePackages() {
   };
 
   const handleDelete = async (pkg: MaintenancePackage) => {
-    if (!window.confirm(`Bạn có chắc muốn ẩn gói "${pkg.name}" không?`)) {
+    if (!await confirm({ title: "Ẩn gói bảo dưỡng", description: `Gói “${pkg.name}” sẽ không còn được hiển thị để khách chọn.`, confirmText: "Ẩn gói" })) {
       return;
     }
 
@@ -1004,7 +1006,7 @@ function MaintenancePackages() {
 
       {modal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-3 sm:p-5"
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-3 sm:p-5"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget && !isSaving) {
               setModal(null);

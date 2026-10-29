@@ -1540,7 +1540,7 @@ export default function Booking() {
 
       {/* Modal xác nhận đặt lịch hẹn */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 transform transition-all relative">
             {/* Nút đóng X */}
             <button

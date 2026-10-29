@@ -1,3 +1,4 @@
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 import AdminHubNav from "../../components/AdminHubNav";
 import { useEffect, useState, type FormEvent } from "react";
 import AdminSidebar from "./AdminSidebar";
@@ -59,6 +60,7 @@ function formatPrice(price: string | number): string {
 }
 
 function Services() {
+  const { confirm } = useAppFeedback();
   const [services, setServices] = useState<Service[]>([]);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
@@ -275,9 +277,7 @@ function Services() {
   const handleDelete = async (service: Service) => {
     if (isDeleting) return;
 
-    const confirmed = window.confirm(
-      `Bạn có chắc muốn ẩn dịch vụ "${service.name}" không?`,
-    );
+    const confirmed = await confirm({ title: "Ẩn dịch vụ", description: `Dịch vụ “${service.name}” sẽ không còn xuất hiện trong danh mục hoạt động.`, confirmText: "Ẩn dịch vụ" });
 
     if (!confirmed) return;
 
@@ -687,7 +687,7 @@ function Services() {
 
       {modal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-4"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget && !isSaving) {

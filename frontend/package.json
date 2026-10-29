@@ -14,7 +14,12 @@
     "test:nav": "node tests/navigation-regression.mjs",
     "test:contrast": "node tests/ui-contrast-regression.mjs",
     "test:customer": "node tests/customer-atelier-parity.mjs",
-    "test:tracking-booking": "node tests/customer-tracking-booking.mjs"
+    "test:tracking-booking": "node tests/customer-tracking-booking.mjs",
+    "test:tailwind": "node tests/tailwind-migration.mjs",
+    "test:technician": "node tests/technician-dark-blue.mjs",
+    "test:technician-theme": "node tests/technician-theme-toggle.mjs",
+    "test:workflow": "node tests/advisor-technician-workflow.mjs",
+    "test:ui-demo": "node tests/ui-demo-readiness.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
