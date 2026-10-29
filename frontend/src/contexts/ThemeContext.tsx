@@ -1,38 +1,124 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import type { PropsWithChildren } from "react";
 
+/* ==========================================
+   CARSERVICE - THEME CONTEXT
+   Light / Dark Mode
+========================================== */
+
 type Theme = "light" | "dark";
+
 const THEME_KEY = "carservice-theme";
 
-type ThemeContextValue = { theme: Theme; toggleTheme: () => void };
+type ThemeContextValue = {
+  theme: Theme;
+  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
+};
+
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function initialTheme(): Theme {
+/* ==========================================
+   GET INITIAL THEME
+========================================== */
+
+function getInitialTheme(): Theme {
+  if (typeof window === "undefined") {
+    return "light";
+  }
+
   try {
-    const saved = localStorage.getItem(THEME_KEY);
-    if (saved === "light" || saved === "dark") return saved;
-  } catch { /* Chế độ riêng tư có thể vô hiệu hóa storage. */ }
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const savedTheme = window.localStorage.getItem(THEME_KEY);
+
+    if (savedTheme === "light" || savedTheme === "dark") {
+      return savedTheme;
+    }
+  } catch {
+    // Trường hợp trình duyệt chặn localStorage.
+  }
+
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 }
+
+/* ==========================================
+   APPLY THEME
+========================================== */
+
+function applyTheme(theme: Theme) {
+  if (typeof document === "undefined") return;
+
+  const root = document.documentElement;
+
+  root.setAttribute("data-theme", theme);
+  root.classList.toggle("dark", theme === "dark");
+  root.style.colorScheme = theme;
+}
+
+/* ==========================================
+   THEME PROVIDER
+========================================== */
 
 export function ThemeProvider({ children }: PropsWithChildren) {
-  const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
+
+  const setTheme = useCallback((newTheme: Theme) => {
+    setThemeState(newTheme);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setThemeState((currentTheme) =>
+      currentTheme === "light" ? "dark" : "light"
+    );
+  }, []);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document.documentElement.style.colorScheme = theme;
-    try { localStorage.setItem(THEME_KEY, theme); } catch { /* Giữ trạng thái trong phiên. */ }
+    applyTheme(theme);
+
+    try {
+      window.localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // Không lưu được thì vẫn đổi giao diện bình thường.
+    }
   }, [theme]);
 
-  const value = useMemo(() => ({
-    theme,
-    toggleTheme: () => setTheme(previous => previous === "light" ? "dark" : "light"),
-  }), [theme]);
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  const value = useMemo<ThemeContextValue>(
+    () => ({
+      theme,
+      toggleTheme,
+      setTheme,
+    }),
+    [theme, toggleTheme, setTheme]
+  );
+
+  return (
+    <ThemeContext.Provider value={value}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
-export function useTheme() {
+/* ==========================================
+   USE THEME HOOK
+========================================== */
+
+export function useTheme(): ThemeContextValue {
   const context = useContext(ThemeContext);
-  if (!context) throw new Error("useTheme phải được dùng trong ThemeProvider");
+
+  if (!context) {
+    throw new Error(
+      "useTheme phải được sử dụng bên trong ThemeProvider"
+    );
+  }
+
   return context;
 }
