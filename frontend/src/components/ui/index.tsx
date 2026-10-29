@@ -1,23 +1,23 @@
 import type { ButtonHTMLAttributes, PropsWithChildren } from "react";
 
 export function Button({ children, className = "", ...props }: PropsWithChildren<ButtonHTMLAttributes<HTMLButtonElement>>) {
-  return <button className={`cs-button ${className}`} {...props}>{children}</button>;
+  return <button className={`cs-button cursor-pointer rounded-[11px] border-0 bg-cs-accent px-[18px] py-2.5 font-bold text-cs-accent-contrast disabled:cursor-not-allowed disabled:opacity-55 ${className}`} {...props}>{children}</button>;
 }
 export function Card({ children, className = "" }: PropsWithChildren<{ className?: string }>) {
-  return <section className={`cs-card ${className}`}>{children}</section>;
+  return <section className={`cs-card rounded-2xl border border-cs-border bg-cs-surface p-6 ${className}`}>{children}</section>;
 }
 export function PageHeading({ eyebrow, title, description }: { eyebrow?: string; title: string; description?: string }) {
-  return <div className="cs-page-head">{eyebrow && <p className="cs-eyebrow">{eyebrow}</p>}<h1>{title}</h1>{description && <p>{description}</p>}</div>;
+  return <div className="mb-7">{eyebrow && <p className="mb-2.5 text-[10px] font-extrabold tracking-[0.16em] text-cs-accent">{eyebrow}</p>}<h1 className="font-[Manrope] text-[clamp(25px,3vw,36px)] font-extrabold leading-[1.2] tracking-[-0.04em]">{title}</h1>{description && <p className="mt-[9px] text-sm text-cs-muted">{description}</p>}</div>;
 }
 export function EmptyState({ title = "Chưa có dữ liệu", description, children }: PropsWithChildren<{title?: string; description?: string}>) {
-  return <Card><div className="cs-empty"><span className="cs-empty-mark" aria-hidden="true">◇</span><h2>{title}</h2>{description && <p>{description}</p>}{children}</div></Card>;
+  return <Card><div className="flex min-h-[235px] flex-col items-center justify-center gap-3 text-center"><span className="grid size-12 place-items-center rounded-[15px] bg-cs-soft text-[27px] text-cs-accent" aria-hidden="true">◇</span><h2 className="text-[17px] font-extrabold">{title}</h2>{description && <p className="max-w-[570px] text-[13px] leading-[1.7] text-cs-muted">{description}</p>}{children}</div></Card>;
 }
-export function LoadingState() { return <p className="cs-loading" role="status">Đang tải dữ liệu...</p>; }
+export function LoadingState() { return <p className="p-[25px] text-center text-cs-muted" role="status">Đang tải dữ liệu...</p>; }
 export function StatusBadge({ status }: { status: string }) {
   const statusLabel: Record<string, string> = {
     CREATED: "Chờ xác nhận", CONFIRMED: "Đã xác nhận", CANCELLED: "Đã hủy",
     RECEIVED: "Đã tiếp nhận", DIAGNOSING: "Đang chẩn đoán", CLOSED: "Đã đóng phiếu",
     ACTIVE: "Đang hoạt động", INACTIVE: "Ngừng hoạt động",
   };
-  return <span className="cs-status-badge">{statusLabel[status] ?? status}</span>;
+  return <span className="rounded-full bg-cs-soft px-[11px] py-1.5 text-[11px] font-extrabold text-cs-accent">{statusLabel[status] ?? status}</span>;
 }

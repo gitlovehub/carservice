@@ -1,3 +1,4 @@
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useState } from "react";
 import AdminSidebar from "./AdminSidebar";
@@ -48,6 +49,7 @@ const initialCustomers: Customer[] = [
 ];
 
 function AdminCustomers() {
+  const { confirm } = useAppFeedback();
   const [customers, setCustomers] = useState(initialCustomers);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Tất cả");
@@ -81,15 +83,11 @@ function AdminCustomers() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleToggleStatus = (customer: Customer) => {
+  const handleToggleStatus = async (customer: Customer) => {
     const nextStatus =
       customer.status === "Hoạt động" ? "Tạm khóa" : "Hoạt động";
 
-    const confirmed = window.confirm(
-      `Bạn có chắc muốn ${
-        nextStatus === "Tạm khóa" ? "khóa" : "mở khóa"
-      } khách hàng ${customer.name}?`,
-    );
+    const confirmed = await confirm({ title: nextStatus === "Tạm khóa" ? "Khóa khách hàng" : "Mở khóa khách hàng", description: `Xác nhận đổi trạng thái tài khoản khách hàng ${customer.name} sang “${nextStatus}”?`, variant: nextStatus === "Tạm khóa" ? "danger" : "info", confirmText: "Xác nhận thay đổi" });
 
     if (!confirmed) return;
 

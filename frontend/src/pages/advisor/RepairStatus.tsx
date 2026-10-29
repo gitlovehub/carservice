@@ -1,3 +1,4 @@
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useMemo, useState } from "react";
 import AdvisorSidebar from "./AdvisorSidebar";
@@ -63,6 +64,7 @@ const emptyForm = {
 };
 
 function RepairStatus() {
+  const { confirm } = useAppFeedback();
   const [repairs, setRepairs] = useState<Repair[]>(initialRepairs);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -179,8 +181,8 @@ function RepairStatus() {
     setForm({ ...emptyForm });
   };
 
-  const handleDelete = (repair: Repair) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa phiếu ${repair.id}?`)) {
+  const handleDelete = async (repair: Repair) => {
+    if (!await confirm({ title: "Xóa phiếu", description: `Bạn có chắc muốn xóa phiếu #${repair.id}?`, variant: "danger", confirmText: "Xóa phiếu" })) {
       return;
     }
 
@@ -460,7 +462,7 @@ function RepairStatus() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="my-auto w-full max-w-2xl rounded-2xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-[#EEF0F2] px-6 py-5">
               <div>
@@ -605,7 +607,7 @@ function RepairStatus() {
       )}
 
       {selectedRepair && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-[#EEF0F2] px-6 py-5">
               <div>

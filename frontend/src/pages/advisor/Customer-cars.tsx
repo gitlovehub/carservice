@@ -1,3 +1,4 @@
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -42,6 +43,7 @@ const inputClass =
   "w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10";
 
 function CustomerCars() {
+  const { confirm } = useAppFeedback();
   const [cars, setCars] = useState<AdvisorVehicle[]>([]);
   const [customers, setCustomers] = useState<AdvisorCustomer[]>([]);
   const [search, setSearch] = useState("");
@@ -215,7 +217,7 @@ function CustomerCars() {
   const handleDelete = async (car: AdvisorVehicle) => {
     const plate = car.license_plate || `#${car.id}`;
 
-    if (!window.confirm(`Bạn có chắc muốn xóa xe ${plate}?`)) return;
+    if (!await confirm({ title: "Xác nhận xóa xe", description: `Bạn có chắc muốn xóa xe biển số ${plate}? Hãy đảm bảo xe không có lịch hẹn đang xử lý.`, variant: "danger", confirmText: "Xóa xe" })) return;
 
     setDeletingId(car.id);
     setError("");
@@ -535,7 +537,7 @@ function CustomerCars() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="my-auto w-full max-w-2xl rounded-2xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-[#EEF0F2] px-6 py-5">
               <div>

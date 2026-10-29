@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdvisorSidebar from "./AdvisorSidebar";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 import AdvisorTopbar from "./AdvisorTopbar";
 import {
   cancelAdvisorAppointment,
@@ -76,13 +77,6 @@ type AppointmentResponse = {
   };
 };
 
-type ToastType = "success" | "error";
-
-type Toast = {
-  message: string;
-  type: ToastType;
-};
-
 type ApiError = {
   status?: number;
   message?: string;
@@ -107,19 +101,10 @@ function getStatusText(status: AppointmentStatus) {
 }
 
 function getStatusClass(status: AppointmentStatus) {
-  if (status === "PENDING") {
-    return "border border-amber-200 bg-amber-50 text-amber-800";
-  }
-
-  if (status === "CONFIRMED") {
-    return "border border-blue-200 bg-blue-50 text-blue-800";
-  }
-
-  if (status === "CHECKED_IN") {
-    return "border border-emerald-200 bg-emerald-50 text-emerald-800";
-  }
-
-  return "border border-rose-200 bg-rose-50 text-rose-800";
+  if (status === "PENDING") return "cs-status-pending";
+  if (status === "CONFIRMED") return "cs-status-confirmed";
+  if (status === "CHECKED_IN") return "cs-status-checked";
+  return "cs-status-cancelled";
 }
 
 function formatDate(date: string) {
@@ -168,6 +153,7 @@ function getAppointmentPlate(appointment: Appointment) {
 
 function Appointments() {
   const navigate = useNavigate();
+  const { confirm, notify } = useAppFeedback();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
@@ -187,16 +173,17 @@ function Appointments() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
-  const [toast, setToast] = useState<Toast | null>(null);
+  useEffect(() => {
+    if (!selectedAppointment && !cancelAppointment) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setSelectedAppointment(null); setCancelAppointment(null); }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [selectedAppointment, cancelAppointment]);
 
   const itemsPerPage = 15;
-
-  const showToast = (message: string, type: ToastType = "success") => {
-    setToast({ message, type });
-    window.setTimeout(() => {
-      setToast(null);
-    }, 2500);
-  };
+  const showToast = (message: string, type: "success" | "error" = "success") => notify(message, type);
 
   const loadAppointments = async () => {
     try {
@@ -271,7 +258,21 @@ function Appointments() {
     setCurrentPage(1);
   };
 
-  const handleConfirm = async (id: number) => {
+  const handleConfirm = async (appointment: Appointment) => {
+    const approved = await confirm({
+      title: "Xác minh lịch hẹn với khách",
+      reference: appointment.appointment_code,
+      phone: appointment.customer?.phone,
+      description: `Hãy liên hệ ${getAppointmentCustomer(appointment)} qua số ${getAppointmentPhone(appointment)} để kiểm tra nhu cầu dịch vụ và khung giờ ${formatDate(appointment.appointment_date)} lúc ${appointment.appointment_time}. Chỉ xác nhận khi khách đồng ý. Nếu không liên hệ được, hãy quay lại và giữ lịch ở trạng thái chờ.`,
+      confirmText: "Khách đã đồng ý – Xác nhận lịch",
+      cancelText: "Chưa liên hệ được / Để sau",
+      checklist: [
+        "Tôi đã liên hệ trực tiếp với khách hàng và xác minh đúng xe, dịch vụ, ngày giờ.",
+        "Khách hàng đã đồng ý với lịch hẹn; gara có thể tiếp nhận theo lịch.",
+      ],
+    });
+    if (!approved) return;
+    const id = appointment.id;
     try {
       setLoadingAction(`confirm-${id}`);
       const response = await confirmAdvisorAppointment(id);
@@ -288,12 +289,25 @@ function Appointments() {
     }
   };
 
-  const handleCheckIn = async (id: number) => {
+  const handleCheckIn = async (appointment: Appointment) => {
+    const approved = await confirm({
+      title: "Xác nhận xe đã đến gara",
+      reference: appointment.appointment_code,
+      description: `Chỉ check-in khi khách đã thực sự đến gara và cố vấn đã đối chiếu xe ${getAppointmentPlate(appointment)} với lịch hẹn. Không thực hiện khi chỉ mới gọi điện xác nhận.`,
+      confirmText: "Xác nhận xe đã đến",
+      checklist: [
+        "Khách hàng đã có mặt tại gara cùng phương tiện.",
+        "Tôi đã đối chiếu biển số và thông tin lịch hẹn trước khi tiếp nhận.",
+      ],
+    });
+    if (!approved) return;
+    const id = appointment.id;
     try {
       setLoadingAction(`checkin-${id}`);
       const response = await checkInAdvisorAppointment(id);
       showToast(response?.message || "Tiếp nhận xe thành công.");
       await loadAppointments();
+      navigate(`/advisor/reception?appointment=${id}`);
     } catch (err: unknown) {
       const error = err as ApiError;
       showToast(
@@ -369,7 +383,7 @@ function Appointments() {
   }, [appointments]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="cs-appointment-page min-h-screen bg-cs-bg text-cs-text">
       <AdvisorSidebar />
 
       <div className="lg:ml-[250px]">
@@ -379,7 +393,7 @@ function Appointments() {
           <div className="mx-auto max-w-6xl px-6 py-8 lg:px-8 lg:py-10">
             {/* TIÊU ĐỀ */}
             <div className="mb-8">
-              <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
+              <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-cs-muted">
                 Gara / Lịch hẹn
               </p>
               <div>
@@ -396,7 +410,7 @@ function Appointments() {
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <p className="text-xs font-bold uppercase tracking-wider text-cs-muted">
                     Lịch hẹn
                   </p>
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
@@ -642,7 +656,7 @@ function Appointments() {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenDetail(appointment)}
-                                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                  className="cs-unified-btn cs-unified-secondary"
                                 >
                                   Chi tiết
                                 </button>
@@ -652,8 +666,8 @@ function Appointments() {
                                     <button
                                       type="button"
                                       disabled={isConfirming}
-                                      onClick={() => handleConfirm(appointment.id)}
-                                      className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                                      onClick={() => handleConfirm(appointment)}
+                                      className="cs-unified-btn cs-unified-primary"
                                     >
                                       {isConfirming ? "Đang xử lý..." : "Xác nhận"}
                                     </button>
@@ -664,11 +678,18 @@ function Appointments() {
                                         setCancelAppointment(appointment);
                                         setCancelReason("");
                                       }}
-                                      className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                                      className="cs-unified-btn cs-unified-secondary"
                                     >
                                       Từ chối
                                     </button>
                                   </>
+                                )}
+
+                                {appointment.status === "CHECKED_IN" && (
+                                  <button type="button" onClick={() => navigate(`/advisor/reception?appointment=${appointment.id}`)}
+                                    className="cs-unified-btn cs-unified-secondary">
+                                    Tạo / xem phiếu
+                                  </button>
                                 )}
 
                                 {appointment.status === "CONFIRMED" && (
@@ -676,8 +697,8 @@ function Appointments() {
                                     <button
                                       type="button"
                                       disabled={isCheckingIn}
-                                      onClick={() => handleCheckIn(appointment.id)}
-                                      className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                                      onClick={() => handleCheckIn(appointment)}
+                                      className="cs-unified-btn cs-unified-primary"
                                     >
                                       {isCheckingIn ? "Đang xử lý..." : "Tiếp nhận"}
                                     </button>
@@ -688,7 +709,7 @@ function Appointments() {
                                         setCancelAppointment(appointment);
                                         setCancelReason("");
                                       }}
-                                      className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                                      className="cs-unified-btn cs-unified-secondary"
                                     >
                                       Từ chối
                                     </button>
@@ -777,148 +798,40 @@ function Appointments() {
         </main>
       </div>
 
-      {/* MODAL CHI TIẾT */}
+      {/* Chi tiết lịch theo tokens của role; không đặt chữ trắng trên nền xám sáng. */}
       {selectedAppointment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
-              <div>
-                <p className="text-base font-bold text-slate-900">
-                  Chi tiết lịch hẹn
-                </p>
-                <p className="font-mono text-xs text-slate-400">
-                  {selectedAppointment.appointment_code}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setSelectedAppointment(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            {loadingDetail ? (
-              <div className="space-y-4 p-6">
-                <div className="h-20 animate-pulse rounded-xl bg-slate-100" />
-                <div className="h-20 animate-pulse rounded-xl bg-slate-100" />
-                <div className="h-24 animate-pulse rounded-xl bg-slate-100" />
-              </div>
-            ) : (
-              <div className="grid gap-4 p-6 sm:grid-cols-2">
-                <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Khách hàng
-                  </p>
-                  <p className="mt-1.5 text-sm font-semibold text-slate-900">
-                    {getAppointmentCustomer(selectedAppointment)}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {getAppointmentPhone(selectedAppointment)}
-                  </p>
-                  {selectedAppointment.customer?.email && (
-                    <p className="text-xs text-slate-500">
-                      {selectedAppointment.customer.email}
-                    </p>
-                  )}
-                </div>
-
-                <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Trạng thái
-                  </p>
-                  <span
-                    className={`mt-2 inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${getStatusClass(
-                      selectedAppointment.status
-                    )}`}
-                  >
-                    {getStatusText(selectedAppointment.status)}
-                  </span>
-                </div>
-
-                <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Thông tin xe
-                  </p>
-                  <p className="mt-1.5 text-sm font-semibold text-slate-900">
-                    {getVehicleName(selectedAppointment.vehicle)}
-                  </p>
-                  <p className="font-mono text-xs text-slate-500">
-                    {getAppointmentPlate(selectedAppointment)}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Thời gian hẹn
-                  </p>
-                  <p className="mt-1.5 text-sm font-semibold text-slate-900">
-                    {formatDate(selectedAppointment.appointment_date)}
-                  </p>
-                  <p className="font-mono text-xs text-slate-500">
-                    {selectedAppointment.appointment_time}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 sm:col-span-2">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Dịch vụ đã chọn
-                  </p>
-                  <p className="mt-1.5 text-xs leading-relaxed text-slate-700">
-                    {getServiceName(selectedAppointment)}
-                  </p>
-                </div>
-
-                {selectedAppointment.symptom_description && (
-                  <div className="sm:col-span-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Mô tả tình trạng
-                    </p>
-                    <div className="mt-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-700">
-                      {selectedAppointment.symptom_description}
-                    </div>
-                  </div>
-                )}
-
-                {selectedAppointment.note && (
-                  <div className="sm:col-span-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Ghi chú
-                    </p>
-                    <div className="mt-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-700">
-                      {selectedAppointment.note}
-                    </div>
-                  </div>
-                )}
-
-                {selectedAppointment.cancel_reason && (
-                  <div className="sm:col-span-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-rose-600">
-                      Lý do từ chối / hủy
-                    </p>
-                    <div className="mt-1.5 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-800">
-                      {selectedAppointment.cancel_reason}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 px-4 py-6 backdrop-blur-sm" onMouseDown={event => { if (event.currentTarget === event.target) setSelectedAppointment(null); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="advisor-appointment-title" className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[20px] border border-cs-border bg-cs-surface text-cs-text shadow-2xl">
+            <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-cs-border bg-cs-surface px-6 py-5">
+              <div><h2 id="advisor-appointment-title" className="text-lg font-extrabold">Chi tiết lịch hẹn</h2><p className="mt-1 font-mono text-xs text-cs-muted">{selectedAppointment.appointment_code}</p></div>
+              <button type="button" aria-label="Đóng chi tiết" onClick={() => setSelectedAppointment(null)} className="cs-unified-btn cs-unified-secondary min-w-0 px-3">✕</button>
+            </header>
+            {loadingDetail ? <div className="p-6 text-sm text-cs-muted">Đang tải chi tiết lịch hẹn...</div> : <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-6">
+              {[
+                ["Khách hàng", getAppointmentCustomer(selectedAppointment), getAppointmentPhone(selectedAppointment)],
+                ["Xe / Biển số", getVehicleName(selectedAppointment.vehicle), getAppointmentPlate(selectedAppointment)],
+                ["Ngày hẹn", formatDate(selectedAppointment.appointment_date), selectedAppointment.appointment_time],
+              ].map(([label,value,extra]) => <div key={label} className="cs-info-panel min-w-0 p-4"><p className="text-xs font-bold uppercase tracking-wide text-cs-muted">{label}</p><p className="mt-2 break-words text-sm font-bold text-cs-text">{value}</p><p className="mt-1 break-all text-xs text-cs-muted">{extra}</p>{label === "Khách hàng" && selectedAppointment.customer?.email && <p className="mt-1 break-all text-xs text-cs-muted">{selectedAppointment.customer.email}</p>}</div>)}
+              <div className="cs-info-panel p-4"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-cs-muted">Trạng thái</p><span className={`inline-flex rounded-lg px-3 py-1.5 text-xs font-bold ${getStatusClass(selectedAppointment.status)}`}>{getStatusText(selectedAppointment.status)}</span></div>
+              <div className="cs-info-panel p-4 sm:col-span-2"><p className="text-xs font-bold uppercase tracking-wide text-cs-muted">Dịch vụ đã chọn</p><p className="mt-2 text-sm text-cs-text">{getServiceName(selectedAppointment)}</p></div>
+              {(selectedAppointment.symptom_description || selectedAppointment.note) && <div className="cs-info-panel p-4 sm:col-span-2"><p className="text-xs font-bold uppercase tracking-wide text-cs-muted">Yêu cầu / Ghi chú</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-cs-text">{selectedAppointment.symptom_description}{selectedAppointment.symptom_description && selectedAppointment.note ? " · " : ""}{selectedAppointment.note}</p></div>}
+              {selectedAppointment.cancel_reason && <div className="cs-info-panel p-4 sm:col-span-2"><p className="text-xs font-bold text-red-400">Lý do hủy</p><p className="mt-2 text-sm text-cs-text">{selectedAppointment.cancel_reason}</p></div>}
+            </div>}
+            <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-cs-border px-6 py-4"><p className="text-xs text-cs-muted">Thông tin từ hệ thống gara</p><button className="cs-unified-btn cs-unified-secondary" onClick={() => setSelectedAppointment(null)}>Đóng</button></footer>
+          </section>
         </div>
       )}
 
       {/* MODAL TỪ CHỐI */}
       {cancelAppointment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-cs-border bg-cs-surface text-cs-text shadow-xl">
+            <div className="flex items-start justify-between border-b border-cs-border px-6 py-4">
               <div>
-                <p className="text-base font-bold text-slate-900">
+                <p className="text-base font-bold text-cs-text">
                   Từ chối lịch hẹn
                 </p>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-cs-muted">
                   {cancelAppointment.appointment_code} -{" "}
                   {getAppointmentCustomer(cancelAppointment)}
                 </p>
@@ -930,21 +843,21 @@ function Appointments() {
                   setCancelAppointment(null);
                   setCancelReason("");
                 }}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-cs-muted transition hover:bg-cs-surface-2 hover:text-cs-text"
               >
                 ✕
               </button>
             </div>
 
             <div className="p-6">
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5">
-                <p className="text-xs font-semibold text-rose-800">Lưu ý</p>
-                <p className="mt-0.5 text-xs text-rose-700">
+              <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3.5">
+                <p className="text-xs font-semibold text-rose-400">Lưu ý</p>
+                <p className="mt-0.5 text-xs text-cs-text">
                   Vui lòng nhập lý do cụ thể để khách hàng nắm rõ nguyên nhân lịch hẹn bị từ chối.
                 </p>
               </div>
 
-              <label className="mt-4 block text-xs font-semibold text-slate-700">
+              <label className="mt-4 block text-xs font-semibold text-cs-text">
                 Lý do từ chối
               </label>
               <textarea
@@ -952,18 +865,18 @@ function Appointments() {
                 onChange={(e) => setCancelReason(e.target.value)}
                 rows={4}
                 placeholder="Nhập lý do từ chối lịch hẹn..."
-                className="mt-1.5 w-full resize-none rounded-xl border border-slate-200 p-3 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                className="mt-1.5 w-full resize-none rounded-xl border border-cs-border bg-cs-surface-2 p-3 text-sm text-cs-text placeholder:text-cs-muted outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
               />
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4">
+            <div className="flex justify-end gap-2 border-t border-cs-border px-6 py-4">
               <button
                 type="button"
                 onClick={() => {
                   setCancelAppointment(null);
                   setCancelReason("");
                 }}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                className="rounded-xl border border-cs-border bg-cs-surface px-4 py-2 text-xs font-semibold text-cs-muted transition hover:bg-cs-surface-2"
               >
                 Hủy bỏ
               </button>
@@ -986,23 +899,7 @@ function Appointments() {
         </div>
       )}
 
-      {/* TOAST THÔNG BÁO */}
-      {toast && (
-        <div className="fixed right-5 top-5 z-[60]">
-          <div
-            className={`min-w-[280px] rounded-xl border bg-white px-4 py-3 shadow-lg ${
-              toast.type === "success"
-                ? "border-emerald-200 text-emerald-800"
-                : "border-rose-200 text-rose-800"
-            }`}
-          >
-            <p className="text-xs font-semibold">
-              {toast.type === "success" ? "Thành công" : "Có lỗi xảy ra"}
-            </p>
-            <p className="mt-0.5 text-xs text-slate-500">{toast.message}</p>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }
