@@ -39,7 +39,6 @@ apiClient.interceptors.response.use(
     const data = error.response?.data ?? null;
     const validation = data?.errors && Object.values(data.errors).flat()[0];
     const message = validation || data?.message || (status === 0 ? "Không thể kết nối tới máy chủ." : status === 502 || status === 503 || status === 504 ? "Máy chủ backend chưa được khởi chạy hoặc không phản hồi (502 Bad Gateway). Vui lòng kiểm tra 'php artisan serve'." : "Có lỗi khi xử lý yêu cầu.");
-    // Backend enforces role/ownership; 401 invalidates the cached session.
     if (status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("authToken");
