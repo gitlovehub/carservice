@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Account;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RegisterRequest extends FormRequest
 {
@@ -40,7 +42,14 @@ class RegisterRequest extends FormRequest
                 'regex:/^(0|\+84)[3|5|7|8|9][0-9]{8}$/',
                 'max:20',
             ],
-            'email' => ['required', 'email', 'max:150', 'unique:accounts,email'],
+            'email' => [
+                'required',
+                'email',
+                'max:150',
+                Rule::unique('accounts', 'email')->where(function ($query) {
+                    return $query->where('status', '!=', Account::STATUS_PENDING);
+                }),
+            ],
             'password' => ['required', 'string', 'min:8', 'confirmed', 'max:255'],
             'device_name' => ['nullable', 'string', 'max:100'],
             'accept_terms' => ['required', 'accepted'],

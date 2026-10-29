@@ -32,6 +32,34 @@ class AuthController extends Controller
         $data['phone'] = trim((string) $data['phone']);
 
         $account = DB::transaction(function () use ($data) {
+            $existingAccount = Account::query()
+                ->whereRaw('LOWER(email) = ?', [$data['email']])
+                ->first();
+
+            if ($existingAccount && $existingAccount->status === Account::STATUS_PENDING) {
+                $existingAccount->update([
+                    'password_hash' => Hash::make($data['password']),
+                ]);
+
+                $customer = Customer::query()->where('account_id', $existingAccount->id)->first();
+                if ($customer) {
+                    $customer->update([
+                        'full_name' => $data['full_name'],
+                        'phone' => $data['phone'],
+                        'email' => $data['email'],
+                    ]);
+                } else {
+                    Customer::query()->create([
+                        'account_id' => $existingAccount->id,
+                        'full_name' => $data['full_name'],
+                        'phone' => $data['phone'],
+                        'email' => $data['email'],
+                    ]);
+                }
+
+                return $existingAccount;
+            }
+
             $account = Account::query()->create([
                 'email' => $data['email'],
                 'password_hash' => Hash::make($data['password']),
