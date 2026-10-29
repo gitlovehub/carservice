@@ -7,10 +7,10 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\Account;
 use App\Models\Customer;
+use App\Models\Employee;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -103,18 +103,10 @@ class AuthController extends Controller
             ]);
         }
 
-        $token = null;
-
-        // Cấp Sanctum Token cho Frontend React
+        // Frontend React luôn xác thực bằng Bearer token (local và deploy như nhau)
         $token = $account->createToken(
             $data['device_name'] ?? 'carservice-web'
         )->plainTextToken;
-
-        // Giữ đăng nhập session nếu request hỗ trợ
-        if ($request->hasSession()) {
-            Auth::guard('web')->login($account);
-            $request->session()->regenerate();
-        }
 
         return response()->json([
             'token' => $token,
@@ -136,12 +128,6 @@ class AuthController extends Controller
 
         if ($accessToken instanceof PersonalAccessToken) {
             $accessToken->delete();
-        }
-
-        if ($request->hasSession()) {
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
         }
 
         return response()->json(['message' => 'Đã đăng xuất.']);
