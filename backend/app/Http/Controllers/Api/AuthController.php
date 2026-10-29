@@ -32,6 +32,34 @@ class AuthController extends Controller
         $data['phone'] = trim((string) $data['phone']);
 
         $account = DB::transaction(function () use ($data) {
+            $existingAccount = Account::query()
+                ->whereRaw('LOWER(email) = ?', [$data['email']])
+                ->first();
+
+            if ($existingAccount && $existingAccount->status === Account::STATUS_PENDING) {
+                $existingAccount->update([
+                    'password_hash' => Hash::make($data['password']),
+                ]);
+
+                $customer = Customer::query()->where('account_id', $existingAccount->id)->first();
+                if ($customer) {
+                    $customer->update([
+                        'full_name' => $data['full_name'],
+                        'phone' => $data['phone'],
+                        'email' => $data['email'],
+                    ]);
+                } else {
+                    Customer::query()->create([
+                        'account_id' => $existingAccount->id,
+                        'full_name' => $data['full_name'],
+                        'phone' => $data['phone'],
+                        'email' => $data['email'],
+                    ]);
+                }
+
+                return $existingAccount;
+            }
+
             $account = Account::query()->create([
                 'email' => $data['email'],
                 'password_hash' => Hash::make($data['password']),
@@ -39,29 +67,13 @@ class AuthController extends Controller
                 'status' => Account::STATUS_PENDING,
             ]);
 
-            $existingCustomer = Customer::query()
-                ->whereNull('account_id')
-                ->where(function ($query) use ($data) {
-                    $query->where('phone', $data['phone'])
-                        ->orWhere('email', $data['email']);
-                })
-                ->first();
-
-            if ($existingCustomer) {
-                $existingCustomer->update([
-                    'account_id' => $account->id,
-                    'full_name' => $data['full_name'],
-                    'phone' => $data['phone'],
-                    'email' => $data['email'],
-                ]);
-            } else {
-                Customer::query()->create([
-                    'account_id' => $account->id,
-                    'full_name' => $data['full_name'],
-                    'phone' => $data['phone'],
-                    'email' => $data['email'],
-                ]);
-            }
+            // Luôn tạo hồ sơ riêng; chỉ liên kết hồ sơ walk-in sau khi xác thực OTP email.
+            Customer::query()->create([
+                'account_id' => $account->id,
+                'full_name' => $data['full_name'],
+                'phone' => $data['phone'],
+                'email' => $data['email'],
+            ]);
 
             return $account;
         });
@@ -378,6 +390,8 @@ class AuthController extends Controller
                     'email_verified_at' => now(),
                     'status' => Account::STATUS_ACTIVE,
                 ]);
+
+                $this->linkWalkInCustomerByVerifiedEmail($account);
             }
         });
 
@@ -387,6 +401,40 @@ class AuthController extends Controller
             'message' => 'Xác thực email thành công.',
             'token' => $token,
             'account' => $this->formatAccount($account->fresh()),
+        ]);
+    }
+
+    private function linkWalkInCustomerByVerifiedEmail(Account $account): void
+    {
+        $walkInCustomer = Customer::query()
+            ->whereNull('account_id')
+            ->whereRaw('LOWER(email) = ?', [strtolower(trim($account->email))])
+            ->lockForUpdate()
+            ->first();
+
+        if (! $walkInCustomer) {
+            return;
+        }
+
+        $existingCustomer = Customer::withTrashed()
+            ->where('account_id', $account->id)
+            ->first();
+
+        if ($existingCustomer) {
+            $hasData = $existingCustomer->vehicles()->withTrashed()->exists()
+                || $existingCustomer->appointments()->exists()
+                || $existingCustomer->repairOrders()->exists();
+
+            if ($hasData) {
+                return;
+            }
+
+            $existingCustomer->forceDelete();
+        }
+
+        $walkInCustomer->update([
+            'account_id' => $account->id,
+            'email' => strtolower(trim((string) $account->email)),
         ]);
     }
 
@@ -547,5 +595,4 @@ class AuthController extends Controller
             'message' => 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.'
         ]);
     }
-
 }

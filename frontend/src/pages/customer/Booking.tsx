@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import confetti from "canvas-confetti";
-import "../../styles/atelier-booking.css";
 import { fetchApi } from "../../services/api";
 import { SERVICE_PRODUCTS, type ServiceProduct } from "../../services/serviceCatalog";
 
@@ -624,7 +623,7 @@ export default function Booking() {
   const finalModelDisplayName = vehicleModel === "Khác" ? customModel.trim() || "Xe riêng" : vehicleModel;
 
   return (
-    <div className="at-booking-legacy min-h-screen bg-slate-50 text-slate-800 antialiased font-sans flex flex-col justify-between selection:bg-[#1F2933] selection:text-white">
+    <div className="min-h-screen bg-[var(--cs-bg,#f7f7f6)] [&_button:not(:disabled)]:cursor-pointer [&_a]:cursor-pointer text-[var(--cs-text,#191919)] [&_.bg-white]:bg-[var(--cs-surface,#fff)] [&_.bg-slate-50]:bg-[var(--cs-bg,#f7f7f6)] [&_.bg-slate-100]:bg-[var(--cs-surface-2,#f1f1ef)] [&_.text-slate-900]:text-[var(--cs-text,#191919)] [&_.text-slate-800]:text-[var(--cs-text,#191919)] [&_.text-slate-700]:text-[var(--cs-text,#191919)] [&_.text-slate-600]:text-[var(--cs-muted,#757575)] [&_.text-slate-500]:text-[var(--cs-muted,#757575)] [&_.border-slate-200]:border-[var(--cs-border,#e9e9e6)] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-50 [&_input]:accent-[#cf2935] [&_input]:focus-visible:outline-[#cf2935] [&_select]:focus-visible:outline-[#cf2935] [&_textarea]:focus-visible:outline-[#cf2935] min-h-screen bg-slate-50 text-slate-800 antialiased font-sans flex flex-col justify-between selection:bg-[#1F2933] selection:text-white">
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 w-full flex-grow">
         {/* Navigation Breadcrumb */}
@@ -657,12 +656,12 @@ export default function Booking() {
 
         {/* Stepper Navigation */}
         <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200/80 mb-8">
-          <div className="at-booking-stepper relative flex items-center justify-between max-w-3xl mx-auto">
+          <div className=" relative flex items-center justify-between max-w-3xl mx-auto">
             {/* Background Track Line */}
-            <div className="at-booking-stepper-track absolute h-1 bg-slate-100 z-0"></div>
+            <div className="left-[12.5%] right-[12.5%] top-5 -translate-y-1/2 sm:top-[22px] absolute h-1 bg-slate-100 z-0"></div>
             {/* Dynamic Progress Line */}
             <div
-              className="at-booking-stepper-progress absolute h-1 bg-[#1F2933] z-0 transition-all duration-500 ease-out"
+              className="left-[12.5%] top-5 -translate-y-1/2 sm:top-[22px] absolute h-1 bg-[#1F2933] z-0 transition-all duration-500 ease-out"
               style={{
                 width: `${((currentStep - 1) / 3) * 75}%`,
               }}
@@ -780,7 +779,7 @@ export default function Booking() {
         </div>
 
         {/* Bố cục ATELIER: quy trình API hiện tại vẫn giữ nguyên bốn bước */}
-        <div className="at-booking-grid">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(290px,.88fr)] [&>div:first-child]:min-w-0 [&>div:first-child]:rounded-[19px] [&>div:first-child]:p-[18px] sm:[&>div:first-child]:p-6">
         {/* Main Card Container */}
         <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-200/90 relative overflow-hidden">
           {/* ============================================== */}
@@ -987,7 +986,7 @@ export default function Booking() {
                     { label: "SUV / Crossover (5-7 chỗ)", value: "SUV / Crossover (5-7 chỗ)", icon: "fa-solid fa-car" },
                     { label: "Bán tải / MPV (7-8 chỗ)", value: "Bán tải / MPV (7-8 chỗ)", icon: "fa-solid fa-truck-pickup" },
                   ].map((item) => (
-                    <label key={item.value} className="at-vehicle-type-option cursor-pointer">
+                    <label key={item.value} className="group cursor-pointer">
                       <input
                         type="radio"
                         name="vehicleType"
@@ -996,7 +995,7 @@ export default function Booking() {
                         onChange={(e) => handleVehicleTypeChange(e.target.value as VehicleType)}
                         className="peer sr-only"
                       />
-                      <div className="at-vehicle-type-card p-4 rounded-xl border-2 border-slate-200 bg-white text-center transition">
+                      <div className="group-hover:-translate-y-px group-hover:border-[#c4646b] peer-checked:border-[#cf2935] peer-checked:bg-[var(--cs-soft,#fff1f1)] peer-checked:ring-1 peer-checked:ring-[#cf2935] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#cf2935] p-4 rounded-xl border-2 border-slate-200 bg-white text-center transition">
                         <i className={`${item.icon} text-2xl text-slate-600 mb-2 block`}></i>
                         <span className="text-xs font-bold block text-slate-800">{item.label}</span>
                       </div>
@@ -1102,7 +1101,7 @@ export default function Booking() {
                   {SERVICE_PRODUCTS.map((pkg) => {
                     const isChecked = selectedService.id === pkg.id;
                     return (
-                      <label key={pkg.id} className="at-service-package-option cursor-pointer">
+                      <label key={pkg.id} className="group cursor-pointer">
                         <input
                           type="radio"
                           name="servicePackage"
@@ -1112,7 +1111,7 @@ export default function Booking() {
                           className="peer sr-only"
                         />
                         <div
-                          className={`at-service-package-card p-4 rounded-2xl border-2 transition relative ${
+                          className={`group-hover:-translate-y-px group-hover:border-[#c4646b] peer-checked:border-[#cf2935] peer-checked:bg-[var(--cs-soft,#fff1f1)] peer-checked:ring-1 peer-checked:ring-[#cf2935] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#cf2935] p-4 rounded-2xl border-2 transition relative ${
                             isChecked
                               ? "border-[#1F2933] bg-[#F3E8D2]/40"
                               : "border-slate-200 bg-white hover:border-slate-300"
@@ -1165,7 +1164,7 @@ export default function Booking() {
                   {GARAGE_BRANCHES.map((b) => {
                     const isChecked = garageBranch === b.fullName;
                     return (
-                      <label key={b.id} className="at-booking-branch-option cursor-pointer">
+                      <label key={b.id} className="group cursor-pointer">
                         <input
                           type="radio"
                           name="garageBranch"
@@ -1174,10 +1173,10 @@ export default function Booking() {
                           onChange={(e) => setGarageBranch(e.target.value)}
                           className="peer sr-only"
                         />
-                        <div className={`at-booking-branch-card p-3.5 rounded-xl border-2 transition ${isChecked ? "is-selected" : ""}`}>
+                        <div className={`border-[var(--cs-border,#e9e9e6)] bg-[var(--cs-surface,#fff)] group-hover:border-[#cf2935] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#cf2935] p-3.5 rounded-xl border-2 transition ${isChecked ? "border-[#cf2935]! bg-[var(--cs-soft,#fff1f1)]! ring-1 ring-[#cf2935]" : ""}`}>
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-sm text-slate-800">{b.name}</span>
-                            <span className="at-booking-branch-status text-[10px] bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
+                            <span className="text-black! text-[10px] bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
                               {b.status}
                             </span>
                           </div>
@@ -1204,10 +1203,10 @@ export default function Booking() {
                         key={d.index}
                         type="button"
                         onClick={() => handleDateSelect(d.index)}
-                        className={`at-booking-date-option flex-shrink-0 w-24 py-3 px-2 rounded-2xl border-2 text-center transition cursor-pointer ${isSelected ? "is-selected font-bold" : ""}`}
+                        className={`border-[var(--cs-border,#e9e9e6)] bg-[var(--cs-surface,#fff)] text-[var(--cs-text,#191919)] hover:border-[#cf2935] flex-shrink-0 w-24 py-3 px-2 rounded-2xl border-2 text-center transition cursor-pointer ${isSelected ? "border-[#cf2935]! bg-[#cf2935]! font-bold text-white! ring-2 ring-[#cf2935]/20 [&_span]:text-white!" : ""}`}
                       >
                         <span
-                          className={`at-booking-date-day block text-[11px] uppercase tracking-wider ${isSelected ? "font-bold" : ""}`}
+                          className={` block text-[11px] uppercase tracking-wider ${isSelected ? "font-bold" : ""}`}
                         >
                           {d.dayName}
                         </span>
@@ -1508,8 +1507,8 @@ export default function Booking() {
           )}
         </div>
 
-        <aside className="at-booking-help" aria-label="Hướng dẫn đặt lịch">
-          <p className="at-booking-help-label">BOOKING NOTES</p>
+        <aside className="sticky top-[106px] min-h-[430px] rounded-[19px] border border-[var(--cs-border,#e9e9e6)] bg-[var(--cs-surface,#fff)] px-[26px] py-7 max-lg:static max-lg:min-h-0 [&_h2]:mb-5 [&_h2]:text-2xl [&_h2]:font-extrabold [&_h2]:tracking-tight [&_ol]:flex [&_ol]:list-none [&_ol]:flex-col [&_ol]:gap-5 [&_ol]:pl-0 max-lg:[&_ol]:grid max-lg:[&_ol]:grid-cols-2 max-sm:[&_ol]:grid-cols-1 [&_li]:relative [&_li]:pl-7 [&_li]:before:absolute [&_li]:before:left-0 [&_li]:before:top-1 [&_li]:before:size-3.5 [&_li]:before:rounded-full [&_li]:before:border-2 [&_li]:before:border-[#cf2935] [&_li]:after:absolute [&_li]:after:bottom-[-18px] [&_li]:after:left-[7px] [&_li]:after:top-6 [&_li]:after:w-px [&_li]:after:bg-[var(--cs-border,#e9e9e6)] [&_li:last-child]:after:hidden [&_li_strong]:mb-1.5 [&_li_strong]:block [&_li_strong]:text-[13px] [&_li_strong]:font-extrabold [&_li_small]:text-xs [&_li_small]:leading-relaxed [&_li_small]:text-[var(--cs-muted,#757575)]" aria-label="Hướng dẫn đặt lịch">
+          <p className="mb-3 text-xs font-extrabold tracking-[0.14em] text-[#cf2935]">BOOKING NOTES</p>
           <h2>Đặt lịch thật đơn giản.</h2>
           <ol>
             <li><strong>Thông tin liên hệ</strong><small>Kiểm tra hồ sơ để gara liên hệ với bạn.</small></li>
@@ -1517,7 +1516,7 @@ export default function Booking() {
             <li><strong>Chọn khung giờ</strong><small>Gara sẽ kiểm tra và xác nhận lịch tiếp nhận.</small></li>
             <li><strong>Kiểm tra & xác nhận</strong><small>Chỉ gửi lịch khi bạn đã kiểm tra thông tin.</small></li>
           </ol>
-          <p className="at-booking-note-bottom">Lịch hẹn chỉ giữ khung giờ tiếp nhận; chi phí sửa chữa phát sinh phải có báo giá và sự chấp thuận của bạn.</p>
+          <p className="mt-8 rounded-xl border-l-[3px] border-[#cf2935] bg-[var(--cs-soft,#fff1f1)] p-4 text-xs leading-7 text-[var(--cs-muted,#757575)]">Lịch hẹn chỉ giữ khung giờ tiếp nhận; chi phí sửa chữa phát sinh phải có báo giá và sự chấp thuận của bạn.</p>
         </aside>
         </div>
 
