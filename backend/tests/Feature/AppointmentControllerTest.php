@@ -340,6 +340,27 @@ class AppointmentControllerTest extends TestCase
             ->assertJsonValidationErrors('vehicle_id');
     }
 
+    public function test_invalid_time_format_returns_vietnamese_message(): void
+    {
+        $customer = $this->createAuthenticatedCustomer();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+
+        $this->withToken($customer['token'])->postJson('/api/appointments', [
+            'vehicle_id' => $vehicle->id,
+            'appointment_date' => now()->addDay()->toDateString(),
+            'appointment_time' => '9h',
+            'request_type' => 'MAINTENANCE',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['appointment_time' => 'Giờ hẹn phải đúng định dạng HH:MM (ví dụ 09:00).']);
+
+        $mine = $this->createAppointment($vehicle, '09:00');
+        $this->withToken($customer['token'])
+            ->patchJson("/api/appointments/{$mine->id}", ['appointment_time' => '9h'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['appointment_time' => 'Giờ hẹn phải đúng định dạng HH:MM (ví dụ 09:00).']);
+    }
+
     private function createAuthenticatedCustomer(): array
     {
         $account = Account::factory()->customer()->create();
