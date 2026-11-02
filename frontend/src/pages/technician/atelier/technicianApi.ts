@@ -21,6 +21,8 @@ export type RepairOrder = {
   status_history?: Array<{ id: number; status?: string; note?: string | null; created_at?: string | null }>;
   inspections?: Inspection[];
   work_items?: WorkItem[];
+  quotations?: Array<{ id: number; version?: number; status: string; items?: Array<{ id: number; item_type: string; part_id?: number | null; description?: string | null; quantity: number; is_approved?: boolean | null }> }>;
+  used_parts?: Array<{ id: number; part_id: number; quantity: number; part?: { name?: string | null } | null }>;
 };
 
 export type WorkItem = {
@@ -67,6 +69,8 @@ export const technicianApi = {
   finishInspection: (id: number) => fetchApi<Inspection>(`${base}/${id}/inspections/complete`, { method: "POST" }),
   services: () => fetchApi<CatalogService[]>("/services"),
   parts: () => fetchApi<CatalogPart[]>("/parts"),
+  recordUsedPart: (id: number, payload: { part_id: number; quantity: number }) =>
+    fetchApi(`${base}/${id}/used-parts`, { method: "POST", body: JSON.stringify(payload) }),
   addRecommendation: (id: number, payload: { item_type: "SERVICE" | "PART"; service_id?: number; part_id?: number; quantity: number; note?: string }) =>
     fetchApi(`${base}/${id}/inspections/recommendations`, { method: "POST", body: JSON.stringify(payload) }),
 };

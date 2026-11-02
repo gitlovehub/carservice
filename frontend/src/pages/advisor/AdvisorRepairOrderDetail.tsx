@@ -3,7 +3,7 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { latestQuotation, workflowApi, type TechnicianOption, type WorkflowOrder } from "../../services/workflowService";
 import { action, card, input, outline, WorkflowTitle, Notice, Status, errorText, formatDateTime } from "./WorkflowUI";
-import { QuotationPanel } from "./RepairOrderPanels";
+import { QuotationPanel, RepairPanel } from "./RepairOrderPanels";
 
 export default function AdvisorRepairOrderDetail() {
   const id = Number(useParams().orderId);
@@ -161,6 +161,7 @@ export default function AdvisorRepairOrderDetail() {
         </div>}
       </section>
       <QuotationPanel key={`quotation-${latestQuotation(order)?.id ?? 0}-${order.inspections?.[0]?.recommendations?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
+      <RepairPanel order={order} onChanged={refreshAfterAction}/>
       <section className={`${card} mt-6`}><h2 className="mb-4 text-lg font-bold text-cs-text">Lịch sử xử lý phiếu</h2>
         {order.status_history?.length ? <ol className="space-y-3 border-l-2 border-cs-accent/40 pl-5">{order.status_history.map(item => <li key={item.id} className="text-sm text-cs-text"><strong>{item.status || "Cập nhật"}</strong><span className="ml-3 text-xs text-cs-muted">{formatDateTime(item.created_at)}</span>{item.note && <p className="mt-1 text-xs text-cs-muted">{item.note}</p>}</li>)}</ol> : <p className="text-sm text-cs-muted">Chưa có nhật ký.</p>}
       </section>

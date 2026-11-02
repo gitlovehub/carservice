@@ -1,7 +1,7 @@
 import { useAppFeedback } from "../../../components/ui/feedbackContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Alert, Busy, Empty, Heading, StatusBadge, panel, primary, secondary } from "./TechnicianUI";
+import { Alert, Busy, Empty, Heading, StatusBadge, control, panel, primary, secondary } from "./TechnicianUI";
 import { dateLabel, isNotFound, messageForError, technicianApi, vehicleLabel } from "./technicianApi";
 import type { Inspection, RepairOrder, WorkItem, WorkStatus } from "./technicianApi";
 
@@ -17,6 +17,9 @@ export default function TechnicianDetail() {
   const [actionError, setActionError] = useState("");
   const [updating, setUpdating] = useState<number | null>(null);
   const [revision, setRevision] = useState(0);
+  const [partId, setPartId] = useState("");
+  const [partQuantity, setPartQuantity] = useState("1");
+  const [partMessage, setPartMessage] = useState("");
 
   useEffect(() => {
     if (!Number.isSafeInteger(id) || id < 1) return;
@@ -37,6 +40,18 @@ export default function TechnicianDetail() {
     setActionError(""); setUpdating(item.id);
     try { await technicianApi.updateWorkStatus(item.id, status); setRevision(v => v + 1); }
     catch (err) { setActionError(messageForError(err)); } finally { setUpdating(null); }
+  }
+  const latestQuotation = [...(order?.quotations ?? [])].sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0];
+  const approvedParts = latestQuotation?.items?.filter(item => item.item_type === "PART" && item.is_approved) ?? [];
+  async function recordPart(event: FormEvent) {
+    event.preventDefault();
+    const part = Number(partId); const quantity = Number(partQuantity);
+    if (!Number.isSafeInteger(part) || part < 1 || !Number.isSafeInteger(quantity) || quantity < 1) { setActionError("Chọn phụ tùng và số lượng nguyên dương."); return; }
+    setActionError(""); setPartMessage(""); setUpdating(-1);
+    try {
+      await technicianApi.recordUsedPart(id, { part_id: part, quantity });
+      setPartMessage("Đã ghi phụ tùng thực dùng, kho đã được trừ."); setPartId(""); setPartQuantity("1"); setRevision(v => v + 1);
+    } catch (err) { setActionError(messageForError(err)); } finally { setUpdating(null); }
   }
   if (!Number.isSafeInteger(id) || id < 1) return <Alert>Mã phiếu không hợp lệ.</Alert>;
   return <>
@@ -78,6 +93,20 @@ export default function TechnicianDetail() {
             {["COMPLETED", "CANCELLED"].includes(item.status) && <span className="text-sm text-ktv-subtle">Không có thao tác tiếp theo</span>}
           </div></div>)}</div> : <div className="p-6"><Empty title="Chưa có công việc" description="Cố vấn sẽ tạo công việc sau khi hoàn thành các bước nghiệp vụ tương ứng."/></div>}
       </section>
+      {(order.status === "IN_PROGRESS" || !!order.used_parts?.length) && <section className={`${panel} mb-6 p-6`}>
+        <h2 className="text-lg font-bold text-ktv-strong">Phụ tùng thực dùng</h2>
+        <p className="mt-1 text-sm text-ktv-muted">Chỉ phụ tùng khách đã duyệt trong báo giá. Ghi nhận = xuất kho.</p>
+        {partMessage && <p role="status" className="mt-3 text-sm text-ktv-highlight">{partMessage}</p>}
+        {!!order.used_parts?.length && <ul className="mt-4 space-y-1 text-sm text-ktv-text">{order.used_parts.map(part => <li key={part.id}>• {part.part?.name || `Phụ tùng #${part.part_id}`} × {part.quantity}</li>)}</ul>}
+        {order.status === "IN_PROGRESS" && (approvedParts.length ? <form className="mt-4 grid gap-3 md:grid-cols-[minmax(0,2fr)_100px_auto] md:items-end" onSubmit={event => void recordPart(event)}>
+          <label className="text-xs font-semibold text-ktv-muted">Phụ tùng<select required className={`${control} mt-2`} value={partId} onChange={event => setPartId(event.target.value)}>
+            <option value="">— Chọn —</option>
+            {approvedParts.map(item => <option key={item.id} value={item.part_id ?? ""}>{item.description} (duyệt {item.quantity})</option>)}
+          </select></label>
+          <label className="text-xs font-semibold text-ktv-muted">Số lượng<input className={`${control} mt-2`} type="number" min="1" step="1" required value={partQuantity} onChange={event => setPartQuantity(event.target.value)}/></label>
+          <button type="submit" className={secondary} disabled={updating !== null}>Ghi nhận</button>
+        </form> : <p className="mt-4 text-sm text-ktv-subtle">Báo giá không có phụ tùng nào được khách duyệt.</p>)}
+      </section>}
       <section className={`${panel} p-6`}><h2 className="text-lg font-bold text-ktv-strong">Nhật ký trạng thái phiếu</h2>
         {order.status_history?.length ? <ol className="mt-5 space-y-4 border-l border-ktv-accent/30 pl-5">{order.status_history.map(entry => <li key={entry.id} className="relative"><span className="absolute -left-[25px] top-1.5 h-2.5 w-2.5 rounded-full bg-ktv-accent"/>
           <p className="text-sm font-semibold text-ktv-strong">{entry.status || "Thay đổi trạng thái"}</p><p className="mt-1 text-xs text-ktv-subtle">{dateLabel(entry.created_at)}</p>{entry.note && <p className="mt-1 text-sm text-ktv-muted">{entry.note}</p>}

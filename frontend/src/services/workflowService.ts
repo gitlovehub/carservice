@@ -198,6 +198,10 @@ export const workflowApi = {
     fetchApi<WorkflowOrder>(`/repair-orders/${id}/${step}`, { method: "POST", body: JSON.stringify(note ? { note } : {}) }),
   close: (id: number, closeReason: string, note: string) =>
     fetchApi<WorkflowOrder>(`/repair-orders/${id}/close`, { method: "POST", body: JSON.stringify({ close_reason: closeReason, note }) }),
+  updateWorkItem: (workItemId: number, status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED") =>
+    fetchApi(`/work-items/${workItemId}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  recordUsedPart: (id: number, payload: { part_id: number; quantity: number; work_item_id?: number }) =>
+    fetchApi<WorkflowUsedPart>(`/repair-orders/${id}/used-parts`, { method: "POST", body: JSON.stringify(payload) }),
   createInvoice: (id: number) => fetchApi<WorkflowInvoice>(`/repair-orders/${id}/invoice`, { method: "POST" }),
   payCash: (invoiceId: number, amount: number) =>
     fetchApi<WorkflowPayment>(`/invoices/${invoiceId}/payments`, { method: "POST", body: JSON.stringify({ payment_method: "DIRECT", amount }) }),
