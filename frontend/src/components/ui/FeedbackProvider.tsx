@@ -6,7 +6,7 @@ type ConfirmState = { options: ConfirmOptions; resolve: (result: boolean) => voi
 
 export function FeedbackProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const role = location.pathname.startsWith("/advisor") ? "advisor" : location.pathname.startsWith("/admin") ? "admin" : location.pathname.startsWith("/technician") ? "technician" : "customer";
+  const role = location.pathname.startsWith("/advisor") ? "advisor" : location.pathname.startsWith("/admin") ? "admin" : "customer";
   const [dialog, setDialog] = useState<ConfirmState>(null);
   const [checked, setChecked] = useState<boolean[]>([]);
   const [toasts, setToasts] = useState<ToastItem[]>([]);

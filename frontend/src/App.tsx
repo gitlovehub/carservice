@@ -35,11 +35,6 @@ import AdvisorRepairOrderDetail from "./pages/advisor/AdvisorRepairOrderDetail";
 
 
 
-import TechnicianLayout from "./pages/technician/atelier/TechnicianLayout";
-import TechnicianDashboard from "./pages/technician/atelier/TechnicianDashboard";
-import TechnicianOrders from "./pages/technician/atelier/TechnicianOrders";
-import TechnicianDetail from "./pages/technician/atelier/TechnicianDetail";
-import TechnicianInspection from "./pages/technician/atelier/TechnicianInspection";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import WorkspaceDashboard from "./pages/shared/WorkspaceDashboard";
 import AdminAccounts from "./pages/admin/Accounts";
@@ -114,20 +109,6 @@ function App() {
       <Route path="staff" element={<ModulePlaceholder area="Quản trị" title="Nhân sự" description="Trang khung để tích hợp quản lý nhân sự khi có API và card triển khai." owner="Frontend module Admin"/>}/>
     </Route>
 
-    {/* Technician: protected Laravel role and real assigned-work APIs only. */}
-    <Route path="/technician" element={<ProtectedRoute allowedRoles={["TECHNICIAN"]}><TechnicianLayout/></ProtectedRoute>}>
-      <Route index element={<TechnicianDashboard/>}/>
-      <Route path="orders" element={<TechnicianOrders/>}/>
-      <Route path="orders/:orderId" element={<TechnicianDetail/>}/>
-      <Route path="orders/:orderId/inspection" element={<TechnicianInspection/>}/>
-      <Route path="work" element={<TechnicianOrders focusWork/>}/>
-    </Route>
-    {/* Keep legacy links but require genuine TECHNICIAN role (not ADMIN). */}
-    <Route path="/assigned-repairs" element={<Navigate to="/technician/orders" replace/>}/>
-    <Route path="/vehicle-check" element={<Navigate to="/technician/orders" replace/>}/>
-    <Route path="/diagnosis" element={<Navigate to="/technician/orders" replace/>}/>
-    <Route path="/repair-progress" element={<Navigate to="/technician/work" replace/>}/>
-    <Route path="/checklist" element={<Navigate to="/technician/orders" replace/>}/>
     <Route path="*" element={<div style={{ padding: 30 }}>Không tìm thấy trang. <a href="/">Về trang chủ</a></div>}/>
   </Routes><ChatWidget/></FeedbackProvider></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;
 }

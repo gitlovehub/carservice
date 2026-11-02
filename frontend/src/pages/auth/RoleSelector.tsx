@@ -30,19 +30,6 @@ const roles = [
     ),
   },
   {
-    code: "TECHNICIAN",
-    path: "/technician",
-    name: "Kỹ thuật viên",
-    description:
-      "Kiểm tra tình trạng xe, cập nhật tiến độ sửa chữa và báo cáo phụ tùng cần thay thế.",
-    features: ["Kiểm tra xe", "Cập nhật tiến độ", "Báo cáo kỹ thuật"],
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
-        <path d="M14.7 6.3a5 5 0 0 0-6.6 6.6L3 18l3 3 5.1-5.1a5 5 0 0 0 6.6-6.6L14 13l-3-3z" />
-      </svg>
-    ),
-  },
-  {
     code: "ADMIN",
     path: "/admin",
     name: "Quản trị viên",
