@@ -25,7 +25,7 @@ assert.match(order,/<InspectionPanel /);
 assert.match(src('pages/advisor/RepairOrderPanels.tsx'),/Hoàn tất chẩn đoán/);
 assert.match(styles,/\.cs-unified-btn/);
 assert.match(styles,/\.cs-info-panel/);
-for (const [file,rule] of [['pages/technician/atelier/TechnicianInspection.tsx',/Hoàn tất kiểm tra và chẩn đoán/],['pages/admin/AdminCustomers.tsx',/Khóa khách hàng/]]) assert.match(src(file),rule);
+for (const [file,rule] of [['pages/advisor/RepairOrderPanels.tsx',/Hoàn tất chẩn đoán/],['pages/admin/AdminCustomers.tsx',/Khóa khách hàng/]]) assert.match(src(file),rule);
 function walk(dir){return readdirSync(dir,{withFileTypes:true}).flatMap(item=>item.isDirectory()?walk(path.join(dir,item.name)):item.name.endsWith('.tsx')?[path.join(dir,item.name)]:[])}
 for(const file of walk('src')) assert.doesNotMatch(readFileSync(file,'utf8'), /window\.confirm\(|\balert\(/, `No native confirm/alert in ${file}`);
 console.log('PASS UI demo readiness: two distinct confirmations, accessible modal/toasts, clean contrast and unified buttons; no native confirm/alert in React TSX.');
