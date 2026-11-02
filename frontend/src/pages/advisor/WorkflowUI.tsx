@@ -10,7 +10,11 @@ export function Notice({ children, tone = "info" }: { children: ReactNode; tone?
   return <div role={tone === "error" ? "alert" : "status"} className={`mb-5 rounded-xl border px-4 py-3 text-sm leading-6 ${tone === "error" ? "border-red-500/40 bg-red-500/10 text-cs-text" : tone === "success" ? "border-emerald-500/40 bg-emerald-500/10 text-cs-text" : "border-cs-border bg-cs-soft text-cs-text"}`}>{children}</div>;
 }
 export function Status({ status }: { status: string }) {
-  const translation: Record<string, string> = { PENDING: "Chờ xác nhận", CONFIRMED: "Đã xác nhận", CHECKED_IN: "Đã tiếp nhận", RECEIVED: "Đã lập phiếu", INSPECTING: "Đang chẩn đoán", QUOTING: "Chờ lập báo giá", CANCELLED: "Đã hủy", COMPLETED: "Hoàn thành" };
+  const translation: Record<string, string> = {
+    PENDING: "Chờ xác nhận", CONFIRMED: "Đã xác nhận", CHECKED_IN: "Đã tiếp nhận", CANCELLED: "Đã hủy",
+    RECEIVED: "Đã lập phiếu", INSPECTING: "Đang kiểm tra", QUOTING: "Chờ lập báo giá", WAITING_APPROVAL: "Chờ khách duyệt",
+    IN_PROGRESS: "Đang sửa chữa", WAITING_FOR_PARTS: "Chờ phụ tùng", COMPLETED: "Chờ thanh toán", HANDED_OVER: "Đã bàn giao", CLOSED: "Đã đóng",
+  };
   return <span className="inline-flex rounded-lg border border-cs-border bg-cs-soft px-2.5 py-1 text-xs font-bold text-cs-text">{translation[status] || status}</span>;
 }
 export function formatDateTime(date?: string | null) {

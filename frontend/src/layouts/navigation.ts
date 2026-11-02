@@ -25,9 +25,9 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Đặt lịch hộ", path: "/advisor/create-booking", icon: "calendar" },
     { label: "Khách hàng", path: "/advisor/customers", icon: "users" },
     { label: "Xe khách hàng", path: "/advisor/customer-cars", icon: "car" },
-    { label: "Lập báo giá", path: "/advisor/quotation", icon: "receipt" },
-    { label: "Tiến độ công việc", path: "/advisor/repair-status", icon: "wrench" },
-    { label: "Thanh toán", path: "/advisor/payments", icon: "receipt" },
+    { label: "Lập báo giá", path: "/advisor/service-orders?status=QUOTING", icon: "receipt" },
+    { label: "Tiến độ sửa chữa", path: "/advisor/service-orders?status=IN_PROGRESS", icon: "wrench" },
+    { label: "Thu tiền & bàn giao", path: "/advisor/service-orders?status=COMPLETED", icon: "receipt" },
   ],
   admin: [
     { label: "Trung tâm điều hành", path: "/admin", icon: "chart" },
