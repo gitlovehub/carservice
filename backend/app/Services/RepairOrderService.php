@@ -10,6 +10,8 @@ use App\Models\Employee;
 use App\Models\Inspection;
 use App\Models\InspectionItem;
 use App\Models\InspectionRecommendation;
+use App\Models\Inventory;
+use App\Models\InventoryTransaction;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Part;
@@ -438,31 +440,59 @@ class RepairOrderService
     /**
      * RULE: chỉ ghi nhận phụ tùng thực dùng nếu part_id nằm trong
      * các dòng PART đã được khách duyệt của báo giá mới nhất.
+     * Ghi nhận = xuất kho: trừ inventories và tạo inventory_transactions loại OUT.
      */
     public function recordUsedPart(RepairOrder $ro, array $data): UsedPart
     {
-        $approvedPartIds = $ro->latestQuotation
-            ? $ro->latestQuotation->items()
-                ->where('item_type', QuotationItem::TYPE_PART)
-                ->where('is_approved', true)
-                ->pluck('part_id')
-                ->all()
-            : [];
+        if ($ro->status !== RepairOrder::IN_PROGRESS) {
+            throw InvalidStatusTransitionException::because('Chỉ ghi nhận phụ tùng thực dùng khi phiếu đang IN_PROGRESS.');
+        }
 
-        if (! in_array($data['part_id'], $approvedPartIds, true)) {
+        $approvedItem = $ro->latestQuotation?->items()
+            ->where('item_type', QuotationItem::TYPE_PART)
+            ->where('is_approved', true)
+            ->where('part_id', $data['part_id'])
+            ->first();
+
+        if (! $approvedItem) {
             throw InvalidStatusTransitionException::because(
                 'Phụ tùng phải nằm trong báo giá đã được khách duyệt mới được ghi nhận sử dụng.'
             );
         }
 
-        return UsedPart::create([
-            'repair_order_id' => $ro->id,
-            'work_item_id' => $data['work_item_id'] ?? null,
-            'part_id' => $data['part_id'],
-            'quantity' => $data['quantity'],
-            'unit_price' => $data['unit_price'],
-            'used_at' => now(),
-        ]);
+        return DB::transaction(function () use ($ro, $data, $approvedItem) {
+            $inventory = Inventory::query()->where('part_id', $data['part_id'])->lockForUpdate()->first();
+            $quantity = (int) $data['quantity'];
+
+            if (! $inventory || $inventory->quantity < $quantity) {
+                $inStock = $inventory->quantity ?? 0;
+                throw InvalidStatusTransitionException::because(
+                    "Không đủ tồn kho (còn {$inStock}). Chuyển phiếu sang chờ phụ tùng nếu cần."
+                );
+            }
+
+            $usedPart = UsedPart::create([
+                'repair_order_id' => $ro->id,
+                'work_item_id' => $data['work_item_id'] ?? null,
+                'part_id' => $data['part_id'],
+                'quantity' => $quantity,
+                'unit_price' => $data['unit_price'] ?? $approvedItem->unit_price,
+                'used_at' => now(),
+            ]);
+
+            $inventory->decrement('quantity', $quantity);
+
+            InventoryTransaction::create([
+                'inventory_id' => $inventory->id,
+                'repair_order_id' => $ro->id,
+                'used_part_id' => $usedPart->id,
+                'transaction_type' => InventoryTransaction::TYPE_OUT,
+                'quantity' => $quantity,
+                'note' => "Xuất kho cho phiếu {$ro->repair_order_code}.",
+            ]);
+
+            return $usedPart->load('part');
+        });
     }
 
     /*

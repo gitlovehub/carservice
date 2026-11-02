@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\Inspection;
 use App\Models\InspectionRecommendation;
+use App\Models\Inventory;
 use App\Models\Part;
 use App\Models\Quotation;
 use App\Models\RepairOrder;
@@ -166,5 +167,52 @@ class RepairFlowTest extends TestCase
         $this->actingAs($this->advisor)
             ->postJson("/api/repair-orders/{$this->repairOrder->id}/start-repair")
             ->assertUnprocessable();
+    }
+
+    public function test_technician_uses_approved_part_and_stock_is_exported(): void
+    {
+        $this->approveAndStartRepair();
+        $inventory = Inventory::query()->create(['part_id' => $this->part->id, 'quantity' => 5]);
+
+        $this->actingAs($this->technicianAccount)
+            ->postJson("/api/repair-orders/{$this->repairOrder->id}/used-parts", ['part_id' => $this->part->id, 'quantity' => 2])
+            ->assertCreated()
+            ->assertJsonPath('unit_price', '450000.00');
+
+        $this->assertSame(3, $inventory->fresh()->quantity);
+        $this->assertDatabaseHas('inventory_transactions', [
+            'inventory_id' => $inventory->id,
+            'repair_order_id' => $this->repairOrder->id,
+            'transaction_type' => 'OUT',
+            'quantity' => 2,
+        ]);
+    }
+
+    public function test_using_part_beyond_stock_is_rejected_without_changes(): void
+    {
+        $this->approveAndStartRepair();
+        $inventory = Inventory::query()->create(['part_id' => $this->part->id, 'quantity' => 1]);
+
+        $this->actingAs($this->advisor)
+            ->postJson("/api/repair-orders/{$this->repairOrder->id}/used-parts", ['part_id' => $this->part->id, 'quantity' => 2])
+            ->assertUnprocessable();
+
+        $this->assertSame(1, $inventory->fresh()->quantity);
+        $this->assertDatabaseCount('used_parts', 0);
+    }
+
+    public function test_order_completes_only_after_all_work_items_are_done(): void
+    {
+        $this->approveAndStartRepair();
+        $workItem = WorkItem::query()->where('repair_order_id', $this->repairOrder->id)->firstOrFail();
+
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/complete")->assertUnprocessable();
+
+        $this->actingAs($this->technicianAccount)
+            ->patchJson("/api/work-items/{$workItem->id}/status", ['status' => WorkItem::COMPLETED])
+            ->assertOk();
+
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/complete")->assertOk();
+        $this->assertSame(RepairOrder::COMPLETED, $this->repairOrder->fresh()->status);
     }
 }
