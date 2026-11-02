@@ -272,4 +272,14 @@ class RepairFlowTest extends TestCase
 
         $this->assertDatabaseCount('payments', 0);
     }
+
+    public function test_order_detail_includes_invoice_items_and_newest_history_first(): void
+    {
+        $this->completeAndInvoice();
+
+        $response = $this->actingAs($this->advisor)->getJson("/api/repair-orders/{$this->repairOrder->id}")->assertOk();
+
+        $this->assertCount(2, $response->json('invoice.items'));
+        $this->assertSame(RepairOrder::COMPLETED, $response->json('status_history.0.status'));
+    }
 }
