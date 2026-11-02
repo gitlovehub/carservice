@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInspectionRecommendationRequest;
 use App\Http\Requests\StoreInspectionRequest;
 use App\Models\Account;
+use App\Models\Assignment;
 use App\Models\RepairOrder;
 use App\Models\TechnicianProfile;
 use App\Services\RepairOrderService;
@@ -22,12 +23,26 @@ class InspectionController extends Controller
      */
     public function store(StoreInspectionRequest $request, RepairOrder $repairOrder): JsonResponse
     {
-        $technician = TechnicianProfile::where('employee_id', $request->user()->employee?->id)->first();
+        $employee = $request->user()->employee;
 
-        if (! $technician) {
-            return response()->json([
-                'message' => 'Tài khoản không gắn với hồ sơ Kỹ thuật viên hợp lệ.',
-            ], 403);
+        if ($request->user()->role === Account::ROLE_TECHNICIAN) {
+            $technician = TechnicianProfile::where('employee_id', $employee?->id)->first();
+
+            if (! $technician) {
+                return response()->json([
+                    'message' => 'Tài khoản không gắn với hồ sơ Kỹ thuật viên hợp lệ.',
+                ], 403);
+            }
+        } else {
+            // Cố vấn nhập kết quả: gắn KTV đang phụ trách phiếu nếu có, không thì để trống.
+            if (! $employee) {
+                return response()->json(['message' => 'Tài khoản chưa gắn với hồ sơ nhân viên.'], 403);
+            }
+
+            $technician = $repairOrder->assignments()
+                ->whereIn('status', [Assignment::ASSIGNED, Assignment::IN_PROGRESS])
+                ->latest('assigned_at')
+                ->first()?->technician;
         }
 
         if ($denied = $this->denyUnassignedTechnician($request, $repairOrder)) {
@@ -40,7 +55,7 @@ class InspectionController extends Controller
             ], 422);
         }
 
-        $inspection = $this->service->recordInspection($repairOrder, $technician, $request->validated());
+        $inspection = $this->service->recordInspection($repairOrder, $technician, $request->validated(), $employee);
 
         return response()->json($inspection, 201);
     }
@@ -56,7 +71,7 @@ class InspectionController extends Controller
         }
 
         $inspection = $repairOrder->inspections()
-            ->with(['items', 'recommendations.service', 'recommendations.part', 'technician.employee'])
+            ->with(['items', 'recommendations.service', 'recommendations.part', 'technician.employee', 'recordedBy'])
             ->first();
 
         if (! $inspection) {

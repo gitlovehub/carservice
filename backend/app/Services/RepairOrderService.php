@@ -116,7 +116,7 @@ class RepairOrderService
 
     /*
     |--------------------------------------------------------------------------
-    | 3. KTV ghi nhận kết quả kiểm tra / chẩn đoán
+    | 3. Ghi nhận kết quả kiểm tra / chẩn đoán (KTV hoặc Cố vấn nhập)
     |--------------------------------------------------------------------------
     | $data = [
     |   'condition_description' => ..., 'diagnosis' => ...,
@@ -124,9 +124,11 @@ class RepairOrderService
     |   'recommendations' => [['item_type','service_id'|'part_id','quantity','note'], ...],
     | ]
     */
-    public function recordInspection(RepairOrder $ro, TechnicianProfile $technician, array $data): Inspection
+    public function recordInspection(RepairOrder $ro, ?TechnicianProfile $technician, array $data, ?Employee $recordedBy = null): Inspection
     {
-        $this->assertTechnician($technician);
+        if ($technician) {
+            $this->assertTechnician($technician);
+        }
 
         if (! in_array($ro->status, [RepairOrder::RECEIVED, RepairOrder::INSPECTING], true)) {
             throw InvalidStatusTransitionException::because(
@@ -140,10 +142,11 @@ class RepairOrderService
             );
         }
 
-        return DB::transaction(function () use ($ro, $technician, $data) {
+        return DB::transaction(function () use ($ro, $technician, $data, $recordedBy) {
             $inspection = Inspection::create([
                 'repair_order_id' => $ro->id,
-                'technician_id' => $technician->id,
+                'technician_id' => $technician?->id,
+                'recorded_by_employee_id' => $recordedBy?->id,
                 'condition_description' => $data['condition_description'] ?? null,
                 'diagnosis' => $data['diagnosis'] ?? null,
                 'inspected_at' => null,

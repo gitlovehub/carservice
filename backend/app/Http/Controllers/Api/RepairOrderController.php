@@ -53,7 +53,7 @@ class RepairOrderController extends Controller
 
         $repairOrder->load([
             'customer', 'vehicle', 'advisor', 'statusHistory.changedByAccount',
-            'assignments.technician.employee', 'inspections.items', 'inspections.recommendations.service', 'inspections.recommendations.part',
+            'assignments.technician.employee', 'inspections.items', 'inspections.recordedBy', 'inspections.recommendations.service', 'inspections.recommendations.part',
             'quotations.items', 'workItems.technician', 'workItems.service', 'usedParts.part', 'invoice.items', 'invoice.payments',
         ]);
 

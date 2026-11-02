@@ -308,17 +308,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     /*
     |--------------------------------------------------------------------------
-    | Technician
+    | Inspections: KTV hoặc Cố vấn ghi kết quả kiểm tra / chẩn đoán
     |--------------------------------------------------------------------------
+    | Gara không dùng màn hình KTV thì Cố vấn nhập thay. KTV chỉ thao tác
+    | trên phiếu mình được giao (InspectionController::denyUnassignedTechnician).
     */
 
-    Route::middleware('role:'.Account::ROLE_TECHNICIAN)->group(function (): void {
-
-        /*
-        |--------------------------------------------------------------------------
-        | Inspections
-        |--------------------------------------------------------------------------
-        */
+    Route::middleware('role:'.Account::ROLE_ADVISOR.','.Account::ROLE_TECHNICIAN)->group(function (): void {
 
         Route::controller(InspectionController::class)->group(function (): void {
 
