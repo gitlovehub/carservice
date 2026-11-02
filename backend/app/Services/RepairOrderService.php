@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Models\Account;
+use App\Models\Appointment;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Inspection;
@@ -18,6 +19,7 @@ use App\Models\RepairOrder;
 use App\Models\RepairOrderStatusHistory;
 use App\Models\TechnicianProfile;
 use App\Models\UsedPart;
+use App\Models\Vehicle;
 use App\Models\WorkItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -34,6 +36,27 @@ class RepairOrderService
         $this->assertAdvisor($advisor);
 
         return DB::transaction(function () use ($data, $advisor) {
+            $vehicle = Vehicle::query()->lockForUpdate()->find($data['vehicle_id']);
+
+            if (! $vehicle || (int) $vehicle->customer_id !== (int) $data['customer_id']) {
+                throw InvalidStatusTransitionException::because('Xe không thuộc khách hàng đã chọn.');
+            }
+
+            if (! empty($data['appointment_id'])) {
+                $this->assertAppointmentReadyForReceiving((int) $data['appointment_id'], $data);
+            }
+
+            $openOrder = RepairOrder::query()
+                ->where('vehicle_id', $vehicle->id)
+                ->whereNotIn('status', [RepairOrder::HANDED_OVER, RepairOrder::CLOSED])
+                ->first();
+
+            if ($openOrder) {
+                throw InvalidStatusTransitionException::because(
+                    "Xe đang có phiếu sửa chữa {$openOrder->repair_order_code} chưa kết thúc, không tạo phiếu mới."
+                );
+            }
+
             $ro = RepairOrder::create([
                 'repair_order_code' => $this->generateCode('RO'),
                 'appointment_id' => $data['appointment_id'] ?? null,
@@ -650,6 +673,39 @@ class RepairOrderService
             'changed_by_account_id' => $actor?->id,
             'note' => $note,
         ]);
+    }
+
+    /**
+     * Lịch hẹn chỉ được lập phiếu khi xe đã check-in, đúng khách/xe và chưa có phiếu.
+     *
+     * @param  array{customer_id: int|string, vehicle_id: int|string}  $data
+     */
+    private function assertAppointmentReadyForReceiving(int $appointmentId, array $data): void
+    {
+        $appointment = Appointment::query()->lockForUpdate()->find($appointmentId);
+
+        if (! $appointment) {
+            throw InvalidStatusTransitionException::because('Không tìm thấy lịch hẹn.');
+        }
+
+        if ($appointment->status !== 'CHECKED_IN') {
+            throw InvalidStatusTransitionException::because(
+                "Chỉ tạo phiếu sửa chữa khi lịch hẹn đã check-in (CHECKED_IN). Trạng thái hiện tại: {$appointment->status}."
+            );
+        }
+
+        if ((int) $appointment->customer_id !== (int) $data['customer_id']
+            || (int) $appointment->vehicle_id !== (int) $data['vehicle_id']) {
+            throw InvalidStatusTransitionException::because('Khách hàng hoặc xe không khớp với lịch hẹn.');
+        }
+
+        $existing = RepairOrder::query()->where('appointment_id', $appointmentId)->first();
+
+        if ($existing) {
+            throw InvalidStatusTransitionException::because(
+                "Lịch hẹn này đã có phiếu sửa chữa {$existing->repair_order_code}, không tạo phiếu thứ hai."
+            );
+        }
     }
 
     private function assertAdvisor(Employee $employee): void
