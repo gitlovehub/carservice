@@ -16,9 +16,10 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\QuotationController;
 use App\Http\Controllers\Api\RepairOrderController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\TechnicianController;
 use App\Http\Controllers\Api\VehicleController;
-use App\Http\Controllers\Api\WorkItemController;
 use App\Http\Controllers\Api\WorkingHoursController;
+use App\Http\Controllers\Api\WorkItemController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
 
@@ -229,6 +230,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         | Repair Orders
         |--------------------------------------------------------------------------
         */
+
+        Route::get('technicians', [TechnicianController::class, 'index']);
 
         Route::controller(RepairOrderController::class)->group(function (): void {
 
