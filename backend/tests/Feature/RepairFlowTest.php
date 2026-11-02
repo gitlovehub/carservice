@@ -215,4 +215,61 @@ class RepairFlowTest extends TestCase
         $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/complete")->assertOk();
         $this->assertSame(RepairOrder::COMPLETED, $this->repairOrder->fresh()->status);
     }
+
+    /**
+     * Đưa phiếu đến COMPLETED và xuất hóa đơn, trả về id hóa đơn.
+     */
+    private function completeAndInvoice(): int
+    {
+        $this->approveAndStartRepair();
+        WorkItem::query()->where('repair_order_id', $this->repairOrder->id)->update(['status' => WorkItem::COMPLETED]);
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/complete")->assertOk();
+
+        return $this->actingAs($this->advisor)
+            ->postJson("/api/repair-orders/{$this->repairOrder->id}/invoice")
+            ->assertCreated()
+            ->assertJsonPath('total_amount', '1200000.00')
+            ->json('id');
+    }
+
+    public function test_cash_payment_then_hand_over_then_customer_review(): void
+    {
+        $invoiceId = $this->completeAndInvoice();
+        $orderId = $this->repairOrder->id;
+
+        $this->actingAs($this->advisor)->postJson("/api/invoices/{$invoiceId}/payments", ['amount' => 200000])
+            ->assertCreated()
+            ->assertJsonPath('payment_method', 'DIRECT')
+            ->assertJsonPath('status', 'SUCCESS');
+
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$orderId}/hand-over")->assertUnprocessable();
+
+        $this->actingAs($this->customerAccount)
+            ->postJson('/api/me/reviews', ['repair_order_id' => $orderId, 'overall_rating' => 5])
+            ->assertUnprocessable();
+
+        $this->actingAs($this->advisor)->postJson("/api/invoices/{$invoiceId}/payments", ['amount' => 1000000])->assertCreated();
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$orderId}/hand-over")->assertOk();
+        $this->assertSame(RepairOrder::HANDED_OVER, $this->repairOrder->fresh()->status);
+
+        $this->actingAs($this->customerAccount)
+            ->postJson('/api/me/reviews', ['repair_order_id' => $orderId, 'overall_rating' => 5])
+            ->assertCreated();
+    }
+
+    public function test_only_cash_payment_is_accepted_and_overpayment_is_rejected(): void
+    {
+        $invoiceId = $this->completeAndInvoice();
+
+        $this->actingAs($this->advisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments", ['payment_method' => 'QR', 'amount' => 1000])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('payment_method');
+
+        $this->actingAs($this->advisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments", ['amount' => 1300000])
+            ->assertUnprocessable();
+
+        $this->assertDatabaseCount('payments', 0);
+    }
 }
