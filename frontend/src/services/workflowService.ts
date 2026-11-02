@@ -84,8 +84,10 @@ export async function advisorAppointment(id: number): Promise<WorkflowAppointmen
 }
 
 /** Index is pagination-based; do not silently assume a single page contains every matching order. */
-export async function listWorkflowOrders(page = 1): Promise<WorkflowPage<WorkflowOrder>> {
-  return fetchApi<WorkflowPage<WorkflowOrder>>(`/repair-orders?page=${page}`);
+export async function listWorkflowOrders(page = 1, status = ""): Promise<WorkflowPage<WorkflowOrder>> {
+  const params = new URLSearchParams({ page: String(page) });
+  if (status) params.set("status", status);
+  return fetchApi<WorkflowPage<WorkflowOrder>>(`/repair-orders?${params}`);
 }
 
 export async function findOrderForAppointment(appointmentId: number): Promise<WorkflowOrder | null> {
