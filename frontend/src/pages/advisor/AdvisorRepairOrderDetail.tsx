@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { workflowApi, type TechnicianOption, type WorkflowOrder } from "../../services/workflowService";
+import { latestQuotation, workflowApi, type TechnicianOption, type WorkflowOrder } from "../../services/workflowService";
 import { action, card, input, outline, WorkflowTitle, Notice, Status, errorText, formatDateTime } from "./WorkflowUI";
+import { QuotationPanel } from "./RepairOrderPanels";
 
 export default function AdvisorRepairOrderDetail() {
   const id = Number(useParams().orderId);
@@ -41,6 +42,10 @@ export default function AdvisorRepairOrderDetail() {
       .catch(err => { if (active) setError(errorText(err)); });
     return () => { active = false; };
   }, []);
+  const refreshAfterAction = useCallback(async (message: string) => {
+    setOrder(await fetchOrder());
+    setSuccess(message); notify(message, "success");
+  }, [fetchOrder, notify]);
   const technicianName = (profileId: number) => technicians.find(item => item.id === profileId)?.employee?.full_name || `KTV #${profileId}`;
 
   const activeAssignments = order?.assignments?.filter(item => item.status !== "CANCELLED") ?? [];
@@ -155,6 +160,7 @@ export default function AdvisorRepairOrderDetail() {
           <ul className="mt-2 space-y-1 text-xs text-cs-muted">{cancelledAssignments.map(item => <li key={item.id}>{item.technician?.employee?.full_name || `KTV #${item.technician_id}`} · Đã hủy</li>)}</ul>
         </div>}
       </section>
+      <QuotationPanel key={`quotation-${latestQuotation(order)?.id ?? 0}-${order.inspections?.[0]?.recommendations?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
       <section className={`${card} mt-6`}><h2 className="mb-4 text-lg font-bold text-cs-text">Lịch sử xử lý phiếu</h2>
         {order.status_history?.length ? <ol className="space-y-3 border-l-2 border-cs-accent/40 pl-5">{order.status_history.map(item => <li key={item.id} className="text-sm text-cs-text"><strong>{item.status || "Cập nhật"}</strong><span className="ml-3 text-xs text-cs-muted">{formatDateTime(item.created_at)}</span>{item.note && <p className="mt-1 text-xs text-cs-muted">{item.note}</p>}</li>)}</ol> : <p className="text-sm text-cs-muted">Chưa có nhật ký.</p>}
       </section>
