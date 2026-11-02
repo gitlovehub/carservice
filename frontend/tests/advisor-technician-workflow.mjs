@@ -35,7 +35,7 @@ assert.match(reception, /Tạo phiếu sửa chữa/);
 assert.match(orders, /listWorkflowOrders/);
 assert.match(detail, /assignTechnician/);
 assert.match(detail, /window\.print\(\)/);
-assert.match(detail, /technician_profiles\.id/);
+assert.match(detail, /workflowApi\.technicians\(\)/, "Advisor picks a technician from GET /technicians, not a typed profile id");
 assert.match(detail, /const activeAssignments = order\?\.assignments\?\.filter\(item => item\.status !== "CANCELLED"\)/);
 assert.match(detail, /const canAssign = activeAssignments\.length === 0 && order\?\.status === "RECEIVED"/);
 assert.match(detail, /if \(!canAssign\)/);
