@@ -85,6 +85,14 @@ class RepairOrderService
     {
         $this->assertTechnician($technician);
 
+        if (in_array($ro->status, [RepairOrder::COMPLETED, RepairOrder::HANDED_OVER, RepairOrder::CLOSED], true)) {
+            throw InvalidStatusTransitionException::because("Không thể giao KTV khi phiếu đang {$ro->status}.");
+        }
+
+        if ($ro->assignments()->where('technician_id', $technician->id)->exists()) {
+            throw InvalidStatusTransitionException::because('KTV này đã được giao cho phiếu sửa chữa.');
+        }
+
         return DB::transaction(function () use ($ro, $technician, $actor, $note) {
             $assignment = Assignment::create([
                 'repair_order_id' => $ro->id,
