@@ -164,7 +164,7 @@ function Cars() {
             <h1 className="mb-2 mt-3 text-[clamp(31px,3.4vw,46px)] font-extrabold leading-[1.16] tracking-[-0.06em]">Garage của tôi</h1>
             <p className="text-sm leading-[1.7] text-cs-muted">Quản lý danh sách xe để đặt lịch nhanh hơn.</p>
           </div>
-          <button type="button" className="inline-flex min-h-[45px] w-max cursor-pointer items-center justify-center gap-2.5 whitespace-nowrap rounded-[11px] border border-[#cf2935] bg-[#cf2935] px-5 py-3 text-[13px] font-extrabold text-white transition-colors hover:bg-[#af202b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935]" onClick={() => {
+          <button type="button" className="cs-btn cs-btn-primary w-max" onClick={() => {
             setError(""); setIsAddFormOpen((previous) => !previous);
           }}>
             <Icon name="plus" size={17} /> {isAddFormOpen ? "Đóng biểu mẫu" : "Thêm xe"}
@@ -251,14 +251,14 @@ function Cars() {
                 <button
                   type="button"
                   onClick={() => setIsAddFormOpen(false)}
-                  className="cursor-pointer rounded-xl border border-[#DDE1E4] px-4 py-2 text-xs font-semibold text-[#66717C] hover:bg-slate-50"
+                  className="cs-btn cs-btn-secondary"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={loading || saving}
-                  className="cursor-pointer rounded-xl bg-[#cf2935] px-5 py-2 text-xs font-bold text-white transition hover:bg-[#af202b] disabled:opacity-50"
+                  className="cs-btn cs-btn-primary"
                 >
                   {saving ? "Đang lưu..." : "Lưu xe"}
                 </button>
@@ -274,7 +274,7 @@ function Cars() {
             <Icon name="car" size={38}/>
             <h2>Garage đang trống</h2>
             <p>Thêm chiếc xe đầu tiên để đặt lịch bảo dưỡng.</p>
-            <button type="button" className="inline-flex min-h-[45px] w-max cursor-pointer items-center justify-center gap-2.5 whitespace-nowrap rounded-[11px] border border-[#cf2935] bg-[#cf2935] px-5 py-3 text-[13px] font-extrabold text-white transition-colors hover:bg-[#af202b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935]" onClick={() => setIsAddFormOpen(true)}>Thêm xe</button>
+            <button type="button" className="cs-btn cs-btn-primary w-max" onClick={() => setIsAddFormOpen(true)}>Thêm xe</button>
           </div>
         ) : (
           <div className="grid grid-cols-3 items-stretch gap-5 max-[1050px]:grid-cols-2 max-[670px]:grid-cols-1">
@@ -370,14 +370,14 @@ function Cars() {
                 <button
                   type="button"
                   onClick={() => setEditingVehicle(null)}
-                  className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 font-semibold text-slate-600 hover:bg-slate-50"
+                  className="cs-btn cs-btn-secondary"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={updating}
-                  className="cursor-pointer rounded-xl bg-[#cf2935] px-5 py-2 font-bold text-white transition hover:bg-[#af202b] disabled:opacity-60"
+                  className="cs-btn cs-btn-primary"
                 >
                   {updating ? "Đang lưu..." : "Cập nhật"}
                 </button>
@@ -402,7 +402,7 @@ function Cars() {
               <button
                 type="button"
                 onClick={() => setDeletingVehicle(null)}
-                className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                className="cs-btn cs-btn-secondary"
               >
                 Hủy
               </button>
@@ -410,7 +410,7 @@ function Cars() {
                 type="button"
                 disabled={deleting}
                 onClick={() => void handleDeleteVehicle()}
-                className="cursor-pointer rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-red-700 disabled:opacity-60"
+                className="cs-btn cs-btn-danger"
               >
                 {deleting ? "Đang xóa..." : "Xóa vĩnh viễn"}
               </button>
@@ -486,7 +486,7 @@ function Cars() {
               <button
                 type="button"
                 onClick={() => setDetailVehicle(null)}
-                className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                className="cs-btn cs-btn-secondary"
               >
                 Đóng
               </button>

@@ -206,7 +206,7 @@ export default function InvoicesPage() {
                 <button
                   type="button"
                   onClick={() => void loadData()}
-                  className="mt-3 cursor-pointer rounded-lg bg-[#1F2933] px-3 py-1.5 text-xs font-bold text-white"
+                  className="cs-btn cs-btn-secondary cs-btn-sm mt-3"
                 >
                   Thử lại
                 </button>
@@ -306,7 +306,7 @@ export default function InvoicesPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedInvoiceRow({ invoice, order })}
-                              className="cursor-pointer rounded-xl border border-[#DDE1E4] bg-white px-3 py-2 text-[11px] font-semibold text-[#20252B] transition hover:border-[#1F2933] hover:bg-[#1F2933] hover:text-white"
+                              className="cs-btn cs-btn-secondary cs-btn-sm"
                             >
                               Xem chi tiết
                             </button>
@@ -451,7 +451,7 @@ export default function InvoicesPage() {
                       <div key={pm.id} className="flex items-center justify-between p-3">
                         <div>
                           <p className="font-semibold text-slate-800">
-                            Phương thức: {pm.payment_method || "Tiền mặt / Chuyển khoản"}
+                            Phương thức: {pm.payment_method === "DIRECT" || !pm.payment_method ? "Tiền mặt tại quầy" : pm.payment_method}
                           </p>
                           <p className="text-[11px] text-slate-400">
                             Ngày: {formatDate(pm.payment_date)} · Trạng thái: {pm.status}
@@ -469,7 +469,7 @@ export default function InvoicesPage() {
               <button
                 type="button"
                 onClick={() => setSelectedInvoiceRow(null)}
-                className="cursor-pointer rounded-xl bg-slate-900 px-5 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                className="cs-btn cs-btn-primary"
               >
                 Đóng
               </button>

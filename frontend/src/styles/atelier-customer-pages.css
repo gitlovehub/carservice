@@ -5,10 +5,10 @@
 .at-customer-eyebrow{font-size:12px;letter-spacing:.16em;font-weight:800;color:var(--cs-accent);margin-bottom:10px}
 .at-customer-heading h1{font:800 clamp(29px,4vw,46px)/1.16 Manrope,system-ui,sans-serif;letter-spacing:-.055em}
 .at-customer-heading p:not(.at-customer-eyebrow){margin-top:10px;color:var(--cs-muted);font-size:14px}
-.at-customer-primary{border:1px solid #cf2935;background:#cf2935;color:white!important;font-weight:800;font-size:13px;border-radius:11px;padding:13px 20px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px}
-.at-customer-primary:hover{background:#af1f2b;border-color:#af1f2b}
-.at-customer-outline{display:inline-flex;border:1px solid var(--cs-border);border-radius:10px;padding:11px 15px;color:var(--cs-text)!important;font-weight:700;font-size:12px;margin-top:18px}
-.at-customer-outline:hover{border-color:var(--cs-accent);color:var(--cs-accent)!important}
+.at-customer-primary{border:1px solid var(--cs-accent,#cf2935);background:var(--cs-accent,#cf2935);color:var(--cs-accent-contrast,#fff)!important;font-weight:800;font-size:13px;border-radius:11px;padding:11px 18px;min-height:40px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.at-customer-primary:hover:not(:disabled){background:color-mix(in srgb,var(--cs-accent,#cf2935) 88%,#000);border-color:color-mix(in srgb,var(--cs-accent,#cf2935) 88%,#000);box-shadow:0 6px 16px -10px rgba(0,0,0,.45);transform:translateY(-1px)}
+.at-customer-outline{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;border:1px solid var(--cs-border);border-radius:11px;padding:9px 15px;background:var(--cs-surface-2,transparent);color:var(--cs-text)!important;font-weight:750;font-size:13px;margin-top:18px}
+.at-customer-outline:hover:not(:disabled){background:var(--cs-soft);border-color:var(--cs-accent);color:var(--cs-text)!important;box-shadow:0 6px 16px -10px rgba(0,0,0,.45);transform:translateY(-1px)}
 .at-customer-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:28px 0 22px}
 .at-customer-stat{min-height:137px;padding:24px;background:var(--cs-surface);border:1px solid var(--cs-border);border-radius:18px;display:flex;flex-direction:column;align-items:flex-start}
 .at-customer-stat span{font-size:12px;font-weight:800;letter-spacing:.065em;color:var(--cs-muted)}

@@ -18,8 +18,33 @@ export type WorkflowAppointment = {
 };
 export type WorkflowInspection = {
   id: number; diagnosis?: string | null; condition_description?: string | null; inspected_at?: string | null;
+  recorded_by?: { id: number; full_name?: string } | null;
   items?: Array<{ id: number; item_name: string; condition_status?: string | null; note?: string | null }>;
-  recommendations?: Array<{ id: number; item_type?: string; quantity?: number; note?: string | null }>;
+  recommendations?: Array<{
+    id: number; item_type?: "SERVICE" | "PART"; service_id?: number | null; part_id?: number | null; quantity?: number; note?: string | null;
+    service?: { id: number; name?: string; base_price?: string | number | null } | null;
+    part?: { id: number; name?: string; sell_price?: string | number | null } | null;
+  }>;
+};
+export type Money = string | number | null | undefined;
+export type WorkflowQuotationItem = {
+  id: number; item_type: "SERVICE" | "PART"; service_id?: number | null; part_id?: number | null;
+  description?: string | null; quantity: number; unit_price: Money; amount: Money; is_approved?: boolean | null;
+};
+export type WorkflowQuotation = {
+  id: number; quotation_code?: string; version?: number; status: string;
+  subtotal?: Money; discount_amount?: Money; total_amount?: Money; items?: WorkflowQuotationItem[];
+};
+export type WorkflowWorkItem = {
+  id: number; description?: string | null; status: string; service?: { name?: string } | null;
+  technician?: { employee?: { full_name?: string } | null } | null;
+};
+export type WorkflowUsedPart = { id: number; part_id: number; quantity: number; unit_price: Money; part?: { name?: string; unit?: string } | null };
+export type WorkflowPayment = { id: number; amount: Money; payment_method: string; status: string; paid_at?: string | null };
+export type WorkflowInvoice = {
+  id: number; invoice_code?: string; status: string; subtotal?: Money; discount_amount?: Money; total_amount?: Money;
+  items?: Array<{ id: number; description?: string | null; quantity: number; unit_price: Money; amount: Money }>;
+  payments?: WorkflowPayment[];
 };
 export type WorkflowOrder = {
   id: number;
@@ -38,6 +63,10 @@ export type WorkflowOrder = {
   assignments?: Array<{ id: number; technician_id: number; status?: string; technician?: { employee?: { full_name?: string } } }>;
   inspections?: WorkflowInspection[];
   status_history?: Array<{ id: number; status?: string; note?: string | null; created_at?: string }>;
+  quotations?: WorkflowQuotation[];
+  work_items?: WorkflowWorkItem[];
+  used_parts?: WorkflowUsedPart[];
+  invoice?: WorkflowInvoice | null;
 };
 export type WorkflowPage<T> = { data: T[]; current_page: number; last_page: number; total: number };
 export type ReceivePayload = {
@@ -56,8 +85,10 @@ export async function advisorAppointment(id: number): Promise<WorkflowAppointmen
 }
 
 /** Index is pagination-based; do not silently assume a single page contains every matching order. */
-export async function listWorkflowOrders(page = 1): Promise<WorkflowPage<WorkflowOrder>> {
-  return fetchApi<WorkflowPage<WorkflowOrder>>(`/repair-orders?page=${page}`);
+export async function listWorkflowOrders(page = 1, status = ""): Promise<WorkflowPage<WorkflowOrder>> {
+  const params = new URLSearchParams({ page: String(page) });
+  if (status) params.set("status", status);
+  return fetchApi<WorkflowPage<WorkflowOrder>>(`/repair-orders?${params}`);
 }
 
 export async function findOrderForAppointment(appointmentId: number): Promise<WorkflowOrder | null> {
@@ -130,8 +161,66 @@ export async function receiveRepairOrder(data: ReceivePayload): Promise<{ order:
   }
 }
 
+export type CatalogService = { id: number; name: string; category?: string | null; base_price?: Money };
+export type CatalogPart = { id: number; sku: string; name: string; unit?: string | null; sell_price?: Money; inventory?: { quantity: number } | null };
+export type QuotationLineInput = {
+  item_type: "SERVICE" | "PART"; service_id?: number; part_id?: number; description?: string; quantity: number; unit_price?: number;
+};
+export function latestQuotation(order: { quotations?: WorkflowQuotation[] }): WorkflowQuotation | null {
+  return [...(order.quotations ?? [])].sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0] ?? null;
+}
+/** Laravel decimal columns arrive as strings ("450000.00"). */
+export function toNumber(value: Money): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+export function formatVnd(value: Money): string {
+  return `${toNumber(value).toLocaleString("vi-VN")} ₫`;
+}
+
+export type InspectionResult = "PASSED" | "WARNING" | "FAILED";
+export type RecommendationInput = { item_type: "SERVICE" | "PART"; service_id?: number; part_id?: number; quantity: number; note?: string };
+export type InspectionInput = {
+  condition_description?: string; diagnosis?: string;
+  inspection_items: Array<{ item_name: string; status: InspectionResult; condition_description?: string }>;
+  recommendations?: RecommendationInput[];
+};
+
+export type TechnicianOption = {
+  id: number;
+  specialty?: string | null;
+  level?: string | null;
+  is_available?: boolean;
+  active_assignments_count?: number;
+  employee?: { id: number; full_name?: string; phone?: string } | null;
+};
+
 export const workflowApi = {
   order: (id: number) => fetchApi<WorkflowOrder>(`/repair-orders/${id}`),
+  technicians: () => fetchApi<TechnicianOption[]>("/technicians"),
+  services: () => fetchApi<CatalogService[]>("/services"),
+  parts: () => fetchApi<CatalogPart[]>("/parts"),
+  createQuotation: (id: number, payload: { discount_amount?: number; items: QuotationLineInput[] }) =>
+    fetchApi<WorkflowQuotation>(`/repair-orders/${id}/quotations`, { method: "POST", body: JSON.stringify(payload) }),
+  sendQuotation: (quotationId: number) => fetchApi<WorkflowQuotation>(`/quotations/${quotationId}/send`, { method: "POST" }),
+  respondQuotation: (quotationId: number, responses: Array<{ item_id: number; is_approved: boolean }>) =>
+    fetchApi<WorkflowQuotation>(`/quotations/${quotationId}/respond`, { method: "POST", body: JSON.stringify({ responses }) }),
+  transition: (id: number, step: "start-repair" | "waiting-for-parts" | "resume" | "complete" | "hand-over", note?: string) =>
+    fetchApi<WorkflowOrder>(`/repair-orders/${id}/${step}`, { method: "POST", body: JSON.stringify(note ? { note } : {}) }),
+  close: (id: number, closeReason: string, note: string) =>
+    fetchApi<WorkflowOrder>(`/repair-orders/${id}/close`, { method: "POST", body: JSON.stringify({ close_reason: closeReason, note }) }),
+  recordInspection: (id: number, payload: InspectionInput) =>
+    fetchApi<WorkflowInspection>(`/repair-orders/${id}/inspections`, { method: "POST", body: JSON.stringify(payload) }),
+  addRecommendation: (id: number, payload: RecommendationInput) =>
+    fetchApi(`/repair-orders/${id}/inspections/recommendations`, { method: "POST", body: JSON.stringify(payload) }),
+  completeInspection: (id: number) => fetchApi<WorkflowInspection>(`/repair-orders/${id}/inspections/complete`, { method: "POST" }),
+  updateWorkItem: (workItemId: number, status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED") =>
+    fetchApi(`/work-items/${workItemId}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  recordUsedPart: (id: number, payload: { part_id: number; quantity: number; work_item_id?: number }) =>
+    fetchApi<WorkflowUsedPart>(`/repair-orders/${id}/used-parts`, { method: "POST", body: JSON.stringify(payload) }),
+  createInvoice: (id: number) => fetchApi<WorkflowInvoice>(`/repair-orders/${id}/invoice`, { method: "POST" }),
+  payCash: (invoiceId: number, amount: number) =>
+    fetchApi<WorkflowPayment>(`/invoices/${invoiceId}/payments`, { method: "POST", body: JSON.stringify({ payment_method: "DIRECT", amount }) }),
   assignTechnician: (id: number, technicianId: number, note?: string) => fetchApi(`/repair-orders/${id}/assign-technician`, {
     method: "POST", body: JSON.stringify({ technician_id: technicianId, note: note || null }),
   }),

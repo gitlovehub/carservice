@@ -12,13 +12,15 @@ use App\Http\Controllers\Api\CustomerReviewController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\MaintenancePackageController;
+use App\Http\Controllers\Api\PartController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\QuotationController;
 use App\Http\Controllers\Api\RepairOrderController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\TechnicianController;
 use App\Http\Controllers\Api\VehicleController;
-use App\Http\Controllers\Api\WorkItemController;
 use App\Http\Controllers\Api\WorkingHoursController;
+use App\Http\Controllers\Api\WorkItemController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
 
@@ -211,9 +213,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::controller(WorkItemController::class)->group(function (): void {
             Route::get('repair-orders/{repairOrder}/work-items', 'index');
             Route::patch('work-items/{workItem}/status', 'updateStatus');
+            Route::post('repair-orders/{repairOrder}/used-parts', 'storeUsedPart');
         });
 
         Route::get('repair-orders/{repairOrder}/inspections', [InspectionController::class, 'show']);
+
+        // Danh mục phụ tùng (đề xuất khi chẩn đoán, lập báo giá)
+        Route::get('parts', [PartController::class, 'index']);
     });
 
     /*
@@ -229,6 +235,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         | Repair Orders
         |--------------------------------------------------------------------------
         */
+
+        Route::get('technicians', [TechnicianController::class, 'index']);
 
         Route::controller(RepairOrderController::class)->group(function (): void {
 
@@ -267,20 +275,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         /*
         |--------------------------------------------------------------------------
-        | Work Items / Used Parts
-        |--------------------------------------------------------------------------
-        */
-
-        Route::controller(WorkItemController::class)->group(function (): void {
-
-            Route::post(
-                'repair-orders/{repairOrder}/used-parts',
-                'storeUsedPart'
-            );
-        });
-
-        /*
-        |--------------------------------------------------------------------------
         | Invoice
         |--------------------------------------------------------------------------
         */
@@ -314,17 +308,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     /*
     |--------------------------------------------------------------------------
-    | Technician
+    | Inspections: KTV hoặc Cố vấn ghi kết quả kiểm tra / chẩn đoán
     |--------------------------------------------------------------------------
+    | Gara không dùng màn hình KTV thì Cố vấn nhập thay. KTV chỉ thao tác
+    | trên phiếu mình được giao (InspectionController::denyUnassignedTechnician).
     */
 
-    Route::middleware('role:'.Account::ROLE_TECHNICIAN)->group(function (): void {
-
-        /*
-        |--------------------------------------------------------------------------
-        | Inspections
-        |--------------------------------------------------------------------------
-        */
+    Route::middleware('role:'.Account::ROLE_ADVISOR.','.Account::ROLE_TECHNICIAN)->group(function (): void {
 
         Route::controller(InspectionController::class)->group(function (): void {
 

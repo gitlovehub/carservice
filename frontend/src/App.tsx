@@ -27,8 +27,6 @@ import Reviews from "./pages/customer/Reviews";
 import AdvisorCustomers from "./pages/advisor/Customers";
 import AdvisorCustomerCars from "./pages/advisor/Customer-cars";
 import AdvisorAppointments from "./pages/advisor/Appointments";
-import AdvisorRepairStatus from "./pages/advisor/RepairStatus";
-import AdvisorQuotation from "./pages/advisor/Quotation";
 import ReceptionWorkflow from "./pages/advisor/ReceptionWorkflow";
 import AdvisorRepairOrders from "./pages/advisor/AdvisorRepairOrders";
 import AdvisorRepairOrderDetail from "./pages/advisor/AdvisorRepairOrderDetail";
@@ -37,11 +35,6 @@ import AdvisorRepairOrderDetail from "./pages/advisor/AdvisorRepairOrderDetail";
 
 
 
-import TechnicianLayout from "./pages/technician/atelier/TechnicianLayout";
-import TechnicianDashboard from "./pages/technician/atelier/TechnicianDashboard";
-import TechnicianOrders from "./pages/technician/atelier/TechnicianOrders";
-import TechnicianDetail from "./pages/technician/atelier/TechnicianDetail";
-import TechnicianInspection from "./pages/technician/atelier/TechnicianInspection";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import WorkspaceDashboard from "./pages/shared/WorkspaceDashboard";
 import AdminAccounts from "./pages/admin/Accounts";
@@ -94,9 +87,10 @@ function App() {
       <Route path="customers" element={<AdvisorCustomers/>}/>
       <Route path="customer-cars" element={<AdvisorCustomerCars/>}/>
       <Route path="create-booking" element={<ModulePlaceholder area="Cố vấn" title="Đặt lịch hộ" description="Chỉ là màn hình tham chiếu demo; chưa cấp quyền tạo lịch hộ khi chưa có nghiệp vụ và API được nhóm trưởng chốt." owner="Nhóm module lịch hẹn"/>}/>
-      <Route path="repair-status" element={<AdvisorRepairStatus/>}/>
-      <Route path="quotation" element={<AdvisorQuotation/>}/>
-      <Route path="payments" element={<ModulePlaceholder area="Cố vấn" title="Thanh toán" description="Màn hình khung chờ module thanh toán của thành viên phụ trách và API thực tế." owner="Nhóm module thanh toán"/>}/>
+      {/* Báo giá, tiến độ, thanh toán được thao tác trên chi tiết phiếu; các menu cũ trỏ vào danh sách đã lọc. */}
+      <Route path="repair-status" element={<Navigate to="/advisor/service-orders?status=IN_PROGRESS" replace/>}/>
+      <Route path="quotation" element={<Navigate to="/advisor/service-orders?status=QUOTING" replace/>}/>
+      <Route path="payments" element={<Navigate to="/advisor/service-orders?status=COMPLETED" replace/>}/>
     </Route>
     <Route path="/customers" element={<Navigate to="/advisor/customers" replace/>}/>
     <Route path="/customer-cars" element={<Navigate to="/advisor/customer-cars" replace/>}/>
@@ -115,20 +109,6 @@ function App() {
       <Route path="staff" element={<ModulePlaceholder area="Quản trị" title="Nhân sự" description="Trang khung để tích hợp quản lý nhân sự khi có API và card triển khai." owner="Frontend module Admin"/>}/>
     </Route>
 
-    {/* Technician: protected Laravel role and real assigned-work APIs only. */}
-    <Route path="/technician" element={<ProtectedRoute allowedRoles={["TECHNICIAN"]}><TechnicianLayout/></ProtectedRoute>}>
-      <Route index element={<TechnicianDashboard/>}/>
-      <Route path="orders" element={<TechnicianOrders/>}/>
-      <Route path="orders/:orderId" element={<TechnicianDetail/>}/>
-      <Route path="orders/:orderId/inspection" element={<TechnicianInspection/>}/>
-      <Route path="work" element={<TechnicianOrders focusWork/>}/>
-    </Route>
-    {/* Keep legacy links but require genuine TECHNICIAN role (not ADMIN). */}
-    <Route path="/assigned-repairs" element={<Navigate to="/technician/orders" replace/>}/>
-    <Route path="/vehicle-check" element={<Navigate to="/technician/orders" replace/>}/>
-    <Route path="/diagnosis" element={<Navigate to="/technician/orders" replace/>}/>
-    <Route path="/repair-progress" element={<Navigate to="/technician/work" replace/>}/>
-    <Route path="/checklist" element={<Navigate to="/technician/orders" replace/>}/>
     <Route path="*" element={<div style={{ padding: 30 }}>Không tìm thấy trang. <a href="/">Về trang chủ</a></div>}/>
   </Routes><ChatWidget/></FeedbackProvider></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;
 }

@@ -230,7 +230,7 @@ function Header() {
                 onClick={() => setOpen((previous) => !previous)}
                 aria-expanded={open}
                 aria-haspopup="menu"
-                className="flex items-center gap-2 rounded-xl border border-[#E1E4E6] bg-white px-2 py-1.5 transition hover:border-[#D6A85F] hover:bg-[#F7F7F5] sm:gap-3 sm:px-3"
+                className="cs-btn cs-btn-secondary"
               >
                 {user?.avatar ? (
                   <img
@@ -332,7 +332,7 @@ function Header() {
             onClick={() => setMobileOpen((previous) => !previous)}
             aria-label={mobileOpen ? "Đóng menu" : "Mở menu"}
             aria-expanded={mobileOpen}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E1E4E6] text-[#1F2933] transition hover:bg-[#F7F7F5] lg:hidden"
+            className="cs-btn cs-btn-secondary lg:hidden"
           >
             {mobileOpen ? (
               <svg

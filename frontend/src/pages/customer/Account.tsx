@@ -552,7 +552,7 @@ function Account() {
                     <button
                       type="button"
                       onClick={() => logout()}
-                      className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50/60 py-2.5 text-xs font-semibold text-red-600 transition hover:bg-red-600 hover:text-white"
+                      className="cs-btn cs-btn-danger-outline cs-btn-block"
                     >
                       <span>↪</span>
                       Đăng xuất tài khoản
@@ -581,7 +581,7 @@ function Account() {
                     <button
                       type="button"
                       onClick={handleOpenEditProfile}
-                      className="inline-flex items-center gap-2 cursor-pointer rounded-xl border border-[#DDE1E4] bg-white px-4 py-2.5 text-xs font-semibold text-[#20252B] transition hover:border-[#1F2933] hover:bg-[#1F2933] hover:text-white shadow-2xs"
+                      className="cs-btn cs-btn-secondary"
                     >
                       <svg
                         className="h-3.5 w-3.5"
@@ -692,7 +692,7 @@ function Account() {
                     <button
                       type="button"
                       onClick={handleOpenChangePassword}
-                      className="inline-flex items-center gap-2 cursor-pointer rounded-xl border border-[#DDE1E4] bg-white px-4 py-2.5 text-xs font-semibold text-[#20252B] transition hover:border-[#D6A85F] hover:bg-[#FAF8F5] shadow-2xs"
+                      className="cs-btn cs-btn-secondary"
                     >
                       <svg
                         className="h-3.5 w-3.5 text-[#D6A85F]"
@@ -856,7 +856,7 @@ function Account() {
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => setIsEditProfileOpen(false)}
-                  className="cursor-pointer rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                  className="cs-btn cs-btn-secondary"
                 >
                   Hủy bỏ
                 </button>
@@ -864,7 +864,7 @@ function Account() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-[#1F2933] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#2e3b47] disabled:opacity-50"
+                  className="cs-btn cs-btn-primary"
                 >
                   {isSubmitting ? (
                     <>
@@ -1045,7 +1045,7 @@ function Account() {
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => setIsChangePasswordOpen(false)}
-                  className="cursor-pointer rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                  className="cs-btn cs-btn-secondary"
                 >
                   Hủy bỏ
                 </button>
@@ -1053,7 +1053,7 @@ function Account() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-[#1F2933] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#2e3b47] disabled:opacity-50"
+                  className="cs-btn cs-btn-primary"
                 >
                   {isSubmitting ? (
                     <>
@@ -1129,7 +1129,7 @@ function Account() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-[#1F2933] hover:bg-slate-50"
+                    className="cs-btn cs-btn-secondary"
                   >
                     <span>📁 Tải ảnh từ thiết bị</span>
                   </button>
@@ -1138,7 +1138,7 @@ function Account() {
                     <button
                       type="button"
                       onClick={() => setSelectedAvatar("")}
-                      className="cursor-pointer rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                      className="cs-btn cs-btn-danger-outline"
                     >
                       Dùng chữ cái mặc định
                     </button>
@@ -1190,7 +1190,7 @@ function Account() {
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => setIsAvatarModalOpen(false)}
-                  className="cursor-pointer rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                  className="cs-btn cs-btn-secondary"
                 >
                   Hủy bỏ
                 </button>
@@ -1199,7 +1199,7 @@ function Account() {
                   type="button"
                   disabled={isSubmitting}
                   onClick={handleSaveAvatar}
-                  className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-[#1F2933] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#2e3b47] disabled:opacity-50"
+                  className="cs-btn cs-btn-primary"
                 >
                   {isSubmitting ? (
                     <>

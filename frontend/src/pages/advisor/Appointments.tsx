@@ -526,7 +526,7 @@ function Appointments() {
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                    className="cs-btn cs-btn-secondary"
                   >
                     Xóa bộ lọc
                   </button>
@@ -739,7 +739,7 @@ function Appointments() {
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    className="cs-btn cs-btn-secondary mt-4"
                   >
                     Xóa bộ lọc
                   </button>
@@ -758,7 +758,7 @@ function Appointments() {
                       type="button"
                       disabled={currentPage === 1}
                       onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                      className="cs-btn cs-btn-secondary cs-btn-sm"
                     >
                       Trước
                     </button>
@@ -786,7 +786,7 @@ function Appointments() {
                       onClick={() =>
                         setCurrentPage((page) => Math.min(totalPages, page + 1))
                       }
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                      className="cs-btn cs-btn-secondary cs-btn-sm"
                     >
                       Sau
                     </button>
@@ -876,7 +876,7 @@ function Appointments() {
                   setCancelAppointment(null);
                   setCancelReason("");
                 }}
-                className="rounded-xl border border-cs-border bg-cs-surface px-4 py-2 text-xs font-semibold text-cs-muted transition hover:bg-cs-surface-2"
+                className="cs-btn cs-btn-secondary"
               >
                 Hủy bỏ
               </button>
@@ -888,7 +888,7 @@ function Appointments() {
                   loadingAction === `cancel-${cancelAppointment.id}`
                 }
                 onClick={handleCancel}
-                className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:opacity-40"
+                className="cs-btn cs-btn-danger"
               >
                 {loadingAction === `cancel-${cancelAppointment.id}`
                   ? "Đang xử lý..."

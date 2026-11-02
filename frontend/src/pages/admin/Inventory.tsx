@@ -237,7 +237,7 @@ function Inventory() {
                 <button
                   type="button"
                   onClick={openAddModal}
-                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24] sm:ml-auto"
+                  className="cs-btn cs-btn-primary"
                 >
                   + Nhập phụ tùng
                 </button>
@@ -465,7 +465,7 @@ function Inventory() {
                           <button
                             type="button"
                             onClick={() => openEditModal(part)}
-                            className="flex-1 rounded-xl bg-[#1F2933] px-3 py-2.5 text-[10px] font-semibold text-white transition hover:bg-[#151D24] sm:flex-none"
+                            className="cs-btn cs-btn-primary flex-1 sm:flex-none"
                           >
                             Cập nhật
                           </button>
@@ -542,7 +542,7 @@ function Inventory() {
                 <button
                   type="button"
                   onClick={() => openEditModal(selectedPart)}
-                  className="mt-3 w-full rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white hover:bg-[#151D24]"
+                  className="cs-btn cs-btn-primary mt-3 cs-btn-block"
                 >
                   Cập nhật phụ tùng
                 </button>
@@ -645,7 +645,7 @@ function Inventory() {
                   <button
                     type="button"
                     onClick={handleSave}
-                    className="flex-1 rounded-xl bg-[#1F2933] px-4 py-3 text-xs font-semibold text-white hover:bg-[#151D24]"
+                    className="cs-btn cs-btn-primary flex-1"
                   >
                     Lưu thông tin
                   </button>

@@ -162,7 +162,7 @@ export default function ReceptionWorkflow() {
               <label className="block text-sm font-semibold text-cs-text">Tình trạng xe ban đầu<textarea className={input} rows={3} value={condition} onChange={event => setCondition(event.target.value)} placeholder="Ghi nhận hư hỏng, ngoại thất, hiện trạng..."/></label>
               <label className="block text-sm font-semibold text-cs-text">Ghi chú tiếp nhận<textarea className={input} rows={3} value={note} onChange={event => setNote(event.target.value)} placeholder="Ghi chú bàn giao và yêu cầu của khách"/></label>
               <button type="submit" className={action} disabled={working}>{working ? "Đang lập phiếu..." : "Tạo phiếu sửa chữa →"}</button>
-              <p className="text-xs leading-5 text-cs-muted">Backend lưu trạng thái RECEIVED. Bước phân công KTV thực hiện sau khi tạo phiếu.</p>
+              <p className="text-xs leading-5 text-cs-muted">Phiếu được tạo ở trạng thái RECEIVED. Bước tiếp theo: ghi kết quả kiểm tra ngay trên trang phiếu.</p>
             </form>)}
           {selected.status === "CANCELLED" && <Notice tone="error">Lịch đã hủy, không thể tiếp nhận.</Notice>}
         </>}
