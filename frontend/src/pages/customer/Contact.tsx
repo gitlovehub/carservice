@@ -247,7 +247,7 @@ function Contact() {
                     <button
                       type="button"
                       onClick={handleSubmit}
-                      className="cursor-pointer rounded-xl bg-[#1F2933] px-6 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[#151D24] hover:shadow-md"
+                      className="cs-btn cs-btn-primary"
                     >
                       Gửi yêu cầu
                     </button>

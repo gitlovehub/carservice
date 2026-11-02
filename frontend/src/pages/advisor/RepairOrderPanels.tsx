@@ -4,7 +4,7 @@ import {
   formatVnd, latestQuotation, toNumber, workflowApi,
   type CatalogPart, type CatalogService, type QuotationLineInput, type WorkflowOrder, type WorkflowQuotation,
 } from "../../services/workflowService";
-import { action, card, errorText, input, Notice, outline } from "./WorkflowUI";
+import { action, card, danger, errorText, input, Notice, outline, success } from "./WorkflowUI";
 
 /** Panels for the steps after diagnosis; every action calls Laravel and then reloads the order. */
 type PanelProps = { order: WorkflowOrder; onChanged: (message: string) => Promise<void> };
@@ -151,16 +151,16 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
     {quotation && <QuotationTable quotation={quotation} approvals={quotation.status === "SENT" ? approvals : undefined}
       onToggle={quotation.status === "SENT" ? (itemId, approved) => setApprovals(previous => ({ ...previous, [itemId]: approved })) : undefined}/>}
 
-    {quotation?.status === "DRAFT" && <div className="mt-5 flex flex-wrap gap-3"><button type="button" className={action} disabled={working} onClick={() => void sendQuotation()}>Gửi báo giá cho khách</button></div>}
+    {quotation?.status === "DRAFT" && <div className="mt-5 flex flex-wrap gap-3"><button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void sendQuotation()}>Gửi báo giá cho khách</button></div>}
     {quotation?.status === "SENT" && <div className="mt-5 space-y-3">
       <Notice>Khách có thể tự duyệt trong tài khoản. Nếu khách trả lời trực tiếp tại quầy, bỏ chọn hạng mục bị từ chối rồi ghi nhận.</Notice>
-      <button type="button" className={action} disabled={working} onClick={() => void recordResponse()}>Ghi nhận phản hồi tại quầy</button>
+      <button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void recordResponse()}>Ghi nhận phản hồi tại quầy</button>
     </div>}
     {quotation && ["APPROVED", "PARTIALLY_APPROVED"].includes(quotation.status) && order.status === "WAITING_APPROVAL" &&
-      <div className="mt-5"><button type="button" className={action} disabled={working} onClick={() => void startRepair()}>Bắt đầu sửa chữa →</button></div>}
+      <div className="mt-5"><button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void startRepair()}>Bắt đầu sửa chữa →</button></div>}
     {quotation?.status === "REJECTED" && order.status === "WAITING_APPROVAL" && <div className="mt-5 flex flex-wrap gap-3">
       <Notice tone="error">Khách từ chối toàn bộ báo giá. Lập báo giá mới bên dưới hoặc đóng phiếu.</Notice>
-      <button type="button" className={outline} disabled={working} onClick={() => void closeDeclined()}>Đóng phiếu (khách từ chối)</button>
+      <button type="button" className={danger} disabled={working} onClick={() => void closeDeclined()}>Đóng phiếu (khách từ chối)</button>
     </div>}
 
     {canBuild && <form className="mt-6 space-y-4 border-t border-cs-border pt-5" onSubmit={event => void createQuotation(event)}>
@@ -177,7 +177,7 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
         <label className="text-xs font-semibold text-cs-muted">SL<input className={input} type="number" min="1" step="1" required value={line.quantity} onChange={event => updateLine(line.key, { quantity: event.target.value })}/></label>
         <label className="text-xs font-semibold text-cs-muted">Đơn giá (₫)<input className={input} type="number" min="0" step="any" required value={line.unit_price} onChange={event => updateLine(line.key, { unit_price: event.target.value })}/></label>
         <label className="text-xs font-semibold text-cs-muted">Mô tả (tùy chọn)<input className={input} value={line.description} onChange={event => updateLine(line.key, { description: event.target.value })} placeholder="Mặc định: tên hạng mục"/></label>
-        <button type="button" className={outline} onClick={() => setLines(previous => previous.filter(item => item.key !== line.key))}>Xóa</button>
+        <button type="button" className={`${danger} cs-btn-sm`} aria-label="Xóa dòng báo giá" onClick={() => setLines(previous => previous.filter(item => item.key !== line.key))}>Xóa</button>
       </div>)}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap gap-3">
@@ -236,8 +236,8 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
     {workItems.length ? <ul className="space-y-2">{workItems.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 text-sm">
       <div><p className="font-semibold text-cs-text">{item.service?.name || item.description || `Công việc #${item.id}`}</p><p className="text-xs text-cs-muted">{workStatusText[item.status] || item.status}</p></div>
       {inRepair && <div className="flex gap-2">
-        {item.status === "PENDING" && <button type="button" className={outline} disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(item.id, "IN_PROGRESS"), "Đã bắt đầu công việc.")}>Bắt đầu</button>}
-        {item.status === "IN_PROGRESS" && <button type="button" className={outline} disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(item.id, "COMPLETED"), "Đã hoàn thành công việc.")}>Xong</button>}
+        {item.status === "PENDING" && <button type="button" className={`${outline} cs-btn-sm`} disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(item.id, "IN_PROGRESS"), "Đã bắt đầu công việc.")}>Bắt đầu</button>}
+        {item.status === "IN_PROGRESS" && <button type="button" className={`${success} cs-btn-sm`} disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(item.id, "COMPLETED"), "Đã hoàn thành công việc.")}>Xong</button>}
       </div>}
     </li>)}</ul> : <p className="text-sm text-cs-muted">Báo giá không có dịch vụ nào được duyệt nên không có công việc.</p>}
 
@@ -257,7 +257,7 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
       <label className="block text-xs font-semibold text-cs-muted">Ghi chú (tùy chọn)<input className={input} value={note} onChange={event => setNote(event.target.value)} placeholder="Ví dụ: đã chạy thử 5 km, phanh ổn định"/></label>
       <div className="flex flex-wrap gap-3">
         {order.status === "IN_PROGRESS" && <button type="button" className={outline} disabled={working} onClick={() => void run(() => workflowApi.transition(order.id, "waiting-for-parts", note.trim() || undefined), "Phiếu chuyển sang chờ phụ tùng.")}>Chờ phụ tùng</button>}
-        {order.status === "WAITING_FOR_PARTS" && <button type="button" className={action} disabled={working} onClick={() => void run(() => workflowApi.transition(order.id, "resume", note.trim() || undefined), "Tiếp tục sửa chữa.")}>Tiếp tục sửa chữa</button>}
+        {order.status === "WAITING_FOR_PARTS" && <button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void run(() => workflowApi.transition(order.id, "resume", note.trim() || undefined), "Tiếp tục sửa chữa.")}>Tiếp tục sửa chữa</button>}
         {order.status === "IN_PROGRESS" && <button type="button" className={action} disabled={working || unfinished > 0} onClick={() => void complete()}>Hoàn thành sửa chữa →</button>}
       </div>
       {order.status === "IN_PROGRESS" && unfinished > 0 && <p className="text-xs text-cs-muted">Còn {unfinished} công việc chưa xong nên chưa thể hoàn thành phiếu.</p>}
@@ -309,7 +309,7 @@ export function PaymentPanel({ order, onChanged }: PanelProps) {
     <h2 className="mt-1 text-lg font-bold text-cs-text">Hóa đơn {invoice && <span className="ml-2 text-sm font-semibold text-cs-muted">{invoice.invoice_code} · {invoiceStatusText[invoice.status] || invoice.status}</span>}</h2>
     <div className="mt-4 print:hidden">{error && <Notice tone="error">{error}</Notice>}</div>
     {!invoice && <div className="print:hidden"><p className="mb-4 text-sm text-cs-muted">Hóa đơn được tính từ các hạng mục khách đã duyệt trong báo giá.</p>
-      <button type="button" className={action} disabled={working} onClick={() => void run(() => workflowApi.createInvoice(order.id), "Đã lập hóa đơn. Thu tiền mặt tại quầy.")}>Lập hóa đơn</button></div>}
+      <button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void run(() => workflowApi.createInvoice(order.id), "Đã lập hóa đơn. Thu tiền mặt tại quầy.")}>Lập hóa đơn</button></div>}
     {invoice && <>
       <ul className="space-y-1 text-sm text-cs-text">{invoice.items?.map(item => <li key={item.id} className="flex justify-between gap-3"><span>{item.description} × {item.quantity}</span><span>{formatVnd(item.amount)}</span></li>)}</ul>
       <div className="mt-3 space-y-1 border-t border-cs-border pt-3 text-right text-sm text-cs-text">
@@ -321,10 +321,10 @@ export function PaymentPanel({ order, onChanged }: PanelProps) {
       {remaining > 0 && <form className="mt-5 grid gap-3 border-t border-cs-border pt-5 md:grid-cols-[1fr_1fr_auto] md:items-end print:hidden" onSubmit={event => void collectCash(event)}>
         <label className="text-xs font-semibold text-cs-muted">Số tiền thu (₫)<input className={input} type="number" min="1" step="any" max={remaining} required value={amount} onChange={event => setAmount(event.target.value)}/></label>
         <label className="text-xs font-semibold text-cs-muted">Khách đưa (₫, để tính tiền thối)<input className={input} type="number" min="0" step="any" value={cashGiven} onChange={event => setCashGiven(event.target.value)}/></label>
-        <button type="submit" className={action} disabled={working}>Xác nhận đã nhận tiền mặt</button>
+        <button type="submit" className={success} disabled={working} aria-busy={working}>Xác nhận đã nhận tiền mặt</button>
         {cashGiven && <p className="text-sm text-cs-text md:col-span-3">{change >= 0 ? `Tiền thối lại khách: ${formatVnd(change)}` : `Khách đưa thiếu ${formatVnd(-change)}`}</p>}
       </form>}
-      {invoice.status === "PAID" && order.status === "COMPLETED" && <div className="mt-5 print:hidden"><button type="button" className={action} disabled={working} onClick={() => void handOver()}>Bàn giao xe cho khách →</button></div>}
+      {invoice.status === "PAID" && order.status === "COMPLETED" && <div className="mt-5 print:hidden"><button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void handOver()}>Bàn giao xe cho khách →</button></div>}
       {order.status === "HANDED_OVER" && <div className="mt-5"><Notice tone="success">Đã bàn giao xe. Khách có thể gửi đánh giá dịch vụ.</Notice></div>}
     </>}
   </section>;

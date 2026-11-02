@@ -298,15 +298,6 @@ html[data-theme="dark"] .cs-feedback-layer { --cs-bg:#111214; --cs-surface:#191b
 html[data-theme="dark"] .cs-feedback-layer[data-area="advisor"] { --cs-accent:#e9bf72; --cs-accent-contrast:#1e1b14; --cs-soft:#302719; }
 html[data-theme="dark"] .cs-feedback-layer[data-area="admin"] { --cs-accent:#c5ff64; --cs-accent-contrast:#141a0e; --cs-soft:#26351c; }
 html[data-theme="dark"] .cs-feedback-layer[data-area="technician"] { --cs-accent:#7dd3fc; --cs-accent-contrast:#06152a; --cs-soft:#162b43; --cs-bg:#0a1223; --cs-surface:#131f35; --cs-surface-2:#17263e; --cs-border:#41526b; }
-.cs-unified-btn {display:inline-flex;align-items:center;justify-content:center;min-height:40px;min-width:86px;gap:8px;padding:9px 16px;border:1px solid transparent;border-radius:11px;font-size:13px;font-weight:750;line-height:20px;white-space:normal;text-align:center;transition:background .18s ease,border-color .18s ease,transform .18s ease;cursor:pointer;}
-.cs-unified-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.cs-unified-btn:focus-visible{outline:2px solid var(--cs-accent);outline-offset:3px}
-.cs-unified-primary {background:var(--cs-accent);color:var(--cs-accent-contrast)}
-.cs-unified-primary:hover:not(:disabled) {filter:brightness(.92)}
-.cs-unified-secondary {background:var(--cs-surface-2);color:var(--cs-text);border-color:var(--cs-border)}
-.cs-unified-secondary:hover:not(:disabled) {background:var(--cs-soft);border-color:var(--cs-accent)}
-.cs-unified-danger {background:#b91c1c;color:white}
-.cs-unified-danger:hover:not(:disabled) {background:#991b1b}
 .cs-appointment-page :is(button,a){min-height:36px}
 .cs-appointment-page :is(button,a).cs-unified-btn{min-height:40px}
 .cs-info-panel {background:var(--cs-surface-2)!important;border:1px solid var(--cs-border)!important;color:var(--cs-text)!important;border-radius:13px}

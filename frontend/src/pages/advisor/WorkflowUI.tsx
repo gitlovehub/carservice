@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
 export const card = "rounded-2xl border border-cs-border bg-cs-surface p-5 shadow-sm sm:p-6";
 export const input = "mt-2 min-h-11 w-full rounded-xl border border-cs-border bg-cs-surface-2 px-3 py-2.5 text-sm text-cs-text outline-none transition hover:border-cs-accent/60 focus:border-cs-accent focus:ring-2 focus:ring-cs-accent/20 disabled:opacity-50";
-export const action = "inline-flex min-h-10 items-center justify-center rounded-xl bg-cs-accent px-4 py-2 text-sm font-bold text-cs-accent-contrast transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50";
-export const outline = "inline-flex min-h-10 items-center justify-center rounded-xl border border-cs-border bg-cs-surface-2 px-4 py-2 text-sm font-semibold text-cs-text transition hover:border-cs-accent/60 hover:bg-cs-soft disabled:opacity-50";
+/** Nút thao tác chuẩn (styles/buttons.css): action = bước tiếp theo, outline = thao tác phụ. */
+export const action = "cs-btn cs-btn-primary";
+export const outline = "cs-btn cs-btn-secondary";
+export const danger = "cs-btn cs-btn-danger-outline";
+export const success = "cs-btn cs-btn-success";
 export function WorkflowTitle({ label, title, sub }: { label: string; title: string; sub: string }) {
   return <div className="mb-7"><p className="text-xs font-bold uppercase tracking-[0.16em] text-cs-accent">{label}</p><h1 className="mt-2 text-2xl font-black text-cs-text sm:text-4xl">{title}</h1><p className="mt-2 text-sm text-cs-muted">{sub}</p></div>;
 }

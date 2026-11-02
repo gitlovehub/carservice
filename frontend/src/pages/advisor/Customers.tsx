@@ -175,7 +175,7 @@ function Customers() {
                 <button
                   type="button"
                   onClick={openCreateModal}
-                  className="w-fit rounded-xl bg-[#1F2933] px-4 py-2.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-[#151D24]"
+                  className="cs-btn cs-btn-primary"
                 >
                   + Thêm khách hàng
                 </button>
@@ -246,7 +246,7 @@ function Customers() {
 
                 <button
                   type="submit"
-                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-[11px] font-semibold text-white transition hover:bg-[#151D24]"
+                  className="cs-btn cs-btn-primary"
                 >
                   Tìm kiếm
                 </button>

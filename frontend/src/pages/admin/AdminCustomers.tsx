@@ -228,7 +228,7 @@ function AdminCustomers() {
                 <button
                   type="button"
                   onClick={handleResetFilter}
-                  className="rounded-xl border border-[#E1E4E6] px-4 py-3 text-xs font-semibold text-[#66717C] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
+                  className="cs-btn cs-btn-secondary"
                 >
                   Đặt lại
                 </button>
@@ -344,7 +344,7 @@ function AdminCustomers() {
                     <button
                       type="button"
                       onClick={handleResetFilter}
-                      className="mt-4 rounded-xl bg-[#20252B] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#39434D]"
+                      className="cs-btn cs-btn-primary mt-4"
                     >
                       Xóa bộ lọc
                     </button>

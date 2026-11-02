@@ -245,7 +245,7 @@ function Reviews() {
                 <button
                   type="submit"
                   disabled={submitting || finishedOrders.length === 0}
-                  className="w-full cursor-pointer rounded-xl bg-[#1F2933] py-3 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                  className="cs-btn cs-btn-primary cs-btn-block" aria-busy={submitting}
                 >
                   {submitting ? "Đang gửi..." : "Gửi đánh giá"}
                 </button>

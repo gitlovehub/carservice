@@ -206,7 +206,7 @@ export default function InvoicesPage() {
                 <button
                   type="button"
                   onClick={() => void loadData()}
-                  className="mt-3 cursor-pointer rounded-lg bg-[#1F2933] px-3 py-1.5 text-xs font-bold text-white"
+                  className="cs-btn cs-btn-secondary cs-btn-sm mt-3"
                 >
                   Thử lại
                 </button>
@@ -306,7 +306,7 @@ export default function InvoicesPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedInvoiceRow({ invoice, order })}
-                              className="cursor-pointer rounded-xl border border-[#DDE1E4] bg-white px-3 py-2 text-[11px] font-semibold text-[#20252B] transition hover:border-[#1F2933] hover:bg-[#1F2933] hover:text-white"
+                              className="cs-btn cs-btn-secondary cs-btn-sm"
                             >
                               Xem chi tiết
                             </button>
@@ -469,7 +469,7 @@ export default function InvoicesPage() {
               <button
                 type="button"
                 onClick={() => setSelectedInvoiceRow(null)}
-                className="cursor-pointer rounded-xl bg-slate-900 px-5 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                className="cs-btn cs-btn-primary"
               >
                 Đóng
               </button>

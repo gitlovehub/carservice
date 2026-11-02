@@ -343,7 +343,7 @@ function Services() {
                 <button
                   type="button"
                   onClick={openCreateModal}
-                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24]"
+                  className="cs-btn cs-btn-primary"
                 >
                   + Thêm dịch vụ
                 </button>
@@ -455,7 +455,7 @@ function Services() {
                 <div className="flex gap-2">
                   <button
                     type="submit"
-                    className="flex-1 rounded-xl bg-[#1F2933] px-4 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24]"
+                    className="cs-btn cs-btn-primary flex-1"
                   >
                     Tìm kiếm
                   </button>
@@ -639,7 +639,7 @@ function Services() {
                               type="button"
                               disabled={isDeleting}
                               onClick={() => void handleDelete(service)}
-                              className="rounded-xl border border-red-200 bg-white px-4 py-2.5 text-[10px] font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                              className="cs-btn cs-btn-danger-outline"
                             >
                               {deletingId === service.id
                                 ? "Đang xử lý..."
@@ -837,7 +837,7 @@ function Services() {
                     <button
                       type="submit"
                       disabled={isSaving}
-                      className="rounded-xl bg-[#1F2933] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#151D24] disabled:opacity-60"
+                      className="cs-btn cs-btn-primary"
                     >
                       {isSaving ? "Đang lưu..." : "Lưu dịch vụ"}
                     </button>
@@ -919,7 +919,7 @@ function Services() {
                   <button
                     type="button"
                     onClick={() => setModal(null)}
-                    className="rounded-xl bg-[#1F2933] px-5 py-2.5 text-xs font-semibold text-white"
+                    className="cs-btn cs-btn-primary"
                   >
                     Đóng
                   </button>

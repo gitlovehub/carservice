@@ -145,7 +145,7 @@ function RoleSelector() {
                 type="button"
                 onClick={() => handleSelect(role.code, role.path)}
                 aria-label={`Chọn vai trò ${role.name}`}
-                className="group flex min-h-[250px] flex-col rounded-3xl border border-[#E1E4E6] bg-white p-6 text-left transition duration-200 hover:-translate-y-1 hover:border-[#D6A85F] hover:shadow-[0_18px_40px_rgba(31,41,51,0.08)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D6A85F]/30 sm:p-7"
+                className="cs-btn cs-btn-secondary"
               >
                 <div className="flex w-full items-start justify-between gap-4">
                   <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D6A85F]/30 bg-[#FAF8F5] p-4 text-[#9A7334] transition group-hover:bg-[#F5ECD9]">
