@@ -12,11 +12,13 @@ use App\Models\InspectionItem;
 use App\Models\InspectionRecommendation;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\Part;
 use App\Models\Payment;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\RepairOrder;
 use App\Models\RepairOrderStatusHistory;
+use App\Models\Service;
 use App\Models\TechnicianProfile;
 use App\Models\UsedPart;
 use App\Models\Vehicle;
@@ -265,7 +267,14 @@ class RepairOrderService
                     );
                 }
 
-                $unitPrice = (float) $item['unit_price'];
+                $catalogItem = $item['item_type'] === QuotationItem::TYPE_PART
+                    ? Part::query()->find($item['part_id'])
+                    : Service::query()->find($item['service_id']);
+                $catalogPrice = $item['item_type'] === QuotationItem::TYPE_PART
+                    ? $catalogItem?->sell_price
+                    : $catalogItem?->base_price;
+
+                $unitPrice = (float) ($item['unit_price'] ?? $catalogPrice ?? 0);
                 $quantity = (int) ($item['quantity'] ?? 1);
 
                 QuotationItem::create([
@@ -273,7 +282,7 @@ class RepairOrderService
                     'item_type' => $item['item_type'],
                     'service_id' => $item['item_type'] === QuotationItem::TYPE_SERVICE ? $item['service_id'] : null,
                     'part_id' => $item['item_type'] === QuotationItem::TYPE_PART ? $item['part_id'] : null,
-                    'description' => $item['description'],
+                    'description' => $item['description'] ?? $catalogItem?->name ?? '',
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
                     'amount' => $unitPrice * $quantity,
