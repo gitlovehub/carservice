@@ -3,7 +3,6 @@ import CustomerHeader from "../../components/CustomerHeader";
 import CustomerTopbar from "../../components/CustomerTopbar";
 import { Toast, type ToastType } from "../../components/auth/Toast";
 import {
-  FINISHED_REPAIR_STATUSES,
   formatDate,
   getMyRepairOrders,
   getMyReviews,
@@ -40,8 +39,8 @@ function Reviews() {
       ]);
       setReviews(reviewData);
 
-      // Chỉ lấy các phiếu đã xong hoặc bàn giao
-      const finished = orderData.filter((o) => FINISHED_REPAIR_STATUSES.includes(o.status));
+      // Backend chỉ nhận đánh giá cho phiếu đã bàn giao xe (HANDED_OVER)
+      const finished = orderData.filter((o) => o.status === "HANDED_OVER");
       setFinishedOrders(finished);
 
       // Tìm phiếu đầu tiên chưa được đánh giá để gán mặc định
