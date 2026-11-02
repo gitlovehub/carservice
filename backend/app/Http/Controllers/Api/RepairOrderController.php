@@ -53,8 +53,8 @@ class RepairOrderController extends Controller
 
         $repairOrder->load([
             'customer', 'vehicle', 'advisor', 'statusHistory.changedByAccount',
-            'assignments.technician.employee', 'inspections.items', 'inspections.recommendations',
-            'quotations.items', 'workItems.technician', 'usedParts', 'invoice.payments',
+            'assignments.technician.employee', 'inspections.items', 'inspections.recommendations.service', 'inspections.recommendations.part',
+            'quotations.items', 'workItems.technician', 'workItems.service', 'usedParts.part', 'invoice.payments',
         ]);
 
         return response()->json($repairOrder);
