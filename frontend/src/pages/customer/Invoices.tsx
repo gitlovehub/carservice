@@ -451,7 +451,7 @@ export default function InvoicesPage() {
                       <div key={pm.id} className="flex items-center justify-between p-3">
                         <div>
                           <p className="font-semibold text-slate-800">
-                            Phương thức: {pm.payment_method || "Tiền mặt / Chuyển khoản"}
+                            Phương thức: {pm.payment_method === "DIRECT" || !pm.payment_method ? "Tiền mặt tại quầy" : pm.payment_method}
                           </p>
                           <p className="text-[11px] text-slate-400">
                             Ngày: {formatDate(pm.payment_date)} · Trạng thái: {pm.status}
