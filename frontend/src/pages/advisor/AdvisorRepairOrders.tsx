@@ -4,7 +4,7 @@ import { listWorkflowOrders, type WorkflowOrder, type WorkflowPage } from "../..
 import { card, outline, WorkflowTitle, Notice, Status, errorText, formatDateTime } from "./WorkflowUI";
 
 const filters: Array<[string, string]> = [
-  ["", "Tất cả"], ["RECEIVED", "Chờ giao KTV"], ["INSPECTING", "Đang kiểm tra"], ["QUOTING", "Chờ lập báo giá"],
+  ["", "Tất cả"], ["RECEIVED", "Chờ kiểm tra"], ["INSPECTING", "Đang kiểm tra"], ["QUOTING", "Chờ lập báo giá"],
   ["WAITING_APPROVAL", "Chờ khách duyệt"], ["IN_PROGRESS", "Đang sửa"], ["WAITING_FOR_PARTS", "Chờ phụ tùng"],
   ["COMPLETED", "Chờ thanh toán"], ["HANDED_OVER", "Đã bàn giao"], ["CLOSED", "Đã đóng"],
 ];
@@ -25,7 +25,7 @@ export default function AdvisorRepairOrders() {
   useEffect(() => { void load(); }, [load]);
 
   return <main className="mx-auto max-w-6xl pb-12">
-    <WorkflowTitle label="SERVICE DESK / REPAIR ORDERS" title="Phiếu sửa chữa" sub="Danh sách phiếu thực tế. Tạo phiếu tại bước tiếp nhận xe, sau đó phân công kỹ thuật viên kiểm tra."/>
+    <WorkflowTitle label="SERVICE DESK / REPAIR ORDERS" title="Phiếu sửa chữa" sub="Danh sách phiếu thực tế. Tạo phiếu tại bước tiếp nhận xe, sau đó mở phiếu để kiểm tra, báo giá và sửa chữa."/>
     <div className="mb-5 flex flex-wrap gap-3"><Link className={outline} to="/advisor/reception">+ Tiếp nhận xe và lập phiếu</Link><button type="button" className={outline} disabled={loading} onClick={() => void load()}>Làm mới</button></div>
     <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Lọc theo trạng thái">{filters.map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={status === value}
       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${status === value ? "border-cs-accent bg-cs-accent text-cs-accent-contrast" : "border-cs-border bg-cs-surface-2 text-cs-text hover:border-cs-accent/60"}`}

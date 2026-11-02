@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import {
   formatVnd, latestQuotation, toNumber, workflowApi,
-  type CatalogPart, type CatalogService, type QuotationLineInput, type WorkflowOrder, type WorkflowQuotation,
+  type CatalogPart, type CatalogService, type InspectionResult, type QuotationLineInput, type RecommendationInput,
+  type WorkflowOrder, type WorkflowQuotation,
 } from "../../services/workflowService";
 import { action, card, danger, errorText, input, Notice, outline, success } from "./WorkflowUI";
 
@@ -74,7 +75,8 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
     return () => { active = false; };
   }, []);
 
-  const canBuild = ["INSPECTING", "QUOTING", "WAITING_APPROVAL"].includes(order.status)
+  // Chỉ lập báo giá sau khi chẩn đoán đã hoàn tất (backend cho phép sớm hơn, giao diện giữ đúng thứ tự bước).
+  const canBuild = ["QUOTING", "WAITING_APPROVAL"].includes(order.status)
     && (!quotation || ["REJECTED", "CANCELLED"].includes(quotation.status));
   const draftTotal = lines.reduce((sum, line) => sum + toNumber(line.unit_price) * toNumber(line.quantity), 0) - toNumber(discount);
 
@@ -133,8 +135,8 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
   }
 
   async function startRepair() {
-    if (!await confirm({ title: "Bắt đầu sửa chữa", description: "Tạo công việc cho KTV từ các dịch vụ khách đã duyệt và chuyển phiếu sang đang sửa chữa.", confirmText: "Bắt đầu sửa" })) return;
-    await run(() => workflowApi.transition(order.id, "start-repair"), "Đã bắt đầu sửa chữa. KTV thấy công việc trên phiếu.");
+    if (!await confirm({ title: "Bắt đầu sửa chữa", description: "Tạo danh sách công việc từ các dịch vụ khách đã duyệt và chuyển phiếu sang đang sửa chữa.", confirmText: "Bắt đầu sửa" })) return;
+    await run(() => workflowApi.transition(order.id, "start-repair"), "Đã bắt đầu sửa chữa. Cập nhật từng công việc ở Bước 4.");
   }
 
   async function closeDeclined() {
@@ -165,7 +167,7 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
 
     {canBuild && <form className="mt-6 space-y-4 border-t border-cs-border pt-5" onSubmit={event => void createQuotation(event)}>
       <h3 className="font-bold text-cs-text">{quotation ? "Lập báo giá mới" : "Lập báo giá từ kết quả chẩn đoán"}</h3>
-      {!recommendations.length && <Notice>KTV chưa đề xuất hạng mục. Có thể thêm dịch vụ thủ công; phụ tùng chỉ được báo giá khi KTV đã đề xuất.</Notice>}
+      {!recommendations.length && <Notice>Chưa có đề xuất từ bước kiểm tra. Có thể thêm dịch vụ thủ công; phụ tùng chỉ được báo giá khi đã có trong đề xuất ở bước kiểm tra.</Notice>}
       {lines.map(line => <div key={line.key} className="grid gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 md:grid-cols-[120px_minmax(0,2fr)_80px_140px_minmax(0,1.5fr)_auto] md:items-end">
         <label className="text-xs font-semibold text-cs-muted">Loại<select className={input} value={line.item_type} onChange={event => updateLine(line.key, { item_type: event.target.value as "SERVICE" | "PART" })}><option value="SERVICE">Dịch vụ</option><option value="PART">Phụ tùng</option></select></label>
         <label className="text-xs font-semibold text-cs-muted">Hạng mục *<select required className={input} value={line.ref_id} onChange={event => updateLine(line.key, { ref_id: event.target.value })}>
@@ -181,7 +183,7 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
       </div>)}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap gap-3">
-          <button type="button" className={outline} onClick={() => setLines(previous => [...previous, { key: Date.now(), item_type: "SERVICE", ref_id: "", quantity: "1", unit_price: "0", description: "" }])}>+ Thêm dòng</button>
+          <button type="button" className={`${outline} self-end`} onClick={() => setLines(previous => [...previous, { key: Date.now(), item_type: "SERVICE", ref_id: "", quantity: "1", unit_price: "0", description: "" }])}>+ Thêm dòng</button>
           <label className="text-xs font-semibold text-cs-muted">Giảm giá (₫)<input className={input} type="number" min="0" step="any" value={discount} onChange={event => setDiscount(event.target.value)}/></label>
         </div>
         <div className="text-right"><p className="text-sm text-cs-muted">Tổng dự kiến</p><p className="text-xl font-black text-cs-text">{formatVnd(draftTotal)}</p></div>
@@ -327,5 +329,164 @@ export function PaymentPanel({ order, onChanged }: PanelProps) {
       {invoice.status === "PAID" && order.status === "COMPLETED" && <div className="mt-5 print:hidden"><button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void handOver()}>Bàn giao xe cho khách →</button></div>}
       {order.status === "HANDED_OVER" && <div className="mt-5"><Notice tone="success">Đã bàn giao xe. Khách có thể gửi đánh giá dịch vụ.</Notice></div>}
     </>}
+  </section>;
+}
+
+const resultText: Record<string, string> = {
+  PASSED: "Đạt", WARNING: "Cần lưu ý", FAILED: "Không đạt",
+  NORMAL: "Bình thường", NEEDS_SERVICE: "Cần bảo dưỡng", NEEDS_REPLACEMENT: "Cần thay thế",
+};
+const resultTone: Record<string, string> = { PASSED: "text-emerald-600", WARNING: "text-amber-600", FAILED: "text-red-600" };
+type CheckRow = { key: number; item_name: string; status: InspectionResult; condition_description: string };
+type RecRow = { key: number; item_type: "SERVICE" | "PART"; ref_id: string; quantity: string; note: string };
+const blankCheck = (key: number): CheckRow => ({ key, item_name: "", status: "PASSED", condition_description: "" });
+const blankRec = (key: number, type: "SERVICE" | "PART" = "SERVICE"): RecRow => ({ key, item_type: type, ref_id: "", quantity: "1", note: "" });
+
+/** Bước 2: cố vấn ghi kết quả kiểm tra, đề xuất dịch vụ/phụ tùng và hoàn tất chẩn đoán. */
+export function InspectionPanel({ order, onChanged }: PanelProps) {
+  const { confirm } = useAppFeedback();
+  const inspection = order.inspections?.[0] ?? null;
+  const [services, setServices] = useState<CatalogService[]>([]);
+  const [parts, setParts] = useState<CatalogPart[]>([]);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
+  const [condition, setCondition] = useState(order.initial_condition ?? "");
+  const [diagnosis, setDiagnosis] = useState("");
+  const [checks, setChecks] = useState<CheckRow[]>([blankCheck(1)]);
+  const [recs, setRecs] = useState<RecRow[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([workflowApi.services(), workflowApi.parts()])
+      .then(([serviceList, partList]) => { if (active) { setServices(serviceList); setParts(partList); } })
+      .catch(err => { if (active) setError(errorText(err)); });
+    return () => { active = false; };
+  }, []);
+
+  const canRecord = !inspection && ["RECEIVED", "INSPECTING"].includes(order.status);
+  const canFinish = !!inspection && !inspection.inspected_at && order.status === "INSPECTING";
+
+  async function run(task: () => Promise<unknown>, message: string) {
+    setWorking(true); setError("");
+    try { await task(); await onChanged(message); }
+    catch (err) { setError(errorText(err)); }
+    finally { setWorking(false); }
+  }
+
+  function toRecommendations(rows: RecRow[]): RecommendationInput[] | null {
+    const result: RecommendationInput[] = [];
+    for (const row of rows) {
+      const refId = Number(row.ref_id); const quantity = Number(row.quantity);
+      if (!Number.isSafeInteger(refId) || refId < 1 || !Number.isSafeInteger(quantity) || quantity < 1) return null;
+      result.push({
+        item_type: row.item_type, ...(row.item_type === "PART" ? { part_id: refId } : { service_id: refId }),
+        quantity, ...(row.note.trim() ? { note: row.note.trim() } : {}),
+      });
+    }
+    return result;
+  }
+
+  async function record(event: FormEvent) {
+    event.preventDefault();
+    const items = checks.filter(row => row.item_name.trim()).map(row => ({
+      item_name: row.item_name.trim(), status: row.status,
+      ...(row.condition_description.trim() ? { condition_description: row.condition_description.trim() } : {}),
+    }));
+    if (!items.length) { setError("Ghi ít nhất một hạng mục đã kiểm tra."); return; }
+    const recommendations = toRecommendations(recs);
+    if (!recommendations) { setError("Mỗi đề xuất cần chọn dịch vụ/phụ tùng và số lượng nguyên dương."); return; }
+    await run(() => workflowApi.recordInspection(order.id, {
+      ...(condition.trim() ? { condition_description: condition.trim() } : {}),
+      ...(diagnosis.trim() ? { diagnosis: diagnosis.trim() } : {}),
+      inspection_items: items, recommendations,
+    }), "Đã lưu kết quả kiểm tra. Rà soát đề xuất rồi hoàn tất chẩn đoán.");
+  }
+
+  async function addMore(event: FormEvent) {
+    event.preventDefault();
+    const recommendations = toRecommendations(recs);
+    if (!recommendations?.length) { setError("Chọn dịch vụ/phụ tùng và số lượng cho đề xuất."); return; }
+    await run(async () => { for (const rec of recommendations) await workflowApi.addRecommendation(order.id, rec); }, "Đã thêm đề xuất.");
+    setRecs([]);
+  }
+
+  async function finish() {
+    if (!await confirm({
+      title: "Hoàn tất chẩn đoán", description: "Khóa kết quả kiểm tra và chuyển phiếu sang bước lập báo giá. Đề xuất sẽ được điền sẵn vào báo giá.",
+      confirmText: "Hoàn tất chẩn đoán", checklist: ["Đã ghi đủ hạng mục kiểm tra và đề xuất cần làm."],
+    })) return;
+    await run(() => workflowApi.completeInspection(order.id), "Đã hoàn tất chẩn đoán. Tiếp theo: lập báo giá.");
+  }
+
+  const recEditor = <div className="space-y-3">
+    {recs.map(row => <div key={row.key} className="grid gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 md:grid-cols-[120px_minmax(0,2fr)_80px_minmax(0,1.5fr)_auto] md:items-end">
+      <label className="text-xs font-semibold text-cs-muted">Loại<select className={input} value={row.item_type} onChange={event => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, item_type: event.target.value as "SERVICE" | "PART", ref_id: "" } : item))}><option value="SERVICE">Dịch vụ</option><option value="PART">Phụ tùng</option></select></label>
+      <label className="text-xs font-semibold text-cs-muted">{row.item_type === "PART" ? "Phụ tùng" : "Dịch vụ"} *<select required className={input} value={row.ref_id} onChange={event => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, ref_id: event.target.value } : item))}>
+        <option value="">— Chọn —</option>
+        {row.item_type === "SERVICE"
+          ? services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)
+          : parts.map(part => <option key={part.id} value={part.id}>{part.name} · tồn {part.inventory?.quantity ?? 0} {part.unit || ""}</option>)}
+      </select></label>
+      <label className="text-xs font-semibold text-cs-muted">SL<input className={input} type="number" min="1" step="1" required value={row.quantity} onChange={event => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, quantity: event.target.value } : item))}/></label>
+      <label className="text-xs font-semibold text-cs-muted">Lý do (tùy chọn)<input className={input} value={row.note} onChange={event => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, note: event.target.value } : item))} placeholder="Ví dụ: má phanh còn 2mm"/></label>
+      <button type="button" className={`${danger} cs-btn-sm`} aria-label="Xóa đề xuất" onClick={() => setRecs(previous => previous.filter(item => item.key !== row.key))}>Xóa</button>
+    </div>)}
+    <div className="cs-btn-row">
+      <button type="button" className={`${outline} cs-btn-sm`} onClick={() => setRecs(previous => [...previous, blankRec(Date.now())])}>+ Đề xuất dịch vụ</button>
+      <button type="button" className={`${outline} cs-btn-sm`} onClick={() => setRecs(previous => [...previous, blankRec(Date.now(), "PART")])}>+ Đề xuất phụ tùng</button>
+    </div>
+  </div>;
+
+  return <section className={`${card} mt-6`}>
+    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent print:hidden">Bước 2 · Kiểm tra & chẩn đoán</p>
+    <h2 className="mt-1 text-lg font-bold text-cs-text">Kiểm tra và chẩn đoán</h2>
+    <div className="mt-4 print:hidden">{error && <Notice tone="error">{error}</Notice>}</div>
+
+    {inspection && <div className="space-y-4 text-sm text-cs-text">
+      <dl className="grid gap-4 sm:grid-cols-2">
+        <div><dt className="text-xs text-cs-muted">Tình trạng</dt><dd className="mt-1 whitespace-pre-wrap">{inspection.condition_description || "—"}</dd></div>
+        <div><dt className="text-xs text-cs-muted">Kết luận</dt><dd className="mt-1 whitespace-pre-wrap font-semibold">{inspection.diagnosis || "—"}</dd></div>
+      </dl>
+      {!!inspection.items?.length && <ul className="divide-y divide-cs-border rounded-xl border border-cs-border">{inspection.items.map(item => <li key={item.id} className="flex flex-wrap justify-between gap-3 px-4 py-2.5">
+        <span>{item.item_name}</span><span className={`text-xs font-bold ${resultTone[item.condition_status ?? ""] ?? "text-cs-muted"}`}>{resultText[item.condition_status ?? ""] ?? item.condition_status ?? "—"}</span>
+      </li>)}</ul>}
+      <div><p className="mb-2 text-xs font-bold text-cs-muted">Đề xuất cần làm</p>
+        {inspection.recommendations?.length ? <ul className="space-y-1">{inspection.recommendations.map(rec => <li key={rec.id}>• {rec.item_type === "PART" ? "Phụ tùng" : "Dịch vụ"}: <strong>{rec.part?.name || rec.service?.name || "—"}</strong> × {rec.quantity ?? 1}{rec.note ? ` · ${rec.note}` : ""}</li>)}</ul>
+          : <p className="text-cs-muted">Chưa có đề xuất.</p>}
+      </div>
+      <p className="text-xs text-cs-muted">{inspection.recorded_by?.full_name ? `Người nhập: ${inspection.recorded_by.full_name} · ` : ""}{inspection.inspected_at ? `Hoàn tất ${new Date(inspection.inspected_at).toLocaleString("vi-VN")}` : "Chưa hoàn tất chẩn đoán"}</p>
+    </div>}
+
+    {canFinish && <form className="mt-5 space-y-4 border-t border-cs-border pt-5 print:hidden" onSubmit={event => void addMore(event)}>
+      <h3 className="text-sm font-bold text-cs-text">Bổ sung đề xuất</h3>
+      {recEditor}
+      <div className="cs-btn-row cs-btn-row-end">
+        {recs.length > 0 && <button type="submit" className={outline} disabled={working}>Lưu đề xuất bổ sung</button>}
+        <button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void finish()}>Hoàn tất chẩn đoán →</button>
+      </div>
+    </form>}
+
+    {canRecord && <form className="space-y-5 print:hidden" onSubmit={event => void record(event)}>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="text-xs font-semibold text-cs-muted">Tình trạng tổng thể<textarea className={`${input} min-h-20`} value={condition} onChange={event => setCondition(event.target.value)} placeholder="Ví dụ: phanh trước kêu khi dừng"/></label>
+        <label className="text-xs font-semibold text-cs-muted">Kết luận chẩn đoán<textarea className={`${input} min-h-20`} value={diagnosis} onChange={event => setDiagnosis(event.target.value)} placeholder="Ví dụ: má phanh trước mòn còn 2mm, cần thay"/></label>
+      </div>
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-cs-text">Hạng mục đã kiểm tra</h3>
+        {checks.map(row => <div key={row.key} className="grid gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 md:grid-cols-[minmax(0,2fr)_150px_minmax(0,2fr)_auto] md:items-end">
+          <label className="text-xs font-semibold text-cs-muted">Hạng mục *<input className={input} value={row.item_name} onChange={event => setChecks(previous => previous.map(item => item.key === row.key ? { ...item, item_name: event.target.value } : item))} placeholder="Ví dụ: Má phanh trước"/></label>
+          <label className="text-xs font-semibold text-cs-muted">Kết quả<select className={input} value={row.status} onChange={event => setChecks(previous => previous.map(item => item.key === row.key ? { ...item, status: event.target.value as InspectionResult } : item))}>
+            <option value="PASSED">Đạt</option><option value="WARNING">Cần lưu ý</option><option value="FAILED">Không đạt</option>
+          </select></label>
+          <label className="text-xs font-semibold text-cs-muted">Ghi chú (tùy chọn)<input className={input} value={row.condition_description} onChange={event => setChecks(previous => previous.map(item => item.key === row.key ? { ...item, condition_description: event.target.value } : item))}/></label>
+          <button type="button" className={`${danger} cs-btn-sm`} aria-label="Xóa hạng mục" disabled={checks.length === 1} onClick={() => setChecks(previous => previous.filter(item => item.key !== row.key))}>Xóa</button>
+        </div>)}
+        <button type="button" className={`${outline} cs-btn-sm`} onClick={() => setChecks(previous => [...previous, blankCheck(Date.now())])}>+ Thêm hạng mục</button>
+      </div>
+      <div className="space-y-3"><h3 className="text-sm font-bold text-cs-text">Đề xuất dịch vụ / phụ tùng</h3>{recEditor}</div>
+      <div className="cs-btn-row cs-btn-row-end"><button type="submit" className={action} disabled={working} aria-busy={working}>Lưu kết quả kiểm tra</button></div>
+    </form>}
+
+    {!inspection && !canRecord && <p className="text-sm text-cs-muted">Phiếu không có kết quả kiểm tra.</p>}
   </section>;
 }

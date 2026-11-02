@@ -18,6 +18,7 @@ export type WorkflowAppointment = {
 };
 export type WorkflowInspection = {
   id: number; diagnosis?: string | null; condition_description?: string | null; inspected_at?: string | null;
+  recorded_by?: { id: number; full_name?: string } | null;
   items?: Array<{ id: number; item_name: string; condition_status?: string | null; note?: string | null }>;
   recommendations?: Array<{
     id: number; item_type?: "SERVICE" | "PART"; service_id?: number | null; part_id?: number | null; quantity?: number; note?: string | null;
@@ -177,6 +178,14 @@ export function formatVnd(value: Money): string {
   return `${toNumber(value).toLocaleString("vi-VN")} ₫`;
 }
 
+export type InspectionResult = "PASSED" | "WARNING" | "FAILED";
+export type RecommendationInput = { item_type: "SERVICE" | "PART"; service_id?: number; part_id?: number; quantity: number; note?: string };
+export type InspectionInput = {
+  condition_description?: string; diagnosis?: string;
+  inspection_items: Array<{ item_name: string; status: InspectionResult; condition_description?: string }>;
+  recommendations?: RecommendationInput[];
+};
+
 export type TechnicianOption = {
   id: number;
   specialty?: string | null;
@@ -200,6 +209,11 @@ export const workflowApi = {
     fetchApi<WorkflowOrder>(`/repair-orders/${id}/${step}`, { method: "POST", body: JSON.stringify(note ? { note } : {}) }),
   close: (id: number, closeReason: string, note: string) =>
     fetchApi<WorkflowOrder>(`/repair-orders/${id}/close`, { method: "POST", body: JSON.stringify({ close_reason: closeReason, note }) }),
+  recordInspection: (id: number, payload: InspectionInput) =>
+    fetchApi<WorkflowInspection>(`/repair-orders/${id}/inspections`, { method: "POST", body: JSON.stringify(payload) }),
+  addRecommendation: (id: number, payload: RecommendationInput) =>
+    fetchApi(`/repair-orders/${id}/inspections/recommendations`, { method: "POST", body: JSON.stringify(payload) }),
+  completeInspection: (id: number) => fetchApi<WorkflowInspection>(`/repair-orders/${id}/inspections/complete`, { method: "POST" }),
   updateWorkItem: (workItemId: number, status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED") =>
     fetchApi(`/work-items/${workItemId}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
   recordUsedPart: (id: number, payload: { part_id: number; quantity: number; work_item_id?: number }) =>
