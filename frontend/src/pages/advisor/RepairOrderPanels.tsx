@@ -190,3 +190,77 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
     </form>}
   </section>;
 }
+
+const workStatusText: Record<string, string> = { PENDING: "Chờ làm", IN_PROGRESS: "Đang làm", COMPLETED: "Hoàn thành", CANCELLED: "Đã hủy" };
+
+export function RepairPanel({ order, onChanged }: PanelProps) {
+  const { confirm } = useAppFeedback();
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
+  const [partId, setPartId] = useState("");
+  const [quantity, setQuantity] = useState("1");
+  const [note, setNote] = useState("");
+  const approvedParts = latestQuotation(order)?.items?.filter(item => item.item_type === "PART" && item.is_approved) ?? [];
+  const workItems = order.work_items ?? [];
+  const unfinished = workItems.filter(item => ["PENDING", "IN_PROGRESS"].includes(item.status)).length;
+  const inRepair = ["IN_PROGRESS", "WAITING_FOR_PARTS"].includes(order.status);
+
+  async function run(task: () => Promise<unknown>, message: string) {
+    setWorking(true); setError("");
+    try { await task(); await onChanged(message); }
+    catch (err) { setError(errorText(err)); }
+    finally { setWorking(false); }
+  }
+
+  async function exportPart(event: FormEvent) {
+    event.preventDefault();
+    const part = Number(partId); const amount = Number(quantity);
+    if (!Number.isSafeInteger(part) || part < 1 || !Number.isSafeInteger(amount) || amount < 1) { setError("Chọn phụ tùng và số lượng nguyên dương."); return; }
+    await run(() => workflowApi.recordUsedPart(order.id, { part_id: part, quantity: amount }), "Đã ghi phụ tùng thực dùng và trừ tồn kho.");
+    setPartId(""); setQuantity("1");
+  }
+
+  async function complete() {
+    if (!await confirm({ title: "Hoàn thành sửa chữa", description: "Xác nhận xe đã sửa xong và chạy thử đạt. Sau bước này cố vấn lập hóa đơn để thu tiền.", confirmText: "Hoàn thành" })) return;
+    await run(() => workflowApi.transition(order.id, "complete", note.trim() || undefined), "Phiếu đã hoàn thành. Tiếp theo: lập hóa đơn.");
+  }
+
+  if (!inRepair && !workItems.length) return null;
+  return <section className={`${card} mt-6 print:hidden`}>
+    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent">Bước 4 · Sửa chữa</p>
+    <h2 className="mt-1 text-lg font-bold text-cs-text">Tiến độ sửa chữa</h2>
+    <div className="mt-4">{error && <Notice tone="error">{error}</Notice>}</div>
+    {order.status === "WAITING_FOR_PARTS" && <Notice>Phiếu đang chờ phụ tùng. Khi hàng về, bấm Tiếp tục sửa chữa.</Notice>}
+
+    <h3 className="mb-2 text-sm font-bold text-cs-text">Công việc ({workItems.length - unfinished}/{workItems.length} xong)</h3>
+    {workItems.length ? <ul className="space-y-2">{workItems.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 text-sm">
+      <div><p className="font-semibold text-cs-text">{item.service?.name || item.description || `Công việc #${item.id}`}</p><p className="text-xs text-cs-muted">{workStatusText[item.status] || item.status}</p></div>
+      {inRepair && <div className="flex gap-2">
+        {item.status === "PENDING" && <button type="button" className={outline} disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(item.id, "IN_PROGRESS"), "Đã bắt đầu công việc.")}>Bắt đầu</button>}
+        {item.status === "IN_PROGRESS" && <button type="button" className={outline} disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(item.id, "COMPLETED"), "Đã hoàn thành công việc.")}>Xong</button>}
+      </div>}
+    </li>)}</ul> : <p className="text-sm text-cs-muted">Báo giá không có dịch vụ nào được duyệt nên không có công việc.</p>}
+
+    <h3 className="mb-2 mt-6 text-sm font-bold text-cs-text">Phụ tùng thực dùng (đã xuất kho)</h3>
+    {order.used_parts?.length ? <ul className="space-y-1 text-sm text-cs-text">{order.used_parts.map(part => <li key={part.id}>• {part.part?.name || `Phụ tùng #${part.part_id}`} × {part.quantity} · {formatVnd(part.unit_price)}</li>)}</ul>
+      : <p className="text-sm text-cs-muted">Chưa xuất phụ tùng nào.</p>}
+    {order.status === "IN_PROGRESS" && approvedParts.length > 0 && <form className="mt-3 grid gap-3 md:grid-cols-[minmax(0,2fr)_100px_auto] md:items-end" onSubmit={event => void exportPart(event)}>
+      <label className="text-xs font-semibold text-cs-muted">Phụ tùng đã duyệt<select required className={input} value={partId} onChange={event => setPartId(event.target.value)}>
+        <option value="">— Chọn —</option>
+        {approvedParts.map(item => <option key={item.id} value={item.part_id ?? ""}>{item.description} (duyệt {item.quantity})</option>)}
+      </select></label>
+      <label className="text-xs font-semibold text-cs-muted">SL<input className={input} type="number" min="1" step="1" required value={quantity} onChange={event => setQuantity(event.target.value)}/></label>
+      <button type="submit" className={outline} disabled={working}>Xuất kho</button>
+    </form>}
+
+    {inRepair && <div className="mt-6 space-y-3 border-t border-cs-border pt-5">
+      <label className="block text-xs font-semibold text-cs-muted">Ghi chú (tùy chọn)<input className={input} value={note} onChange={event => setNote(event.target.value)} placeholder="Ví dụ: đã chạy thử 5 km, phanh ổn định"/></label>
+      <div className="flex flex-wrap gap-3">
+        {order.status === "IN_PROGRESS" && <button type="button" className={outline} disabled={working} onClick={() => void run(() => workflowApi.transition(order.id, "waiting-for-parts", note.trim() || undefined), "Phiếu chuyển sang chờ phụ tùng.")}>Chờ phụ tùng</button>}
+        {order.status === "WAITING_FOR_PARTS" && <button type="button" className={action} disabled={working} onClick={() => void run(() => workflowApi.transition(order.id, "resume", note.trim() || undefined), "Tiếp tục sửa chữa.")}>Tiếp tục sửa chữa</button>}
+        {order.status === "IN_PROGRESS" && <button type="button" className={action} disabled={working || unfinished > 0} onClick={() => void complete()}>Hoàn thành sửa chữa →</button>}
+      </div>
+      {order.status === "IN_PROGRESS" && unfinished > 0 && <p className="text-xs text-cs-muted">Còn {unfinished} công việc chưa xong nên chưa thể hoàn thành phiếu.</p>}
+    </div>}
+  </section>;
+}
