@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
+use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -270,6 +271,75 @@ class AppointmentControllerTest extends TestCase
     /**
      * @return array{customer: Customer, token: string}
      */
+    /**
+     * Tạo lịch hẹn trực tiếp trong DB cho một xe vào ngày mai lúc $time.
+     */
+    private function createAppointment(Vehicle $vehicle, string $time, string $status = 'PENDING'): Appointment
+    {
+        return Appointment::query()->create([
+            'appointment_code' => 'APT-'.uniqid(),
+            'customer_id' => $vehicle->customer_id,
+            'vehicle_id' => $vehicle->id,
+            'appointment_date' => now()->addDay()->toDateString(),
+            'appointment_time' => $time.':00',
+            'request_type' => 'MAINTENANCE',
+            'status' => $status,
+        ]);
+    }
+
+    public function test_rescheduling_into_a_full_slot_is_rejected_like_booking(): void
+    {
+        $customer = $this->createAuthenticatedCustomer();
+        $mine = $this->createAppointment(Vehicle::factory()->create(['customer_id' => $customer['customer']->id]), '09:00');
+        DB::table('working_hours')->update(['max_slots' => 2]);
+        $this->createAppointment(Vehicle::factory()->create(), '10:00');
+        $this->createAppointment(Vehicle::factory()->create(), '10:00', 'NO_SHOW');
+        $this->createAppointment(Vehicle::factory()->create(), '10:00');
+
+        $this->withToken($customer['token'])
+            ->patchJson("/api/appointments/{$mine->id}", ['appointment_time' => '10:00'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['appointment_time' => 'Khung giờ đã đầy.']);
+    }
+
+    public function test_rescheduling_ignores_no_show_when_counting_slots(): void
+    {
+        $customer = $this->createAuthenticatedCustomer();
+        $mine = $this->createAppointment(Vehicle::factory()->create(['customer_id' => $customer['customer']->id]), '09:00');
+        DB::table('working_hours')->update(['max_slots' => 1]);
+        $this->createAppointment(Vehicle::factory()->create(), '10:00', 'NO_SHOW');
+
+        $this->withToken($customer['token'])
+            ->patchJson("/api/appointments/{$mine->id}", ['appointment_time' => '10:00'])
+            ->assertOk();
+
+        $this->assertSame('10:00:00', substr((string) $mine->fresh()->appointment_time, 0, 8));
+    }
+
+    public function test_rescheduling_rejects_vehicle_already_booked_in_that_slot(): void
+    {
+        $customer = $this->createAuthenticatedCustomer();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+        $mine = $this->createAppointment($vehicle, '09:00');
+        $this->createAppointment($vehicle, '11:00');
+
+        $this->withToken($customer['token'])
+            ->patchJson("/api/appointments/{$mine->id}", ['appointment_time' => '11:00'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['vehicle_id' => 'Xe đã có lịch hẹn tại khung giờ này.']);
+    }
+
+    public function test_rescheduling_to_another_customers_vehicle_is_rejected(): void
+    {
+        $customer = $this->createAuthenticatedCustomer();
+        $mine = $this->createAppointment(Vehicle::factory()->create(['customer_id' => $customer['customer']->id]), '09:00');
+
+        $this->withToken($customer['token'])
+            ->patchJson("/api/appointments/{$mine->id}", ['vehicle_id' => Vehicle::factory()->create()->id])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('vehicle_id');
+    }
+
     private function createAuthenticatedCustomer(): array
     {
         $account = Account::factory()->customer()->create();
