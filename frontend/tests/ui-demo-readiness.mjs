@@ -22,7 +22,7 @@ assert.match(reception,/Xác nhận khách và xe đến gara/);
 assert.match(reception,/Xác nhận tạo phiếu sửa chữa/);
 assert.match(reception,/Mỗi lịch hẹn chỉ được có một phiếu/);
 assert.match(order,/Xác nhận phân công kỹ thuật viên/);
-assert.match(order,/technician_profiles\.id/);
+assert.match(order,/workflowApi\.technicians\(\)/);
 assert.match(styles,/\.cs-unified-btn/);
 assert.match(styles,/\.cs-info-panel/);
 for (const [file,rule] of [['pages/technician/atelier/TechnicianInspection.tsx',/Hoàn tất kiểm tra và chẩn đoán/],['pages/admin/AdminCustomers.tsx',/Khóa khách hàng/]]) assert.match(src(file),rule);
