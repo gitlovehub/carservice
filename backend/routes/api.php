@@ -213,6 +213,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::controller(WorkItemController::class)->group(function (): void {
             Route::get('repair-orders/{repairOrder}/work-items', 'index');
             Route::patch('work-items/{workItem}/status', 'updateStatus');
+            Route::post('repair-orders/{repairOrder}/used-parts', 'storeUsedPart');
         });
 
         Route::get('repair-orders/{repairOrder}/inspections', [InspectionController::class, 'show']);
@@ -270,20 +271,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
                 Route::post('send', 'send');
                 Route::post('respond', 'respond');
             });
-        });
-
-        /*
-        |--------------------------------------------------------------------------
-        | Work Items / Used Parts
-        |--------------------------------------------------------------------------
-        */
-
-        Route::controller(WorkItemController::class)->group(function (): void {
-
-            Route::post(
-                'repair-orders/{repairOrder}/used-parts',
-                'storeUsedPart'
-            );
         });
 
         /*

@@ -60,11 +60,23 @@ class WorkItemController extends Controller
 
     public function storeUsedPart(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        if ($request->user()?->role === Account::ROLE_TECHNICIAN) {
+            $employeeId = $request->user()->employee?->id;
+
+            if (! $employeeId || ! $repairOrder->assignments()->whereHas('technician', function ($q) use ($employeeId): void {
+                $q->where('employee_id', $employeeId);
+            })->exists()) {
+                return response()->json([
+                    'message' => 'Bạn không có quyền ghi nhận phụ tùng cho phiếu sửa chữa này.',
+                ], 403);
+            }
+        }
+
         $data = $request->validate([
             'work_item_id' => ['nullable', 'integer', 'exists:work_items,id'],
             'part_id' => ['required', 'integer', 'exists:parts,id'],
             'quantity' => ['required', 'integer', 'min:1'],
-            'unit_price' => ['required', 'numeric', 'min:0'],
+            'unit_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $usedPart = $this->service->recordUsedPart($repairOrder, $data);
