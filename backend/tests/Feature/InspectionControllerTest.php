@@ -332,6 +332,31 @@ class InspectionControllerTest extends TestCase
             ->assertJsonPath('0.inventory.quantity', 7);
     }
 
+    public function test_advisor_records_and_completes_inspection_without_a_technician(): void
+    {
+        [$advisorAccount, $advisorEmployee] = $this->createAdvisor();
+        $repairOrder = $this->createRepairOrder(RepairOrder::RECEIVED);
+        $part = Part::query()->create(['sku' => 'BRK-02', 'name' => 'Má phanh sau', 'unit' => 'Bộ', 'status' => 'ACTIVE']);
+
+        $this->actingAs($advisorAccount)
+            ->postJson("/api/repair-orders/{$repairOrder->id}/inspections", [
+                'diagnosis' => 'Má phanh sau mòn',
+                'inspection_items' => [['item_name' => 'Má phanh sau', 'status' => InspectionItem::FAILED]],
+                'recommendations' => [['item_type' => 'PART', 'part_id' => $part->id, 'quantity' => 1]],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('technician_id', null)
+            ->assertJsonPath('recorded_by_employee_id', $advisorEmployee->id);
+
+        $this->assertSame(RepairOrder::INSPECTING, $repairOrder->fresh()->status);
+
+        $this->actingAs($advisorAccount)
+            ->postJson("/api/repair-orders/{$repairOrder->id}/inspections/complete")
+            ->assertOk();
+
+        $this->assertSame(RepairOrder::QUOTING, $repairOrder->fresh()->status);
+    }
+
     public function test_customer_cannot_call_technician_inspection_endpoints(): void
     {
         $customerAccount = Account::factory()->customer()->create();
