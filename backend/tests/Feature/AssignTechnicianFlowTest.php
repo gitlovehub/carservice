@@ -88,4 +88,19 @@ class AssignTechnicianFlowTest extends TestCase
             ->postJson("/api/repair-orders/{$repairOrder->id}/assign-technician", ['technician_id' => $this->createTechnician()->id])
             ->assertUnprocessable();
     }
+
+    public function test_closing_order_releases_its_technician(): void
+    {
+        $advisor = $this->createAdvisor();
+        $technician = $this->createTechnician();
+        $repairOrder = $this->createRepairOrder();
+        $this->actingAs($advisor)->postJson("/api/repair-orders/{$repairOrder->id}/assign-technician", ['technician_id' => $technician->id])->assertCreated();
+
+        $this->actingAs($advisor)
+            ->postJson("/api/repair-orders/{$repairOrder->id}/close", ['close_reason' => 'CUSTOMER_REQUEST', 'note' => 'Khách đổi ý'])
+            ->assertOk();
+
+        $this->assertDatabaseHas('assignments', ['technician_id' => $technician->id, 'status' => 'CANCELLED']);
+        $this->actingAs($advisor)->getJson('/api/technicians')->assertJsonPath('0.active_assignments_count', 0);
+    }
 }
