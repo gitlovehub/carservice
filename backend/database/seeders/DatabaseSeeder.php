@@ -11,7 +11,6 @@ use App\Models\Service;
 use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
 use App\Models\VehicleModel;
-use App\Models\WorkingHour;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -24,6 +23,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RealDataSeeder::class);
+        $this->call(DemoAccountsSeeder::class);
+        $this->call(PartInventorySeeder::class);
 
         $defaultPassword = Hash::make('password123');
 
@@ -79,18 +80,8 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // 8. CẤU HÌNH LỊCH LÀM VIỆC CỦA GARAGE Thứ 2 -> Thứ 7 (2,3,4,5,6,7), Chủ nhật (8)
-        foreach (range(2, 8) as $day) {
-            WorkingHour::firstOrCreate(
-                ['day_of_week' => $day],
-                [
-                    'open_time' => '08:00:00',
-                    'close_time' => $day === 8 ? '12:00:00' : '17:30:00', // Chủ nhật (8) làm nửa ngày
-                    'max_slots' => $day === 8 ? 3 : 5,
-                    'is_active' => true,
-                ]
-            );
-        }
+        // 8. GIỜ LÀM VIỆC: day_of_week theo Carbon (0 = Chủ nhật ... 6 = Thứ bảy), khớp với API đặt lịch
+        $this->call(WorkingHoursSeeder::class);
 
         // 9. CẤU HÌNH NGÀY NGHỈ LỄ CỦA GARAGE
         Holiday::firstOrCreate(
