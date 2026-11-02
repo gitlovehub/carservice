@@ -82,7 +82,8 @@ class RepairOrder extends Model
     public function statusHistory(): HasMany
     {
         return $this->hasMany(RepairOrderStatusHistory::class, 'repair_order_id')
-            ->orderByDesc('created_at');
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
     }
 
     public function assignments(): HasMany
