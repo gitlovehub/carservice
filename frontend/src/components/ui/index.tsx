@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, PropsWithChildren } from "react";
 
 export function Button({ children, className = "", ...props }: PropsWithChildren<ButtonHTMLAttributes<HTMLButtonElement>>) {
-  return <button className={`cs-button cursor-pointer rounded-[11px] border-0 bg-cs-accent px-[18px] py-2.5 font-bold text-cs-accent-contrast disabled:cursor-not-allowed disabled:opacity-55 ${className}`} {...props}>{children}</button>;
+  return <button className={`cs-button cs-btn cs-btn-primary ${className}`} {...props}>{children}</button>;
 }
 export function Card({ children, className = "" }: PropsWithChildren<{ className?: string }>) {
   return <section className={`cs-card rounded-2xl border border-cs-border bg-cs-surface p-6 ${className}`}>{children}</section>;

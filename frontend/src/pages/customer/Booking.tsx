@@ -1439,21 +1439,21 @@ export default function Booking() {
                 <button
                   type="button"
                   onClick={printReceipt}
-                  className="px-5 py-2.5 rounded-xl border border-slate-300 font-bold text-sm text-slate-700 hover:bg-slate-50 transition flex items-center gap-2 cursor-pointer"
+                  className="cs-btn cs-btn-secondary"
                 >
                   <i className="fa-solid fa-print"></i> In phiếu hẹn
                 </button>
                 <button
                   type="button"
                   onClick={copyBookingCode}
-                  className="px-5 py-2.5 rounded-xl border border-slate-300 font-bold text-sm text-slate-700 hover:bg-slate-50 transition flex items-center gap-2 cursor-pointer"
+                  className="cs-btn cs-btn-secondary"
                 >
                   <i className="fa-regular fa-copy"></i> Sao chép mã
                 </button>
                 <button
                   type="button"
                   onClick={resetFormToStart}
-                  className="px-5 py-2.5 rounded-xl bg-[#1F2933] hover:bg-[#151D24] font-bold text-sm text-white transition flex items-center gap-2 shadow-sm cursor-pointer"
+                  className="cs-btn cs-btn-primary"
                 >
                   <i className="fa-solid fa-plus"></i> Đặt lịch hẹn khác
                 </button>
@@ -1468,7 +1468,7 @@ export default function Booking() {
                 <button
                   type="button"
                   onClick={() => goToStep(currentStep - 1)}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition flex items-center gap-2 cursor-pointer"
+                  className="cs-btn cs-btn-ghost"
                 >
                   <i className="fa-solid fa-arrow-left"></i> Quay lại
                 </button>
@@ -1481,7 +1481,7 @@ export default function Booking() {
                   type="button"
                   disabled={submitting}
                   onClick={handleNextClick}
-                  className="px-7 py-2.5 rounded-xl font-bold text-sm bg-[#1F2933] hover:bg-[#151D24] text-white shadow-lg shadow-[#1F2933]/25 active:scale-95 transition flex items-center gap-2 cursor-pointer"
+                  className="cs-btn cs-btn-primary"
                 >
                   {submitting ? (
                     <span>Đang xử lý...</span>
@@ -1607,7 +1607,7 @@ export default function Booking() {
                   setShowConfirmModal(false);
                   setSubmissionError("");
                 }}
-                className="px-4 py-2.5 rounded-xl border border-slate-300 font-bold text-xs sm:text-sm text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                className="cs-btn cs-btn-secondary"
               >
                 Hủy / Xem lại
               </button>
@@ -1615,7 +1615,7 @@ export default function Booking() {
                 type="button"
                 onClick={handleConfirmSubmit}
                 disabled={submitting}
-                className="px-5 py-2.5 rounded-xl bg-[#1F2933] hover:bg-[#151D24] font-bold text-xs sm:text-sm text-white shadow-lg shadow-[#1F2933]/25 transition cursor-pointer flex items-center gap-2"
+                className="cs-btn cs-btn-primary"
               >
                 {submitting ? (
                   <span>Đang xử lý...</span>

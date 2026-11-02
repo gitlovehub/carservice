@@ -264,7 +264,7 @@ function CustomerCars() {
                 <button
                   type="button"
                   onClick={openCreateModal}
-                  className="w-fit rounded-xl bg-[#1F2933] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151D24]"
+                  className="cs-btn cs-btn-primary"
                 >
                   + Thêm xe
                 </button>
@@ -340,7 +340,7 @@ function CustomerCars() {
                 <button
                   type="button"
                   onClick={() => void loadCars()}
-                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-[11px] font-semibold text-white hover:bg-[#151D24]"
+                  className="cs-btn cs-btn-primary"
                 >
                   Tìm kiếm
                 </button>
@@ -493,7 +493,7 @@ function CustomerCars() {
                                 type="button"
                                 disabled={deletingId === car.id}
                                 onClick={() => void handleDelete(car)}
-                                className="rounded-lg border border-red-200 px-3 py-1.5 text-[10px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                                className="cs-btn cs-btn-danger-outline"
                               >
                                 {deletingId === car.id ? "Đang xóa..." : "Xóa"}
                               </button>
@@ -706,7 +706,7 @@ function CustomerCars() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white hover:bg-[#151D24] disabled:opacity-50"
+                  className="cs-btn cs-btn-primary"
                 >
                   {saving ? "Đang lưu..." : editingCar ? "Lưu thay đổi" : "Thêm xe"}
                 </button>

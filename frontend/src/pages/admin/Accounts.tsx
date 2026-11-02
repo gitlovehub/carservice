@@ -292,7 +292,7 @@ function Accounts() {
                 <button
                   type="button"
                   onClick={openCreateForm}
-                  className="rounded-xl bg-[#1F2933] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#151D24]"
+                  className="cs-btn cs-btn-primary"
                 >
                   + Tạo tài khoản
                 </button>
@@ -331,7 +331,7 @@ function Accounts() {
 
                   <button
                     type="submit"
-                    className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24]"
+                    className="cs-btn cs-btn-primary"
                   >
                     Tìm kiếm
                   </button>
@@ -444,7 +444,7 @@ function Accounts() {
                   <div className="flex flex-wrap gap-3 md:col-span-2">
                     <button
                       type="submit"
-                      className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white hover:bg-[#151D24]"
+                      className="cs-btn cs-btn-primary"
                     >
                       {editingAccount ? "Lưu phân quyền" : "Tạo tài khoản"}
                     </button>

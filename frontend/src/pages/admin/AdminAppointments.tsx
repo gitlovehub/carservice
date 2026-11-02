@@ -386,7 +386,7 @@ function AdminAppointments() {
                       setSearch("");
                       setStatus("Tất cả");
                     }}
-                    className="rounded-xl border border-[#E1E4E6] px-4 py-2.5 text-xs font-semibold transition hover:bg-[#F3F4F2]"
+                    className="cs-btn cs-btn-secondary"
                   >
                     Xóa lọc
                   </button>
