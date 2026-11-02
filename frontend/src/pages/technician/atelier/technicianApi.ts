@@ -41,8 +41,10 @@ export type Inspection = {
   condition_description?: string | null;
   inspected_at?: string | null;
   items?: InspectionItem[];
-  recommendations?: Array<{ id: number; item_type: string; quantity?: number; note?: string | null }>;
+  recommendations?: Array<{ id: number; item_type: string; quantity?: number; note?: string | null; service?: { name?: string | null } | null; part?: { name?: string | null } | null }>;
 };
+export type CatalogService = { id: number; name: string; category?: string | null; base_price?: string | number | null };
+export type CatalogPart = { id: number; sku: string; name: string; unit?: string | null; sell_price?: string | number | null; inventory?: { quantity: number } | null };
 export type Paginated<T> = { data: T[]; total: number; current_page: number; last_page: number; per_page: number };
 export type InspectionPayload = {
   condition_description: string;
@@ -63,6 +65,8 @@ export const technicianApi = {
   inspection: (id: number, signal?: AbortSignal) => fetchApi<Inspection>(`${base}/${id}/inspections`, { signal }),
   startInspection: (id: number, payload: InspectionPayload) => fetchApi<Inspection>(`${base}/${id}/inspections`, { method: "POST", body: JSON.stringify(payload) }),
   finishInspection: (id: number) => fetchApi<Inspection>(`${base}/${id}/inspections/complete`, { method: "POST" }),
+  services: () => fetchApi<CatalogService[]>("/services"),
+  parts: () => fetchApi<CatalogPart[]>("/parts"),
   addRecommendation: (id: number, payload: { item_type: "SERVICE" | "PART"; service_id?: number; part_id?: number; quantity: number; note?: string }) =>
     fetchApi(`${base}/${id}/inspections/recommendations`, { method: "POST", body: JSON.stringify(payload) }),
 };
