@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\CustomerReviewController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\MaintenancePackageController;
+use App\Http\Controllers\Api\PartController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\QuotationController;
 use App\Http\Controllers\Api\RepairOrderController;
@@ -215,6 +216,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         });
 
         Route::get('repair-orders/{repairOrder}/inspections', [InspectionController::class, 'show']);
+
+        // Danh mục phụ tùng (đề xuất khi chẩn đoán, lập báo giá)
+        Route::get('parts', [PartController::class, 'index']);
     });
 
     /*

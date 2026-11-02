@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInspectionRecommendationRequest;
 use App\Http\Requests\StoreInspectionRequest;
+use App\Models\Account;
 use App\Models\RepairOrder;
 use App\Models\TechnicianProfile;
 use App\Services\RepairOrderService;
@@ -29,6 +30,10 @@ class InspectionController extends Controller
             ], 403);
         }
 
+        if ($denied = $this->denyUnassignedTechnician($request, $repairOrder)) {
+            return $denied;
+        }
+
         if ($repairOrder->inspections()->exists()) {
             return response()->json([
                 'message' => 'Mỗi lệnh sửa chữa chỉ thuộc về 1 phiếu kiểm tra tổng thể.',
@@ -44,8 +49,12 @@ class InspectionController extends Controller
      * GET /api/repair-orders/{repairOrder}/inspections
      * Xem phiếu chẩn đoán chi tiết của lệnh sửa chữa (kèm các item đánh giá và đề xuất phụ tùng/dịch vụ).
      */
-    public function show(RepairOrder $repairOrder): JsonResponse
+    public function show(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        if ($denied = $this->denyUnassignedTechnician($request, $repairOrder)) {
+            return $denied;
+        }
+
         $inspection = $repairOrder->inspections()
             ->with(['items', 'recommendations.service', 'recommendations.part', 'technician.employee'])
             ->first();
@@ -65,6 +74,10 @@ class InspectionController extends Controller
      */
     public function addRecommendation(StoreInspectionRecommendationRequest $request, RepairOrder $repairOrder): JsonResponse
     {
+        if ($denied = $this->denyUnassignedTechnician($request, $repairOrder)) {
+            return $denied;
+        }
+
         $inspection = $repairOrder->inspections()->latest()->first();
 
         if (! $inspection) {
@@ -95,6 +108,10 @@ class InspectionController extends Controller
      */
     public function complete(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        if ($denied = $this->denyUnassignedTechnician($request, $repairOrder)) {
+            return $denied;
+        }
+
         $inspection = $repairOrder->inspections()->latest()->first();
 
         if (! $inspection) {
@@ -106,5 +123,25 @@ class InspectionController extends Controller
         $completedInspection = $this->service->completeInspection($repairOrder, $request->user());
 
         return response()->json($completedInspection);
+    }
+
+    /**
+     * KTV chỉ được thao tác trên phiếu mình được giao; Cố vấn không bị giới hạn.
+     */
+    private function denyUnassignedTechnician(Request $request, RepairOrder $repairOrder): ?JsonResponse
+    {
+        if ($request->user()?->role !== Account::ROLE_TECHNICIAN) {
+            return null;
+        }
+
+        $employeeId = $request->user()->employee?->id;
+
+        $isAssigned = $employeeId && $repairOrder->assignments()
+            ->whereHas('technician', fn ($query) => $query->where('employee_id', $employeeId))
+            ->exists();
+
+        return $isAssigned ? null : response()->json([
+            'message' => 'Bạn không được giao phiếu sửa chữa này.',
+        ], 403);
     }
 }
