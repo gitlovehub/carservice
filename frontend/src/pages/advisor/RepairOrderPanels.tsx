@@ -264,3 +264,68 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
     </div>}
   </section>;
 }
+
+const invoiceStatusText: Record<string, string> = { UNPAID: "Chưa thanh toán", PARTIALLY_PAID: "Đã thu một phần", PAID: "Đã thanh toán đủ", CANCELLED: "Đã hủy" };
+
+export function PaymentPanel({ order, onChanged }: PanelProps) {
+  const { confirm } = useAppFeedback();
+  const invoice = order.invoice;
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
+  const paid = invoice?.payments?.filter(payment => payment.status === "SUCCESS").reduce((sum, payment) => sum + toNumber(payment.amount), 0) ?? 0;
+  const remaining = Math.max(0, toNumber(invoice?.total_amount) - paid);
+  const [amount, setAmount] = useState(() => String(remaining));
+  const [cashGiven, setCashGiven] = useState("");
+  const change = toNumber(cashGiven) - toNumber(amount);
+
+  async function run(task: () => Promise<unknown>, message: string) {
+    setWorking(true); setError("");
+    try { await task(); await onChanged(message); }
+    catch (err) { setError(errorText(err)); }
+    finally { setWorking(false); }
+  }
+
+  async function collectCash(event: FormEvent) {
+    event.preventDefault();
+    const value = toNumber(amount);
+    if (!invoice || value <= 0 || value > remaining) { setError(`Số tiền thu phải lớn hơn 0 và không quá ${formatVnd(remaining)}.`); return; }
+    if (!await confirm({
+      title: "Xác nhận đã nhận tiền mặt", reference: invoice.invoice_code,
+      description: `Ghi nhận khách đã trả ${formatVnd(value)} tiền mặt tại quầy.${change > 0 ? ` Trả lại khách ${formatVnd(change)}.` : ""}`,
+      confirmText: "Đã nhận tiền", checklist: ["Đã đếm đủ tiền mặt khách đưa."],
+    })) return;
+    await run(() => workflowApi.payCash(invoice.id, value), value >= remaining ? "Đã thu đủ tiền. Có thể bàn giao xe." : "Đã ghi nhận một phần tiền mặt.");
+    setCashGiven("");
+  }
+
+  async function handOver() {
+    if (!await confirm({ title: "Bàn giao xe cho khách", description: "Xác nhận khách đã nhận lại xe. Phiếu kết thúc và khách có thể gửi đánh giá.", confirmText: "Bàn giao xe" })) return;
+    await run(() => workflowApi.transition(order.id, "hand-over"), "Đã bàn giao xe. Phiếu sửa chữa hoàn tất.");
+  }
+
+  if (!["COMPLETED", "HANDED_OVER"].includes(order.status)) return null;
+  return <section className={`${card} mt-6`}>
+    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent print:hidden">Bước 5 · Thanh toán & bàn giao</p>
+    <h2 className="mt-1 text-lg font-bold text-cs-text">Hóa đơn {invoice && <span className="ml-2 text-sm font-semibold text-cs-muted">{invoice.invoice_code} · {invoiceStatusText[invoice.status] || invoice.status}</span>}</h2>
+    <div className="mt-4 print:hidden">{error && <Notice tone="error">{error}</Notice>}</div>
+    {!invoice && <div className="print:hidden"><p className="mb-4 text-sm text-cs-muted">Hóa đơn được tính từ các hạng mục khách đã duyệt trong báo giá.</p>
+      <button type="button" className={action} disabled={working} onClick={() => void run(() => workflowApi.createInvoice(order.id), "Đã lập hóa đơn. Thu tiền mặt tại quầy.")}>Lập hóa đơn</button></div>}
+    {invoice && <>
+      <ul className="space-y-1 text-sm text-cs-text">{invoice.items?.map(item => <li key={item.id} className="flex justify-between gap-3"><span>{item.description} × {item.quantity}</span><span>{formatVnd(item.amount)}</span></li>)}</ul>
+      <div className="mt-3 space-y-1 border-t border-cs-border pt-3 text-right text-sm text-cs-text">
+        {toNumber(invoice.discount_amount) > 0 && <p>Giảm giá: −{formatVnd(invoice.discount_amount)}</p>}
+        <p className="text-base font-black">Tổng cộng: {formatVnd(invoice.total_amount)}</p>
+        <p>Đã thu: {formatVnd(paid)} · Còn lại: <strong>{formatVnd(remaining)}</strong></p>
+      </div>
+      {!!invoice.payments?.length && <ul className="mt-3 space-y-1 text-xs text-cs-muted">{invoice.payments.map(payment => <li key={payment.id}>Tiền mặt {formatVnd(payment.amount)} · {payment.paid_at ? new Date(payment.paid_at).toLocaleString("vi-VN") : payment.status}</li>)}</ul>}
+      {remaining > 0 && <form className="mt-5 grid gap-3 border-t border-cs-border pt-5 md:grid-cols-[1fr_1fr_auto] md:items-end print:hidden" onSubmit={event => void collectCash(event)}>
+        <label className="text-xs font-semibold text-cs-muted">Số tiền thu (₫)<input className={input} type="number" min="1" step="1000" max={remaining} required value={amount} onChange={event => setAmount(event.target.value)}/></label>
+        <label className="text-xs font-semibold text-cs-muted">Khách đưa (₫, để tính tiền thối)<input className={input} type="number" min="0" step="1000" value={cashGiven} onChange={event => setCashGiven(event.target.value)}/></label>
+        <button type="submit" className={action} disabled={working}>Xác nhận đã nhận tiền mặt</button>
+        {cashGiven && <p className="text-sm text-cs-text md:col-span-3">{change >= 0 ? `Tiền thối lại khách: ${formatVnd(change)}` : `Khách đưa thiếu ${formatVnd(-change)}`}</p>}
+      </form>}
+      {invoice.status === "PAID" && order.status === "COMPLETED" && <div className="mt-5 print:hidden"><button type="button" className={action} disabled={working} onClick={() => void handOver()}>Bàn giao xe cho khách →</button></div>}
+      {order.status === "HANDED_OVER" && <div className="mt-5"><Notice tone="success">Đã bàn giao xe. Khách có thể gửi đánh giá dịch vụ.</Notice></div>}
+    </>}
+  </section>;
+}

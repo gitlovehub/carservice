@@ -25,7 +25,6 @@ function Payment() {
   const [targets, setTargets] = useState<PaymentTarget[]>([]);
   const [selectedTarget, setSelectedTarget] = useState<PaymentTarget | null>(null);
 
-  const [method, setMethod] = useState("BANK_TRANSFER");
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   useEffect(() => {
@@ -74,15 +73,6 @@ function Payment() {
     };
   }, [targetInvoiceId]);
 
-  const handleCopy = async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setToast({ message: `Đã sao chép ${label}.`, type: "success" });
-    } catch {
-      setToast({ message: `${label}: ${text}`, type: "info" });
-    }
-  };
-
   const invoice = selectedTarget?.invoice;
   const order = selectedTarget?.order;
   const isPaid = invoice?.status === "PAID";
@@ -107,7 +97,7 @@ function Payment() {
                   Thanh toán dịch vụ
                 </h1>
                 <p className="mt-2 text-[13px] leading-6 text-[#66717C]">
-                  Thông tin hóa đơn, hướng dẫn chuyển khoản và đối soát thanh toán.
+                  Thông tin hóa đơn và hướng dẫn thanh toán tiền mặt tại quầy.
                 </p>
               </div>
 
@@ -267,66 +257,15 @@ function Payment() {
                   </div>
 
                   <div className="p-6 text-xs">
-                    <label className="mb-2 block font-bold text-slate-700">
-                      Hình thức thanh toán
-                    </label>
-                    <select
-                      value={method}
-                      onChange={(e) => setMethod(e.target.value)}
-                      className="h-11 w-full cursor-pointer rounded-xl border border-slate-200 px-3 font-semibold outline-none focus:border-[#D6A85F]"
-                    >
-                      <option value="BANK_TRANSFER">Chuyển khoản ngân hàng (QR Code)</option>
-                      <option value="CASH">Thanh toán tiền mặt tại quầy gara</option>
-                      <option value="CARD">Quẹt thẻ POS tại quầy</option>
-                    </select>
-
-                    {method === "BANK_TRANSFER" ? (
-                      <div className="mt-5 space-y-3 rounded-2xl bg-[#F7F7F5] p-4 text-xs">
-                        <p className="font-bold text-[#1F2933]">Thông tin tài khoản nhận:</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-500">Ngân hàng:</span>
-                          <span className="font-bold text-slate-800">MB Bank (Quân Đội)</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-500">Số tài khoản:</span>
-                          <div className="flex items-center gap-1 font-mono font-bold text-[#1F2933]">
-                            <span>0332405972</span>
-                            <button
-                              type="button"
-                              onClick={() => void handleCopy("0332405972", "Số tài khoản")}
-                              className="cursor-pointer text-slate-400 hover:text-black"
-                              title="Sao chép"
-                            >
-                              📋
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-500">Chủ tài khoản:</span>
-                          <span className="font-bold text-slate-800">CARSERVICE VIETNAM</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-500">Nội dung CK:</span>
-                          <div className="flex items-center gap-1 font-mono font-bold text-emerald-700">
-                            <span>{invoice?.invoice_code}</span>
-                            <button
-                              type="button"
-                              onClick={() => void handleCopy(invoice?.invoice_code ?? "", "Nội dung")}
-                              className="cursor-pointer text-slate-400 hover:text-black"
-                              title="Sao chép"
-                            >
-                              📋
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mt-5 rounded-2xl bg-[#FAF8F5] p-4 text-slate-700">
-                        <p className="font-semibold leading-5">
-                          Quý khách vui lòng đến quầy thu ngân của xưởng dịch vụ CarService để được nhân viên hỗ trợ thanh toán trực tiếp.
-                        </p>
-                      </div>
-                    )}
+                    <p className="mb-2 font-bold text-slate-700">Hình thức thanh toán</p>
+                    <div className="rounded-2xl bg-[#FAF8F5] p-4 text-slate-700">
+                      <p className="font-bold text-[#1F2933]">Tiền mặt tại quầy gara</p>
+                      <p className="mt-2 font-semibold leading-5">
+                        {isPaid
+                          ? "Gara đã xác nhận nhận đủ tiền. Cảm ơn quý khách."
+                          : `Quý khách vui lòng thanh toán tại quầy khi nhận xe, đọc mã hóa đơn ${invoice?.invoice_code ?? ""} cho cố vấn. Trạng thái sẽ cập nhật ngay khi cố vấn xác nhận đã nhận tiền.`}
+                      </p>
+                    </div>
 
                     <div className="mt-6 border-t border-slate-100 pt-4 text-center">
                       <p className="text-[11px] text-slate-500">
