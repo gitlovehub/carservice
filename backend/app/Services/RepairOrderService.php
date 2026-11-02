@@ -179,7 +179,7 @@ class RepairOrderService
             if ($ro->status === RepairOrder::RECEIVED) {
                 $ro->status = RepairOrder::INSPECTING;
                 $ro->save();
-                $this->logHistory($ro, RepairOrder::INSPECTING, null, 'KTV bắt đầu kiểm tra.');
+                $this->logHistory($ro, RepairOrder::INSPECTING, $recordedBy?->account, 'Bắt đầu kiểm tra xe.');
             }
 
             return $inspection->load(['items', 'recommendations.service', 'recommendations.part', 'technician.employee']);
@@ -215,7 +215,7 @@ class RepairOrderService
             $inspection->save();
 
             if ($ro->status === RepairOrder::INSPECTING) {
-                $this->transition($ro, RepairOrder::QUOTING, $actor, 'KTV hoàn tất chẩn đoán, chuyển sang lập báo giá.');
+                $this->transition($ro, RepairOrder::QUOTING, $actor, 'Hoàn tất chẩn đoán, chuyển sang lập báo giá.');
             }
 
             return $inspection->load(['items', 'recommendations.service', 'recommendations.part', 'technician.employee']);
