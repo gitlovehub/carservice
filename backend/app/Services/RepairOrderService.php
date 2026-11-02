@@ -709,6 +709,13 @@ class RepairOrderService
 
         $ro->save();
 
+        // Phiếu xong/đóng thì KTV không còn bị tính là đang giữ phiếu này.
+        if (in_array($to, [RepairOrder::COMPLETED, RepairOrder::CLOSED], true)) {
+            $ro->assignments()
+                ->whereIn('status', [Assignment::ASSIGNED, Assignment::IN_PROGRESS])
+                ->update(['status' => $to === RepairOrder::COMPLETED ? Assignment::COMPLETED : Assignment::CANCELLED]);
+        }
+
         $this->logHistory($ro, $to, $actor, $note);
     }
 
