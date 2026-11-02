@@ -130,8 +130,18 @@ export async function receiveRepairOrder(data: ReceivePayload): Promise<{ order:
   }
 }
 
+export type TechnicianOption = {
+  id: number;
+  specialty?: string | null;
+  level?: string | null;
+  is_available?: boolean;
+  active_assignments_count?: number;
+  employee?: { id: number; full_name?: string; phone?: string } | null;
+};
+
 export const workflowApi = {
   order: (id: number) => fetchApi<WorkflowOrder>(`/repair-orders/${id}`),
+  technicians: () => fetchApi<TechnicianOption[]>("/technicians"),
   assignTechnician: (id: number, technicianId: number, note?: string) => fetchApi(`/repair-orders/${id}/assign-technician`, {
     method: "POST", body: JSON.stringify({ technician_id: technicianId, note: note || null }),
   }),

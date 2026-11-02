@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { workflowApi, type WorkflowOrder } from "../../services/workflowService";
+import { workflowApi, type TechnicianOption, type WorkflowOrder } from "../../services/workflowService";
 import { action, card, input, outline, WorkflowTitle, Notice, Status, errorText, formatDateTime } from "./WorkflowUI";
 
 export default function AdvisorRepairOrderDetail() {
@@ -15,6 +15,7 @@ export default function AdvisorRepairOrderDetail() {
   const [success, setSuccess] = useState((location.state as { success?: string } | null)?.success || "");
   const [technicianId, setTechnicianId] = useState("");
   const [assignmentNote, setAssignmentNote] = useState("");
+  const [technicians, setTechnicians] = useState<TechnicianOption[]>([]);
   const fetchOrder = useCallback(() => {
     if (!Number.isSafeInteger(id) || id < 1) return Promise.reject(new Error("Mã phiếu không hợp lệ."));
     return workflowApi.order(id);
@@ -33,6 +34,14 @@ export default function AdvisorRepairOrderDetail() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [fetchOrder]);
+  useEffect(() => {
+    let active = true;
+    workflowApi.technicians()
+      .then(result => { if (active) setTechnicians(result); })
+      .catch(err => { if (active) setError(errorText(err)); });
+    return () => { active = false; };
+  }, []);
+  const technicianName = (profileId: number) => technicians.find(item => item.id === profileId)?.employee?.full_name || `KTV #${profileId}`;
 
   const activeAssignments = order?.assignments?.filter(item => item.status !== "CANCELLED") ?? [];
   const cancelledAssignments = order?.assignments?.filter(item => item.status === "CANCELLED") ?? [];
@@ -45,7 +54,7 @@ export default function AdvisorRepairOrderDetail() {
       return;
     }
     const profile = Number(technicianId);
-    if (!Number.isSafeInteger(profile) || profile < 1) { setError("Nhập ID hồ sơ KTV (technician_profiles.id) hợp lệ."); return; }
+    if (!Number.isSafeInteger(profile) || profile < 1) { setError("Chọn kỹ thuật viên phụ trách."); return; }
     if (!order || working) return;
     if (order.assignments?.some(item => Number(item.technician_id) === profile)) {
       setError("KTV này đã được phân công trên phiếu."); return;
@@ -53,8 +62,8 @@ export default function AdvisorRepairOrderDetail() {
     const approved = await confirm({
       title: "Xác nhận phân công kỹ thuật viên",
       reference: order.repair_order_code || `Phiếu #${order.id}`,
-      description: `Giao phiếu cho hồ sơ kỹ thuật viên số ${profile}. Hãy đảm bảo đây là ID hồ sơ KTV thật đã được xác minh với nhóm quản lý, không phải ID tài khoản hoặc nhân viên.`,
-      confirmText: "Giao việc cho KTV", checklist: ["Đã đối chiếu ID hồ sơ kỹ thuật viên chính xác."],
+      description: `Giao phiếu cho ${technicianName(profile)} kiểm tra và chẩn đoán. Phiếu sẽ chuyển sang trạng thái đang kiểm tra.`,
+      confirmText: "Giao việc cho KTV",
     });
     if (!approved) return;
     setWorking(true); setError(""); setSuccess("");
@@ -122,17 +131,21 @@ export default function AdvisorRepairOrderDetail() {
           </div>
         ) : canAssign ? (
           <>
-            <Notice>Phiếu đang chờ giao cho KTV. Hãy sử dụng đúng mã hồ sơ đã được nhóm quản lý cung cấp.</Notice>
+            <Notice>Phiếu đang chờ giao cho KTV. Danh sách ưu tiên KTV đang rảnh và ít phiếu nhất.</Notice>
             <form className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] md:items-end" onSubmit={event => void assign(event)}>
-              <label className="text-sm font-semibold text-cs-text">Mã KTV phụ trách *
-                <input type="number" min="1" step="1" required className={input} value={technicianId} onChange={event => setTechnicianId(event.target.value)} placeholder="Ví dụ: 1" />
+              <label className="text-sm font-semibold text-cs-text">Kỹ thuật viên phụ trách *
+                <select required className={input} value={technicianId} onChange={event => setTechnicianId(event.target.value)}>
+                  <option value="">— Chọn KTV —</option>
+                  {technicians.map(item => <option key={item.id} value={item.id}>
+                    {item.employee?.full_name || `KTV #${item.id}`}{item.specialty ? ` · ${item.specialty}` : ""} · {item.active_assignments_count ?? 0} phiếu đang làm{item.is_available === false ? " · đang bận" : ""}
+                  </option>)}
+                </select>
               </label>
               <label className="text-sm font-semibold text-cs-text">Ghi chú giao việc
                 <input className={input} value={assignmentNote} onChange={event => setAssignmentNote(event.target.value)} placeholder="Ví dụ: Kiểm tra hệ thống phanh" />
               </label>
               <button className={`${action} min-w-36`} type="submit" disabled={working}>{working ? "Đang giao..." : "Giao cho KTV"}</button>
             </form>
-            <p className="mt-3 text-xs leading-5 text-cs-muted">Chỉ nhập mã hồ sơ KTV đã xác minh; không dùng mã tài khoản hay nhân viên. API hiện tại chưa cung cấp danh sách KTV để chọn theo tên.</p>
           </>
         ) : (
           <Notice>Phiếu chưa có KTV đang phụ trách nhưng đã qua trạng thái RECEIVED. Không thể phân công mới tại màn hình này; cần đối chiếu quy trình với nhóm trước khi tiếp tục.</Notice>
