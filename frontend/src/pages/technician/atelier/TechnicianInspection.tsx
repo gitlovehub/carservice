@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Alert, Busy, Heading, StatusBadge, control, panel, primary, secondary } from "./TechnicianUI";
 import { dateLabel, isNotFound, messageForError, technicianApi } from "./technicianApi";
-import type { Inspection, InspectionItemStatus, InspectionPayload, RepairOrder } from "./technicianApi";
+import type { CatalogPart, CatalogService, Inspection, InspectionItemStatus, InspectionPayload, RepairOrder } from "./technicianApi";
 
 const itemStatuses: Array<[InspectionItemStatus, string]> = [
   ["PASSED", "Đạt"], ["WARNING", "Cần lưu ý"], ["FAILED", "Không đạt"],
@@ -30,6 +30,15 @@ export default function TechnicianInspection() {
   const [recommendationQuantity, setRecommendationQuantity] = useState("1");
   const [recommendationNote, setRecommendationNote] = useState("");
   const [recommendationMessage, setRecommendationMessage] = useState("");
+  const [services, setServices] = useState<CatalogService[]>([]);
+  const [parts, setParts] = useState<CatalogPart[]>([]);
+  useEffect(() => {
+    let active = true;
+    Promise.all([technicianApi.services(), technicianApi.parts()])
+      .then(([serviceList, partList]) => { if (active) { setServices(serviceList); setParts(partList); } })
+      .catch(err => { if (active) setError(messageForError(err)); });
+    return () => { active = false; };
+  }, []);
   useEffect(() => {
     if (!Number.isSafeInteger(id) || id < 1) return;
     const abort = new AbortController(); let active = true;
@@ -61,7 +70,7 @@ export default function TechnicianInspection() {
     const relatedId = Number(recommendationId);
     const quantity = Number(recommendationQuantity);
     if (!Number.isSafeInteger(relatedId) || relatedId < 1 || !Number.isSafeInteger(quantity) || quantity < 1) {
-      setError("Nhập ID danh mục và số lượng nguyên dương."); return;
+      setError("Chọn dịch vụ/phụ tùng và nhập số lượng nguyên dương."); return;
     }
     setSaving(true); setError(""); setRecommendationMessage("");
     try {
@@ -70,7 +79,7 @@ export default function TechnicianInspection() {
         ...(recommendationType === "SERVICE" ? { service_id: relatedId } : { part_id: relatedId }),
         quantity, ...(recommendationNote.trim() ? { note: recommendationNote.trim() } : {}),
       });
-      setRecommendationMessage("Đã gửi đề xuất dịch vụ/phụ tùng lên Laravel.");
+      setRecommendationMessage("Đã ghi nhận đề xuất. Cố vấn sẽ dùng để lập báo giá.");
       setRecommendationId(""); setRecommendationNote(""); setRecommendationQuantity("1");
       setRevision(value => value + 1);
     } catch (err) { setError(messageForError(err)); }
@@ -92,18 +101,22 @@ export default function TechnicianInspection() {
       <p className="mt-3 text-sm text-ktv-muted">{inspection.inspected_at ? `Hoàn tất: ${dateLabel(inspection.inspected_at)}` : "Đang chẩn đoán"}</p>
       <div className="mt-6 grid gap-5 sm:grid-cols-2"><div><p className="text-xs text-ktv-subtle">Tình trạng ban đầu</p><p className="mt-2 text-sm text-ktv-text">{inspection.condition_description || "Không có ghi chú"}</p></div><div><p className="text-xs text-ktv-subtle">Kết luận</p><p className="mt-2 text-sm text-ktv-text">{inspection.diagnosis || "Chưa có kết luận"}</p></div></div>
       <h3 className="mt-8 mb-3 font-bold text-ktv-strong">Hạng mục kiểm tra</h3><div className="divide-y divide-ktv-line/60 rounded-xl border border-ktv-line/60">{inspection.items?.length ? inspection.items.map(item => <div className="flex flex-wrap justify-between gap-3 p-4" key={item.id}><div><strong className="text-sm text-ktv-text">{item.item_name}</strong>{item.condition_description && <p className="mt-1 text-xs text-ktv-muted">{item.condition_description}</p>}</div><span className="text-xs font-medium text-ktv-highlight">{itemStatuses.find(([value]) => value === item.condition_status)?.[1] || item.condition_status || "Chưa đánh giá"}</span></div>) : <p className="p-4 text-sm text-ktv-muted">Không có hạng mục nào.</p>}</div>
-      {!!inspection.recommendations?.length && <div className="mt-6"><h3 className="mb-3 font-bold text-ktv-strong">Đề xuất đã ghi nhận</h3><div className="space-y-2">{inspection.recommendations.map(rec => <p key={rec.id} className="rounded-xl border border-ktv-line/60 bg-ktv-inset p-3 text-sm text-ktv-muted">{rec.item_type} · Số lượng {rec.quantity ?? 1} {rec.note ? `· ${rec.note}` : ""}</p>)}</div></div>}
+      {!!inspection.recommendations?.length && <div className="mt-6"><h3 className="mb-3 font-bold text-ktv-strong">Đề xuất đã ghi nhận</h3><div className="space-y-2">{inspection.recommendations.map(rec => <p key={rec.id} className="rounded-xl border border-ktv-line/60 bg-ktv-inset p-3 text-sm text-ktv-muted">{rec.item_type === "PART" ? "Phụ tùng" : "Dịch vụ"}: <strong className="text-ktv-text">{rec.part?.name || rec.service?.name || "—"}</strong> · SL {rec.quantity ?? 1} {rec.note ? `· ${rec.note}` : ""}</p>)}</div></div>}
       {!inspection.inspected_at && order.status === "INSPECTING" && <div className="mt-6 space-y-5 border-t border-ktv-line/60 pt-6">
         <div><h3 className="font-bold text-ktv-strong">Đề xuất hạng mục sửa chữa / phụ tùng</h3><p className="mt-1 text-xs text-ktv-muted">Gửi qua API hiện có; không đồng nghĩa khách đã duyệt báo giá hoặc xuất kho.</p></div>
         {recommendationMessage && <p role="status" className="text-sm text-ktv-highlight">{recommendationMessage}</p>}
         <form onSubmit={event => void addRecommendation(event)} className="grid gap-3 md:grid-cols-[1fr_1fr_100px]">
           <label className="text-xs font-semibold text-ktv-muted">Loại đề xuất<select className={`${control} mt-2`} value={recommendationType} onChange={e => { setRecommendationType(e.target.value as "SERVICE" | "PART"); setRecommendationId(""); }}><option value="SERVICE">Dịch vụ</option><option value="PART">Phụ tùng</option></select></label>
-          <label className="text-xs font-semibold text-ktv-muted">{recommendationType === "SERVICE" ? "ID dịch vụ" : "ID phụ tùng"} *<input className={`${control} mt-2`} type="number" min="1" step="1" required value={recommendationId} onChange={e => setRecommendationId(e.target.value)} placeholder={recommendationType === "SERVICE" ? "services.id" : "parts.id"}/></label>
+          <label className="text-xs font-semibold text-ktv-muted">{recommendationType === "SERVICE" ? "Dịch vụ" : "Phụ tùng"} *<select className={`${control} mt-2`} required value={recommendationId} onChange={e => setRecommendationId(e.target.value)}>
+            <option value="">— Chọn —</option>
+            {recommendationType === "SERVICE"
+              ? services.map(item => <option key={item.id} value={item.id}>{item.name}{item.category ? ` · ${item.category}` : ""}</option>)
+              : parts.map(item => <option key={item.id} value={item.id}>{item.name} ({item.sku}) · tồn {item.inventory?.quantity ?? 0} {item.unit || ""}</option>)}
+          </select></label>
           <label className="text-xs font-semibold text-ktv-muted">Số lượng<input className={`${control} mt-2`} type="number" min="1" step="1" value={recommendationQuantity} onChange={e => setRecommendationQuantity(e.target.value)} required/></label>
           <label className="text-xs font-semibold text-ktv-muted md:col-span-3">Lý do đề xuất<input className={`${control} mt-2`} value={recommendationNote} onChange={e => setRecommendationNote(e.target.value)} placeholder="Giải thích hạng mục cần xử lý"/></label>
           <div className="md:col-span-3"><button type="submit" className={secondary} disabled={saving}>+ Thêm đề xuất</button></div>
         </form>
-        <p className="text-xs leading-5 text-ktv-subtle">API chưa có danh sách phụ tùng riêng cho KTV; ID phải lấy từ danh mục thực trong hệ thống. Backend kiểm tra ID tồn tại.</p>
         <button type="button" className={primary} disabled={saving} onClick={() => void finish()}>{saving ? "Đang xử lý..." : "Hoàn tất kiểm tra và chuyển báo giá →"}</button>
       </div>}
     </section>}
