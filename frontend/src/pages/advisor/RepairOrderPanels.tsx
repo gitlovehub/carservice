@@ -175,14 +175,14 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
             : parts.filter(part => recommendedPartIds.has(part.id)).map(part => <option key={part.id} value={part.id}>{part.name} · tồn {part.inventory?.quantity ?? 0}</option>)}
         </select></label>
         <label className="text-xs font-semibold text-cs-muted">SL<input className={input} type="number" min="1" step="1" required value={line.quantity} onChange={event => updateLine(line.key, { quantity: event.target.value })}/></label>
-        <label className="text-xs font-semibold text-cs-muted">Đơn giá (₫)<input className={input} type="number" min="0" step="1000" required value={line.unit_price} onChange={event => updateLine(line.key, { unit_price: event.target.value })}/></label>
+        <label className="text-xs font-semibold text-cs-muted">Đơn giá (₫)<input className={input} type="number" min="0" step="any" required value={line.unit_price} onChange={event => updateLine(line.key, { unit_price: event.target.value })}/></label>
         <label className="text-xs font-semibold text-cs-muted">Mô tả (tùy chọn)<input className={input} value={line.description} onChange={event => updateLine(line.key, { description: event.target.value })} placeholder="Mặc định: tên hạng mục"/></label>
         <button type="button" className={outline} onClick={() => setLines(previous => previous.filter(item => item.key !== line.key))}>Xóa</button>
       </div>)}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap gap-3">
           <button type="button" className={outline} onClick={() => setLines(previous => [...previous, { key: Date.now(), item_type: "SERVICE", ref_id: "", quantity: "1", unit_price: "0", description: "" }])}>+ Thêm dòng</button>
-          <label className="text-xs font-semibold text-cs-muted">Giảm giá (₫)<input className={input} type="number" min="0" step="1000" value={discount} onChange={event => setDiscount(event.target.value)}/></label>
+          <label className="text-xs font-semibold text-cs-muted">Giảm giá (₫)<input className={input} type="number" min="0" step="any" value={discount} onChange={event => setDiscount(event.target.value)}/></label>
         </div>
         <div className="text-right"><p className="text-sm text-cs-muted">Tổng dự kiến</p><p className="text-xl font-black text-cs-text">{formatVnd(draftTotal)}</p></div>
       </div>
@@ -319,8 +319,8 @@ export function PaymentPanel({ order, onChanged }: PanelProps) {
       </div>
       {!!invoice.payments?.length && <ul className="mt-3 space-y-1 text-xs text-cs-muted">{invoice.payments.map(payment => <li key={payment.id}>Tiền mặt {formatVnd(payment.amount)} · {payment.paid_at ? new Date(payment.paid_at).toLocaleString("vi-VN") : payment.status}</li>)}</ul>}
       {remaining > 0 && <form className="mt-5 grid gap-3 border-t border-cs-border pt-5 md:grid-cols-[1fr_1fr_auto] md:items-end print:hidden" onSubmit={event => void collectCash(event)}>
-        <label className="text-xs font-semibold text-cs-muted">Số tiền thu (₫)<input className={input} type="number" min="1" step="1000" max={remaining} required value={amount} onChange={event => setAmount(event.target.value)}/></label>
-        <label className="text-xs font-semibold text-cs-muted">Khách đưa (₫, để tính tiền thối)<input className={input} type="number" min="0" step="1000" value={cashGiven} onChange={event => setCashGiven(event.target.value)}/></label>
+        <label className="text-xs font-semibold text-cs-muted">Số tiền thu (₫)<input className={input} type="number" min="1" step="any" max={remaining} required value={amount} onChange={event => setAmount(event.target.value)}/></label>
+        <label className="text-xs font-semibold text-cs-muted">Khách đưa (₫, để tính tiền thối)<input className={input} type="number" min="0" step="any" value={cashGiven} onChange={event => setCashGiven(event.target.value)}/></label>
         <button type="submit" className={action} disabled={working}>Xác nhận đã nhận tiền mặt</button>
         {cashGiven && <p className="text-sm text-cs-text md:col-span-3">{change >= 0 ? `Tiền thối lại khách: ${formatVnd(change)}` : `Khách đưa thiếu ${formatVnd(-change)}`}</p>}
       </form>}
