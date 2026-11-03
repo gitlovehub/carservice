@@ -3,6 +3,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { fetchApi } from "../../services/api";
 import { SERVICE_PRODUCTS, type ServiceProduct } from "../../services/serviceCatalog";
+import {
+  getApiVehicleType,
+  requiresCustomVehicleSubtype,
+  type BookingVehicleType,
+  type CustomVehicleSubtype,
+} from "../../lib/bookingVehicleType";
 
 type SavedVehicle = {
   id: number;
@@ -137,7 +143,7 @@ const BRAND_MODELS: Record<string, string[]> = {
   "Hãng khác": ["Dòng xe khác"],
 };
 
-type VehicleType = "Sedan / Hatchback (4-5 chỗ)" | "SUV / Crossover (5-7 chỗ)" | "Bán tải / MPV (7-8 chỗ)";
+type VehicleType = BookingVehicleType;
 
 const VEHICLE_MODELS_BY_TYPE: Record<VehicleType, string[]> = {
   "Sedan / Hatchback (4-5 chỗ)": [
@@ -228,6 +234,7 @@ export default function Booking() {
   const [vehicleBrand, setVehicleBrand] = useState("Toyota");
   const [vehicleModel, setVehicleModel] = useState("Vios");
   const [customModel, setCustomModel] = useState("");
+  const [customVehicleSubtype, setCustomVehicleSubtype] = useState<CustomVehicleSubtype | "">("");
   const [vehiclePlate, setVehiclePlate] = useState("");
   const [selectedService, setSelectedService] = useState<ServiceProduct>(SERVICE_PRODUCTS[0]);
   const [selectedSavedVehicleId, setSelectedSavedVehicleId] = useState<number | null>(null);
@@ -395,6 +402,7 @@ export default function Booking() {
     const brandModels = getModelsForVehicleType(newBrand, vehicleType);
     setVehicleModel(brandModels.length > 0 ? brandModels[0] : "");
     setCustomModel("");
+    setCustomVehicleSubtype("");
     if (errors.model) {
       setErrors((prev) => ({ ...prev, model: "" }));
     }
@@ -408,12 +416,14 @@ export default function Booking() {
       setVehicleModel(compatibleModels[0] || "");
       setCustomModel("");
     }
+    setCustomVehicleSubtype("");
     if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
   };
 
   const handleModelChange = (newModel: string) => {
     setSelectedSavedVehicleId(null);
     setVehicleModel(newModel);
+    setCustomVehicleSubtype("");
     const inferredType = getVehicleTypeForModel(newModel);
     if (inferredType) setVehicleType(inferredType);
     if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
@@ -477,6 +487,12 @@ export default function Booking() {
       if (!validModels.includes(vehicleModel)) {
         newErrors.model = `Dòng xe "${vehicleModel}" không thuộc danh mục xe của hãng ${vehicleBrand}.`;
       }
+    }
+    if (
+      requiresCustomVehicleSubtype(vehicleType, vehicleModel)
+      && !customVehicleSubtype
+    ) {
+      newErrors.vehicleSubtype = "Vui lòng chọn xe là MPV hay bán tải.";
     }
 
     // 2. Kiểm tra chuẩn form biển số xe ô tô
@@ -565,7 +581,11 @@ export default function Booking() {
                   brand: vehicleBrand,
                   model: finalModelName,
                   license_plate: vehiclePlate.trim().toUpperCase(),
-                  vehicle_type: vehicleType,
+                  vehicle_type: getApiVehicleType(
+                    vehicleType,
+                    vehicleModel,
+                    customVehicleSubtype || undefined,
+                  ),
                 },
               }),
           appointment_date: selectedDateObj.isoDate,
@@ -1050,17 +1070,47 @@ export default function Booking() {
 
                   {/* Nhập tay nếu chọn "Khác" hoặc hãng khác */}
                   {vehicleModel === "Khác" && (
-                    <input
-                      type="text"
-                      placeholder={`Nhập tên dòng xe ${vehicleBrand}...`}
-                      value={customModel}
-                      onChange={(e) => {
-                        setSelectedSavedVehicleId(null);
-                        setCustomModel(e.target.value);
-                        if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
-                      }}
-                      className="mt-2 w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition"
-                    />
+                    <>
+                      <input
+                        type="text"
+                        placeholder={`Nhập tên dòng xe ${vehicleBrand}...`}
+                        value={customModel}
+                        onChange={(e) => {
+                          setSelectedSavedVehicleId(null);
+                          setCustomModel(e.target.value);
+                          if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
+                        }}
+                        className="mt-2 w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition"
+                      />
+                      {requiresCustomVehicleSubtype(vehicleType, vehicleModel) && (
+                        <div className="mt-2">
+                          <label
+                            htmlFor="customVehicleSubtype"
+                            className="block text-xs font-semibold text-slate-600 mb-1"
+                          >
+                            Phân loại xe
+                          </label>
+                          <select
+                            id="customVehicleSubtype"
+                            value={customVehicleSubtype}
+                            onChange={(e) => {
+                              setCustomVehicleSubtype(e.target.value as CustomVehicleSubtype | "");
+                              if (errors.vehicleSubtype) {
+                                setErrors((prev) => ({ ...prev, vehicleSubtype: "" }));
+                              }
+                            }}
+                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm"
+                          >
+                            <option value="">-- Chọn MPV hoặc bán tải --</option>
+                            <option value="MPV">MPV</option>
+                            <option value="PICKUP">Bán tải</option>
+                          </select>
+                          {errors.vehicleSubtype && (
+                            <p className="text-[11px] text-red-500 mt-1">{errors.vehicleSubtype}</p>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                   {errors.model && <p className="text-[11px] text-red-500 mt-1">{errors.model}</p>}
                 </div>
