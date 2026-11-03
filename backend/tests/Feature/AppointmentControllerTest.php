@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AppointmentControllerTest extends TestCase
@@ -85,6 +86,39 @@ class AppointmentControllerTest extends TestCase
             'customer_id' => $customer['customer']->id,
             'license_plate' => null,
         ]);
+    }
+
+    public static function newVehicleTypes(): array
+    {
+        return [
+            'pickup' => ['Hilux', 'PICKUP'],
+            'mpv' => ['Innova', 'MPV'],
+        ];
+    }
+
+    #[DataProvider('newVehicleTypes')]
+    public function test_booking_persists_the_selected_pickup_or_mpv_type(string $modelName, string $vehicleType): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+
+        $this->withToken($customer['token'])->postJson('/api/appointments', [
+            'new_vehicle' => [
+                'brand' => 'Toyota',
+                'model' => $modelName,
+                'vehicle_type' => $vehicleType,
+            ],
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '09:00',
+            'request_type' => 'MAINTENANCE',
+        ])->assertCreated();
+
+        $vehicle = Vehicle::query()
+            ->where('customer_id', $customer['customer']->id)
+            ->with('model')
+            ->firstOrFail();
+
+        $this->assertSame($vehicleType, $vehicle->model->body_type);
     }
 
     public function test_rejects_the_sixth_booking_for_a_time_slot(): void
