@@ -7,6 +7,8 @@ import {
   getMyRepairOrders,
   getVehicleName,
   invoiceStatusLabel,
+  paymentMethodLabel,
+  paymentStatusLabel,
   type CustomerRepairOrder,
 } from "../../services/customerApi";
 
@@ -451,10 +453,10 @@ export default function InvoicesPage() {
                       <div key={pm.id} className="flex items-center justify-between p-3">
                         <div>
                           <p className="font-semibold text-slate-800">
-                            Phương thức: {pm.payment_method === "DIRECT" || !pm.payment_method ? "Tiền mặt tại quầy" : pm.payment_method}
+                            Phương thức: {paymentMethodLabel[pm.payment_method ?? "DIRECT"] ?? pm.payment_method}
                           </p>
                           <p className="text-[11px] text-slate-400">
-                            Ngày: {formatDate(pm.payment_date)} · Trạng thái: {pm.status}
+                            Ngày: {formatDate(pm.paid_at ?? pm.payment_date ?? pm.created_at)} · Trạng thái: {paymentStatusLabel[pm.status] ?? pm.status}
                           </p>
                         </div>
                         <p className="font-bold text-emerald-700">{formatMoney(pm.amount)}</p>

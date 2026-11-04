@@ -23,6 +23,7 @@ import RepairStatus from "./pages/customer/RepairStatus";
 import ServiceHistory from "./pages/customer/ServiceHistory";
 import Quotation from "./pages/customer/Quotation";
 import Payment from "./pages/customer/Payment";
+import VnpayReturn from "./pages/customer/VnpayReturn";
 import Invoices from "./pages/customer/Invoices";
 import Reviews from "./pages/customer/Reviews";
 import AdvisorCustomers from "./pages/advisor/Customers";
@@ -74,6 +75,7 @@ function App() {
       <Route path="/repair-status" element={<RepairStatus/>}/>
       <Route path="/quotation" element={<Quotation/>}/>
       <Route path="/payment" element={<Payment/>}/>
+        <Route path="/payment/vnpay-return" element={<VnpayReturn/>}/>
       <Route path="/invoices" element={<Invoices/>}/>
       <Route path="/reviews" element={<Reviews/>}/>
     </Route>

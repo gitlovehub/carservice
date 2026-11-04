@@ -112,7 +112,7 @@ export type CustomerRepairOrder = {
     discount_amount?: number | string;
     status: "UNPAID" | "PARTIALLY_PAID" | "PAID" | "CANCELLED" | string;
     items?: InvoiceItem[];
-    payments?: { id: number; amount: number | string; status: string; payment_date?: string; payment_method?: string }[];
+    payments?: { id: number; amount: number | string; status: string; payment_date?: string; paid_at?: string | null; created_at?: string | null; payment_method?: string }[];
   } | null;
 };
 
@@ -406,3 +406,71 @@ export async function getAdvisorCustomerDetail(
 
   return res.data;
 }
+
+
+/* ---------- Thanh toán VNPay ---------- */
+
+export type VnpayCreateResponse = {
+  payment_id: number;
+  txn_ref: string;
+  amount: number | string;
+  status: string;
+  expires_at: string | null;
+  payment_url: string;
+};
+
+export type VnpayPaymentResult = "PENDING" | "SUCCESS" | "FAILED" | "CANCELLED";
+
+export type VnpayReturnResponse = {
+  result: VnpayPaymentResult;
+  message: string;
+  vnp_response_code: string;
+  payment: {
+    id: number;
+    txn_ref: string;
+    amount: number | string;
+    status: VnpayPaymentResult;
+    transaction_code: string | null;
+    bank_code: string | null;
+    paid_at: string | null;
+    expires_at: string | null;
+  };
+  invoice: {
+    id: number;
+    invoice_code: string;
+    repair_order_id: number;
+    total_amount: number | string;
+    status: string;
+  };
+};
+
+/** Backend tự tính số tiền còn phải trả; Frontend chỉ gửi mã hóa đơn. */
+export async function createVnpayPayment(invoiceId: number): Promise<VnpayCreateResponse> {
+  const idempotencyKey = typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  return fetchApi<VnpayCreateResponse>(`/me/invoices/${invoiceId}/vnpay`, {
+    method: "POST",
+    headers: { "Idempotency-Key": idempotencyKey },
+  });
+}
+
+/** Chuyển nguyên query string VNPay trả về cho Backend xác thực chữ ký và đọc trạng thái từ Database. */
+export async function getVnpayReturnResult(search: string): Promise<VnpayReturnResponse> {
+  const query = search.startsWith("?") ? search.slice(1) : search;
+  return fetchApi<VnpayReturnResponse>(`/payments/vnpay/return?${query}`);
+}
+
+export const paymentMethodLabel: Record<string, string> = {
+  DIRECT: "Tiền mặt tại quầy",
+  QR: "Chuyển khoản QR",
+  VNPAY: "VNPay",
+};
+
+export const paymentStatusLabel: Record<string, string> = {
+  PENDING: "Đang chờ xử lý",
+  SUCCESS: "Thành công",
+  FAILED: "Thất bại",
+  CANCELLED: "Đã hủy",
+};

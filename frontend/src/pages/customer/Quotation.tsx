@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Toast, type ToastType } from "../../components/auth/Toast";
 import "../../styles/atelier-customer-pages.css";
@@ -31,6 +32,13 @@ export default function QuotationPage() {
   const [submitError, setSubmitError] = useState("");
 
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+
+    const payableInvoice = (row: QuotationRow) => {
+    const invoice = row.order.invoice;
+    return invoice && invoice.status !== "PAID" && invoice.status !== "CANCELLED" ? invoice : null;
+  };
+  const isApproved = (row: QuotationRow) =>
+    row.quotation.status === "APPROVED" || row.quotation.status === "PARTIALLY_APPROVED";
 
   const loadData = async () => {
     setLoading(true);
@@ -180,8 +188,15 @@ export default function QuotationPage() {
       </div><span className={`at-customer-status ${row.quotation.status === "SENT" ? "is-pending" : row.quotation.status === "REJECTED" || row.quotation.status === "CANCELLED" ? "is-cancelled" : "is-confirmed"}`}>● {quotationStatusLabel[row.quotation.status] ?? row.quotation.status}</span></div>
       <div className="at-quote-bottom"><div><small>TỔNG DỰ KIẾN</small><strong>{formatMoney(row.quotation.total_amount)}</strong>
         <span>{row.quotation.items?.length ?? 0} hạng mục · Phiên bản {row.quotation.version}</span></div>
-        <button type="button" className={row.quotation.status === "SENT" ? "at-customer-primary" : "at-customer-outline"} onClick={() => openModal(row)}>
-          {row.quotation.status === "SENT" ? "Xem và duyệt →" : "Xem chi tiết →"}</button></div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {payableInvoice(row) && (
+            <Link to={`/payment?invoice_id=${payableInvoice(row)!.id}`} className="at-customer-primary">
+              Thanh toán →
+            </Link>
+          )}
+          <button type="button" className={row.quotation.status === "SENT" ? "at-customer-primary" : "at-customer-outline"} onClick={() => openModal(row)}>
+            {row.quotation.status === "SENT" ? "Xem và duyệt →" : "Xem chi tiết →"}</button>
+        </div></div>
     </article>)}
     <p className="at-customer-footnote">Báo giá chỉ có hiệu lực sau khi bạn phê duyệt các hạng mục. Gara không tự duyệt thay bạn.</p>
   </div>
@@ -201,7 +216,18 @@ export default function QuotationPage() {
         <b>{formatMoney(item.amount)}</b>
       </label>)}{!selectedRow.quotation.items?.length && <p className="at-quote-instruction">Chưa có chi tiết hạng mục.</p>}</div>
       {submitError && <p role="alert" className="at-customer-notice at-customer-error">{submitError}</p>}
-      <div className="at-modal-actions"><button type="button" className="at-customer-outline" onClick={closeModal}>Đóng</button>
+            {isApproved(selectedRow) && !selectedRow.order.invoice && (
+        <p className="at-quote-instruction">Bạn có thể thanh toán (VNPay hoặc tiền mặt) sau khi gara hoàn tất sửa chữa và lập hóa đơn.</p>
+      )}
+      {selectedRow.order.invoice?.status === "PAID" && (
+        <p className="at-quote-instruction">Hóa đơn {selectedRow.order.invoice.invoice_code} đã được thanh toán.</p>
+      )}
+            <div className="at-modal-actions"><button type="button" className="at-customer-outline" onClick={closeModal}>Đóng</button>
+        {payableInvoice(selectedRow) && (
+          <Link to={`/payment?invoice_id=${payableInvoice(selectedRow)!.id}`} className="at-customer-primary">
+            Thanh toán {formatMoney(payableInvoice(selectedRow)!.total_amount)} →
+          </Link>
+        )}
         {selectedRow.quotation.status === "SENT" && <><button type="button" disabled={submitting} className="at-danger-outline" onClick={() => void handleRespond(true)}>Từ chối</button>
           <button type="button" disabled={submitting || !selectedRow.quotation.items?.length} className="at-customer-primary" aria-busy={submitting} onClick={() => void handleRespond(false)}>{submitting ? "Đang gửi..." : "Xác nhận duyệt báo giá"}</button></>}
       </div>

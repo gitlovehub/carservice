@@ -269,6 +269,9 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
 
 const invoiceStatusText: Record<string, string> = { UNPAID: "Chưa thanh toán", PARTIALLY_PAID: "Đã thu một phần", PAID: "Đã thanh toán đủ", CANCELLED: "Đã hủy" };
 
+const paymentMethodText: Record<string, string> = { DIRECT: "Tiền mặt", QR: "QR", VNPAY: "VNPay" };
+const paymentStatusText: Record<string, string> = { PENDING: "Đang chờ", SUCCESS: "Thành công", FAILED: "Thất bại", CANCELLED: "Đã hủy" };
+
 export function PaymentPanel({ order, onChanged }: PanelProps) {
   const { confirm } = useAppFeedback();
   const invoice = order.invoice;
@@ -319,7 +322,7 @@ export function PaymentPanel({ order, onChanged }: PanelProps) {
         <p className="text-base font-black">Tổng cộng: {formatVnd(invoice.total_amount)}</p>
         <p>Đã thu: {formatVnd(paid)} · Còn lại: <strong>{formatVnd(remaining)}</strong></p>
       </div>
-      {!!invoice.payments?.length && <ul className="mt-3 space-y-1 text-xs text-cs-muted">{invoice.payments.map(payment => <li key={payment.id}>Tiền mặt {formatVnd(payment.amount)} · {payment.paid_at ? new Date(payment.paid_at).toLocaleString("vi-VN") : payment.status}</li>)}</ul>}
+      {!!invoice.payments?.length && <ul className="mt-3 space-y-1 text-xs text-cs-muted">{invoice.payments.map(payment => <li key={payment.id}>{paymentMethodText[payment.payment_method] || payment.payment_method} {formatVnd(payment.amount)} · {payment.paid_at ? new Date(payment.paid_at).toLocaleString("vi-VN") : paymentStatusText[payment.status] || payment.status}</li>)}</ul>}
       {remaining > 0 && <form className="mt-5 grid gap-3 border-t border-cs-border pt-5 md:grid-cols-[1fr_1fr_auto] md:items-end print:hidden" onSubmit={event => void collectCash(event)}>
         <label className="text-xs font-semibold text-cs-muted">Số tiền thu (₫)<input className={input} type="number" min="1" step="any" max={remaining} required value={amount} onChange={event => setAmount(event.target.value)}/></label>
         <label className="text-xs font-semibold text-cs-muted">Khách đưa (₫, để tính tiền thối)<input className={input} type="number" min="0" step="any" value={cashGiven} onChange={event => setCashGiven(event.target.value)}/></label>

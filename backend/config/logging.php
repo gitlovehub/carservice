@@ -73,6 +73,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'vnpay' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/vnpay.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'max_files' => env('VNPAY_LOG_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
         'monthly' => [
             'driver' => 'monthly',
             'path' => storage_path('logs/laravel.log'),

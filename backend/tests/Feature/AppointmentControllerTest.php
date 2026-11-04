@@ -249,6 +249,81 @@ class AppointmentControllerTest extends TestCase
         $this->assertDatabaseMissing('vehicles', ['license_plate' => '30A-777.77']);
     }
 
+    public function test_rebooking_with_own_license_plate_reuses_existing_vehicle(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $payload = fn (int $days) => [
+            'new_vehicle' => [
+                'brand' => 'Toyota',
+                'model' => 'Vios',
+                'license_plate' => '30A-888.88',
+                'vehicle_type' => 'Sedan / Hatchback (4-5 chỗ)',
+            ],
+            'appointment_date' => now()->addDays($days)->toDateString(),
+            'appointment_time' => '09:00',
+            'request_type' => 'MAINTENANCE',
+        ];
+
+        $first = $this->withToken($customer['token'])->postJson('/api/appointments', $payload(2))->assertCreated();
+        $vehicleCount = Vehicle::count();
+
+        $this->withToken($customer['token'])->postJson('/api/appointments', $payload(3))
+            ->assertCreated()
+            ->assertJsonPath('data.vehicle_id', $first->json('data.vehicle_id'));
+
+        $this->assertSame($vehicleCount, Vehicle::count());
+    }
+
+    public function test_rebooking_restores_soft_deleted_own_vehicle(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $vehicle = Vehicle::factory()->create([
+            'customer_id' => $customer['customer']->id,
+            'license_plate' => '30A-999.99',
+        ]);
+        $vehicle->delete();
+
+        $this->withToken($customer['token'])->postJson('/api/appointments', [
+            'new_vehicle' => [
+                'brand' => 'Toyota',
+                'model' => 'Vios',
+                'license_plate' => '30a-999.99',
+                'vehicle_type' => 'Sedan / Hatchback (4-5 chỗ)',
+            ],
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '09:00',
+            'request_type' => 'MAINTENANCE',
+        ])->assertCreated()->assertJsonPath('data.vehicle_id', $vehicle->id);
+
+        $this->assertNotSoftDeleted('vehicles', ['id' => $vehicle->id]);
+    }
+
+    public function test_cannot_book_with_license_plate_of_another_customer(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $owner = $this->createAuthenticatedCustomer();
+        Vehicle::factory()->create(['customer_id' => $owner['customer']->id, 'license_plate' => '30A-121.21']);
+
+        $other = $this->createAuthenticatedCustomer();
+        $this->app['auth']->forgetGuards();
+
+        $this->withToken($other['token'])->postJson('/api/appointments', [
+            'new_vehicle' => [
+                'brand' => 'Toyota',
+                'model' => 'Vios',
+                'license_plate' => '30A-121.21',
+                'vehicle_type' => 'Sedan / Hatchback (4-5 chỗ)',
+            ],
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '09:00',
+            'request_type' => 'MAINTENANCE',
+        ])->assertUnprocessable()->assertJsonValidationErrors('new_vehicle.license_plate');
+
+        $this->assertDatabaseMissing('appointments', ['customer_id' => $other['customer']->id]);
+    }
+
     public function test_rejects_both_existing_and_new_vehicle_in_same_booking(): void
     {
         $this->travelTo(now()->startOfDay());
