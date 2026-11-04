@@ -68,9 +68,30 @@ class AppointmentController extends Controller
                 } else {
                     $input = $validated['new_vehicle'];
                     $plate = isset($input['license_plate']) ? strtoupper(trim($input['license_plate'])) : null;
-                    if ($plate !== null && Vehicle::where('license_plate', $plate)->exists()) {
-                        throw ValidationException::withMessages(['new_vehicle.license_plate' => 'Biển số đã tồn tại.']);
+                    if ($plate === '') {
+                        $plate = null;
                     }
+
+                    // Biển số đã có: nếu là xe của chính khách (kể cả đã xóa mềm) thì dùng lại,
+                    // nếu thuộc khách khác thì từ chối để không đặt lịch trên xe của người khác.
+                    $existingVehicle = $plate === null ? null : Vehicle::withTrashed()
+                        ->where('license_plate', $plate)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($existingVehicle && (int) $existingVehicle->customer_id !== (int) $customer->id) {
+                        throw ValidationException::withMessages([
+                            'new_vehicle.license_plate' => 'Biển số này đã được đăng ký cho một tài khoản khác. Vui lòng liên hệ gara để được hỗ trợ.',
+                        ]);
+                    }
+                }
+
+                if (! isset($validated['vehicle_id']) && $existingVehicle) {
+                    if ($existingVehicle->trashed()) {
+                        $existingVehicle->restore();
+                    }
+                    $vehicle = $existingVehicle;
+                } elseif (! isset($validated['vehicle_id'])) {
                     $type = match ($input['vehicle_type']) {
                         'Sedan / Hatchback (4-5 chỗ)' => 'SEDAN',
                         'SUV / Crossover (5-7 chỗ)' => 'SUV',

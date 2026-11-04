@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Toast, type ToastType } from "../../components/auth/Toast";
 import {
+  createVnpayPayment,
   formatDate,
   formatMoney,
   getMyRepairOrderDetail,
@@ -26,6 +27,7 @@ function Payment() {
   const [selectedTarget, setSelectedTarget] = useState<PaymentTarget | null>(null);
 
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -76,6 +78,23 @@ function Payment() {
   const invoice = selectedTarget?.invoice;
   const order = selectedTarget?.order;
   const isPaid = invoice?.status === "PAID";
+  
+  const canPayOnline = !!invoice && !isPaid && invoice.status !== "CANCELLED";
+
+  const handleVnpay = async () => {
+    if (!invoice || redirecting) return;
+    setRedirecting(true);
+    try {
+      const { payment_url } = await createVnpayPayment(invoice.id);
+      window.location.assign(payment_url);
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : "Không thể khởi tạo thanh toán VNPay.",
+        type: "error",
+      });
+      setRedirecting(false);
+    }
+  };
 
   return (
     <div className="at-customer-payment min-h-screen bg-[#F7F7F5] text-[#20252B]">
@@ -97,7 +116,7 @@ function Payment() {
                   Thanh toán dịch vụ
                 </h1>
                 <p className="mt-2 text-[13px] leading-6 text-[#66717C]">
-                  Thông tin hóa đơn và hướng dẫn thanh toán tiền mặt tại quầy.
+                  Thông tin hóa đơn, thanh toán trực tuyến qua VNPay hoặc tiền mặt tại quầy.
                 </p>
               </div>
 
@@ -257,9 +276,26 @@ function Payment() {
                   </div>
 
                   <div className="p-6 text-xs">
+                                        {canPayOnline && (
+                      <div className="mb-5">
+                        <p className="mb-2 font-bold text-slate-700">Thanh toán trực tuyến</p>
+                        <button
+                          type="button"
+                          onClick={() => void handleVnpay()}
+                          disabled={redirecting}
+                          aria-busy={redirecting}
+                          className="w-full cursor-pointer rounded-xl bg-[#005BAA] px-4 py-3 text-sm font-bold text-white hover:bg-[#004A8C] disabled:cursor-wait disabled:opacity-60"
+                        >
+                          {redirecting ? "Đang chuyển sang VNPay..." : "Thanh toán qua VNPay"}
+                        </button>
+                        <p className="mt-2 leading-5 text-slate-500">
+                          Hỗ trợ thẻ ATM/tài khoản ngân hàng, thẻ quốc tế và VNPay QR. Hệ thống tự cập nhật khi VNPay xác nhận.
+                        </p>
+                      </div>
+                    )}
                     <p className="mb-2 font-bold text-slate-700">Hình thức thanh toán</p>
                     <div className="rounded-2xl bg-[#FAF8F5] p-4 text-slate-700">
-                      <p className="font-bold text-[#1F2933]">Tiền mặt tại quầy gara</p>
+                        <p className="font-bold text-[#1F2933]">{canPayOnline ? "Hoặc tiền mặt tại quầy gara" : "Tiền mặt tại quầy gara"}</p>
                       <p className="mt-2 font-semibold leading-5">
                         {isPaid
                           ? "Gara đã xác nhận nhận đủ tiền. Cảm ơn quý khách."

@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\RepairOrderController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\TechnicianController;
 use App\Http\Controllers\Api\VehicleController;
+use App\Http\Controllers\Api\VnpayController;
 use App\Http\Controllers\Api\WorkingHoursController;
 use App\Http\Controllers\Api\WorkItemController;
 use App\Models\Account;
@@ -53,6 +54,12 @@ Route::get('maintenance-packages/{maintenancePackage}', [MaintenancePackageContr
 Route::get('/working-hours', [WorkingHoursController::class, 'index']);
 
 Route::post('chatbot', [ChatbotController::class, 'chat'])->middleware('throttle:20,1');
+
+// VNPay: IPN do máy chủ VNPay gọi; Return do Frontend gọi để hiển thị kết quả. Bảo vệ bằng chữ ký.
+Route::controller(VnpayController::class)->prefix('payments/vnpay')->group(function (): void {
+    Route::get('ipn', 'ipn');
+    Route::get('return', 'return')->middleware('throttle:30,1');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -90,6 +97,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('repair-orders/{repairOrder}/invoice', 'invoice');
             Route::post('quotations/{quotation}/respond', 'respondQuotation');
         });
+
+        // Thanh toán hóa đơn qua VNPay
+        Route::post('me/invoices/{invoice}/vnpay', [VnpayController::class, 'create'])->middleware(['throttle:10,1', 'idempotency']);
 
         // Đánh giá dịch vụ
         Route::controller(CustomerReviewController::class)->prefix('me/reviews')->group(function (): void {

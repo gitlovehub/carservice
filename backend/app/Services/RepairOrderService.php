@@ -659,7 +659,7 @@ class RepairOrderService
         });
     }
 
-    private function refreshInvoiceStatus(Invoice $invoice): void
+    public function refreshInvoiceStatus(Invoice $invoice): void
     {
         $invoice->refresh();
         $paid = (float) $invoice->totalPaid();
