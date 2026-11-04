@@ -29,7 +29,7 @@ class AdvisorAppointmentOverrideTest extends TestCase
         );
     }
 
-    public function test_advisor_can_override_customer_active_booking_limit_with_reason(): void
+    public function test_advisor_can_create_internal_appointment_without_active_booking_limit(): void
     {
         $advisor = Account::factory()->advisor()->create();
         $customer = Customer::factory()->create();
@@ -42,37 +42,10 @@ class AdvisorAppointmentOverrideTest extends TestCase
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '10:00',
             'request_type' => 'MAINTENANCE',
-            'override_active_limit' => true,
-            'override_reason' => 'Khách hàng doanh nghiệp cần ưu tiên lịch.',
         ]);
 
         $response->assertCreated();
         $this->assertDatabaseCount('appointments', 4);
-        $this->assertDatabaseHas('audit_logs', [
-            'account_id' => $advisor->id,
-            'action' => 'appointment.limit_overridden',
-            'reason' => 'Khách hàng doanh nghiệp cần ưu tiên lịch.',
-        ]);
-    }
-
-    public function test_internal_booking_requires_override_reason_when_limit_is_exceeded(): void
-    {
-        $advisor = Account::factory()->advisor()->create();
-        $customer = Customer::factory()->create();
-        $vehicle = Vehicle::factory()->create(['customer_id' => $customer->id]);
-        $this->createActiveAppointments($customer);
-
-        $this->actingAs($advisor)
-            ->postJson('/api/advisor/appointments', [
-                'customer_id' => $customer->id,
-                'vehicle_id' => $vehicle->id,
-                'appointment_date' => now()->addDays(2)->toDateString(),
-                'appointment_time' => '10:00',
-                'request_type' => 'MAINTENANCE',
-                'override_active_limit' => true,
-            ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('override_reason');
     }
 
     public function test_administrator_can_create_internal_appointment(): void
@@ -84,19 +57,6 @@ class AdvisorAppointmentOverrideTest extends TestCase
         $this->actingAs($admin)
             ->postJson('/api/advisor/appointments', $this->payload($customer, $vehicle))
             ->assertCreated();
-    }
-
-    public function test_internal_booking_without_override_still_enforces_active_limit(): void
-    {
-        $advisor = Account::factory()->advisor()->create();
-        $customer = Customer::factory()->create();
-        $vehicle = Vehicle::factory()->create(['customer_id' => $customer->id]);
-        $this->createActiveAppointments($customer);
-
-        $this->actingAs($advisor)
-            ->postJson('/api/advisor/appointments', $this->payload($customer, $vehicle))
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('override_active_limit');
     }
 
     public function test_override_does_not_bypass_slot_capacity(): void
@@ -123,10 +83,7 @@ class AdvisorAppointmentOverrideTest extends TestCase
         $this->actingAs($advisor)
             ->postJson('/api/advisor/appointments', array_merge(
                 $this->payload($customer, $vehicle, $date, '10:00'),
-                [
-                    'override_active_limit' => true,
-                    'override_reason' => 'Ưu tiên xử lý.',
-                ],
+                [],
             ))
             ->assertUnprocessable()
             ->assertJsonValidationErrors('appointment_time');
@@ -152,10 +109,7 @@ class AdvisorAppointmentOverrideTest extends TestCase
         $this->actingAs($advisor)
             ->postJson('/api/advisor/appointments', array_merge(
                 $this->payload($customer, $vehicle, $date, '10:00'),
-                [
-                    'override_active_limit' => true,
-                    'override_reason' => 'Ưu tiên xử lý.',
-                ],
+                [],
             ))
             ->assertUnprocessable()
             ->assertJsonValidationErrors('vehicle_id');
