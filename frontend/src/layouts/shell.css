@@ -330,3 +330,10 @@ html[data-theme="dark"] .cs-workspace .bg-emerald-50 {background:#203b30!importa
 html[data-theme="dark"] .cs-workspace :is(.text-emerald-700,.text-emerald-800){color:#b4f1ce!important}
 html[data-theme="dark"] .cs-workspace .bg-blue-50 {background:#1d324a!important}
 html[data-theme="dark"] .cs-workspace :is(.text-blue-700,.text-blue-800){color:#b2d7ff!important}
+
+/* Đồng bộ logo thanh bên cố vấn/admin với header trang chủ */
+.cs-workspace .cs-sidebar-brand .cs-brand{gap:10px;font-size:20px;letter-spacing:-.06em;line-height:1.1;}
+.cs-workspace .cs-sidebar-brand .cs-brand-mark,
+.cs-workspace[data-area="advisor"] .cs-sidebar-brand .cs-brand-mark,
+.cs-workspace[data-area="admin"] .cs-sidebar-brand .cs-brand-mark{width:32px;height:32px;border-radius:8px;font-size:14px;font-weight:800;transform:rotate(-6deg);background:#cf2935;color:#fff;}
+.cs-workspace .cs-sidebar-brand .cs-brand small{margin-top:2px;font-size:9px;letter-spacing:.14em;}
