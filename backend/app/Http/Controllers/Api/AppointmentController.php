@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 class AppointmentController extends Controller
@@ -40,19 +41,19 @@ class AppointmentController extends Controller
                 $when = Carbon::createFromFormat('Y-m-d H:i:s', "$date $time");
 
                 if ($when->lessThanOrEqualTo(now())) {
-                    throw \Illuminate\Validation\ValidationException::withMessages(['appointment_time' => 'Giờ hẹn phải ở tương lai.']);
+                    throw ValidationException::withMessages(['appointment_time' => 'Giờ hẹn phải ở tương lai.']);
                 }
                 if (DB::table('holidays')->where('holiday_date', $date)->exists()) {
-                    throw \Illuminate\Validation\ValidationException::withMessages(['appointment_date' => 'Garage nghỉ lễ ngày này.']);
+                    throw ValidationException::withMessages(['appointment_date' => 'Garage nghỉ lễ ngày này.']);
                 }
 
                 $day = $when->dayOfWeek;
                 $hours = DB::table('working_hours')->where('day_of_week', $day)->first();
                 if (! $hours) {
-                    throw \Illuminate\Validation\ValidationException::withMessages(['appointment_date' => 'Garage chưa cấu hình giờ làm việc cho ngày này.']);
+                    throw ValidationException::withMessages(['appointment_date' => 'Garage chưa cấu hình giờ làm việc cho ngày này.']);
                 }
                 if (! $hours->is_active || $time < substr($hours->open_time, 0, 8) || $time >= substr($hours->close_time, 0, 8)) {
-                    throw \Illuminate\Validation\ValidationException::withMessages(['appointment_time' => 'Ngoài giờ làm việc của garage.']);
+                    throw ValidationException::withMessages(['appointment_time' => 'Ngoài giờ làm việc của garage.']);
                 }
 
                 // Khóa ngày làm việc trước khi kiểm tra số slot (thứ tự khóa nhất quán).
@@ -65,13 +66,13 @@ class AppointmentController extends Controller
                     $vehicle = Vehicle::whereKey($validated['vehicle_id'])
                         ->where('customer_id', $customer->id)->first();
                     if (! $vehicle) {
-                        throw \Illuminate\Validation\ValidationException::withMessages(['vehicle_id' => 'Xe không tồn tại hoặc không thuộc tài khoản của bạn.']);
+                        throw ValidationException::withMessages(['vehicle_id' => 'Xe không tồn tại hoặc không thuộc tài khoản của bạn.']);
                     }
                 } else {
                     $input = $validated['new_vehicle'];
                     $plate = isset($input['license_plate']) ? strtoupper(trim($input['license_plate'])) : null;
                     if ($plate !== null && Vehicle::where('license_plate', $plate)->exists()) {
-                        throw \Illuminate\Validation\ValidationException::withMessages(['new_vehicle.license_plate' => 'Biển số đã tồn tại.']);
+                        throw ValidationException::withMessages(['new_vehicle.license_plate' => 'Biển số đã tồn tại.']);
                     }
                     $type = match ($input['vehicle_type']) {
                         'Sedan / Hatchback (4-5 chỗ)' => 'SEDAN',
@@ -97,14 +98,14 @@ class AppointmentController extends Controller
                     ->whereNotIn('status', ['CANCELLED', 'NO_SHOW'])
                     ->count();
                 if ($booked >= (int) ($hours->max_slots ?? 5)) {
-                    throw \Illuminate\Validation\ValidationException::withMessages(['appointment_time' => 'Khung giờ đã đầy.']);
+                    throw ValidationException::withMessages(['appointment_time' => 'Khung giờ đã đầy.']);
                 }
                 $duplicate = Appointment::where('vehicle_id', $vehicle->id)
                     ->where('appointment_date', $date)
                     ->where('appointment_time', $time)
                     ->whereNotIn('status', ['CANCELLED', 'NO_SHOW'])->exists();
                 if ($duplicate) {
-                    throw \Illuminate\Validation\ValidationException::withMessages(['vehicle_id' => 'Xe đã có lịch hẹn tại khung giờ này.']);
+                    throw ValidationException::withMessages(['vehicle_id' => 'Xe đã có lịch hẹn tại khung giờ này.']);
                 }
 
                 $appointment = Appointment::create([
@@ -146,10 +147,11 @@ class AppointmentController extends Controller
                     'appointment_time' => $appointment->appointment_time,
                 ],
             ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
             report($e);
+
             return response()->json(['success' => false, 'message' => 'Không thể đặt lịch lúc này.'], 500);
         }
     }
@@ -239,6 +241,8 @@ class AppointmentController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
+        $this->authorize('view', $appointment);
+
         return response()->json([
             'success' => true,
             'data' => $appointment,
@@ -264,6 +268,8 @@ class AppointmentController extends Controller
                     'message' => 'Lịch hẹn không tồn tại hoặc bạn không có quyền thao tác.',
                 ], Response::HTTP_NOT_FOUND);
             }
+
+            $this->authorize('update', $appointment);
 
             // Chỉ cho phép sửa khi còn PENDING
             if ($appointment->status !== 'PENDING') {

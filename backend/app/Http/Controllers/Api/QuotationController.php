@@ -15,6 +15,9 @@ class QuotationController extends Controller
 
     public function store(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('create', Quotation::class);
+        $this->authorize('update', $repairOrder);
+
         $data = $request->validate([
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'valid_until' => ['nullable', 'date'],
@@ -38,6 +41,8 @@ class QuotationController extends Controller
 
     public function send(Request $request, Quotation $quotation): JsonResponse
     {
+        $this->authorize('update', $quotation);
+
         $quotation = $this->service->sendQuotation($quotation, $request->user());
 
         return response()->json($quotation);
@@ -45,6 +50,8 @@ class QuotationController extends Controller
 
     public function respond(Request $request, Quotation $quotation): JsonResponse
     {
+        $this->authorize('respond', $quotation);
+
         $data = $request->validate([
             'responses' => ['required', 'array', 'min:1'],
             'responses.*.item_id' => ['required', 'integer', 'exists:quotation_items,id'],
