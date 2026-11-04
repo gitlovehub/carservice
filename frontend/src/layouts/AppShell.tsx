@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuthSession } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { getUserDisplayName, logout } from "../pages/auth/auth";
+import PageTransition from "../components/PageTransition";
 import { Icon } from "../components/ui/Icon";
 import { shellNavigation } from "./navigation";
 import type { ShellArea } from "./ShellContext";
@@ -89,7 +90,7 @@ function WorkLayout({ area }: { area: "advisor" | "admin" }) {
           </div>
           <UserControls area={area}/>
         </header>
-        <div className="cs-work-content" id="main-content"><Outlet/></div>
+        <div className="cs-work-content" id="main-content"><PageTransition><Outlet/></PageTransition></div>
       </div>
     </div>
   </ShellContext.Provider>;
@@ -99,25 +100,10 @@ export function AdvisorLayout() { return <WorkLayout area="advisor"/>; }
 export function AdminLayout() { return <WorkLayout area="admin"/>; }
 
 export function CustomerLayout() {
-  const { pathname } = useLocation();
-  const [open, setOpen] = useState(false);
-  useEffect(() => { setOpen(false); }, [pathname]);
-  useEffect(() => {
-    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, []);
+  // Header/footer do PublicLayout đảm nhiệm để đồng bộ và không bị dựng lại khi chuyển trang.
   return <ShellContext.Provider value="customer">
     <div className="cs-shell cs-customer-layout" data-area="customer">
-      <header className="cs-public-header">
-        <Brand area="customer"/>
-        <div className="cs-desktop-navigation"><NavItems area="customer" close={() => setOpen(false)}/></div>
-        <UserControls area="customer"/>
-        <button className="cs-menu-button cs-icon-button" onClick={() => setOpen(previous => !previous)} aria-label={open ? "Đóng điều hướng" : "Mở điều hướng"} aria-expanded={open} aria-controls="cs-customer-mobile-nav"><Icon name={open ? "close" : "menu"}/></button>
-      </header>
-      {open && <div id="cs-customer-mobile-nav" className="cs-mobile-public-nav"><NavItems area="customer" close={() => setOpen(false)}/></div>}
       <div className="cs-customer-main" id="main-content"><Outlet/></div>
-      <footer className="cs-public-footer"><span>© {new Date().getFullYear()} CarService · Chăm sóc ô tô thuận tiện</span><Link to="/">Trang chủ</Link></footer>
     </div>
   </ShellContext.Provider>;
 }
