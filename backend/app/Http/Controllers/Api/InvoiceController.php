@@ -13,6 +13,8 @@ class InvoiceController extends Controller
 
     public function store(RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('update', $repairOrder);
+
         $invoice = $this->service->generateInvoice($repairOrder);
 
         return response()->json($invoice, 201);
@@ -20,6 +22,8 @@ class InvoiceController extends Controller
 
     public function show(RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('view', $repairOrder);
+
         return response()->json($repairOrder->invoice()->with('items', 'payments')->firstOrFail());
     }
 }

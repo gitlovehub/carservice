@@ -11,6 +11,12 @@ class Appointment extends Model
 {
     use HasFactory;
 
+    public const ACTIVE_STATUSES = [
+        'PENDING',
+        'CONFIRMED',
+        'CHECKED_IN',
+    ];
+
     protected $table = 'appointments';
 
     protected $fillable = [
