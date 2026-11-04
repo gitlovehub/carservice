@@ -15,6 +15,8 @@ class PaymentController extends Controller
 
     public function store(Request $request, Invoice $invoice): JsonResponse
     {
+        $this->authorize('update', $invoice);
+
         // Giai đoạn demo: chỉ thu tiền mặt tại quầy, Cố vấn xác nhận đã nhận tiền (chưa tích hợp VNPay/QR).
         $data = $request->validate([
             'payment_method' => ['sometimes', 'string', 'in:'.Payment::DIRECT],
@@ -30,6 +32,8 @@ class PaymentController extends Controller
 
     public function confirmQr(Request $request, Payment $payment): JsonResponse
     {
+        $this->authorize('update', $payment);
+
         $data = $request->validate([
             'success' => ['required', 'boolean'],
             'transaction_code' => ['nullable', 'string'],

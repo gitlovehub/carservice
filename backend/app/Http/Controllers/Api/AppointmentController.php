@@ -62,6 +62,17 @@ class AppointmentController extends Controller
                 // Khóa bản ghi customer để tuần tự hóa các request của cùng khách hàng.
                 Customer::whereKey($customer->id)->lockForUpdate()->firstOrFail();
 
+                $activeAppointments = Appointment::query()
+                    ->where('customer_id', $customer->id)
+                    ->whereIn('status', Appointment::ACTIVE_STATUSES)
+                    ->count();
+
+                if ($activeAppointments >= 3) {
+                    throw ValidationException::withMessages([
+                        'appointment_date' => 'Bạn chỉ được có tối đa 3 lịch hẹn đang hoạt động.',
+                    ]);
+                }
+
                 if (isset($validated['vehicle_id'])) {
                     $vehicle = Vehicle::whereKey($validated['vehicle_id'])
                         ->where('customer_id', $customer->id)->first();
@@ -241,6 +252,8 @@ class AppointmentController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
+        $this->authorize('view', $appointment);
+
         return response()->json([
             'success' => true,
             'data' => $appointment,
@@ -266,6 +279,8 @@ class AppointmentController extends Controller
                     'message' => 'Lịch hẹn không tồn tại hoặc bạn không có quyền thao tác.',
                 ], Response::HTTP_NOT_FOUND);
             }
+
+            $this->authorize('update', $appointment);
 
             // Chỉ cho phép sửa khi còn PENDING
             if ($appointment->status !== 'PENDING') {

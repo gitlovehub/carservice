@@ -9,6 +9,7 @@ use App\Models\RepairOrder;
 use App\Services\RepairOrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class CustomerRepairOrderController extends Controller
@@ -33,7 +34,7 @@ class CustomerRepairOrderController extends Controller
 
     public function show(Request $request, RepairOrder $repairOrder): JsonResponse
     {
-        $this->authorizeOwner($request, $repairOrder);
+        $this->authorizeCustomerResource($request, 'view', $repairOrder);
 
         $repairOrder->load([
             'vehicle.model.brand',
@@ -55,14 +56,14 @@ class CustomerRepairOrderController extends Controller
 
     public function invoice(Request $request, RepairOrder $repairOrder): JsonResponse
     {
-        $this->authorizeOwner($request, $repairOrder);
+        $this->authorizeCustomerResource($request, 'view', $repairOrder);
 
         return response()->json($repairOrder->invoice()->with('items', 'payments')->firstOrFail());
     }
 
     public function respondQuotation(Request $request, Quotation $quotation): JsonResponse
     {
-        $this->authorizeOwner($request, $quotation->repairOrder);
+        $this->authorizeCustomerResource($request, 'respond', $quotation);
 
         $data = $request->validate([
             'responses' => ['required', 'array', 'min:1'],
@@ -90,10 +91,13 @@ class CustomerRepairOrderController extends Controller
         return (int) $customerId;
     }
 
-    private function authorizeOwner(Request $request, RepairOrder $repairOrder): void
-    {
-        abort_if(
-            (int) $repairOrder->customer_id !== $this->customerId($request),
+    private function authorizeCustomerResource(
+        Request $request,
+        string $ability,
+        mixed $resource
+    ): void {
+        abort_unless(
+            Gate::forUser($request->user())->allows($ability, $resource),
             404
         );
     }

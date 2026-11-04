@@ -23,7 +23,10 @@ class InspectionController extends Controller
      */
     public function store(StoreInspectionRequest $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('inspect', $repairOrder);
+
         $employee = $request->user()->employee;
+        $technician = null;
 
         if ($request->user()->role === Account::ROLE_TECHNICIAN) {
             $technician = TechnicianProfile::where('employee_id', $employee?->id)->first();
@@ -66,6 +69,8 @@ class InspectionController extends Controller
      */
     public function show(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('inspect', $repairOrder);
+
         if ($denied = $this->denyUnassignedTechnician($request, $repairOrder)) {
             return $denied;
         }
@@ -89,6 +94,8 @@ class InspectionController extends Controller
      */
     public function addRecommendation(StoreInspectionRecommendationRequest $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('inspect', $repairOrder);
+
         if ($denied = $this->denyUnassignedTechnician($request, $repairOrder)) {
             return $denied;
         }
@@ -123,6 +130,8 @@ class InspectionController extends Controller
      */
     public function complete(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('inspect', $repairOrder);
+
         if ($denied = $this->denyUnassignedTechnician($request, $repairOrder)) {
             return $denied;
         }
