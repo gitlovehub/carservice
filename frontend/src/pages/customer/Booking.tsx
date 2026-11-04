@@ -925,15 +925,10 @@ export default function Booking() {
                     <select
                       id="customerCity"
                       value={customerCity}
-                      onChange={(e) => setCustomerCity(e.target.value)}
+                      disabled
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition bg-white text-slate-800"
                     >
                       <option value="TP. Hà Nội">TP. Hà Nội</option>
-                      <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                      <option value="TP. Đà Nẵng">TP. Đà Nẵng</option>
-                      <option value="TP. Hải Phòng">TP. Hải Phòng</option>
-                      <option value="Bình Dương">Bình Dương</option>
-                      <option value="Tỉnh thành khác">Tỉnh thành khác</option>
                     </select>
                   </div>
                 </div>
