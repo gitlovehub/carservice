@@ -31,7 +31,7 @@ class StoreAppointmentRequest extends FormRequest
             'new_vehicle.brand' => ['required_with:new_vehicle', 'string', 'max:100'],
             'new_vehicle.model' => ['required_with:new_vehicle', 'string', 'max:100'],
             'new_vehicle.vehicle_type' => ['required_with:new_vehicle', Rule::in(['Sedan / Hatchback (4-5 chỗ)', 'SUV / Crossover (5-7 chỗ)', 'MPV', 'PICKUP'])],
-            'new_vehicle.license_plate' => ['nullable', 'string', 'max:20', 'unique:vehicles,license_plate'],
+            'new_vehicle.license_plate' => ['nullable', 'string', 'max:20'],
             'appointment_date' => ['required', 'date_format:Y-m-d'],
             'appointment_time' => ['required', 'date_format:H:i'],
             'request_type' => ['required', Rule::in(['DIAGNOSIS', 'REPAIR', 'MAINTENANCE', 'REPLACEMENT'])],
