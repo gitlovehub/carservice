@@ -21,7 +21,6 @@ function removeVietnameseTones(str: string): string {
     .trim();
 }
 
-// 63 Tỉnh/Thành phố trực thuộc Trung ương của Việt Nam
 const FALLBACK_PROVINCES: Province[] = [
   { code: 1, name: "Thành phố Hà Nội" },
   { code: 79, name: "Thành phố Hồ Chí Minh" },
@@ -238,7 +237,7 @@ export default function VietnamAddressSelector({
     }
   }, [value, provinces, selectedProvince]);
 
-  // 2. Tải danh sách 63 Tỉnh/Thành phố
+  // Tải danh sách tỉnh/thành phố
   useEffect(() => {
     if (cachedProvinces.length > 0) {
       setProvinces(cachedProvinces);
@@ -262,7 +261,7 @@ export default function VietnamAddressSelector({
       });
   }, []);
 
-  // 3. Tải toàn bộ Xã/Phường của Tỉnh/Thành phố
+  // Tải toàn bộ Xã/Phường của Tỉnh/Thành phố
   useEffect(() => {
     if (!selectedProvince) {
       setWards([]);
@@ -317,8 +316,7 @@ export default function VietnamAddressSelector({
         }
       )
       .catch(() => {
-        const fallbackList = NEW_ADMIN_UNITS[provinceObj.code] || [];
-        setWards(fallbackList);
+        setWards(NEW_ADMIN_UNITS[provinceObj.code] || []);
       })
       .finally(() => {
         setLoadingWards(false);
