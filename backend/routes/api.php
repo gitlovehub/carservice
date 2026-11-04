@@ -115,7 +115,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Quản lý lịch hẹn của khách hàng
         Route::controller(AppointmentController::class)->prefix('appointments')->group(function (): void {
             Route::get('/', 'index');                 // GET /api/appointments
-            Route::post('/', 'store');                // POST /api/appointments
+            Route::post('/', 'store')
+                ->middleware(['throttle:booking-create', 'idempotency']); // POST /api/appointments
             Route::get('/{appointment}', 'show');     // GET /api/appointments/{id}
             Route::patch('/{appointment}', 'update'); // PATCH /api/appointments/{id}
             Route::post('/{appointment}/cancel', 'cancel'); // POST /api/appointments/{id}/cancel
@@ -135,6 +136,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Quản lý lịch hẹn của cố vấn
         // Quản lý lịch hẹn phía Cố vấn
         Route::prefix('advisor/appointments')->group(function (): void {
+            Route::post('/', [AdvisorAppointmentController::class, 'store']);
             Route::get('/', [AdvisorAppointmentController::class, 'index']);
             Route::get('/{id}', [AdvisorAppointmentController::class, 'show']);
             Route::post('/{id}/confirm', [AdvisorAppointmentController::class, 'confirm']);

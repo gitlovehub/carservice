@@ -7,6 +7,7 @@ use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -124,10 +125,11 @@ class AppointmentControllerTest extends TestCase
     public function test_rejects_the_sixth_booking_for_a_time_slot(): void
     {
         $this->travelTo(now()->startOfDay());
-        $customer = $this->createAuthenticatedCustomer();
         $bookingDate = now()->addDays(2)->toDateString();
 
         for ($bookingNumber = 1; $bookingNumber <= 5; $bookingNumber++) {
+            $customer = $this->createAuthenticatedCustomer();
+
             $this->withToken($customer['token'])->postJson('/api/appointments', [
                 'new_vehicle' => [
                     'brand' => 'Toyota',
@@ -139,7 +141,11 @@ class AppointmentControllerTest extends TestCase
                 'appointment_time' => '09:00',
                 'request_type' => 'MAINTENANCE',
             ])->assertCreated();
+
+            Auth::forgetGuards();
         }
+
+        $customer = $this->createAuthenticatedCustomer();
 
         $this->withToken($customer['token'])->postJson('/api/appointments', [
             'new_vehicle' => [
@@ -300,6 +306,121 @@ class AppointmentControllerTest extends TestCase
         $this->withToken($customer['token'])->postJson('/api/appointments', $payload)->assertUnprocessable();
 
         $this->assertDatabaseCount('appointments', 1);
+    }
+
+    public function test_customer_cannot_create_a_fourth_active_appointment(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+
+        for ($appointmentNumber = 1; $appointmentNumber <= 3; $appointmentNumber++) {
+            $vehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+            $this->createAppointment($vehicle, sprintf('0%d:00', 8 + $appointmentNumber));
+        }
+
+        $newVehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+
+        $this->withToken($customer['token'])
+            ->postJson('/api/appointments', [
+                'vehicle_id' => $newVehicle->id,
+                'appointment_date' => now()->addDays(2)->toDateString(),
+                'appointment_time' => '12:00',
+                'request_type' => 'MAINTENANCE',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'appointment_date' => 'Bạn chỉ được có tối đa 3 lịch hẹn đang hoạt động.',
+            ]);
+    }
+
+    public function test_cancelled_appointments_do_not_count_towards_active_limit(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+
+        for ($appointmentNumber = 1; $appointmentNumber <= 3; $appointmentNumber++) {
+            $vehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+            $appointment = $this->createAppointment($vehicle, sprintf('0%d:00', 8 + $appointmentNumber));
+            $appointment->update(['status' => 'CANCELLED']);
+        }
+
+        $newVehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+
+        $this->withToken($customer['token'])
+            ->postJson('/api/appointments', [
+                'vehicle_id' => $newVehicle->id,
+                'appointment_date' => now()->addDays(2)->toDateString(),
+                'appointment_time' => '12:00',
+                'request_type' => 'MAINTENANCE',
+            ])
+            ->assertCreated();
+    }
+
+    public function test_idempotency_key_replays_the_original_booking_response(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+        $payload = [
+            'vehicle_id' => $vehicle->id,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '12:00',
+            'request_type' => 'MAINTENANCE',
+        ];
+
+        $first = $this->withToken($customer['token'])
+            ->withHeader('Idempotency-Key', 'booking-replay-1')
+            ->postJson('/api/appointments', $payload)
+            ->assertCreated();
+
+        $second = $this->withToken($customer['token'])
+            ->withHeader('Idempotency-Key', 'booking-replay-1')
+            ->postJson('/api/appointments', $payload)
+            ->assertCreated();
+
+        $this->assertSame($first->json('data.id'), $second->json('data.id'));
+        $this->assertDatabaseCount('appointments', 1);
+        $this->assertDatabaseCount('idempotency_keys', 1);
+    }
+
+    public function test_idempotency_key_cannot_be_reused_for_a_different_booking(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $firstVehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+        $secondVehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+        $headers = ['Idempotency-Key' => 'booking-reuse-1'];
+
+        $this->withToken($customer['token'])->withHeaders($headers)->postJson('/api/appointments', [
+            'vehicle_id' => $firstVehicle->id,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '12:00',
+            'request_type' => 'MAINTENANCE',
+        ])->assertCreated();
+
+        $this->withToken($customer['token'])->withHeaders($headers)->postJson('/api/appointments', [
+            'vehicle_id' => $secondVehicle->id,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '13:00',
+            'request_type' => 'MAINTENANCE',
+        ])->assertStatus(409);
+
+        $this->assertDatabaseCount('appointments', 1);
+    }
+
+    public function test_booking_endpoint_is_rate_limited_per_customer(): void
+    {
+        $customer = $this->createAuthenticatedCustomer();
+
+        for ($requestNumber = 1; $requestNumber <= 10; $requestNumber++) {
+            $this->withToken($customer['token'])
+                ->postJson('/api/appointments', [])
+                ->assertUnprocessable();
+        }
+
+        $this->withToken($customer['token'])
+            ->postJson('/api/appointments', [])
+            ->assertTooManyRequests();
     }
 
     /**
