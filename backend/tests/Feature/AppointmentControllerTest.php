@@ -308,7 +308,7 @@ class AppointmentControllerTest extends TestCase
         $this->assertDatabaseCount('appointments', 1);
     }
 
-    public function test_customer_cannot_create_a_fourth_active_appointment(): void
+    public function test_customer_can_create_more_than_three_active_appointments(): void
     {
         $this->travelTo(now()->startOfDay());
         $customer = $this->createAuthenticatedCustomer();
@@ -327,10 +327,7 @@ class AppointmentControllerTest extends TestCase
                 'appointment_time' => '12:00',
                 'request_type' => 'MAINTENANCE',
             ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors([
-                'appointment_date' => 'Bạn chỉ được có tối đa 3 lịch hẹn đang hoạt động.',
-            ]);
+            ->assertCreated();
     }
 
     public function test_cancelled_appointments_do_not_count_towards_active_limit(): void

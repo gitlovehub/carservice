@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInternalAppointmentRequest;
 use App\Models\Appointment;
-use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Vehicle;
 use Carbon\Carbon;
@@ -22,10 +21,7 @@ class AdvisorAppointmentController extends Controller
     public function store(StoreInternalAppointmentRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $override = (bool) ($data['override_active_limit'] ?? false);
-        $account = $request->user();
-
-        $appointment = DB::transaction(function () use ($data, $override, $account, $request) {
+        $appointment = DB::transaction(function () use ($data) {
             $date = $data['appointment_date'];
             $time = $data['appointment_time'].':00';
             $when = Carbon::createFromFormat('Y-m-d H:i:s', "$date $time");
@@ -83,17 +79,6 @@ class AdvisorAppointmentController extends Controller
                 ]);
             }
 
-            $activeCount = Appointment::query()
-                ->where('customer_id', $customer->id)
-                ->whereIn('status', Appointment::ACTIVE_STATUSES)
-                ->count();
-
-            if (! $override && $activeCount >= 3) {
-                throw ValidationException::withMessages([
-                    'override_active_limit' => 'Khách hàng đã có tối đa 3 lịch hẹn đang hoạt động.',
-                ]);
-            }
-
             $appointment = Appointment::query()->create([
                 'appointment_code' => 'APT-'.$when->format('Ymd').'-'.strtoupper(Str::random(8)),
                 'customer_id' => $customer->id,
@@ -109,31 +94,12 @@ class AdvisorAppointmentController extends Controller
             $appointment->services()->sync($data['service_ids'] ?? []);
             $appointment->packages()->sync($data['package_ids'] ?? []);
 
-            if ($override) {
-                AuditLog::query()->create([
-                    'account_id' => $account->id,
-                    'action' => 'appointment.limit_overridden',
-                    'auditable_type' => $appointment->getMorphClass(),
-                    'auditable_id' => $appointment->id,
-                    'old_values' => ['active_appointment_count' => $activeCount],
-                    'new_values' => [
-                        'active_appointment_limit' => 3,
-                        'appointment_id' => $appointment->id,
-                    ],
-                    'reason' => $data['override_reason'],
-                    'ip_address' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
-                ]);
-            }
-
             return $appointment;
         });
 
         return response()->json([
             'success' => true,
-            'message' => $override
-                ? 'Đã tạo lịch nội bộ và ghi nhận override giới hạn.'
-                : 'Tạo lịch nội bộ thành công.',
+            'message' => 'Tạo lịch nội bộ thành công.',
             'data' => $appointment->load(['customer', 'vehicle']),
         ], Response::HTTP_CREATED);
     }
