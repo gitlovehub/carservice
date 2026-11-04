@@ -5,6 +5,7 @@ import ChatWidget from "./components/ChatWidget";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
+import PublicLayout from "./layouts/PublicLayout";
 import { AdminLayout, AdvisorLayout, CustomerLayout } from "./layouts/AppShell";
 import ModulePlaceholder from "./pages/shared/ModulePlaceholder";
 import Home from "./pages/Home";
@@ -49,6 +50,7 @@ import AdminReports from "./pages/admin/Reports";
 function App() {
   return <BrowserRouter><ThemeProvider><AuthProvider><AppErrorBoundary><FeedbackProvider><Routes>
     {/* Public pages continue using their existing components. */}
+    <Route element={<PublicLayout/>}>
     <Route path="/" element={<Home/>}/>
     <Route path="/login" element={<Login/>}/>
     <Route path="/register" element={<Register/>}/>
@@ -74,6 +76,7 @@ function App() {
       <Route path="/payment" element={<Payment/>}/>
       <Route path="/invoices" element={<Invoices/>}/>
       <Route path="/reviews" element={<Reviews/>}/>
+    </Route>
     </Route>
     {/* Shared account alias for older links and other existing roles. */}
     <Route path="/account" element={<ProtectedRoute allowedRoles={["CUSTOMER"]}><Account/></ProtectedRoute>}/>
