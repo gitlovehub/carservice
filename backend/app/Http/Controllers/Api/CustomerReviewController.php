@@ -44,7 +44,9 @@ class CustomerReviewController extends Controller
             'repair_order_id' => [
                 'required',
                 'integer',
-                Rule::exists('repair_orders', 'id')->where('customer_id', $customerId),
+                Rule::exists('repair_orders', 'id')
+                    ->where('customer_id', $customerId)
+                    ->where('status', RepairOrder::HANDED_OVER),
                 Rule::unique('reviews', 'repair_order_id'),
             ],
             'overall_rating' => ['required', 'integer', 'min:1', 'max:5'],
@@ -53,7 +55,7 @@ class CustomerReviewController extends Controller
             'comment' => ['nullable', 'string', 'max:1000'],
         ], [
             'repair_order_id.unique' => 'Phiếu sửa chữa này đã được bạn gửi đánh giá trước đó.',
-            'repair_order_id.exists' => 'Phiếu sửa chữa không tồn tại hoặc không thuộc sở hữu của bạn.',
+            'repair_order_id.exists' => 'Chỉ đánh giá được phiếu sửa chữa của bạn sau khi đã bàn giao xe.',
         ]);
 
         $review = Review::create([

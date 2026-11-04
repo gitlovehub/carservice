@@ -11,7 +11,6 @@ use App\Models\Service;
 use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
 use App\Models\VehicleModel;
-use App\Models\WorkingHour;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -24,7 +23,43 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RealDataSeeder::class);
+        $this->call(DemoAccountsSeeder::class);
+        $this->call(PartInventorySeeder::class);
 
+        // Dữ liệu mẫu ngẫu nhiên (factory) chỉ tạo ở lần chạy đầu để `db:seed` chạy lại không lỗi trùng email.
+        if (Account::query()->where('email', 'admin@carservice.vn')->exists()) {
+            $this->command?->info('Đã có dữ liệu mẫu, bỏ qua phần tạo ngẫu nhiên.');
+        } else {
+            $this->seedSampleData();
+        }
+
+        // 8. GIỜ LÀM VIỆC: day_of_week theo Carbon (0 = Chủ nhật ... 6 = Thứ bảy), khớp với API đặt lịch
+        $this->call(WorkingHoursSeeder::class);
+
+        // 9. CẤU HÌNH NGÀY NGHỈ LỄ CỦA GARAGE
+        Holiday::firstOrCreate(
+            ['holiday_date' => '2026-01-01'],
+            ['reason' => 'Tết Dương Lịch 2026']
+        );
+        Holiday::firstOrCreate(
+            ['holiday_date' => '2026-04-30'],
+            ['reason' => 'Ngày Giải phóng miền Nam']
+        );
+        Holiday::firstOrCreate(
+            ['holiday_date' => '2026-05-01'],
+            ['reason' => 'Ngày Quốc tế Lao động']
+        );
+        Holiday::firstOrCreate(
+            ['holiday_date' => '2026-09-02'],
+            ['reason' => 'Lễ Quốc khánh 2/9']
+        );
+    }
+
+    /**
+     * Tài khoản admin mẫu, nhân sự, khách hàng, xe, dịch vụ và gói bảo dưỡng ngẫu nhiên.
+     */
+    private function seedSampleData(): void
+    {
         $defaultPassword = Hash::make('password123');
 
         // 1. TÀI KHOẢN ADMIN MẪU
@@ -78,36 +113,5 @@ class DatabaseSeeder extends Seeder
                 ]);
             }
         }
-
-        // 8. CẤU HÌNH LỊCH LÀM VIỆC CỦA GARAGE Thứ 2 -> Thứ 7 (2,3,4,5,6,7), Chủ nhật (8)
-        foreach (range(2, 8) as $day) {
-            WorkingHour::firstOrCreate(
-                ['day_of_week' => $day],
-                [
-                    'open_time' => '08:00:00',
-                    'close_time' => $day === 8 ? '12:00:00' : '17:30:00', // Chủ nhật (8) làm nửa ngày
-                    'max_slots' => $day === 8 ? 3 : 5,
-                    'is_active' => true,
-                ]
-            );
-        }
-
-        // 9. CẤU HÌNH NGÀY NGHỈ LỄ CỦA GARAGE
-        Holiday::firstOrCreate(
-            ['holiday_date' => '2026-01-01'],
-            ['reason' => 'Tết Dương Lịch 2026']
-        );
-        Holiday::firstOrCreate(
-            ['holiday_date' => '2026-04-30'],
-            ['reason' => 'Ngày Giải phóng miền Nam']
-        );
-        Holiday::firstOrCreate(
-            ['holiday_date' => '2026-05-01'],
-            ['reason' => 'Ngày Quốc tế Lao động']
-        );
-        Holiday::firstOrCreate(
-            ['holiday_date' => '2026-09-02'],
-            ['reason' => 'Lễ Quốc khánh 2/9']
-        );
     }
 }

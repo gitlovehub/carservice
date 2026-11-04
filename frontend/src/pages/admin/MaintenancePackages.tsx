@@ -1,3 +1,4 @@
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 import {
   useCallback,
   useEffect,
@@ -213,6 +214,7 @@ function withPartQuantity(
 }
 
 function MaintenancePackages() {
+  const { confirm } = useAppFeedback();
   const [packages, setPackages] = useState<MaintenancePackage[]>([]);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
@@ -564,7 +566,7 @@ function MaintenancePackages() {
   };
 
   const handleDelete = async (pkg: MaintenancePackage) => {
-    if (!window.confirm(`Bạn có chắc muốn ẩn gói "${pkg.name}" không?`)) {
+    if (!await confirm({ title: "Ẩn gói bảo dưỡng", description: `Gói “${pkg.name}” sẽ không còn được hiển thị để khách chọn.`, confirmText: "Ẩn gói" })) {
       return;
     }
 
@@ -641,7 +643,7 @@ function MaintenancePackages() {
                 <button
                   type="button"
                   onClick={openCreateModal}
-                  className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24]"
+                  className="cs-btn cs-btn-primary"
                 >
                   + Thêm gói bảo dưỡng
                 </button>
@@ -777,7 +779,7 @@ function MaintenancePackages() {
                 <div className="flex gap-2">
                   <button
                     type="submit"
-                    className="flex-1 rounded-xl bg-[#1F2933] px-4 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24]"
+                    className="cs-btn cs-btn-primary flex-1"
                   >
                     Tìm kiếm
                   </button>
@@ -843,7 +845,7 @@ function MaintenancePackages() {
                   <button
                     type="button"
                     onClick={openCreateModal}
-                    className="mt-5 rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white"
+                    className="cs-btn cs-btn-primary mt-5"
                   >
                     + Thêm gói bảo dưỡng
                   </button>
@@ -949,7 +951,7 @@ function MaintenancePackages() {
                             <button
                               type="button"
                               onClick={() => void handleDelete(pkg)}
-                              className="rounded-xl border border-red-200 bg-white px-4 py-2.5 text-[10px] font-semibold text-red-700 transition hover:bg-red-50"
+                              className="cs-btn cs-btn-danger-outline"
                             >
                               Ẩn gói
                             </button>
@@ -1004,7 +1006,7 @@ function MaintenancePackages() {
 
       {modal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-3 sm:p-5"
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-3 sm:p-5"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget && !isSaving) {
               setModal(null);
@@ -1510,7 +1512,7 @@ function MaintenancePackages() {
                     <button
                       type="button"
                       onClick={() => openEditModal(selectedPackage)}
-                      className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white hover:bg-[#151D24]"
+                      className="cs-btn cs-btn-primary"
                     >
                       Chỉnh sửa gói
                     </button>

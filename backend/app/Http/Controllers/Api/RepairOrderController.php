@@ -43,8 +43,8 @@ class RepairOrderController extends Controller
 
         $repairOrder->load([
             'customer', 'vehicle', 'advisor', 'statusHistory.changedByAccount',
-            'assignments.technician.employee', 'inspections.items', 'inspections.recommendations',
-            'quotations.items', 'workItems.technician', 'usedParts', 'invoice.payments',
+            'assignments.technician.employee', 'inspections.items', 'inspections.recordedBy', 'inspections.recommendations.service', 'inspections.recommendations.part',
+            'quotations.items', 'workItems.technician', 'workItems.service', 'usedParts.part', 'invoice.items', 'invoice.payments',
         ]);
 
         return response()->json($repairOrder);
@@ -55,7 +55,7 @@ class RepairOrderController extends Controller
         $this->authorize('create', RepairOrder::class);
 
         $data = $request->validate([
-            'appointment_id' => ['nullable', 'integer'],
+            'appointment_id' => ['nullable', 'integer', 'exists:appointments,id'],
             'customer_id' => ['required', 'integer', 'exists:customers,id'],
             'vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
             'mileage_received' => ['nullable', 'integer', 'min:0'],
@@ -64,6 +64,10 @@ class RepairOrderController extends Controller
         ]);
 
         $advisor = $request->user()->employee;
+
+        if (! $advisor) {
+            return response()->json(['message' => 'Tài khoản chưa gắn với hồ sơ nhân viên.'], 403);
+        }
 
         $ro = $this->service->receive($data, $advisor);
 

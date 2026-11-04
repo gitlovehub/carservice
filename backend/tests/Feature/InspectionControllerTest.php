@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
+use App\Models\Assignment;
 use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\Inspection;
 use App\Models\InspectionItem;
 use App\Models\InspectionRecommendation;
+use App\Models\Inventory;
 use App\Models\Part;
 use App\Models\RepairOrder;
 use App\Models\Service;
@@ -41,13 +43,13 @@ class InspectionControllerTest extends TestCase
         return [$account, $employee];
     }
 
-    private function createRepairOrder(string $status = RepairOrder::RECEIVED): RepairOrder
+    private function createRepairOrder(string $status = RepairOrder::RECEIVED, ?TechnicianProfile $assignedTo = null): RepairOrder
     {
         $customer = Customer::factory()->create();
         $vehicle = Vehicle::factory()->create(['customer_id' => $customer->id]);
         $advisor = Employee::factory()->create();
 
-        return RepairOrder::query()->create([
+        $repairOrder = RepairOrder::query()->create([
             'repair_order_code' => 'RO-'.uniqid(),
             'customer_id' => $customer->id,
             'vehicle_id' => $vehicle->id,
@@ -55,12 +57,23 @@ class InspectionControllerTest extends TestCase
             'status' => $status,
             'received_at' => now(),
         ]);
+
+        if ($assignedTo) {
+            Assignment::query()->create([
+                'repair_order_id' => $repairOrder->id,
+                'technician_id' => $assignedTo->id,
+                'status' => Assignment::ASSIGNED,
+                'assigned_at' => now(),
+            ]);
+        }
+
+        return $repairOrder;
     }
 
     public function test_technician_can_create_inspection_with_passed_warning_failed_items(): void
     {
         [$account, , $technician] = $this->createTechnician();
-        $repairOrder = $this->createRepairOrder(RepairOrder::RECEIVED);
+        $repairOrder = $this->createRepairOrder(RepairOrder::RECEIVED, $technician);
 
         $service = Service::factory()->create();
         $part = Part::query()->create([
@@ -141,8 +154,8 @@ class InspectionControllerTest extends TestCase
 
     public function test_validation_fails_for_invalid_status_or_empty_items(): void
     {
-        [$account] = $this->createTechnician();
-        $repairOrder = $this->createRepairOrder();
+        [$account, , $technician] = $this->createTechnician();
+        $repairOrder = $this->createRepairOrder(RepairOrder::RECEIVED, $technician);
 
         $payload = [
             'inspection_items' => [
@@ -162,7 +175,7 @@ class InspectionControllerTest extends TestCase
     public function test_cannot_create_duplicate_inspection_for_same_repair_order(): void
     {
         [$account, , $technician] = $this->createTechnician();
-        $repairOrder = $this->createRepairOrder();
+        $repairOrder = $this->createRepairOrder(RepairOrder::RECEIVED, $technician);
 
         Inspection::query()->create([
             'repair_order_id' => $repairOrder->id,
@@ -189,7 +202,7 @@ class InspectionControllerTest extends TestCase
     {
         [$techAccount, , $technician] = $this->createTechnician();
         [$advisorAccount] = $this->createAdvisor();
-        $repairOrder = $this->createRepairOrder(RepairOrder::INSPECTING);
+        $repairOrder = $this->createRepairOrder(RepairOrder::INSPECTING, $technician);
 
         $inspection = Inspection::query()->create([
             'repair_order_id' => $repairOrder->id,
@@ -219,8 +232,8 @@ class InspectionControllerTest extends TestCase
 
     public function test_view_inspection_returns_404_if_no_inspection_exists(): void
     {
-        [$account] = $this->createTechnician();
-        $repairOrder = $this->createRepairOrder();
+        [$account, , $technician] = $this->createTechnician();
+        $repairOrder = $this->createRepairOrder(RepairOrder::RECEIVED, $technician);
 
         $this->actingAs($account)
             ->getJson("/api/repair-orders/{$repairOrder->id}/inspections")
@@ -231,7 +244,7 @@ class InspectionControllerTest extends TestCase
     public function test_technician_can_add_recommendations(): void
     {
         [$account, , $technician] = $this->createTechnician();
-        $repairOrder = $this->createRepairOrder(RepairOrder::INSPECTING);
+        $repairOrder = $this->createRepairOrder(RepairOrder::INSPECTING, $technician);
 
         Inspection::query()->create([
             'repair_order_id' => $repairOrder->id,
@@ -262,7 +275,7 @@ class InspectionControllerTest extends TestCase
     public function test_technician_can_complete_inspection_and_status_changes_to_quoting(): void
     {
         [$account, , $technician] = $this->createTechnician();
-        $repairOrder = $this->createRepairOrder(RepairOrder::INSPECTING);
+        $repairOrder = $this->createRepairOrder(RepairOrder::INSPECTING, $technician);
 
         $inspection = Inspection::query()->create([
             'repair_order_id' => $repairOrder->id,
@@ -281,6 +294,67 @@ class InspectionControllerTest extends TestCase
             'repair_order_id' => $repairOrder->id,
             'status' => RepairOrder::QUOTING,
         ]);
+    }
+
+    public function test_unassigned_technician_cannot_record_or_complete_inspection(): void
+    {
+        [$account] = $this->createTechnician();
+        [, , $assignedTechnician] = $this->createTechnician();
+        $repairOrder = $this->createRepairOrder(RepairOrder::INSPECTING, $assignedTechnician);
+
+        $this->actingAs($account)
+            ->postJson("/api/repair-orders/{$repairOrder->id}/inspections", [
+                'diagnosis' => 'Không được giao',
+                'inspection_items' => [['item_name' => 'Phanh', 'status' => InspectionItem::PASSED]],
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($account)
+            ->postJson("/api/repair-orders/{$repairOrder->id}/inspections/complete")
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('inspections', 0);
+        $this->assertSame(RepairOrder::INSPECTING, $repairOrder->fresh()->status);
+    }
+
+    public function test_technician_lists_active_parts_with_stock(): void
+    {
+        [$account] = $this->createTechnician();
+        $part = Part::query()->create(['sku' => 'BRK-01', 'name' => 'Má phanh', 'unit' => 'Bộ', 'status' => 'ACTIVE']);
+        Part::query()->create(['sku' => 'OLD-01', 'name' => 'Phụ tùng ngừng bán', 'unit' => 'Cái', 'status' => 'INACTIVE']);
+        Inventory::query()->create(['part_id' => $part->id, 'quantity' => 7]);
+
+        $this->actingAs($account)
+            ->getJson('/api/parts?search=phanh')
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.sku', 'BRK-01')
+            ->assertJsonPath('0.inventory.quantity', 7);
+    }
+
+    public function test_advisor_records_and_completes_inspection_without_a_technician(): void
+    {
+        [$advisorAccount, $advisorEmployee] = $this->createAdvisor();
+        $repairOrder = $this->createRepairOrder(RepairOrder::RECEIVED);
+        $part = Part::query()->create(['sku' => 'BRK-02', 'name' => 'Má phanh sau', 'unit' => 'Bộ', 'status' => 'ACTIVE']);
+
+        $this->actingAs($advisorAccount)
+            ->postJson("/api/repair-orders/{$repairOrder->id}/inspections", [
+                'diagnosis' => 'Má phanh sau mòn',
+                'inspection_items' => [['item_name' => 'Má phanh sau', 'status' => InspectionItem::FAILED]],
+                'recommendations' => [['item_type' => 'PART', 'part_id' => $part->id, 'quantity' => 1]],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('technician_id', null)
+            ->assertJsonPath('recorded_by_employee_id', $advisorEmployee->id);
+
+        $this->assertSame(RepairOrder::INSPECTING, $repairOrder->fresh()->status);
+
+        $this->actingAs($advisorAccount)
+            ->postJson("/api/repair-orders/{$repairOrder->id}/inspections/complete")
+            ->assertOk();
+
+        $this->assertSame(RepairOrder::QUOTING, $repairOrder->fresh()->status);
     }
 
     public function test_customer_cannot_call_technician_inspection_endpoints(): void

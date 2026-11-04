@@ -294,7 +294,7 @@ function AppointmentsPage() {
         <button
           type="button"
           onClick={() => void openDetails(appointment)}
-          className="whitespace-nowrap rounded-lg bg-[#1F2933] px-3 py-2 text-xs font-semibold text-white hover:bg-[#151D24]"
+          className="cs-btn cs-btn-primary cs-btn-sm"
         >
           Xem chi tiết
         </button>
@@ -407,7 +407,7 @@ function AppointmentsPage() {
                       <button
                         type="button"
                         onClick={() => void openDetails(appointment)}
-                        className="mt-4 w-full rounded-lg bg-[#1F2933] px-3 py-2.5 text-xs font-semibold text-white"
+                        className="cs-btn cs-btn-primary cs-btn-sm mt-4 cs-btn-block"
                       >
                         Xem chi tiết
                       </button>
@@ -450,7 +450,7 @@ function AppointmentsPage() {
                 type="button"
                 disabled={page <= 1 || loading}
                 onClick={() => changePage(Math.max(1, page - 1))}
-                className="rounded-lg border border-[#DDE1E4] bg-white px-4 py-2 text-xs font-semibold disabled:opacity-40"
+                className="cs-btn cs-btn-secondary"
               >
                 Trước
               </button>
@@ -458,7 +458,7 @@ function AppointmentsPage() {
                 type="button"
                 disabled={page >= lastPage || loading}
                 onClick={() => changePage(Math.min(lastPage, page + 1))}
-                className="rounded-lg border border-[#DDE1E4] bg-white px-4 py-2 text-xs font-semibold disabled:opacity-40"
+                className="cs-btn cs-btn-secondary"
               >
                 Tiếp
               </button>
@@ -600,7 +600,7 @@ function AppointmentsPage() {
                       <button type="button" onClick={() => setEditing(false)} className="rounded-lg border px-4 py-2 text-xs font-semibold">
                         Đóng
                       </button>
-                      <button type="submit" disabled={saving} className="rounded-lg bg-[#1F2933] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+                      <button type="submit" disabled={saving} className="cs-btn cs-btn-primary">
                         {saving ? "Đang lưu..." : "Lưu thay đổi"}
                       </button>
                     </div>
@@ -626,7 +626,7 @@ function AppointmentsPage() {
                       <button type="button" onClick={() => setCancelPrompt(false)} className="rounded-lg border px-4 py-2 text-xs font-semibold">
                         Không hủy
                       </button>
-                      <button type="submit" disabled={saving} className="rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+                      <button type="submit" disabled={saving} className="cs-btn cs-btn-danger">
                         {saving ? "Đang hủy..." : "Xác nhận hủy"}
                       </button>
                     </div>
@@ -642,7 +642,7 @@ function AppointmentsPage() {
                           setOperationError("");
                           setEditing(true);
                         }}
-                        className="rounded-lg border border-[#DDE1E4] px-4 py-2.5 text-xs font-semibold hover:border-[#D6A85F]"
+                        className="cs-btn cs-btn-secondary"
                       >
                         Đổi giờ / Sửa lịch
                       </button>
@@ -655,7 +655,7 @@ function AppointmentsPage() {
                           setCancelReason("");
                           setCancelPrompt(true);
                         }}
-                        className="rounded-lg border border-red-200 px-4 py-2.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+                        className="cs-btn cs-btn-danger-outline"
                       >
                         Hủy lịch hẹn
                       </button>

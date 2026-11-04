@@ -1,3 +1,4 @@
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useState } from "react";
 import AdminSidebar from "./AdminSidebar";
@@ -48,6 +49,7 @@ const initialCustomers: Customer[] = [
 ];
 
 function AdminCustomers() {
+  const { confirm } = useAppFeedback();
   const [customers, setCustomers] = useState(initialCustomers);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Tất cả");
@@ -81,15 +83,11 @@ function AdminCustomers() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleToggleStatus = (customer: Customer) => {
+  const handleToggleStatus = async (customer: Customer) => {
     const nextStatus =
       customer.status === "Hoạt động" ? "Tạm khóa" : "Hoạt động";
 
-    const confirmed = window.confirm(
-      `Bạn có chắc muốn ${
-        nextStatus === "Tạm khóa" ? "khóa" : "mở khóa"
-      } khách hàng ${customer.name}?`,
-    );
+    const confirmed = await confirm({ title: nextStatus === "Tạm khóa" ? "Khóa khách hàng" : "Mở khóa khách hàng", description: `Xác nhận đổi trạng thái tài khoản khách hàng ${customer.name} sang “${nextStatus}”?`, variant: nextStatus === "Tạm khóa" ? "danger" : "info", confirmText: "Xác nhận thay đổi" });
 
     if (!confirmed) return;
 
@@ -230,7 +228,7 @@ function AdminCustomers() {
                 <button
                   type="button"
                   onClick={handleResetFilter}
-                  className="rounded-xl border border-[#E1E4E6] px-4 py-3 text-xs font-semibold text-[#66717C] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
+                  className="cs-btn cs-btn-secondary"
                 >
                   Đặt lại
                 </button>
@@ -346,7 +344,7 @@ function AdminCustomers() {
                     <button
                       type="button"
                       onClick={handleResetFilter}
-                      className="mt-4 rounded-xl bg-[#20252B] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#39434D]"
+                      className="cs-btn cs-btn-primary mt-4"
                     >
                       Xóa bộ lọc
                     </button>
