@@ -3,14 +3,141 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreInternalAppointmentRequest;
 use App\Models\Appointment;
+use App\Models\AuditLog;
+use App\Models\Customer;
+use App\Models\Vehicle;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 class AdvisorAppointmentController extends Controller
 {
+    public function store(StoreInternalAppointmentRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $override = (bool) ($data['override_active_limit'] ?? false);
+        $account = $request->user();
+
+        $appointment = DB::transaction(function () use ($data, $override, $account, $request) {
+            $date = $data['appointment_date'];
+            $time = $data['appointment_time'].':00';
+            $when = Carbon::createFromFormat('Y-m-d H:i:s', "$date $time");
+            $customer = Customer::query()->lockForUpdate()->findOrFail($data['customer_id']);
+            $vehicle = Vehicle::query()
+                ->whereKey($data['vehicle_id'])
+                ->where('customer_id', $customer->id)
+                ->first();
+
+            if (! $vehicle) {
+                throw ValidationException::withMessages([
+                    'vehicle_id' => 'Xe không thuộc khách hàng đã chọn.',
+                ]);
+            }
+
+            if ($when->lessThanOrEqualTo(now())) {
+                throw ValidationException::withMessages([
+                    'appointment_time' => 'Giờ hẹn phải ở tương lai.',
+                ]);
+            }
+
+            $hours = DB::table('working_hours')
+                ->where('day_of_week', $when->dayOfWeek)
+                ->lockForUpdate()
+                ->first();
+
+            if (DB::table('holidays')->where('holiday_date', $date)->exists()) {
+                throw ValidationException::withMessages([
+                    'appointment_date' => 'Garage nghỉ lễ ngày này.',
+                ]);
+            }
+
+            if (! $hours || ! $hours->is_active
+                || $time < substr($hours->open_time, 0, 8)
+                || $time >= substr($hours->close_time, 0, 8)) {
+                throw ValidationException::withMessages([
+                    'appointment_time' => 'Ngoài giờ làm việc của garage.',
+                ]);
+            }
+
+            $activeInSlot = Appointment::query()
+                ->where('appointment_date', $date)
+                ->where('appointment_time', $time)
+                ->whereNotIn('status', ['CANCELLED', 'NO_SHOW']);
+
+            if ($activeInSlot->count() >= (int) ($hours->max_slots ?? 5)) {
+                throw ValidationException::withMessages([
+                    'appointment_time' => 'Khung giờ đã đầy.',
+                ]);
+            }
+
+            if ((clone $activeInSlot)->where('vehicle_id', $vehicle->id)->exists()) {
+                throw ValidationException::withMessages([
+                    'vehicle_id' => 'Xe đã có lịch hẹn tại khung giờ này.',
+                ]);
+            }
+
+            $activeCount = Appointment::query()
+                ->where('customer_id', $customer->id)
+                ->whereIn('status', Appointment::ACTIVE_STATUSES)
+                ->count();
+
+            if (! $override && $activeCount >= 3) {
+                throw ValidationException::withMessages([
+                    'override_active_limit' => 'Khách hàng đã có tối đa 3 lịch hẹn đang hoạt động.',
+                ]);
+            }
+
+            $appointment = Appointment::query()->create([
+                'appointment_code' => 'APT-'.$when->format('Ymd').'-'.strtoupper(Str::random(8)),
+                'customer_id' => $customer->id,
+                'vehicle_id' => $vehicle->id,
+                'appointment_date' => $date,
+                'appointment_time' => $time,
+                'request_type' => $data['request_type'],
+                'symptom_description' => $data['symptom_description'] ?? null,
+                'note' => $data['note'] ?? null,
+                'status' => 'PENDING',
+            ]);
+
+            $appointment->services()->sync($data['service_ids'] ?? []);
+            $appointment->packages()->sync($data['package_ids'] ?? []);
+
+            if ($override) {
+                AuditLog::query()->create([
+                    'account_id' => $account->id,
+                    'action' => 'appointment.limit_overridden',
+                    'auditable_type' => $appointment->getMorphClass(),
+                    'auditable_id' => $appointment->id,
+                    'old_values' => ['active_appointment_count' => $activeCount],
+                    'new_values' => [
+                        'active_appointment_limit' => 3,
+                        'appointment_id' => $appointment->id,
+                    ],
+                    'reason' => $data['override_reason'],
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+            }
+
+            return $appointment;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => $override
+                ? 'Đã tạo lịch nội bộ và ghi nhận override giới hạn.'
+                : 'Tạo lịch nội bộ thành công.',
+            'data' => $appointment->load(['customer', 'vehicle']),
+        ], Response::HTTP_CREATED);
+    }
+
     /**
      * Danh sách lịch hẹn toàn garage dành cho Cố vấn/Admin
      */
@@ -42,11 +169,11 @@ class AdvisorAppointmentController extends Controller
                     $q->whereHas('vehicle', function ($v) use ($search) {
                         $v->where('license_plate', 'like', "%{$search}%");
                     })
-                    ->orWhereHas('customer', function ($c) use ($search) {
-                        $c->where('full_name', 'like', "%{$search}%")
-                          ->orWhere('phone', 'like', "%{$search}%");
-                    })
-                    ->orWhere('appointment_code', 'like', "%{$search}%");
+                        ->orWhereHas('customer', function ($c) use ($search) {
+                            $c->where('full_name', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%");
+                        })
+                        ->orWhere('appointment_code', 'like', "%{$search}%");
                 });
             }
 
@@ -56,13 +183,13 @@ class AdvisorAppointmentController extends Controller
                 ->paginate($request->query('per_page', 15));
 
             return response()->json([
-                'success'    => true,
-                'data'       => $appointments->items(),
+                'success' => true,
+                'data' => $appointments->items(),
                 'pagination' => [
                     'current_page' => $appointments->currentPage(),
-                    'per_page'     => $appointments->perPage(),
-                    'total'        => $appointments->total(),
-                    'last_page'    => $appointments->lastPage(),
+                    'per_page' => $appointments->perPage(),
+                    'total' => $appointments->total(),
+                    'last_page' => $appointments->lastPage(),
                 ],
             ], Response::HTTP_OK);
 
@@ -86,7 +213,7 @@ class AdvisorAppointmentController extends Controller
             'packages',
         ])->find($id);
 
-        if (!$appointment) {
+        if (! $appointment) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy lịch hẹn.',
@@ -95,7 +222,7 @@ class AdvisorAppointmentController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $appointment,
+            'data' => $appointment,
         ], Response::HTTP_OK);
     }
 
@@ -106,7 +233,7 @@ class AdvisorAppointmentController extends Controller
     {
         $appointment = Appointment::find($id);
 
-        if (!$appointment) {
+        if (! $appointment) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy lịch hẹn.',
@@ -127,7 +254,7 @@ class AdvisorAppointmentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Xác nhận lịch hẹn thành công.',
-            'data'    => $appointment->fresh(),
+            'data' => $appointment->fresh(),
         ], Response::HTTP_OK);
     }
 
@@ -138,7 +265,7 @@ class AdvisorAppointmentController extends Controller
     {
         $appointment = Appointment::find($id);
 
-        if (!$appointment) {
+        if (! $appointment) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy lịch hẹn.',
@@ -159,7 +286,7 @@ class AdvisorAppointmentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Tiếp nhận xe vào garage thành công. Sẵn sàng lập Lệnh sửa chữa.',
-            'data'    => $appointment->fresh(),
+            'data' => $appointment->fresh(),
         ], Response::HTTP_OK);
     }
 
@@ -174,7 +301,7 @@ class AdvisorAppointmentController extends Controller
 
         $appointment = Appointment::find($id);
 
-        if (!$appointment) {
+        if (! $appointment) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy lịch hẹn.',
@@ -184,19 +311,19 @@ class AdvisorAppointmentController extends Controller
         if (in_array($appointment->status, ['CHECKED_IN', 'CANCELLED'])) {
             return response()->json([
                 'success' => false,
-                'message' => "Không thể hủy lịch hẹn đã tiếp nhận hoặc đã hủy trước đó.",
+                'message' => 'Không thể hủy lịch hẹn đã tiếp nhận hoặc đã hủy trước đó.',
             ], Response::HTTP_BAD_REQUEST);
         }
 
         $appointment->update([
-            'status'        => 'CANCELLED',
+            'status' => 'CANCELLED',
             'cancel_reason' => $request->input('cancel_reason'),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Đã hủy lịch hẹn thành công.',
-            'data'    => $appointment->fresh(),
+            'data' => $appointment->fresh(),
         ], Response::HTTP_OK);
     }
 }
