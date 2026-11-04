@@ -14,6 +14,16 @@ return [
     |
     */
 
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-flash-lite-latest'),
+    ],
+
+    'chatbot' => [
+        'phone' => env('CHATBOT_PHONE', '0332 405 972'),
+        'email' => env('CHATBOT_EMAIL', 'contact@carservice.vn'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

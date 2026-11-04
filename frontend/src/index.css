@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-/* Use the same manual theme selector as ThemeContext.tsx */
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-
 @theme {
   --color-brand: #cf2935;
   --color-brand-dark: #a91e29;
@@ -12,6 +9,26 @@
   --color-surface: #ffffff;
   --color-line: #e1e4e6;
   --font-sans: "Inter", "Segoe UI", sans-serif;
+}
+
+/* Tailwind v4 design tokens. Theme variables are defined by the existing
+   role layouts; the same utilities therefore work in light and dark mode. */
+@theme inline {
+  --color-cs-bg: var(--cs-bg);
+  --color-cs-surface: var(--cs-surface);
+  --color-cs-surface-2: var(--cs-surface-2);
+  --color-cs-text: var(--cs-text);
+  --color-cs-muted: var(--cs-muted);
+  --color-cs-border: var(--cs-border);
+  --color-cs-accent: var(--cs-accent);
+  --color-cs-soft: var(--cs-soft);
+  --color-cs-accent-contrast: var(--cs-accent-contrast);
+  --color-at-ink: var(--at-ink);
+  --color-at-muted: var(--at-muted);
+  --color-at-surface: var(--at-surface);
+  --color-at-surface2: var(--at-surface2);
+  --color-at-border: var(--at-border);
+  --color-at-accent: var(--at-accent);
 }
 
 :root {
@@ -92,28 +109,19 @@ img {
     transition-duration: 0.01ms !important;
   }
 }
-/* Global interactive affordance; disabled controls remain non-clickable. */
-@layer base {
-  button:not(:disabled),
-  [role="button"]:not([aria-disabled="true"]) {
-    @apply cursor-pointer;
+
+
+/* Print only the real repair-order details, not the advisor application shell. */
+@media print {
+  body:has([data-print-repair-order]) .cs-work-sidebar,
+  body:has([data-print-repair-order]) .cs-work-top,
+  body:has([data-print-repair-order]) .print\:hidden { display: none !important; }
+  body:has([data-print-repair-order]) .cs-work-main { margin: 0 !important; width: 100% !important; }
+  body:has([data-print-repair-order]) .cs-work-content { padding: 0 !important; overflow: visible !important; }
+  body:has([data-print-repair-order]) [data-print-repair-order] {
+    --cs-surface: #ffffff; --cs-surface-2: #ffffff; --cs-text: #151515;
+    --cs-muted: #444444; --cs-border: #cccccc; --cs-soft: #f5f5f5;
+    color: #151515 !important; background: #ffffff !important;
   }
-
-  button:disabled,
-  [role="button"][aria-disabled="true"] {
-    @apply cursor-not-allowed;
-  }
-}
-
-/* Match the root page background to the current CarService theme. */
-html[data-theme="dark"],
-html[data-theme="dark"] body {
-  background: #111214;
-  color-scheme: dark;
-}
-
-html[data-theme="light"],
-html[data-theme="light"] body {
-  background: #f7f7f5;
-  color-scheme: light;
+  body:has([data-print-repair-order]) { background: white !important; }
 }

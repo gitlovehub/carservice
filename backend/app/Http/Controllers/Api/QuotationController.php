@@ -25,9 +25,9 @@ class QuotationController extends Controller
             'items.*.item_type' => ['required', 'string', 'in:SERVICE,PART'],
             'items.*.service_id' => ['nullable', 'integer', 'exists:services,id', 'required_if:items.*.item_type,SERVICE'],
             'items.*.part_id' => ['nullable', 'integer', 'exists:parts,id', 'required_if:items.*.item_type,PART'],
-            'items.*.description' => ['required', 'string'],
+            'items.*.description' => ['nullable', 'string'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $advisor = $request->user()->employee;

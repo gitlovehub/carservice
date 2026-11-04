@@ -4,20 +4,26 @@ namespace App\Services;
 
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Models\Account;
+use App\Models\Appointment;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Inspection;
 use App\Models\InspectionItem;
 use App\Models\InspectionRecommendation;
+use App\Models\Inventory;
+use App\Models\InventoryTransaction;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\Part;
 use App\Models\Payment;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\RepairOrder;
 use App\Models\RepairOrderStatusHistory;
+use App\Models\Service;
 use App\Models\TechnicianProfile;
 use App\Models\UsedPart;
+use App\Models\Vehicle;
 use App\Models\WorkItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -34,6 +40,27 @@ class RepairOrderService
         $this->assertAdvisor($advisor);
 
         return DB::transaction(function () use ($data, $advisor) {
+            $vehicle = Vehicle::query()->lockForUpdate()->find($data['vehicle_id']);
+
+            if (! $vehicle || (int) $vehicle->customer_id !== (int) $data['customer_id']) {
+                throw InvalidStatusTransitionException::because('Xe không thuộc khách hàng đã chọn.');
+            }
+
+            if (! empty($data['appointment_id'])) {
+                $this->assertAppointmentReadyForReceiving((int) $data['appointment_id'], $data);
+            }
+
+            $openOrder = RepairOrder::query()
+                ->where('vehicle_id', $vehicle->id)
+                ->whereNotIn('status', [RepairOrder::HANDED_OVER, RepairOrder::CLOSED])
+                ->first();
+
+            if ($openOrder) {
+                throw InvalidStatusTransitionException::because(
+                    "Xe đang có phiếu sửa chữa {$openOrder->repair_order_code} chưa kết thúc, không tạo phiếu mới."
+                );
+            }
+
             $ro = RepairOrder::create([
                 'repair_order_code' => $this->generateCode('RO'),
                 'appointment_id' => $data['appointment_id'] ?? null,
@@ -62,6 +89,14 @@ class RepairOrderService
     {
         $this->assertTechnician($technician);
 
+        if (in_array($ro->status, [RepairOrder::COMPLETED, RepairOrder::HANDED_OVER, RepairOrder::CLOSED], true)) {
+            throw InvalidStatusTransitionException::because("Không thể giao KTV khi phiếu đang {$ro->status}.");
+        }
+
+        if ($ro->assignments()->where('technician_id', $technician->id)->exists()) {
+            throw InvalidStatusTransitionException::because('KTV này đã được giao cho phiếu sửa chữa.');
+        }
+
         return DB::transaction(function () use ($ro, $technician, $actor, $note) {
             $assignment = Assignment::create([
                 'repair_order_id' => $ro->id,
@@ -81,7 +116,7 @@ class RepairOrderService
 
     /*
     |--------------------------------------------------------------------------
-    | 3. KTV ghi nhận kết quả kiểm tra / chẩn đoán
+    | 3. Ghi nhận kết quả kiểm tra / chẩn đoán (KTV hoặc Cố vấn nhập)
     |--------------------------------------------------------------------------
     | $data = [
     |   'condition_description' => ..., 'diagnosis' => ...,
@@ -89,9 +124,11 @@ class RepairOrderService
     |   'recommendations' => [['item_type','service_id'|'part_id','quantity','note'], ...],
     | ]
     */
-    public function recordInspection(RepairOrder $ro, TechnicianProfile $technician, array $data): Inspection
+    public function recordInspection(RepairOrder $ro, ?TechnicianProfile $technician, array $data, ?Employee $recordedBy = null): Inspection
     {
-        $this->assertTechnician($technician);
+        if ($technician) {
+            $this->assertTechnician($technician);
+        }
 
         if (! in_array($ro->status, [RepairOrder::RECEIVED, RepairOrder::INSPECTING], true)) {
             throw InvalidStatusTransitionException::because(
@@ -105,10 +142,11 @@ class RepairOrderService
             );
         }
 
-        return DB::transaction(function () use ($ro, $technician, $data) {
+        return DB::transaction(function () use ($ro, $technician, $data, $recordedBy) {
             $inspection = Inspection::create([
                 'repair_order_id' => $ro->id,
-                'technician_id' => $technician->id,
+                'technician_id' => $technician?->id,
+                'recorded_by_employee_id' => $recordedBy?->id,
                 'condition_description' => $data['condition_description'] ?? null,
                 'diagnosis' => $data['diagnosis'] ?? null,
                 'inspected_at' => null,
@@ -141,7 +179,7 @@ class RepairOrderService
             if ($ro->status === RepairOrder::RECEIVED) {
                 $ro->status = RepairOrder::INSPECTING;
                 $ro->save();
-                $this->logHistory($ro, RepairOrder::INSPECTING, null, 'KTV bắt đầu kiểm tra.');
+                $this->logHistory($ro, RepairOrder::INSPECTING, $recordedBy?->account, 'Bắt đầu kiểm tra xe.');
             }
 
             return $inspection->load(['items', 'recommendations.service', 'recommendations.part', 'technician.employee']);
@@ -177,7 +215,7 @@ class RepairOrderService
             $inspection->save();
 
             if ($ro->status === RepairOrder::INSPECTING) {
-                $this->transition($ro, RepairOrder::QUOTING, $actor, 'KTV hoàn tất chẩn đoán, chuyển sang lập báo giá.');
+                $this->transition($ro, RepairOrder::QUOTING, $actor, 'Hoàn tất chẩn đoán, chuyển sang lập báo giá.');
             }
 
             return $inspection->load(['items', 'recommendations.service', 'recommendations.part', 'technician.employee']);
@@ -234,7 +272,14 @@ class RepairOrderService
                     );
                 }
 
-                $unitPrice = (float) $item['unit_price'];
+                $catalogItem = $item['item_type'] === QuotationItem::TYPE_PART
+                    ? Part::query()->find($item['part_id'])
+                    : Service::query()->find($item['service_id']);
+                $catalogPrice = $item['item_type'] === QuotationItem::TYPE_PART
+                    ? $catalogItem?->sell_price
+                    : $catalogItem?->base_price;
+
+                $unitPrice = (float) ($item['unit_price'] ?? $catalogPrice ?? 0);
                 $quantity = (int) ($item['quantity'] ?? 1);
 
                 QuotationItem::create([
@@ -242,7 +287,7 @@ class RepairOrderService
                     'item_type' => $item['item_type'],
                     'service_id' => $item['item_type'] === QuotationItem::TYPE_SERVICE ? $item['service_id'] : null,
                     'part_id' => $item['item_type'] === QuotationItem::TYPE_PART ? $item['part_id'] : null,
-                    'description' => $item['description'],
+                    'description' => $item['description'] ?? $catalogItem?->name ?? '',
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
                     'amount' => $unitPrice * $quantity,
@@ -398,31 +443,59 @@ class RepairOrderService
     /**
      * RULE: chỉ ghi nhận phụ tùng thực dùng nếu part_id nằm trong
      * các dòng PART đã được khách duyệt của báo giá mới nhất.
+     * Ghi nhận = xuất kho: trừ inventories và tạo inventory_transactions loại OUT.
      */
     public function recordUsedPart(RepairOrder $ro, array $data): UsedPart
     {
-        $approvedPartIds = $ro->latestQuotation
-            ? $ro->latestQuotation->items()
-                ->where('item_type', QuotationItem::TYPE_PART)
-                ->where('is_approved', true)
-                ->pluck('part_id')
-                ->all()
-            : [];
+        if ($ro->status !== RepairOrder::IN_PROGRESS) {
+            throw InvalidStatusTransitionException::because('Chỉ ghi nhận phụ tùng thực dùng khi phiếu đang IN_PROGRESS.');
+        }
 
-        if (! in_array($data['part_id'], $approvedPartIds, true)) {
+        $approvedItem = $ro->latestQuotation?->items()
+            ->where('item_type', QuotationItem::TYPE_PART)
+            ->where('is_approved', true)
+            ->where('part_id', $data['part_id'])
+            ->first();
+
+        if (! $approvedItem) {
             throw InvalidStatusTransitionException::because(
                 'Phụ tùng phải nằm trong báo giá đã được khách duyệt mới được ghi nhận sử dụng.'
             );
         }
 
-        return UsedPart::create([
-            'repair_order_id' => $ro->id,
-            'work_item_id' => $data['work_item_id'] ?? null,
-            'part_id' => $data['part_id'],
-            'quantity' => $data['quantity'],
-            'unit_price' => $data['unit_price'],
-            'used_at' => now(),
-        ]);
+        return DB::transaction(function () use ($ro, $data, $approvedItem) {
+            $inventory = Inventory::query()->where('part_id', $data['part_id'])->lockForUpdate()->first();
+            $quantity = (int) $data['quantity'];
+
+            if (! $inventory || $inventory->quantity < $quantity) {
+                $inStock = $inventory->quantity ?? 0;
+                throw InvalidStatusTransitionException::because(
+                    "Không đủ tồn kho (còn {$inStock}). Chuyển phiếu sang chờ phụ tùng nếu cần."
+                );
+            }
+
+            $usedPart = UsedPart::create([
+                'repair_order_id' => $ro->id,
+                'work_item_id' => $data['work_item_id'] ?? null,
+                'part_id' => $data['part_id'],
+                'quantity' => $quantity,
+                'unit_price' => $data['unit_price'] ?? $approvedItem->unit_price,
+                'used_at' => now(),
+            ]);
+
+            $inventory->decrement('quantity', $quantity);
+
+            InventoryTransaction::create([
+                'inventory_id' => $inventory->id,
+                'repair_order_id' => $ro->id,
+                'used_part_id' => $usedPart->id,
+                'transaction_type' => InventoryTransaction::TYPE_OUT,
+                'quantity' => $quantity,
+                'note' => "Xuất kho cho phiếu {$ro->repair_order_code}.",
+            ]);
+
+            return $usedPart->load('part');
+        });
     }
 
     /*
@@ -639,6 +712,13 @@ class RepairOrderService
 
         $ro->save();
 
+        // Phiếu xong/đóng thì KTV không còn bị tính là đang giữ phiếu này.
+        if (in_array($to, [RepairOrder::COMPLETED, RepairOrder::CLOSED], true)) {
+            $ro->assignments()
+                ->whereIn('status', [Assignment::ASSIGNED, Assignment::IN_PROGRESS])
+                ->update(['status' => $to === RepairOrder::COMPLETED ? Assignment::COMPLETED : Assignment::CANCELLED]);
+        }
+
         $this->logHistory($ro, $to, $actor, $note);
     }
 
@@ -650,6 +730,39 @@ class RepairOrderService
             'changed_by_account_id' => $actor?->id,
             'note' => $note,
         ]);
+    }
+
+    /**
+     * Lịch hẹn chỉ được lập phiếu khi xe đã check-in, đúng khách/xe và chưa có phiếu.
+     *
+     * @param  array{customer_id: int|string, vehicle_id: int|string}  $data
+     */
+    private function assertAppointmentReadyForReceiving(int $appointmentId, array $data): void
+    {
+        $appointment = Appointment::query()->lockForUpdate()->find($appointmentId);
+
+        if (! $appointment) {
+            throw InvalidStatusTransitionException::because('Không tìm thấy lịch hẹn.');
+        }
+
+        if ($appointment->status !== 'CHECKED_IN') {
+            throw InvalidStatusTransitionException::because(
+                "Chỉ tạo phiếu sửa chữa khi lịch hẹn đã check-in (CHECKED_IN). Trạng thái hiện tại: {$appointment->status}."
+            );
+        }
+
+        if ((int) $appointment->customer_id !== (int) $data['customer_id']
+            || (int) $appointment->vehicle_id !== (int) $data['vehicle_id']) {
+            throw InvalidStatusTransitionException::because('Khách hàng hoặc xe không khớp với lịch hẹn.');
+        }
+
+        $existing = RepairOrder::query()->where('appointment_id', $appointmentId)->first();
+
+        if ($existing) {
+            throw InvalidStatusTransitionException::because(
+                "Lịch hẹn này đã có phiếu sửa chữa {$existing->repair_order_code}, không tạo phiếu thứ hai."
+            );
+        }
     }
 
     private function assertAdvisor(Employee $employee): void

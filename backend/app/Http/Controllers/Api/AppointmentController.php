@@ -282,56 +282,33 @@ class AppointmentController extends Controller
             $validated = $request->validated();
 
             DB::transaction(function () use ($appointment, $validated, $customer) {
-                // Nếu đổi xe: kiểm tra xe mới thuộc khách hàng
-                if (isset($validated['vehicle_id']) && $validated['vehicle_id'] !== $appointment->vehicle_id) {
-                    $hasVehicle = Vehicle::where('id', $validated['vehicle_id'])
-                        ->where('customer_id', $customer->id)
-                        ->exists();
-                    if (! $hasVehicle) {
-                        throw new Exception('Phương tiện không thuộc sở hữu của bạn.');
-                    }
+                // Khóa lịch hẹn để hai lần đổi giờ đồng thời không cùng lọt qua kiểm tra slot.
+                $appointment = Appointment::whereKey($appointment->id)->lockForUpdate()->firstOrFail();
+
+                $vehicleId = (int) ($validated['vehicle_id'] ?? $appointment->vehicle_id);
+                $date = $validated['appointment_date'] ?? Carbon::parse($appointment->appointment_date)->toDateString();
+                $time = isset($validated['appointment_time'])
+                    ? $validated['appointment_time'].':00'
+                    : substr((string) $appointment->appointment_time, 0, 8);
+
+                if ($vehicleId !== (int) $appointment->vehicle_id
+                    && ! Vehicle::whereKey($vehicleId)->where('customer_id', $customer->id)->exists()) {
+                    throw ValidationException::withMessages(['vehicle_id' => 'Xe không tồn tại hoặc không thuộc tài khoản của bạn.']);
                 }
 
-                // Nếu đổi ngày hoặc giờ hẹn: kiểm tra lịch mở cửa và slot
-                if (isset($validated['appointment_date']) || isset($validated['appointment_time'])) {
-                    $newDate = $validated['appointment_date'] ?? $appointment->appointment_date;
-                    $newTime = isset($validated['appointment_time'])
-                        ? Carbon::parse($validated['appointment_time'])->format('H:i:s')
-                        : $appointment->appointment_time;
+                $slotChanged = $vehicleId !== (int) $appointment->vehicle_id
+                    || isset($validated['appointment_date'])
+                    || isset($validated['appointment_time']);
 
-                    // Kiểm tra ngày nghỉ
-                    $isHoliday = DB::table('holidays')->where('holiday_date', $newDate)->exists();
-                    if ($isHoliday) {
-                        throw new Exception('Garage đóng cửa nghỉ lễ vào ngày này.');
-                    }
-
-                    // Kiểm tra giờ làm việc (hệ 0..6 hoặc 2..8 theo seeder của bạn)
-                    $bookingDate = Carbon::parse($newDate);
-                    $rawDay = $bookingDate->dayOfWeek;
-                    $dayOfWeek = $rawDay;
-
-                    $wh = DB::table('working_hours')->where('day_of_week', $dayOfWeek)->where('is_active', true)->lockForUpdate()->first();
-                    if (Carbon::parse($newDate.' '.$newTime)->lessThanOrEqualTo(now()) || ! $wh || $newTime < $wh->open_time || $newTime >= $wh->close_time) {
-                        throw new Exception('Giờ hẹn không nằm trong khung giờ làm việc.');
-                    }
-
-                    // Kiểm tra slot (loại trừ chính appointment hiện tại)
-                    $booked = DB::table('appointments')
-                        ->where('appointment_date', $newDate)
-                        ->where('appointment_time', $newTime)
-                        ->where('status', '!=', 'CANCELLED')
-                        ->where('id', '!=', $appointment->id)
-                        ->count();
-
-                    if ($booked >= $wh->max_slots) {
-                        throw new Exception('Khung giờ này đã đầy, vui lòng chọn giờ khác.');
-                    }
+                if ($slotChanged) {
+                    $this->assertSlotIsBookable($date, $time, $vehicleId, $appointment->id);
                 }
 
-                // Cập nhật thông tin bảng appointments
-                $appointment->update(collect($validated)->except(['service_ids', 'package_ids'])->toArray());
+                $appointment->update([
+                    ...collect($validated)->except(['service_ids', 'package_ids', 'appointment_time'])->toArray(),
+                    ...(isset($validated['appointment_time']) ? ['appointment_time' => $time] : []),
+                ]);
 
-                // Cập nhật bảng quan hệ nếu có truyền
                 if (isset($validated['service_ids'])) {
                     $appointment->services()->sync($validated['service_ids']);
                 }
@@ -346,6 +323,8 @@ class AppointmentController extends Controller
                 'data' => $appointment->fresh(),
             ], Response::HTTP_OK);
 
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -394,5 +373,43 @@ class AppointmentController extends Controller
             'success' => true,
             'message' => 'Hủy lịch hẹn thành công.',
         ], Response::HTTP_OK);
+    }
+
+    /**
+     * Quy tắc chung cho một khung giờ (giống lúc đặt lịch): ở tương lai, không trùng ngày lễ,
+     * trong giờ làm việc, còn slot và xe chưa có lịch khác cùng khung giờ.
+     */
+    private function assertSlotIsBookable(string $date, string $time, int $vehicleId, ?int $ignoreAppointmentId = null): void
+    {
+        if (Carbon::parse("$date $time")->lessThanOrEqualTo(now())) {
+            throw ValidationException::withMessages(['appointment_time' => 'Giờ hẹn phải ở tương lai.']);
+        }
+
+        if (DB::table('holidays')->where('holiday_date', $date)->exists()) {
+            throw ValidationException::withMessages(['appointment_date' => 'Garage nghỉ lễ ngày này.']);
+        }
+
+        $hours = DB::table('working_hours')
+            ->where('day_of_week', Carbon::parse($date)->dayOfWeek)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $hours || ! $hours->is_active || $time < substr($hours->open_time, 0, 8) || $time >= substr($hours->close_time, 0, 8)) {
+            throw ValidationException::withMessages(['appointment_time' => 'Ngoài giờ làm việc của garage.']);
+        }
+
+        $activeInSlot = Appointment::query()
+            ->where('appointment_date', $date)
+            ->where('appointment_time', $time)
+            ->whereNotIn('status', ['CANCELLED', 'NO_SHOW'])
+            ->when($ignoreAppointmentId, fn ($query) => $query->whereKeyNot($ignoreAppointmentId));
+
+        if ((clone $activeInSlot)->count() >= (int) ($hours->max_slots ?? 5)) {
+            throw ValidationException::withMessages(['appointment_time' => 'Khung giờ đã đầy.']);
+        }
+
+        if ((clone $activeInSlot)->where('vehicle_id', $vehicleId)->exists()) {
+            throw ValidationException::withMessages(['vehicle_id' => 'Xe đã có lịch hẹn tại khung giờ này.']);
+        }
     }
 }

@@ -8,7 +8,8 @@ const app=src('App.tsx'), dashboard=src('pages/shared/WorkspaceDashboard.tsx'), 
 const auth=src('pages/auth/auth.ts'), guard=src('pages/auth/ProtectedRoute.tsx'), services=src('pages/customer/Services.tsx');
 const login=src('pages/auth/Login.tsx'), boundary=src('components/AppErrorBoundary.tsx');
 assert.ok(dashboard.indexOf('const advisor = role === "advisor";') < dashboard.indexOf('const upcoming = items.filter('),'Dashboard must not use advisor before declaration');
-assert.match(app, /<AppErrorBoundary><Routes>/);
+assert.match(app, /<AppErrorBoundary><FeedbackProvider><Routes>/);
+assert.match(app, /<\/Routes><ChatWidget\/><\/FeedbackProvider>/);
 assert.match(boundary, /getDerivedStateFromError/);
 assert.match(header, /label: "Dịch vụ", href: "\/services"/);
 assert.doesNotMatch(header, /href: "\/#services"/);
@@ -24,7 +25,7 @@ assert.match(guard, /state={{ from: location }}/);
 assert.match(auth, /path: "\/customer\/appointments"/);
 assert.match(login, /role === "CUSTOMER"/);
 assert.match(services, /fetchApi<Service\[\] \| { data: Service\[\] }>\("\/services"\)/);
-assert.match(services, /at-services-hero/);
+assert.match(services, /radial-gradient/); // migrated ATELIER hero uses Tailwind utilities
 assert.match(services, /Không tải được dịch vụ/);
 assert.doesNotMatch(services, /SERVICE_PRODUCTS/);
 assert.match(src('styles/atelier-booking.css'), /at-booking-legacy/);

@@ -188,36 +188,28 @@ class AuthTest extends TestCase
             ->assertJsonPath('allowed', true);
     }
 
-    public function test_spa_login_uses_a_session_instead_of_creating_a_bearer_token(): void
+    public function test_spa_login_from_localhost_receives_a_bearer_token_like_production(): void
     {
         config(['sanctum.stateful' => ['localhost:5173']]);
         $account = $this->createAccount();
 
-        $this->withHeader('Origin', 'http://localhost:5173')
+        $token = $this->withHeader('Origin', 'http://localhost:5173')
             ->postJson('/api/login', [
                 'email' => $account->email,
                 'password' => 'correct-password',
             ])
             ->assertOk()
-            ->assertJsonPath('token', null)
-            ->assertJsonPath('account.id', $account->id);
+            ->assertJsonPath('account.id', $account->id)
+            ->json('token');
 
-        $this->assertAuthenticatedAs($account, 'web');
-        $this->assertDatabaseCount('personal_access_tokens', 0);
+        $this->assertIsString($token);
+        $this->assertDatabaseCount('personal_access_tokens', 1);
 
         Auth::forgetGuards();
-        $this->withHeader('Origin', 'http://localhost:5173')
+        $this->withHeaders(['Origin' => 'http://localhost:5173', 'Authorization' => 'Bearer '.$token])
             ->getJson('/api/me')
             ->assertOk()
             ->assertJsonPath('account.id', $account->id);
-
-        Auth::forgetGuards();
-        $this->withHeader('Origin', 'http://localhost:5173')
-            ->postJson('/api/logout')
-            ->assertOk()
-            ->assertJsonPath('message', 'Đã đăng xuất.');
-
-        $this->assertGuest('web');
     }
 
     public function test_cors_allows_the_configured_spa_to_send_credentials(): void

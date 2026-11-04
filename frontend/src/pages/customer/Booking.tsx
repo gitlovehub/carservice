@@ -3,6 +3,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { fetchApi } from "../../services/api";
 import { SERVICE_PRODUCTS, type ServiceProduct } from "../../services/serviceCatalog";
+import {
+  getApiVehicleType,
+  requiresCustomVehicleSubtype,
+  type BookingVehicleType,
+  type CustomVehicleSubtype,
+} from "../../lib/bookingVehicleType";
 
 type SavedVehicle = {
   id: number;
@@ -137,7 +143,7 @@ const BRAND_MODELS: Record<string, string[]> = {
   "Hãng khác": ["Dòng xe khác"],
 };
 
-type VehicleType = "Sedan / Hatchback (4-5 chỗ)" | "SUV / Crossover (5-7 chỗ)" | "Bán tải / MPV (7-8 chỗ)";
+type VehicleType = BookingVehicleType;
 
 const VEHICLE_MODELS_BY_TYPE: Record<VehicleType, string[]> = {
   "Sedan / Hatchback (4-5 chỗ)": [
@@ -228,6 +234,7 @@ export default function Booking() {
   const [vehicleBrand, setVehicleBrand] = useState("Toyota");
   const [vehicleModel, setVehicleModel] = useState("Vios");
   const [customModel, setCustomModel] = useState("");
+  const [customVehicleSubtype, setCustomVehicleSubtype] = useState<CustomVehicleSubtype | "">("");
   const [vehiclePlate, setVehiclePlate] = useState("");
   const [selectedService, setSelectedService] = useState<ServiceProduct>(SERVICE_PRODUCTS[0]);
   const [selectedSavedVehicleId, setSelectedSavedVehicleId] = useState<number | null>(null);
@@ -395,6 +402,7 @@ export default function Booking() {
     const brandModels = getModelsForVehicleType(newBrand, vehicleType);
     setVehicleModel(brandModels.length > 0 ? brandModels[0] : "");
     setCustomModel("");
+    setCustomVehicleSubtype("");
     if (errors.model) {
       setErrors((prev) => ({ ...prev, model: "" }));
     }
@@ -408,12 +416,14 @@ export default function Booking() {
       setVehicleModel(compatibleModels[0] || "");
       setCustomModel("");
     }
+    setCustomVehicleSubtype("");
     if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
   };
 
   const handleModelChange = (newModel: string) => {
     setSelectedSavedVehicleId(null);
     setVehicleModel(newModel);
+    setCustomVehicleSubtype("");
     const inferredType = getVehicleTypeForModel(newModel);
     if (inferredType) setVehicleType(inferredType);
     if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
@@ -477,6 +487,12 @@ export default function Booking() {
       if (!validModels.includes(vehicleModel)) {
         newErrors.model = `Dòng xe "${vehicleModel}" không thuộc danh mục xe của hãng ${vehicleBrand}.`;
       }
+    }
+    if (
+      requiresCustomVehicleSubtype(vehicleType, vehicleModel)
+      && !customVehicleSubtype
+    ) {
+      newErrors.vehicleSubtype = "Vui lòng chọn xe là MPV hay bán tải.";
     }
 
     // 2. Kiểm tra chuẩn form biển số xe ô tô
@@ -565,7 +581,11 @@ export default function Booking() {
                   brand: vehicleBrand,
                   model: finalModelName,
                   license_plate: vehiclePlate.trim().toUpperCase(),
-                  vehicle_type: vehicleType,
+                  vehicle_type: getApiVehicleType(
+                    vehicleType,
+                    vehicleModel,
+                    customVehicleSubtype || undefined,
+                  ),
                 },
               }),
           appointment_date: selectedDateObj.isoDate,
@@ -1050,17 +1070,47 @@ export default function Booking() {
 
                   {/* Nhập tay nếu chọn "Khác" hoặc hãng khác */}
                   {vehicleModel === "Khác" && (
-                    <input
-                      type="text"
-                      placeholder={`Nhập tên dòng xe ${vehicleBrand}...`}
-                      value={customModel}
-                      onChange={(e) => {
-                        setSelectedSavedVehicleId(null);
-                        setCustomModel(e.target.value);
-                        if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
-                      }}
-                      className="mt-2 w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition"
-                    />
+                    <>
+                      <input
+                        type="text"
+                        placeholder={`Nhập tên dòng xe ${vehicleBrand}...`}
+                        value={customModel}
+                        onChange={(e) => {
+                          setSelectedSavedVehicleId(null);
+                          setCustomModel(e.target.value);
+                          if (errors.model) setErrors((prev) => ({ ...prev, model: "" }));
+                        }}
+                        className="mt-2 w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition"
+                      />
+                      {requiresCustomVehicleSubtype(vehicleType, vehicleModel) && (
+                        <div className="mt-2">
+                          <label
+                            htmlFor="customVehicleSubtype"
+                            className="block text-xs font-semibold text-slate-600 mb-1"
+                          >
+                            Phân loại xe
+                          </label>
+                          <select
+                            id="customVehicleSubtype"
+                            value={customVehicleSubtype}
+                            onChange={(e) => {
+                              setCustomVehicleSubtype(e.target.value as CustomVehicleSubtype | "");
+                              if (errors.vehicleSubtype) {
+                                setErrors((prev) => ({ ...prev, vehicleSubtype: "" }));
+                              }
+                            }}
+                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm"
+                          >
+                            <option value="">-- Chọn MPV hoặc bán tải --</option>
+                            <option value="MPV">MPV</option>
+                            <option value="PICKUP">Bán tải</option>
+                          </select>
+                          {errors.vehicleSubtype && (
+                            <p className="text-[11px] text-red-500 mt-1">{errors.vehicleSubtype}</p>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                   {errors.model && <p className="text-[11px] text-red-500 mt-1">{errors.model}</p>}
                 </div>
@@ -1439,21 +1489,21 @@ export default function Booking() {
                 <button
                   type="button"
                   onClick={printReceipt}
-                  className="px-5 py-2.5 rounded-xl border border-slate-300 font-bold text-sm text-slate-700 hover:bg-slate-50 transition flex items-center gap-2 cursor-pointer"
+                  className="cs-btn cs-btn-secondary"
                 >
                   <i className="fa-solid fa-print"></i> In phiếu hẹn
                 </button>
                 <button
                   type="button"
                   onClick={copyBookingCode}
-                  className="px-5 py-2.5 rounded-xl border border-slate-300 font-bold text-sm text-slate-700 hover:bg-slate-50 transition flex items-center gap-2 cursor-pointer"
+                  className="cs-btn cs-btn-secondary"
                 >
                   <i className="fa-regular fa-copy"></i> Sao chép mã
                 </button>
                 <button
                   type="button"
                   onClick={resetFormToStart}
-                  className="px-5 py-2.5 rounded-xl bg-[#1F2933] hover:bg-[#151D24] font-bold text-sm text-white transition flex items-center gap-2 shadow-sm cursor-pointer"
+                  className="cs-btn cs-btn-primary"
                 >
                   <i className="fa-solid fa-plus"></i> Đặt lịch hẹn khác
                 </button>
@@ -1468,7 +1518,7 @@ export default function Booking() {
                 <button
                   type="button"
                   onClick={() => goToStep(currentStep - 1)}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition flex items-center gap-2 cursor-pointer"
+                  className="cs-btn cs-btn-ghost"
                 >
                   <i className="fa-solid fa-arrow-left"></i> Quay lại
                 </button>
@@ -1481,7 +1531,7 @@ export default function Booking() {
                   type="button"
                   disabled={submitting}
                   onClick={handleNextClick}
-                  className="px-7 py-2.5 rounded-xl font-bold text-sm bg-[#1F2933] hover:bg-[#151D24] text-white shadow-lg shadow-[#1F2933]/25 active:scale-95 transition flex items-center gap-2 cursor-pointer"
+                  className="cs-btn cs-btn-primary"
                 >
                   {submitting ? (
                     <span>Đang xử lý...</span>
@@ -1540,7 +1590,7 @@ export default function Booking() {
 
       {/* Modal xác nhận đặt lịch hẹn */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 transform transition-all relative">
             {/* Nút đóng X */}
             <button
@@ -1607,7 +1657,7 @@ export default function Booking() {
                   setShowConfirmModal(false);
                   setSubmissionError("");
                 }}
-                className="px-4 py-2.5 rounded-xl border border-slate-300 font-bold text-xs sm:text-sm text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                className="cs-btn cs-btn-secondary"
               >
                 Hủy / Xem lại
               </button>
@@ -1615,7 +1665,7 @@ export default function Booking() {
                 type="button"
                 onClick={handleConfirmSubmit}
                 disabled={submitting}
-                className="px-5 py-2.5 rounded-xl bg-[#1F2933] hover:bg-[#151D24] font-bold text-xs sm:text-sm text-white shadow-lg shadow-[#1F2933]/25 transition cursor-pointer flex items-center gap-2"
+                className="cs-btn cs-btn-primary"
               >
                 {submitting ? (
                   <span>Đang xử lý...</span>

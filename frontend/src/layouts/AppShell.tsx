@@ -42,7 +42,12 @@ function UserControls({ area }: { area: ShellArea }) {
 }
 
 function NavItems({ area, close }: { area: ShellArea; close: () => void }) {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  // Menu trỏ tới danh sách đã lọc (?status=...) chỉ sáng khi đúng bộ lọc đó.
+  const filteredPaths = shellNavigation[area].filter(item => item.path.includes("?")).map(item => item.path);
+  const matches = (path: string, isActive: boolean) => path.includes("?")
+    ? pathname + search === path
+    : isActive && !filteredPaths.includes(pathname + search);
   const aliases: Record<string, string> = {
     "/booking": "/customer/booking", "/appointments": "/customer/appointments",
     "/cars": "/customer/cars", "/repair-status": "/repair-status", "/quotation": "/quotation",
@@ -50,7 +55,7 @@ function NavItems({ area, close }: { area: ShellArea; close: () => void }) {
   const activePath = aliases[pathname] ?? pathname;
   return <nav className={area === "customer" ? "cs-public-nav" : "cs-side-nav"} aria-label={`Điều hướng ${info[area].short}`}>
     {shellNavigation[area].map(({ path, label, icon }) =>
-      <NavLink key={path} to={path} onClick={close} end={path === "/admin" || path === "/advisor"} className={({isActive}) => `cs-nav-link${isActive || (area === "customer" && activePath === path) ? " is-active" : ""}`}>
+      <NavLink key={path} to={path} onClick={close} end={path === "/admin" || path === "/advisor"} className={({isActive}) => `cs-nav-link${matches(path, isActive) || (area === "customer" && activePath === path) ? " is-active" : ""}`}>
         <Icon name={icon} size={18}/><span>{label}</span>
       </NavLink>
     )}
