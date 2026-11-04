@@ -26,8 +26,6 @@ class StoreInternalAppointmentRequest extends FormRequest
             'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('status', 'ACTIVE')],
             'package_ids' => ['sometimes', 'array'],
             'package_ids.*' => ['integer', 'distinct', 'exists:maintenance_packages,id'],
-            'override_active_limit' => ['sometimes', 'boolean'],
-            'override_reason' => ['required_if:override_active_limit,true', 'nullable', 'string', 'max:1000'],
         ];
     }
 }
