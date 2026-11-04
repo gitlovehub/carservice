@@ -98,7 +98,7 @@ class VnpayPaymentService
      * @param  array<string, string>  $params
      * @return array{RspCode: string, Message: string}
      */
-    public function handleIpn(array $params): array
+    public function handleIpn(array $params, string $source = 'IPN'): array
     {
         $txnRef = $params['vnp_TxnRef'] ?? null;
         $context = ['txn_ref' => $txnRef, 'response_code' => $params['vnp_ResponseCode'] ?? null, 'transaction_status' => $params['vnp_TransactionStatus'] ?? null];
@@ -116,7 +116,7 @@ class VnpayPaymentService
         }
 
         try {
-            return DB::transaction(function () use ($params, $txnRef, $context) {
+            return DB::transaction(function () use ($params, $txnRef, $context, $source) {
                 $invoiceId = Payment::query()
                     ->where('gateway_txn_ref', $txnRef)
                     ->where('payment_method', Payment::VNPAY)
@@ -157,7 +157,7 @@ class VnpayPaymentService
                     $responseCode,
                     $transactionStatus,
                     $params,
-                    'IPN',
+                    $source,
                 );
 
                 return $this->ipnResponse('00', 'Confirm Success');
@@ -193,7 +193,14 @@ class VnpayPaymentService
             return ['found' => false];
         }
 
-        // IPN chưa về (vd. chạy local không có URL công khai): hỏi VNPay bằng querydr.
+        // IPN chưa về (vd. chạy local không có URL công khai): xác nhận bằng chính dữ liệu Return
+        // đã được VNPay ký (cùng logic IPN: chữ ký, TmnCode, số tiền, chống xử lý trùng).
+        if ($payment->status === Payment::PENDING && config('services.vnpay.confirm_on_return')) {
+            $this->handleIpn($params, 'RETURN');
+            $payment->refresh()->load('invoice');
+        }
+
+        // Vẫn còn PENDING: hỏi VNPay bằng querydr (nếu bật).
         if ($payment->status === Payment::PENDING && config('services.vnpay.query_on_return')) {
             $this->syncWithGateway($payment, $serverIp);
             $payment->refresh()->load('invoice');

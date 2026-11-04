@@ -48,7 +48,8 @@ return [
         'expire_minutes' => (int) env('VNPAY_EXPIRE_MINUTES', 15),
         'min_amount' => (int) env('VNPAY_MIN_AMOUNT', 5000),
         'max_amount' => (int) env('VNPAY_MAX_AMOUNT', 9999999999),
-        'query_on_return' => (bool) env('VNPAY_QUERY_ON_RETURN', true),
+        'confirm_on_return' => (bool) env('VNPAY_CONFIRM_ON_RETURN', false),
+        'query_on_return' => (bool) env('VNPAY_QUERY_ON_RETURN', false),
         'log_channel' => env('VNPAY_LOG_CHANNEL', 'vnpay'),
     ],
 
