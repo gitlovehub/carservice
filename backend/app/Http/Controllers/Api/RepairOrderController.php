@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\RepairOrder;
+use App\Models\TechnicianProfile;
 use App\Services\RepairOrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,17 +39,7 @@ class RepairOrderController extends Controller
 
     public function show(Request $request, RepairOrder $repairOrder): JsonResponse
     {
-        if ($request->user()?->role === Account::ROLE_TECHNICIAN) {
-            $employeeId = $request->user()->employee?->id;
-
-            if (! $employeeId || ! $repairOrder->assignments()->whereHas('technician', function ($q) use ($employeeId): void {
-                $q->where('employee_id', $employeeId);
-            })->exists()) {
-                return response()->json([
-                    'message' => 'Bạn không có quyền xem phiếu sửa chữa này.',
-                ], 403);
-            }
-        }
+        $this->authorize('view', $repairOrder);
 
         $repairOrder->load([
             'customer', 'vehicle', 'advisor', 'statusHistory.changedByAccount',
@@ -61,6 +52,8 @@ class RepairOrderController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->authorize('create', RepairOrder::class);
+
         $data = $request->validate([
             'appointment_id' => ['nullable', 'integer'],
             'customer_id' => ['required', 'integer', 'exists:customers,id'],
@@ -79,12 +72,14 @@ class RepairOrderController extends Controller
 
     public function assignTechnician(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('update', $repairOrder);
+
         $data = $request->validate([
             'technician_id' => ['required', 'integer', 'exists:technician_profiles,id'],
             'note' => ['nullable', 'string'],
         ]);
 
-        $technician = \App\Models\TechnicianProfile::findOrFail($data['technician_id']);
+        $technician = TechnicianProfile::findOrFail($data['technician_id']);
 
         $assignment = $this->service->assignTechnician(
             $repairOrder, $technician, $request->user(), $data['note'] ?? null
@@ -95,6 +90,8 @@ class RepairOrderController extends Controller
 
     public function startRepair(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('update', $repairOrder);
+
         $ro = $this->service->startRepair($repairOrder, $request->user());
 
         return response()->json($ro->load('workItems'));
@@ -102,6 +99,8 @@ class RepairOrderController extends Controller
 
     public function markWaitingForParts(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('update', $repairOrder);
+
         $data = $request->validate(['note' => ['nullable', 'string']]);
 
         $ro = $this->service->markWaitingForParts($repairOrder, $request->user(), $data['note'] ?? null);
@@ -111,6 +110,8 @@ class RepairOrderController extends Controller
 
     public function resume(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('update', $repairOrder);
+
         $data = $request->validate(['note' => ['nullable', 'string']]);
 
         $ro = $this->service->resumeFromWaitingForParts($repairOrder, $request->user(), $data['note'] ?? null);
@@ -120,6 +121,8 @@ class RepairOrderController extends Controller
 
     public function review(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('update', $repairOrder);
+
         $data = $request->validate(['note' => ['nullable', 'string']]);
 
         $this->service->logReviewAndTest($repairOrder, $request->user(), $data['note'] ?? null);
@@ -129,6 +132,8 @@ class RepairOrderController extends Controller
 
     public function complete(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('update', $repairOrder);
+
         $data = $request->validate(['note' => ['nullable', 'string']]);
 
         $ro = $this->service->completeRepairOrder($repairOrder, $request->user(), $data['note'] ?? null);
@@ -138,6 +143,8 @@ class RepairOrderController extends Controller
 
     public function close(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('update', $repairOrder);
+
         $data = $request->validate([
             'close_reason' => ['required', 'string', 'in:'.implode(',', RepairOrder::CLOSE_REASONS)],
             'note' => ['required', 'string'],
@@ -152,6 +159,8 @@ class RepairOrderController extends Controller
 
     public function handOver(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('update', $repairOrder);
+
         $ro = $this->service->handOver($repairOrder, $request->user());
 
         return response()->json($ro);

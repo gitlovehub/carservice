@@ -15,6 +15,8 @@ class PaymentController extends Controller
 
     public function store(Request $request, Invoice $invoice): JsonResponse
     {
+        $this->authorize('update', $invoice);
+
         $data = $request->validate([
             'payment_method' => ['required', 'string', 'in:DIRECT,QR'],
             'amount' => ['required', 'numeric', 'min:0.01'],
@@ -27,6 +29,8 @@ class PaymentController extends Controller
 
     public function confirmQr(Request $request, Payment $payment): JsonResponse
     {
+        $this->authorize('update', $payment);
+
         $data = $request->validate([
             'success' => ['required', 'boolean'],
             'transaction_code' => ['nullable', 'string'],

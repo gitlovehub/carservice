@@ -21,6 +21,8 @@ class InspectionController extends Controller
      */
     public function store(StoreInspectionRequest $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('inspect', $repairOrder);
+
         $technician = TechnicianProfile::where('employee_id', $request->user()->employee?->id)->first();
 
         if (! $technician) {
@@ -46,6 +48,8 @@ class InspectionController extends Controller
      */
     public function show(RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('inspect', $repairOrder);
+
         $inspection = $repairOrder->inspections()
             ->with(['items', 'recommendations.service', 'recommendations.part', 'technician.employee'])
             ->first();
@@ -65,6 +69,8 @@ class InspectionController extends Controller
      */
     public function addRecommendation(StoreInspectionRecommendationRequest $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('inspect', $repairOrder);
+
         $inspection = $repairOrder->inspections()->latest()->first();
 
         if (! $inspection) {
@@ -95,6 +101,8 @@ class InspectionController extends Controller
      */
     public function complete(Request $request, RepairOrder $repairOrder): JsonResponse
     {
+        $this->authorize('inspect', $repairOrder);
+
         $inspection = $repairOrder->inspections()->latest()->first();
 
         if (! $inspection) {

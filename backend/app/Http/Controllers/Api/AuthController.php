@@ -5,22 +5,23 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Mail\EmailVerificationOtpMail;
+use App\Mail\PasswordResetOtpMail;
 use App\Models\Account;
 use App\Models\Customer;
+use App\Models\EmailVerificationOtp;
+use App\Models\PasswordResetOtp;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
-use Laravel\Sanctum\PersonalAccessToken;
-use App\Mail\EmailVerificationOtpMail;
-use App\Models\EmailVerificationOtp;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\PasswordResetOtpMail;
-use App\Models\PasswordResetOtp;
+use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -68,7 +69,7 @@ class AuthController extends Controller
         try {
             Mail::to($account->email)->send(new EmailVerificationOtpMail($otp));
         } catch (\Throwable $e) {
-            Log::error("[OTP EMAIL ERROR] " . $e->getMessage());
+            Log::error('[OTP EMAIL ERROR] '.$e->getMessage());
         }
 
         return response()->json([
@@ -92,7 +93,7 @@ class AuthController extends Controller
         if ($account->status === Account::STATUS_PENDING) {
             throw ValidationException::withMessages([
                 'email' => [
-                    'Tài khoản chưa xác thực email. Vui lòng nhập mã OTP.'
+                    'Tài khoản chưa xác thực email. Vui lòng nhập mã OTP.',
                 ],
             ]);
         }
@@ -105,15 +106,15 @@ class AuthController extends Controller
 
         $token = null;
 
-        // Cấp Sanctum Token cho Frontend React
-        $token = $account->createToken(
-            $data['device_name'] ?? 'carservice-web'
-        )->plainTextToken;
+        if (EnsureFrontendRequestsAreStateful::fromFrontend($request)) {
+            abort_unless($request->hasSession(), 500, 'Không thể khởi tạo phiên đăng nhập SPA.');
 
-        // Giữ đăng nhập session nếu request hỗ trợ
-        if ($request->hasSession()) {
             Auth::guard('web')->login($account);
             $request->session()->regenerate();
+        } else {
+            $token = $account->createToken(
+                $data['device_name'] ?? 'carservice-web'
+            )->plainTextToken;
         }
 
         return response()->json([
@@ -168,7 +169,7 @@ class AuthController extends Controller
         }
 
         if ($account->role === Account::ROLE_CUSTOMER) {
-            if (!$account->customer) {
+            if (! $account->customer) {
                 Customer::query()->create([
                     'account_id' => $account->id,
                     'full_name' => $validated['full_name'] ?? 'Khách hàng',
@@ -187,12 +188,12 @@ class AuthController extends Controller
                 if (array_key_exists('address', $validated)) {
                     $customerUpdates['address'] = $validated['address'];
                 }
-                if (!empty($customerUpdates)) {
+                if (! empty($customerUpdates)) {
                     $account->customer->update($customerUpdates);
                 }
             }
         } else {
-            if (!$account->employee) {
+            if (! $account->employee) {
                 Employee::query()->create([
                     'account_id' => $account->id,
                     'full_name' => $validated['full_name'] ?? 'Nhân viên',
@@ -207,7 +208,7 @@ class AuthController extends Controller
                 if (array_key_exists('phone', $validated) && $validated['phone'] !== null) {
                     $employeeUpdates['phone'] = $validated['phone'];
                 }
-                if (!empty($employeeUpdates)) {
+                if (! empty($employeeUpdates)) {
                     $account->employee->update($employeeUpdates);
                 }
             }
@@ -247,7 +248,7 @@ class AuthController extends Controller
             'new_password_confirmation.required' => 'Vui lòng xác nhận mật khẩu mới.',
         ]);
 
-        if (!Hash::check($validated['current_password'], $account->getAuthPassword())) {
+        if (! Hash::check($validated['current_password'], $account->getAuthPassword())) {
             throw ValidationException::withMessages([
                 'current_password' => ['Mật khẩu hiện tại không chính xác.'],
             ]);
@@ -446,7 +447,7 @@ class AuthController extends Controller
         try {
             Mail::to($account->email)->send(new EmailVerificationOtpMail($otp));
         } catch (\Throwable $e) {
-            Log::error("[OTP EMAIL ERROR] " . $e->getMessage());
+            Log::error('[OTP EMAIL ERROR] '.$e->getMessage());
         }
 
         return response()->json([
@@ -461,13 +462,13 @@ class AuthController extends Controller
         ]);
 
         $account = Account::whereRaw('LOWER(email) = ?', [
-            strtolower($request->email)
+            strtolower($request->email),
         ])->first();
 
         // Không tiết lộ email có tồn tại trong hệ thống hay không
-        if (!$account) {
+        if (! $account) {
             return response()->json([
-                'message' => 'Nếu email tồn tại trong hệ thống, mã OTP sẽ được gửi đến email.'
+                'message' => 'Nếu email tồn tại trong hệ thống, mã OTP sẽ được gửi đến email.',
             ]);
         }
 
@@ -491,7 +492,7 @@ class AuthController extends Controller
         try {
             Mail::to($account->email)->send(new PasswordResetOtpMail($otp));
         } catch (\Throwable $e) {
-            Log::error("[OTP EMAIL ERROR] " . $e->getMessage());
+            Log::error('[OTP EMAIL ERROR] '.$e->getMessage());
         }
 
         return response()->json([
@@ -508,12 +509,12 @@ class AuthController extends Controller
         ]);
 
         $account = Account::whereRaw('LOWER(email) = ?', [
-            strtolower($request->email)
+            strtolower($request->email),
         ])->first();
 
-        if (!$account) {
+        if (! $account) {
             return response()->json([
-                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.'
+                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.',
             ], 422);
         }
 
@@ -523,30 +524,30 @@ class AuthController extends Controller
             ->latest()
             ->first();
 
-        if (!$passwordResetOtp) {
+        if (! $passwordResetOtp) {
             return response()->json([
-                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.'
+                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.',
             ], 422);
         }
 
         // Kiểm tra OTP đã hết hạn chưa
         if ($passwordResetOtp->expires_at->isPast()) {
             return response()->json([
-                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.'
+                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.',
             ], 422);
         }
 
         // Kiểm tra OTP
-        if (!Hash::check($request->otp, $passwordResetOtp->otp_hash)) {
+        if (! Hash::check($request->otp, $passwordResetOtp->otp_hash)) {
             return response()->json([
-                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.'
+                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.',
             ], 422);
         }
 
         // Kiểm tra mật khẩu không được trùng cũ
         if (Hash::check($request->password, $account->password_hash)) {
             return response()->json([
-                'message' => 'Mật khẩu mới không được trùng với mật khẩu cũ.'
+                'message' => 'Mật khẩu mới không được trùng với mật khẩu cũ.',
             ], 422);
         }
 
@@ -564,7 +565,7 @@ class AuthController extends Controller
         });
 
         return response()->json([
-            'message' => 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.'
+            'message' => 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.',
         ]);
     }
 }

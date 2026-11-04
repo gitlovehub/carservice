@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\VehicleBrand;
 use App\Models\Vehicle;
+use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -80,7 +80,7 @@ class VehicleController extends Controller
                 'nullable',
                 'integer',
                 'min:1900',
-                'max:' . (date('Y') + 1),
+                'max:'.(date('Y') + 1),
             ],
 
             'license_plate' => [
@@ -170,7 +170,7 @@ class VehicleController extends Controller
                 'nullable',
                 'integer',
                 'min:1900',
-                'max:' . (date('Y') + 1),
+                'max:'.(date('Y') + 1),
             ],
 
             'license_plate' => [
@@ -249,7 +249,6 @@ class VehicleController extends Controller
         ]);
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | CUSTOMER - QUẢN LÝ XE CỦA CHÍNH MÌNH
@@ -275,7 +274,7 @@ class VehicleController extends Controller
     {
         $customer = $this->getAuthenticatedCustomer($request);
 
-        if (!$customer) {
+        if (! $customer) {
             return $this->customerProfileNotFoundResponse();
         }
 
@@ -302,7 +301,7 @@ class VehicleController extends Controller
     {
         $customer = $this->getAuthenticatedCustomer($request);
 
-        if (!$customer) {
+        if (! $customer) {
             return $this->customerProfileNotFoundResponse();
         }
 
@@ -338,7 +337,7 @@ class VehicleController extends Controller
                 'nullable',
                 'integer',
                 'min:1900',
-                'max:' . (date('Y') + 1),
+                'max:'.(date('Y') + 1),
             ],
 
             'license_plate' => [
@@ -367,7 +366,7 @@ class VehicleController extends Controller
             ],
         ]);
 
-        if (!empty($validated['model_name'])) {
+        if (! empty($validated['model_name'])) {
             $brand = VehicleBrand::firstOrCreate(
                 ['name' => 'Toyota'],
                 ['status' => 'ACTIVE'],
@@ -403,13 +402,11 @@ class VehicleController extends Controller
     {
         $customer = $this->getAuthenticatedCustomer($request);
 
-        if (!$customer) {
+        if (! $customer) {
             return $this->customerProfileNotFoundResponse();
         }
 
-        if ((int) $vehicle->customer_id !== (int) $customer->id) {
-            return $this->vehicleForbiddenResponse();
-        }
+        $this->authorize('view', $vehicle);
 
         $vehicle->load('model');
 
@@ -433,13 +430,11 @@ class VehicleController extends Controller
     ) {
         $customer = $this->getAuthenticatedCustomer($request);
 
-        if (!$customer) {
+        if (! $customer) {
             return $this->customerProfileNotFoundResponse();
         }
 
-        if ((int) $vehicle->customer_id !== (int) $customer->id) {
-            return $this->vehicleForbiddenResponse();
-        }
+        $this->authorize('update', $vehicle);
 
         $validated = $request->validate([
             'model_id' => [
@@ -457,7 +452,7 @@ class VehicleController extends Controller
                 'nullable',
                 'integer',
                 'min:1900',
-                'max:' . (date('Y') + 1),
+                'max:'.(date('Y') + 1),
             ],
 
             'license_plate' => [
@@ -510,13 +505,11 @@ class VehicleController extends Controller
     ) {
         $customer = $this->getAuthenticatedCustomer($request);
 
-        if (!$customer) {
+        if (! $customer) {
             return $this->customerProfileNotFoundResponse();
         }
 
-        if ((int) $vehicle->customer_id !== (int) $customer->id) {
-            return $this->vehicleForbiddenResponse();
-        }
+        $this->authorize('delete', $vehicle);
 
         $vehicle->delete();
 
@@ -525,7 +518,6 @@ class VehicleController extends Controller
             'message' => 'Xóa xe của bạn thành công.',
         ]);
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -540,7 +532,7 @@ class VehicleController extends Controller
     {
         $account = $request->user();
 
-        if (!$account) {
+        if (! $account) {
             return null;
         }
 
