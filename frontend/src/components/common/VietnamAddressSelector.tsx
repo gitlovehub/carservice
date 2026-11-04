@@ -21,71 +21,8 @@ function removeVietnameseTones(str: string): string {
     .trim();
 }
 
-// 63 Tỉnh/Thành phố trực thuộc Trung ương của Việt Nam
-const FALLBACK_PROVINCES: Province[] = [
+const HANOI_PROVINCES: Province[] = [
   { code: 1, name: "Thành phố Hà Nội" },
-  { code: 79, name: "Thành phố Hồ Chí Minh" },
-  { code: 31, name: "Thành phố Hải Phòng" },
-  { code: 48, name: "Thành phố Đà Nẵng" },
-  { code: 92, name: "Thành phố Cần Thơ" },
-  { code: 2, name: "Tỉnh Hà Giang" },
-  { code: 4, name: "Tỉnh Cao Bằng" },
-  { code: 6, name: "Tỉnh Bắc Kạn" },
-  { code: 8, name: "Tỉnh Tuyên Quang" },
-  { code: 10, name: "Tỉnh Lào Cai" },
-  { code: 11, name: "Tỉnh Điện Biên" },
-  { code: 12, name: "Tỉnh Lai Châu" },
-  { code: 14, name: "Tỉnh Sơn La" },
-  { code: 15, name: "Tỉnh Yên Bái" },
-  { code: 17, name: "Tỉnh Hoà Bình" },
-  { code: 19, name: "Tỉnh Thái Nguyên" },
-  { code: 20, name: "Tỉnh Lạng Sơn" },
-  { code: 22, name: "Tỉnh Quảng Ninh" },
-  { code: 24, name: "Tỉnh Bắc Giang" },
-  { code: 25, name: "Tỉnh Phú Thọ" },
-  { code: 26, name: "Tỉnh Vĩnh Phúc" },
-  { code: 27, name: "Tỉnh Bắc Ninh" },
-  { code: 30, name: "Tỉnh Hải Dương" },
-  { code: 33, name: "Tỉnh Hưng Yên" },
-  { code: 34, name: "Tỉnh Thái Bình" },
-  { code: 35, name: "Tỉnh Hà Nam" },
-  { code: 36, name: "Tỉnh Nam Định" },
-  { code: 37, name: "Tỉnh Ninh Bình" },
-  { code: 38, name: "Tỉnh Thanh Hóa" },
-  { code: 40, name: "Tỉnh Nghệ An" },
-  { code: 42, name: "Tỉnh Hà Tĩnh" },
-  { code: 44, name: "Tỉnh Quảng Bình" },
-  { code: 45, name: "Tỉnh Quảng Trị" },
-  { code: 46, name: "Tỉnh Thừa Thiên Huế" },
-  { code: 49, name: "Tỉnh Quảng Nam" },
-  { code: 51, name: "Tỉnh Quảng Ngãi" },
-  { code: 52, name: "Tỉnh Bình Định" },
-  { code: 54, name: "Tỉnh Phú Yên" },
-  { code: 56, name: "Tỉnh Khánh Hòa" },
-  { code: 58, name: "Tỉnh Ninh Thuận" },
-  { code: 60, name: "Tỉnh Bình Thuận" },
-  { code: 62, name: "Tỉnh Kon Tum" },
-  { code: 64, name: "Tỉnh Gia Lai" },
-  { code: 66, name: "Tỉnh Đắk Lắk" },
-  { code: 67, name: "Tỉnh Đắk Nông" },
-  { code: 68, name: "Tỉnh Lâm Đồng" },
-  { code: 70, name: "Tỉnh Bình Phước" },
-  { code: 72, name: "Tỉnh Tây Ninh" },
-  { code: 74, name: "Tỉnh Bình Dương" },
-  { code: 75, name: "Tỉnh Đồng Nai" },
-  { code: 77, name: "Tỉnh Bà Rịa - Vũng Tàu" },
-  { code: 80, name: "Tỉnh Long An" },
-  { code: 82, name: "Tỉnh Tiền Giang" },
-  { code: 83, name: "Tỉnh Bến Tre" },
-  { code: 84, name: "Tỉnh Trà Vinh" },
-  { code: 86, name: "Tỉnh Vĩnh Long" },
-  { code: 87, name: "Tỉnh Đồng Tháp" },
-  { code: 89, name: "Tỉnh An Giang" },
-  { code: 91, name: "Tỉnh Kiên Giang" },
-  { code: 93, name: "Tỉnh Hậu Giang" },
-  { code: 94, name: "Tỉnh Sóc Trăng" },
-  { code: 95, name: "Tỉnh Bạc Liêu" },
-  { code: 96, name: "Tỉnh Cà Mau" },
 ];
 
 // Bổ sung đầy đủ các xã/phường mới thành lập hoặc sáp nhập
@@ -120,7 +57,6 @@ const NEW_ADMIN_UNITS: Record<number, Ward[]> = {
   ],
 };
 
-const cachedProvinces: Province[] = [];
 const cachedProvinceWards: Record<number, Ward[]> = {};
 
 // Helper: Phân tích chuỗi địa chỉ có sẵn thành các phần: Tỉnh/TP, Xã/Phường, Số nhà/đường
@@ -190,10 +126,12 @@ export default function VietnamAddressSelector({
   onChange,
   error,
 }: VietnamAddressSelectorProps) {
-  const [provinces, setProvinces] = useState<Province[]>(FALLBACK_PROVINCES);
+  const provinces = HANOI_PROVINCES;
   const [wards, setWards] = useState<Ward[]>([]);
 
-  const [selectedProvince, setSelectedProvince] = useState<string>("");
+  const [selectedProvince, setSelectedProvince] = useState<string>(
+    HANOI_PROVINCES[0].name,
+  );
   const [selectedWard, setSelectedWard] = useState<string>("");
   const [streetAddress, setStreetAddress] = useState<string>("");
 
@@ -202,7 +140,6 @@ export default function VietnamAddressSelector({
   const [isWardDropdownOpen, setIsWardDropdownOpen] = useState<boolean>(false);
   const wardDropdownRef = useRef<HTMLDivElement>(null);
 
-  const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingWards, setLoadingWards] = useState(false);
 
   // Đóng dropdown khi nhấn ra ngoài
@@ -223,46 +160,20 @@ export default function VietnamAddressSelector({
   useEffect(() => {
     if (!value || value === "Chưa cập nhật") return;
 
-    if (!selectedProvince) {
-      const parsed = parseAddressString(value, provinces);
-      if (parsed.province) {
-        setSelectedProvince(parsed.province);
-      }
-      if (parsed.ward) {
-        setSelectedWard(parsed.ward);
-        setSearchWardInput(parsed.ward);
-      }
-      if (parsed.street) {
-        setStreetAddress(parsed.street);
-      }
+    const parsed = parseAddressString(value, provinces);
+    if (parsed.province === HANOI_PROVINCES[0].name) {
+      setSelectedProvince(parsed.province);
+    }
+    if (parsed.ward) {
+      setSelectedWard(parsed.ward);
+      setSearchWardInput(parsed.ward);
+    }
+    if (parsed.street) {
+      setStreetAddress(parsed.street);
     }
   }, [value, provinces, selectedProvince]);
 
-  // 2. Tải danh sách 63 Tỉnh/Thành phố
-  useEffect(() => {
-    if (cachedProvinces.length > 0) {
-      setProvinces(cachedProvinces);
-      return;
-    }
-
-    setLoadingProvinces(true);
-    fetch("https://provinces.open-api.vn/api/?depth=1")
-      .then((res) => res.json())
-      .then((data: Province[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          cachedProvinces.push(...data);
-          setProvinces(data);
-        }
-      })
-      .catch(() => {
-        setProvinces(FALLBACK_PROVINCES);
-      })
-      .finally(() => {
-        setLoadingProvinces(false);
-      });
-  }, []);
-
-  // 3. Tải toàn bộ Xã/Phường của Tỉnh/Thành phố
+  // Tải toàn bộ Xã/Phường của Hà Nội
   useEffect(() => {
     if (!selectedProvince) {
       setWards([]);
@@ -317,8 +228,7 @@ export default function VietnamAddressSelector({
         }
       )
       .catch(() => {
-        const fallbackList = NEW_ADMIN_UNITS[provinceObj.code] || [];
-        setWards(fallbackList);
+        setWards(NEW_ADMIN_UNITS[provinceObj.code] || []);
       })
       .finally(() => {
         setLoadingWards(false);
@@ -400,14 +310,9 @@ export default function VietnamAddressSelector({
           <select
             value={selectedProvince}
             onChange={handleProvinceChange}
-            disabled={loadingProvinces}
+            disabled
             className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-medium text-[#20252B] transition focus:border-[#D6A85F] focus:outline-none focus:ring-1 focus:ring-[#D6A85F]"
           >
-            <option value="">
-              {loadingProvinces
-                ? "Đang tải tỉnh thành..."
-                : "-- Chọn Tỉnh / Thành phố --"}
-            </option>
             {provinces.map((p) => (
               <option key={p.code} value={p.name}>
                 {p.name}
