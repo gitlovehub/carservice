@@ -30,19 +30,6 @@ const roles = [
     ),
   },
   {
-    code: "TECHNICIAN",
-    path: "/technician",
-    name: "Kỹ thuật viên",
-    description:
-      "Kiểm tra tình trạng xe, cập nhật tiến độ sửa chữa và báo cáo phụ tùng cần thay thế.",
-    features: ["Kiểm tra xe", "Cập nhật tiến độ", "Báo cáo kỹ thuật"],
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
-        <path d="M14.7 6.3a5 5 0 0 0-6.6 6.6L3 18l3 3 5.1-5.1a5 5 0 0 0 6.6-6.6L14 13l-3-3z" />
-      </svg>
-    ),
-  },
-  {
     code: "ADMIN",
     path: "/admin",
     name: "Quản trị viên",
@@ -145,7 +132,7 @@ function RoleSelector() {
                 type="button"
                 onClick={() => handleSelect(role.code, role.path)}
                 aria-label={`Chọn vai trò ${role.name}`}
-                className="group flex min-h-[250px] flex-col rounded-3xl border border-[#E1E4E6] bg-white p-6 text-left transition duration-200 hover:-translate-y-1 hover:border-[#D6A85F] hover:shadow-[0_18px_40px_rgba(31,41,51,0.08)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D6A85F]/30 sm:p-7"
+                className="cs-btn cs-btn-secondary"
               >
                 <div className="flex w-full items-start justify-between gap-4">
                   <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D6A85F]/30 bg-[#FAF8F5] p-4 text-[#9A7334] transition group-hover:bg-[#F5ECD9]">

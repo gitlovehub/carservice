@@ -167,7 +167,7 @@ function CustomerHeader() {
               <button
                 type="button"
                 onClick={logout}
-                className="flex flex-1 items-center justify-center rounded-xl border border-red-500/40 bg-red-500/10 py-2 text-[11px] font-medium text-red-400 transition hover:bg-red-500 hover:text-white"
+                className="cs-btn cs-btn-danger-outline flex-1"
               >
                 Đăng xuất
               </button>

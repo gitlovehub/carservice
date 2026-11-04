@@ -326,7 +326,7 @@ function CustomerDashboard() {
               <button
                 type="button"
                 onClick={openOdoModal}
-                className="h-10 cursor-pointer rounded-xl border border-[#E1E4E6] bg-white px-4 text-xs font-semibold text-[#20252B] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
+                className="cs-btn cs-btn-secondary"
               >
                 Cập nhật số ODO
               </button>
@@ -551,7 +551,7 @@ function CustomerDashboard() {
                             setSearchKeyword("");
                             setVehicleFilter("ALL");
                           }}
-                          className="mt-4 cursor-pointer rounded-xl bg-[#1F2933] px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                          className="cs-btn cs-btn-primary mt-4"
                         >
                           Xóa bộ lọc
                         </button>
@@ -596,7 +596,7 @@ function CustomerDashboard() {
                                 e.stopPropagation();
                                 void openOrderDetail(o);
                               }}
-                              className="cursor-pointer rounded-lg border border-[#E1E4E6] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#20252B] transition hover:border-[#D6A85F]"
+                              className="cs-btn cs-btn-secondary"
                             >
                               Chi tiết
                             </button>
@@ -717,7 +717,7 @@ function CustomerDashboard() {
 
       {/* ===== MODAL CHI TIẾT PHIẾU ===== */}
       {selectedOrderId !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
@@ -860,7 +860,7 @@ function CustomerDashboard() {
               <button
                 type="button"
                 onClick={() => setSelectedOrderId(null)}
-                className="cursor-pointer rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                className="cs-btn cs-btn-primary"
               >
                 Đóng
               </button>
@@ -871,7 +871,7 @@ function CustomerDashboard() {
 
       {/* ===== MODAL CẬP NHẬT ODO ===== */}
       {showOdoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-lg font-bold text-[#1F2933]">Cập nhật số ODO xe</h3>
@@ -928,14 +928,14 @@ function CustomerDashboard() {
                 <button
                   type="button"
                   onClick={() => setShowOdoModal(false)}
-                  className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  className="cs-btn cs-btn-secondary"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={odoSaving}
-                  className="cursor-pointer rounded-xl bg-[#1F2933] px-5 py-2 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                  className="cs-btn cs-btn-primary"
                 >
                   {odoSaving ? "Đang lưu..." : "Lưu số ODO"}
                 </button>

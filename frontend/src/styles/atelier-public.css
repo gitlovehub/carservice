@@ -29,11 +29,11 @@ html[data-theme='dark'] .at-root {
 .at-menu-button{display:none}.at-mobile-nav{display:none}
 .at-public-footer{padding:36px clamp(20px,5vw,76px);border-top:1px solid var(--at-border);display:flex;justify-content:space-between;gap:20px;background:var(--at-surface);color:var(--at-muted);font-size:12px;flex-wrap:wrap}
 .at-btn{border:1px solid transparent;border-radius:10px;padding:11px 17px;font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:41px;transition:transform .18s,background .18s,border-color .18s;white-space:nowrap;font-family:'DM Sans',sans-serif}
-.at-btn:hover:not(:disabled){transform:translateY(-1px)}
+.at-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 16px -10px rgba(0,0,0,.45)}
 .at-btn-primary{background:var(--at-accent);color:white!important}
-.at-btn-primary:hover{background:#b92430}
+.at-btn-primary:hover:not(:disabled){background:color-mix(in srgb,var(--at-accent) 88%,#000)}
 .at-btn-outline{background:var(--at-surface);border-color:var(--at-border);color:var(--at-ink)}
-.at-btn-outline:hover{border-color:var(--at-accent)}
+.at-btn-outline:hover:not(:disabled){border-color:var(--at-accent);background:color-mix(in srgb,var(--at-accent) 8%,var(--at-surface))}
 .at-btn-hero-outline{background:#ffffff12;color:white;border-color:#ffffff30}
 .at-btn-hero-outline:hover{background:#ffffff20}
 .at-btn.at-large{padding:15px 25px;min-height:53px;font-size:14px}

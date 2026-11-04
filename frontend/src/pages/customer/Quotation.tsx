@@ -169,7 +169,7 @@ export default function QuotationPage() {
       <input aria-label="Tìm báo giá" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Mã báo giá, biển số, tên xe..."/>
     </div>
     {loading && <div className="at-customer-empty">Đang tải báo giá...</div>}
-    {error && <div role="alert" className="at-customer-notice at-customer-error"><span>{error}</span><button type="button" onClick={() => void loadData()}>Thử lại</button></div>}
+    {error && <div role="alert" className="at-customer-notice at-customer-error"><span>{error}</span><button type="button" className="cs-btn cs-btn-secondary cs-btn-sm" onClick={() => void loadData()}>Thử lại</button></div>}
     {!loading && !error && filtered.length===0 && <div className="at-customer-empty"><h2>Chưa có báo giá phù hợp</h2>
       <p>Khi gara lập báo giá cho xe của bạn, thông tin sẽ xuất hiện tại đây.</p></div>}
     {!loading && !error && filtered.map(row => <article key={row.quotation.id} className="at-quote-card">
@@ -193,7 +193,7 @@ export default function QuotationPage() {
       </div><button type="button" className="at-modal-close" onClick={closeModal} aria-label="Đóng cửa sổ">✕</button></div>
       <div className="at-modal-summary"><span>{quotationStatusLabel[selectedRow.quotation.status] ?? selectedRow.quotation.status}</span><strong>{formatMoney(selectedRow.quotation.total_amount)}</strong></div>
       <p className="at-quote-instruction">{selectedRow.quotation.status === "SENT" ? "Chọn hạng mục bạn đồng ý thực hiện. Bỏ chọn những hạng mục chưa muốn sửa." : "Danh sách hạng mục trong báo giá."}</p>
-      {selectedRow.quotation.status === "SENT" && <div className="at-quote-select-all"><button type="button" onClick={() => handleSelectAll(true)}>Chọn tất cả</button><button type="button" onClick={() => handleSelectAll(false)}>Bỏ chọn</button></div>}
+      {selectedRow.quotation.status === "SENT" && <div className="at-quote-select-all"><button type="button" className="cs-btn cs-btn-ghost cs-btn-sm" onClick={() => handleSelectAll(true)}>Chọn tất cả</button><button type="button" className="cs-btn cs-btn-ghost cs-btn-sm" onClick={() => handleSelectAll(false)}>Bỏ chọn</button></div>}
       <div className="at-quote-items">{(selectedRow.quotation.items ?? []).map(item => <label className="at-quote-item" key={item.id}>
         {selectedRow.quotation.status === "SENT" && <input type="checkbox" checked={Boolean(selectedItems[item.id])} onChange={() => handleToggleItem(item.id)}/>}
         <div><small>{item.item_type === "PART" ? "PHỤ TÙNG" : "DỊCH VỤ"}</small><strong>{item.description || "Hạng mục sửa chữa"}</strong>
@@ -203,7 +203,7 @@ export default function QuotationPage() {
       {submitError && <p role="alert" className="at-customer-notice at-customer-error">{submitError}</p>}
       <div className="at-modal-actions"><button type="button" className="at-customer-outline" onClick={closeModal}>Đóng</button>
         {selectedRow.quotation.status === "SENT" && <><button type="button" disabled={submitting} className="at-danger-outline" onClick={() => void handleRespond(true)}>Từ chối</button>
-          <button type="button" disabled={submitting || !selectedRow.quotation.items?.length} className="at-customer-primary" onClick={() => void handleRespond(false)}>{submitting ? "Đang gửi..." : "Xác nhận duyệt báo giá"}</button></>}
+          <button type="button" disabled={submitting || !selectedRow.quotation.items?.length} className="at-customer-primary" aria-busy={submitting} onClick={() => void handleRespond(false)}>{submitting ? "Đang gửi..." : "Xác nhận duyệt báo giá"}</button></>}
       </div>
     </div>
   </div>}

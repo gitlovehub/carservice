@@ -115,7 +115,6 @@ function Login() {
     const validRoles = [
       "CUSTOMER",
       "ADVISOR",
-      "TECHNICIAN",
       "ADMIN",
     ];
 
@@ -151,17 +150,7 @@ function Login() {
             requestedPath === "/admin"
           : role === "ADVISOR"
             ? requestedPath.startsWith("/advisor/")
-            : role === "TECHNICIAN"
-              ? [
-                  "/technician",
-                  "/assigned-repairs",
-                  "/vehicle-check",
-                  "/diagnosis",
-                  "/repair-progress",
-                  "/checklist",
-                  "/account",
-                ].includes(requestedPath)
-              : false;
+            : false;
 
     if (isBooking && role !== "CUSTOMER") {
       navigate(rolePage?.path || "/", { replace: true });
@@ -257,6 +246,15 @@ function Login() {
           device_name: "web",
         }),
       });
+
+      if (response?.account?.role === "TECHNICIAN") {
+        // Khu vực KTV đã bỏ: cố vấn ghi kết quả kiểm tra. Thu hồi token vừa cấp, không lưu phiên.
+        if (response.token) {
+          void fetchApi("/logout", { method: "POST", headers: { Authorization: `Bearer ${response.token}` } }).catch(() => undefined);
+        }
+        setApiError("Tài khoản kỹ thuật viên không có màn hình riêng. Kết quả kiểm tra do cố vấn ghi trên phiếu sửa chữa.");
+        return;
+      }
 
       if (response?.account?.role) {
         saveRememberedEmail(form.email.trim());

@@ -17,12 +17,15 @@ class PaymentController extends Controller
     {
         $this->authorize('update', $invoice);
 
+        // Giai đoạn demo: chỉ thu tiền mặt tại quầy, Cố vấn xác nhận đã nhận tiền (chưa tích hợp VNPay/QR).
         $data = $request->validate([
-            'payment_method' => ['required', 'string', 'in:DIRECT,QR'],
+            'payment_method' => ['sometimes', 'string', 'in:'.Payment::DIRECT],
             'amount' => ['required', 'numeric', 'min:0.01'],
+        ], [
+            'payment_method.in' => 'Hiện chỉ hỗ trợ thanh toán tiền mặt tại quầy (DIRECT).',
         ]);
 
-        $payment = $this->service->recordPayment($invoice, $data['payment_method'], $data['amount']);
+        $payment = $this->service->recordPayment($invoice, Payment::DIRECT, (float) $data['amount']);
 
         return response()->json($payment, 201);
     }

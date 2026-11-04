@@ -43,7 +43,7 @@ class WorkItemController extends Controller
             'work_item_id' => ['nullable', 'integer', 'exists:work_items,id'],
             'part_id' => ['required', 'integer', 'exists:parts,id'],
             'quantity' => ['required', 'integer', 'min:1'],
-            'unit_price' => ['required', 'numeric', 'min:0'],
+            'unit_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $usedPart = $this->service->recordUsedPart($repairOrder, $data);

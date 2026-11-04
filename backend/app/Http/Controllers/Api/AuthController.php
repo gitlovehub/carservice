@@ -10,6 +10,7 @@ use App\Mail\PasswordResetOtpMail;
 use App\Models\Account;
 use App\Models\Customer;
 use App\Models\EmailVerificationOtp;
+use App\Models\Employee;
 use App\Models\PasswordResetOtp;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
@@ -106,9 +107,7 @@ class AuthController extends Controller
 
         $token = null;
 
-        if (EnsureFrontendRequestsAreStateful::fromFrontend($request)) {
-            abort_unless($request->hasSession(), 500, 'Không thể khởi tạo phiên đăng nhập SPA.');
-
+        if (EnsureFrontendRequestsAreStateful::fromFrontend($request) && $request->hasSession()) {
             Auth::guard('web')->login($account);
             $request->session()->regenerate();
         } else {
@@ -117,6 +116,7 @@ class AuthController extends Controller
             )->plainTextToken;
         }
 
+        // Frontend React luôn xác thực bằng Bearer token (local và deploy như nhau)
         return response()->json([
             'token' => $token,
             'account' => $this->formatAccount($account),

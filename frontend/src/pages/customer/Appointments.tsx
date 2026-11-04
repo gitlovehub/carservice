@@ -214,7 +214,7 @@ function Appointments() {
       </div>
 
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
           <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
@@ -336,7 +336,7 @@ function Appointments() {
                       <button
                         type="button"
                         onClick={() => setEditing(false)}
-                        className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 font-semibold"
+                        className="cs-btn cs-btn-secondary"
                       >
                         Bỏ qua
                       </button>
@@ -344,7 +344,7 @@ function Appointments() {
                         type="button"
                         disabled={saving}
                         onClick={() => void handleSaveEdit()}
-                        className="cursor-pointer rounded-xl bg-[#1F2933] px-4 py-2 font-bold text-white disabled:opacity-60"
+                        className="cs-btn cs-btn-primary"
                       >
                         {saving ? "Đang lưu..." : "Lưu thay đổi"}
                       </button>
@@ -354,7 +354,7 @@ function Appointments() {
                       <button
                         type="button"
                         onClick={() => setCancelling(false)}
-                        className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 font-semibold"
+                        className="cs-btn cs-btn-secondary"
                       >
                         Không hủy
                       </button>
@@ -362,7 +362,7 @@ function Appointments() {
                         type="button"
                         disabled={saving}
                         onClick={() => void handleCancel()}
-                        className="cursor-pointer rounded-xl bg-red-600 px-4 py-2 font-bold text-white disabled:opacity-60"
+                        className="cs-btn cs-btn-danger"
                       >
                         {saving ? "Đang hủy..." : "Xác nhận hủy lịch"}
                       </button>
@@ -373,7 +373,7 @@ function Appointments() {
                         <button
                           type="button"
                           onClick={() => setEditing(true)}
-                          className="cursor-pointer rounded-xl border border-[#DDE1E4] px-4 py-2 font-semibold hover:border-[#D6A85F]"
+                          className="cs-btn cs-btn-secondary"
                         >
                           Đổi ngày giờ
                         </button>
@@ -382,7 +382,7 @@ function Appointments() {
                         <button
                           type="button"
                           onClick={() => setCancelling(true)}
-                          className="cursor-pointer rounded-xl border border-red-200 px-4 py-2 font-semibold text-red-700 hover:bg-red-50"
+                          className="cs-btn cs-btn-danger-outline"
                         >
                           Hủy lịch
                         </button>
@@ -390,7 +390,7 @@ function Appointments() {
                       <button
                         type="button"
                         onClick={closeModal}
-                        className="cursor-pointer rounded-xl bg-[#1F2933] px-4 py-2 font-bold text-white"
+                        className="cs-btn cs-btn-primary"
                       >
                         Đóng
                       </button>
