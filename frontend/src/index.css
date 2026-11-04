@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Biến thể dark của Tailwind theo nút chuyển giao diện (html[data-theme="dark"]). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --color-brand: #cf2935;
   --color-brand-dark: #a91e29;
@@ -125,3 +128,9 @@ img {
   }
   body:has([data-print-repair-order]) { background: white !important; }
 }
+
+/* Hiệu ứng chuyển trang mượt (PageTransition) */
+@keyframes cs-page-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.cs-page-enter { animation: cs-page-enter .28s cubic-bezier(.22,.61,.36,1) both; }
+@media (prefers-reduced-motion: reduce) { .cs-page-enter { animation: none; } }
+html { scroll-behavior: smooth; }
