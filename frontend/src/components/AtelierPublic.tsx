@@ -2,15 +2,22 @@ import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuthSession } from "../contexts/AuthContext";
-import { getRoleManagementPage, logout } from "../pages/auth/auth";
+import { getRoleManagementPage, getUserDisplayName, logout } from "../pages/auth/auth";
 import carArt from "../assets/car-atelier.svg";
 
-function AtelierBrand() {
-  return <Link className="inline-flex shrink-0 items-center gap-2.5 whitespace-nowrap text-xl leading-tight font-extrabold tracking-[-0.06em] text-[#191919] no-underline dark:text-[#f5f5f4]" to="/" aria-label="CarService Atelier - Trang chủ">
+export function AtelierBrand({ to = "/" }: { to?: string }) {
+  return <Link className="inline-flex shrink-0 items-center gap-2.5 whitespace-nowrap text-xl leading-tight font-extrabold tracking-[-0.06em] text-[#191919] no-underline dark:text-[#f5f5f4]" to={to} aria-label="CarService Atelier - Trang chủ">
     <span className="flex size-8 shrink-0 -rotate-6 items-center justify-center rounded-lg bg-[#cf2935] text-sm font-extrabold text-white">C</span>
     <span>carservice<small className="mt-0.5 block text-[9px] font-extrabold tracking-[0.14em] text-[#757575]">ATELIER / AUTO CARE</small></span>
   </Link>;
 }
+
+const customerExtraLinks = [
+  { label: "Xe của tôi", href: "/customer/cars" },
+  { label: "Tiến độ xe", href: "/repair-status" },
+  { label: "Báo giá", href: "/quotation" },
+  { label: "Lịch sử", href: "/customer/service-history" },
+];
 
 const guestLinks = [
   { label: "Trang chủ", href: "/" },
@@ -26,21 +33,23 @@ export function AtelierPublicHeader() {
   const location = useLocation();
   const isAuthenticated = session.status === "authenticated";
   const dashboard = isAuthenticated ? (getRoleManagementPage(session.account.role)?.path ?? "/") : "/login";
-  const links = guestLinks.map(({label,href}) => {
+  const isCustomer = isAuthenticated && session.account.role === "CUSTOMER";
+  const allLinks = isCustomer ? [...guestLinks, ...customerExtraLinks] : guestLinks;
+  const links = allLinks.map(({label,href}) => {
     const path = label === "Lịch hẹn" && isAuthenticated
       ? session.account.role === "ADMIN" ? "/admin/appointments"
         : session.account.role === "ADVISOR" ? "/advisor/appointments"
           : "/customer/appointments"
       : label === "Đặt lịch" && isAuthenticated && session.account.role !== "CUSTOMER"
         ? dashboard : href;
-    return <Link key={label} to={path} onClick={() => setMenuOpen(false)} className={location.pathname === path ? "text-[#cf2935] underline decoration-2 underline-offset-8" : ""}>{label}</Link>;
+    return <Link key={label} to={path} onClick={() => setMenuOpen(false)} className={location.pathname === path || (label === "Đặt lịch" && location.pathname === "/customer/booking") ? "text-[#cf2935] underline decoration-2 underline-offset-8" : ""}>{label}</Link>;
   });
   return <header className="sticky top-0 z-[60] flex h-[81px] items-center justify-between gap-5 border-b border-[#e9e9e6] bg-white px-4 sm:px-[5vw] xl:px-[76px] dark:border-[#34373a] dark:bg-[#191b1e]">
     <AtelierBrand />
-    <nav className="hidden items-center gap-5 min-[821px]:flex xl:gap-8 [&_a]:relative [&_a]:whitespace-nowrap [&_a]:text-[13px] [&_a]:font-bold [&_a]:text-[#757575] [&_a]:hover:text-[#cf2935]" aria-label="Điều hướng chính">{links}</nav>
+    <nav className="hidden items-center gap-4 min-[821px]:flex xl:gap-6 [&_a]:relative [&_a]:whitespace-nowrap [&_a]:text-[13px] [&_a]:font-bold [&_a]:text-[#757575] [&_a]:hover:text-[#cf2935]" aria-label="Điều hướng chính">{links}</nav>
     <div className="flex shrink-0 items-center gap-2">
       <button className="inline-flex size-10 cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-white text-lg text-[#191919] hover:border-[#cf2935] hover:text-[#cf2935] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-white" type="button" onClick={toggleTheme} aria-label={theme === "dark" ? "Bật chế độ sáng" : "Bật chế độ tối"} title="Sáng / tối">{theme === "dark" ? "☀" : "☾"}</button>
-      {isAuthenticated ? <><Link className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-[#e9e9e6] bg-white text-[#191919] hover:border-[#cf2935] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4] min-h-9 px-3 py-2 text-[11px]" to={dashboard}>Không gian của tôi</Link><button className="hidden min-h-9 cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-white px-3 py-2 text-[11px] font-bold text-[#191919] hover:border-[#cf2935] sm:inline-flex dark:border-[#34373a] dark:bg-[#191b1e] dark:text-white" type="button" onClick={() => void logout()}>Đăng xuất</button></> : <Link className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-[#e9e9e6] bg-white text-[#191919] hover:border-[#cf2935] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4] min-h-9 px-3 py-2 text-[11px]" to="/login">Đăng nhập</Link>}
+      {isAuthenticated ? <>{isCustomer && <Link to="/customer/account" aria-label="Tài khoản của tôi" title="Tài khoản của tôi" className="inline-flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#cf2935] text-xs font-extrabold text-white no-underline ring-2 ring-transparent transition hover:ring-[#cf2935]/40">{session.account.avatar ? <img src={session.account.avatar} alt="Ảnh đại diện" className="size-full object-cover" referrerPolicy="no-referrer" /> : (getUserDisplayName(session.account).charAt(0) || "K").toUpperCase()}</Link>}<button className="hidden min-h-9 cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-white px-3 py-2 text-[11px] font-bold text-[#191919] hover:border-[#cf2935] sm:inline-flex dark:border-[#34373a] dark:bg-[#191b1e] dark:text-white" type="button" onClick={() => void logout()}>Đăng xuất</button></> : <Link className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-[#e9e9e6] bg-white text-[#191919] hover:border-[#cf2935] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4] min-h-9 px-3 py-2 text-[11px]" to="/login">Đăng nhập</Link>}
       <button type="button" className="inline-flex size-10 cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-white text-lg min-[821px]:hidden dark:border-[#34373a] dark:bg-[#191b1e] dark:text-white" aria-label={menuOpen ? "Đóng menu" : "Mở menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen(open => !open)}>{menuOpen ? "✕" : "☰"}</button>
     </div>
     {menuOpen && <nav className="absolute inset-x-0 top-[81px] grid gap-2 border-b border-[#e9e9e6] bg-white px-6 py-4 shadow-xl min-[821px]:hidden dark:border-[#34373a] dark:bg-[#191b1e] [&_a]:cursor-pointer [&_a]:py-2 [&_a]:text-sm [&_a]:font-bold" aria-label="Điều hướng mobile">{links}{!isAuthenticated && <Link to="/register" onClick={() => setMenuOpen(false)}>Đăng ký</Link>}</nav>}
@@ -57,8 +66,7 @@ export function AtelierCar({ className = "" }: { className?: string }) {
 
 export function AtelierAuthLayout({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-[#f7f7f6] text-[#191919] dark:bg-[#111214] dark:text-[#f5f5f4]">
-      <AtelierPublicHeader />
+    <>
       <main className="flex w-full flex-1 items-center justify-center px-5 py-12 sm:px-8 sm:py-16">
         <section className="w-full max-w-[480px]" aria-label={title}>
           <h1 className="mb-3 mt-4 text-4xl font-extrabold tracking-tight sm:text-[42px]">
@@ -70,8 +78,7 @@ export function AtelierAuthLayout({ title, description, children }: { title: str
           {children}
         </section>
       </main>
-      <AtelierPublicFooter />
-    </div>
+    </>
   );
 }
 

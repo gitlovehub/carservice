@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { AtelierCar, AtelierPublicFooter, AtelierPublicHeader } from "../components/AtelierPublic";
+import { AtelierCar } from "../components/AtelierPublic";
 
 const services = [
   { code: "01", title: "Bảo dưỡng định kỳ", description: "Kiểm tra và bảo dưỡng xe theo từng giai đoạn sử dụng." },
@@ -8,9 +8,8 @@ const services = [
 ];
 
 export default function Home() {
-  return <div className="min-h-screen bg-[#f7f7f6] text-[#191919] dark:bg-[#111214] dark:text-[#f5f5f4]">
-    <AtelierPublicHeader />
-    <main>
+  return <>
+    <main className="flex-1">
       <section className="relative grid min-h-[560px] overflow-hidden bg-[#1d1114] text-white min-[821px]:grid-cols-[1.08fr_0.92fr]">
         <div className="relative z-10 px-6 pt-14 pb-7 min-[821px]:px-10 min-[821px]:py-20 xl:pl-[max(32px,calc((100vw-1290px)/2))]">
           <h1 className="my-6 max-w-[790px] text-[clamp(2.5rem,5.4vw,5.2rem)] leading-[1.05] font-extrabold tracking-[-0.065em]">Chăm sóc xe<br /><em className="not-italic text-[#fd646e]">Chuẩn từng chi tiết</em></h1>
@@ -23,6 +22,5 @@ export default function Home() {
 
       <section className="mx-auto max-w-[1250px] px-5 pt-14 pb-20 md:px-7"><div className="mb-5 flex flex-wrap items-end justify-between gap-4"><div><div className="text-[11px] font-extrabold tracking-[0.17em] text-[#cf2935] uppercase">DỊCH VỤ</div><h2 className="my-3 text-3xl font-extrabold tracking-tight">Chọn đúng gói cho xe của bạn</h2></div><Link to="/services" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-[#e9e9e6] bg-white text-[#191919] hover:border-[#cf2935] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]">Xem tất cả dịch vụ</Link></div><div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">{services.map(service => <article className="flex flex-col items-start gap-4 rounded-2xl border border-[#e9e9e6] bg-white p-6 dark:border-[#34373a] dark:bg-[#191b1e]" key={service.code}><span className="text-[11px] font-extrabold tracking-[0.17em] text-[#cf2935] uppercase">GÓI {service.code}</span><h3 className="text-xl font-extrabold">{service.title}</h3><p className="min-h-[47px] text-[13px] leading-6 text-[#757575]">{service.description}</p><div className="h-px w-full bg-[#e9e9e6] dark:bg-[#34373a]"/><span className="text-[11px] font-bold tracking-wider text-[#757575] uppercase">Tư vấn theo tình trạng xe thực tế</span><Link to="/booking" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-[#e9e9e6] bg-white text-[#191919] hover:border-[#cf2935] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]">Đặt lịch <span aria-hidden="true">↗</span></Link></article>)}</div></section>
     </main>
-    <AtelierPublicFooter />
-  </div>;
+  </>;
 }
