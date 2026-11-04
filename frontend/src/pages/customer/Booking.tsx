@@ -226,7 +226,6 @@ export default function Booking() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
-  const [customerCity, setCustomerCity] = useState("TP. Hà Nội");
   const [customerNotes, setCustomerNotes] = useState("");
 
   // Step 2: Xe & Dịch vụ (Chỉ giữ xe ô tô, bỏ moto/xe máy và xe điện)
@@ -304,7 +303,6 @@ export default function Booking() {
           if (c?.phone) setCustomerPhone(c.phone);
           if (c?.email) setCustomerEmail(c.email);
           else if (u?.email) setCustomerEmail(u.email);
-          if (c?.address) setCustomerCity(c.address);
         } catch {
           // ignore
         }
@@ -318,7 +316,6 @@ export default function Booking() {
             if (c.full_name) setCustomerName(c.full_name);
             if (c.phone) setCustomerPhone(c.phone);
             if (c.email) setCustomerEmail(c.email);
-            if (c.address) setCustomerCity(c.address);
             // C\u1eadp nh\u1eadt l\u1ea1i localStorage \u0111\u1ec3 l\u1ea7n sau nhanh h\u01a1n
             try {
               const stored = JSON.parse(localStorage.getItem("user") || "{}");
@@ -333,7 +330,6 @@ export default function Booking() {
                   if (r.data.full_name) setCustomerName(r.data.full_name);
                   if (r.data.phone) setCustomerPhone(r.data.phone);
                   if (r.data.email) setCustomerEmail(r.data.email);
-                  if (r.data.address) setCustomerCity(r.data.address);
                 }
               })
               .catch(() => { /* ignore */ });
@@ -922,14 +918,14 @@ export default function Booking() {
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
                       <i className="fa-solid fa-location-dot text-sm"></i>
                     </span>
-                    <select
+                    <div
                       id="customerCity"
-                      value={customerCity}
-                      disabled
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition bg-white text-slate-800"
+                      role="status"
+                      aria-label="Khu vực / Tỉnh thành"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-10 py-2.5 text-sm text-slate-800"
                     >
-                      <option value="TP. Hà Nội">TP. Hà Nội</option>
-                    </select>
+                      Hà Nội
+                    </div>
                   </div>
                 </div>
 
