@@ -5,7 +5,6 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 import AdvisorTopbar from "./AdvisorTopbar";
 import {
   cancelAdvisorAppointment,
-  checkInAdvisorAppointment,
   confirmAdvisorAppointment,
   getAdvisorAppointment,
   getAdvisorAppointments,
@@ -304,9 +303,7 @@ function Appointments() {
     const id = appointment.id;
     try {
       setLoadingAction(`checkin-${id}`);
-      const response = await checkInAdvisorAppointment(id);
-      showToast(response?.message || "Tiếp nhận xe thành công.");
-      await loadAppointments();
+      showToast("Đã xác minh xe. Nhập biển số thực tế tại màn hình tiếp nhận.");
       navigate(`/advisor/reception?appointment=${id}`);
     } catch (err: unknown) {
       const error = err as ApiError;

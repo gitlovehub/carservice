@@ -208,16 +208,6 @@ function formatLicensePlate(input: string): string {
   return clean;
 }
 
-// Kiểm tra biển số xe ô tô có đúng chuẩn định dạng Việt Nam
-function isValidLicensePlate(plate: string): boolean {
-  const clean = plate.trim().toUpperCase().replace(/\s+/g, "");
-  // Chuẩn 5 số: 30A-123.45, 51K-888.88, 29LD-123.45
-  const regex5 = /^[1-9][0-9][A-Z]{1,2}-[0-9]{3}\.[0-9]{2}$/;
-  // Chuẩn 4 số: 29A-1234, 30H-5678
-  const regex4 = /^[1-9][0-9][A-Z]{1,2}-[0-9]{4}$/;
-  return regex5.test(clean) || regex4.test(clean);
-}
-
 export default function Booking() {
   const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -491,13 +481,6 @@ export default function Booking() {
       newErrors.vehicleSubtype = "Vui lòng chọn xe là MPV hay bán tải.";
     }
 
-    // 2. Kiểm tra chuẩn form biển số xe ô tô
-    if (!vehiclePlate.trim()) {
-      newErrors.plate = "Vui lòng nhập biển số xe.";
-    } else if (!isValidLicensePlate(vehiclePlate)) {
-      newErrors.plate = "Biển số xe không đúng chuẩn (VD: 30A-123.45 hoặc 51K-888.88).";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -576,7 +559,6 @@ export default function Booking() {
                 new_vehicle: {
                   brand: vehicleBrand,
                   model: finalModelName,
-                  license_plate: vehiclePlate.trim().toUpperCase(),
                   vehicle_type: getApiVehicleType(
                     vehicleType,
                     vehicleModel,
@@ -1015,8 +997,8 @@ export default function Booking() {
                 </div>
               </div>
 
-              {/* Chi tiết Hãng xe, Dòng xe (chuẩn theo hãng), Biển số xe (chuẩn form) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              {/* Chi tiết hãng xe và dòng xe */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 {/* 1. Hãng xe */}
                 <div>
                   <label htmlFor="vehicleBrand" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
@@ -1106,31 +1088,6 @@ export default function Booking() {
                   {errors.model && <p className="text-[11px] text-red-500 mt-1">{errors.model}</p>}
                 </div>
 
-                {/* 3. Biển số xe chuẩn form */}
-                <div>
-                  <label htmlFor="vehiclePlate" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                    Biển số xe ô tô <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="vehiclePlate"
-                    required
-                    value={vehiclePlate}
-                    onChange={(e) => {
-                      setSelectedSavedVehicleId(null);
-                      const formatted = formatLicensePlate(e.target.value);
-                      setVehiclePlate(formatted);
-                      if (errors.plate) setErrors((prev) => ({ ...prev, plate: "" }));
-                    }}
-                    placeholder="VD: 30A-123.45 hoặc 51K-888.88"
-                    maxLength={12}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm uppercase font-mono font-bold tracking-wider focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition"
-                  />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Chuẩn form: <strong>30A-123.45</strong> hoặc <strong>51K-888.88</strong>
-                  </p>
-                  {errors.plate && <p className="text-[11px] text-red-500 mt-1">{errors.plate}</p>}
-                </div>
               </div>
 
               {/* Lựa chọn gói dịch vụ */}

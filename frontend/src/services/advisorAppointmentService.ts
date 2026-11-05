@@ -56,9 +56,10 @@ export const confirmAdvisorAppointment = async (id: number) => {
   });
 };
 
-export const checkInAdvisorAppointment = async (id: number) => {
+export const checkInAdvisorAppointment = async (id: number, licensePlate: string) => {
   return fetchApi(`/advisor/appointments/${id}/check-in`, {
     method: "POST",
+    body: JSON.stringify({ license_plate: licensePlate }),
   });
 };
 

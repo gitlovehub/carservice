@@ -124,6 +124,69 @@ class AdvisorAppointmentOverrideTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_check_in_requires_the_actual_license_plate(): void
+    {
+        $advisor = Account::factory()->advisor()->create();
+        $customer = Customer::factory()->create();
+        $vehicle = Vehicle::factory()->create([
+            'customer_id' => $customer->id,
+            'license_plate' => null,
+        ]);
+        $appointment = Appointment::query()->create([
+            'appointment_code' => 'APT-'.uniqid(),
+            'customer_id' => $customer->id,
+            'vehicle_id' => $vehicle->id,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '10:00:00',
+            'request_type' => 'MAINTENANCE',
+            'status' => 'CONFIRMED',
+        ]);
+
+        $this->actingAs($advisor)
+            ->postJson("/api/advisor/appointments/{$appointment->id}/check-in", [])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('license_plate');
+    }
+
+    public function test_check_in_records_actual_license_plate_and_audit_log(): void
+    {
+        $advisor = Account::factory()->advisor()->create();
+        $customer = Customer::factory()->create();
+        $vehicle = Vehicle::factory()->create([
+            'customer_id' => $customer->id,
+            'license_plate' => null,
+        ]);
+        $appointment = Appointment::query()->create([
+            'appointment_code' => 'APT-'.uniqid(),
+            'customer_id' => $customer->id,
+            'vehicle_id' => $vehicle->id,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '10:00:00',
+            'request_type' => 'MAINTENANCE',
+            'status' => 'CONFIRMED',
+        ]);
+
+        $this->actingAs($advisor)
+            ->postJson("/api/advisor/appointments/{$appointment->id}/check-in", [
+                'license_plate' => ' 30A-123.45 ',
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('vehicles', [
+            'id' => $vehicle->id,
+            'license_plate' => '30A-123.45',
+        ]);
+        $this->assertDatabaseHas('appointments', [
+            'id' => $appointment->id,
+            'status' => 'CHECKED_IN',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'account_id' => $advisor->id,
+            'action' => 'vehicle.plate_recorded_at_checkin',
+            'auditable_id' => $vehicle->id,
+        ]);
+    }
+
     private function createActiveAppointments(Customer $customer): void
     {
         for ($number = 1; $number <= 3; $number++) {
