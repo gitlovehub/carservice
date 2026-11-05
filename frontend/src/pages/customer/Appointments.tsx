@@ -218,12 +218,12 @@ function Appointments() {
           <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#D6A85F]">
                   CHI TIẾT LỊCH HẸN
                 </p>
                 <h3 className="text-lg font-extrabold text-[#1F2933]">{selected.appointment_code}</h3>
                 <span
-                  className={`mt-1 inline-block rounded-full px-3 py-1 text-[10px] font-semibold ${
+                  className={`mt-1 inline-block rounded-full px-3 py-1 text-[11px] font-semibold ${
                     statusBadge[selected.status] ?? statusBadge.PENDING
                   }`}
                 >

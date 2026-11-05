@@ -10,7 +10,9 @@ const theme = read('index.css');
 const account = read('pages/admin/Accounts.tsx');
 const hub = read('components/AdminHubNav.tsx');
 assert.match(shell,/tbody tr:hover.*--cs-row-hover/,'Table rows must use role-aware hover tokens');
-assert.match(shell,/--cs-row-hover:#232b25/,'Admin dark row hover must stay dark');
+// Hàng bảng khi hover dùng token --cs-hover; tokens.css định nghĩa giá trị tối riêng cho dark mode.
+assert.match(shell,/--cs-row-hover:var\(--cs-hover\)/,'Row hover must come from the shared hover token');
+assert.match(read('styles/tokens.css'),/html\[data-theme="dark"\][\s\S]*--cs-hover: #2a2d32/,'Dark row hover must stay dark');
 assert.match(shell,/cs-admin-current-tile/,'Admin highlighted tile must be readable');
 assert.match(account,/<AdminHubNav \/>/,'Admin accounts must use consistent admin navigation');
 assert.match(hub,/group flex min-h-/, 'Admin module navigation now uses Tailwind utility cards');

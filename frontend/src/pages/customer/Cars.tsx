@@ -160,8 +160,8 @@ function Cars() {
       <main className="mx-auto max-w-[1250px] px-[34px] pb-[82px] pt-12 max-[670px]:px-[18px] max-[670px]:pb-[60px] max-[670px]:pt-[34px]">
         <div className="mb-[33px] flex items-center justify-between gap-6 max-[670px]:flex-col max-[670px]:items-start">
           <div>
-            <p className="text-[11px] font-extrabold uppercase leading-[1.6] tracking-[0.145em] text-[#cf2935]">MY GARAGE / VEHICLES</p>
-            <h1 className="mb-2 mt-3 text-[clamp(31px,3.4vw,46px)] font-extrabold leading-[1.16] tracking-[-0.06em]">Garage của tôi</h1>
+            <p className="text-[12px] font-extrabold uppercase leading-[1.6] tracking-[0.145em] text-[#cf2935]">MY GARAGE / VEHICLES</p>
+            <h1 className="mb-2 mt-3 text-[clamp(31px,3.4vw,46px)] font-extrabold leading-[1.16] tracking-normal">Garage của tôi</h1>
             <p className="text-sm leading-[1.7] text-cs-muted">Quản lý danh sách xe để đặt lịch nhanh hơn.</p>
           </div>
           <button type="button" className="cs-btn cs-btn-primary w-max" onClick={() => {
@@ -282,10 +282,10 @@ function Cars() {
               const brand = car.model?.brand?.name || "PHƯƠNG TIỆN";
               const mileage = car.mileage != null ? Number(car.mileage).toLocaleString("vi-VN") : "—";
               return (
-                <article className="min-w-0 rounded-[19px] border border-cs-border bg-cs-surface p-6 transition-colors hover:border-[#cf29358c] max-[670px]:p-[21px] [&>h2]:break-words [&>h2]:text-[19px] [&>h2]:font-extrabold [&>h2]:leading-[1.35] [&>h2]:tracking-[-0.035em]" key={car.id}>
+                <article className="min-w-0 rounded-[19px] border border-cs-border bg-cs-surface p-6 transition-colors hover:border-[#cf29358c] max-[670px]:p-[21px] [&>h2]:break-words [&>h2]:text-[19px] [&>h2]:font-extrabold [&>h2]:leading-[1.35] [&>h2]:tracking-normal" key={car.id}>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-extrabold uppercase leading-[1.6] tracking-[0.145em] text-[#cf2935]">{brand.toUpperCase()}</span>
-                    <span className="rounded-lg bg-cs-surface-2 px-2.5 py-1.5 text-[11px] font-extrabold text-cs-muted">{car.year ?? "—"}</span>
+                    <span className="text-[12px] font-extrabold uppercase leading-[1.6] tracking-[0.145em] text-[#cf2935]">{brand.toUpperCase()}</span>
+                    <span className="rounded-lg bg-cs-surface-2 px-2.5 py-1.5 text-[12px] font-extrabold text-cs-muted">{car.year ?? "—"}</span>
                   </div>
                   <div className="mb-6 mt-[22px] text-[#cf2935]"><Icon name="car" size={40}/></div>
                   <h2>{getVehicleName(car)}</h2>
@@ -425,7 +425,7 @@ function Cars() {
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#D6A85F]">
                   THÔNG TIN PHƯƠNG TIỆN
                 </p>
                 <h3 className="text-base font-bold text-[#1F2933]">

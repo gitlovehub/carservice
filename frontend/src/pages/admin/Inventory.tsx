@@ -1,7 +1,5 @@
 import AdminHubNav from "../../components/AdminHubNav";
 import { useMemo, useState } from "react";
-import AdminSidebar from "./AdminSidebar";
-import AdminTopbar from "./AdminTopbar";
 
 type PartStatus = "Còn hàng" | "Sắp hết" | "Hết hàng";
 
@@ -208,15 +206,13 @@ function Inventory() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdminSidebar />
 
       <div className="lg:ml-[250px]">
-        <AdminTopbar />
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
             <div className="mb-8">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
                 KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
               </p>
 
@@ -226,7 +222,7 @@ function Inventory() {
                 </div>
 
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                  <h1 className="text-2xl font-bold tracking-normal sm:text-3xl">
                     Phụ tùng & tồn kho
                   </h1>
                   <p className="mt-1 text-xs text-[#66717C]">
@@ -287,11 +283,11 @@ function Inventory() {
                   key={item.label}
                   className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
                     {item.label}
                   </p>
                   <p className="mt-4 text-2xl font-bold">{item.value}</p>
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                  <p className="mt-1 text-[11px] text-[#8A949E]">
                     {item.description}
                   </p>
                 </div>
@@ -302,7 +298,7 @@ function Inventory() {
 
             <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:p-6">
               <div className="mb-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                   GARA / PHỤ TÙNG & TỒN KHO
                 </p>
                 <h2 className="mt-1 text-base font-bold">
@@ -358,7 +354,7 @@ function Inventory() {
             <section className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
               <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     INVENTORY MANAGEMENT
                   </p>
                   <h2 className="mt-1 text-base font-bold">
@@ -388,7 +384,7 @@ function Inventory() {
                     >
                       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                         <div className="flex min-w-0 items-start gap-4">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-white">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[11px] font-bold text-white">
                             {String(index + 1).padStart(2, "0")}
                           </div>
 
@@ -396,7 +392,7 @@ function Inventory() {
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="text-sm font-bold">{part.name}</p>
                               <span
-                                className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${
+                                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold ${
                                   part.status === "Còn hàng"
                                     ? "bg-[#E6F2E8] text-[#28643B]"
                                     : part.status === "Sắp hết"
@@ -407,7 +403,7 @@ function Inventory() {
                                 {part.status}
                               </span>
                             </div>
-                            <p className="mt-1 text-[10px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-[#8A949E]">
                               {part.id} · {part.category}
                             </p>
                           </div>
@@ -415,7 +411,7 @@ function Inventory() {
 
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:min-w-[480px]">
                           <div>
-                            <p className="text-[10px] text-[#8A949E]">
+                            <p className="text-[11px] text-[#8A949E]">
                               SỐ LƯỢNG
                             </p>
                             <p className="mt-1 text-xs font-bold">
@@ -424,7 +420,7 @@ function Inventory() {
                           </div>
 
                           <div>
-                            <p className="text-[10px] text-[#8A949E]">
+                            <p className="text-[11px] text-[#8A949E]">
                               ĐƠN GIÁ
                             </p>
                             <p className="mt-1 text-xs font-bold">
@@ -433,7 +429,7 @@ function Inventory() {
                           </div>
 
                           <div>
-                            <p className="text-[10px] text-[#8A949E]">
+                            <p className="text-[11px] text-[#8A949E]">
                               DANH MỤC
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -442,7 +438,7 @@ function Inventory() {
                           </div>
 
                           <div>
-                            <p className="text-[10px] text-[#8A949E]">
+                            <p className="text-[11px] text-[#8A949E]">
                               MÃ PHỤ TÙNG
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -458,7 +454,7 @@ function Inventory() {
                               setSelectedPart(part);
                               setModal("detail");
                             }}
-                            className="flex-1 rounded-xl border border-[#D9DDE1] bg-white px-3 py-2.5 text-[10px] font-semibold transition hover:bg-[#F3F4F2] sm:flex-none"
+                            className="flex-1 rounded-xl border border-[#D9DDE1] bg-white px-3 py-2.5 text-[11px] font-semibold transition hover:bg-[#F3F4F2] sm:flex-none"
                           >
                             Chi tiết
                           </button>
@@ -495,7 +491,7 @@ function Inventory() {
           >
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
                   QUẢN LÝ KHO
                 </p>
                 <h2

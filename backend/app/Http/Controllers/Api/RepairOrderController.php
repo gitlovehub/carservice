@@ -45,6 +45,12 @@ class RepairOrderController extends Controller
             'customer', 'vehicle', 'advisor', 'statusHistory.changedByAccount',
             'assignments.technician.employee', 'inspections.items', 'inspections.recordedBy', 'inspections.recommendations.service', 'inspections.recommendations.part',
             'quotations.items', 'workItems.technician', 'workItems.service', 'usedParts.part', 'invoice.items', 'invoice.payments',
+            // Yêu cầu khách chọn khi đặt lịch, dùng để điền sẵn đề xuất ở bước kiểm tra.
+            'appointment:id,appointment_code,request_type,symptom_description,note',
+            'appointment.services:id,name',
+            'appointment.packages:id,name',
+            'appointment.packages.services:id,name',
+            'appointment.packages.parts:id,name,unit',
         ]);
 
         return response()->json($repairOrder);

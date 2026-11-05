@@ -5,7 +5,9 @@ import {
   advisorAppointment, checkInConfirmedAppointment, confirmPendingAppointment, findOrderForAppointment,
   listReceptionAppointments, receiveRepairOrder, type WorkflowAppointment, type WorkflowOrder,
 } from "../../services/workflowService";
-import { card, input, action, outline, WorkflowTitle, Notice, Status, errorText } from "./WorkflowUI";
+import { card, input, action, outline, WorkflowTitle, Notice, Status } from "./WorkflowUI";
+import { errorText } from "./workflowFormat";
+import CustomerRequestSummary from "./CustomerRequestSummary";
 
 export default function ReceptionWorkflow() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -151,7 +153,7 @@ export default function ReceptionWorkflow() {
             <div><dt className="text-xs text-cs-muted">Điện thoại</dt><dd className="mt-1 text-cs-text">{selected.customer?.phone || "—"}</dd></div>
             <div><dt className="text-xs text-cs-muted">Xe</dt><dd className="mt-1 text-cs-text">{selected.vehicle?.license_plate || `#${selected.vehicle_id || "?"}`}</dd></div>
             <div><dt className="text-xs text-cs-muted">Ngày / giờ</dt><dd className="mt-1 text-cs-text">{selected.appointment_date} · {selected.appointment_time}</dd></div>
-            <div className="sm:col-span-2"><dt className="text-xs text-cs-muted">Mô tả yêu cầu</dt><dd className="mt-1 text-cs-text">{selected.symptom_description || selected.note || "Không có ghi chú"}</dd></div>
+            <div className="sm:col-span-2"><dt className="mb-2 text-xs text-cs-muted">Khách yêu cầu</dt><dd><CustomerRequestSummary request={selected}/></dd></div>
           </dl>
           <ol className="my-6 flex flex-wrap gap-2 text-xs font-semibold text-cs-muted"><li className="rounded-full bg-cs-soft px-3 py-2">1. Đặt lịch</li><li className="rounded-full bg-cs-soft px-3 py-2">2. Xác nhận</li><li className="rounded-full bg-cs-soft px-3 py-2">3. Check-in</li><li className="rounded-full bg-cs-soft px-3 py-2">4. Phiếu sửa chữa</li></ol>
           {selected.status === "PENDING" && <div><p className="mb-4 text-sm text-cs-muted">Cần xác nhận lịch trước khi tiếp nhận.</p><button type="button" className={action} disabled={working} onClick={() => void handleConfirm()}>{working ? "Đang xử lý..." : "Xác nhận lịch hẹn"}</button></div>}

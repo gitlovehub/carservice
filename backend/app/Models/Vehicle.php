@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'license_plate',
     'vin',
     'mileage',
-    'note'
+    'note',
 ])]
 class Vehicle extends Model
 {

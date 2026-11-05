@@ -46,7 +46,7 @@ export function PasswordStrengthIndicator({
 
   return (
     <div className="mt-2 space-y-2 rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-3 text-left">
-      <div className="flex items-center justify-between text-[11px]">
+      <div className="flex items-center justify-between text-[12px]">
         <span className="text-slate-500 font-medium">Độ mạnh mật khẩu:</span>
         <span
           className={`font-semibold ${
@@ -76,7 +76,7 @@ export function PasswordStrengthIndicator({
       </div>
 
       {/* Rules checklist */}
-      <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
+      <div className="grid grid-cols-2 gap-1.5 pt-1 text-[12px]">
         {requirements.map((req, index) => (
           <div
             key={index}
@@ -85,7 +85,7 @@ export function PasswordStrengthIndicator({
             }`}
           >
             <span
-              className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${
+              className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
                 req.met
                   ? "bg-emerald-100 text-emerald-700"
                   : "bg-slate-200 text-slate-500"

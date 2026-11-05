@@ -1,17 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { getAdvisorAppointments } from "../../services/advisorAppointmentService";
+import { listWorkflowOrders, type WorkflowOrder } from "../../services/workflowService";
+import { Button, Card, EmptyState, ErrorState, LoadingState, PageHeader, StatusBadge, buttonClass } from "../../components/ui";
+import { Icon, type IconName } from "../../components/ui/Icon";
 
-// Reusable utility compositions. Every class is a static Tailwind v4 candidate;
-// role-dependent colors are set with the existing --cs-* design tokens.
-const ui = {
-  task: "mt-[9px] flex items-center justify-between gap-4 rounded-xl border border-cs-border bg-cs-surface px-[17px] py-[15px] hover:border-cs-accent hover:bg-cs-surface-2 [&_strong]:text-[13px] [&_strong]:text-cs-text [&_p]:mt-[5px]! [&_p]:text-[11px] [&_p]:leading-[1.6] [&_p]:text-cs-muted [&>span]:shrink-0 [&>span]:font-[Manrope] [&>span]:text-[21px] [&>span]:font-extrabold [&>span]:text-cs-accent",
-  panelPad: "min-w-0 overflow-hidden rounded-[19px] border border-cs-border bg-cs-surface p-[25px] max-[650px]:p-[19px]",
-  outline: "inline-flex min-h-[42px] items-center justify-center gap-3 whitespace-nowrap rounded-[11px] border border-cs-border bg-cs-surface px-[17px] py-[11px] text-center text-xs font-extrabold text-cs-text! transition hover:border-cs-accent hover:brightness-95",
-  panelTitle: "font-[Manrope] text-xl font-extrabold leading-[1.4] tracking-[-0.04em] max-[650px]:text-lg",
-  panelHead: "flex items-center justify-between gap-[15px] border-b border-cs-border p-[25px_27px] max-[650px]:items-start max-[650px]:p-[19px]",
-} as const;
-
+/**
+ * Trang "Tổng quan" dùng chung cho Advisor và Admin. Chỉ hiển thị số liệu từ API thật:
+ *   - Lịch hẹn: /advisor/appointments (Advisor + Admin) — lấy pagination.total theo trạng thái / ngày.
+ *   - Phiếu sửa chữa: /repair-orders (chỉ Advisor) — lấy total theo trạng thái.
+ * Mỗi số liệu tải độc lập: một API lỗi không làm mất các số khác. Chưa có API thì không hiển thị.
+ */
+type Mode = "advisor" | "admin";
 type Appointment = {
   id: number;
   appointment_code?: string;
@@ -22,122 +22,229 @@ type Appointment = {
   vehicle?: { license_plate?: string | null } | null;
 };
 type AppointmentPayload = { data?: Appointment[] | { data?: Appointment[] }; pagination?: { total?: number } };
-type Mode = "advisor" | "admin";
-const pendingStatuses = new Set(["PENDING", "CREATED"]); // Backend currently uses PENDING; demo uses CREATED.
-const statuses: Record<string, string> = {
-  PENDING: "Chờ xác nhận", CREATED: "Chờ xác nhận", CONFIRMED: "Đã xác nhận",
-  CHECKED_IN: "Đã tiếp nhận", CANCELLED: "Đã hủy",
-};
+type Load<T> = { state: "loading" } | { state: "ready"; value: T } | { state: "error" };
+
 function getItems(payload: AppointmentPayload): Appointment[] {
   const list = payload?.data;
   if (Array.isArray(list)) return list;
   if (list && typeof list === "object" && Array.isArray(list.data)) return list.data;
   return [];
 }
-function dateLabel(value?: string) {
-  if (!value) return "Chưa rõ ngày";
-  const parts = value.split("-");
-  return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
+function totalOf(payload: AppointmentPayload): number {
+  const total = payload?.pagination?.total;
+  if (typeof total !== "number") throw new Error("API không trả tổng số");
+  return total;
 }
-function useAppointments() {
-  const [items, setItems] = useState<Appointment[]>([]);
-  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
-  const [pendingCount, setPendingCount] = useState<number | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+function isoToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Tải một nguồn dữ liệu; `reloadKey` đổi thì tải lại. */
+function useLoad<T>(loader: () => Promise<T>, reloadKey: number, enabled = true): Load<T> {
+  const [result, setResult] = useState<{ key: number; load: Load<T> }>({ key: -1, load: { state: "loading" } });
   useEffect(() => {
-    let mounted = true;
-    setPhase("loading");
-    // The existing Laravel endpoint returns paginated data and supports status=PENDING.
-    // Query the total separately; never present the first page as a global count.
-    Promise.all([
-      getAdvisorAppointments({ per_page: 100 }),
-      getAdvisorAppointments({ per_page: 1, status: "PENDING" }),
-    ]).then(([result, pending]: [AppointmentPayload, AppointmentPayload]) => {
-      if (!mounted) return;
-      setItems(getItems(result));
-      setPendingCount(typeof pending?.pagination?.total === "number" ? pending.pagination.total : null);
-      setPhase("ready");
-    }).catch(() => { if (mounted) { setItems([]); setPendingCount(null); setPhase("error"); } });
-    return () => { mounted = false; };
-  }, [refreshKey]);
-  return { items, pendingCount, phase, retry: () => setRefreshKey(previous => previous + 1) };
+    if (!enabled) return;
+    let alive = true;
+    loader().then(
+      value => { if (alive) setResult({ key: reloadKey, load: { state: "ready", value } }); },
+      () => { if (alive) setResult({ key: reloadKey, load: { state: "error" } }); },
+    );
+    return () => { alive = false; };
+    // loader được tạo mới mỗi lần render; chỉ tải lại khi reloadKey đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reloadKey, enabled]);
+  return result.key === reloadKey ? result.load : { state: "loading" };
 }
-function OverviewMetric({ title, value, helper, featured }: { title: string; value: string; helper: string; featured?: boolean }) {
-  return <article className={`min-h-[144px] rounded-[17px] border p-[23px_24px] max-[650px]:min-h-[130px] max-[650px]:p-[17px_15px] ${featured ? "border-cs-accent bg-cs-accent text-cs-accent-contrast" : "border-cs-border bg-cs-surface"}`}>
-    <div className={`text-[11px] font-extrabold uppercase leading-[1.5] tracking-[0.11em] max-[650px]:text-[9px] ${featured ? "text-cs-accent-contrast opacity-85" : "text-cs-muted"}`}>{title}</div><div className="mb-[5px] mt-[14px] font-[Manrope] text-[clamp(26px,2.8vw,33px)] font-extrabold leading-[1.3] tracking-[-0.055em]">{value}</div>
-    <div className={`text-[11px] leading-[1.6] ${featured ? "text-cs-accent-contrast opacity-85" : "text-cs-muted"}`}>{helper}</div>
-  </article>;
+
+function mapLoad<T, R>(load: Load<T>, fn: (value: T) => R): Load<R> {
+  return load.state === "ready" ? { state: "ready", value: fn(load.value) } : load;
 }
-function QueuePanel({ items, phase, role }: { items: Appointment[]; phase: "loading" | "ready" | "error"; role: Mode }) {
-  return <section className="min-w-0 overflow-hidden rounded-[19px] border border-cs-border bg-cs-surface">
-    <div className={ui.panelHead}><div><h2 className={ui.panelTitle}>{role === "advisor" ? "Lịch hẹn sắp đến" : "Hoạt động vận hành"}</h2>
-      <p className="mt-1! text-xs leading-[1.6] text-cs-muted">{role === "advisor" ? "Các lịch tiếp nhận và xác nhận từ hệ thống." : "Lịch hẹn mới nhất từ hệ thống."}</p></div>
-      <Link className={ui.outline} to={role === "advisor" ? "/advisor/appointments" : "/admin/appointments"}>Xem lịch <span aria-hidden="true">→</span></Link>
+function combineLoad<A, B, R>(a: Load<A>, b: Load<B>, fn: (a: A, b: B) => R): Load<R> {
+  if (a.state === "ready" && b.state === "ready") return { state: "ready", value: fn(a.value, b.value) };
+  return a.state === "error" || b.state === "error" ? { state: "error" } : { state: "loading" };
+}
+
+function StatCard({ label, load, hint, to, icon, highlight }: {
+  label: string; load: Load<number>; hint: string; to: string; icon: IconName; highlight?: boolean;
+}) {
+  const value = load.state === "ready" ? load.value.toLocaleString("vi-VN") : load.state === "error" ? "—" : null;
+  return <Link to={to} className="group flex min-h-[132px] flex-col justify-between gap-3 rounded-card border border-cs-border bg-cs-surface p-card shadow-card transition-colors hover:border-cs-accent focus-visible:border-cs-accent">
+    <div className="flex items-start justify-between gap-3">
+      <p className="text-small font-medium text-cs-text-2">{label}</p>
+      <span className={`grid size-9 shrink-0 place-items-center rounded-control ${highlight ? "bg-cs-accent text-cs-accent-contrast" : "bg-cs-soft text-cs-accent"}`} aria-hidden="true">
+        <Icon name={icon} size={18}/>
+      </span>
     </div>
-    {phase === "loading" ? <div className="px-[25px] py-11 text-center text-[13px] leading-[1.7] text-cs-muted" role="status">Đang tải lịch hẹn…</div> :
-      phase === "error" ? <div className="px-[25px] py-11 text-center text-[13px] leading-[1.7] text-cs-muted" role="alert">Không tải được lịch hẹn. Vui lòng thử lại khi API hoạt động.</div> :
-      items.length === 0 ? <div className="px-[25px] py-11 text-center text-[13px] leading-[1.7] text-cs-muted">Chưa có lịch hẹn. Dữ liệu thực sẽ hiển thị tại đây.</div> :
-      <div className="divide-y divide-cs-border">{items.slice(0, 6).map(item => <div className="grid grid-cols-[78px_minmax(0,1fr)_auto] items-center gap-[14px] px-6 py-5 max-[650px]:grid-cols-[65px_minmax(0,1fr)] max-[650px]:gap-2.5 max-[650px]:p-[15px]" key={item.id}>
-        <div className="[&_strong]:block [&_strong]:font-[Manrope] [&_strong]:text-xl [&_strong]:font-extrabold [&_strong]:leading-[1.35] [&_small]:mt-1 [&_small]:block [&_small]:text-[10px] [&_small]:text-cs-muted"><strong>{item.appointment_time?.slice(0, 5) || "—"}</strong><small>{dateLabel(item.appointment_date)}</small></div>
-        <div className="min-w-0 [&_strong]:break-words [&_strong]:text-xs [&_p]:mt-[5px]! [&_p]:break-words [&_p]:text-[11px] [&_p]:text-cs-muted"><strong>{item.customer?.full_name || item.appointment_code || "Lịch hẹn"}</strong>
-          <p>{item.vehicle?.license_plate || "Chưa có biển số"} · {item.appointment_code || `#${item.id}`}</p></div>
-        <span className={`inline-flex items-center rounded-[30px] bg-cs-surface-2 px-2.5 py-[7px] text-[10px] font-extrabold text-cs-muted max-[650px]:col-start-2 max-[650px]:justify-self-start ${pendingStatuses.has(item.status) ? "bg-cs-soft text-cs-accent" : ""}`}>{statuses[item.status] || item.status}</span>
-      </div>)}</div>}
-  </section>;
+    <div>
+      {value === null
+        ? <span role="status" className="block h-9 w-16 animate-pulse rounded-md bg-cs-surface-2"><span className="sr-only">Đang tải</span></span>
+        : <p className="text-[2rem] font-bold leading-none text-cs-text" title={load.state === "error" ? "Không tải được số liệu" : undefined}>{value}</p>}
+      <p className="mt-2 flex items-center gap-1 text-caption text-cs-muted">
+        {load.state === "error" ? "Không tải được số liệu" : hint}
+        <Icon name="chevron-right" size={12} className="opacity-0 transition-opacity group-hover:opacity-100"/>
+      </p>
+    </div>
+  </Link>;
 }
+
+function Panel({ title, description, action, children }: { title: string; description?: string; action?: ReactNode; children: ReactNode }) {
+  return <Card className="min-w-0 overflow-hidden p-0!">
+    <header className="flex flex-wrap items-start justify-between gap-3 border-b border-cs-border px-5 py-4">
+      <div className="min-w-0">
+        <h2 className="text-subheading text-cs-text">{title}</h2>
+        {description && <p className="mt-0.5 text-caption text-cs-muted">{description}</p>}
+      </div>
+      {action}
+    </header>
+    {children}
+  </Card>;
+}
+
+function TodayAppointments({ load, role, onRetry }: { load: Load<Appointment[]>; role: Mode; onRetry: () => void }) {
+  if (load.state === "loading") return <LoadingState compact label="Đang tải lịch hẹn..."/>;
+  if (load.state === "error") return <ErrorState compact description="Không tải được lịch hẹn hôm nay." onRetry={onRetry}/>;
+  const items = [...load.value].sort((a, b) => (a.appointment_time ?? "").localeCompare(b.appointment_time ?? ""));
+  if (!items.length) return <EmptyState compact icon="calendar" title="Hôm nay chưa có lịch hẹn" description="Lịch hẹn mới sẽ xuất hiện tại đây."/>;
+  return <ul className="divide-y divide-cs-border">
+    {items.slice(0, 8).map(item => <li key={item.id} className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3 max-sm:grid-cols-[48px_minmax(0,1fr)]">
+      <span className="text-subheading font-semibold text-cs-text">{item.appointment_time?.slice(0, 5) || "—"}</span>
+      <div className="min-w-0">
+        <p className="truncate text-small font-medium text-cs-text">{item.customer?.full_name || "Khách hàng"}</p>
+        <p className="truncate text-caption text-cs-muted">{item.vehicle?.license_plate || "Chưa có biển số"} · {item.appointment_code || `#${item.id}`}</p>
+      </div>
+      <StatusBadge domain="appointment" status={item.status} className="max-sm:col-start-2 max-sm:justify-self-start"/>
+    </li>)}
+    {items.length > 8 && <li className="px-5 py-3 text-caption text-cs-muted">
+      và {items.length - 8} lịch khác — <Link className="font-medium text-cs-accent hover:underline" to={`/${role}/appointments`}>xem tất cả</Link>
+    </li>}
+  </ul>;
+}
+
+function RecentOrders({ load, onRetry }: { load: Load<WorkflowOrder[]>; onRetry: () => void }) {
+  if (load.state === "loading") return <LoadingState compact label="Đang tải phiếu sửa chữa..."/>;
+  if (load.state === "error") return <ErrorState compact description="Không tải được phiếu sửa chữa." onRetry={onRetry}/>;
+  if (!load.value.length) return <EmptyState compact icon="clipboard" title="Chưa có phiếu sửa chữa" description="Phiếu được tạo khi tiếp nhận xe."/>;
+  return <ul className="divide-y divide-cs-border">
+    {load.value.slice(0, 5).map(order => <li key={order.id}>
+      <Link to={`/advisor/service-orders/${order.id}`} className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-cs-hover">
+        <div className="min-w-0">
+          <p className="truncate text-small font-medium text-cs-text">{order.repair_order_code || `Phiếu #${order.id}`}</p>
+          <p className="truncate text-caption text-cs-muted">{order.customer?.full_name || "Khách hàng"} · {order.vehicle?.license_plate || "Chưa có biển số"}</p>
+        </div>
+        <StatusBadge domain="repair" status={order.status}/>
+      </Link>
+    </li>)}
+  </ul>;
+}
+
+function TaskLink({ to, label, hint, load }: { to: string; label: string; hint: string; load: Load<number> }) {
+  return <li>
+    <Link to={to} className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-cs-hover">
+      <div className="min-w-0">
+        <p className="text-small font-medium text-cs-text">{label}</p>
+        <p className="text-caption text-cs-muted">{hint}</p>
+      </div>
+      <span className="min-w-8 rounded-full bg-cs-surface-2 px-2.5 py-1 text-center text-small font-semibold text-cs-text">
+        {load.state === "ready" ? load.value : load.state === "error" ? "—" : "…"}
+      </span>
+    </Link>
+  </li>;
+}
+
+const adminShortcuts: Array<{ to: string; label: string; hint: string; icon: IconName }> = [
+  { to: "/admin/services", label: "Dịch vụ", hint: "Danh mục và giá dịch vụ", icon: "settings" },
+  { to: "/admin/maintenance-packages", label: "Gói bảo dưỡng", hint: "Gói theo mốc km", icon: "clipboard" },
+  { to: "/admin/inventory", label: "Kho phụ tùng", hint: "Tồn kho và nhập xuất", icon: "box" },
+  { to: "/admin/accounts", label: "Tài khoản", hint: "Nhân viên và phân quyền", icon: "shield" },
+  { to: "/admin/working-hours", label: "Giờ làm việc", hint: "Khung giờ nhận lịch", icon: "clock" },
+];
+
 export default function WorkspaceDashboard({ role }: { role: Mode }) {
-  const { items, pendingCount, phase, retry } = useAppointments();
-  const ready = phase === "ready";
-  const countPending = pendingCount;
-  const today = new Date();
-  const isoToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const [reloadKey, setReloadKey] = useState(0);
+  const retry = () => setReloadKey(key => key + 1);
+  const today = isoToday();
   const advisor = role === "advisor";
-  const upcoming = items.filter(item => !["CANCELLED", "COMPLETED"].includes(item.status) && (!advisor || !item.appointment_date || item.appointment_date >= isoToday))
-    .sort((a, b) => `${a.appointment_date || ""} ${a.appointment_time || ""}`.localeCompare(`${b.appointment_date || ""} ${b.appointment_time || ""}`));
-  return <main className="mx-auto max-w-[1700px] px-[clamp(18px,3vw,46px)] pb-[72px] pt-[35px] text-cs-text max-[650px]:px-4 max-[650px]:pb-12 max-[650px]:pt-[25px] [&_h1]:m-0 [&_h2]:m-0 [&_p]:m-0">
-    <div className="mb-8 flex items-start justify-between gap-4 max-[650px]:mb-[23px]"><div><p className="mb-[11px]! text-[11px] font-extrabold tracking-[0.14em] text-cs-accent">{advisor ? "SERVICE DESK / DAILY OPERATIONS" : "BUSINESS INTELLIGENCE / ATELIER"}</p>
-      <h1 className="font-[Manrope] text-[clamp(31px,3.4vw,47px)] font-extrabold leading-[1.13] tracking-[-0.055em] max-[650px]:text-[30px]">{advisor ? "Chào buổi làm việc." : "Trung tâm điều hành."}</h1>
-      <p className="mt-3! text-sm leading-[1.7] text-cs-muted">{advisor ? "Mọi việc cần xử lý hôm nay — tập trung tại một nơi." : "Theo dõi hoạt động gara trên dữ liệu API thực tế."}</p></div>
-      <span className="inline-flex items-center gap-[9px] whitespace-nowrap rounded-full bg-cs-soft px-[14px] py-[9px] text-[11px] font-extrabold text-cs-accent max-[650px]:text-[9px]"><span className="size-[7px] rounded-full bg-current"/>{advisor ? new Intl.DateTimeFormat("vi-VN").format(new Date()) : "WORKSPACE"}</span>
-    </div>
-    <section className={`mb-5 flex min-h-[138px] items-center justify-between gap-5 rounded-[18px] px-[29px] py-6 max-[650px]:block max-[650px]:px-5 max-[650px]:py-[23px] ${advisor ? "bg-[#272018] text-[#f5e9d8]" : "border border-[#2e4030] bg-[#18231a] text-[#e5f9e0]"}`}>
-      <div><p className={`mb-[14px]! text-[11px] font-extrabold tracking-[0.08em] ${advisor ? "text-[#dabb83]" : "text-[#bbfc67]"}`}>{advisor ? "TODAY'S FOCUS" : "OPERATIONAL OVERVIEW"}</p>
-        <h2 className="font-[Manrope] text-[clamp(18px,2vw,23px)] font-extrabold leading-[1.3] tracking-[-0.025em]">{phase === "loading" ? "Đang cập nhật dữ liệu" : phase === "error" ? "Cần kiểm tra kết nối API" : `${countPending ?? "—"} lịch cần xác nhận`}</h2>
-        <p className={`mt-[7px]! text-xs leading-[1.7] ${advisor ? "text-[#c8b8a3]" : "text-[#b2cbb0]"}`}>{advisor ? "Ưu tiên kiểm tra lịch đặt mới và lịch tiếp nhận đã xác nhận." : "Các thống kê khác sẽ được tích hợp khi API báo cáo sẵn sàng."}</p></div>
-      {advisor ? <Link className="inline-flex min-h-[42px] items-center justify-center gap-3 whitespace-nowrap rounded-[11px] border border-transparent px-[17px] py-[11px] text-center text-xs font-extrabold transition hover:brightness-95 max-[650px]:mt-[17px] max-[650px]:w-full bg-[#e6c27b] text-[#242019]" to="/advisor/reception">Tiếp nhận xe <span aria-hidden="true">→</span></Link> :
-        <Link className="inline-flex min-h-[42px] items-center justify-center gap-3 whitespace-nowrap rounded-[11px] border border-transparent px-[17px] py-[11px] text-center text-xs font-extrabold transition hover:brightness-95 max-[650px]:mt-[17px] max-[650px]:w-full bg-[#c5ff64] text-[#162111]" to="/admin/appointments">Quản lý lịch hẹn <span aria-hidden="true">→</span></Link>}
-    </section>
-    <div className="mb-5 grid grid-cols-4 gap-4 max-[1150px]:grid-cols-2 max-[650px]:gap-2.5">
-      {advisor ? <>
-        <OverviewMetric title="Lịch cần xác nhận" value={ready && countPending !== null ? String(countPending) : "—"} helper="Chờ cố vấn kiểm tra" featured/>
-        <OverviewMetric title="Báo giá chờ duyệt" value="—" helper="Chờ API báo giá"/>
-        <OverviewMetric title="Xe đang sửa" value="—" helper="Chờ API phiếu sửa chữa"/>
-        <OverviewMetric title="Chờ bàn giao" value="—" helper="Chờ API sửa chữa"/>
-      </> : <>
-        <OverviewMetric title="Doanh thu ghi nhận" value="—" helper="Chờ API báo cáo" featured/>
-        <OverviewMetric title="Xe đang trong gara" value="—" helper="Chờ API phiếu sửa chữa"/>
-        <OverviewMetric title="Lịch cần xác nhận" value={ready && countPending !== null ? String(countPending) : "—"} helper="Đang đợi cố vấn"/>
-        <OverviewMetric title="Phụ tùng cảnh báo" value="—" helper="Chờ API tồn kho"/>
+
+  // Lịch hẹn — dùng chung Advisor/Admin.
+  const pending = useLoad(() => getAdvisorAppointments({ per_page: 1, status: "PENDING" }).then(totalOf), reloadKey);
+  const confirmed = useLoad(() => getAdvisorAppointments({ per_page: 1, status: "CONFIRMED" }).then(totalOf), reloadKey);
+  const todayData = useLoad(() => getAdvisorAppointments({ per_page: 50, date: today }).then(page => ({ items: getItems(page), total: totalOf(page) })), reloadKey);
+  const todayList = mapLoad(todayData, data => data.items);
+  const todayTotal = mapLoad(todayData, data => data.total);
+  // Phiếu sửa chữa — API chỉ mở cho Advisor.
+  const orderTotal = (status: string) => () => listWorkflowOrders(1, status).then(page => page.total);
+  const inProgress = useLoad(orderTotal("IN_PROGRESS"), reloadKey, advisor);
+  const completed = useLoad(orderTotal("COMPLETED"), reloadKey, advisor);
+  const quoting = useLoad(orderTotal("QUOTING"), reloadKey, advisor);
+  const waitingApproval = useLoad(orderTotal("WAITING_APPROVAL"), reloadKey, advisor);
+  const waitingParts = useLoad(orderTotal("WAITING_FOR_PARTS"), reloadKey, advisor);
+  const recentOrders = useLoad(() => listWorkflowOrders(1).then(page => page.data), reloadKey, advisor);
+
+  const dateText = new Intl.DateTimeFormat("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date());
+  const base = `/${role}`;
+
+  return <div className="page-container">
+    <PageHeader
+      eyebrow={dateText}
+      title="Tổng quan"
+      description={advisor ? "Công việc cần xử lý trong ngày: lịch hẹn, tiếp nhận xe và phiếu sửa chữa." : "Tình hình lịch hẹn và lối tắt tới các danh mục quản trị."}
+      actions={<>
+        <Button variant="outline" icon="refresh" onClick={retry}>Làm mới</Button>
+        {advisor
+          ? <Link className={buttonClass({ variant: "primary" })} to="/advisor/reception"><Icon name="car" size={16}/>Tiếp nhận xe</Link>
+          : <Link className={buttonClass({ variant: "primary" })} to="/admin/appointments"><Icon name="calendar" size={16}/>Quản lý lịch hẹn</Link>}
       </>}
-    </div>
-    <div className="grid grid-cols-[minmax(0,1.55fr)_minmax(280px,1fr)] items-start gap-[22px] max-[1150px]:grid-cols-1">
-      <QueuePanel items={upcoming} phase={phase} role={role}/>
+    />
+
+    <section aria-label="Chỉ số chính" className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard label="Lịch chờ xác nhận" load={pending} hint="Cần gọi xác nhận với khách" to={`${base}/appointments`} icon="calendar" highlight/>
+      <StatCard label="Lịch hẹn hôm nay" load={todayTotal} hint="Theo ngày hẹn" to={`${base}/appointments`} icon="clock"/>
+      {advisor ? <>
+        <StatCard label="Đang sửa chữa" load={inProgress} hint="Phiếu ở trạng thái đang sửa" to="/advisor/service-orders?status=IN_PROGRESS" icon="wrench"/>
+        <StatCard label="Chờ thanh toán & bàn giao" load={completed} hint="Đã sửa xong, chờ thu tiền" to="/advisor/service-orders?status=COMPLETED" icon="receipt"/>
+      </> : <>
+        <StatCard label="Đã xác nhận, chờ xe đến" load={confirmed} hint="Lịch đã xác nhận" to="/admin/appointments" icon="check"/>
+        <StatCard label="Tổng lịch đang mở" load={combineLoad(pending, confirmed, (a, b) => a + b)}
+          hint="Chờ xác nhận + đã xác nhận" to="/admin/appointments" icon="clipboard"/>
+      </>}
+    </section>
+
+    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+      <Panel title="Lịch hẹn hôm nay" description="Sắp xếp theo giờ hẹn"
+        action={<Link className={buttonClass({ variant: "ghost", size: "sm" })} to={`${base}/appointments`}>Xem tất cả<Icon name="chevron-right" size={14}/></Link>}>
+        <TodayAppointments load={todayList} role={role} onRetry={retry}/>
+      </Panel>
+
       <div className="grid gap-5">
-        <section className={ui.panelPad}><div className="flex items-center justify-between gap-[15px] pb-[18px]"><div><h2 className={ui.panelTitle}>{advisor ? "Ưu tiên xử lý" : "Ưu tiên hôm nay"}</h2></div><span className="rounded-lg bg-cs-surface-2 px-2.5 py-[7px] text-[10px] font-extrabold text-cs-muted">{advisor ? "ACTION QUEUE" : "ACTIONABLE"}</span></div>
-          <Link className={ui.task} to={advisor ? "/advisor/appointments" : "/admin/appointments"}><div><strong>Lịch đặt mới</strong><p>Kiểm tra và xác nhận lịch</p></div><span>{ready && countPending !== null ? countPending : "—"}</span></Link>
-          {advisor ? <>
-            <Link className={ui.task} to="/advisor/quotation"><div><strong>Báo giá đang chờ</strong><p>Theo dõi phản hồi khách hàng</p></div><span>→</span></Link>
-            <Link className={ui.task} to="/advisor/service-orders"><div><strong>Phiếu sửa chữa</strong><p>Xem các phiếu được tiếp nhận</p></div><span>→</span></Link>
-          </> : <>
-            <Link className={ui.task} to="/admin/inventory"><div><strong>Quản lý kho</strong><p>Xem phụ tùng và vật tư</p></div><span>→</span></Link>
-            <Link className={ui.task} to="/admin/services"><div><strong>Danh mục dịch vụ</strong><p>Kiểm tra các dịch vụ hiện có</p></div><span>→</span></Link>
-          </>}
-        </section>
-        <section className={ui.panelPad}><h2 className={ui.panelTitle}>{advisor ? "Phiếu hoạt động gần đây" : "Sự kiện mới nhất"}</h2>
-          <p className="mt-[14px]! text-xs leading-[1.8] text-cs-muted">Chưa có API tổng hợp cho mục này. Sẽ hiển thị sau khi module được tích hợp.</p>
-          {phase === "error" && <button className={ui.outline} type="button" onClick={retry}>Tải lại lịch hẹn</button>}
-        </section>
+        {advisor ? <>
+          <Panel title="Cần xử lý" description="Phiếu sửa chữa đang chờ thao tác">
+            <ul className="divide-y divide-cs-border">
+              <TaskLink to="/advisor/service-orders?status=QUOTING" label="Lập báo giá" hint="Đã chẩn đoán, chưa gửi báo giá" load={quoting}/>
+              <TaskLink to="/advisor/service-orders?status=WAITING_APPROVAL" label="Chờ khách duyệt" hint="Báo giá đã gửi khách" load={waitingApproval}/>
+              <TaskLink to="/advisor/service-orders?status=WAITING_FOR_PARTS" label="Chờ phụ tùng" hint="Tạm dừng sửa chữa" load={waitingParts}/>
+              <TaskLink to="/advisor/appointments" label="Đã xác nhận, chờ xe đến" hint="Sẵn sàng tiếp nhận" load={confirmed}/>
+            </ul>
+          </Panel>
+          <Panel title="Phiếu sửa chữa gần đây"
+            action={<Link className={buttonClass({ variant: "ghost", size: "sm" })} to="/advisor/service-orders">Xem tất cả<Icon name="chevron-right" size={14}/></Link>}>
+            <RecentOrders load={recentOrders} onRetry={retry}/>
+          </Panel>
+        </> : <Panel title="Quản lý nhanh" description="Danh mục và cấu hình hệ thống">
+          <ul className="divide-y divide-cs-border">
+            {adminShortcuts.map(item => <li key={item.to}>
+              <Link to={item.to} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-cs-hover">
+                <span className="grid size-9 shrink-0 place-items-center rounded-control bg-cs-surface-2 text-cs-text-2" aria-hidden="true"><Icon name={item.icon} size={18}/></span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-small font-medium text-cs-text">{item.label}</p>
+                  <p className="text-caption text-cs-muted">{item.hint}</p>
+                </div>
+                <Icon name="chevron-right" size={16} className="text-cs-muted"/>
+              </Link>
+            </li>)}
+          </ul>
+        </Panel>}
       </div>
     </div>
-  </main>;
+  </div>;
 }

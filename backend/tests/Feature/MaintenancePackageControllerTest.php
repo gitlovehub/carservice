@@ -36,7 +36,7 @@ class MaintenancePackageControllerTest extends TestCase
             'status' => 'INACTIVE',
         ]);
 
-        $response = $this->getJson('/api/maintenance-packages?model_id=' . $vehicleModel->id)
+        $response = $this->getJson('/api/maintenance-packages?model_id='.$vehicleModel->id)
             ->assertOk()
             ->assertJsonCount(2);
 

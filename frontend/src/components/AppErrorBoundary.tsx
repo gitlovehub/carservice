@@ -13,7 +13,7 @@ export default class AppErrorBoundary extends Component<Props, State> {
   }
   render() {
     if (!this.state.crashed) return this.props.children;
-    return <main role="alert" style={{ minHeight:"75vh",display:"grid",placeItems:"center",background:"#f7f7f6",padding:"32px",fontFamily:"Manrope,system-ui,sans-serif",color:"#242424" }}>
+    return <main role="alert" style={{ minHeight:"75vh",display:"grid",placeItems:"center",background:"#f7f7f6",padding:"32px",fontFamily:"var(--font-sans)",color:"#242424" }}>
       <section style={{ background:"white",border:"1px solid #eae7e6",borderRadius:"20px",maxWidth:"560px",padding:"36px",boxShadow:"0 18px 40px #0000000c" }}>
         <span style={{ fontSize:12,fontWeight:800,letterSpacing:".1em",color:"#cf2935" }}>CARSERVICE / THÔNG BÁO</span>
         <h1 style={{ fontSize:26,fontWeight:800,margin:"16px 0 12px" }}>Không thể hiển thị trang này</h1>

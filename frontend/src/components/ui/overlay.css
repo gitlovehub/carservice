@@ -1,0 +1,27 @@
+/* Hiệu ứng mở/đóng dùng chung cho Modal, Drawer, Dropdown (components/ui). */
+.cs-overlay-backdrop { animation: cs-fade-in var(--cs-duration) ease both; }
+.cs-overlay[data-state="closing"] .cs-overlay-backdrop { animation: cs-fade-out var(--cs-duration) ease both; }
+
+.cs-modal-panel { animation: cs-modal-in 220ms var(--cs-ease) both; }
+.cs-overlay[data-state="closing"] .cs-modal-panel { animation: cs-modal-out var(--cs-duration) ease both; }
+
+.cs-drawer-panel { animation: cs-drawer-in 260ms var(--cs-ease) both; }
+.cs-overlay[data-state="closing"] .cs-drawer-panel { animation: cs-drawer-out var(--cs-duration) ease both; }
+.cs-drawer-panel[data-side="left"] { animation-name: cs-drawer-in-left; }
+.cs-overlay[data-state="closing"] .cs-drawer-panel[data-side="left"] { animation-name: cs-drawer-out-left; }
+
+.cs-menu-panel { animation: cs-menu-in 140ms var(--cs-ease) both; }
+
+@keyframes cs-fade-in { from { opacity: 0; } }
+@keyframes cs-fade-out { to { opacity: 0; } }
+@keyframes cs-modal-in { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
+@keyframes cs-modal-out { to { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@keyframes cs-drawer-in { from { transform: translateX(100%); } }
+@keyframes cs-drawer-out { to { transform: translateX(100%); } }
+@keyframes cs-drawer-in-left { from { transform: translateX(-100%); } }
+@keyframes cs-drawer-out-left { to { transform: translateX(-100%); } }
+@keyframes cs-menu-in { from { opacity: 0; transform: translateY(-4px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-overlay-backdrop, .cs-modal-panel, .cs-drawer-panel, .cs-menu-panel { animation: none !important; }
+}

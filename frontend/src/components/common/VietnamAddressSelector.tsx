@@ -392,7 +392,7 @@ export default function VietnamAddressSelector({
       <div className="space-y-3 rounded-xl border border-slate-200 bg-[#FBFBFA] p-3.5">
         {/* Bước 1: Chọn Tỉnh / Thành phố */}
         <div>
-          <label className="text-[11px] font-semibold text-slate-700">
+          <label className="text-[12px] font-semibold text-slate-700">
             Tỉnh / Thành phố <span className="text-rose-500">*</span>
           </label>
           <select
@@ -416,7 +416,7 @@ export default function VietnamAddressSelector({
 
         {/* Bước 2: Tìm kiếm & Chọn Xã / Phường */}
         <div ref={wardDropdownRef} className="relative">
-          <label className="text-[11px] font-semibold text-slate-700">
+          <label className="text-[12px] font-semibold text-slate-700">
             Xã / Phường <span className="text-rose-500">*</span>
           </label>
 
@@ -501,7 +501,7 @@ export default function VietnamAddressSelector({
                         Chọn: "{searchWardInput.trim()}"
                       </span>
                     </div>
-                    <span className="text-[10px] text-[#8B6B38]">Nhấn chọn ↵</span>
+                    <span className="text-[11px] text-[#8B6B38]">Nhấn chọn ↵</span>
                   </div>
                 )}
 
@@ -547,7 +547,7 @@ export default function VietnamAddressSelector({
 
         {/* Bước 3: Số nhà, tên đường / thôn xóm chi tiết */}
         <div>
-          <label className="text-[11px] font-semibold text-slate-700">
+          <label className="text-[12px] font-semibold text-slate-700">
             Số nhà, tên đường / thôn xóm
           </label>
           <input
@@ -560,7 +560,7 @@ export default function VietnamAddressSelector({
         </div>
 
         {/* Địa chỉ hoàn chỉnh tổng hợp */}
-        <div className="rounded-xl border border-[#D6A85F]/40 bg-[#FBF8F1] p-3 text-[11px]">
+        <div className="rounded-xl border border-[#D6A85F]/40 bg-[#FBF8F1] p-3 text-[12px]">
           <div className="flex items-center gap-1.5 font-semibold text-[#8B6B38]">
             <span>📍</span>
             <span>Địa chỉ:</span>
@@ -572,7 +572,7 @@ export default function VietnamAddressSelector({
       </div>
 
       {error && (
-        <p className="text-[11px] font-medium text-rose-500">{error}</p>
+        <p className="text-[12px] font-medium text-rose-500">{error}</p>
       )}
     </div>
   );

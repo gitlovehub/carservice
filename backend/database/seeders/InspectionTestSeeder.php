@@ -7,7 +7,6 @@ use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\Part;
 use App\Models\RepairOrder;
-use App\Models\Service;
 use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
 use App\Models\VehicleModel;
@@ -145,7 +144,7 @@ class InspectionTestSeeder extends Seeder
             ]
         );
 
-        $this->command?->info("Tạo dữ liệu test thành công!");
+        $this->command?->info('Tạo dữ liệu test thành công!');
         $this->command?->info("Repair Order ID để test Postman: {$ro->id} ({$ro->repair_order_code})");
         $this->command?->info("Part ID: {$part->id}");
     }

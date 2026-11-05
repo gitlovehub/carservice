@@ -98,7 +98,7 @@ function CustomerHeader() {
         </div>
 
         <div className="px-4 py-5">
-          <p className="px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#8F9AA4]">
+          <p className="px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#8F9AA4]">
             MENU KHÁCH HÀNG
           </p>
 
@@ -113,7 +113,7 @@ function CustomerHeader() {
                   key={item.path}
                   to={item.path}
                   aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-[12px] font-medium transition ${
+                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-medium transition ${
                     active
                       ? "bg-[#D6A85F] text-[#1F2933]"
                       : "text-[#C6CDD3] hover:bg-[#313B45] hover:text-white"
@@ -140,17 +140,17 @@ function CustomerHeader() {
                   className="h-9 w-9 shrink-0 rounded-full border border-[#D6A85F]/60 object-cover shadow-xs"
                 />
               ) : (
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#D6A85F] text-[10px] font-bold text-[#1F2933]">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#D6A85F] text-[11px] font-bold text-[#1F2933]">
                   {getUserInitials(user)}
                 </div>
               )}
 
               <div className="min-w-0">
-                <p className="truncate text-[12px] font-semibold text-white">
+                <p className="truncate text-[13px] font-semibold text-white">
                   {getUserDisplayName(user)}
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#AEB8C1]">
+                <p className="mt-0.5 text-[11px] text-[#AEB8C1]">
                   Khách hàng
                 </p>
               </div>
@@ -159,7 +159,7 @@ function CustomerHeader() {
             <div className="mt-3 flex gap-2">
               <Link
                 to="/"
-                className="flex flex-1 items-center justify-center rounded-xl border border-[#4A5661] py-2 text-[11px] font-medium text-[#D5DBE0] transition hover:bg-[#313B45] hover:text-white"
+                className="flex flex-1 items-center justify-center rounded-xl border border-[#4A5661] py-2 text-[12px] font-medium text-[#D5DBE0] transition hover:bg-[#313B45] hover:text-white"
               >
                 Trang chủ
               </Link>

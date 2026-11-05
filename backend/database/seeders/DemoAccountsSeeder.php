@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Account;
+use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\TechnicianProfile;
 use Illuminate\Database\Seeder;
@@ -55,7 +56,7 @@ class DemoAccountsSeeder extends Seeder
                 );
 
                 if ($data['role'] === Account::ROLE_CUSTOMER) {
-                    \App\Models\Customer::query()->updateOrCreate(
+                    Customer::query()->updateOrCreate(
                         ['account_id' => $account->id],
                         [
                             'full_name' => $data['name'],
@@ -63,6 +64,7 @@ class DemoAccountsSeeder extends Seeder
                             'email' => $data['email'],
                         ],
                     );
+
                     continue;
                 }
 

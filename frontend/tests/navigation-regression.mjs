@@ -7,7 +7,10 @@ const src=f=>readFileSync(path.join(here,'../src',f),'utf8');
 const app=src('App.tsx'), dashboard=src('pages/shared/WorkspaceDashboard.tsx'), header=src('components/AtelierPublic.tsx');
 const auth=src('pages/auth/auth.ts'), guard=src('pages/auth/ProtectedRoute.tsx'), services=src('pages/customer/Services.tsx');
 const login=src('pages/auth/Login.tsx'), boundary=src('components/AppErrorBoundary.tsx');
-assert.ok(dashboard.indexOf('const advisor = role === "advisor";') < dashboard.indexOf('const upcoming = items.filter('),'Dashboard must not use advisor before declaration');
+// Lỗi cũ: dùng biến `advisor` trước khi khai báo. Phase 4 viết lại dashboard — vẫn kiểm tra không dùng trước khai báo.
+const advisorDecl = dashboard.indexOf('const advisor = role === "advisor";');
+assert.ok(advisorDecl > 0, 'Dashboard must declare advisor');
+assert.doesNotMatch(dashboard.slice(0, advisorDecl), /[(!{\s]advisor\s*[?)&|,]/, 'Dashboard must not use advisor before declaration');
 assert.match(app, /<AppErrorBoundary><FeedbackProvider><Routes>/);
 assert.match(app, /<\/Routes><ChatWidget\/><\/FeedbackProvider>/);
 assert.match(boundary, /getDerivedStateFromError/);

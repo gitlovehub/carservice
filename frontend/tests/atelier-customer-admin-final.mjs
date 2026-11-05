@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const read = file => readFileSync(new URL('../src/'+file, import.meta.url), 'utf8');
-const app = read('layouts/AppShell.tsx');
-assert.match(app, /activePath === path/);
-assert.match(app, /"\/booking": "\/customer\/booking"/);
+// Menu khách hàng nằm ở header công khai (AtelierPublic): "Đặt lịch" sáng cả ở /booking và /customer/booking.
+// (Bản sao logic này trong AppShell là code chết — không có route nào render — đã gỡ ở Phase 4.)
+const publicHeader = read('components/AtelierPublic.tsx');
+assert.match(publicHeader, /label: "Đặt lịch", href: "\/booking"/);
+assert.match(publicHeader, /location\.pathname === "\/customer\/booking"/);
 const nav = read('components/AdminHubNav.tsx');
 for(const module of ['accounts','services','inventory','reports']) assert.ok(nav.includes(`/admin/${module}`),`Missing hub route: ${module}`);
 for(const name of ['Accounts','Inventory','Services','Reports']) assert.match(read(`pages/admin/${name}.tsx`), /<AdminHubNav \/>/);
@@ -17,8 +19,10 @@ const tracking = read('pages/customer/RepairStatus.tsx');
 assert.match(tracking, /getMyRepairOrders\(/);
 assert.doesNotMatch(tracking, /SC-001|Honda City/);
 const booking = read('pages/customer/Booking.tsx');
-assert.match(booking, /at-booking-grid/);
-assert.match(booking, /handleConfirmSubmit/);
+// Trang đặt lịch mới: chọn dịch vụ qua ServicePicker, khung tóm tắt bên cạnh, gửi lịch qua completeBooking.
+assert.match(booking, /<ServicePicker/);
+assert.match(booking, /<BookingSummary/);
+assert.match(booking, /completeBooking/);
 assert.doesNotMatch(booking, /<Header \/>|<Footer \/>/);
 assert.doesNotMatch(appointment, /<CustomerTopbar \/>|<CustomerHeader \/>/);
 assert.match(read('styles/atelier-customer-pages.css'), /at-customer-status/);

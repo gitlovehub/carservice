@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
+use App\Models\Appointment;
 use App\Models\Assignment;
 use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\Inspection;
 use App\Models\InspectionRecommendation;
 use App\Models\Inventory;
+use App\Models\MaintenancePackage;
 use App\Models\Part;
 use App\Models\Quotation;
 use App\Models\RepairOrder;
@@ -271,6 +273,37 @@ class RepairFlowTest extends TestCase
             ->assertUnprocessable();
 
         $this->assertDatabaseCount('payments', 0);
+    }
+
+    public function test_order_detail_includes_what_the_customer_requested_when_booking(): void
+    {
+        $package = MaintenancePackage::factory()->create(['name' => 'Bảo dưỡng 5.000 km']);
+        $package->services()->attach($this->service->id, ['quantity' => 1]);
+        $package->parts()->attach($this->part->id, ['quantity' => 2]);
+        $extraService = Service::factory()->create(['name' => 'Kiểm tra điều hòa']);
+
+        $appointment = Appointment::query()->create([
+            'appointment_code' => 'APT-RO-TEST',
+            'customer_id' => $this->repairOrder->customer_id,
+            'vehicle_id' => $this->repairOrder->vehicle_id,
+            'appointment_date' => now()->toDateString(),
+            'appointment_time' => '09:00:00',
+            'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Phanh kêu khi dừng',
+            'status' => 'CHECKED_IN',
+        ]);
+        $appointment->syncRequestedItems([$extraService->id], [$package->id]);
+        $this->repairOrder->update(['appointment_id' => $appointment->id]);
+
+        $this->actingAs($this->advisor)
+            ->getJson("/api/repair-orders/{$this->repairOrder->id}")
+            ->assertOk()
+            ->assertJsonPath('appointment.symptom_description', 'Phanh kêu khi dừng')
+            ->assertJsonPath('appointment.services.0.name', 'Kiểm tra điều hòa')
+            ->assertJsonPath('appointment.packages.0.name', 'Bảo dưỡng 5.000 km')
+            ->assertJsonPath('appointment.packages.0.services.0.id', $this->service->id)
+            ->assertJsonPath('appointment.packages.0.parts.0.id', $this->part->id)
+            ->assertJsonPath('appointment.packages.0.parts.0.pivot.quantity', 2);
     }
 
     public function test_order_detail_includes_invoice_items_and_newest_history_first(): void
