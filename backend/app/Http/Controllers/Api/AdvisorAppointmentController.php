@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInternalAppointmentRequest;
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Vehicle;
 use Carbon\Carbon;
@@ -227,9 +228,9 @@ class AdvisorAppointmentController extends Controller
     /**
      * Tiếp nhận xe tại garage (CONFIRMED -> CHECKED_IN)
      */
-    public function checkIn(int $id): JsonResponse
+    public function checkIn(Request $request, int $id): JsonResponse
     {
-        $appointment = Appointment::find($id);
+        $appointment = Appointment::with('vehicle')->find($id);
 
         if (! $appointment) {
             return response()->json([
@@ -245,8 +246,40 @@ class AdvisorAppointmentController extends Controller
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        $data = $request->validate([
+            'license_plate' => ['required', 'string', 'max:20', 'regex:/^[1-9][0-9][A-Z]{1,2}-[0-9]{3}\\.[0-9]{2}$|^[1-9][0-9][A-Z]{1,2}-[0-9]{4}$/'],
+        ], [
+            'license_plate.required' => 'Vui lòng nhập biển số xe khi tiếp nhận.',
+            'license_plate.regex' => 'Biển số xe không đúng định dạng.',
+        ]);
+        $licensePlate = strtoupper(preg_replace('/\s+/', '', trim($data['license_plate'])));
+        $existingVehicle = Vehicle::query()
+            ->where('license_plate', $licensePlate)
+            ->whereKeyNot($appointment->vehicle_id)
+            ->exists();
+
+        if ($existingVehicle) {
+            throw ValidationException::withMessages([
+                'license_plate' => 'Biển số xe đã được sử dụng cho phương tiện khác.',
+            ]);
+        }
+
+        $oldPlate = $appointment->vehicle?->license_plate;
+        $appointment->vehicle()->update(['license_plate' => $licensePlate]);
         $appointment->update([
             'status' => 'CHECKED_IN',
+        ]);
+
+        AuditLog::query()->create([
+            'account_id' => $request->user()->id,
+            'action' => 'vehicle.plate_recorded_at_checkin',
+            'auditable_type' => $appointment->vehicle->getMorphClass(),
+            'auditable_id' => $appointment->vehicle_id,
+            'old_values' => ['license_plate' => $oldPlate],
+            'new_values' => ['license_plate' => $licensePlate, 'appointment_id' => $appointment->id],
+            'reason' => 'Ghi nhận biển số thực tế khi tiếp nhận xe.',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
         ]);
 
         return response()->json([
