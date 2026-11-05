@@ -3,7 +3,31 @@ import { getAdvisorAppointment, getAdvisorAppointments, confirmAdvisorAppointmen
 
 /** Laravel responses in backend/routes/api.php, RepairOrderController and AdvisorAppointmentController. */
 export type AppointmentWorkflowStatus = "PENDING" | "CONFIRMED" | "CHECKED_IN" | "CANCELLED";
-export type WorkflowAppointment = {
+/** Dịch vụ / gói khách chọn khi đặt lịch; pivot.estimated_price là giá ước tính lúc đặt. */
+export type RequestedService = { id: number; name: string; pivot?: { estimated_price?: Money; quantity?: number } | null };
+export type RequestedPart = { id: number; name: string; unit?: string | null; pivot?: { quantity?: number } | null };
+export type RequestedPackage = {
+  id: number; name: string; description?: string | null;
+  pivot?: { estimated_price?: Money } | null;
+  services?: RequestedService[]; parts?: RequestedPart[];
+};
+export type CustomerRequest = {
+  request_type?: string | null;
+  symptom_description?: string | null;
+  note?: string | null;
+  services?: RequestedService[];
+  packages?: RequestedPackage[];
+};
+const requestTypeText: Record<string, string> = {
+  MAINTENANCE: "Bảo dưỡng",
+  REPAIR: "Sửa chữa",
+  DIAGNOSIS: "Kiểm tra, chẩn đoán",
+  REPLACEMENT: "Thay thế",
+};
+export function requestTypeLabel(type?: string | null): string {
+  return type ? requestTypeText[type] ?? type : "Chưa xác định";
+}
+export type WorkflowAppointment = CustomerRequest & {
   id: number;
   appointment_code?: string;
   appointment_date?: string;
@@ -13,8 +37,6 @@ export type WorkflowAppointment = {
   vehicle_id?: number | null;
   customer?: { id: number; full_name?: string; phone?: string } | null;
   vehicle?: { id: number; license_plate?: string; variant?: string } | null;
-  symptom_description?: string | null;
-  note?: string | null;
 };
 export type WorkflowInspection = {
   id: number; diagnosis?: string | null; condition_description?: string | null; inspected_at?: string | null;
@@ -49,6 +71,7 @@ export type WorkflowInvoice = {
 export type WorkflowOrder = {
   id: number;
   appointment_id?: number | null;
+  appointment?: (CustomerRequest & { id: number; appointment_code?: string }) | null;
   repair_order_code?: string;
   status: string;
   customer_id?: number;

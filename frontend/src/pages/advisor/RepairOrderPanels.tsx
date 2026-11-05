@@ -5,7 +5,8 @@ import {
   type CatalogPart, type CatalogService, type InspectionResult, type QuotationLineInput, type RecommendationInput,
   type WorkflowOrder, type WorkflowQuotation,
 } from "../../services/workflowService";
-import { action, card, danger, errorText, input, Notice, outline, success } from "./WorkflowUI";
+import { action, card, danger, input, Notice, outline, success } from "./WorkflowUI";
+import { errorText } from "./workflowFormat";
 
 /** Panels for the steps after diagnosis; every action calls Laravel and then reloads the order. */
 type PanelProps = { order: WorkflowOrder; onChanged: (message: string) => Promise<void> };
@@ -345,6 +346,26 @@ type RecRow = { key: number; item_type: "SERVICE" | "PART"; ref_id: string; quan
 const blankCheck = (key: number): CheckRow => ({ key, item_name: "", status: "PASSED", condition_description: "" });
 const blankRec = (key: number, type: "SERVICE" | "PART" = "SERVICE"): RecRow => ({ key, item_type: type, ref_id: "", quantity: "1", note: "" });
 
+/** Điền sẵn đề xuất từ những gì khách chọn khi đặt lịch: nội dung gói trước, dịch vụ lẻ sau. */
+function recsFromCustomerRequest(order: WorkflowOrder): RecRow[] {
+  const request = order.appointment;
+  if (!request) return [];
+  const rows: RecRow[] = [];
+  const seen = new Set<string>();
+  const push = (itemType: "SERVICE" | "PART", id: number, quantity: number | undefined, note: string) => {
+    const dedupeKey = `${itemType}:${id}`;
+    if (seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    rows.push({ key: rows.length + 1, item_type: itemType, ref_id: String(id), quantity: String(quantity ?? 1), note });
+  };
+  request.packages?.forEach(pkg => {
+    pkg.services?.forEach(service => push("SERVICE", service.id, service.pivot?.quantity, `Theo ${pkg.name}`));
+    pkg.parts?.forEach(part => push("PART", part.id, part.pivot?.quantity, `Theo ${pkg.name}`));
+  });
+  request.services?.forEach(service => push("SERVICE", service.id, 1, "Khách yêu cầu"));
+  return rows;
+}
+
 /** Bước 2: cố vấn ghi kết quả kiểm tra, đề xuất dịch vụ/phụ tùng và hoàn tất chẩn đoán. */
 export function InspectionPanel({ order, onChanged }: PanelProps) {
   const { confirm } = useAppFeedback();
@@ -356,7 +377,9 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
   const [condition, setCondition] = useState(order.initial_condition ?? "");
   const [diagnosis, setDiagnosis] = useState("");
   const [checks, setChecks] = useState<CheckRow[]>([blankCheck(1)]);
-  const [recs, setRecs] = useState<RecRow[]>([]);
+  // Chỉ điền sẵn khi chưa ghi kết quả kiểm tra; KTV vẫn quyết định giữ hay bỏ từng dòng.
+  const [prefilledRecs] = useState<RecRow[]>(() => (order.inspections?.length ? [] : recsFromCustomerRequest(order)));
+  const [recs, setRecs] = useState<RecRow[]>(prefilledRecs);
 
   useEffect(() => {
     let active = true;
@@ -486,7 +509,11 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
         </div>)}
         <button type="button" className={`${outline} cs-btn-sm`} onClick={() => setChecks(previous => [...previous, blankCheck(Date.now())])}>+ Thêm hạng mục</button>
       </div>
-      <div className="space-y-3"><h3 className="text-sm font-bold text-cs-text">Đề xuất dịch vụ / phụ tùng</h3>{recEditor}</div>
+      <div className="space-y-3"><h3 className="text-sm font-bold text-cs-text">Đề xuất dịch vụ / phụ tùng</h3>
+        {prefilledRecs.length > 0 && <Notice>Đã điền sẵn {prefilledRecs.length} dòng theo yêu cầu khi đặt lịch. Sau khi kiểm tra, bỏ dòng không cần và thêm phát sinh.</Notice>}
+        {order.appointment?.symptom_description && <p className="text-xs text-cs-muted">Khách mô tả: <span className="text-cs-text">{order.appointment.symptom_description}</span></p>}
+        {recEditor}
+      </div>
       <div className="cs-btn-row cs-btn-row-end"><button type="submit" className={action} disabled={working} aria-busy={working}>Lưu kết quả kiểm tra</button></div>
     </form>}
 

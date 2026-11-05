@@ -23,8 +23,8 @@ class UpdateAppointmentRequest extends FormRequest
             'note' => ['nullable', 'string', 'max:500'],
             'service_ids' => ['nullable', 'array'],
             'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('status', 'ACTIVE')],
-            'package_ids' => ['nullable', 'array'],
-            'package_ids.*' => ['integer', 'distinct', 'exists:maintenance_packages,id'],
+            'package_ids' => ['nullable', 'array', 'max:1'],
+            'package_ids.*' => ['integer', 'distinct', Rule::exists('maintenance_packages', 'id')->where('status', 'ACTIVE')],
         ];
     }
 
@@ -42,8 +42,6 @@ class UpdateAppointmentRequest extends FormRequest
             'new_vehicle.prohibited_unless' => 'Chỉ chọn xe có sẵn hoặc khai báo xe mới, không chọn cả hai.',
             'new_vehicle.brand.required_with' => 'Vui lòng nhập hãng xe.',
             'new_vehicle.model.required_with' => 'Vui lòng nhập dòng xe.',
-            'new_vehicle.vehicle_type.required_with' => 'Vui lòng chọn loại xe.',
-            'new_vehicle.vehicle_type.in' => 'Loại xe không hợp lệ.',
             'new_vehicle.license_plate.unique' => 'Biển số đã tồn tại.',
             'new_vehicle.license_plate.max' => 'Biển số không được quá 20 ký tự.',
             'appointment_date.required' => 'Vui lòng chọn ngày hẹn.',
@@ -57,9 +55,9 @@ class UpdateAppointmentRequest extends FormRequest
             'note.max' => 'Ghi chú quá dài.',
             'service_ids.*.exists' => 'Dịch vụ đã chọn không tồn tại hoặc ngừng hoạt động.',
             'service_ids.*.distinct' => 'Dịch vụ bị chọn trùng.',
-            'package_ids.*.exists' => 'Gói bảo dưỡng đã chọn không tồn tại.',
+            'package_ids.max' => 'Mỗi lịch hẹn chỉ chọn một gói bảo dưỡng.',
+            'package_ids.*.exists' => 'Gói bảo dưỡng không tồn tại hoặc đã ngừng áp dụng.',
             'package_ids.*.distinct' => 'Gói bảo dưỡng bị chọn trùng.',
-            'service_name.in' => 'Dịch vụ đã chọn không hợp lệ.',
         ];
     }
 }

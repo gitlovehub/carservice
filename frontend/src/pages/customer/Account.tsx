@@ -415,11 +415,11 @@ function Account() {
         {/* Banner Section */}
         <section className="border-b border-[#E1E4E6] bg-white">
           <div className="mx-auto max-w-[1280px] px-6 py-14 md:px-8 md:py-16">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
               MY GARAGE / ACCOUNT
             </p>
 
-            <h1 className="mt-3 text-[38px] font-bold tracking-[-1.4px] text-[#1F2933] md:text-[50px]">
+            <h1 className="mt-3 text-[38px] font-bold tracking-normal text-[#1F2933] md:text-[50px]">
               Hồ sơ của tôi
             </h1>
 
@@ -491,7 +491,7 @@ function Account() {
 
                   <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full bg-[#29333D] px-4 py-1.5 border border-white/5">
                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[11px] font-semibold text-[#E8ECEF]">
+                    <span className="text-[12px] font-semibold text-[#E8ECEF]">
                       Tài khoản {status.toLowerCase()}
                     </span>
                   </div>
@@ -507,13 +507,13 @@ function Account() {
 
                 {/* Profile Stats & Details */}
                 <div className="p-6">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     THÔNG TIN HỆ THỐNG
                   </p>
 
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-[12px] text-[#8A949E]">
+                      <span className="text-[13px] text-[#8A949E]">
                         Mã định danh
                       </span>
                       <span className="font-mono text-[13px] font-bold text-[#1F2933] bg-slate-100 px-2 py-0.5 rounded-md">
@@ -522,7 +522,7 @@ function Account() {
                     </div>
 
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-[12px] text-[#8A949E]">
+                      <span className="text-[13px] text-[#8A949E]">
                         Ngày tham gia
                       </span>
                       <span className="text-[13px] font-semibold text-[#20252B]">
@@ -531,7 +531,7 @@ function Account() {
                     </div>
 
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-[12px] text-[#8A949E]">
+                      <span className="text-[13px] text-[#8A949E]">
                         Xe đã đăng ký
                       </span>
                       <span className="text-[13px] font-semibold text-[#20252B]">
@@ -545,7 +545,7 @@ function Account() {
                   </div>
 
                   <div className="mt-6 border-t border-[#E1E4E6] pt-4 space-y-3">
-                    <p className="text-[11px] leading-5 text-[#66717C]">
+                    <p className="text-[12px] leading-5 text-[#66717C]">
                       Thông tin này được sử dụng để định danh trong toàn bộ các quy trình dịch vụ và chăm sóc xe tại CarService.
                     </p>
 
@@ -567,13 +567,13 @@ function Account() {
                 <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-xs">
                   <div className="flex flex-col justify-between gap-4 border-b border-[#E1E4E6] px-6 py-5 md:flex-row md:items-center">
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                      <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                         HỒ SƠ CÁ NHÂN
                       </p>
                       <h2 className="mt-1 text-[18px] font-bold text-[#20252B]">
                         Thông tin cá nhân
                       </h2>
-                      <p className="mt-1 text-[12px] text-[#66717C]">
+                      <p className="mt-1 text-[13px] text-[#66717C]">
                         Thông tin hiển thị khi liên hệ, đặt lịch hẹn và nhận xe.
                       </p>
                     </div>
@@ -602,7 +602,7 @@ function Account() {
 
                   <div className="grid gap-4 p-6 md:grid-cols-2">
                     <div className="rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4">
-                      <p className="text-[11px] font-medium text-[#8A949E]">
+                      <p className="text-[12px] font-medium text-[#8A949E]">
                         Họ và tên
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
@@ -611,7 +611,7 @@ function Account() {
                     </div>
 
                     <div className="rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4">
-                      <p className="text-[11px] font-medium text-[#8A949E]">
+                      <p className="text-[12px] font-medium text-[#8A949E]">
                         Số điện thoại
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
@@ -620,7 +620,7 @@ function Account() {
                     </div>
 
                     <div className="rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4">
-                      <p className="text-[11px] font-medium text-[#8A949E]">
+                      <p className="text-[12px] font-medium text-[#8A949E]">
                         Email liên hệ
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
@@ -629,7 +629,7 @@ function Account() {
                     </div>
 
                     <div className="rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4">
-                      <p className="text-[11px] font-medium text-[#8A949E]">
+                      <p className="text-[12px] font-medium text-[#8A949E]">
                         Vai trò
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#D6A85F]">
@@ -638,7 +638,7 @@ function Account() {
                     </div>
 
                     <div className="rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4 md:col-span-2">
-                      <p className="text-[11px] font-medium text-[#8A949E]">
+                      <p className="text-[12px] font-medium text-[#8A949E]">
                         Địa chỉ
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
@@ -651,38 +651,38 @@ function Account() {
                 {/* 2. Login & Security */}
                 <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-xs">
                   <div className="border-b border-[#E1E4E6] px-6 py-5">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                    <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                       BẢO MẬT & ĐĂNG NHẬP
                     </p>
                     <h2 className="mt-1 text-[18px] font-bold text-[#20252B]">
                       Thông tin đăng nhập
                     </h2>
-                    <p className="mt-1 text-[12px] text-[#66717C]">
+                    <p className="mt-1 text-[13px] text-[#66717C]">
                       Quản lý tài khoản đăng nhập và mật khẩu an toàn.
                     </p>
                   </div>
 
                   <div className="grid gap-4 p-6 md:grid-cols-2">
                     <div className="rounded-xl border border-[#E1E4E6] bg-[#FAFAF9] p-4">
-                      <p className="text-[11px] font-medium text-[#8A949E]">
+                      <p className="text-[12px] font-medium text-[#8A949E]">
                         Email đăng nhập
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
                         {email}
                       </p>
-                      <p className="mt-1 text-[10px] text-slate-400">
+                      <p className="mt-1 text-[11px] text-slate-400">
                         Email dùng để xác thực và nhận thông báo
                       </p>
                     </div>
 
                     <div className="rounded-xl border border-[#E1E4E6] bg-[#FAFAF9] p-4">
-                      <p className="text-[11px] font-medium text-[#8A949E]">
+                      <p className="text-[12px] font-medium text-[#8A949E]">
                         Mật khẩu
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold tracking-[0.2em] text-[#20252B]">
                         ••••••••••••
                       </p>
-                      <p className="mt-1 text-[10px] text-emerald-600 font-medium">
+                      <p className="mt-1 text-[11px] text-emerald-600 font-medium">
                         Đang được bảo vệ an toàn
                       </p>
                     </div>
@@ -723,7 +723,7 @@ function Account() {
                       <p className="text-[14px] font-bold text-[#20252B]">
                         Khuyến nghị bảo mật từ CarService
                       </p>
-                      <p className="mt-1 text-[12px] leading-5 text-[#66717C]">
+                      <p className="mt-1 text-[13px] leading-5 text-[#66717C]">
                         Không chia sẻ mật khẩu của bạn với bất kỳ ai. Để tài khoản an toàn tối đa, hãy đặt mật khẩu có ít nhất 8 ký tự, bao gồm cả chữ in hoa, chữ thường và chữ số.
                       </p>
                     </div>
@@ -773,11 +773,11 @@ function Account() {
                     disabled
                     className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-xs font-medium text-slate-500 cursor-not-allowed"
                   />
-                  <span className="absolute right-3 top-2.5 text-[10px] font-semibold text-slate-400">
+                  <span className="absolute right-3 top-2.5 text-[11px] font-semibold text-slate-400">
                     Định danh cố định
                   </span>
                 </div>
-                <p className="mt-1 text-[11px] text-slate-400">
+                <p className="mt-1 text-[12px] text-slate-400">
                   Email dùng làm tài khoản đăng nhập, không thể thay đổi tại đây.
                 </p>
               </div>
@@ -804,7 +804,7 @@ function Account() {
                   }`}
                 />
                 {profileErrors.fullName && (
-                  <p className="mt-1 text-[11px] font-medium text-rose-500">
+                  <p className="mt-1 text-[12px] font-medium text-rose-500">
                     {profileErrors.fullName}
                   </p>
                 )}
@@ -832,7 +832,7 @@ function Account() {
                   }`}
                 />
                 {profileErrors.phone && (
-                  <p className="mt-1 text-[11px] font-medium text-rose-500">
+                  <p className="mt-1 text-[12px] font-medium text-rose-500">
                     {profileErrors.phone}
                   </p>
                 )}
@@ -944,7 +944,7 @@ function Account() {
                   </button>
                 </div>
                 {passwordErrors.currentPassword && (
-                  <p className="mt-1 text-[11px] font-medium text-rose-500">
+                  <p className="mt-1 text-[12px] font-medium text-rose-500">
                     {passwordErrors.currentPassword}
                   </p>
                 )}
@@ -987,7 +987,7 @@ function Account() {
                   </button>
                 </div>
                 {passwordErrors.newPassword && (
-                  <p className="mt-1 text-[11px] font-medium text-rose-500">
+                  <p className="mt-1 text-[12px] font-medium text-rose-500">
                     {passwordErrors.newPassword}
                   </p>
                 )}
@@ -1033,7 +1033,7 @@ function Account() {
                   </button>
                 </div>
                 {passwordErrors.confirmPassword && (
-                  <p className="mt-1 text-[11px] font-medium text-rose-500">
+                  <p className="mt-1 text-[12px] font-medium text-rose-500">
                     {passwordErrors.confirmPassword}
                   </p>
                 )}
@@ -1111,7 +1111,7 @@ function Account() {
                     </div>
                   )}
                 </div>
-                <p className="mt-2 text-[11px] font-medium text-slate-500">
+                <p className="mt-2 text-[12px] font-medium text-slate-500">
                   Ảnh đại diện hiển thị hiện tại
                 </p>
               </div>
@@ -1144,7 +1144,7 @@ function Account() {
                     </button>
                   )}
                 </div>
-                <p className="mt-1.5 text-[10px] text-slate-400">
+                <p className="mt-1.5 text-[11px] text-slate-400">
                   Định dạng hỗ trợ: PNG, JPG, JPEG, WebP. Tối đa 5MB.
                 </p>
               </div>

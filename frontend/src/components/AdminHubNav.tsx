@@ -13,12 +13,12 @@ export default function AdminHubNav() {
     {sections.map(item => <NavLink key={item.path} to={item.path} className={({isActive}) => [
       "group flex min-h-[104px] min-w-0 flex-col items-start gap-[5px] rounded-2xl border p-[17px_16px] transition-[background-color,border-color,transform] duration-150 hover:-translate-y-px max-[560px]:min-h-[105px] max-[560px]:p-3",
       isActive
-        ? "is-active border-[#3b6346] bg-[#284c32] text-[#f7fff6] hover:bg-[#315a3c] [[data-theme=light]_&]:border-[#507b2c] [[data-theme=light]_&]:bg-[#507b2c]"
-        : "border-cs-border bg-cs-surface text-cs-text hover:border-[#657d62] hover:bg-cs-surface-2",
+        ? "is-active border-cs-accent bg-cs-accent text-cs-accent-contrast hover:bg-cs-accent-hover"
+        : "border-cs-border bg-cs-surface text-cs-text hover:border-cs-accent hover:bg-cs-surface-2",
     ].join(" ")}>
-      <span className="grid size-[34px] place-items-center rounded-[10px] bg-cs-surface-2 text-[11px] font-extrabold text-cs-text group-[.is-active]:bg-[#416a4a] group-[.is-active]:text-[#f4ffe9] [[data-theme=light]_.is-active_&]:bg-[#d7ebc6] [[data-theme=light]_.is-active_&]:text-[#25401d]" aria-hidden="true">{item.abbreviation}</span>
-      <strong className="mt-2 text-xs font-extrabold leading-[1.35] group-[.is-active]:text-[#f7fff6] max-[560px]:text-[11px]">{item.title}</strong>
-      <small className="text-[11px] leading-[1.45] text-cs-muted group-[.is-active]:text-[#c3d5c4]">{item.description}</small>
+      <span className="grid size-[34px] place-items-center rounded-[10px] bg-cs-surface-2 text-[12px] font-extrabold text-cs-text group-[.is-active]:bg-white/20 group-[.is-active]:text-cs-accent-contrast" aria-hidden="true">{item.abbreviation}</span>
+      <strong className="mt-2 text-xs font-extrabold leading-[1.35] group-[.is-active]:text-cs-accent-contrast max-[560px]:text-[12px]">{item.title}</strong>
+      <small className="text-[12px] leading-[1.45] text-cs-muted group-[.is-active]:text-cs-accent-contrast group-[.is-active]:opacity-80">{item.description}</small>
     </NavLink>)}
   </nav>;
 }

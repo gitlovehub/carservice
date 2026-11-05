@@ -106,13 +106,13 @@ function Payment() {
       <main className="lg:ml-[250px]">
         <div className="mx-auto max-w-[1100px] px-6 py-10 md:py-14">
           <div className="mb-8">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
               KHÁCH HÀNG / THANH TOÁN
             </p>
 
             <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h1 className="text-[30px] font-bold tracking-[-0.8px] text-[#1F2933]">
+                <h1 className="text-[30px] font-bold tracking-normal text-[#1F2933]">
                   Thanh toán dịch vụ
                 </h1>
                 <p className="mt-2 text-[13px] leading-6 text-[#66717C]">
@@ -149,7 +149,7 @@ function Payment() {
                 <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
                   <div className="flex flex-col gap-3 border-b border-[#E1E4E6] p-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                      <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                         HÓA ĐƠN
                       </p>
                       <h2 className="mt-1 text-[18px] font-bold text-[#20252B]">
@@ -264,10 +264,10 @@ function Payment() {
               <div className="h-fit space-y-6">
                 <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.05)]">
                   <div className="bg-[#1F2933] p-6 text-white">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                    <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                       TỔNG THANH TOÁN
                     </p>
-                    <p className="mt-2 text-[28px] font-extrabold tracking-tight">
+                    <p className="mt-2 text-[28px] font-extrabold tracking-normal">
                       {formatMoney(invoice?.total_amount)}
                     </p>
                     <p className="mt-1 text-xs text-slate-300">
@@ -304,7 +304,7 @@ function Payment() {
                     </div>
 
                     <div className="mt-6 border-t border-slate-100 pt-4 text-center">
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-[12px] text-slate-500">
                         Hotline hỗ trợ tài chính / tra soát:
                       </p>
                       <a

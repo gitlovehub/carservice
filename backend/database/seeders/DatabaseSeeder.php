@@ -6,13 +6,10 @@ use App\Models\Account;
 use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\Holiday;
-use App\Models\MaintenancePackage;
-use App\Models\Service;
 use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
 use App\Models\VehicleModel;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
@@ -26,6 +23,7 @@ class DatabaseSeeder extends Seeder
         $this->call(VietnamVehicleCatalogSeeder::class);
         $this->call(DemoAccountsSeeder::class);
         $this->call(PartInventorySeeder::class);
+        $this->call(ServiceCatalogSeeder::class);
 
         // Dữ liệu mẫu ngẫu nhiên (factory) chỉ tạo ở lần chạy đầu để `db:seed` chạy lại không lỗi trùng email.
         if (Account::query()->where('email', 'admin@carservice.vn')->exists()) {
@@ -82,8 +80,7 @@ class DatabaseSeeder extends Seeder
         // 3. DÙNG LẠI HÃNG XE VÀ DÒNG XE TỪ RealDataSeeder
         $allModels = VehicleModel::all();
 
-        // 4. MASTER DATA: DỊCH VỤ GARAGE
-        $allServices = Service::factory()->count(8)->create();
+        // 4. DỊCH VỤ VÀ GÓI BẢO DƯỠNG: dùng danh mục thật từ ServiceCatalogSeeder, không sinh ngẫu nhiên.
 
         // 5. KHÁCH HÀNG ONLINE & XE CỦA HỌ
         Customer::factory()->count(10)->create()->each(function ($customer) use ($allModels) {
@@ -100,19 +97,5 @@ class DatabaseSeeder extends Seeder
                 'model_id' => $allModels->random()->id,
             ]);
         });
-
-        // 7. GÓI BẢO DƯỠNG ĐỊNH KỲ & DỊCH VỤ ĐI KÈM
-        $packages = MaintenancePackage::factory()->count(4)->create();
-        foreach ($packages as $package) {
-            // Gắn ngẫu nhiên từ 2 đến 4 dịch vụ vào từng gói
-            $attachServices = $allServices->random(rand(2, 4));
-            foreach ($attachServices as $service) {
-                DB::table('maintenance_package_services')->insertOrIgnore([
-                    'package_id' => $package->id,
-                    'service_id' => $service->id,
-                    'quantity' => 1,
-                ]);
-            }
-        }
     }
 }

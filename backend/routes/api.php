@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AdminServiceController;
 use App\Http\Controllers\Api\AdvisorAppointmentController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BookingCatalogController;
 use App\Http\Controllers\Api\ChatbotController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerRepairOrderController;
@@ -50,6 +51,7 @@ Route::get('services', [ServiceController::class, 'index']);
 Route::get('services/{service}', [ServiceController::class, 'show']);
 Route::get('maintenance-packages', [MaintenancePackageController::class, 'index']);
 Route::get('maintenance-packages/{maintenancePackage}', [MaintenancePackageController::class, 'show']);
+Route::get('booking-catalog', [BookingCatalogController::class, 'index']);
 
 Route::get('/working-hours', [WorkingHoursController::class, 'index']);
 

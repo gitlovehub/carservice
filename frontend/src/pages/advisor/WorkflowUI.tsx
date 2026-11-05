@@ -20,9 +20,4 @@ export function Status({ status }: { status: string }) {
   };
   return <span className="inline-flex rounded-lg border border-cs-border bg-cs-soft px-2.5 py-1 text-xs font-bold text-cs-text">{translation[status] || status}</span>;
 }
-export function formatDateTime(date?: string | null) {
-  if (!date) return "Chưa có";
-  const parsed = new Date(date);
-  return Number.isNaN(parsed.valueOf()) ? date : parsed.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" });
-}
-export function errorText(error: unknown) { return error instanceof Error ? error.message : "Đã xảy ra lỗi. Vui lòng thử lại."; }
+// formatDateTime / errorText: xem ./workflowFormat.ts (tách riêng để file này chỉ export component + hằng).

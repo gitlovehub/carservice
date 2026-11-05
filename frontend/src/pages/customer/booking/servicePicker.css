@@ -1,0 +1,36 @@
+/* Ngăn kéo chọn dịch vụ: trượt từ phải, nền mờ dần, cuộn trong khung. */
+@keyframes cs-drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes cs-drawer-out { from { transform: translateX(0); } to { transform: translateX(100%); } }
+@keyframes cs-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cs-scrim-out { from { opacity: 1; } to { opacity: 0; } }
+
+.cs-service-drawer-scrim { animation: cs-scrim-in .22s ease-out both; }
+.cs-service-drawer-panel { animation: cs-drawer-in .26s cubic-bezier(.22, 1, .36, 1) both; }
+.cs-service-drawer[data-state="closing"] .cs-service-drawer-scrim { animation: cs-scrim-out .2s ease-in both; }
+.cs-service-drawer[data-state="closing"] .cs-service-drawer-panel { animation: cs-drawer-out .2s ease-in both; }
+
+/* Cuộn mượt, không kéo theo trang phía sau, thanh cuộn mảnh. */
+.cs-service-drawer-body {
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cs-border) transparent;
+  scrollbar-gutter: stable;
+}
+.cs-service-drawer-body::-webkit-scrollbar { width: 8px; }
+.cs-service-drawer-body::-webkit-scrollbar-thumb { background: var(--cs-border); border-radius: 999px; }
+.cs-service-drawer-body::-webkit-scrollbar-track { background: transparent; }
+
+/* Nhóm dịch vụ mở/đóng mượt bằng grid-template-rows. */
+.cs-service-group-content { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .22s ease; }
+.cs-service-group-content[data-open="true"] { grid-template-rows: 1fr; }
+.cs-service-group-content > div { min-height: 0; overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-service-drawer-scrim,
+  .cs-service-drawer-panel,
+  .cs-service-drawer[data-state="closing"] .cs-service-drawer-scrim,
+  .cs-service-drawer[data-state="closing"] .cs-service-drawer-panel { animation: none; }
+  .cs-service-drawer-body { scroll-behavior: auto; }
+  .cs-service-group-content { transition: none; }
+}

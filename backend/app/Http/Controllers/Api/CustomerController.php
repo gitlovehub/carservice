@@ -87,7 +87,7 @@ class CustomerController extends Controller
     {
         $customer = Customer::find($id);
 
-        if (!$customer) {
+        if (! $customer) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy khách hàng.',
@@ -109,7 +109,7 @@ class CustomerController extends Controller
     {
         $customer = Customer::find($id);
 
-        if (!$customer) {
+        if (! $customer) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy khách hàng.',
@@ -166,7 +166,7 @@ class CustomerController extends Controller
     {
         $customer = Customer::find($id);
 
-        if (!$customer) {
+        if (! $customer) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy khách hàng.',
@@ -180,7 +180,6 @@ class CustomerController extends Controller
             'message' => 'Xóa khách hàng thành công.',
         ]);
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -198,7 +197,7 @@ class CustomerController extends Controller
             ->customer()
             ->first();
 
-        if (!$customer) {
+        if (! $customer) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tài khoản chưa có hồ sơ khách hàng.',
@@ -222,7 +221,7 @@ class CustomerController extends Controller
             ->customer()
             ->first();
 
-        if (!$customer) {
+        if (! $customer) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tài khoản chưa có hồ sơ khách hàng.',

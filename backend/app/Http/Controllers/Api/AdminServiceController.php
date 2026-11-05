@@ -19,7 +19,9 @@ class AdminServiceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Service::query();
+        $query = Service::query()->withCount([
+            'packages as active_packages_count' => fn ($query) => $query->where('maintenance_packages.status', 'ACTIVE'),
+        ]);
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -30,7 +32,7 @@ class AdminServiceController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->input('search') . '%');
+            $query->where('name', 'like', '%'.$request->input('search').'%');
         }
 
         return response()->json([
@@ -64,6 +66,8 @@ class AdminServiceController extends Controller
             'base_price' => ['required', 'numeric', 'min:0'],
             'estimated_minutes' => ['nullable', 'integer', 'min:1'],
             'status' => ['sometimes', 'required', Rule::in(['ACTIVE', 'INACTIVE'])],
+            'is_popular' => ['sometimes', 'boolean'],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
         ]);
 
         $validated['status'] ??= 'ACTIVE';
@@ -94,6 +98,8 @@ class AdminServiceController extends Controller
             'base_price' => ['sometimes', 'required', 'numeric', 'min:0'],
             'estimated_minutes' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'status' => ['sometimes', 'required', Rule::in(['ACTIVE', 'INACTIVE'])],
+            'is_popular' => ['sometimes', 'boolean'],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
         ]);
 
         $service->update($validated);

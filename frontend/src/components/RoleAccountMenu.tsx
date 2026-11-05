@@ -66,23 +66,23 @@ function RoleAccountMenu() {
             className="h-8 w-8 shrink-0 rounded-full object-cover border border-[#D6A85F]/50 shadow-xs"
           />
         ) : (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F2933] text-[9px] font-bold text-[#D6A85F]">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F2933] text-[11px] font-bold text-[#D6A85F]">
             {getInitials(getUserDisplayName(user))}
           </div>
         )}
 
         <div className="hidden min-w-0 text-left sm:block">
-          <p className="max-w-[120px] truncate text-[11px] font-semibold text-[#20252B]">
+          <p className="max-w-[120px] truncate text-[12px] font-semibold text-[#20252B]">
             {getUserDisplayName(user)}
           </p>
 
-          <p className="mt-0.5 text-[10px] text-[#8A949E]">
+          <p className="mt-0.5 text-[11px] text-[#8A949E]">
             {user?.role || "Khách hàng"}
           </p>
         </div>
 
         <span
-          className={`hidden text-[11px] text-[#8A949E] transition sm:block ${
+          className={`hidden text-[12px] text-[#8A949E] transition sm:block ${
             open ? "rotate-180" : ""
           }`}
         >
@@ -93,7 +93,7 @@ function RoleAccountMenu() {
       {open && (
         <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[280px] overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_16px_40px_rgba(31,41,51,0.12)]">
           <div className="border-b border-[#E1E4E6] px-4 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
               TÀI KHOẢN
             </p>
           </div>
@@ -108,16 +108,16 @@ function RoleAccountMenu() {
                   : "hover:bg-[#F7F7F5]"
               }`}
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D6A85F] text-[12px] text-[#3A3020]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D6A85F] text-[13px] text-[#3A3020]">
                 ⌂
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Trang chủ
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-[#8A949E]">
                   Trở về trang chính
                 </p>
               </div>
@@ -132,16 +132,16 @@ function RoleAccountMenu() {
                   : "hover:bg-[#F7F7F5]"
               }`}
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3E8D2] text-[12px] text-[#3A3020]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3E8D2] text-[13px] text-[#3A3020]">
                 ◉
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Thông tin tài khoản
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-[#8A949E]">
                   Xem thông tin tài khoản
                 </p>
               </div>
@@ -162,11 +162,11 @@ function RoleAccountMenu() {
                 </span>
 
                 <div>
-                  <p className="text-[12px] font-semibold text-[#20252B]">
+                  <p className="text-[13px] font-semibold text-[#20252B]">
                     {managementPage.label}
                   </p>
 
-                  <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                  <p className="mt-0.5 text-[11px] text-[#8A949E]">
                     {user?.role === "CUSTOMER"
                       ? "Lịch sử bảo dưỡng & theo dõi xe"
                       : "Quay lại khu vực làm việc"}
@@ -189,11 +189,11 @@ function RoleAccountMenu() {
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Đặt lịch
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-[#8A949E]">
                   Tạo lịch hẹn mới
                 </p>
               </div>
@@ -213,11 +213,11 @@ function RoleAccountMenu() {
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Lịch hẹn
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-[#8A949E]">
                   Theo dõi lịch hẹn
                 </p>
               </div>
@@ -237,11 +237,11 @@ function RoleAccountMenu() {
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Xe của tôi
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-[#8A949E]">
                   Quản lý phương tiện
                 </p>
               </div>
@@ -261,11 +261,11 @@ function RoleAccountMenu() {
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Đăng xuất
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-[#8A949E]">
                   Thoát khỏi tài khoản
                 </p>
               </div>

@@ -7,7 +7,7 @@ const garage = src('pages/customer/Cars.tsx');
 const services = src('pages/customer/Services.tsx');
 const hub = src('components/AdminHubNav.tsx');
 const dash = src('pages/shared/WorkspaceDashboard.tsx');
-const ui = src('components/ui/index.tsx');
+const ui = src('components/ui/Card.tsx'); // Phase 3: index.ts chỉ còn re-export, Card nằm file riêng.
 const shell = src('layouts/shell.css');
 assert.match(index, /@import "tailwindcss"/);
 assert.match(index, /@theme inline/);

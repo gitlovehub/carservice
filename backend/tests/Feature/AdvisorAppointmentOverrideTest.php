@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\Appointment;
 use App\Models\Customer;
+use App\Models\MaintenancePackage;
+use App\Models\Service;
 use App\Models\Vehicle;
+use App\Models\VehicleModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -113,6 +116,38 @@ class AdvisorAppointmentOverrideTest extends TestCase
             ))
             ->assertUnprocessable()
             ->assertJsonValidationErrors('vehicle_id');
+    }
+
+    public function test_internal_appointment_uses_same_package_rules_and_price_snapshot_as_customer_booking(): void
+    {
+        $advisor = Account::factory()->advisor()->create();
+        $customer = Customer::factory()->create();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer->id]);
+        $oilChange = Service::factory()->create(['name' => 'Thay dầu', 'base_price' => 100000]);
+        $sharedPackage = MaintenancePackage::factory()->create(['vehicle_model_id' => null]);
+        $sharedPackage->services()->attach($oilChange->id, ['quantity' => 1]);
+        $otherModelPackage = MaintenancePackage::factory()->create(['vehicle_model_id' => VehicleModel::factory()->create()->id]);
+
+        $this->actingAs($advisor)
+            ->postJson('/api/advisor/appointments', [...$this->payload($customer, $vehicle), 'package_ids' => [$otherModelPackage->id]])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('package_ids');
+
+        $appointmentId = $this->actingAs($advisor)
+            ->postJson('/api/advisor/appointments', [
+                ...$this->payload($customer, $vehicle),
+                'package_ids' => [$sharedPackage->id],
+                'service_ids' => [$oilChange->id],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->assertDatabaseMissing('appointment_services', ['appointment_id' => $appointmentId]);
+        $this->assertDatabaseHas('appointment_packages', [
+            'appointment_id' => $appointmentId,
+            'package_id' => $sharedPackage->id,
+            'estimated_price' => 100000,
+        ]);
     }
 
     public function test_customer_cannot_create_internal_appointment(): void

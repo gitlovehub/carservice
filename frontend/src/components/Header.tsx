@@ -248,7 +248,7 @@ function Header() {
                   <p className="max-w-[120px] truncate text-xs font-semibold text-[#1F2933]">
                     {getUserDisplayName(user)}
                   </p>
-                  <p className="text-[10px] text-[#7A838C]">
+                  <p className="text-[11px] text-[#7A838C]">
                     {user?.role || "Khách hàng"}
                   </p>
                 </div>
@@ -276,7 +276,7 @@ function Header() {
                   className="absolute right-0 top-full z-50 mt-2.5 w-64 rounded-2xl border border-[#E1E4E6] bg-white p-2 shadow-xl shadow-slate-900/10"
                 >
                   <div className="border-b border-[#EEF0F2] px-3 py-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A949E]">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#8A949E]">
                       Tài khoản người dùng
                     </p>
                     <p className="mt-1 truncate text-xs font-semibold text-[#1F2933]">

@@ -108,11 +108,11 @@ function Reviews() {
       <main className="lg:ml-[250px]">
         <div className="mx-auto max-w-[1200px] px-6 py-10 md:px-8 md:py-14">
           <div className="mb-8">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+            <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
               KHÁCH HÀNG / ĐÁNH GIÁ
             </p>
 
-            <h1 className="text-[30px] font-bold tracking-[-0.8px] text-[#1F2933]">
+            <h1 className="text-[30px] font-bold tracking-normal text-[#1F2933]">
               Đánh giá dịch vụ
             </h1>
 
@@ -127,7 +127,7 @@ function Reviews() {
               onSubmit={handleSubmit}
               className="h-fit rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]"
             >
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+              <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                 GỬI PHẢN HỒI
               </p>
               <h2 className="mt-1 text-[17px] font-bold text-[#20252B]">
@@ -181,7 +181,7 @@ function Reviews() {
                       </button>
                     ))}
                   </div>
-                  <p className="mt-1.5 text-[11px] text-[#8A949E]">
+                  <p className="mt-1.5 text-[12px] text-[#8A949E]">
                     {rating === 5
                       ? "Rất hài lòng (5/5 sao)"
                       : rating === 4
@@ -256,7 +256,7 @@ function Reviews() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex flex-col justify-between gap-3 border-b border-[#E1E4E6] px-6 py-5 sm:flex-row sm:items-center">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     LỊCH SỬ
                   </p>
                   <h2 className="mt-1 text-[17px] font-bold text-[#20252B]">
@@ -264,7 +264,7 @@ function Reviews() {
                   </h2>
                 </div>
 
-                <div className="rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
+                <div className="rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[12px] font-semibold text-[#66717C]">
                   {reviews.length} đánh giá
                 </div>
               </div>
@@ -297,7 +297,7 @@ function Reviews() {
                               <span className="font-mono text-xs font-bold text-[#1F2933]">
                                 Phiếu {ro?.repair_order_code ?? `#${rev.repair_order_id}`}
                               </span>
-                              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
                                 Đã ghi nhận
                               </span>
                             </div>
@@ -316,7 +316,7 @@ function Reviews() {
                                 {"★".repeat(5 - rev.overall_rating)}
                               </span>
                             </div>
-                            <p className="mt-0.5 text-[11px] text-slate-400">
+                            <p className="mt-0.5 text-[12px] text-slate-400">
                               {formatDate(rev.created_at)}
                             </p>
                           </div>
@@ -351,7 +351,7 @@ function Reviews() {
                 <p className="text-[13px] font-semibold text-[#20252B]">
                   Góp ý của bạn rất quan trọng
                 </p>
-                <p className="mt-1 text-[11px] leading-5 text-[#7B858F]">
+                <p className="mt-1 text-[12px] leading-5 text-[#7B858F]">
                   Hãy đánh giá trung thực để CarService không ngừng nâng cao tay nghề kỹ thuật và chất lượng phục vụ khách hàng.
                 </p>
               </div>

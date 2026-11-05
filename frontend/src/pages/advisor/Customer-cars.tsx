@@ -2,8 +2,6 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import AdvisorSidebar from "./AdvisorSidebar";
-import AdvisorTopbar from "./AdvisorTopbar";
 import {
   createAdvisorVehicle,
   deleteAdvisorVehicle,
@@ -239,24 +237,22 @@ function CustomerCars() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdvisorSidebar />
 
       <div className="lg:ml-[250px]">
-        <AdvisorTopbar />
 
         <main>
           <div className="mx-auto max-w-[1200px] px-6 py-8 lg:px-8 lg:py-10">
             <div className="mb-8">
-              <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
                 GARA / XE KHÁCH HÀNG
               </p>
 
               <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
                 <div>
-                  <h2 className="text-[24px] font-bold tracking-tight">
+                  <h2 className="text-[24px] font-bold tracking-normal">
                     Quản lý xe khách hàng
                   </h2>
-                  <p className="mt-2 max-w-[620px] text-[12px] leading-5 text-[#8A949E]">
+                  <p className="mt-2 max-w-[620px] text-[13px] leading-5 text-[#8A949E]">
                     Theo dõi và cập nhật thông tin xe thuộc khách hàng tại gara.
                   </p>
                 </div>
@@ -273,33 +269,33 @@ function CustomerCars() {
 
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                   TỔNG SỐ XE
                 </p>
                 <p className="mt-3 text-[24px] font-bold">{total}</p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Tổng số xe từ hệ thống
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                   KẾT QUẢ
                 </p>
                 <p className="mt-3 text-[24px] font-bold">
                   {filteredCars.length}
                 </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Xe ở trang hiện tại
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                   VAI TRÒ
                 </p>
                 <p className="mt-3 text-[14px] font-bold">Cố vấn dịch vụ</p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Không gian làm việc
                 </p>
               </div>
@@ -308,7 +304,7 @@ function CustomerCars() {
             <div className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-5">
               <div className="mb-5">
                 <p className="text-[13px] font-semibold">Tìm kiếm xe</p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Tìm theo biển số, VIN hoặc phiên bản xe.
                 </p>
               </div>
@@ -355,7 +351,7 @@ function CustomerCars() {
                       setBrand("");
                       setPage(1);
                     }}
-                    className="text-[10px] font-semibold text-[#66717C] hover:text-[#20252B]"
+                    className="text-[11px] font-semibold text-[#66717C] hover:text-[#20252B]"
                   >
                     Xóa bộ lọc
                   </button>
@@ -364,7 +360,7 @@ function CustomerCars() {
             </div>
 
             {error && (
-              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-700">
+              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
                 {error}
               </div>
             )}
@@ -375,11 +371,11 @@ function CustomerCars() {
                   <p className="text-[13px] font-semibold">
                     Danh sách xe khách hàng
                   </p>
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                  <p className="mt-1 text-[11px] text-[#8A949E]">
                     Dữ liệu được tải từ hệ thống
                   </p>
                 </div>
-                <p className="w-fit rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-semibold text-[#66717C]">
+                <p className="w-fit rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
                   {total} xe
                 </p>
               </div>
@@ -399,7 +395,7 @@ function CustomerCars() {
                       ].map((heading) => (
                         <th
                           key={heading}
-                          className="px-5 py-3 text-[9px] font-bold text-[#8A949E]"
+                          className="px-5 py-3 text-[11px] font-bold text-[#8A949E]"
                         >
                           {heading}
                         </th>
@@ -412,7 +408,7 @@ function CustomerCars() {
                       <tr>
                         <td
                           colSpan={7}
-                          className="px-5 py-14 text-center text-[12px] text-[#8A949E]"
+                          className="px-5 py-14 text-center text-[13px] text-[#8A949E]"
                         >
                           Đang tải danh sách xe...
                         </td>
@@ -421,7 +417,7 @@ function CustomerCars() {
                       <tr>
                         <td
                           colSpan={7}
-                          className="px-5 py-14 text-center text-[12px] text-[#8A949E]"
+                          className="px-5 py-14 text-center text-[13px] text-[#8A949E]"
                         >
                           Không tìm thấy xe phù hợp.
                         </td>
@@ -432,41 +428,41 @@ function CustomerCars() {
                           key={car.id}
                           className="border-b border-[#EEF0F2] last:border-0 hover:bg-transparent cs-readable-row"
                         >
-                          <td className="px-5 py-4 text-[11px] text-[#66717C]">
+                          <td className="px-5 py-4 text-[12px] text-[#66717C]">
                             {(page - 1) * 10 + index + 1}
                           </td>
 
                           <td className="px-5 py-4">
-                            <span className="rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-bold">
+                            <span className="rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-bold">
                               {car.license_plate || "Chưa có biển số"}
                             </span>
                           </td>
 
                           <td className="px-5 py-4">
-                            <p className="text-[11px] font-semibold">
+                            <p className="text-[12px] font-semibold">
                               {car.customer?.full_name ||
                                 car.customer?.name ||
                                 "Chưa có thông tin"}
                             </p>
-                            <p className="mt-1 text-[9px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-[#8A949E]">
                               {car.customer?.phone || car.customer?.email || "—"}
                             </p>
                           </td>
 
                           <td className="px-5 py-4">
-                            <p className="text-[11px] font-semibold">
+                            <p className="text-[12px] font-semibold">
                               {car.model?.brand?.name || "Chưa xác định"}
                             </p>
-                            <p className="mt-1 text-[9px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-[#8A949E]">
                               {car.model?.name || car.variant || "Chưa xác định"}
                             </p>
                           </td>
 
-                          <td className="px-5 py-4 text-[11px] text-[#66717C]">
+                          <td className="px-5 py-4 text-[12px] text-[#66717C]">
                             {car.year || "—"}
                           </td>
 
-                          <td className="px-5 py-4 text-[11px] text-[#66717C]">
+                          <td className="px-5 py-4 text-[12px] text-[#66717C]">
                             {car.mileage != null
                               ? `${car.mileage.toLocaleString("vi-VN")} km`
                               : "—"}
@@ -476,7 +472,7 @@ function CustomerCars() {
                             <div className="flex items-center gap-2">
                               <Link
                                 to="/advisor/appointments"
-                                className="inline-flex rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[10px] font-semibold text-[#374151] hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
+                                className="inline-flex rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[11px] font-semibold text-[#374151] hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
                               >
                                 Lịch hẹn
                               </Link>
@@ -484,7 +480,7 @@ function CustomerCars() {
                               <button
                                 type="button"
                                 onClick={() => openEditModal(car)}
-                                className="rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[10px] font-semibold hover:border-[#D6A85F]"
+                                className="rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[11px] font-semibold hover:border-[#D6A85F]"
                               >
                                 Sửa
                               </button>
@@ -508,7 +504,7 @@ function CustomerCars() {
 
               {!loading && lastPage > 1 && (
                 <div className="flex items-center justify-between border-t border-[#EEF0F2] px-5 py-4">
-                  <p className="text-[10px] text-[#8A949E]">
+                  <p className="text-[11px] text-[#8A949E]">
                     Trang {page} / {lastPage}
                   </p>
                   <div className="flex gap-2">
@@ -516,7 +512,7 @@ function CustomerCars() {
                       type="button"
                       disabled={page <= 1}
                       onClick={() => setPage((current) => current - 1)}
-                      className="rounded-lg border border-[#D9DDE1] px-3 py-2 text-[10px] font-semibold disabled:opacity-40"
+                      className="rounded-lg border border-[#D9DDE1] px-3 py-2 text-[11px] font-semibold disabled:opacity-40"
                     >
                       Trang trước
                     </button>
@@ -524,7 +520,7 @@ function CustomerCars() {
                       type="button"
                       disabled={page >= lastPage}
                       onClick={() => setPage((current) => current + 1)}
-                      className="rounded-lg border border-[#D9DDE1] px-3 py-2 text-[10px] font-semibold disabled:opacity-40"
+                      className="rounded-lg border border-[#D9DDE1] px-3 py-2 text-[11px] font-semibold disabled:opacity-40"
                     >
                       Trang sau
                     </button>

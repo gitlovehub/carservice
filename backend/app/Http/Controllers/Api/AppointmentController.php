@@ -7,7 +7,6 @@ use App\Http\Requests\StoreAppointmentRequest;
 use App\Http\Requests\UpdateAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Customer;
-use App\Models\Service;
 use App\Models\Vehicle;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
@@ -84,30 +83,25 @@ class AppointmentController extends Controller
                             'new_vehicle.license_plate' => 'Biển số này đã được đăng ký cho một tài khoản khác. Vui lòng liên hệ gara để được hỗ trợ.',
                         ]);
                     }
-                }
 
-                if (! isset($validated['vehicle_id']) && $existingVehicle) {
-                    if ($existingVehicle->trashed()) {
-                        $existingVehicle->restore();
+                    if ($existingVehicle) {
+                        if ($existingVehicle->trashed()) {
+                            $existingVehicle->restore();
+                        }
+                        $vehicle = $existingVehicle;
+                    } else {
+                        // Loại thân xe (body_type) lấy theo danh mục có sẵn; dòng xe mới do khách nhập để trống.
+                        $brand = VehicleBrand::firstOrCreate(['name' => trim($input['brand'])], ['status' => 'ACTIVE']);
+                        $model = VehicleModel::firstOrCreate(
+                            ['brand_id' => $brand->id, 'name' => trim($input['model'])],
+                            ['status' => 'ACTIVE']
+                        );
+                        $vehicle = Vehicle::create([
+                            'customer_id' => $customer->id,
+                            'model_id' => $model->id,
+                            'license_plate' => $plate,
+                        ]);
                     }
-                    $vehicle = $existingVehicle;
-                } elseif (! isset($validated['vehicle_id'])) {
-                    $type = match ($input['vehicle_type']) {
-                        'Sedan / Hatchback (4-5 chỗ)' => 'SEDAN',
-                        'SUV / Crossover (5-7 chỗ)' => 'SUV',
-                        'PICKUP' => 'PICKUP',
-                        default => 'MPV',
-                    };
-                    $brand = VehicleBrand::firstOrCreate(['name' => trim($input['brand'])], ['status' => 'ACTIVE']);
-                    $model = VehicleModel::firstOrCreate(
-                        ['brand_id' => $brand->id, 'name' => trim($input['model'])],
-                        ['body_type' => $type, 'status' => 'ACTIVE']
-                    );
-                    $vehicle = Vehicle::create([
-                        'customer_id' => $customer->id,
-                        'model_id' => $model->id,
-                        'license_plate' => $plate,
-                    ]);
                 }
 
                 $booked = DB::table('appointments')
@@ -126,29 +120,21 @@ class AppointmentController extends Controller
                     throw ValidationException::withMessages(['vehicle_id' => 'Xe đã có lịch hẹn tại khung giờ này.']);
                 }
 
+                $serviceIds = $validated['service_ids'] ?? [];
+                $packageIds = $validated['package_ids'] ?? [];
+
                 $appointment = Appointment::create([
                     'appointment_code' => 'APT-'.$when->format('Ymd').'-'.strtoupper(Str::random(8)),
                     'customer_id' => $customer->id,
                     'vehicle_id' => $vehicle->id,
                     'appointment_date' => $date,
                     'appointment_time' => $time,
-                    'request_type' => $validated['request_type'],
+                    'request_type' => $validated['request_type'] ?? $this->inferRequestType($serviceIds, $packageIds),
                     'symptom_description' => $validated['symptom_description'] ?? null,
                     'note' => $validated['note'] ?? null,
                     'status' => 'PENDING',
                 ]);
-                $ids = $validated['service_ids'] ?? [];
-                if (! empty($validated['service_name'])) {
-                    $defaults = [
-                        'Bảo dưỡng định kỳ' => ['category' => 'Bảo dưỡng định kỳ', 'base_price' => 500000, 'estimated_minutes' => 60, 'status' => 'ACTIVE'],
-                        'Kiểm tra tổng quát' => ['category' => 'Kiểm tra tổng quát', 'base_price' => 300000, 'estimated_minutes' => 60, 'status' => 'ACTIVE'],
-                        'Thay dầu động cơ' => ['category' => 'Bảo dưỡng định kỳ', 'base_price' => 350000, 'estimated_minutes' => 30, 'status' => 'ACTIVE'],
-                    ];
-                    $service = Service::firstOrCreate(['name' => $validated['service_name']], $defaults[$validated['service_name']]);
-                    $ids[] = $service->id;
-                }
-                $appointment->services()->sync(array_unique($ids));
-                $appointment->packages()->sync($validated['package_ids'] ?? []);
+                $appointment->syncRequestedItems($serviceIds, $packageIds);
 
                 return $appointment;
             }, 3);
@@ -314,7 +300,8 @@ class AppointmentController extends Controller
                     throw ValidationException::withMessages(['vehicle_id' => 'Xe không tồn tại hoặc không thuộc tài khoản của bạn.']);
                 }
 
-                $slotChanged = $vehicleId !== (int) $appointment->vehicle_id
+                $vehicleChanged = $vehicleId !== (int) $appointment->vehicle_id;
+                $slotChanged = $vehicleChanged
                     || isset($validated['appointment_date'])
                     || isset($validated['appointment_time']);
 
@@ -327,11 +314,14 @@ class AppointmentController extends Controller
                     ...(isset($validated['appointment_time']) ? ['appointment_time' => $time] : []),
                 ]);
 
-                if (isset($validated['service_ids'])) {
-                    $appointment->services()->sync($validated['service_ids']);
-                }
-                if (isset($validated['package_ids'])) {
-                    $appointment->packages()->sync($validated['package_ids']);
+                $itemsChanged = isset($validated['service_ids']) || isset($validated['package_ids']);
+
+                // Đổi xe thì kiểm tra lại gói theo dòng xe mới.
+                if ($itemsChanged || $vehicleChanged) {
+                    $appointment->syncRequestedItems(
+                        $validated['service_ids'] ?? $appointment->services()->pluck('services.id')->all(),
+                        $validated['package_ids'] ?? $appointment->packages()->pluck('maintenance_packages.id')->all(),
+                    );
                 }
             });
 
@@ -391,6 +381,21 @@ class AppointmentController extends Controller
             'success' => true,
             'message' => 'Hủy lịch hẹn thành công.',
         ], Response::HTTP_OK);
+    }
+
+    /**
+     * Có gói thì là bảo dưỡng; chỉ có dịch vụ lẻ thì là sửa chữa; chỉ mô tả triệu chứng thì là chẩn đoán.
+     *
+     * @param  array<int, int>  $serviceIds
+     * @param  array<int, int>  $packageIds
+     */
+    private function inferRequestType(array $serviceIds, array $packageIds): string
+    {
+        if ($packageIds !== []) {
+            return 'MAINTENANCE';
+        }
+
+        return $serviceIds !== [] ? 'REPAIR' : 'DIAGNOSIS';
     }
 
     /**

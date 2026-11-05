@@ -72,7 +72,7 @@ function TrackingCard({ order }: { order: CustomerRepairOrder }) {
 
   return (
     <article className="mb-5 rounded-[18px] border bg-[var(--cs-surface,#fff)] border-[var(--cs-border,#e9e9e6)] p-5 sm:p-7">
-      <div className="flex flex-wrap items-center justify-between gap-5 border-b border-[var(--cs-border,#e9e9e6)] pb-6 [&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:tracking-tight">
+      <div className="flex flex-wrap items-center justify-between gap-5 border-b border-[var(--cs-border,#e9e9e6)] pb-6 [&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:tracking-normal">
         <div>
           <p className="mb-2 text-[13px] font-extrabold tracking-[0.11em] text-[#cf2935]">{order.repair_order_code}</p>
           <h2>{getVehicleName(order.vehicle)}</h2>
@@ -81,7 +81,7 @@ function TrackingCard({ order }: { order: CustomerRepairOrder }) {
             {order.received_at ? ` · Tiếp nhận ${formatEventTime(order.received_at)}` : ""}
           </p>
         </div>
-        <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-2 text-[11px] font-extrabold ${statusColorClasses[statusColor(status)]}`}>
+        <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-2 text-[12px] font-extrabold ${statusColorClasses[statusColor(status)]}`}>
           ● {repairStatusLabel[status] ?? status}
         </span>
       </div>
@@ -138,7 +138,7 @@ export default function RepairStatus() {
 
   return <section className="min-h-[calc(100dvh-180px)] px-5 py-12 sm:px-6 sm:pb-16 bg-[var(--cs-bg,#f7f7f6)] text-[var(--cs-text,#191919)] ">
     <div className="mx-auto w-full max-w-[1200px]">
-      <header className="mb-7 flex flex-wrap items-end justify-between gap-5 [&_h1]:text-[clamp(29px,4vw,46px)] [&_h1]:font-extrabold [&_h1]:tracking-[-0.055em] [&_h1]:leading-[1.16] [&_p:not(:first-child)]:mt-2.5 [&_p:not(:first-child)]:text-sm [&_p:not(:first-child)]:text-[var(--cs-muted,#757575)]"><div>
+      <header className="mb-7 flex flex-wrap items-end justify-between gap-5 [&_h1]:text-[clamp(29px,4vw,46px)] [&_h1]:font-extrabold [&_h1]:tracking-normal [&_h1]:leading-[1.16] [&_p:not(:first-child)]:mt-2.5 [&_p:not(:first-child)]:text-sm [&_p:not(:first-child)]:text-[var(--cs-muted,#757575)]"><div>
         <p className="mb-2.5 text-xs font-extrabold tracking-[0.16em] text-[#cf2935]">MY GARAGE / TRACKING</p>
         <h1>Hành trình sửa chữa</h1>
         <p>Biết xe đang ở công đoạn nào và công việc tiếp theo là gì.</p>

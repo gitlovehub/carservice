@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { listWorkflowOrders, type WorkflowOrder, type WorkflowPage } from "../../services/workflowService";
-import { card, outline, WorkflowTitle, Notice, Status, errorText, formatDateTime } from "./WorkflowUI";
+import { card, outline, WorkflowTitle, Notice, Status } from "./WorkflowUI";
+import { errorText, formatDateTime } from "./workflowFormat";
 
 const filters: Array<[string, string]> = [
   ["", "Tất cả"], ["RECEIVED", "Chờ kiểm tra"], ["INSPECTING", "Đang kiểm tra"], ["QUOTING", "Chờ lập báo giá"],

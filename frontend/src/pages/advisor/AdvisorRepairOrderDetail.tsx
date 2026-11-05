@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { latestQuotation, workflowApi, type WorkflowOrder } from "../../services/workflowService";
-import { card, outline, WorkflowTitle, Notice, Status, errorText, formatDateTime } from "./WorkflowUI";
+import { card, outline, WorkflowTitle, Notice, Status } from "./WorkflowUI";
+import { errorText, formatDateTime } from "./workflowFormat";
 import { InspectionPanel, PaymentPanel, QuotationPanel, RepairPanel } from "./RepairOrderPanels";
+import CustomerRequestSummary from "./CustomerRequestSummary";
 
 /** Các bước của phiếu sửa chữa theo thứ tự cố vấn thao tác; mỗi bước gồm những trạng thái thuộc về nó. */
 const steps: Array<{ label: string; statuses: string[] }> = [
@@ -23,7 +25,7 @@ function StepTracker({ status }: { status: string }) {
       const active = !finished && index === current;
       return <li key={step.label} aria-current={active ? "step" : undefined} className={`rounded-xl border px-2 py-2.5 text-center text-xs font-semibold sm:text-sm ${
         active ? "border-cs-accent bg-cs-soft text-cs-text" : done ? "border-cs-border bg-cs-surface text-cs-muted" : "border-dashed border-cs-border text-cs-muted"}`}>
-        <span className={`mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${
+        <span className={`mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-black ${
           active ? "bg-cs-accent text-cs-accent-contrast" : done ? "bg-emerald-600 text-white" : "bg-cs-surface-2 text-cs-muted"}`}>{done ? "✓" : index + 1}</span>
         <span className="hidden sm:inline">{step.label}</span>
       </li>;
@@ -81,13 +83,17 @@ export default function AdvisorRepairOrderDetail() {
           ["Khách hàng", order.customer?.full_name || `#${order.customer_id || "?"}`],
           ["Điện thoại", order.customer?.phone || "—"],
           ["Biển số", order.vehicle?.license_plate || `#${order.vehicle_id || "?"}`],
-          ["Lịch hẹn", order.appointment_id ? `#${order.appointment_id}` : "Khách walk-in"],
+          ["Lịch hẹn", order.appointment?.appointment_code || (order.appointment_id ? `#${order.appointment_id}` : "Khách walk-in")],
           ["Cố vấn", order.advisor?.full_name || "—"],
           ["Nhận xe lúc", formatDateTime(order.received_at)],
           ["Số km", order.mileage_received == null ? "—" : `${order.mileage_received.toLocaleString("vi-VN")} km`],
         ].map(([name, value]) => <div key={name}><dt className="text-xs text-cs-muted">{name}</dt><dd className="mt-1 text-sm font-semibold text-cs-text">{value}</dd></div>)}</dl>
         <div className="mt-5 border-t border-cs-border pt-4"><p className="text-xs font-bold text-cs-muted">Tình trạng ban đầu</p><p className="mt-2 whitespace-pre-wrap text-sm text-cs-text">{order.initial_condition || "Chưa ghi"}</p></div>
         {order.note && <p className="mt-3 whitespace-pre-wrap text-sm text-cs-muted">Ghi chú: {order.note}</p>}
+        {order.appointment && <div className="mt-5 border-t border-cs-border pt-4">
+          <p className="mb-3 text-xs font-bold text-cs-muted">Khách yêu cầu khi đặt lịch {order.appointment.appointment_code ? `(${order.appointment.appointment_code})` : ""}</p>
+          <CustomerRequestSummary request={order.appointment}/>
+        </div>}
       </section>
       <InspectionPanel key={`inspection-${order.inspections?.[0]?.id ?? 0}-${order.inspections?.[0]?.recommendations?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
       <QuotationPanel key={`quotation-${latestQuotation(order)?.id ?? 0}-${order.inspections?.[0]?.recommendations?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>

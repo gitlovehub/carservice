@@ -32,7 +32,7 @@ class AdminMaintenancePackageController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->input('search') . '%');
+            $query->where('name', 'like', '%'.$request->input('search').'%');
         }
 
         $packages = $query->latest('id')->paginate(10);

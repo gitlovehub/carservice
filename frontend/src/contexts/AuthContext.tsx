@@ -1,17 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PropsWithChildren } from "react";
 import { fetchApi } from "../services/api";
 import type { AuthUserInfo } from "../pages/auth/auth";
-
-export type SessionState =
-  | { status: "checking"; account: null }
-  | { status: "guest"; account: null }
-  | { status: "error"; account: null }
-  | { status: "authenticated"; account: NonNullable<AuthUserInfo> };
-
-const AuthContext = createContext<SessionState | null>(null);
+import { AuthContext, type SessionState } from "./authSession";
 
 // Chỉ dữ liệu /api/me được xác nhận bởi Sanctum mới cấp quyền truy cập route.
+// Hook đọc phiên: useAuthSession() trong contexts/authSession.ts.
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<SessionState>({ status: "checking", account: null });
   const [revision, setRevision] = useState(0);
@@ -55,10 +49,4 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const value = useMemo(() => session, [session]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuthSession() {
-  const session = useContext(AuthContext);
-  if (!session) throw new Error("useAuthSession phải được dùng trong AuthProvider");
-  return session;
 }

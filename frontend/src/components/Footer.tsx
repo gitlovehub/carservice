@@ -21,7 +21,7 @@ function Footer() {
 
             <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-[11px] font-medium text-slate-600">
+              <span className="text-[12px] font-medium text-slate-600">
                 Chứng chỉ kỹ thuật tiêu chuẩn OEM
               </span>
             </div>

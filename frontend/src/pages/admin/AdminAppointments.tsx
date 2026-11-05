@@ -2,8 +2,6 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AdminSidebar from "./AdminSidebar";
-import AdminTopbar from "./AdminTopbar";
 import { fetchApi } from "../../services/api";
 
 type Appointment = {
@@ -219,20 +217,18 @@ function AdminAppointments() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdminSidebar />
 
       <div className="lg:ml-[250px]">
-        <AdminTopbar />
 
         <main className="px-6 py-8 lg:px-8">
           <div className="mx-auto max-w-[1200px]">
             <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
                   QUẢN TRỊ HỆ THỐNG / LỊCH HẸN
                 </p>
 
-                <h1 className="text-3xl font-bold tracking-tight">
+                <h1 className="text-3xl font-bold tracking-normal">
                   Quản lý lịch hẹn
                 </h1>
 
@@ -278,11 +274,11 @@ function AdminAppointments() {
                   key={item.label}
                   className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
                     {item.label}
                   </p>
                   <p className="mt-4 text-2xl font-bold">{item.value}</p>
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                  <p className="mt-1 text-[11px] text-[#8A949E]">
                     {item.description}
                   </p>
                 </div>
@@ -291,23 +287,23 @@ function AdminAppointments() {
 
             <div className="mb-6 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
                   Đã xác nhận
                 </p>
                 <p className="mt-3 text-2xl font-bold">{confirmedCount}</p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Chờ khách hàng đến gara
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
                   Kết quả hiện tại
                 </p>
                 <p className="mt-3 text-2xl font-bold">
                   {filteredAppointments.length}
                 </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Lịch hẹn phù hợp với tìm kiếm và bộ lọc
                 </p>
               </div>
@@ -349,7 +345,7 @@ function AdminAppointments() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-6">
               <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     DANH SÁCH
                   </p>
 
@@ -394,12 +390,12 @@ function AdminAppointments() {
               </div>
 
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[10px] text-[#8A949E]">
+                <p className="text-[11px] text-[#8A949E]">
                   Hiển thị {filteredAppointments.length} / {appointments.length} lịch hẹn
                 </p>
 
                 {updatingId !== null && (
-                  <p className="text-[10px] font-semibold text-[#9A6B22]">
+                  <p className="text-[11px] font-semibold text-[#9A6B22]">
                     Đang cập nhật lịch hẹn...
                   </p>
                 )}
@@ -420,7 +416,7 @@ function AdminAppointments() {
                       ].map((heading) => (
                         <th
                           key={heading}
-                          className="px-3 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]"
+                          className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A949E]"
                         >
                           {heading}
                         </th>
@@ -449,7 +445,7 @@ function AdminAppointments() {
                             <p className="text-xs font-semibold">
                               {appointment.customer}
                             </p>
-                            <p className="mt-1 text-[10px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-[#8A949E]">
                               {appointment.phone || "Chưa có số điện thoại"}
                             </p>
                           </td>
@@ -466,7 +462,7 @@ function AdminAppointments() {
 
                           <td className="px-3 py-4">
                             <span
-                              className={`inline-flex whitespace-nowrap rounded-full px-3 py-1.5 text-[10px] font-semibold ${getStatusStyle(appointment.status)}`}
+                              className={`inline-flex whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold ${getStatusStyle(appointment.status)}`}
                             >
                               {appointment.status}
                             </span>
@@ -484,7 +480,7 @@ function AdminAppointments() {
                                       "Đã xác nhận",
                                     )
                                   }
-                                  className="rounded-xl bg-[#1F2933] px-3 py-2 text-[10px] font-semibold text-white transition hover:bg-[#151D24] disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="rounded-xl bg-[#1F2933] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#151D24] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   {isUpdating ? "Đang xử lý..." : "Duyệt"}
                                 </button>
@@ -498,7 +494,7 @@ function AdminAppointments() {
                                       "Đã hủy",
                                     )
                                   }
-                                  className="rounded-xl border border-[#E1E4E6] px-3 py-2 text-[10px] font-semibold text-[#A24A4A] transition hover:bg-[#FDEEEE] disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="rounded-xl border border-[#E1E4E6] px-3 py-2 text-[11px] font-semibold text-[#A24A4A] transition hover:bg-[#FDEEEE] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   Hủy
                                 </button>
@@ -515,20 +511,20 @@ function AdminAppointments() {
                                     "Đã tiếp nhận",
                                   )
                                 }
-                                className="whitespace-nowrap rounded-xl border border-[#E1E4E6] px-3 py-2 text-[10px] font-semibold text-[#66717C] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5] disabled:cursor-not-allowed disabled:opacity-50"
+                                className="whitespace-nowrap rounded-xl border border-[#E1E4E6] px-3 py-2 text-[11px] font-semibold text-[#66717C] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5] disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 {isUpdating ? "Đang xử lý..." : "Tiếp nhận"}
                               </button>
                             )}
 
                             {appointment.status === "Đã tiếp nhận" && (
-                              <span className="text-[10px] font-medium text-[#8A949E]">
+                              <span className="text-[11px] font-medium text-[#8A949E]">
                                 Đã tiếp nhận
                               </span>
                             )}
 
                             {appointment.status === "Đã hủy" && (
-                              <span className="text-[10px] font-medium text-[#8A949E]">
+                              <span className="text-[11px] font-medium text-[#8A949E]">
                                 Đã kết thúc
                               </span>
                             )}

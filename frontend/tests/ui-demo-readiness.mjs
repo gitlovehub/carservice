@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 const src = (file) => readFileSync(path.resolve('src',file),'utf8');
-const feedback=src('components/ui/FeedbackProvider.tsx');
+// Phase 3: giao diện hộp xác nhận tách sang ConfirmDialog, vùng màu theo vai trò sang useOverlayArea; vẫn một cơ chế duy nhất.
+const feedback=['FeedbackProvider.tsx','ConfirmDialog.tsx','useOverlayArea.ts'].map(f=>src('components/ui/'+f)).join('\n');
 const appointments=src('pages/advisor/Appointments.tsx');
 const reception=src('pages/advisor/ReceptionWorkflow.tsx');
 const order=src('pages/advisor/AdvisorRepairOrderDetail.tsx');

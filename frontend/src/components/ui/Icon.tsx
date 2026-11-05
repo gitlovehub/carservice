@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import type { ShellNavItem } from "../../layouts/navigation";
 
-type IconName = ShellNavItem["icon"] | "sun" | "moon" | "menu" | "close" | "logout" | "arrow" | "plus";
+export type IconName = ShellNavItem["icon"] | "sun" | "moon" | "menu" | "close" | "logout" | "arrow" | "plus"
+  | "search" | "chevron-left" | "chevron-right" | "chevron-down" | "edit" | "trash" | "more" | "check"
+  | "alert" | "info" | "eye" | "filter" | "user" | "refresh" | "sidebar";
 type Props = { name: IconName; size?: number; className?: string };
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-6h6v6"/></>,
@@ -23,6 +25,21 @@ const paths: Record<IconName, ReactNode> = {
   logout: <><path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10"/></>,
   arrow: <path d="M5 12h14m-6-6 6 6-6 6"/>,
   plus: <path d="M12 5v14M5 12h14"/>,
+  search: <><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></>,
+  "chevron-left": <path d="m15 5-7 7 7 7"/>,
+  "chevron-right": <path d="m9 5 7 7-7 7"/>,
+  "chevron-down": <path d="m5 9 7 7 7-7"/>,
+  edit: <><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></>,
+  trash: <><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></>,
+  more: <><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></>,
+  check: <path d="m5 12.5 4.5 4.5L19 7.5"/>,
+  alert: <><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/></>,
+  info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.5v.01"/></>,
+  eye: <><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="2.8"/></>,
+  filter: <path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>,
+  user: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
+  refresh: <><path d="M20 11a8 8 0 0 0-14.6-4.5M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5M20 20v-4h-4"/></>,
+  sidebar: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></>,
 };
 export function Icon({ name, size = 18, className }: Props) {
   return <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;

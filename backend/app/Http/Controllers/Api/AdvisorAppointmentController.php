@@ -91,8 +91,7 @@ class AdvisorAppointmentController extends Controller
                 'status' => 'PENDING',
             ]);
 
-            $appointment->services()->sync($data['service_ids'] ?? []);
-            $appointment->packages()->sync($data['package_ids'] ?? []);
+            $appointment->syncRequestedItems($data['service_ids'] ?? [], $data['package_ids'] ?? []);
 
             return $appointment;
         });
@@ -175,8 +174,10 @@ class AdvisorAppointmentController extends Controller
         $appointment = Appointment::with([
             'customer',
             'vehicle.model.brand',
-            'services',
-            'packages',
+            'services:id,name,category,base_price,estimated_minutes',
+            'packages:id,name,description,mileage_milestone',
+            'packages.services:id,name',
+            'packages.parts:id,name,unit',
         ])->find($id);
 
         if (! $appointment) {
