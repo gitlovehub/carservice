@@ -185,6 +185,27 @@ function getBrandForModel(model: string): string | undefined {
   )?.[0];
 }
 
+/**
+ * Xe đã lưu → giá trị của các ô Phân loại / Hãng / Dòng xe / Biển số.
+ * Dùng chung cho lúc tải trang và lúc bấm chọn để hai nơi luôn đồng bộ.
+ * Dòng xe không có trong danh mục cứng → chọn "Khác" và điền tên thật vào ô nhập tay.
+ */
+const DEFAULT_VEHICLE_TYPE: VehicleType = "Sedan / Hatchback (4-5 chỗ)";
+
+function savedVehicleToForm(v: SavedVehicle, currentType: VehicleType) {
+  const modelName = v.model?.name?.trim() ?? "";
+  const brand = v.model?.brand?.name?.trim() || (modelName ? getBrandForModel(modelName) : undefined) || "Hãng khác";
+  const vehicleType = (modelName && getVehicleTypeForModel(modelName)) || currentType;
+  const inCatalog = modelName !== "" && getModelsForVehicleType(brand, vehicleType).includes(modelName);
+  return {
+    brand,
+    vehicleType,
+    model: inCatalog ? modelName : modelName ? "Khác" : "",
+    customModel: inCatalog ? "" : modelName,
+    plate: v.license_plate ? formatLicensePlate(v.license_plate) : "",
+  };
+}
+
 // Tự động format biển số xe theo chuẩn VN (VD: 30A-123.45 hoặc 51K-888.88 hoặc 29A-1234)
 function formatLicensePlate(input: string): string {
   const clean = input.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -229,7 +250,7 @@ export default function Booking() {
   const [customerNotes, setCustomerNotes] = useState("");
 
   // Step 2: Xe & Dịch vụ (Chỉ giữ xe ô tô, bỏ moto/xe máy và xe điện)
-  const [vehicleType, setVehicleType] = useState<VehicleType>("Sedan / Hatchback (4-5 chỗ)");
+  const [vehicleType, setVehicleType] = useState<VehicleType>(DEFAULT_VEHICLE_TYPE);
   const [vehicleBrand, setVehicleBrand] = useState("Toyota");
   const [vehicleModel, setVehicleModel] = useState("Vios");
   const [customModel, setCustomModel] = useState("");
@@ -352,9 +373,13 @@ export default function Booking() {
               : null;
             const target = matched ?? list[0];
             setSelectedSavedVehicleId(target.id);
-            if (target.model?.brand?.name) setVehicleBrand(target.model.brand.name);
-            if (target.model?.name) setVehicleModel(target.model.name);
-            if (target.license_plate) setVehiclePlate(target.license_plate);
+            const form = savedVehicleToForm(target, DEFAULT_VEHICLE_TYPE);
+            setVehicleType(form.vehicleType);
+            setVehicleBrand(form.brand);
+            setVehicleModel(form.model);
+            setCustomModel(form.customModel);
+            setCustomVehicleSubtype("");
+            setVehiclePlate(form.plate);
           }
         })
         .catch(() => {
@@ -433,18 +458,14 @@ export default function Booking() {
     }
     const v = savedVehicles.find((item) => item.id === vId);
     if (v) {
-      if (v.model?.name) {
-        setVehicleModel(v.model.name);
-        const brandName = v.model.brand?.name || getBrandForModel(v.model.name);
-        if (brandName) setVehicleBrand(brandName);
-        const inferredType = getVehicleTypeForModel(v.model.name);
-        if (inferredType) setVehicleType(inferredType);
-      } else if (v.model?.brand?.name) {
-        setVehicleBrand(v.model.brand.name);
-      }
-      if (v.license_plate) {
-        setVehiclePlate(formatLicensePlate(v.license_plate));
-      }
+      const form = savedVehicleToForm(v, vehicleType);
+      setVehicleType(form.vehicleType);
+      setVehicleBrand(form.brand);
+      setVehicleModel(form.model);
+      setCustomModel(form.customModel);
+      setCustomVehicleSubtype("");
+      setVehiclePlate(form.plate);
+      setErrors((prev) => ({ ...prev, model: "", plate: "", vehicleSubtype: "" }));
     }
   };
 
@@ -485,7 +506,8 @@ export default function Booking() {
       }
     }
     if (
-      requiresCustomVehicleSubtype(vehicleType, vehicleModel)
+      !selectedSavedVehicleId // xe đã lưu chỉ gửi vehicle_id, backend đã biết loại xe
+      && requiresCustomVehicleSubtype(vehicleType, vehicleModel)
       && !customVehicleSubtype
     ) {
       newErrors.vehicleSubtype = "Vui lòng chọn xe là MPV hay bán tải.";
@@ -1028,7 +1050,8 @@ export default function Booking() {
                     onChange={(e) => handleBrandChange(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D6A85F]/30 focus:border-[#D6A85F] transition bg-white"
                   >
-                    {Object.keys(BRAND_MODELS).map((b) => (
+                    {/* Hãng của xe đã lưu có thể không nằm trong danh mục cứng — vẫn hiển thị đúng. */}
+                    {[...(BRAND_MODELS[vehicleBrand] ? [] : [vehicleBrand]), ...Object.keys(BRAND_MODELS)].map((b) => (
                       <option key={b} value={b}>
                         {b}
                       </option>
