@@ -34,7 +34,7 @@ class WorkingHoursController extends Controller
             ->whereBetween('day_of_week', [0, 6])
             ->first();
 
-        if (!$workingHour) {
+        if (! $workingHour) {
             return response()->json([
                 'message' => 'Không tìm thấy cấu hình giờ làm việc.',
             ], 404);

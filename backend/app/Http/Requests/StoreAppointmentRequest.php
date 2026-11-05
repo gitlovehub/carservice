@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreAppointmentRequest extends FormRequest
 {
@@ -30,18 +31,36 @@ class StoreAppointmentRequest extends FormRequest
 
             'new_vehicle.brand' => ['required_with:new_vehicle', 'string', 'max:100'],
             'new_vehicle.model' => ['required_with:new_vehicle', 'string', 'max:100'],
-            'new_vehicle.vehicle_type' => ['required_with:new_vehicle', Rule::in(['Sedan / Hatchback (4-5 chỗ)', 'SUV / Crossover (5-7 chỗ)', 'MPV', 'PICKUP'])],
             'new_vehicle.license_plate' => ['nullable', 'string', 'max:20'],
             'appointment_date' => ['required', 'date_format:Y-m-d'],
             'appointment_time' => ['required', 'date_format:H:i'],
-            'request_type' => ['required', Rule::in(['DIAGNOSIS', 'REPAIR', 'MAINTENANCE', 'REPLACEMENT'])],
+            'request_type' => ['sometimes', Rule::in(['DIAGNOSIS', 'REPAIR', 'MAINTENANCE', 'REPLACEMENT'])],
             'symptom_description' => ['nullable', 'string', 'max:5000'],
             'note' => ['nullable', 'string', 'max:5000'],
             'service_ids' => ['sometimes', 'array'],
             'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('status', 'ACTIVE')],
-            'package_ids' => ['sometimes', 'array'],
-            'package_ids.*' => ['integer', 'distinct', 'exists:maintenance_packages,id'],
-            'service_name' => ['sometimes', Rule::in(['Bảo dưỡng định kỳ', 'Kiểm tra tổng quát', 'Thay dầu động cơ'])],
+            'package_ids' => ['sometimes', 'array', 'max:1'],
+            'package_ids.*' => ['integer', 'distinct', Rule::exists('maintenance_packages', 'id')->where('status', 'ACTIVE')],
+        ];
+    }
+
+    /**
+     * Khách phải chọn ít nhất một gói, một dịch vụ, hoặc mô tả triệu chứng.
+     *
+     * @return array<int, \Closure>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $hasNeed = ! empty($this->input('service_ids'))
+                    || ! empty($this->input('package_ids'))
+                    || trim((string) $this->input('symptom_description')) !== '';
+
+                if (! $hasNeed) {
+                    $validator->errors()->add('service_ids', 'Vui lòng chọn dịch vụ, gói bảo dưỡng hoặc mô tả tình trạng xe.');
+                }
+            },
         ];
     }
 
@@ -59,8 +78,6 @@ class StoreAppointmentRequest extends FormRequest
             'new_vehicle.prohibited_unless' => 'Chỉ chọn xe có sẵn hoặc khai báo xe mới, không chọn cả hai.',
             'new_vehicle.brand.required_with' => 'Vui lòng nhập hãng xe.',
             'new_vehicle.model.required_with' => 'Vui lòng nhập dòng xe.',
-            'new_vehicle.vehicle_type.required_with' => 'Vui lòng chọn loại xe.',
-            'new_vehicle.vehicle_type.in' => 'Loại xe không hợp lệ.',
             'new_vehicle.license_plate.unique' => 'Biển số đã tồn tại.',
             'new_vehicle.license_plate.max' => 'Biển số không được quá 20 ký tự.',
             'appointment_date.required' => 'Vui lòng chọn ngày hẹn.',
@@ -74,9 +91,9 @@ class StoreAppointmentRequest extends FormRequest
             'note.max' => 'Ghi chú quá dài.',
             'service_ids.*.exists' => 'Dịch vụ đã chọn không tồn tại hoặc ngừng hoạt động.',
             'service_ids.*.distinct' => 'Dịch vụ bị chọn trùng.',
-            'package_ids.*.exists' => 'Gói bảo dưỡng đã chọn không tồn tại.',
+            'package_ids.max' => 'Mỗi lịch hẹn chỉ chọn một gói bảo dưỡng.',
+            'package_ids.*.exists' => 'Gói bảo dưỡng không tồn tại hoặc đã ngừng áp dụng.',
             'package_ids.*.distinct' => 'Gói bảo dưỡng bị chọn trùng.',
-            'service_name.in' => 'Dịch vụ đã chọn không hợp lệ.',
         ];
     }
 }

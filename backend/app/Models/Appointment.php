@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Validation\ValidationException;
 
 class Appointment extends Model
 {
@@ -44,7 +45,8 @@ class Appointment extends Model
 
     public function services(): BelongsToMany
     {
-        return $this->belongsToMany(Service::class, 'appointment_services', 'appointment_id', 'service_id');
+        return $this->belongsToMany(Service::class, 'appointment_services', 'appointment_id', 'service_id')
+            ->withPivot('estimated_price');
     }
 
     public function packages(): BelongsToMany
@@ -54,6 +56,51 @@ class Appointment extends Model
             'appointment_packages',
             'appointment_id',
             'package_id'
+        )->withPivot('estimated_price');
+    }
+
+    /**
+     * Ghi dịch vụ và gói khách chọn kèm giá ước tính tại thời điểm đặt.
+     * Gói riêng của một dòng xe chỉ được chọn cho đúng dòng xe đó.
+     * Dịch vụ đã nằm trong gói được bỏ qua để không tính hai lần.
+     *
+     * @param  array<int, int>  $serviceIds
+     * @param  array<int, int>  $packageIds
+     *
+     * @throws ValidationException
+     */
+    public function syncRequestedItems(array $serviceIds, array $packageIds): void
+    {
+        $packageIds = array_values(array_unique($packageIds));
+        $vehicleModelId = Vehicle::withTrashed()->whereKey($this->vehicle_id)->value('model_id');
+
+        $packages = MaintenancePackage::query()
+            ->availableFor($vehicleModelId === null ? null : (int) $vehicleModelId)
+            ->with([
+                'services' => fn ($query) => $query->where('status', 'ACTIVE'),
+                'parts',
+            ])
+            ->findMany($packageIds);
+
+        if ($packages->count() !== count($packageIds)) {
+            throw ValidationException::withMessages(['package_ids' => 'Gói bảo dưỡng không áp dụng cho dòng xe này.']);
+        }
+
+        $servicesInPackages = $packages->flatMap(fn (MaintenancePackage $package) => $package->services->modelKeys())->all();
+
+        $services = Service::query()
+            ->findMany(array_diff(array_unique($serviceIds), $servicesInPackages));
+
+        $this->services()->sync(
+            $services->mapWithKeys(fn (Service $service) => [
+                $service->id => ['estimated_price' => $service->base_price],
+            ])->all()
+        );
+
+        $this->packages()->sync(
+            $packages->mapWithKeys(fn (MaintenancePackage $package) => [
+                $package->id => ['estimated_price' => $package->calculateEstimatedPrice()],
+            ])->all()
         );
     }
 }

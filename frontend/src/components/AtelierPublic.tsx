@@ -1,14 +1,14 @@
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useTheme } from "../contexts/ThemeContext";
-import { useAuthSession } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/theme";
+import { useAuthSession } from "../contexts/authSession";
 import { getRoleManagementPage, getUserDisplayName, logout } from "../pages/auth/auth";
 import carArt from "../assets/car-atelier.svg";
 
 export function AtelierBrand({ to = "/" }: { to?: string }) {
-  return <Link className="inline-flex shrink-0 items-center gap-2.5 whitespace-nowrap text-xl leading-tight font-extrabold tracking-[-0.06em] text-[#191919] no-underline dark:text-[#f5f5f4]" to={to} aria-label="CarService Atelier - Trang chủ">
+  return <Link className="inline-flex shrink-0 items-center gap-2.5 whitespace-nowrap text-xl leading-tight font-extrabold tracking-normal text-[#191919] no-underline dark:text-[#f5f5f4]" to={to} aria-label="CarService Atelier - Trang chủ">
     <span className="flex size-8 shrink-0 -rotate-6 items-center justify-center rounded-lg bg-[#cf2935] text-sm font-extrabold text-white">C</span>
-    <span>carservice<small className="mt-0.5 block text-[9px] font-extrabold tracking-[0.14em] text-[#757575]">ATELIER / AUTO CARE</small></span>
+    <span>carservice<small className="mt-0.5 block text-[11px] font-extrabold tracking-[0.14em] text-[#757575]">ATELIER / AUTO CARE</small></span>
   </Link>;
 }
 
@@ -49,7 +49,7 @@ export function AtelierPublicHeader() {
     <nav className="hidden items-center gap-4 min-[821px]:flex xl:gap-6 [&_a]:relative [&_a]:whitespace-nowrap [&_a]:text-[13px] [&_a]:font-bold [&_a]:text-[#757575] [&_a]:hover:text-[#cf2935]" aria-label="Điều hướng chính">{links}</nav>
     <div className="flex shrink-0 items-center gap-2">
       <button className="inline-flex size-10 cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-white text-lg text-[#191919] hover:border-[#cf2935] hover:text-[#cf2935] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-white" type="button" onClick={toggleTheme} aria-label={theme === "dark" ? "Bật chế độ sáng" : "Bật chế độ tối"} title="Sáng / tối">{theme === "dark" ? "☀" : "☾"}</button>
-      {isAuthenticated ? <>{isCustomer && <Link to="/customer/account" aria-label="Tài khoản của tôi" title="Tài khoản của tôi" className="inline-flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#cf2935] text-xs font-extrabold text-white no-underline ring-2 ring-transparent transition hover:ring-[#cf2935]/40">{session.account.avatar ? <img src={session.account.avatar} alt="Ảnh đại diện" className="size-full object-cover" referrerPolicy="no-referrer" /> : (getUserDisplayName(session.account).charAt(0) || "K").toUpperCase()}</Link>}<button className="hidden min-h-9 cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-white px-3 py-2 text-[11px] font-bold text-[#191919] hover:border-[#cf2935] sm:inline-flex dark:border-[#34373a] dark:bg-[#191b1e] dark:text-white" type="button" onClick={() => void logout()}>Đăng xuất</button></> : <Link className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-[#e9e9e6] bg-white text-[#191919] hover:border-[#cf2935] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4] min-h-9 px-3 py-2 text-[11px]" to="/login">Đăng nhập</Link>}
+      {isAuthenticated ? <>{isCustomer && <Link to="/customer/account" aria-label="Tài khoản của tôi" title="Tài khoản của tôi" className="inline-flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#cf2935] text-xs font-extrabold text-white no-underline ring-2 ring-transparent transition hover:ring-[#cf2935]/40">{session.account.avatar ? <img src={session.account.avatar} alt="Ảnh đại diện" className="size-full object-cover" referrerPolicy="no-referrer" /> : (getUserDisplayName(session.account).charAt(0) || "K").toUpperCase()}</Link>}<button className="hidden min-h-9 cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-white px-3 py-2 text-[12px] font-bold text-[#191919] hover:border-[#cf2935] sm:inline-flex dark:border-[#34373a] dark:bg-[#191b1e] dark:text-white" type="button" onClick={() => void logout()}>Đăng xuất</button></> : <Link className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-[#e9e9e6] bg-white text-[#191919] hover:border-[#cf2935] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4] min-h-9 px-3 py-2 text-[12px]" to="/login">Đăng nhập</Link>}
       <button type="button" className="inline-flex size-10 cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-white text-lg min-[821px]:hidden dark:border-[#34373a] dark:bg-[#191b1e] dark:text-white" aria-label={menuOpen ? "Đóng menu" : "Mở menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen(open => !open)}>{menuOpen ? "✕" : "☰"}</button>
     </div>
     {menuOpen && <nav className="absolute inset-x-0 top-[81px] grid gap-2 border-b border-[#e9e9e6] bg-white px-6 py-4 shadow-xl min-[821px]:hidden dark:border-[#34373a] dark:bg-[#191b1e] [&_a]:cursor-pointer [&_a]:py-2 [&_a]:text-sm [&_a]:font-bold" aria-label="Điều hướng mobile">{links}{!isAuthenticated && <Link to="/register" onClick={() => setMenuOpen(false)}>Đăng ký</Link>}</nav>}
@@ -69,7 +69,7 @@ export function AtelierAuthLayout({ title, description, children }: { title: str
     <>
       <main className="flex w-full flex-1 items-center justify-center px-5 py-12 sm:px-8 sm:py-16">
         <section className="w-full max-w-[480px]" aria-label={title}>
-          <h1 className="mb-3 mt-4 text-4xl font-extrabold tracking-tight sm:text-[42px]">
+          <h1 className="mb-3 mt-4 text-4xl font-extrabold tracking-normal sm:text-[42px]">
             {title}
           </h1>
           <p className="mb-8 leading-7 text-[#757575] dark:text-[#a1a5ad]">

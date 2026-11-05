@@ -1,7 +1,5 @@
 import AdminHubNav from "../../components/AdminHubNav";
 import { useMemo, useState } from "react";
-import AdminSidebar from "./AdminSidebar";
-import AdminTopbar from "./AdminTopbar";
 
 type AccountRole = "Cố vấn dịch vụ" | "Kỹ thuật viên" | "Quản trị viên";
 type AccountStatus = "Hoạt động" | "Khóa";
@@ -195,15 +193,13 @@ function Accounts() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdminSidebar />
 
       <div className="lg:ml-[250px]">
-        <AdminTopbar />
 
         <main className="px-6 py-8 lg:px-8">
           <div className="mx-auto max-w-[1200px]">
             <div className="mb-8">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
                 KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
               </p>
 
@@ -213,7 +209,7 @@ function Accounts() {
                 </div>
 
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-[#20252B]">
+                  <h1 className="text-3xl font-bold tracking-normal text-[#20252B]">
                     Quản trị viên
                   </h1>
                   <p className="mt-1 text-xs text-[#66717C]">
@@ -250,13 +246,13 @@ function Accounts() {
                   key={item.label}
                   className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
                     {item.label}
                   </p>
                   <p className="mt-4 text-2xl font-bold text-[#20252B]">
                     {item.value}
                   </p>
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                  <p className="mt-1 text-[11px] text-[#8A949E]">
                     {item.description}
                   </p>
                 </div>
@@ -281,7 +277,7 @@ function Accounts() {
             <div className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-6">
               <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     GARA / TÀI KHOẢN & NHÂN VIÊN
                   </p>
                   <h2 className="mt-1 text-base font-bold text-[#20252B]">
@@ -339,7 +335,7 @@ function Accounts() {
               </form>
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-[10px] text-[#8A949E]">
+                <p className="text-[11px] text-[#8A949E]">
                   Tìm kiếm và lọc danh sách theo thông tin hiện có.
                 </p>
                 <button
@@ -350,7 +346,7 @@ function Accounts() {
                     setRoleFilter("Tất cả vai trò");
                     setStatusFilter("Tất cả trạng thái");
                   }}
-                  className="text-[10px] font-semibold text-[#66717C] underline underline-offset-4 hover:text-[#20252B]"
+                  className="text-[11px] font-semibold text-[#66717C] underline underline-offset-4 hover:text-[#20252B]"
                 >
                   Xóa bộ lọc
                 </button>
@@ -361,7 +357,7 @@ function Accounts() {
               <div className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-6">
                 <div className="mb-5 flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                       ACCOUNT SETTINGS
                     </p>
                     <h2 className="mt-1 text-base font-bold">
@@ -463,14 +459,14 @@ function Accounts() {
             <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
               <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-6 py-5 sm:flex-row sm:items-center">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     ACCOUNT MANAGEMENT
                   </p>
                   <h2 className="mt-1 text-base font-bold text-[#20252B]">
                     Danh sách tài khoản & nhân viên
                   </h2>
                 </div>
-                <p className="text-[10px] text-[#8A949E]">
+                <p className="text-[11px] text-[#8A949E]">
                   {filteredAccounts.length} / {accounts.length} kết quả
                 </p>
               </div>
@@ -493,28 +489,28 @@ function Accounts() {
                     >
                       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-white">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[11px] font-bold text-white">
                             {String(index + 1).padStart(2, "0")}
                           </div>
                           <div>
                             <p className="text-xs font-bold text-[#20252B]">
                               {account.name}
                             </p>
-                            <p className="mt-1 text-[10px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-[#8A949E]">
                               {account.phone}
                             </p>
                           </div>
                         </div>
 
                         <div>
-                          <p className="text-[10px] text-[#8A949E]">TÀI KHOẢN</p>
+                          <p className="text-[11px] text-[#8A949E]">TÀI KHOẢN</p>
                           <p className="mt-1 text-xs font-semibold text-[#20252B]">
                             {account.username}
                           </p>
                         </div>
 
                         <div>
-                          <p className="text-[10px] text-[#8A949E]">VAI TRÒ</p>
+                          <p className="text-[11px] text-[#8A949E]">VAI TRÒ</p>
                           <p className="mt-1 text-xs font-semibold text-[#20252B]">
                             {account.role}
                           </p>
@@ -522,7 +518,7 @@ function Accounts() {
 
                         <div>
                           <span
-                            className={`inline-flex rounded-full px-3 py-1.5 text-[10px] font-semibold ${
+                            className={`inline-flex rounded-full px-3 py-1.5 text-[11px] font-semibold ${
                               account.status === "Hoạt động"
                                 ? "bg-[#F3E8D2] text-[#3A3020]"
                                 : "bg-[#F3F4F2] text-[#66717C]"
@@ -536,14 +532,14 @@ function Accounts() {
                           <button
                             type="button"
                             onClick={() => openRoleForm(account)}
-                            className="rounded-xl border border-[#D9DDE1] px-4 py-2 text-[10px] font-semibold text-[#20252B] transition hover:bg-[#F3F4F2]"
+                            className="rounded-xl border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#20252B] transition hover:bg-[#F3F4F2]"
                           >
                             Phân quyền
                           </button>
                           <button
                             type="button"
                             onClick={() => toggleStatus(account)}
-                            className="rounded-xl border border-[#D9DDE1] px-4 py-2 text-[10px] font-semibold text-[#20252B] transition hover:bg-[#F3F4F2]"
+                            className="rounded-xl border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#20252B] transition hover:bg-[#F3F4F2]"
                           >
                             {account.status === "Hoạt động" ? "Khóa" : "Mở khóa"}
                           </button>

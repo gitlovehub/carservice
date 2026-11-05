@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { getRoleManagementPage } from "./auth";
 import type { UserRole } from "./auth";
-import { useAuthSession } from "../../contexts/AuthContext";
+import { useAuthSession } from "../../contexts/authSession";
 import { LoadingState } from "../../components/ui";
 
 type Props = { allowedRoles: UserRole[]; children: React.ReactNode };

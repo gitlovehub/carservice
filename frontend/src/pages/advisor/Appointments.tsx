@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AdvisorSidebar from "./AdvisorSidebar";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
-import AdvisorTopbar from "./AdvisorTopbar";
 import {
   cancelAdvisorAppointment,
   checkInAdvisorAppointment,
@@ -11,6 +9,8 @@ import {
   getAdvisorAppointments,
   type AppointmentStatus,
 } from "../../services/advisorAppointmentService";
+import { requestTypeLabel } from "../../services/workflowService";
+import CustomerRequestSummary from "./CustomerRequestSummary";
 
 type Customer = {
   id: number;
@@ -133,7 +133,7 @@ function getServiceName(appointment: Appointment) {
   const names = [...serviceNames, ...packageNames];
 
   if (names.length === 0) {
-    return appointment.request_type || "Chưa xác định";
+    return requestTypeLabel(appointment.request_type);
   }
 
   return names.join(", ");
@@ -384,10 +384,8 @@ function Appointments() {
 
   return (
     <div className="cs-appointment-page min-h-screen bg-cs-bg text-cs-text">
-      <AdvisorSidebar />
 
       <div className="lg:ml-[250px]">
-        <AdvisorTopbar />
 
         <main>
           <div className="mx-auto max-w-6xl px-6 py-8 lg:px-8 lg:py-10">
@@ -397,7 +395,7 @@ function Appointments() {
                 Gara / Lịch hẹn
               </p>
               <div>
-                <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                <h2 className="text-2xl font-bold tracking-normal text-slate-900 sm:text-3xl">
                   Quản lý lịch hẹn
                 </h2>
                 <p className="mt-1.5 max-w-2xl text-xs text-slate-500">
@@ -643,7 +641,7 @@ function Appointments() {
 
                             <td className="px-5 py-4">
                               <span
-                                className={`inline-flex rounded-lg px-2.5 py-1 text-[11px] font-semibold ${getStatusClass(
+                                className={`inline-flex rounded-lg px-2.5 py-1 text-[12px] font-semibold ${getStatusClass(
                                   appointment.status
                                 )}`}
                               >
@@ -813,8 +811,7 @@ function Appointments() {
                 ["Ngày hẹn", formatDate(selectedAppointment.appointment_date), selectedAppointment.appointment_time],
               ].map(([label,value,extra]) => <div key={label} className="cs-info-panel min-w-0 p-4"><p className="text-xs font-bold uppercase tracking-wide text-cs-muted">{label}</p><p className="mt-2 break-words text-sm font-bold text-cs-text">{value}</p><p className="mt-1 break-all text-xs text-cs-muted">{extra}</p>{label === "Khách hàng" && selectedAppointment.customer?.email && <p className="mt-1 break-all text-xs text-cs-muted">{selectedAppointment.customer.email}</p>}</div>)}
               <div className="cs-info-panel p-4"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-cs-muted">Trạng thái</p><span className={`inline-flex rounded-lg px-3 py-1.5 text-xs font-bold ${getStatusClass(selectedAppointment.status)}`}>{getStatusText(selectedAppointment.status)}</span></div>
-              <div className="cs-info-panel p-4 sm:col-span-2"><p className="text-xs font-bold uppercase tracking-wide text-cs-muted">Dịch vụ đã chọn</p><p className="mt-2 text-sm text-cs-text">{getServiceName(selectedAppointment)}</p></div>
-              {(selectedAppointment.symptom_description || selectedAppointment.note) && <div className="cs-info-panel p-4 sm:col-span-2"><p className="text-xs font-bold uppercase tracking-wide text-cs-muted">Yêu cầu / Ghi chú</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-cs-text">{selectedAppointment.symptom_description}{selectedAppointment.symptom_description && selectedAppointment.note ? " · " : ""}{selectedAppointment.note}</p></div>}
+              <div className="cs-info-panel p-4 sm:col-span-2"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-cs-muted">Khách yêu cầu</p><CustomerRequestSummary request={selectedAppointment}/></div>
               {selectedAppointment.cancel_reason && <div className="cs-info-panel p-4 sm:col-span-2"><p className="text-xs font-bold text-red-400">Lý do hủy</p><p className="mt-2 text-sm text-cs-text">{selectedAppointment.cancel_reason}</p></div>}
             </div>}
             <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-cs-border px-6 py-4"><p className="text-xs text-cs-muted">Thông tin từ hệ thống gara</p><button className="cs-unified-btn cs-unified-secondary" onClick={() => setSelectedAppointment(null)}>Đóng</button></footer>

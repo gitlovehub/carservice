@@ -1,96 +1,175 @@
-import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { useAuthSession } from "../contexts/AuthContext";
-import { useTheme } from "../contexts/ThemeContext";
-import { getUserDisplayName, logout } from "../pages/auth/auth";
+import { useEffect, useRef, useState } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAuthSession } from "../contexts/authSession";
+import { useTheme } from "../contexts/theme";
+import { getUserDisplayName, getUserInitials, logout } from "../pages/auth/auth";
 import PageTransition from "../components/PageTransition";
+import { Dropdown, IconButton } from "../components/ui";
 import { Icon } from "../components/ui/Icon";
-import { shellNavigation } from "./navigation";
-import type { ShellArea } from "./ShellContext";
+import { LABELS } from "../config/labels";
+import { areaInfo, crumbs, navGroups, shellNavigation } from "./navigation";
 import { ShellContext } from "./ShellContext";
 import "./shell.css";
+import "./workspace.css";
 import "../styles/atelier-customer-complete.css";
 
-const info = {
-  customer: { title: "Khu vực khách hàng", label: "AUTO CARE", short: "KHÁCH HÀNG" },
-  advisor: { title: "Không gian cố vấn", label: "SERVICE WORKSPACE", short: "CỐ VẤN DỊCH VỤ" },
-  admin: { title: "Trung tâm điều hành", label: "BUSINESS CONTROL", short: "QUẢN TRỊ HỆ THỐNG" },
-};
+type WorkArea = "advisor" | "admin";
+const SIDEBAR_KEY = "carservice-sidebar";
+const roleLabel: Record<WorkArea, string> = { advisor: "Cố vấn dịch vụ", admin: "Quản trị viên" };
 
-function Brand({ area }: { area: ShellArea }) {
-  return <Link className="cs-brand" to={area === "customer" ? "/" : area === "advisor" ? "/advisor" : "/admin"}>
-    <span className="cs-brand-mark">C</span>
-    <span>carservice<small>ATELIER / {info[area].label}</small></span>
-  </Link>;
+function readCollapsed() {
+  try { return localStorage.getItem(SIDEBAR_KEY) === "collapsed"; } catch { return false; }
 }
 
-function ThemeButton() {
-  const { theme, toggleTheme } = useTheme();
-  return <button type="button" className="cs-icon-button" onClick={toggleTheme} aria-label={theme === "dark" ? "Bật chế độ sáng" : "Bật chế độ tối"} title="Chế độ sáng / tối">
-    <Icon name={theme === "dark" ? "sun" : "moon"}/>
-  </button>;
-}
-
-function UserControls({ area }: { area: ShellArea }) {
-  const session = useAuthSession();
-  const account = session.status === "authenticated" ? session.account : null;
-  return <div className="cs-user-controls">
-    <span className="cs-user-name" title={account?.email ?? ""}>{getUserDisplayName(account)}</span>
-    <ThemeButton />
-    <button type="button" className="cs-icon-button" onClick={() => { void logout(); }} title="Đăng xuất" aria-label="Đăng xuất"><Icon name="logout"/></button>
-    {area === "customer" && <Link to="/customer/account" className="cs-account-link" aria-label="Tài khoản của tôi">{(getUserDisplayName(account).charAt(0) || "K").toUpperCase()}</Link>}
-  </div>;
-}
-
-function NavItems({ area, close }: { area: ShellArea; close: () => void }) {
+/** Menu nhóm theo nghiệp vụ. Mục trỏ tới danh sách đã lọc (?status=...) chỉ sáng khi đúng bộ lọc đó. */
+function SidebarNav({ area, onNavigate }: { area: WorkArea; onNavigate: () => void }) {
   const { pathname, search } = useLocation();
-  // Menu trỏ tới danh sách đã lọc (?status=...) chỉ sáng khi đúng bộ lọc đó.
   const filteredPaths = shellNavigation[area].filter(item => item.path.includes("?")).map(item => item.path);
-  const matches = (path: string, isActive: boolean) => path.includes("?")
-    ? pathname + search === path
-    : isActive && !filteredPaths.includes(pathname + search);
-  const aliases: Record<string, string> = {
-    "/booking": "/customer/booking", "/appointments": "/customer/appointments",
-    "/cars": "/customer/cars", "/repair-status": "/repair-status", "/quotation": "/quotation",
+  const home = areaInfo[area].home;
+  const isCurrent = (path: string) => {
+    if (path.includes("?")) return pathname + search === path;
+    if (filteredPaths.includes(pathname + search)) return false;
+    return path === home ? pathname === home : pathname === path || pathname.startsWith(`${path}/`);
   };
-  const activePath = aliases[pathname] ?? pathname;
-  return <nav className={area === "customer" ? "cs-public-nav" : "cs-side-nav"} aria-label={`Điều hướng ${info[area].short}`}>
-    {shellNavigation[area].map(({ path, label, icon }) =>
-      <NavLink key={path} to={path} onClick={close} end={path === "/admin" || path === "/advisor"} className={({isActive}) => `cs-nav-link${matches(path, isActive) || (area === "customer" && activePath === path) ? " is-active" : ""}`}>
-        <Icon name={icon} size={18}/><span>{label}</span>
-      </NavLink>
-    )}
+  return <nav className="cs-ws-nav" aria-label={`Điều hướng ${roleLabel[area]}`}>
+    {navGroups(area).map(group => <div key={group.label} className="cs-ws-group" role="group" aria-label={group.label}>
+      {group.label && <p className="cs-ws-group-label" aria-hidden="true">{group.label}</p>}
+      <ul className="cs-ws-list">
+        {group.items.map(({ path, label, icon, soon }) => {
+          const current = isCurrent(path);
+          return <li key={path}>
+            <Link to={path} onClick={onNavigate} title={label} aria-current={current ? "page" : undefined}
+              className={`cs-ws-link${current ? " is-active" : ""}`}>
+              <Icon name={icon} size={18}/>
+              <span className="cs-ws-label">{label}{soon && <span className="sr-only"> (sắp có)</span>}</span>
+              {soon && <span className="cs-ws-soon" aria-hidden="true">Sắp có</span>}
+            </Link>
+          </li>;
+        })}
+      </ul>
+    </div>)}
   </nav>;
 }
 
-function WorkLayout({ area }: { area: "advisor" | "admin" }) {
-  const { pathname } = useLocation();
+function Breadcrumbs({ area }: { area: WorkArea }) {
+  const { pathname, search } = useLocation();
+  const trail = crumbs(area, pathname, search);
+  return <nav className="cs-ws-crumbs" aria-label="Vị trí trang">
+    <ol>
+      {trail.map((crumb, index) => {
+        const last = index === trail.length - 1;
+        return <li key={`${crumb.label}-${index}`}>
+          {index > 0 && <Icon name="chevron-right" size={14} className="shrink-0 opacity-60"/>}
+          {last || !crumb.to ? <span aria-current={last ? "page" : undefined}>{crumb.label}</span> : <Link to={crumb.to}>{crumb.label}</Link>}
+        </li>;
+      })}
+    </ol>
+  </nav>;
+}
+
+function AccountMenu({ area }: { area: WorkArea }) {
+  const session = useAuthSession();
+  const navigate = useNavigate();
+  const account = session.status === "authenticated" ? session.account : null;
+  const name = getUserDisplayName(account);
+  return <Dropdown label="Menu tài khoản"
+    header={<div className="min-w-0">
+      <p className="truncate text-small font-semibold text-cs-text">{name}</p>
+      {account?.email && <p className="truncate text-caption text-cs-muted">{account.email}</p>}
+      <p className="mt-1 text-caption text-cs-accent">{roleLabel[area]}</p>
+    </div>}
+    items={[
+      { label: "Website công khai", icon: "arrow", onSelect: () => navigate("/") },
+      { type: "separator" },
+      { label: LABELS.action.logout, icon: "logout", onSelect: () => { void logout(); } },
+    ]}
+    trigger={props => <button type="button" className="cs-ws-account" aria-label={`Menu tài khoản: ${name}`} {...props}>
+      <span className="cs-ws-avatar" aria-hidden="true">{getUserInitials(account)}</span>
+      <span className="cs-ws-account-name">{name}</span>
+      <Icon name="chevron-down" size={14} className="text-cs-muted"/>
+    </button>}
+  />;
+}
+
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  return <IconButton icon={theme === "dark" ? "sun" : "moon"} label={theme === "dark" ? LABELS.theme.toLight : LABELS.theme.toDark} onClick={toggleTheme}/>;
+}
+
+/** Bố cục chung Advisor/Admin: sidebar nhóm nghiệp vụ + topbar (breadcrumb, sáng/tối, tài khoản) + nội dung. */
+function WorkLayout({ area }: { area: WorkArea }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+
+  const toggleCollapsed = () => setCollapsed(value => {
+    try { localStorage.setItem(SIDEBAR_KEY, value ? "expanded" : "collapsed"); } catch { /* Giữ trong phiên. */ }
+    return !value;
+  });
+
+  // Ngăn kéo trên điện thoại: Esc để đóng, khóa cuộn nền, focus vào ngăn kéo và trả về nút mở khi đóng.
   useEffect(() => {
-    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setMobileOpen(false); };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, []);
-  const title = shellNavigation[area].find(nav => nav.path === pathname)?.label ?? info[area].title;
+    if (!mobileOpen) {
+      if (wasOpen.current) menuButtonRef.current?.focus({ preventScroll: true });
+      wasOpen.current = false;
+      return;
+    }
+    wasOpen.current = true;
+    closeButtonRef.current?.focus({ preventScroll: true });
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setMobileOpen(false); };
+    // Xoay / phóng to sang bề rộng desktop thì ngăn kéo không còn ý nghĩa.
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const onWide = () => { if (desktop.matches) setMobileOpen(false); };
+    document.addEventListener("keydown", onKey);
+    desktop.addEventListener("change", onWide);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKey);
+      desktop.removeEventListener("change", onWide);
+    };
+  }, [mobileOpen]);
+
+  const close = () => setMobileOpen(false);
   return <ShellContext.Provider value={area}>
-    <div className="cs-shell cs-workspace" data-area={area}>
-      {mobileOpen && <button className="cs-menu-scrim" onClick={() => setMobileOpen(false)} aria-label="Đóng thanh điều hướng"/>}
-      <aside className={`cs-work-sidebar${mobileOpen ? " is-open" : ""}`} aria-label={info[area].short}>
-        <div className="cs-sidebar-brand"><Brand area={area}/><button className="cs-close-sidebar cs-icon-button" onClick={() => setMobileOpen(false)} aria-label="Đóng menu"><Icon name="close"/></button></div>
-        <div className="cs-nav-caption">{info[area].label}</div>
-        <NavItems area={area} close={() => setMobileOpen(false)}/>
-        <div className="cs-sidebar-bottom"><Link to="/" className="cs-bottom-link"><Icon name="arrow" size={16}/> Website công khai</Link><span>CarService • WD_004</span></div>
+    <div className="cs-shell cs-workspace" data-area={area} data-sidebar={collapsed ? "collapsed" : "expanded"}>
+      <a href="#main-content" className="cs-skip-link">Bỏ qua thanh điều hướng</a>
+      {mobileOpen && <div className="cs-ws-scrim" onClick={close} aria-hidden="true"/>}
+      <aside id="cs-workspace-sidebar" className="cs-work-sidebar" data-open={mobileOpen} aria-label={roleLabel[area]}>
+        <div className="cs-ws-brand">
+          <Link to={areaInfo[area].home} onClick={close} aria-label="CarService — Tổng quan">
+            <span className="cs-ws-brand-mark" aria-hidden="true">C</span>
+            <span className="cs-ws-brand-text">CarService<small>{roleLabel[area]}</small></span>
+          </Link>
+          <span className="cs-ws-mobile-only">
+            <IconButton ref={closeButtonRef} icon="close" label="Đóng thanh điều hướng" size="sm" onClick={close}/>
+          </span>
+        </div>
+        <SidebarNav area={area} onNavigate={close}/>
+        <div className="cs-ws-foot">
+          <Link to="/" className="cs-ws-link" title="Website công khai"><Icon name="arrow" size={18}/><span className="cs-ws-label">Website công khai</span></Link>
+        </div>
       </aside>
       <div className="cs-work-main">
         <header className="cs-work-top">
-          <div className="cs-title-group">
-            <button type="button" className="cs-menu-button cs-icon-button" onClick={() => setMobileOpen(true)} aria-label="Mở thanh điều hướng"><Icon name="menu"/></button>
-            <div><span className="cs-top-caption">CARSERVICE / {info[area].label}</span><strong>{title}</strong></div>
+          <span className="cs-ws-mobile-only">
+            <IconButton ref={menuButtonRef} icon="menu" label="Mở thanh điều hướng" onClick={() => setMobileOpen(true)}
+              aria-expanded={mobileOpen} aria-controls="cs-workspace-sidebar"/>
+          </span>
+          <span className="cs-ws-desktop-only">
+            <IconButton icon="sidebar" label={collapsed ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng"} onClick={toggleCollapsed}
+              aria-expanded={!collapsed} aria-controls="cs-workspace-sidebar"/>
+          </span>
+          <Breadcrumbs area={area}/>
+          <div className="cs-ws-actions">
+            <ThemeToggle/>
+            <AccountMenu area={area}/>
           </div>
-          <UserControls area={area}/>
         </header>
-        <div className="cs-work-content" id="main-content"><PageTransition><Outlet/></PageTransition></div>
+        <div className="cs-work-content" id="main-content" tabIndex={-1}><PageTransition><Outlet/></PageTransition></div>
       </div>
     </div>
   </ShellContext.Provider>;

@@ -1,8 +1,6 @@
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import AdminHubNav from "../../components/AdminHubNav";
 import { useEffect, useState, type FormEvent } from "react";
-import AdminSidebar from "./AdminSidebar";
-import AdminTopbar from "./AdminTopbar";
 import { fetchApi } from "../../services/api";
 
 type ServiceStatus = "ACTIVE" | "INACTIVE";
@@ -15,6 +13,9 @@ type Service = {
   base_price: string;
   estimated_minutes: number | null;
   status: ServiceStatus;
+  is_popular: boolean;
+  sort_order: number;
+  active_packages_count?: number;
 };
 
 type ServiceForm = {
@@ -24,6 +25,8 @@ type ServiceForm = {
   base_price: string;
   estimated_minutes: string;
   status: ServiceStatus;
+  is_popular: boolean;
+  sort_order: string;
 };
 
 type ServiceIndexResponse = {
@@ -46,6 +49,8 @@ const emptyForm: ServiceForm = {
   base_price: "",
   estimated_minutes: "",
   status: "ACTIVE",
+  is_popular: false,
+  sort_order: "0",
 };
 
 const fieldClass =
@@ -152,6 +157,8 @@ function Services() {
       base_price: String(service.base_price ?? ""),
       estimated_minutes: service.estimated_minutes?.toString() ?? "",
       status: service.status,
+      is_popular: Boolean(service.is_popular),
+      sort_order: String(service.sort_order ?? 0),
     });
     setFormError("");
     setModal("form");
@@ -231,6 +238,12 @@ function Services() {
       return;
     }
 
+    const sortOrder = form.sort_order.trim() === "" ? 0 : Number(form.sort_order);
+    if (!Number.isInteger(sortOrder) || sortOrder < 0) {
+      setFormError("Thứ tự hiển thị phải là số nguyên không âm.");
+      return;
+    }
+
     const payload = {
       name,
       category: form.category.trim() || null,
@@ -238,6 +251,8 @@ function Services() {
       base_price: basePrice,
       estimated_minutes: estimatedMinutes,
       status: form.status,
+      is_popular: form.is_popular,
+      sort_order: sortOrder,
     };
 
     setIsSaving(true);
@@ -277,7 +292,15 @@ function Services() {
   const handleDelete = async (service: Service) => {
     if (isDeleting) return;
 
-    const confirmed = await confirm({ title: "Ẩn dịch vụ", description: `Dịch vụ “${service.name}” sẽ không còn xuất hiện trong danh mục hoạt động.`, confirmText: "Ẩn dịch vụ" });
+    const packageCount = service.active_packages_count ?? 0;
+    const packageWarning = packageCount > 0
+      ? ` Dịch vụ đang nằm trong ${packageCount} gói bảo dưỡng; các gói này sẽ không còn tính dịch vụ này.`
+      : "";
+    const confirmed = await confirm({
+      title: "Ẩn dịch vụ",
+      description: `Khách sẽ không thấy “${service.name}” khi đặt lịch.${packageWarning}`,
+      confirmText: "Ẩn dịch vụ",
+    });
 
     if (!confirmed) return;
 
@@ -312,15 +335,13 @@ function Services() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdminSidebar />
 
       <div className="lg:ml-[250px]">
-        <AdminTopbar />
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
             <div className="mb-8">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#B68A43]">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#B68A43]">
                 KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
               </p>
 
@@ -331,7 +352,7 @@ function Services() {
                   </div>
 
                   <div>
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                    <h1 className="text-2xl font-bold tracking-normal sm:text-3xl">
                       Quản lý dịch vụ
                     </h1>
                     <p className="mt-1 text-xs text-[#66717C]">
@@ -363,7 +384,7 @@ function Services() {
                 <p className="mt-4 text-2xl font-bold">
                   {isLoading ? "—" : total}
                 </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Tổng số kết quả theo bộ lọc
                 </p>
               </div>
@@ -380,7 +401,7 @@ function Services() {
                 <p className="mt-4 text-2xl font-bold">
                   {isLoading ? "—" : activeCount}
                 </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Trên trang đang hiển thị
                 </p>
               </div>
@@ -397,7 +418,7 @@ function Services() {
                 <p className="mt-4 text-2xl font-bold">
                   {isLoading ? "—" : inactiveCount}
                 </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Trên trang đang hiển thị
                 </p>
               </div>
@@ -488,7 +509,7 @@ function Services() {
             <section className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
               <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#B68A43]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#B68A43]">
                     SERVICE MANAGEMENT
                   </p>
                   <h2 className="mt-1 text-base font-bold">
@@ -552,7 +573,7 @@ function Services() {
                     >
                       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                         <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-white">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[11px] font-bold text-white">
                             {String((page - 1) * 10 + index + 1).padStart(2, "0")}
                           </div>
 
@@ -562,7 +583,7 @@ function Services() {
                                 {service.name}
                               </h3>
                               <span
-                                className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${
+                                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold ${
                                   service.status === "ACTIVE"
                                     ? "bg-[#F3E8D2] text-[#3A3020]"
                                     : "bg-[#F1F2F3] text-[#66717C]"
@@ -572,9 +593,19 @@ function Services() {
                                   ? "Đang hoạt động"
                                   : "Ngừng hoạt động"}
                               </span>
+                              {service.is_popular && (
+                                <span className="rounded-full bg-[#E7F3E8] px-3 py-1.5 text-[11px] font-semibold text-[#397044]">
+                                  Phổ biến
+                                </span>
+                              )}
+                              {(service.active_packages_count ?? 0) > 0 && (
+                                <span className="rounded-full bg-[#F1F2F3] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
+                                  Trong {service.active_packages_count} gói
+                                </span>
+                              )}
                             </div>
 
-                            <p className="mt-1 text-[10px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-[#8A949E]">
                               DV-{String(service.id).padStart(3, "0")}
                               {service.category ? ` · ${service.category}` : ""}
                             </p>
@@ -587,7 +618,7 @@ function Services() {
 
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 xl:min-w-[330px]">
                           <div>
-                            <p className="text-[10px] text-[#8A949E]">
+                            <p className="text-[11px] text-[#8A949E]">
                               GIÁ THAM KHẢO
                             </p>
                             <p className="mt-1 text-xs font-bold">
@@ -596,7 +627,7 @@ function Services() {
                           </div>
 
                           <div>
-                            <p className="text-[10px] text-[#8A949E]">
+                            <p className="text-[11px] text-[#8A949E]">
                               THỜI GIAN
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -607,7 +638,7 @@ function Services() {
                           </div>
 
                           <div>
-                            <p className="text-[10px] text-[#8A949E]">
+                            <p className="text-[11px] text-[#8A949E]">
                               MÃ DỊCH VỤ
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -621,7 +652,7 @@ function Services() {
                             type="button"
                             onClick={() => void openDetailModal(service)}
                             disabled={isLoadingDetail}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[10px] font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-50"
+                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-50"
                           >
                             Chi tiết
                           </button>
@@ -629,7 +660,7 @@ function Services() {
                           <button
                             type="button"
                             onClick={() => openEditModal(service)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[10px] font-semibold transition hover:bg-[#F3F4F2]"
+                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-[#F3F4F2]"
                           >
                             Chỉnh sửa
                           </button>
@@ -814,6 +845,47 @@ function Services() {
                       </select>
                     </label>
                   </div>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <label className="flex items-center gap-2 text-xs font-semibold sm:col-span-2 sm:pt-6">
+                      <input
+                        type="checkbox"
+                        checked={form.is_popular}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            is_popular: event.target.checked,
+                          }))
+                        }
+                        className="h-4 w-4"
+                      />
+                      Hiện trong nhóm “Phổ biến” khi đặt lịch
+                    </label>
+
+                    <label className="block text-xs font-semibold">
+                      Thứ tự hiển thị
+                      <input
+                        min="0"
+                        step="1"
+                        type="number"
+                        value={form.sort_order}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            sort_order: event.target.value,
+                          }))
+                        }
+                        className={`${fieldClass} mt-2 font-normal`}
+                      />
+                    </label>
+                  </div>
+
+                  {form.status === "INACTIVE" &&
+                    (selectedService?.active_packages_count ?? 0) > 0 && (
+                      <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-700">
+                        Dịch vụ đang nằm trong {selectedService?.active_packages_count} gói bảo dưỡng. Khi ngừng, các gói này sẽ không còn tính dịch vụ này.
+                      </p>
+                    )}
 
                   {formError && (
                     <p

@@ -7,8 +7,6 @@ import {
   type FormEvent,
 } from "react";
 import { Link } from "react-router-dom";
-import AdminSidebar from "./AdminSidebar";
-import AdminTopbar from "./AdminTopbar";
 import { fetchApi } from "../../services/api";
 
 type PackageStatus = "ACTIVE" | "INACTIVE";
@@ -613,15 +611,13 @@ function MaintenancePackages() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdminSidebar />
 
       <div className="lg:ml-[250px]">
-        <AdminTopbar />
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
             <div className="mb-8">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
                 KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
               </p>
 
@@ -631,7 +627,7 @@ function MaintenancePackages() {
                     GB
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                    <h1 className="text-2xl font-bold tracking-normal sm:text-3xl">
                       Gói bảo dưỡng
                     </h1>
                     <p className="mt-1 text-xs text-[#66717C]">
@@ -706,13 +702,13 @@ function MaintenancePackages() {
                   key={item.label}
                   className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
                     {item.label}
                   </p>
                   <p className="mt-4 text-2xl font-bold">
                     {new Intl.NumberFormat("vi-VN").format(item.value)}
                   </p>
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                  <p className="mt-1 text-[11px] text-[#8A949E]">
                     {item.description}
                   </p>
                 </div>
@@ -721,7 +717,7 @@ function MaintenancePackages() {
 
             <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:p-6">
               <div className="mb-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                   GARA / QUẢN LÝ BẢO DƯỠNG
                 </p>
                 <h2 className="mt-1 text-base font-bold">
@@ -797,7 +793,7 @@ function MaintenancePackages() {
             <section className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
               <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     MAINTENANCE PACKAGES
                   </p>
                   <h2 className="mt-1 text-base font-bold">
@@ -859,7 +855,7 @@ function MaintenancePackages() {
                     >
                       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                         <div className="flex min-w-0 items-start gap-4">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-white">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[11px] font-bold text-white">
                             {String((page - 1) * 10 + index + 1).padStart(2, "0")}
                           </div>
 
@@ -869,7 +865,7 @@ function MaintenancePackages() {
                                 {pkg.name}
                               </h3>
                               <span
-                                className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${
+                                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold ${
                                   pkg.status === "ACTIVE"
                                     ? "bg-[#E6F2E8] text-[#28643B]"
                                     : "bg-[#F3F4F2] text-[#66717C]"
@@ -881,7 +877,7 @@ function MaintenancePackages() {
                               </span>
                             </div>
 
-                            <p className="mt-1 text-[10px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-[#8A949E]">
                               GB-{String(pkg.id).padStart(3, "0")} ·{" "}
                               {modelLabel(pkg.vehicle_model)}
                             </p>
@@ -890,7 +886,7 @@ function MaintenancePackages() {
                               {pkg.description || "Chưa có mô tả."}
                             </p>
 
-                            <p className="mt-2 text-[10px] text-[#8A949E]">
+                            <p className="mt-2 text-[11px] text-[#8A949E]">
                               {pkg.services.length} dịch vụ ·{" "}
                               {pkg.parts.length} phụ tùng
                             </p>
@@ -899,7 +895,7 @@ function MaintenancePackages() {
 
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:min-w-[340px]">
                           <div>
-                            <p className="text-[10px] text-[#8A949E]">
+                            <p className="text-[11px] text-[#8A949E]">
                               GIÁ ƯỚC TÍNH
                             </p>
                             <p className="mt-1 text-xs font-bold">
@@ -908,7 +904,7 @@ function MaintenancePackages() {
                           </div>
 
                           <div>
-                            <p className="text-[10px] text-[#8A949E]">
+                            <p className="text-[11px] text-[#8A949E]">
                               MỐC KM
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -919,7 +915,7 @@ function MaintenancePackages() {
                           </div>
 
                           <div>
-                            <p className="text-[10px] text-[#8A949E]">
+                            <p className="text-[11px] text-[#8A949E]">
                               MỐC THÁNG
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -934,7 +930,7 @@ function MaintenancePackages() {
                           <button
                             type="button"
                             onClick={() => void openDetailModal(pkg)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[10px] font-semibold transition hover:bg-[#F3F4F2]"
+                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-[#F3F4F2]"
                           >
                             Chi tiết
                           </button>
@@ -942,7 +938,7 @@ function MaintenancePackages() {
                           <button
                             type="button"
                             onClick={() => openEditModal(pkg)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[10px] font-semibold transition hover:bg-[#F3F4F2]"
+                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-[#F3F4F2]"
                           >
                             Chỉnh sửa
                           </button>
@@ -1022,7 +1018,7 @@ function MaintenancePackages() {
             {modal === "form" ? (
               <>
                 <div className="mb-6">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
                     QUẢN LÝ BẢO DƯỠNG
                   </p>
                   <h2
@@ -1159,7 +1155,7 @@ function MaintenancePackages() {
                       <div className="mb-3 flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-xs font-bold">Dịch vụ</p>
-                          <span className="rounded-full bg-[#F3E8D2] px-2.5 py-1 text-[10px] font-semibold">
+                          <span className="rounded-full bg-[#F3E8D2] px-2.5 py-1 text-[11px] font-semibold">
                             {form.services.length} đã chọn
                           </span>
                         </div>
@@ -1196,11 +1192,11 @@ function MaintenancePackages() {
                                     {service.name}
                                   </span>
                                   {service.category && (
-                                    <span className="mt-1 block text-[10px] text-[#8A949E]">
+                                    <span className="mt-1 block text-[11px] text-[#8A949E]">
                                       {service.category}
                                     </span>
                                   )}
-                                  <span className="mt-1 block text-[10px] text-[#66717C]">
+                                  <span className="mt-1 block text-[11px] text-[#66717C]">
                                     {formatPrice(service.base_price)}
                                   </span>
                                 </span>
@@ -1210,7 +1206,7 @@ function MaintenancePackages() {
                                 <div className="mt-3 flex items-center justify-between border-t border-[#E5E8EA] pt-3">
                                   <label
                                     htmlFor={`service-quantity-${service.id}`}
-                                    className="text-[10px] text-[#66717C]"
+                                    className="text-[11px] text-[#66717C]"
                                   >
                                     Số lượng
                                   </label>
@@ -1246,7 +1242,7 @@ function MaintenancePackages() {
                       <div className="mb-3 flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-xs font-bold">Phụ tùng</p>
-                          <span className="rounded-full bg-[#F3E8D2] px-2.5 py-1 text-[10px] font-semibold">
+                          <span className="rounded-full bg-[#F3E8D2] px-2.5 py-1 text-[11px] font-semibold">
                             {form.parts.length} đã chọn
                           </span>
                         </div>
@@ -1280,10 +1276,10 @@ function MaintenancePackages() {
                                   <span className="block text-xs font-semibold">
                                     {part.name}
                                   </span>
-                                  <span className="mt-1 block text-[10px] text-[#8A949E]">
+                                  <span className="mt-1 block text-[11px] text-[#8A949E]">
                                     {part.sku}
                                   </span>
-                                  <span className="mt-1 block text-[10px] text-[#66717C]">
+                                  <span className="mt-1 block text-[11px] text-[#66717C]">
                                     {formatPrice(part.sell_price)}
                                   </span>
                                 </span>
@@ -1293,7 +1289,7 @@ function MaintenancePackages() {
                                 <div className="mt-3 flex items-center justify-between border-t border-[#E5E8EA] pt-3">
                                   <label
                                     htmlFor={`part-quantity-${part.id}`}
-                                    className="text-[10px] text-[#66717C]"
+                                    className="text-[11px] text-[#66717C]"
                                   >
                                     Số lượng
                                   </label>
@@ -1361,7 +1357,7 @@ function MaintenancePackages() {
             ) : (
               <>
                 <div className="mb-6">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
                     THÔNG TIN CHI TIẾT
                   </p>
                   <h2
@@ -1476,7 +1472,7 @@ function MaintenancePackages() {
                               <p className="text-xs font-semibold">
                                 {part.name}
                               </p>
-                              <p className="mt-1 text-[10px] text-[#8A949E]">
+                              <p className="mt-1 text-[11px] text-[#8A949E]">
                                 {part.sku}
                               </p>
                             </div>

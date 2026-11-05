@@ -17,8 +17,11 @@ class WorkItem extends Model
     use HasFactory;
 
     public const PENDING = 'PENDING';
+
     public const IN_PROGRESS = 'IN_PROGRESS';
+
     public const COMPLETED = 'COMPLETED';
+
     public const CANCELLED = 'CANCELLED';
 
     protected function casts(): array

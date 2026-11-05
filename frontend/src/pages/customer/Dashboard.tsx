@@ -309,10 +309,10 @@ function CustomerDashboard() {
           {/* ===== TIÊU ĐỀ TRANG ===== */}
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
                 KHÁCH HÀNG / TỔNG QUAN DỊCH VỤ
               </p>
-              <h1 className="mt-2 text-[28px] font-bold tracking-[-0.6px] text-[#1F2933]">
+              <h1 className="mt-2 text-[28px] font-bold tracking-normal text-[#1F2933]">
                 Xin chào, {getUserDisplayName(user)}
               </h1>
               <p className="mt-1.5 text-[13px] leading-6 text-[#66717C]">
@@ -361,7 +361,7 @@ function CustomerDashboard() {
                 className="group flex min-h-[116px] cursor-pointer flex-col justify-between rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)] transition hover:border-[#D6A85F] hover:shadow-md"
               >
                 <div className="flex items-start justify-between">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                     {kpi.label}
                   </p>
                   <span className="text-sm text-[#B5BDC5] transition group-hover:translate-x-0.5 group-hover:text-[#D6A85F]">
@@ -369,10 +369,10 @@ function CustomerDashboard() {
                   </span>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold tracking-tight text-[#20252B]">
+                  <p className="text-2xl font-bold tracking-normal text-[#20252B]">
                     {loading ? "…" : kpi.value}
                   </p>
-                  <p className="mt-1 text-[11px] text-[#66717C]">{loading ? " " : kpi.hint}</p>
+                  <p className="mt-1 text-[12px] text-[#66717C]">{loading ? " " : kpi.hint}</p>
                 </div>
               </Link>
             ))}
@@ -390,7 +390,7 @@ function CustomerDashboard() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-amber-500" />
-                          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-amber-600">
+                          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-amber-600">
                             Xe đang được xử lý tại gara
                           </p>
                         </div>
@@ -575,11 +575,11 @@ function CustomerDashboard() {
                                 · {Number(o.mileage_received).toLocaleString("vi-VN")} km
                               </span>
                             )}
-                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
                               {repairStatusLabel[o.status] ?? o.status}
                             </span>
                           </div>
-                          <p className="mt-1.5 text-[11px] text-[#66717C]">
+                          <p className="mt-1.5 text-[12px] text-[#66717C]">
                             Phiếu <strong>{o.repair_order_code}</strong> · Hoàn tất{" "}
                             {formatDate(o.completed_at ?? o.handed_over_at ?? o.received_at)}
                           </p>
@@ -606,7 +606,7 @@ function CustomerDashboard() {
                                 e.stopPropagation();
                                 navigate(o.vehicle_id ? `/booking?vehicle_id=${o.vehicle_id}` : "/booking");
                               }}
-                              className="cursor-pointer rounded-lg border border-[#E5B869]/50 bg-[#FAF8F5] px-3 py-1.5 text-[11px] font-bold text-[#8F641B] transition hover:bg-[#F3E8D2]"
+                              className="cursor-pointer rounded-lg border border-[#E5B869]/50 bg-[#FAF8F5] px-3 py-1.5 text-[12px] font-bold text-[#8F641B] transition hover:bg-[#F3E8D2]"
                             >
                               Đặt lịch lại
                             </button>
@@ -626,7 +626,7 @@ function CustomerDashboard() {
                   <h2 className="text-base font-bold text-[#1F2933]">Lịch hẹn sắp tới</h2>
                   <Link
                     to="/customer/appointments"
-                    className="cursor-pointer text-[11px] font-bold text-[#8F641B] hover:underline"
+                    className="cursor-pointer text-[12px] font-bold text-[#8F641B] hover:underline"
                   >
                     Xem tất cả
                   </Link>
@@ -640,7 +640,7 @@ function CustomerDashboard() {
                       <p className="text-xs font-semibold text-[#20252B]">Chưa có lịch hẹn nào</p>
                       <Link
                         to="/booking"
-                        className="mt-3 inline-flex cursor-pointer rounded-lg bg-[#1F2933] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-slate-800"
+                        className="mt-3 inline-flex cursor-pointer rounded-lg bg-[#1F2933] px-3 py-1.5 text-[12px] font-bold text-white transition hover:bg-slate-800"
                       >
                         Đặt lịch ngay
                       </Link>
@@ -657,7 +657,7 @@ function CustomerDashboard() {
                             {formatDate(a.appointment_date)} · {formatTime(a.appointment_time)}
                           </p>
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                               a.status === "CONFIRMED"
                                 ? "bg-[#F3E8D2] text-[#3A3020]"
                                 : "bg-white text-[#66717C]"
@@ -666,10 +666,10 @@ function CustomerDashboard() {
                             {appointmentStatusLabel[a.status] ?? a.status}
                           </span>
                         </div>
-                        <p className="mt-1.5 text-[11px] text-[#66717C]">
+                        <p className="mt-1.5 text-[12px] text-[#66717C]">
                           {getVehicleName(a.vehicle)} · {a.vehicle?.license_plate ?? "—"}
                         </p>
-                        <p className="mt-0.5 text-[11px] text-[#8A949E]">
+                        <p className="mt-0.5 text-[12px] text-[#8A949E]">
                           {requestTypeLabel[a.request_type] ?? a.request_type} · {a.appointment_code}
                         </p>
                       </Link>
@@ -685,7 +685,7 @@ function CustomerDashboard() {
                 </p>
 
                 <div className="mt-4 rounded-xl bg-[#1F2933] p-4 text-white">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#E5B869]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#E5B869]">
                     Hotline hỗ trợ kỹ thuật
                   </p>
                   <a
@@ -697,7 +697,7 @@ function CustomerDashboard() {
                   <button
                     type="button"
                     onClick={() => void handleCopyHotline()}
-                    className="mt-2 cursor-pointer text-[11px] text-slate-300 underline underline-offset-2 transition hover:text-white"
+                    className="mt-2 cursor-pointer text-[12px] text-slate-300 underline underline-offset-2 transition hover:text-white"
                   >
                     Sao chép số
                   </button>
@@ -721,7 +721,7 @@ function CustomerDashboard() {
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#D6A85F]">
                   CHI TIẾT PHIẾU DỊCH VỤ
                 </p>
                 <h3 className="text-lg font-extrabold text-[#1F2933]">

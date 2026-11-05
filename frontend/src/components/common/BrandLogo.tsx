@@ -27,8 +27,8 @@ export default function BrandLogo({
 
   const subtitleClass =
     size === "lg"
-      ? "text-[10px] tracking-[0.2em]"
-      : "text-[9px] tracking-[0.18em]";
+      ? "text-[11px] tracking-[0.2em]"
+      : "text-[11px] tracking-[0.18em]";
 
   const isDark = theme === "dark";
 
@@ -45,7 +45,7 @@ export default function BrandLogo({
 
       <div className="leading-none">
         <p
-          className={`font-extrabold tracking-tight ${titleClass} ${
+          className={`font-extrabold tracking-normal ${titleClass} ${
             isDark ? "text-white" : "text-[#1F2933]"
           }`}
         >

@@ -99,7 +99,7 @@ export default function ChatWidget() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold leading-tight">Trợ lý CarService</p>
-              <p className="text-[11px] text-slate-300">Trả lời tức thì · Hỗ trợ AI</p>
+              <p className="text-[12px] text-slate-300">Trả lời tức thì · Hỗ trợ AI</p>
             </div>
             <button
               type="button"

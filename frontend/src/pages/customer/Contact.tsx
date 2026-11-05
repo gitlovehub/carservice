@@ -32,11 +32,11 @@ function Contact() {
       <main>
         <section className="border-b border-[#E1E4E6] bg-white">
           <div className="mx-auto max-w-[1280px] px-6 py-12 md:py-14">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
               CARSERVICE / LIÊN HỆ
             </p>
 
-            <h1 className="mt-3 text-[32px] font-bold tracking-[-1px] text-[#1F2933] md:text-[42px]">
+            <h1 className="mt-3 text-[32px] font-bold tracking-normal text-[#1F2933] md:text-[42px]">
               Liên hệ với chúng tôi
             </h1>
 
@@ -52,7 +52,7 @@ function Contact() {
             <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
               <div className="space-y-5">
                 <div className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     CONTACT
                   </p>
 
@@ -60,7 +60,7 @@ function Contact() {
                     Thông tin liên hệ
                   </h2>
 
-                  <p className="mt-2 text-[11px] leading-5 text-[#66717C]">
+                  <p className="mt-2 text-[12px] leading-5 text-[#66717C]">
                     Bạn có thể liên hệ với CarService thông qua các thông tin
                     dưới đây.
                   </p>
@@ -73,7 +73,7 @@ function Contact() {
                         </div>
 
                         <div>
-                          <p className="text-[11px] text-[#8A949E]">
+                          <p className="text-[12px] text-[#8A949E]">
                             Điện thoại
                           </p>
 
@@ -91,7 +91,7 @@ function Contact() {
                         </div>
 
                         <div>
-                          <p className="text-[11px] text-[#8A949E]">
+                          <p className="text-[12px] text-[#8A949E]">
                             Email
                           </p>
 
@@ -109,7 +109,7 @@ function Contact() {
                         </div>
 
                         <div>
-                          <p className="text-[11px] text-[#8A949E]">
+                          <p className="text-[12px] text-[#8A949E]">
                             Địa chỉ gara
                           </p>
 
@@ -127,7 +127,7 @@ function Contact() {
                         </div>
 
                         <div>
-                          <p className="text-[11px] text-[#8A949E]">
+                          <p className="text-[12px] text-[#8A949E]">
                             Thời gian làm việc
                           </p>
 
@@ -135,7 +135,7 @@ function Contact() {
                             08:00 – 17:30
                           </p>
 
-                          <p className="mt-1 text-[11px] text-[#8A949E]">
+                          <p className="mt-1 text-[12px] text-[#8A949E]">
                             Thứ 2 – Thứ 7
                           </p>
                         </div>
@@ -155,7 +155,7 @@ function Contact() {
                         Hỗ trợ khách hàng
                       </p>
 
-                      <p className="mt-1 text-[11px] leading-5 text-[#AEB8C1]">
+                      <p className="mt-1 text-[12px] leading-5 text-[#AEB8C1]">
                         Đội ngũ CarService sẽ tiếp nhận và phản hồi yêu cầu
                         của bạn trong thời gian sớm nhất.
                       </p>
@@ -166,7 +166,7 @@ function Contact() {
 
               <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
                 <div className="border-b border-[#E1E4E6] px-6 py-5">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     SEND MESSAGE
                   </p>
 
@@ -174,7 +174,7 @@ function Contact() {
                     Gửi yêu cầu hỗ trợ
                   </h2>
 
-                  <p className="mt-2 text-[11px] leading-5 text-[#66717C]">
+                  <p className="mt-2 text-[12px] leading-5 text-[#66717C]">
                     Điền thông tin bên dưới để CarService có thể hỗ trợ bạn.
                   </p>
                 </div>
@@ -239,7 +239,7 @@ function Contact() {
                   </div>
 
                   <div className="flex flex-col justify-between gap-4 border-t border-[#E1E4E6] pt-5 sm:flex-row sm:items-center">
-                    <p className="max-w-md text-[11px] leading-5 text-[#8A949E]">
+                    <p className="max-w-md text-[12px] leading-5 text-[#8A949E]">
                       Vui lòng cung cấp thông tin chính xác để CarService
                       có thể liên hệ lại với bạn.
                     </p>

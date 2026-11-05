@@ -18,11 +18,17 @@ for (const layout of ['CustomerLayout', 'AdvisorLayout', 'AdminLayout']) {
 for (const route of ['customer/dashboard', 'advisor', 'admin', 'customer/appointments', 'path="appointments"', 'working-hours']) {
   assert.ok(routes.includes(route), `Route ${route} missing`);
 }
-for (const color of ['#cf2935', '#a77a2e', '#507b2c', '#e9bf72', '#c5ff64']) {
-  assert.ok(src('layouts/shell.css').includes(color), `ATELIER color ${color} missing`);
+// Màu thương hiệu và màu nhấn theo vai trò nằm tập trung ở tokens.css (Design System, Phase 2).
+const tokens = src('styles/tokens.css');
+for (const needle of ['--cs-brand: #cf2935', '[data-area="advisor"]', '[data-area="admin"]', 'html[data-theme="dark"]']) {
+  assert.ok(tokens.includes(needle), `Design token ${needle} missing`);
+}
+assert.match(src('index.css'), /@import "\.\/styles\/tokens\.css"/, 'tokens.css must be loaded globally');
+for (const neon of ['#c5ff64', '#c6ff68', '#507b2c']) {
+  assert.ok(!tokens.includes(neon) && !src('layouts/shell.css').includes(neon), `Admin neon ${neon} must be gone`);
 }
 assert.match(nav, /customer:[\s\S]+advisor:[\s\S]+admin:/);
-assert.match(shell, /aria-expanded=.*open/);
+assert.match(shell, /aria-expanded=\{\w*open\}/i, 'Mobile menu button must expose its open state');
 assert.match(shell, /ShellContext.Provider/);
 assert.match(theme, /localStorage\.setItem\(THEME_KEY/);
 assert.match(auth, /fetchApi\("\/me"\)/, 'must check the real backend before granting a role');

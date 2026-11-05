@@ -22,7 +22,7 @@ class ServiceController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         return response()->json($query->orderBy('category')->orderBy('name')->get());

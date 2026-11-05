@@ -7,8 +7,6 @@ import {
   type AdvisorCustomer,
   type AdvisorCustomerInput,
 } from "../../services/customerApi";
-import AdvisorSidebar from "./AdvisorSidebar";
-import AdvisorTopbar from "./AdvisorTopbar";
 
 const emptyForm: AdvisorCustomerInput = {
   full_name: "",
@@ -150,24 +148,22 @@ function Customers() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdvisorSidebar />
 
       <div className="lg:ml-[250px]">
-        <AdvisorTopbar />
 
         <main>
           <div className="mx-auto max-w-[1200px] px-6 py-8 lg:px-8 lg:py-10">
             <div className="mb-8">
-              <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
                 GARA / KHÁCH HÀNG
               </p>
 
               <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
                 <div>
-                  <h2 className="text-[24px] font-bold tracking-tight text-[#20252B]">
+                  <h2 className="text-[24px] font-bold tracking-normal text-[#20252B]">
                     Quản lý khách hàng
                   </h2>
-                  <p className="mt-2 max-w-[620px] text-[12px] leading-5 text-[#8A949E]">
+                  <p className="mt-2 max-w-[620px] text-[13px] leading-5 text-[#8A949E]">
                     Tìm kiếm và quản lý thông tin khách hàng tại gara.
                   </p>
                 </div>
@@ -184,37 +180,37 @@ function Customers() {
 
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                   TỔNG KHÁCH HÀNG
                 </p>
                 <p className="mt-3 text-[24px] font-bold text-[#20252B]">
                   {total}
                 </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Dữ liệu từ hệ thống
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                   KẾT QUẢ HIỂN THỊ
                 </p>
                 <p className="mt-3 text-[24px] font-bold text-[#20252B]">
                   {customers.length}
                 </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Khách hàng trên trang này
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                   VAI TRÒ
                 </p>
                 <p className="mt-3 text-[14px] font-bold text-[#20252B]">
                   Cố vấn dịch vụ
                 </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Quản lý thông tin khách hàng
                 </p>
               </div>
@@ -225,7 +221,7 @@ function Customers() {
                 <p className="text-[13px] font-semibold text-[#20252B]">
                   Tìm kiếm khách hàng
                 </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-[#8A949E]">
                   Tìm theo tên, số điện thoại hoặc email.
                 </p>
               </div>
@@ -241,7 +237,7 @@ function Customers() {
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Tên, số điện thoại hoặc email"
-                  className="w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-[12px] outline-none transition placeholder:text-[#A0A8AF] focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
+                  className="w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-[13px] outline-none transition placeholder:text-[#A0A8AF] focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
                 />
 
                 <button
@@ -254,7 +250,7 @@ function Customers() {
                 <button
                   type="button"
                   onClick={resetSearch}
-                  className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-[11px] font-semibold text-[#374151] transition hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
+                  className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-[12px] font-semibold text-[#374151] transition hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
                 >
                   Xóa bộ lọc
                 </button>
@@ -267,18 +263,18 @@ function Customers() {
                   <p className="text-[13px] font-semibold text-[#20252B]">
                     Danh sách khách hàng
                   </p>
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
+                  <p className="mt-1 text-[11px] text-[#8A949E]">
                     Thông tin được tải từ backend
                   </p>
                 </div>
 
-                <p className="w-fit rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[10px] font-semibold text-[#66717C]">
+                <p className="w-fit rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
                   {total} khách hàng
                 </p>
               </div>
 
               {error && (
-                <div className="m-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-700">
+                <div className="m-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
                   <p>{error}</p>
                   <button
                     type="button"
@@ -294,22 +290,22 @@ function Customers() {
                 <table className="w-full min-w-[850px] border-collapse">
                   <thead>
                     <tr className="border-b border-[#E1E4E6] bg-[#F7F7F5] text-left">
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
+                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
                         STT
                       </th>
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
+                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
                         KHÁCH HÀNG
                       </th>
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
+                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
                         SỐ ĐIỆN THOẠI
                       </th>
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
+                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
                         EMAIL
                       </th>
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
+                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
                         ĐỊA CHỈ
                       </th>
-                      <th className="px-5 py-3 text-[9px] font-bold text-[#8A949E]">
+                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
                         THAO TÁC
                       </th>
                     </tr>
@@ -320,7 +316,7 @@ function Customers() {
                       <tr>
                         <td
                           colSpan={6}
-                          className="px-5 py-14 text-center text-[12px] text-[#8A949E]"
+                          className="px-5 py-14 text-center text-[13px] text-[#8A949E]"
                         >
                           Đang tải danh sách khách hàng...
                         </td>
@@ -331,13 +327,13 @@ function Customers() {
                           key={customer.id}
                           className="border-b border-[#EEF0F2] last:border-0 transition hover:bg-[#FAFAF9]"
                         >
-                          <td className="px-5 py-4 text-[11px] text-[#66717C]">
+                          <td className="px-5 py-4 text-[12px] text-[#66717C]">
                             {(page - 1) * 10 + index + 1}
                           </td>
 
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3E8D2] text-[10px] font-bold text-[#5B4630]">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3E8D2] text-[11px] font-bold text-[#5B4630]">
                                 {customer.full_name
                                   .trim()
                                   .split(/\s+/)
@@ -347,23 +343,23 @@ function Customers() {
                               </div>
 
                               <div>
-                                <p className="text-[11px] font-semibold text-[#20252B]">
+                                <p className="text-[12px] font-semibold text-[#20252B]">
                                   {customer.full_name}
                                 </p>
-                                <p className="mt-1 text-[9px] text-[#8A949E]">
+                                <p className="mt-1 text-[11px] text-[#8A949E]">
                                   Mã khách hàng: {customer.id}
                                 </p>
                               </div>
                             </div>
                           </td>
 
-                          <td className="px-5 py-4 text-[11px] text-[#374151]">
+                          <td className="px-5 py-4 text-[12px] text-[#374151]">
                             {customer.phone}
                           </td>
-                          <td className="px-5 py-4 text-[11px] text-[#374151]">
+                          <td className="px-5 py-4 text-[12px] text-[#374151]">
                             {customer.email || "Chưa cập nhật"}
                           </td>
-                          <td className="px-5 py-4 text-[11px] text-[#374151]">
+                          <td className="px-5 py-4 text-[12px] text-[#374151]">
                             {customer.address || "Chưa cập nhật"}
                           </td>
 
@@ -372,13 +368,13 @@ function Customers() {
                               <button
                                 type="button"
                                 onClick={() => openEditModal(customer)}
-                                className="rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[10px] font-semibold text-[#374151] transition hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
+                                className="rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[11px] font-semibold text-[#374151] transition hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
                               >
                                 Sửa
                               </button>
                               <Link
                                 to={`/advisor/customer-cars?customerId=${customer.id}`}
-                                className="inline-flex rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[10px] font-semibold text-[#374151] transition hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
+                                className="inline-flex rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[11px] font-semibold text-[#374151] transition hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
                               >
                                 Xe
                               </Link>
@@ -389,10 +385,10 @@ function Customers() {
                     ) : (
                       <tr>
                         <td colSpan={6} className="px-5 py-14 text-center">
-                          <p className="text-[12px] font-semibold text-[#20252B]">
+                          <p className="text-[13px] font-semibold text-[#20252B]">
                             Không tìm thấy khách hàng
                           </p>
-                          <p className="mt-1 text-[10px] text-[#8A949E]">
+                          <p className="mt-1 text-[11px] text-[#8A949E]">
                             Thử thay đổi từ khóa hoặc thêm khách hàng mới.
                           </p>
                         </td>
@@ -403,7 +399,7 @@ function Customers() {
               </div>
 
               <div className="flex flex-col gap-3 border-t border-[#EEF0F2] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-[10px] text-[#8A949E]">
+                <p className="text-[11px] text-[#8A949E]">
                   Trang {page} / {lastPage}
                 </p>
 
@@ -412,7 +408,7 @@ function Customers() {
                     type="button"
                     disabled={page <= 1 || loading}
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-[10px] font-semibold text-[#374151] transition hover:bg-[#F7F7F5] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#374151] transition hover:bg-[#F7F7F5] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Trước
                   </button>
@@ -422,7 +418,7 @@ function Customers() {
                     onClick={() =>
                       setPage((current) => Math.min(lastPage, current + 1))
                     }
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-[10px] font-semibold text-[#374151] transition hover:bg-[#F7F7F5] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#374151] transition hover:bg-[#F7F7F5] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Tiếp
                   </button>
@@ -449,7 +445,7 @@ function Customers() {
                 >
                   {editingCustomer ? "Cập nhật khách hàng" : "Thêm khách hàng"}
                 </h3>
-                <p className="mt-1 text-[11px] text-[#8A949E]">
+                <p className="mt-1 text-[12px] text-[#8A949E]">
                   Nhập thông tin khách hàng bên dưới.
                 </p>
               </div>
@@ -469,7 +465,7 @@ function Customers() {
               <div>
                 <label
                   htmlFor="customer-name"
-                  className="mb-2 block text-[11px] font-semibold text-[#374151]"
+                  className="mb-2 block text-[12px] font-semibold text-[#374151]"
                 >
                   Họ và tên <span className="text-red-500">*</span>
                 </label>
@@ -482,14 +478,14 @@ function Customers() {
                     setForm({ ...form, full_name: event.target.value })
                   }
                   placeholder="Nhập họ và tên"
-                  className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-[12px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
+                  className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-[13px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="customer-phone"
-                  className="mb-2 block text-[11px] font-semibold text-[#374151]"
+                  className="mb-2 block text-[12px] font-semibold text-[#374151]"
                 >
                   Số điện thoại <span className="text-red-500">*</span>
                 </label>
@@ -502,14 +498,14 @@ function Customers() {
                     setForm({ ...form, phone: event.target.value })
                   }
                   placeholder="Nhập số điện thoại"
-                  className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-[12px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
+                  className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-[13px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="customer-email"
-                  className="mb-2 block text-[11px] font-semibold text-[#374151]"
+                  className="mb-2 block text-[12px] font-semibold text-[#374151]"
                 >
                   Email
                 </label>
@@ -522,14 +518,14 @@ function Customers() {
                     setForm({ ...form, email: event.target.value })
                   }
                   placeholder="example@email.com"
-                  className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-[12px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
+                  className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-[13px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="customer-address"
-                  className="mb-2 block text-[11px] font-semibold text-[#374151]"
+                  className="mb-2 block text-[12px] font-semibold text-[#374151]"
                 >
                   Địa chỉ
                 </label>
@@ -542,12 +538,12 @@ function Customers() {
                     setForm({ ...form, address: event.target.value })
                   }
                   placeholder="Nhập địa chỉ khách hàng"
-                  className="w-full resize-y rounded-xl border border-[#D9DDE1] px-4 py-3 text-[12px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
+                  className="w-full resize-y rounded-xl border border-[#D9DDE1] px-4 py-3 text-[13px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
                 />
               </div>
 
               {formError && (
-                <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[11px] text-red-700">
+                <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-700">
                   {formError}
                 </p>
               )}
@@ -557,14 +553,14 @@ function Customers() {
                   type="button"
                   disabled={saving}
                   onClick={closeModal}
-                  className="rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-[11px] font-semibold text-[#374151] hover:bg-[#F7F7F5] disabled:opacity-50"
+                  className="rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#F7F7F5] disabled:opacity-50"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-xl bg-[#1F2933] px-5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#151D24] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-xl bg-[#1F2933] px-5 py-2.5 text-[12px] font-semibold text-white transition hover:bg-[#151D24] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving
                     ? "Đang lưu..."

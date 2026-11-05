@@ -4,7 +4,7 @@ import PageTransition from "../components/PageTransition";
 
 /** Layout dùng chung cho trang công khai: header/footer giữ nguyên khi chuyển trang. */
 export default function PublicLayout() {
-  return <div className="flex min-h-dvh flex-col bg-[#f7f7f6] text-[#191919] dark:bg-[#111214] dark:text-[#f5f5f4]">
+  return <div className="flex min-h-dvh flex-col bg-cs-bg text-cs-text">
     <AtelierPublicHeader />
     <PageTransition className="flex flex-1 flex-col"><Outlet /></PageTransition>
     <AtelierPublicFooter />

@@ -1,8 +1,6 @@
 import AdminHubNav from "../../components/AdminHubNav";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import AdminSidebar from "./AdminSidebar";
-import AdminTopbar from "./AdminTopbar";
 
 type Report = {
   title: string;
@@ -153,15 +151,13 @@ function Reports() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdminSidebar />
 
       <div className="lg:ml-[250px]">
-        <AdminTopbar />
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
             <div className="mb-8">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
                 KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
               </p>
 
@@ -172,7 +168,7 @@ function Reports() {
                   </div>
 
                   <div>
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                    <h1 className="text-2xl font-bold tracking-normal sm:text-3xl">
                       Báo cáo & thống kê
                     </h1>
 
@@ -197,7 +193,7 @@ function Reports() {
             <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     GARA / BÁO CÁO
                   </p>
                   <h2 className="mt-1 text-base font-bold">
@@ -229,7 +225,7 @@ function Reports() {
                   key={report.title}
                   className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
                     {report.title}
                   </p>
 
@@ -238,11 +234,11 @@ function Reports() {
                   </p>
 
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-[10px] leading-4 text-[#8A949E]">
+                    <p className="text-[11px] leading-4 text-[#8A949E]">
                       {report.description}
                     </p>
 
-                    <span className="rounded-full bg-[#F3E8D2] px-2.5 py-1 text-[10px] font-semibold text-[#3A3020]">
+                    <span className="rounded-full bg-[#F3E8D2] px-2.5 py-1 text-[11px] font-semibold text-[#3A3020]">
                       {report.change}
                     </span>
                   </div>
@@ -252,7 +248,7 @@ function Reports() {
 
             <div className="mb-6 grid gap-4 sm:grid-cols-2">
               <article className="rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:p-6">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                   TỔNG HỢP DỊCH VỤ
                 </p>
                 <p className="mt-4 text-xs text-[#66717C]">
@@ -264,7 +260,7 @@ function Reports() {
               </article>
 
               <article className="rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:p-6">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                   LƯỢT SỬ DỤNG
                 </p>
                 <p className="mt-4 text-xs text-[#66717C]">
@@ -279,7 +275,7 @@ function Reports() {
             <div className="grid gap-6 lg:grid-cols-2">
               <section className="rounded-2xl border border-[#E1E4E6] bg-white">
                 <div className="border-b border-[#EEF0F2] px-5 py-5 sm:px-6">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     SERVICE REPORT
                   </p>
                   <h2 className="mt-1 text-base font-bold">
@@ -298,7 +294,7 @@ function Reports() {
                           <p className="text-xs font-semibold">
                             {service.name}
                           </p>
-                          <p className="mt-1 text-[10px] text-[#8A949E]">
+                          <p className="mt-1 text-[11px] text-[#8A949E]">
                             {service.quantity} lượt sử dụng
                           </p>
                         </div>
@@ -325,7 +321,7 @@ function Reports() {
 
               <section className="rounded-2xl border border-[#E1E4E6] bg-white">
                 <div className="border-b border-[#EEF0F2] px-5 py-5 sm:px-6">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                     GARAGE OVERVIEW
                   </p>
                   <h2 className="mt-1 text-base font-bold">
@@ -360,7 +356,7 @@ function Reports() {
                   ))}
 
                   <div className="rounded-2xl bg-[#F7F7F5] p-5">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
                       LƯU Ý
                     </p>
                     <p className="mt-2 text-xs leading-5 text-[#66717C]">

@@ -21,7 +21,7 @@ class AdminMaintenancePackageControllerTest extends TestCase
         $advisor = Account::factory()->advisor()->create();
         $token = $advisor->createToken('package-test')->plainTextToken;
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/maintenance-packages')
             ->assertForbidden();
     }
@@ -33,7 +33,7 @@ class AdminMaintenancePackageControllerTest extends TestCase
         $service = Service::factory()->create(['base_price' => 100]);
         $part = $this->createPart('PART-CRUD-001', 45);
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/admin/maintenance-packages', [
                 'vehicle_model_id' => $vehicleModel->id,
                 'name' => 'Gói 10.000 km',
@@ -55,13 +55,13 @@ class AdminMaintenancePackageControllerTest extends TestCase
 
         $package = MaintenancePackage::query()->firstOrFail();
 
-        $this->getJson('/api/admin/maintenance-packages?vehicle_model_id=' . $vehicleModel->id . '&status=ACTIVE&search=10.000')
+        $this->getJson('/api/admin/maintenance-packages?vehicle_model_id='.$vehicleModel->id.'&status=ACTIVE&search=10.000')
             ->assertOk()
             ->assertJsonPath('data.total', 1)
             ->assertJsonPath('data.data.0.id', $package->id)
             ->assertJsonPath('data.data.0.price', 335);
 
-        $this->getJson('/api/admin/maintenance-packages/' . $package->id)
+        $this->getJson('/api/admin/maintenance-packages/'.$package->id)
             ->assertOk()
             ->assertJsonPath('data.id', $package->id)
             ->assertJsonPath('data.estimated_price', 335);
@@ -75,8 +75,8 @@ class AdminMaintenancePackageControllerTest extends TestCase
         $newService = Service::factory()->create();
         $package->services()->attach($existingService->id, ['quantity' => 2]);
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->patchJson('/api/admin/maintenance-packages/' . $package->id, [
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->patchJson('/api/admin/maintenance-packages/'.$package->id, [
                 'name' => 'Tên sau',
                 'services' => [
                     ['service_id' => $newService->id],
@@ -92,14 +92,14 @@ class AdminMaintenancePackageControllerTest extends TestCase
             'service_id' => $existingService->id,
         ]);
 
-        $this->patchJson('/api/admin/maintenance-packages/' . $package->id, [
+        $this->patchJson('/api/admin/maintenance-packages/'.$package->id, [
             'description' => 'Mô tả cập nhật',
         ])
             ->assertOk()
             ->assertJsonPath('data.description', 'Mô tả cập nhật')
             ->assertJsonPath('data.services.0.id', $newService->id);
 
-        $this->putJson('/api/admin/maintenance-packages/' . $package->id . '/services', [
+        $this->putJson('/api/admin/maintenance-packages/'.$package->id.'/services', [
             'services' => [],
         ])
             ->assertOk()
@@ -117,8 +117,8 @@ class AdminMaintenancePackageControllerTest extends TestCase
         $package = MaintenancePackage::factory()->create();
         $part = $this->createPart('PART-CRUD-002', 80);
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->putJson('/api/admin/maintenance-packages/' . $package->id . '/parts', [
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/admin/maintenance-packages/'.$package->id.'/parts', [
                 'parts' => [
                     ['part_id' => $part->id, 'quantity' => 2],
                 ],
@@ -128,7 +128,7 @@ class AdminMaintenancePackageControllerTest extends TestCase
             ->assertJsonPath('data.parts.0.pivot.quantity', 2)
             ->assertJsonPath('data.price', 160);
 
-        $this->deleteJson('/api/admin/maintenance-packages/' . $package->id)
+        $this->deleteJson('/api/admin/maintenance-packages/'.$package->id)
             ->assertOk()
             ->assertJsonPath('data.status', 'INACTIVE');
 
@@ -143,7 +143,7 @@ class AdminMaintenancePackageControllerTest extends TestCase
         $token = $this->adminToken();
         $service = Service::factory()->create();
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/admin/maintenance-packages', [
                 'name' => 'Gói không hợp lệ',
                 'mileage_milestone' => 0,
@@ -170,7 +170,7 @@ class AdminMaintenancePackageControllerTest extends TestCase
     {
         return Part::query()->create([
             'sku' => $sku,
-            'name' => 'Phụ tùng ' . $sku,
+            'name' => 'Phụ tùng '.$sku,
             'unit' => 'cái',
             'sell_price' => $sellPrice,
             'status' => 'ACTIVE',

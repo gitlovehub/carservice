@@ -64,10 +64,10 @@ export default function VnpayReturn() {
     <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
       <main className="lg:ml-[250px]">
         <div className="mx-auto max-w-[640px] px-6 py-10 md:py-14">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+          <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
             KHÁCH HÀNG / KẾT QUẢ THANH TOÁN
           </p>
-          <h1 className="mt-3 text-[28px] font-bold tracking-[-0.8px] text-[#1F2933]">Kết quả thanh toán VNPay</h1>
+          <h1 className="mt-3 text-[28px] font-bold tracking-normal text-[#1F2933]">Kết quả thanh toán VNPay</h1>
 
           <div className="mt-8 overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
             {shownError ? (

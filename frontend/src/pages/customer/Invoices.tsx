@@ -93,13 +93,13 @@ export default function InvoicesPage() {
       <main className="lg:ml-[250px]">
         <div className="mx-auto max-w-[1200px] px-6 py-10 md:px-8 md:py-14">
           <div className="mb-8">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
               KHÁCH HÀNG / HÓA ĐƠN
             </p>
 
             <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h1 className="text-[30px] font-bold tracking-[-0.8px] text-[#1F2933]">
+                <h1 className="text-[30px] font-bold tracking-normal text-[#1F2933]">
                   Hóa đơn của tôi
                 </h1>
                 <p className="mt-2 text-[13px] leading-6 text-[#66717C]">
@@ -108,7 +108,7 @@ export default function InvoicesPage() {
               </div>
 
               <div className="hidden rounded-xl border border-[#E1E4E6] bg-white px-4 py-3 sm:block">
-                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                   TỔNG ĐÃ CHI TRẢ
                 </p>
                 <p className="mt-1 text-[14px] font-bold text-[#1F2933]">
@@ -123,15 +123,15 @@ export default function InvoicesPage() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                     TỔNG HÓA ĐƠN
                   </p>
-                  <p className="mt-3 text-2xl font-bold tracking-tight text-[#20252B]">
+                  <p className="mt-3 text-2xl font-bold tracking-normal text-[#20252B]">
                     {loading ? "…" : rows.length}
                   </p>
-                  <p className="mt-1 text-[11px] text-[#66717C]">Hóa đơn phát hành</p>
+                  <p className="mt-1 text-[12px] text-[#66717C]">Hóa đơn phát hành</p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1F2933] text-[11px] font-bold text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1F2933] text-[12px] font-bold text-white">
                   HĐ
                 </div>
               </div>
@@ -140,13 +140,13 @@ export default function InvoicesPage() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                     ĐÃ THANH TOÁN
                   </p>
-                  <p className="mt-3 text-2xl font-bold tracking-tight text-emerald-700">
+                  <p className="mt-3 text-2xl font-bold tracking-normal text-emerald-700">
                     {loading ? "…" : paidCount}
                   </p>
-                  <p className="mt-1 text-[11px] text-[#66717C]">Giao dịch hoàn tất</p>
+                  <p className="mt-1 text-[12px] text-[#66717C]">Giao dịch hoàn tất</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-sm font-bold text-emerald-800">
                   ✓
@@ -157,13 +157,13 @@ export default function InvoicesPage() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
                     CHƯA THANH TOÁN
                   </p>
-                  <p className="mt-3 text-2xl font-bold tracking-tight text-amber-600">
+                  <p className="mt-3 text-2xl font-bold tracking-normal text-amber-600">
                     {loading ? "…" : unpaidCount}
                   </p>
-                  <p className="mt-1 text-[11px] text-[#66717C]">Cần thanh toán</p>
+                  <p className="mt-1 text-[12px] text-[#66717C]">Cần thanh toán</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-sm font-bold text-amber-800">
                   !
@@ -195,7 +195,7 @@ export default function InvoicesPage() {
                 </select>
               </div>
 
-              <span className="rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
+              <span className="rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[12px] font-semibold text-[#66717C]">
                 {filtered.length} hóa đơn
               </span>
             </div>
@@ -235,7 +235,7 @@ export default function InvoicesPage() {
                     >
                       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F2933] text-[11px] font-bold text-white">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F2933] text-[12px] font-bold text-white">
                             HĐ
                           </div>
 
@@ -245,7 +245,7 @@ export default function InvoicesPage() {
                                 {invoice.invoice_code}
                               </p>
                               <span
-                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${
                                   isPaid
                                     ? "bg-emerald-100 text-emerald-800"
                                     : "bg-amber-100 text-amber-800"
@@ -266,7 +266,7 @@ export default function InvoicesPage() {
                                 {order.vehicle?.license_plate ?? "—"}
                               </span>
                             </p>
-                            <p className="mt-0.5 text-[11px] text-[#66717C]">
+                            <p className="mt-0.5 text-[12px] text-[#66717C]">
                               Phiếu dịch vụ: <strong>{order.repair_order_code}</strong>
                             </p>
                           </div>
@@ -274,7 +274,7 @@ export default function InvoicesPage() {
 
                         <div className="grid grid-cols-2 gap-5 border-t border-[#E1E4E6] pt-4 sm:grid-cols-3 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
                           <div>
-                            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                            <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
                               Ngày lập
                             </p>
                             <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
@@ -283,14 +283,14 @@ export default function InvoicesPage() {
                           </div>
 
                           <div>
-                            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                            <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
                               Tổng tiền
                             </p>
                             <p className="mt-1 text-[14px] font-bold text-[#1F2933]">
                               {formatMoney(invoice.total_amount)}
                             </p>
                             {paid > 0 && !isPaid && (
-                              <p className="text-[10px] text-emerald-700">
+                              <p className="text-[11px] text-emerald-700">
                                 Đã trả: {formatMoney(paid)}
                               </p>
                             )}
@@ -300,7 +300,7 @@ export default function InvoicesPage() {
                             {!isPaid && (
                               <Link
                                 to={`/payment?invoice_id=${invoice.id}`}
-                                className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-center text-[11px] font-bold text-white shadow-sm transition hover:bg-amber-600"
+                                className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-center text-[12px] font-bold text-white shadow-sm transition hover:bg-amber-600"
                               >
                                 Thanh toán ngay
                               </Link>
@@ -329,7 +329,7 @@ export default function InvoicesPage() {
               </div>
               <div>
                 <p className="text-[14px] font-bold text-[#20252B]">Hỗ trợ hóa đơn & thanh toán</p>
-                <p className="mt-1 text-[11px] leading-5 text-[#66717C]">
+                <p className="mt-1 text-[12px] leading-5 text-[#66717C]">
                   Quý khách có nhu cầu xuất hóa đơn VAT điện tử cho doanh nghiệp hoặc cần tra soát các giao dịch chuyển khoản, vui lòng liên hệ hotline: <strong>033 240 5972</strong>.
                 </p>
               </div>
@@ -344,7 +344,7 @@ export default function InvoicesPage() {
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#D6A85F]">
                   CHI TIẾT HÓA ĐƠN
                 </p>
                 <h3 className="text-xl font-extrabold text-[#1F2933]">
@@ -455,7 +455,7 @@ export default function InvoicesPage() {
                           <p className="font-semibold text-slate-800">
                             Phương thức: {paymentMethodLabel[pm.payment_method ?? "DIRECT"] ?? pm.payment_method}
                           </p>
-                          <p className="text-[11px] text-slate-400">
+                          <p className="text-[12px] text-slate-400">
                             Ngày: {formatDate(pm.paid_at ?? pm.payment_date ?? pm.created_at)} · Trạng thái: {paymentStatusLabel[pm.status] ?? pm.status}
                           </p>
                         </div>

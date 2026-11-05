@@ -24,8 +24,20 @@ class StoreInternalAppointmentRequest extends FormRequest
             'note' => ['nullable', 'string', 'max:5000'],
             'service_ids' => ['sometimes', 'array'],
             'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('status', 'ACTIVE')],
-            'package_ids' => ['sometimes', 'array'],
-            'package_ids.*' => ['integer', 'distinct', 'exists:maintenance_packages,id'],
+            'package_ids' => ['sometimes', 'array', 'max:1'],
+            'package_ids.*' => ['integer', 'distinct', Rule::exists('maintenance_packages', 'id')->where('status', 'ACTIVE')],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'package_ids.max' => 'Mỗi lịch hẹn chỉ chọn một gói bảo dưỡng.',
+            'package_ids.*.exists' => 'Gói bảo dưỡng không tồn tại hoặc đã ngừng áp dụng.',
+            'service_ids.*.exists' => 'Dịch vụ không tồn tại hoặc đã ngừng hoạt động.',
         ];
     }
 }
