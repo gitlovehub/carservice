@@ -19,6 +19,7 @@ export default function ReceptionWorkflow() {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [checkInPlate, setCheckInPlate] = useState("");
   const [mileage, setMileage] = useState("");
   const [condition, setCondition] = useState("");
   const [note, setNote] = useState("");
@@ -45,6 +46,7 @@ export default function ReceptionWorkflow() {
     advisorAppointment(selectedId).then(async appointment => {
       if (!active) return;
       setSelected(appointment);
+      setCheckInPlate(appointment.vehicle?.license_plate || "");
       if (appointment.status === "CHECKED_IN") {
         const matched = await findOrderForAppointment(selectedId);
         if (active) setOrder(matched);
@@ -76,6 +78,11 @@ export default function ReceptionWorkflow() {
 
   async function handleCheckIn() {
     if (!selected || selected.status !== "CONFIRMED") return;
+    const normalizedPlate = checkInPlate.trim().toUpperCase().replace(/\s+/g, "");
+    if (!/^[1-9][0-9][A-Z]{1,2}-[0-9]{3}\.[0-9]{2}$|^[1-9][0-9][A-Z]{1,2}-[0-9]{4}$/.test(normalizedPlate)) {
+      setError("Vui lòng nhập biển số xe đúng định dạng (VD: 30A-123.45).");
+      return;
+    }
     const approved = await confirm({
       title: "Xác nhận khách và xe đến gara", reference: selected.appointment_code,
       description: `Kiểm tra khách và xe biển số ${selected.vehicle?.license_plate || "trên lịch hẹn"} đã thực sự có mặt. Xác nhận lịch qua điện thoại không đồng nghĩa đã tiếp nhận xe.`,
@@ -85,7 +92,7 @@ export default function ReceptionWorkflow() {
     if (!approved) return;
     setWorking(true); setError(""); setMessage("");
     try {
-      const updated = await checkInConfirmedAppointment(selected.id);
+      const updated = await checkInConfirmedAppointment(selected.id, normalizedPlate);
       setSelected(updated); notify("Đã xác nhận xe đến gara và tiếp nhận thành công.", "success"); setMessage("Đã check-in. Tiếp theo hãy ghi tình trạng xe để tạo một phiếu sửa chữa.");
       const existing = await findOrderForAppointment(selected.id);
       setOrder(existing);
@@ -155,7 +162,23 @@ export default function ReceptionWorkflow() {
           </dl>
           <ol className="my-6 flex flex-wrap gap-2 text-xs font-semibold text-cs-muted"><li className="rounded-full bg-cs-soft px-3 py-2">1. Đặt lịch</li><li className="rounded-full bg-cs-soft px-3 py-2">2. Xác nhận</li><li className="rounded-full bg-cs-soft px-3 py-2">3. Check-in</li><li className="rounded-full bg-cs-soft px-3 py-2">4. Phiếu sửa chữa</li></ol>
           {selected.status === "PENDING" && <div><p className="mb-4 text-sm text-cs-muted">Cần xác nhận lịch trước khi tiếp nhận.</p><button type="button" className={action} disabled={working} onClick={() => void handleConfirm()}>{working ? "Đang xử lý..." : "Xác nhận lịch hẹn"}</button></div>}
-          {selected.status === "CONFIRMED" && <div><p className="mb-4 text-sm text-cs-muted">Chỉ check-in sau khi xe thực sự đến gara.</p><button type="button" className={action} disabled={working} onClick={() => void handleCheckIn()}>{working ? "Đang tiếp nhận..." : "Tiếp nhận xe (CHECKED_IN)"}</button></div>}
+          {selected.status === "CONFIRMED" && <div className="space-y-4">
+            <p className="text-sm text-cs-muted">Chỉ check-in sau khi xe thực sự đến gara.</p>
+            <label className="block text-sm font-semibold text-cs-text">
+              Biển số xe thực tế <span className="text-cs-accent">*</span>
+              <input
+                className={input}
+                type="text"
+                required
+                maxLength={12}
+                value={checkInPlate}
+                onChange={event => setCheckInPlate(event.target.value.toUpperCase())}
+                placeholder="Ví dụ: 30A-123.45"
+              />
+              <span className="mt-1 block text-xs font-normal text-cs-muted">Đối chiếu với xe thực tế trước khi tiếp nhận.</span>
+            </label>
+            <button type="button" className={action} disabled={working} onClick={() => void handleCheckIn()}>{working ? "Đang tiếp nhận..." : "Tiếp nhận xe (CHECKED_IN)"}</button>
+          </div>}
           {selected.status === "CHECKED_IN" && (order ? <div><Notice tone="success">Lịch đã có phiếu {order.repair_order_code || `#${order.id}`}. Không được tạo phiếu thứ hai.</Notice><Link className={action} to={`/advisor/service-orders/${order.id}`}>Xem phiếu sửa chữa →</Link></div>
             : <form onSubmit={event => void submitReceive(event)} className="space-y-4"><h3 className="text-lg font-bold text-cs-text">Lập phiếu sửa chữa (RECEIVED)</h3>
               <label className="block text-sm font-semibold text-cs-text">Số km khi tiếp nhận (không bắt buộc)<input className={input} type="number" min="0" step="1" inputMode="numeric" value={mileage} onChange={event => setMileage(event.target.value)} placeholder="Ví dụ 35000"/></label>

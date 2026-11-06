@@ -22,10 +22,7 @@ class AdvisorAppointmentController extends Controller
     public function store(StoreInternalAppointmentRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $override = (bool) ($data['override_active_limit'] ?? false);
-        $account = $request->user();
-
-        $appointment = DB::transaction(function () use ($data, $override, $account, $request) {
+        $appointment = DB::transaction(function () use ($data) {
             $date = $data['appointment_date'];
             $time = $data['appointment_time'].':00';
             $when = Carbon::createFromFormat('Y-m-d H:i:s', "$date $time");
@@ -83,17 +80,6 @@ class AdvisorAppointmentController extends Controller
                 ]);
             }
 
-            $activeCount = Appointment::query()
-                ->where('customer_id', $customer->id)
-                ->whereIn('status', Appointment::ACTIVE_STATUSES)
-                ->count();
-
-            if (! $override && $activeCount >= 3) {
-                throw ValidationException::withMessages([
-                    'override_active_limit' => 'Khách hàng đã có tối đa 3 lịch hẹn đang hoạt động.',
-                ]);
-            }
-
             $appointment = Appointment::query()->create([
                 'appointment_code' => 'APT-'.$when->format('Ymd').'-'.strtoupper(Str::random(8)),
                 'customer_id' => $customer->id,
@@ -109,31 +95,12 @@ class AdvisorAppointmentController extends Controller
             $appointment->services()->sync($data['service_ids'] ?? []);
             $appointment->packages()->sync($data['package_ids'] ?? []);
 
-            if ($override) {
-                AuditLog::query()->create([
-                    'account_id' => $account->id,
-                    'action' => 'appointment.limit_overridden',
-                    'auditable_type' => $appointment->getMorphClass(),
-                    'auditable_id' => $appointment->id,
-                    'old_values' => ['active_appointment_count' => $activeCount],
-                    'new_values' => [
-                        'active_appointment_limit' => 3,
-                        'appointment_id' => $appointment->id,
-                    ],
-                    'reason' => $data['override_reason'],
-                    'ip_address' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
-                ]);
-            }
-
             return $appointment;
         });
 
         return response()->json([
             'success' => true,
-            'message' => $override
-                ? 'Đã tạo lịch nội bộ và ghi nhận override giới hạn.'
-                : 'Tạo lịch nội bộ thành công.',
+            'message' => 'Tạo lịch nội bộ thành công.',
             'data' => $appointment->load(['customer', 'vehicle']),
         ], Response::HTTP_CREATED);
     }
@@ -261,9 +228,9 @@ class AdvisorAppointmentController extends Controller
     /**
      * Tiếp nhận xe tại garage (CONFIRMED -> CHECKED_IN)
      */
-    public function checkIn(int $id): JsonResponse
+    public function checkIn(Request $request, int $id): JsonResponse
     {
-        $appointment = Appointment::find($id);
+        $appointment = Appointment::with('vehicle')->find($id);
 
         if (! $appointment) {
             return response()->json([
@@ -279,8 +246,40 @@ class AdvisorAppointmentController extends Controller
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        $data = $request->validate([
+            'license_plate' => ['required', 'string', 'max:20', 'regex:/^[1-9][0-9][A-Z]{1,2}-[0-9]{3}\\.[0-9]{2}$|^[1-9][0-9][A-Z]{1,2}-[0-9]{4}$/'],
+        ], [
+            'license_plate.required' => 'Vui lòng nhập biển số xe khi tiếp nhận.',
+            'license_plate.regex' => 'Biển số xe không đúng định dạng.',
+        ]);
+        $licensePlate = strtoupper(preg_replace('/\s+/', '', trim($data['license_plate'])));
+        $existingVehicle = Vehicle::query()
+            ->where('license_plate', $licensePlate)
+            ->whereKeyNot($appointment->vehicle_id)
+            ->exists();
+
+        if ($existingVehicle) {
+            throw ValidationException::withMessages([
+                'license_plate' => 'Biển số xe đã được sử dụng cho phương tiện khác.',
+            ]);
+        }
+
+        $oldPlate = $appointment->vehicle?->license_plate;
+        $appointment->vehicle()->update(['license_plate' => $licensePlate]);
         $appointment->update([
             'status' => 'CHECKED_IN',
+        ]);
+
+        AuditLog::query()->create([
+            'account_id' => $request->user()->id,
+            'action' => 'vehicle.plate_recorded_at_checkin',
+            'auditable_type' => $appointment->vehicle->getMorphClass(),
+            'auditable_id' => $appointment->vehicle_id,
+            'old_values' => ['license_plate' => $oldPlate],
+            'new_values' => ['license_plate' => $licensePlate, 'appointment_id' => $appointment->id],
+            'reason' => 'Ghi nhận biển số thực tế khi tiếp nhận xe.',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
         ]);
 
         return response()->json([

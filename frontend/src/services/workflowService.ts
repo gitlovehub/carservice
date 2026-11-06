@@ -119,13 +119,13 @@ export async function listReceptionAppointments(status: AppointmentWorkflowStatu
 }
 
 /** Must be confirmed before check-in; Backend validates the transition. */
-export async function checkInConfirmedAppointment(id: number): Promise<WorkflowAppointment> {
+export async function checkInConfirmedAppointment(id: number, licensePlate: string): Promise<WorkflowAppointment> {
   const appointment = await advisorAppointment(id);
   if (appointment.status === "CHECKED_IN") return appointment;
   if (appointment.status !== "CONFIRMED") {
     throw new Error("Cần xác nhận lịch hẹn trước khi tiếp nhận xe.");
   }
-  await checkInAdvisorAppointment(id);
+  await checkInAdvisorAppointment(id, licensePlate);
   return advisorAppointment(id);
 }
 
