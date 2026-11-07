@@ -15,11 +15,8 @@ type PanelProps = { order: WorkflowOrder; onChanged: (message: string) => Promis
 
 // Nhãn + màu trạng thái (báo giá, hạng mục, hóa đơn, thanh toán, kết quả kiểm tra): config/status.ts.
 
-function QuotationTable({ quotation, approvals, onToggle }: {
-  quotation: WorkflowQuotation;
-  approvals?: Record<number, boolean>;
-  onToggle?: (itemId: number, approved: boolean) => void;
-}) {
+/** Bảng báo giá — chỉ hiển thị. Quyết định đồng ý/từ chối do khách tự thực hiện trong tài khoản. */
+function QuotationTable({ quotation }: { quotation: WorkflowQuotation }) {
   return <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm">
     <thead><tr className="border-b border-cs-border text-left text-xs text-cs-muted">
       <th className="py-2 pr-3">Hạng mục</th><th className="py-2 pr-3">Loại</th><th className="py-2 pr-3 text-right">SL</th>
@@ -31,9 +28,7 @@ function QuotationTable({ quotation, approvals, onToggle }: {
       <td className="py-2 pr-3 text-right">{item.quantity}</td>
       <td className="py-2 pr-3 text-right">{formatVnd(item.unit_price)}</td>
       <td className="py-2 pr-3 text-right font-semibold">{formatVnd(item.amount)}</td>
-      <td className="py-2 text-xs">{onToggle && approvals
-        ? <label className="inline-flex items-center gap-2"><input type="checkbox" checked={approvals[item.id] ?? true} onChange={event => onToggle(item.id, event.target.checked)}/>Đồng ý</label>
-        : item.is_approved == null ? "Chưa trả lời" : item.is_approved ? "✓ Đồng ý" : "✗ Từ chối"}</td>
+      <td className="py-2 text-xs">{item.is_approved == null ? "Chưa trả lời" : item.is_approved ? "✓ Đồng ý" : "✗ Từ chối"}</td>
     </tr>)}</tbody>
   </table>
     <div className="mt-3 space-y-1 text-right text-sm text-cs-text">
@@ -54,7 +49,6 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [discount, setDiscount] = useState("0");
-  const [approvals, setApprovals] = useState<Record<number, boolean>>({});
 
   const recommendations = useMemo(() => order.inspections?.flatMap(item => item.recommendations ?? []) ?? [], [order.inspections]);
   const recommendedPartIds = useMemo(() => new Set(recommendations.filter(rec => rec.item_type === "PART").map(rec => Number(rec.part_id))), [recommendations]);
@@ -126,14 +120,6 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
     await run(() => workflowApi.sendQuotation(quotation.id), "Đã gửi báo giá. Phiếu chuyển sang chờ khách duyệt.");
   }
 
-  async function recordResponse() {
-    if (!quotation?.items) return;
-    const responses = quotation.items.map(item => ({ item_id: item.id, is_approved: approvals[item.id] ?? true }));
-    const approvedCount = responses.filter(item => item.is_approved).length;
-    if (!await confirm({ title: "Ghi nhận phản hồi của khách tại quầy", reference: quotation.quotation_code, description: `Khách đồng ý ${approvedCount}/${responses.length} hạng mục. Chỉ hạng mục được đồng ý mới được sửa và tính tiền.`, confirmText: "Ghi nhận" })) return;
-    await run(() => workflowApi.respondQuotation(quotation.id, responses), "Đã ghi nhận phản hồi báo giá của khách.");
-  }
-
   async function startRepair() {
     if (!await confirm({ title: "Bắt đầu sửa chữa", description: "Tạo danh sách công việc từ các dịch vụ khách đã duyệt và chuyển phiếu sang đang sửa chữa.", confirmText: "Bắt đầu sửa" })) return;
     await run(() => workflowApi.transition(order.id, "start-repair"), "Đã bắt đầu sửa chữa. Cập nhật từng công việc ở Bước 4.");
@@ -150,13 +136,11 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
     <h2 className="mt-1 text-lg font-bold text-cs-text">Báo giá cho khách {quotation && <span className="ml-2 inline-flex items-center gap-2 text-sm font-semibold text-cs-muted">{quotation.quotation_code} <StatusBadge domain="quotation" status={quotation.status}/></span>}</h2>
     <div className="mt-4">{error && <Notice tone="error">{error}</Notice>}</div>
 
-    {quotation && <QuotationTable quotation={quotation} approvals={quotation.status === "SENT" ? approvals : undefined}
-      onToggle={quotation.status === "SENT" ? (itemId, approved) => setApprovals(previous => ({ ...previous, [itemId]: approved })) : undefined}/>}
+    {quotation && <QuotationTable quotation={quotation}/>}
 
     {quotation?.status === "DRAFT" && <div className="mt-5 flex flex-wrap gap-3"><button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void sendQuotation()}>Gửi báo giá cho khách</button></div>}
-    {quotation?.status === "SENT" && <div className="mt-5 space-y-3">
-      <Notice>Khách có thể tự duyệt trong tài khoản. Nếu khách trả lời trực tiếp tại quầy, bỏ chọn hạng mục bị từ chối rồi ghi nhận.</Notice>
-      <button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void recordResponse()}>Ghi nhận phản hồi tại quầy</button>
+    {quotation?.status === "SENT" && <div className="mt-5">
+      <Notice>Đang chờ khách duyệt. Chỉ khách được đồng ý hoặc từ chối từng hạng mục, trong tài khoản của mình (mục "Báo giá"). Nếu khách đang ở quầy, hãy hướng dẫn khách đăng nhập để tự duyệt, sau đó bấm "Làm mới".</Notice>
     </div>}
     {quotation && ["APPROVED", "PARTIALLY_APPROVED"].includes(quotation.status) && order.status === "WAITING_APPROVAL" &&
       <div className="mt-5"><button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void startRepair()}>Bắt đầu sửa chữa →</button></div>}

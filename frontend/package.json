@@ -19,7 +19,8 @@
     "test:workflow": "node tests/advisor-technician-workflow.mjs",
     "test:ui-demo": "node tests/ui-demo-readiness.mjs",
     "test:components": "node tests/component-library.mjs",
-    "test:layout": "node tests/workspace-layout.mjs"
+    "test:layout": "node tests/workspace-layout.mjs",
+    "test:approval": "node tests/customer-approval-only.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

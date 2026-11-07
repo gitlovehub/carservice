@@ -306,6 +306,101 @@ class RepairFlowTest extends TestCase
             ->assertJsonPath('appointment.packages.0.parts.0.pivot.quantity', 2);
     }
 
+    /**
+     * P0: chỉ khách được duyệt báo giá — nhân viên không có đường nào để "ghi nhận thay khách".
+     */
+    public function test_staff_cannot_respond_to_quotation_on_behalf_of_customer(): void
+    {
+        $quotation = $this->sendQuotation();
+        $responses = $quotation->items->map(fn ($item) => ['item_id' => $item->id, 'is_approved' => true])->all();
+
+        // Route cũ dành cho cố vấn đã gỡ.
+        $this->actingAs($this->advisor)
+            ->postJson("/api/quotations/{$quotation->id}/respond", ['responses' => $responses])
+            ->assertNotFound();
+
+        // Route của khách chặn mọi vai trò khác.
+        $this->actingAs($this->advisor)
+            ->postJson("/api/me/quotations/{$quotation->id}/respond", ['responses' => $responses])
+            ->assertForbidden();
+
+        $quotation->refresh();
+        $this->assertSame(Quotation::SENT, $quotation->status);
+        $this->assertNull($quotation->customer_response_at);
+        $this->assertSame(0, $quotation->items()->whereNotNull('is_approved')->count());
+        $this->assertSame(RepairOrder::WAITING_APPROVAL, $this->repairOrder->fresh()->status);
+    }
+
+    /**
+     * Khóa hành vi hiện tại: phiên bản báo giá mới THAY THẾ bản cũ (báo giá lại trước khi sửa).
+     * Hóa đơn và công việc lấy từ bản mới nhất — không cộng dồn các phiên bản (tránh tính tiền 2 lần).
+     * Báo giá phát sinh cộng dồn sẽ được thiết kế riêng ở P3 (quotations.type = SUPPLEMENT).
+     */
+    public function test_requote_replaces_previous_version_and_invoice_is_not_double_counted(): void
+    {
+        $first = $this->sendQuotation();
+        $this->actingAs($this->customerAccount)
+            ->postJson("/api/me/quotations/{$first->id}/respond", [
+                'responses' => [
+                    ['item_id' => $first->items->firstWhere('item_type', 'SERVICE')->id, 'is_approved' => true],
+                    ['item_id' => $first->items->firstWhere('item_type', 'PART')->id, 'is_approved' => false],
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', Quotation::PARTIALLY_APPROVED);
+
+        // Cố vấn báo giá lại (vẫn ở WAITING_APPROVAL) với cùng công + 1 phụ tùng.
+        $secondId = $this->actingAs($this->advisor)
+            ->postJson("/api/repair-orders/{$this->repairOrder->id}/quotations", [
+                'items' => [
+                    ['item_type' => 'SERVICE', 'service_id' => $this->service->id, 'quantity' => 1],
+                    ['item_type' => 'PART', 'part_id' => $this->part->id, 'quantity' => 1],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('version', 2)
+            ->json('id');
+        $this->actingAs($this->advisor)->postJson("/api/quotations/{$secondId}/send")->assertOk();
+        $second = Quotation::query()->with('items')->findOrFail($secondId);
+        $this->actingAs($this->customerAccount)
+            ->postJson("/api/me/quotations/{$secondId}/respond", [
+                'responses' => $second->items->map(fn ($item) => ['item_id' => $item->id, 'is_approved' => true])->all(),
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', Quotation::APPROVED);
+
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/start-repair")->assertOk();
+        // Chỉ 1 công việc (từ bản 2), không nhân đôi với dịch vụ đã duyệt ở bản 1.
+        $this->assertSame(1, WorkItem::query()->where('repair_order_id', $this->repairOrder->id)->count());
+
+        WorkItem::query()->where('repair_order_id', $this->repairOrder->id)->update(['status' => WorkItem::COMPLETED]);
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/complete")->assertOk();
+
+        // 300.000 công + 1 × 450.000 phụ tùng = 750.000 (không cộng thêm 300.000 của bản 1).
+        $this->actingAs($this->advisor)
+            ->postJson("/api/repair-orders/{$this->repairOrder->id}/invoice")
+            ->assertCreated()
+            ->assertJsonPath('total_amount', '750000.00')
+            ->assertJsonCount(2, 'items');
+    }
+
+    /**
+     * Khóa điều kiện để hóa đơn theo bản mới nhất là đúng: không lập báo giá mới khi đang sửa.
+     * (Phát sinh trong lúc sửa sẽ có luồng riêng ở P3.)
+     */
+    public function test_new_quotation_cannot_be_created_while_repair_is_in_progress(): void
+    {
+        $this->approveAndStartRepair();
+
+        $this->actingAs($this->advisor)
+            ->postJson("/api/repair-orders/{$this->repairOrder->id}/quotations", [
+                'items' => [['item_type' => 'SERVICE', 'service_id' => $this->service->id, 'quantity' => 1]],
+            ])
+            ->assertUnprocessable();
+
+        $this->assertSame(1, Quotation::query()->where('repair_order_id', $this->repairOrder->id)->count());
+    }
+
     public function test_order_detail_includes_invoice_items_and_newest_history_first(): void
     {
         $this->completeAndInvoice();

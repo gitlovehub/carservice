@@ -226,8 +226,7 @@ export const workflowApi = {
   createQuotation: (id: number, payload: { discount_amount?: number; items: QuotationLineInput[] }) =>
     fetchApi<WorkflowQuotation>(`/repair-orders/${id}/quotations`, { method: "POST", body: JSON.stringify(payload) }),
   sendQuotation: (quotationId: number) => fetchApi<WorkflowQuotation>(`/quotations/${quotationId}/send`, { method: "POST" }),
-  respondQuotation: (quotationId: number, responses: Array<{ item_id: number; is_approved: boolean }>) =>
-    fetchApi<WorkflowQuotation>(`/quotations/${quotationId}/respond`, { method: "POST", body: JSON.stringify({ responses }) }),
+  // Không có "respondQuotation" phía nhân viên: chỉ khách duyệt báo giá (customerApi.respondQuotation → /me/...).
   transition: (id: number, step: "start-repair" | "waiting-for-parts" | "resume" | "complete" | "hand-over", note?: string) =>
     fetchApi<WorkflowOrder>(`/repair-orders/${id}/${step}`, { method: "POST", body: JSON.stringify(note ? { note } : {}) }),
   close: (id: number, closeReason: string, note: string) =>
