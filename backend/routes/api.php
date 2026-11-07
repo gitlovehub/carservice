@@ -281,9 +281,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
                 'store'
             );
 
+            // Phản hồi báo giá chỉ do khách thực hiện: POST /me/quotations/{id}/respond
+            // (CustomerRepairOrderController). Không có route nào cho nhân viên duyệt thay khách.
             Route::prefix('quotations/{quotation}')->group(function (): void {
                 Route::post('send', 'send');
-                Route::post('respond', 'respond');
             });
         });
 

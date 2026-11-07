@@ -48,18 +48,6 @@ class QuotationController extends Controller
         return response()->json($quotation);
     }
 
-    public function respond(Request $request, Quotation $quotation): JsonResponse
-    {
-        $this->authorize('respond', $quotation);
-
-        $data = $request->validate([
-            'responses' => ['required', 'array', 'min:1'],
-            'responses.*.item_id' => ['required', 'integer', 'exists:quotation_items,id'],
-            'responses.*.is_approved' => ['required', 'boolean'],
-        ]);
-
-        $quotation = $this->service->recordCustomerResponse($quotation, $data['responses']);
-
-        return response()->json($quotation);
-    }
+    // Không có hành động "respond" cho nhân viên: khách tự duyệt qua
+    // CustomerRepairOrderController::respondQuotation (POST /me/quotations/{id}/respond).
 }
