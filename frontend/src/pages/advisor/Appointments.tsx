@@ -1,3 +1,4 @@
+import { Modal } from "../../components/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -11,6 +12,9 @@ import {
 } from "../../services/advisorAppointmentService";
 import { requestTypeLabel } from "../../services/workflowService";
 import CustomerRequestSummary from "./CustomerRequestSummary";
+import { StatusBadge } from "../../components/ui/Badge";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { getStatus } from "../../config/status";
 
 type Customer = {
   id: number;
@@ -82,30 +86,14 @@ type ApiError = {
   message?: string;
 };
 
+// Nhãn tab lọc lấy từ config/status.ts để khớp đúng với badge trạng thái.
 const statusOptions: {
   value: "" | AppointmentStatus;
   label: string;
 }[] = [
   { value: "", label: "Tất cả" },
-  { value: "PENDING", label: "Chờ xác nhận" },
-  { value: "CONFIRMED", label: "Đã xác nhận" },
-  { value: "CHECKED_IN", label: "Đã tiếp nhận" },
-  { value: "CANCELLED", label: "Đã hủy" },
+  ...(["PENDING", "CONFIRMED", "CHECKED_IN", "CANCELLED"] as const).map(value => ({ value, label: getStatus("appointment", value).label })),
 ];
-
-function getStatusText(status: AppointmentStatus) {
-  if (status === "PENDING") return "Chờ xác nhận";
-  if (status === "CONFIRMED") return "Đã xác nhận";
-  if (status === "CHECKED_IN") return "Đã tiếp nhận";
-  return "Đã hủy";
-}
-
-function getStatusClass(status: AppointmentStatus) {
-  if (status === "PENDING") return "cs-status-pending";
-  if (status === "CONFIRMED") return "cs-status-confirmed";
-  if (status === "CHECKED_IN") return "cs-status-checked";
-  return "cs-status-cancelled";
-}
 
 function formatDate(date: string) {
   if (!date) return "-";
@@ -293,7 +281,7 @@ function Appointments() {
     const approved = await confirm({
       title: "Xác nhận xe đã đến gara",
       reference: appointment.appointment_code,
-      description: `Chỉ check-in khi khách đã thực sự đến gara và cố vấn đã đối chiếu xe ${getAppointmentPlate(appointment)} với lịch hẹn. Không thực hiện khi chỉ mới gọi điện xác nhận.`,
+      description: `Chỉ tiếp nhận khi khách đã thực sự đến gara và cố vấn đã đối chiếu xe ${getAppointmentPlate(appointment)} với lịch hẹn. Không thực hiện khi chỉ mới gọi điện xác nhận.`,
       confirmText: "Xác nhận xe đã đến",
       checklist: [
         "Khách hàng đã có mặt tại gara cùng phương tiện.",
@@ -390,19 +378,7 @@ function Appointments() {
         <main>
           <div className="mx-auto max-w-6xl px-6 py-8 lg:px-8 lg:py-10">
             {/* TIÊU ĐỀ */}
-            <div className="mb-8">
-              <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-cs-muted">
-                Gara / Lịch hẹn
-              </p>
-              <div>
-                <h2 className="text-2xl font-bold tracking-normal text-slate-900 sm:text-3xl">
-                  Quản lý lịch hẹn
-                </h2>
-                <p className="mt-1.5 max-w-2xl text-xs text-slate-500">
-                  Theo dõi, xác nhận và tiếp nhận lịch hẹn của khách hàng tại xưởng.
-                </p>
-              </div>
-            </div>
+            <PageHeader title="Lịch hẹn" description="Theo dõi, xác nhận và tiếp nhận lịch hẹn của khách hàng tại xưởng."/>
 
             {/* THỐNG KÊ NHANH */}
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -640,13 +616,7 @@ function Appointments() {
                             </td>
 
                             <td className="px-5 py-4">
-                              <span
-                                className={`inline-flex rounded-lg px-2.5 py-1 text-[12px] font-semibold ${getStatusClass(
-                                  appointment.status
-                                )}`}
-                              >
-                                {getStatusText(appointment.status)}
-                              </span>
+                              <StatusBadge domain="appointment" status={appointment.status}/>
                             </td>
 
                             <td className="px-5 py-4">
@@ -798,8 +768,7 @@ function Appointments() {
 
       {/* Chi tiết lịch theo tokens của role; không đặt chữ trắng trên nền xám sáng. */}
       {selectedAppointment && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 px-4 py-6 backdrop-blur-sm" onMouseDown={event => { if (event.currentTarget === event.target) setSelectedAppointment(null); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="advisor-appointment-title" className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[20px] border border-cs-border bg-cs-surface text-cs-text shadow-2xl">
+        <Modal bare open onClose={() => setSelectedAppointment(null)} dismissible={!loadingAction} title={"Chi tiết lịch hẹn"} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[20px] border border-cs-border bg-cs-surface text-cs-text shadow-overlay">
             <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-cs-border bg-cs-surface px-6 py-5">
               <div><h2 id="advisor-appointment-title" className="text-lg font-extrabold">Chi tiết lịch hẹn</h2><p className="mt-1 font-mono text-xs text-cs-muted">{selectedAppointment.appointment_code}</p></div>
               <button type="button" aria-label="Đóng chi tiết" onClick={() => setSelectedAppointment(null)} className="cs-unified-btn cs-unified-secondary min-w-0 px-3">✕</button>
@@ -810,19 +779,17 @@ function Appointments() {
                 ["Xe / Biển số", getVehicleName(selectedAppointment.vehicle), getAppointmentPlate(selectedAppointment)],
                 ["Ngày hẹn", formatDate(selectedAppointment.appointment_date), selectedAppointment.appointment_time],
               ].map(([label,value,extra]) => <div key={label} className="cs-info-panel min-w-0 p-4"><p className="text-xs font-bold uppercase tracking-wide text-cs-muted">{label}</p><p className="mt-2 break-words text-sm font-bold text-cs-text">{value}</p><p className="mt-1 break-all text-xs text-cs-muted">{extra}</p>{label === "Khách hàng" && selectedAppointment.customer?.email && <p className="mt-1 break-all text-xs text-cs-muted">{selectedAppointment.customer.email}</p>}</div>)}
-              <div className="cs-info-panel p-4"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-cs-muted">Trạng thái</p><span className={`inline-flex rounded-lg px-3 py-1.5 text-xs font-bold ${getStatusClass(selectedAppointment.status)}`}>{getStatusText(selectedAppointment.status)}</span></div>
+              <div className="cs-info-panel p-4"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-cs-muted">Trạng thái</p><StatusBadge domain="appointment" status={selectedAppointment.status}/></div>
               <div className="cs-info-panel p-4 sm:col-span-2"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-cs-muted">Khách yêu cầu</p><CustomerRequestSummary request={selectedAppointment}/></div>
               {selectedAppointment.cancel_reason && <div className="cs-info-panel p-4 sm:col-span-2"><p className="text-xs font-bold text-red-400">Lý do hủy</p><p className="mt-2 text-sm text-cs-text">{selectedAppointment.cancel_reason}</p></div>}
             </div>}
             <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-cs-border px-6 py-4"><p className="text-xs text-cs-muted">Thông tin từ hệ thống gara</p><button className="cs-unified-btn cs-unified-secondary" onClick={() => setSelectedAppointment(null)}>Đóng</button></footer>
-          </section>
-        </div>
+          </Modal>
       )}
 
       {/* MODAL TỪ CHỐI */}
       {cancelAppointment && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-cs-border bg-cs-surface text-cs-text shadow-xl">
+        <Modal bare open onClose={() => setCancelAppointment(null)} dismissible={!loadingAction} title={"Từ chối lịch hẹn"} className="w-full max-w-md rounded-2xl border border-cs-border bg-cs-surface text-cs-text shadow-overlay">
             <div className="flex items-start justify-between border-b border-cs-border px-6 py-4">
               <div>
                 <p className="text-base font-bold text-cs-text">
@@ -892,8 +859,7 @@ function Appointments() {
                   : "Xác nhận từ chối"}
               </button>
             </div>
-          </div>
-        </div>
+          </Modal>
       )}
 
 

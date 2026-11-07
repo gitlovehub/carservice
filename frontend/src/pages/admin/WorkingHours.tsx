@@ -1,3 +1,4 @@
+import { Button, PageHeader } from "../../components/ui";
 import { useEffect, useState } from "react";
 import { fetchApi } from "../../services/api";
 
@@ -38,7 +39,7 @@ const DAY_LABELS = [
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 const fieldClass =
-  "w-full rounded-xl border border-[#D9DDE1] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#1F2933] focus:ring-2 focus:ring-[#D6A85F]/20 disabled:cursor-not-allowed disabled:bg-[#F1F2F3] disabled:text-[#8A949E]";
+  "w-full rounded-xl border border-[#D9DDE1] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#1F2933] focus:ring-2 focus:ring-[#D6A85F]/20 disabled:cursor-not-allowed disabled:bg-[#F1F2F3] disabled:text-cs-muted";
 
 function toHHmm(value: string): string {
   return (value || "").slice(0, 5);
@@ -225,66 +226,36 @@ function WorkingHours() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="min-h-screen bg-cs-bg text-[#20252B]">
 
       <div className="lg:ml-[250px]">
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
-            <div className="mb-8">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#B68A43]">
-                KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
-              </p>
-
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
-                    AD
-                  </div>
-
-                  <div>
-                    <h1 className="text-2xl font-bold tracking-normal sm:text-3xl">
-                      Cấu hình lịch làm việc
-                    </h1>
-                    <p className="mt-1 text-xs text-[#66717C]">
-                      Thiết lập giờ tiếp nhận và số lịch tối đa mỗi khung giờ cho từng ngày
-                      trong tuần.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setReloadKey((current) => current + 1)}
-                  disabled={isLoading}
-                  className="rounded-xl border border-[#D9DDE1] bg-white px-5 py-3 text-xs font-semibold text-[#20252B] transition hover:bg-[#F1F2F3] disabled:opacity-60"
-                >
-                  ↻ Tải lại
-                </button>
-              </div>
-            </div>
+            <PageHeader title="Giờ làm việc" description="Thiết lập giờ tiếp nhận và số lịch tối đa mỗi khung giờ cho từng ngày trong tuần."
+              actions={<Button variant="outline" icon="refresh" loading={isLoading} onClick={() => setReloadKey((current) => current + 1)}>Làm mới</Button>}/>
 
             <div className="mb-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-xs font-medium text-[#66717C]">Ngày hoạt động</p>
+                <p className="text-xs font-medium text-cs-muted">Ngày hoạt động</p>
                 <p className="mt-4 text-2xl font-bold">
                   {isLoading ? "—" : `${activeDays}/${sortedHours.length}`}
                 </p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">Số ngày nhận lịch trong tuần</p>
+                <p className="mt-1 text-[11px] text-cs-muted">Số ngày nhận lịch trong tuần</p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-xs font-medium text-[#66717C]">Ngày nghỉ</p>
+                <p className="text-xs font-medium text-cs-muted">Ngày nghỉ</p>
                 <p className="mt-4 text-2xl font-bold">
                   {isLoading ? "—" : sortedHours.length - activeDays}
                 </p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">Không nhận lịch hẹn</p>
+                <p className="mt-1 text-[11px] text-cs-muted">Không nhận lịch hẹn</p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-xs font-medium text-[#66717C]">Thay đổi chưa lưu</p>
+                <p className="text-xs font-medium text-cs-muted">Thay đổi chưa lưu</p>
                 <p className="mt-4 text-2xl font-bold">{isLoading ? "—" : dirtyCount}</p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">Bấm "Lưu" ở từng ngày</p>
+                <p className="mt-1 text-[11px] text-cs-muted">Bấm "Lưu" ở từng ngày</p>
               </div>
             </div>
 
@@ -302,7 +273,7 @@ function WorkingHours() {
             )}
 
             <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
-              <div className="hidden grid-cols-[1.1fr_0.9fr_1fr_1fr_1fr_1.4fr] gap-4 border-b border-[#E1E4E6] bg-[#FAFAF8] px-6 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E] lg:grid">
+              <div className="hidden grid-cols-[1.1fr_0.9fr_1fr_1fr_1fr_1.4fr] gap-4 border-b border-[#E1E4E6] bg-cs-surface-2 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-cs-muted lg:grid">
                 <span>Ngày</span>
                 <span>Trạng thái</span>
                 <span>Giờ mở cửa</span>
@@ -323,8 +294,8 @@ function WorkingHours() {
               )}
 
               {!isLoading && sortedHours.length === 0 && !error && (
-                <p className="px-6 py-12 text-center text-sm text-[#66717C]">
-                  Chưa có cấu hình giờ làm việc. Hãy chạy WorkingHoursSeeder ở backend.
+                <p className="px-6 py-12 text-center text-sm text-cs-muted">
+                  Chưa có cấu hình giờ làm việc. Vui lòng liên hệ bộ phận kỹ thuật để khởi tạo.
                 </p>
               )}
 
@@ -350,7 +321,7 @@ function WorkingHours() {
                             className={`flex h-9 w-9 items-center justify-center rounded-xl text-[12px] font-bold ${
                               form.is_active
                                 ? "bg-[#F3E8D2] text-[#6D542A]"
-                                : "bg-[#F1F2F3] text-[#8A949E]"
+                                : "bg-[#F1F2F3] text-cs-muted"
                             }`}
                           >
                             {hour.day_of_week === 0 ? "CN" : `T${hour.day_of_week + 1}`}
@@ -379,7 +350,7 @@ function WorkingHours() {
                             aria-label={`Bật/tắt ${DAY_LABELS[hour.day_of_week]}`}
                           />
                           <span className="relative h-6 w-11 rounded-full bg-[#CBD0D4] transition peer-checked:bg-[#397044] peer-focus-visible:ring-2 peer-focus-visible:ring-[#D6A85F]/40 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition peer-checked:after:translate-x-5" />
-                          <span className="text-xs font-medium text-[#66717C]">
+                          <span className="text-xs font-medium text-cs-muted">
                             {form.is_active ? "Hoạt động" : "Nghỉ"}
                           </span>
                         </label>
@@ -425,7 +396,7 @@ function WorkingHours() {
                               type="button"
                               onClick={() => resetRow(hour.id)}
                               disabled={state?.saving}
-                              className="rounded-xl border border-[#D9DDE1] px-3 py-2.5 text-xs font-semibold text-[#66717C] transition hover:bg-[#F1F2F3]"
+                              className="rounded-xl border border-[#D9DDE1] px-3 py-2.5 text-xs font-semibold text-cs-muted transition hover:bg-[#F1F2F3]"
                             >
                               Hoàn tác
                             </button>
@@ -457,7 +428,7 @@ function WorkingHours() {
                 })}
             </div>
 
-            <p className="mt-4 text-[12px] text-[#8A949E]">
+            <p className="mt-4 text-[12px] text-cs-muted">
               Khách hàng chỉ có thể đặt lịch trong các ngày hoạt động, trong khoảng giờ đã
               cấu hình và không vượt quá số lịch tối đa của mỗi khung giờ.
             </p>

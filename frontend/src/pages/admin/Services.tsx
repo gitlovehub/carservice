@@ -1,5 +1,5 @@
+import { Button, Modal, PageHeader } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
-import AdminHubNav from "../../components/AdminHubNav";
 import { useEffect, useState, type FormEvent } from "react";
 import { fetchApi } from "../../services/api";
 
@@ -334,47 +334,19 @@ function Services() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="min-h-screen bg-cs-bg text-[#20252B]">
 
       <div className="lg:ml-[250px]">
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
-            <div className="mb-8">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#B68A43]">
-                KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
-              </p>
-
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
-                    AD
-                  </div>
-
-                  <div>
-                    <h1 className="text-2xl font-bold tracking-normal sm:text-3xl">
-                      Quản lý dịch vụ
-                    </h1>
-                    <p className="mt-1 text-xs text-[#66717C]">
-                      Quản lý thông tin, giá và trạng thái dịch vụ sửa chữa.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={openCreateModal}
-                  className="cs-btn cs-btn-primary"
-                >
-                  + Thêm dịch vụ
-                </button>
-              </div>
-            </div>
+            <PageHeader title="Dịch vụ" description="Quản lý thông tin, giá và trạng thái dịch vụ sửa chữa."
+              actions={<Button variant="primary" icon="plus" onClick={openCreateModal}>Thêm dịch vụ</Button>}/>
 
             <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-[#66717C]">
+                  <p className="text-xs font-medium text-cs-muted">
                     Tổng dịch vụ
                   </p>
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3E8D2] text-sm font-bold text-[#6D542A]">
@@ -384,14 +356,14 @@ function Services() {
                 <p className="mt-4 text-2xl font-bold">
                   {isLoading ? "—" : total}
                 </p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-cs-muted">
                   Tổng số kết quả theo bộ lọc
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-[#66717C]">
+                  <p className="text-xs font-medium text-cs-muted">
                     Đang hoạt động
                   </p>
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E7F3E8] text-sm font-bold text-[#397044]">
@@ -401,35 +373,34 @@ function Services() {
                 <p className="mt-4 text-2xl font-bold">
                   {isLoading ? "—" : activeCount}
                 </p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-cs-muted">
                   Trên trang đang hiển thị
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:col-span-2 xl:col-span-1">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-[#66717C]">
+                  <p className="text-xs font-medium text-cs-muted">
                     Ngừng hoạt động
                   </p>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F2F3] text-sm font-bold text-[#66717C]">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F2F3] text-sm font-bold text-cs-muted">
                     —
                   </span>
                 </div>
                 <p className="mt-4 text-2xl font-bold">
                   {isLoading ? "—" : inactiveCount}
                 </p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-cs-muted">
                   Trên trang đang hiển thị
                 </p>
               </div>
             </div>
 
-            <AdminHubNav />
 
             <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-4 sm:p-6">
               <div className="mb-4">
                 <h2 className="text-sm font-bold">Tìm kiếm và lọc</h2>
-                <p className="mt-1 text-xs text-[#8A949E]">
+                <p className="mt-1 text-xs text-cs-muted">
                   Nhập thông tin hoặc chọn trạng thái để tìm dịch vụ.
                 </p>
               </div>
@@ -484,7 +455,7 @@ function Services() {
                   <button
                     type="button"
                     onClick={clearFilters}
-                    className="rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold transition hover:bg-[#F3F4F2]"
+                    className="rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold transition hover:bg-cs-surface-2"
                   >
                     Xóa lọc
                   </button>
@@ -510,14 +481,14 @@ function Services() {
               <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#B68A43]">
-                    SERVICE MANAGEMENT
+                    DANH SÁCH DỊCH VỤ
                   </p>
                   <h2 className="mt-1 text-base font-bold">
                     Danh sách dịch vụ
                   </h2>
                 </div>
 
-                <p className="text-xs text-[#8A949E]">
+                <p className="text-xs text-cs-muted">
                   {total} kết quả
                 </p>
               </div>
@@ -541,25 +512,25 @@ function Services() {
 
               {isLoading ? (
                 <div className="p-10 text-center">
-                  <p className="text-sm font-medium text-[#66717C]">
+                  <p className="text-sm font-medium text-cs-muted">
                     Đang tải dịch vụ...
                   </p>
                 </div>
               ) : services.length === 0 ? (
                 <div className="px-5 py-14 text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F3F4F2] text-lg">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-cs-surface-2 text-lg">
                     —
                   </div>
                   <p className="mt-4 text-sm font-semibold">
                     Không tìm thấy dịch vụ
                   </p>
-                  <p className="mt-1 text-xs text-[#8A949E]">
+                  <p className="mt-1 text-xs text-cs-muted">
                     Thử thay đổi từ khóa hoặc xóa bộ lọc.
                   </p>
                   <button
                     type="button"
                     onClick={clearFilters}
-                    className="mt-4 rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-xs font-semibold hover:bg-[#F3F4F2]"
+                    className="mt-4 rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-xs font-semibold hover:bg-cs-surface-2"
                   >
                     Xóa bộ lọc
                   </button>
@@ -569,7 +540,7 @@ function Services() {
                   {services.map((service, index) => (
                     <article
                       key={service.id}
-                      className="rounded-2xl border border-[#E5E8EA] bg-[#FAFAF8] p-4 transition hover:border-[#D5D9DC] sm:p-5"
+                      className="rounded-2xl border border-[#E5E8EA] bg-cs-surface-2 p-4 transition hover:border-[#D5D9DC] sm:p-5"
                     >
                       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                         <div className="flex min-w-0 items-start gap-3 sm:gap-4">
@@ -586,7 +557,7 @@ function Services() {
                                 className={`rounded-full px-3 py-1.5 text-[11px] font-semibold ${
                                   service.status === "ACTIVE"
                                     ? "bg-[#F3E8D2] text-[#3A3020]"
-                                    : "bg-[#F1F2F3] text-[#66717C]"
+                                    : "bg-[#F1F2F3] text-cs-muted"
                                 }`}
                               >
                                 {service.status === "ACTIVE"
@@ -599,18 +570,18 @@ function Services() {
                                 </span>
                               )}
                               {(service.active_packages_count ?? 0) > 0 && (
-                                <span className="rounded-full bg-[#F1F2F3] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
+                                <span className="rounded-full bg-[#F1F2F3] px-3 py-1.5 text-[11px] font-semibold text-cs-muted">
                                   Trong {service.active_packages_count} gói
                                 </span>
                               )}
                             </div>
 
-                            <p className="mt-1 text-[11px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-cs-muted">
                               DV-{String(service.id).padStart(3, "0")}
                               {service.category ? ` · ${service.category}` : ""}
                             </p>
 
-                            <p className="mt-2 max-w-md break-words text-xs leading-5 text-[#66717C]">
+                            <p className="mt-2 max-w-md break-words text-xs leading-5 text-cs-muted">
                               {service.description || "Chưa có mô tả."}
                             </p>
                           </div>
@@ -618,7 +589,7 @@ function Services() {
 
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 xl:min-w-[330px]">
                           <div>
-                            <p className="text-[11px] text-[#8A949E]">
+                            <p className="text-[11px] text-cs-muted">
                               GIÁ THAM KHẢO
                             </p>
                             <p className="mt-1 text-xs font-bold">
@@ -627,7 +598,7 @@ function Services() {
                           </div>
 
                           <div>
-                            <p className="text-[11px] text-[#8A949E]">
+                            <p className="text-[11px] text-cs-muted">
                               THỜI GIAN
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -638,7 +609,7 @@ function Services() {
                           </div>
 
                           <div>
-                            <p className="text-[11px] text-[#8A949E]">
+                            <p className="text-[11px] text-cs-muted">
                               MÃ DỊCH VỤ
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -652,7 +623,7 @@ function Services() {
                             type="button"
                             onClick={() => void openDetailModal(service)}
                             disabled={isLoadingDetail}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-50"
+                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-cs-surface-2 disabled:opacity-50"
                           >
                             Chi tiết
                           </button>
@@ -660,7 +631,7 @@ function Services() {
                           <button
                             type="button"
                             onClick={() => openEditModal(service)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-[#F3F4F2]"
+                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-cs-surface-2"
                           >
                             Chỉnh sửa
                           </button>
@@ -685,7 +656,7 @@ function Services() {
               )}
 
               <div className="flex flex-col gap-3 border-t border-[#EEF0F2] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-xs text-[#66717C]">
+                <span className="text-xs text-cs-muted">
                   Trang {page} / {lastPage} · {total} dịch vụ
                 </span>
 
@@ -694,7 +665,7 @@ function Services() {
                     type="button"
                     disabled={page <= 1 || isLoading}
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-40"
+                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-cs-surface-2 disabled:opacity-40"
                   >
                     Trước
                   </button>
@@ -705,7 +676,7 @@ function Services() {
                     onClick={() =>
                       setPage((current) => Math.min(lastPage, current + 1))
                     }
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-40"
+                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-cs-surface-2 disabled:opacity-40"
                   >
                     Tiếp
                   </button>
@@ -717,21 +688,9 @@ function Services() {
       </div>
 
       {modal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-4"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget && !isSaving) {
-              setModal(null);
-            }
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="service-modal-title"
-            className="my-auto max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6"
-          >
+        <Modal bare open onClose={() => setModal(null)} dismissible={!isSaving}
+          title={modal === "form" ? (selectedService ? "Cập nhật dịch vụ" : "Thêm dịch vụ") : "Chi tiết dịch vụ"}
+          className="my-auto max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-panel border border-cs-border bg-cs-surface p-5 shadow-overlay sm:p-6">
             {modal === "form" ? (
               <>
                 <h2 id="service-modal-title" className="mb-5 text-xl font-bold">
@@ -923,48 +882,48 @@ function Services() {
                 </h2>
 
                 {isLoadingDetail ? (
-                  <p className="py-8 text-center text-sm text-[#66717C]">
+                  <p className="py-8 text-center text-sm text-cs-muted">
                     Đang tải thông tin...
                   </p>
                 ) : selectedService ? (
                   <dl className="space-y-4 text-sm">
                     <div>
-                      <dt className="text-xs text-[#8A949E]">Mã dịch vụ</dt>
+                      <dt className="text-xs text-cs-muted">Mã dịch vụ</dt>
                       <dd className="mt-1 font-semibold">
                         DV-{String(selectedService.id).padStart(3, "0")}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-[#8A949E]">Tên dịch vụ</dt>
+                      <dt className="text-xs text-cs-muted">Tên dịch vụ</dt>
                       <dd className="mt-1 font-semibold">
                         {selectedService.name}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-[#8A949E]">Danh mục</dt>
+                      <dt className="text-xs text-cs-muted">Danh mục</dt>
                       <dd className="mt-1">
                         {selectedService.category || "Chưa phân loại"}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-[#8A949E]">Mô tả</dt>
+                      <dt className="text-xs text-cs-muted">Mô tả</dt>
                       <dd className="mt-1 whitespace-pre-wrap">
                         {selectedService.description || "Chưa có mô tả."}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-[#8A949E]">Giá tham khảo</dt>
+                      <dt className="text-xs text-cs-muted">Giá tham khảo</dt>
                       <dd className="mt-1 font-semibold">
                         {formatPrice(selectedService.base_price)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-[#8A949E]">Thời gian dự kiến</dt>
+                      <dt className="text-xs text-cs-muted">Thời gian dự kiến</dt>
                       <dd className="mt-1">
                         {selectedService.estimated_minutes
                           ? `${selectedService.estimated_minutes} phút`
@@ -973,7 +932,7 @@ function Services() {
                     </div>
 
                     <div>
-                      <dt className="text-xs text-[#8A949E]">Trạng thái</dt>
+                      <dt className="text-xs text-cs-muted">Trạng thái</dt>
                       <dd className="mt-1">
                         {selectedService.status === "ACTIVE"
                           ? "Đang hoạt động"
@@ -982,25 +941,18 @@ function Services() {
                     </div>
                   </dl>
                 ) : (
-                  <p className="py-6 text-sm text-[#66717C]">
+                  <p className="py-6 text-sm text-cs-muted">
                     Không có thông tin dịch vụ.
                   </p>
                 )}
 
                 <div className="mt-6 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setModal(null)}
-                    className="cs-btn cs-btn-primary"
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </>
-            )}
-          </section>
-        </div>
-      )}
+                  <Button variant="secondary" onClick={() => setModal(null)}>Đóng</Button>
+                  </div>
+                  </>
+                  )}
+                  </Modal>
+                  )}
     </div>
   );
 }

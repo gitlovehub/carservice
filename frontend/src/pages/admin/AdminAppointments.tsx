@@ -1,4 +1,6 @@
+import { Button, PageHeader } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { StatusBadge } from "../../components/ui/Badge";
 
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +35,11 @@ const statuses: Appointment["status"][] = [
   "Đã tiếp nhận",
   "Đã hủy",
 ];
+
+/** Nhãn nội bộ → mã backend, để badge lấy màu/nhãn chung từ config/status.ts. */
+const statusCode: Record<Appointment["status"], string> = {
+  "Chờ xác nhận": "PENDING", "Đã xác nhận": "CONFIRMED", "Đã tiếp nhận": "CHECKED_IN", "Đã hủy": "CANCELLED",
+};
 
 function formatStatus(status: string): Appointment["status"] {
   if (status === "CONFIRMED") return "Đã xác nhận";
@@ -199,53 +206,15 @@ function AdminAppointments() {
     }
   };
 
-  const getStatusStyle = (appointmentStatus: Appointment["status"]) => {
-    if (appointmentStatus === "Chờ xác nhận") {
-      return "bg-[#FFF6E6] text-[#9A6B22]";
-    }
-
-    if (appointmentStatus === "Đã xác nhận") {
-      return "bg-[#EEF4FA] text-[#46627A]";
-    }
-
-    if (appointmentStatus === "Đã tiếp nhận") {
-      return "bg-[#EEF7EF] text-[#3F7047]";
-    }
-
-    return "bg-[#FDEEEE] text-[#A24A4A]";
-  };
-
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="min-h-screen bg-cs-bg text-[#20252B]">
 
       <div className="lg:ml-[250px]">
 
         <main className="px-6 py-8 lg:px-8">
           <div className="mx-auto max-w-[1200px]">
-            <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <div>
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
-                  QUẢN TRỊ HỆ THỐNG / LỊCH HẸN
-                </p>
-
-                <h1 className="text-3xl font-bold tracking-normal">
-                  Quản lý lịch hẹn
-                </h1>
-
-                <p className="mt-2 text-xs text-[#66717C]">
-                  Theo dõi và quản lý lịch hẹn của khách hàng trong toàn hệ thống.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => void loadAppointments()}
-                disabled={loading}
-                className="flex items-center justify-center gap-2 rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs font-semibold transition hover:bg-[#F3F4F2] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span>{loading ? "Đang tải..." : "↻ Tải lại danh sách"}</span>
-              </button>
-            </div>
+            <PageHeader title="Lịch hẹn" description="Theo dõi và quản lý lịch hẹn của khách hàng trong toàn hệ thống."
+              actions={<Button variant="outline" icon="refresh" loading={loading} loadingText="Đang tải..." onClick={() => void loadAppointments()}>Làm mới</Button>}/>
 
             <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {[
@@ -274,11 +243,11 @@ function AdminAppointments() {
                   key={item.label}
                   className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
                 >
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
                     {item.label}
                   </p>
                   <p className="mt-4 text-2xl font-bold">{item.value}</p>
-                  <p className="mt-1 text-[11px] text-[#8A949E]">
+                  <p className="mt-1 text-[11px] text-cs-muted">
                     {item.description}
                   </p>
                 </div>
@@ -287,23 +256,23 @@ function AdminAppointments() {
 
             <div className="mb-6 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
                   Đã xác nhận
                 </p>
                 <p className="mt-3 text-2xl font-bold">{confirmedCount}</p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-cs-muted">
                   Chờ khách hàng đến gara
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
                   Kết quả hiện tại
                 </p>
                 <p className="mt-3 text-2xl font-bold">
                   {filteredAppointments.length}
                 </p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-cs-muted">
                   Lịch hẹn phù hợp với tìm kiếm và bộ lọc
                 </p>
               </div>
@@ -360,13 +329,13 @@ function AdminAppointments() {
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Tìm mã, tên, SĐT, biển số..."
-                    className="w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-4 py-2.5 text-xs outline-none transition focus:border-[#D6A85F] sm:w-[270px]"
+                    className="w-full rounded-xl border border-[#E1E4E6] bg-cs-bg px-4 py-2.5 text-xs outline-none transition focus:border-[#D6A85F] sm:w-[270px]"
                   />
 
                   <select
                     value={status}
                     onChange={(event) => setStatus(event.target.value)}
-                    className="cursor-pointer rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3 py-2.5 text-xs outline-none focus:border-[#D6A85F]"
+                    className="cursor-pointer rounded-xl border border-[#E1E4E6] bg-cs-bg px-3 py-2.5 text-xs outline-none focus:border-[#D6A85F]"
                   >
                     <option value="Tất cả">Tất cả trạng thái</option>
                     {statuses.map((item) => (
@@ -390,7 +359,7 @@ function AdminAppointments() {
               </div>
 
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[11px] text-[#8A949E]">
+                <p className="text-[11px] text-cs-muted">
                   Hiển thị {filteredAppointments.length} / {appointments.length} lịch hẹn
                 </p>
 
@@ -416,7 +385,7 @@ function AdminAppointments() {
                       ].map((heading) => (
                         <th
                           key={heading}
-                          className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A949E]"
+                          className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted"
                         >
                           {heading}
                         </th>
@@ -437,7 +406,7 @@ function AdminAppointments() {
                             {appointment.id}
                           </td>
 
-                          <td className="px-3 py-4 text-xs text-[#66717C]">
+                          <td className="px-3 py-4 text-xs text-cs-muted">
                             {appointment.time}
                           </td>
 
@@ -445,7 +414,7 @@ function AdminAppointments() {
                             <p className="text-xs font-semibold">
                               {appointment.customer}
                             </p>
-                            <p className="mt-1 text-[11px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-cs-muted">
                               {appointment.phone || "Chưa có số điện thoại"}
                             </p>
                           </td>
@@ -456,16 +425,12 @@ function AdminAppointments() {
                             </span>
                           </td>
 
-                          <td className="max-w-[200px] px-3 py-4 text-xs text-[#66717C]">
+                          <td className="max-w-[200px] px-3 py-4 text-xs text-cs-muted">
                             {appointment.service}
                           </td>
 
                           <td className="px-3 py-4">
-                            <span
-                              className={`inline-flex whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold ${getStatusStyle(appointment.status)}`}
-                            >
-                              {appointment.status}
-                            </span>
+                            <StatusBadge domain="appointment" status={statusCode[appointment.status]}/>
                           </td>
 
                           <td className="px-3 py-4">
@@ -511,20 +476,20 @@ function AdminAppointments() {
                                     "Đã tiếp nhận",
                                   )
                                 }
-                                className="whitespace-nowrap rounded-xl border border-[#E1E4E6] px-3 py-2 text-[11px] font-semibold text-[#66717C] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5] disabled:cursor-not-allowed disabled:opacity-50"
+                                className="whitespace-nowrap rounded-xl border border-[#E1E4E6] px-3 py-2 text-[11px] font-semibold text-cs-muted transition hover:border-[#D6A85F] hover:bg-cs-bg disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 {isUpdating ? "Đang xử lý..." : "Tiếp nhận"}
                               </button>
                             )}
 
                             {appointment.status === "Đã tiếp nhận" && (
-                              <span className="text-[11px] font-medium text-[#8A949E]">
+                              <span className="text-[11px] font-medium text-cs-muted">
                                 Đã tiếp nhận
                               </span>
                             )}
 
                             {appointment.status === "Đã hủy" && (
-                              <span className="text-[11px] font-medium text-[#8A949E]">
+                              <span className="text-[11px] font-medium text-cs-muted">
                                 Đã kết thúc
                               </span>
                             )}
@@ -540,7 +505,7 @@ function AdminAppointments() {
                     <p className="text-sm font-semibold text-[#20252B]">
                       Đang tải lịch hẹn...
                     </p>
-                    <p className="mt-2 text-xs text-[#8A949E]">
+                    <p className="mt-2 text-xs text-cs-muted">
                       Vui lòng chờ trong giây lát.
                     </p>
                   </div>
@@ -551,7 +516,7 @@ function AdminAppointments() {
                     <p className="text-sm font-semibold text-[#20252B]">
                       Không tìm thấy lịch hẹn
                     </p>
-                    <p className="mt-2 text-xs text-[#8A949E]">
+                    <p className="mt-2 text-xs text-cs-muted">
                       Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc trạng thái.
                     </p>
                   </div>

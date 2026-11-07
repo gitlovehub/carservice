@@ -1,3 +1,4 @@
+import { Button, PageHeader, Modal } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -147,70 +148,48 @@ function Customers() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="min-h-screen bg-cs-bg text-[#20252B]">
 
       <div className="lg:ml-[250px]">
 
         <main>
           <div className="mx-auto max-w-[1200px] px-6 py-8 lg:px-8 lg:py-10">
-            <div className="mb-8">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
-                GARA / KHÁCH HÀNG
-              </p>
-
-              <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-                <div>
-                  <h2 className="text-[24px] font-bold tracking-normal text-[#20252B]">
-                    Quản lý khách hàng
-                  </h2>
-                  <p className="mt-2 max-w-[620px] text-[13px] leading-5 text-[#8A949E]">
-                    Tìm kiếm và quản lý thông tin khách hàng tại gara.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={openCreateModal}
-                  className="cs-btn cs-btn-primary"
-                >
-                  + Thêm khách hàng
-                </button>
-              </div>
-            </div>
+            <PageHeader title="Khách hàng" description="Tìm kiếm và quản lý thông tin khách hàng tại gara."
+              actions={<Button variant="primary" icon="plus" onClick={openCreateModal}>Thêm khách hàng</Button>}/>
 
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm">
-                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-cs-muted">
                   TỔNG KHÁCH HÀNG
                 </p>
                 <p className="mt-3 text-[24px] font-bold text-[#20252B]">
                   {total}
                 </p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-cs-muted">
                   Dữ liệu từ hệ thống
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm">
-                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-cs-muted">
                   KẾT QUẢ HIỂN THỊ
                 </p>
                 <p className="mt-3 text-[24px] font-bold text-[#20252B]">
                   {customers.length}
                 </p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-cs-muted">
                   Khách hàng trên trang này
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm">
-                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-cs-muted">
                   VAI TRÒ
                 </p>
                 <p className="mt-3 text-[14px] font-bold text-[#20252B]">
                   Cố vấn dịch vụ
                 </p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-cs-muted">
                   Quản lý thông tin khách hàng
                 </p>
               </div>
@@ -221,7 +200,7 @@ function Customers() {
                 <p className="text-[13px] font-semibold text-[#20252B]">
                   Tìm kiếm khách hàng
                 </p>
-                <p className="mt-1 text-[11px] text-[#8A949E]">
+                <p className="mt-1 text-[11px] text-cs-muted">
                   Tìm theo tên, số điện thoại hoặc email.
                 </p>
               </div>
@@ -237,7 +216,7 @@ function Customers() {
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Tên, số điện thoại hoặc email"
-                  className="w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-[13px] outline-none transition placeholder:text-[#A0A8AF] focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
+                  className="w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-[13px] outline-none transition placeholder:text-cs-muted focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
                 />
 
                 <button
@@ -263,12 +242,12 @@ function Customers() {
                   <p className="text-[13px] font-semibold text-[#20252B]">
                     Danh sách khách hàng
                   </p>
-                  <p className="mt-1 text-[11px] text-[#8A949E]">
-                    Thông tin được tải từ backend
+                  <p className="mt-1 text-[11px] text-cs-muted">
+                    Danh sách khách hàng của gara
                   </p>
                 </div>
 
-                <p className="w-fit rounded-lg bg-[#F3F4F2] px-3 py-1.5 text-[11px] font-semibold text-[#66717C]">
+                <p className="w-fit rounded-lg bg-cs-surface-2 px-3 py-1.5 text-[11px] font-semibold text-cs-muted">
                   {total} khách hàng
                 </p>
               </div>
@@ -289,23 +268,23 @@ function Customers() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[850px] border-collapse">
                   <thead>
-                    <tr className="border-b border-[#E1E4E6] bg-[#F7F7F5] text-left">
-                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
+                    <tr className="border-b border-[#E1E4E6] bg-cs-bg text-left">
+                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
                         STT
                       </th>
-                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
+                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
                         KHÁCH HÀNG
                       </th>
-                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
+                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
                         SỐ ĐIỆN THOẠI
                       </th>
-                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
+                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
                         EMAIL
                       </th>
-                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
+                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
                         ĐỊA CHỈ
                       </th>
-                      <th className="px-5 py-3 text-[11px] font-bold text-[#8A949E]">
+                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
                         THAO TÁC
                       </th>
                     </tr>
@@ -316,7 +295,7 @@ function Customers() {
                       <tr>
                         <td
                           colSpan={6}
-                          className="px-5 py-14 text-center text-[13px] text-[#8A949E]"
+                          className="px-5 py-14 text-center text-[13px] text-cs-muted"
                         >
                           Đang tải danh sách khách hàng...
                         </td>
@@ -325,9 +304,9 @@ function Customers() {
                       customers.map((customer, index) => (
                         <tr
                           key={customer.id}
-                          className="border-b border-[#EEF0F2] last:border-0 transition hover:bg-[#FAFAF9]"
+                          className="border-b border-[#EEF0F2] last:border-0 transition hover:bg-cs-surface-2"
                         >
-                          <td className="px-5 py-4 text-[12px] text-[#66717C]">
+                          <td className="px-5 py-4 text-[12px] text-cs-muted">
                             {(page - 1) * 10 + index + 1}
                           </td>
 
@@ -346,7 +325,7 @@ function Customers() {
                                 <p className="text-[12px] font-semibold text-[#20252B]">
                                   {customer.full_name}
                                 </p>
-                                <p className="mt-1 text-[11px] text-[#8A949E]">
+                                <p className="mt-1 text-[11px] text-cs-muted">
                                   Mã khách hàng: {customer.id}
                                 </p>
                               </div>
@@ -388,7 +367,7 @@ function Customers() {
                           <p className="text-[13px] font-semibold text-[#20252B]">
                             Không tìm thấy khách hàng
                           </p>
-                          <p className="mt-1 text-[11px] text-[#8A949E]">
+                          <p className="mt-1 text-[11px] text-cs-muted">
                             Thử thay đổi từ khóa hoặc thêm khách hàng mới.
                           </p>
                         </td>
@@ -399,7 +378,7 @@ function Customers() {
               </div>
 
               <div className="flex flex-col gap-3 border-t border-[#EEF0F2] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-[11px] text-[#8A949E]">
+                <p className="text-[11px] text-cs-muted">
                   Trang {page} / {lastPage}
                 </p>
 
@@ -408,7 +387,7 @@ function Customers() {
                     type="button"
                     disabled={page <= 1 || loading}
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#374151] transition hover:bg-[#F7F7F5] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#374151] transition hover:bg-cs-bg disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Trước
                   </button>
@@ -418,7 +397,7 @@ function Customers() {
                     onClick={() =>
                       setPage((current) => Math.min(lastPage, current + 1))
                     }
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#374151] transition hover:bg-[#F7F7F5] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#374151] transition hover:bg-cs-bg disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Tiếp
                   </button>
@@ -430,13 +409,7 @@ function Customers() {
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="customer-modal-title"
-            className="my-auto w-full max-w-[560px] rounded-2xl bg-white p-6 shadow-xl"
-          >
+        <Modal bare open onClose={closeModal} dismissible={!saving} title={"Thông tin khách hàng"} className="my-auto w-full max-w-[560px] rounded-2xl bg-cs-surface p-6 shadow-overlay">
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
                 <h3
@@ -445,7 +418,7 @@ function Customers() {
                 >
                   {editingCustomer ? "Cập nhật khách hàng" : "Thêm khách hàng"}
                 </h3>
-                <p className="mt-1 text-[12px] text-[#8A949E]">
+                <p className="mt-1 text-[12px] text-cs-muted">
                   Nhập thông tin khách hàng bên dưới.
                 </p>
               </div>
@@ -455,7 +428,7 @@ function Customers() {
                 disabled={saving}
                 onClick={closeModal}
                 aria-label="Đóng biểu mẫu"
-                className="rounded-lg px-2 py-1 text-lg text-[#66717C] hover:bg-[#F3F4F2] disabled:opacity-40"
+                className="rounded-lg px-2 py-1 text-lg text-cs-muted hover:bg-cs-surface-2 disabled:opacity-40"
               >
                 ×
               </button>
@@ -553,7 +526,7 @@ function Customers() {
                   type="button"
                   disabled={saving}
                   onClick={closeModal}
-                  className="rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#F7F7F5] disabled:opacity-50"
+                  className="rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-cs-bg disabled:opacity-50"
                 >
                   Hủy
                 </button>
@@ -570,8 +543,7 @@ function Customers() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </Modal>
       )}
     </div>
   );

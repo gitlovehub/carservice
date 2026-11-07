@@ -55,8 +55,8 @@ function RoleAccountMenu() {
         onClick={() => setOpen(!open)}
         className={`flex cursor-pointer items-center gap-3 rounded-xl border px-2.5 py-2 transition sm:px-3 ${
           open
-            ? "border-[#D6A85F] bg-[#F7F7F5]"
-            : "border-[#E1E4E6] bg-white hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
+            ? "border-[#D6A85F] bg-cs-bg"
+            : "border-[#E1E4E6] bg-white hover:border-[#D6A85F] hover:bg-cs-bg"
         }`}
       >
         {user?.avatar ? (
@@ -76,13 +76,13 @@ function RoleAccountMenu() {
             {getUserDisplayName(user)}
           </p>
 
-          <p className="mt-0.5 text-[11px] text-[#8A949E]">
+          <p className="mt-0.5 text-[11px] text-cs-muted">
             {user?.role || "Khách hàng"}
           </p>
         </div>
 
         <span
-          className={`hidden text-[12px] text-[#8A949E] transition sm:block ${
+          className={`hidden text-[12px] text-cs-muted transition sm:block ${
             open ? "rotate-180" : ""
           }`}
         >
@@ -93,7 +93,7 @@ function RoleAccountMenu() {
       {open && (
         <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[280px] overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_16px_40px_rgba(31,41,51,0.12)]">
           <div className="border-b border-[#E1E4E6] px-4 py-4">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-cs-muted">
               TÀI KHOẢN
             </p>
           </div>
@@ -105,7 +105,7 @@ function RoleAccountMenu() {
               className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                 location.pathname === "/"
                   ? "bg-[#F3E8D2]"
-                  : "hover:bg-[#F7F7F5]"
+                  : "hover:bg-cs-bg"
               }`}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D6A85F] text-[13px] text-[#3A3020]">
@@ -117,7 +117,7 @@ function RoleAccountMenu() {
                   Trang chủ
                 </p>
 
-                <p className="mt-0.5 text-[11px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Trở về trang chính
                 </p>
               </div>
@@ -129,7 +129,7 @@ function RoleAccountMenu() {
               className={`mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                 location.pathname === "/account"
                   ? "bg-[#F3E8D2]"
-                  : "hover:bg-[#F7F7F5]"
+                  : "hover:bg-cs-bg"
               }`}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3E8D2] text-[13px] text-[#3A3020]">
@@ -141,7 +141,7 @@ function RoleAccountMenu() {
                   Thông tin tài khoản
                 </p>
 
-                <p className="mt-0.5 text-[11px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Xem thông tin tài khoản
                 </p>
               </div>
@@ -154,7 +154,7 @@ function RoleAccountMenu() {
                 className={`mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                   location.pathname === managementPage.path
                     ? "bg-[#F3E8D2]"
-                    : "hover:bg-[#F7F7F5]"
+                    : "hover:bg-cs-bg"
                 }`}
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1F2933] text-[13px] text-white">
@@ -166,7 +166,7 @@ function RoleAccountMenu() {
                     {managementPage.label}
                   </p>
 
-                  <p className="mt-0.5 text-[11px] text-[#8A949E]">
+                  <p className="mt-0.5 text-[11px] text-cs-muted">
                     {user?.role === "CUSTOMER"
                       ? "Lịch sử bảo dưỡng & theo dõi xe"
                       : "Quay lại khu vực làm việc"}
@@ -181,7 +181,7 @@ function RoleAccountMenu() {
               className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                 location.pathname === "/booking"
                   ? "bg-[#F3E8D2]"
-                  : "hover:bg-[#F7F7F5]"
+                  : "hover:bg-cs-bg"
               }`}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3E8D2] text-[13px] text-[#3A3020]">
@@ -193,7 +193,7 @@ function RoleAccountMenu() {
                   Đặt lịch
                 </p>
 
-                <p className="mt-0.5 text-[11px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Tạo lịch hẹn mới
                 </p>
               </div>
@@ -205,7 +205,7 @@ function RoleAccountMenu() {
               className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                 location.pathname === "/customer/appointments"
                   ? "bg-[#F3E8D2]"
-                  : "hover:bg-[#F7F7F5]"
+                  : "hover:bg-cs-bg"
               }`}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3E8D2] text-[13px] text-[#3A3020]">
@@ -217,7 +217,7 @@ function RoleAccountMenu() {
                   Lịch hẹn
                 </p>
 
-                <p className="mt-0.5 text-[11px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Theo dõi lịch hẹn
                 </p>
               </div>
@@ -229,7 +229,7 @@ function RoleAccountMenu() {
               className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                 location.pathname === "/customer/cars"
                   ? "bg-[#F3E8D2]"
-                  : "hover:bg-[#F7F7F5]"
+                  : "hover:bg-cs-bg"
               }`}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3E8D2] text-[13px] text-[#3A3020]">
@@ -241,7 +241,7 @@ function RoleAccountMenu() {
                   Xe của tôi
                 </p>
 
-                <p className="mt-0.5 text-[11px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Quản lý phương tiện
                 </p>
               </div>
@@ -254,9 +254,9 @@ function RoleAccountMenu() {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-[#F7F7F5]"
+              className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-cs-bg"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3F4F2] text-[13px] text-[#3A3020]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cs-surface-2 text-[13px] text-[#3A3020]">
                 ↪
               </span>
 
@@ -265,7 +265,7 @@ function RoleAccountMenu() {
                   Đăng xuất
                 </p>
 
-                <p className="mt-0.5 text-[11px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Thoát khỏi tài khoản
                 </p>
               </div>

@@ -1,4 +1,5 @@
 import { fetchApi } from "./api";
+import { statusLabels } from "../config/status";
 
 /* ---------- Kiểu dữ liệu theo API_Documentation & backend thực tế ---------- */
 
@@ -259,29 +260,13 @@ export async function submitReview(data: {
 
 /* ---------- Hiển thị ---------- */
 
-export const quotationStatusLabel: Record<string, string> = {
-  DRAFT: "Bản nháp",
-  SENT: "Chờ bạn duyệt",
-  APPROVED: "Đã duyệt toàn bộ",
-  PARTIALLY_APPROVED: "Đã duyệt một phần",
-  REJECTED: "Đã từ chối",
-  CANCELLED: "Đã hủy",
-};
-
-export const invoiceStatusLabel: Record<string, string> = {
-  UNPAID: "Chưa thanh toán",
-  PARTIALLY_PAID: "Thanh toán một phần",
-  PAID: "Đã thanh toán",
-  CANCELLED: "Đã hủy",
-};
-
-export const appointmentStatusLabel: Record<string, string> = {
-  PENDING: "Chờ xác nhận",
-  CONFIRMED: "Đã xác nhận",
-  CHECKED_IN: "Đã tiếp nhận xe",
-  CANCELLED: "Đã hủy",
-  NO_SHOW: "Không đến",
-};
+// Nhãn trạng thái lấy từ nguồn chung config/status.ts (góc nhìn khách hàng) — không khai báo lại ở đây.
+export const quotationStatusLabel = statusLabels("quotation", "customer");
+export const invoiceStatusLabel = statusLabels("invoice", "customer");
+/** CREATED là mã cũ cùng nghĩa PENDING — bỏ khỏi danh sách để bộ lọc không lặp "Chờ xác nhận". */
+export const appointmentStatusLabel = Object.fromEntries(
+  Object.entries(statusLabels("appointment", "customer")).filter(([code]) => code !== "CREATED"),
+);
 
 export const requestTypeLabel: Record<string, string> = {
   DIAGNOSIS: "Kiểm tra / chẩn đoán",
@@ -290,18 +275,7 @@ export const requestTypeLabel: Record<string, string> = {
   REPLACEMENT: "Thay thế phụ tùng",
 };
 
-export const repairStatusLabel: Record<string, string> = {
-  RECEIVED: "Đã tiếp nhận",
-  INSPECTING: "Đang kiểm tra",
-  QUOTING: "Đang lập báo giá",
-  REVIEW_TEST: "Đang kiểm tra lại",
-  WAITING_APPROVAL: "Chờ khách duyệt báo giá",
-  WAITING_FOR_PARTS: "Chờ phụ tùng",
-  IN_PROGRESS: "Đang sửa chữa",
-  COMPLETED: "Đã hoàn tất",
-  HANDED_OVER: "Đã bàn giao",
-  CLOSED: "Đã đóng phiếu",
-};
+export const repairStatusLabel = statusLabels("repair", "customer");
 
 export const FINISHED_REPAIR_STATUSES = ["COMPLETED", "HANDED_OVER", "CLOSED"];
 
@@ -468,9 +442,4 @@ export const paymentMethodLabel: Record<string, string> = {
   VNPAY: "VNPay",
 };
 
-export const paymentStatusLabel: Record<string, string> = {
-  PENDING: "Đang chờ xử lý",
-  SUCCESS: "Thành công",
-  FAILED: "Thất bại",
-  CANCELLED: "Đã hủy",
-};
+export const paymentStatusLabel = statusLabels("payment", "customer");

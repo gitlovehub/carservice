@@ -7,14 +7,13 @@ import {
 } from "../../services/workflowService";
 import { action, card, danger, input, Notice, outline, success } from "./WorkflowUI";
 import { errorText } from "./workflowFormat";
+import { StatusBadge } from "../../components/ui/Badge";
+import { getStatus } from "../../config/status";
 
 /** Panels for the steps after diagnosis; every action calls Laravel and then reloads the order. */
 type PanelProps = { order: WorkflowOrder; onChanged: (message: string) => Promise<void> };
 
-const quotationStatusText: Record<string, string> = {
-  DRAFT: "Bản nháp", SENT: "Đã gửi khách", APPROVED: "Khách duyệt toàn bộ",
-  PARTIALLY_APPROVED: "Khách duyệt một phần", REJECTED: "Khách từ chối", CANCELLED: "Đã hủy",
-};
+// Nhãn + màu trạng thái (báo giá, hạng mục, hóa đơn, thanh toán, kết quả kiểm tra): config/status.ts.
 
 function QuotationTable({ quotation, approvals, onToggle }: {
   quotation: WorkflowQuotation;
@@ -147,8 +146,8 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
 
   if (!quotation && !canBuild) return null;
   return <section className={`${card} mt-6 print:hidden`}>
-    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent">Bước 3 · Báo giá</p>
-    <h2 className="mt-1 text-lg font-bold text-cs-text">Báo giá cho khách {quotation && <span className="ml-2 text-sm font-semibold text-cs-muted">{quotation.quotation_code} · {quotationStatusText[quotation.status] || quotation.status}</span>}</h2>
+    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text">Bước 3 · Báo giá</p>
+    <h2 className="mt-1 text-lg font-bold text-cs-text">Báo giá cho khách {quotation && <span className="ml-2 inline-flex items-center gap-2 text-sm font-semibold text-cs-muted">{quotation.quotation_code} <StatusBadge domain="quotation" status={quotation.status}/></span>}</h2>
     <div className="mt-4">{error && <Notice tone="error">{error}</Notice>}</div>
 
     {quotation && <QuotationTable quotation={quotation} approvals={quotation.status === "SENT" ? approvals : undefined}
@@ -194,7 +193,6 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
   </section>;
 }
 
-const workStatusText: Record<string, string> = { PENDING: "Chờ làm", IN_PROGRESS: "Đang làm", COMPLETED: "Hoàn thành", CANCELLED: "Đã hủy" };
 
 export function RepairPanel({ order, onChanged }: PanelProps) {
   const { confirm } = useAppFeedback();
@@ -230,14 +228,14 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
 
   if (!inRepair && !workItems.length) return null;
   return <section className={`${card} mt-6 print:hidden`}>
-    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent">Bước 4 · Sửa chữa</p>
+    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text">Bước 4 · Sửa chữa</p>
     <h2 className="mt-1 text-lg font-bold text-cs-text">Tiến độ sửa chữa</h2>
     <div className="mt-4">{error && <Notice tone="error">{error}</Notice>}</div>
     {order.status === "WAITING_FOR_PARTS" && <Notice>Phiếu đang chờ phụ tùng. Khi hàng về, bấm Tiếp tục sửa chữa.</Notice>}
 
     <h3 className="mb-2 text-sm font-bold text-cs-text">Công việc ({workItems.length - unfinished}/{workItems.length} xong)</h3>
     {workItems.length ? <ul className="space-y-2">{workItems.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 text-sm">
-      <div><p className="font-semibold text-cs-text">{item.service?.name || item.description || `Công việc #${item.id}`}</p><p className="text-xs text-cs-muted">{workStatusText[item.status] || item.status}</p></div>
+      <div><p className="font-semibold text-cs-text">{item.service?.name || item.description || `Công việc #${item.id}`}</p><StatusBadge domain="workItem" status={item.status} className="mt-1"/></div>
       {inRepair && <div className="flex gap-2">
         {item.status === "PENDING" && <button type="button" className={`${outline} cs-btn-sm`} disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(item.id, "IN_PROGRESS"), "Đã bắt đầu công việc.")}>Bắt đầu</button>}
         {item.status === "IN_PROGRESS" && <button type="button" className={`${success} cs-btn-sm`} disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(item.id, "COMPLETED"), "Đã hoàn thành công việc.")}>Xong</button>}
@@ -268,10 +266,8 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
   </section>;
 }
 
-const invoiceStatusText: Record<string, string> = { UNPAID: "Chưa thanh toán", PARTIALLY_PAID: "Đã thu một phần", PAID: "Đã thanh toán đủ", CANCELLED: "Đã hủy" };
 
 const paymentMethodText: Record<string, string> = { DIRECT: "Tiền mặt", QR: "QR", VNPAY: "VNPay" };
-const paymentStatusText: Record<string, string> = { PENDING: "Đang chờ", SUCCESS: "Thành công", FAILED: "Thất bại", CANCELLED: "Đã hủy" };
 
 export function PaymentPanel({ order, onChanged }: PanelProps) {
   const { confirm } = useAppFeedback();
@@ -311,8 +307,8 @@ export function PaymentPanel({ order, onChanged }: PanelProps) {
 
   if (!["COMPLETED", "HANDED_OVER"].includes(order.status)) return null;
   return <section className={`${card} mt-6`}>
-    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent print:hidden">Bước 5 · Thanh toán & bàn giao</p>
-    <h2 className="mt-1 text-lg font-bold text-cs-text">Hóa đơn {invoice && <span className="ml-2 text-sm font-semibold text-cs-muted">{invoice.invoice_code} · {invoiceStatusText[invoice.status] || invoice.status}</span>}</h2>
+    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text print:hidden">Bước 5 · Thanh toán & bàn giao</p>
+    <h2 className="mt-1 text-lg font-bold text-cs-text">Hóa đơn {invoice && <span className="ml-2 inline-flex items-center gap-2 text-sm font-semibold text-cs-muted">{invoice.invoice_code} <StatusBadge domain="invoice" status={invoice.status}/></span>}</h2>
     <div className="mt-4 print:hidden">{error && <Notice tone="error">{error}</Notice>}</div>
     {!invoice && <div className="print:hidden"><p className="mb-4 text-sm text-cs-muted">Hóa đơn được tính từ các hạng mục khách đã duyệt trong báo giá.</p>
       <button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void run(() => workflowApi.createInvoice(order.id), "Đã lập hóa đơn. Thu tiền mặt tại quầy.")}>Lập hóa đơn</button></div>}
@@ -323,7 +319,7 @@ export function PaymentPanel({ order, onChanged }: PanelProps) {
         <p className="text-base font-black">Tổng cộng: {formatVnd(invoice.total_amount)}</p>
         <p>Đã thu: {formatVnd(paid)} · Còn lại: <strong>{formatVnd(remaining)}</strong></p>
       </div>
-      {!!invoice.payments?.length && <ul className="mt-3 space-y-1 text-xs text-cs-muted">{invoice.payments.map(payment => <li key={payment.id}>{paymentMethodText[payment.payment_method] || payment.payment_method} {formatVnd(payment.amount)} · {payment.paid_at ? new Date(payment.paid_at).toLocaleString("vi-VN") : paymentStatusText[payment.status] || payment.status}</li>)}</ul>}
+      {!!invoice.payments?.length && <ul className="mt-3 space-y-1 text-xs text-cs-muted">{invoice.payments.map(payment => <li key={payment.id}>{paymentMethodText[payment.payment_method] || payment.payment_method} {formatVnd(payment.amount)} · {payment.paid_at ? new Date(payment.paid_at).toLocaleString("vi-VN") : getStatus("payment", payment.status).label}</li>)}</ul>}
       {remaining > 0 && <form className="mt-5 grid gap-3 border-t border-cs-border pt-5 md:grid-cols-[1fr_1fr_auto] md:items-end print:hidden" onSubmit={event => void collectCash(event)}>
         <label className="text-xs font-semibold text-cs-muted">Số tiền thu (₫)<input className={input} type="number" min="1" step="any" max={remaining} required value={amount} onChange={event => setAmount(event.target.value)}/></label>
         <label className="text-xs font-semibold text-cs-muted">Khách đưa (₫, để tính tiền thối)<input className={input} type="number" min="0" step="any" value={cashGiven} onChange={event => setCashGiven(event.target.value)}/></label>
@@ -336,11 +332,6 @@ export function PaymentPanel({ order, onChanged }: PanelProps) {
   </section>;
 }
 
-const resultText: Record<string, string> = {
-  PASSED: "Đạt", WARNING: "Cần lưu ý", FAILED: "Không đạt",
-  NORMAL: "Bình thường", NEEDS_SERVICE: "Cần bảo dưỡng", NEEDS_REPLACEMENT: "Cần thay thế",
-};
-const resultTone: Record<string, string> = { PASSED: "text-emerald-600", WARNING: "text-amber-600", FAILED: "text-red-600" };
 type CheckRow = { key: number; item_name: string; status: InspectionResult; condition_description: string };
 type RecRow = { key: number; item_type: "SERVICE" | "PART"; ref_id: string; quantity: string; note: string };
 const blankCheck = (key: number): CheckRow => ({ key, item_name: "", status: "PASSED", condition_description: "" });
@@ -464,7 +455,7 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
   </div>;
 
   return <section className={`${card} mt-6`}>
-    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent print:hidden">Bước 2 · Kiểm tra & chẩn đoán</p>
+    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text print:hidden">Bước 2 · Kiểm tra & chẩn đoán</p>
     <h2 className="mt-1 text-lg font-bold text-cs-text">Kiểm tra và chẩn đoán</h2>
     <div className="mt-4 print:hidden">{error && <Notice tone="error">{error}</Notice>}</div>
 
@@ -474,7 +465,7 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
         <div><dt className="text-xs text-cs-muted">Kết luận</dt><dd className="mt-1 whitespace-pre-wrap font-semibold">{inspection.diagnosis || "—"}</dd></div>
       </dl>
       {!!inspection.items?.length && <ul className="divide-y divide-cs-border rounded-xl border border-cs-border">{inspection.items.map(item => <li key={item.id} className="flex flex-wrap justify-between gap-3 px-4 py-2.5">
-        <span>{item.item_name}</span><span className={`text-xs font-bold ${resultTone[item.condition_status ?? ""] ?? "text-cs-muted"}`}>{resultText[item.condition_status ?? ""] ?? item.condition_status ?? "—"}</span>
+        <span>{item.item_name}</span><StatusBadge domain="inspection" status={item.condition_status}/>
       </li>)}</ul>}
       <div><p className="mb-2 text-xs font-bold text-cs-muted">Đề xuất cần làm</p>
         {inspection.recommendations?.length ? <ul className="space-y-1">{inspection.recommendations.map(rec => <li key={rec.id}>• {rec.item_type === "PART" ? "Phụ tùng" : "Dịch vụ"}: <strong>{rec.part?.name || rec.service?.name || "—"}</strong> × {rec.quantity ?? 1}{rec.note ? ` · ${rec.note}` : ""}</li>)}</ul>

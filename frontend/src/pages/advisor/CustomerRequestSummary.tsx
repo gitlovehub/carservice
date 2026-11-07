@@ -14,7 +14,7 @@ export default function CustomerRequestSummary({ request, compact = false }: { r
 
     {packages.map(pkg => <div key={`package-${pkg.id}`} className="rounded-xl border border-cs-border p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-semibold"><span className="mr-1.5 rounded bg-cs-soft px-1.5 py-0.5 text-[11px] font-bold uppercase text-cs-accent">Gói</span>{pkg.name}</p>
+        <p className="font-semibold"><span className="mr-1.5 rounded bg-cs-soft px-1.5 py-0.5 text-[11px] font-bold uppercase text-cs-accent-text">Gói</span>{pkg.name}</p>
         {toNumber(pkg.pivot?.estimated_price) > 0 && <span className="text-xs text-cs-muted">Ước tính {formatVnd(pkg.pivot?.estimated_price)}</span>}
       </div>
       {!compact && (pkg.services?.length || pkg.parts?.length) ? <ul className="mt-2 space-y-0.5 text-xs text-cs-muted">

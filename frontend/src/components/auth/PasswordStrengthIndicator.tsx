@@ -45,7 +45,7 @@ export function PasswordStrengthIndicator({
   ][metCount];
 
   return (
-    <div className="mt-2 space-y-2 rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-3 text-left">
+    <div className="mt-2 space-y-2 rounded-xl border border-[#E1E4E6] bg-cs-bg p-3 text-left">
       <div className="flex items-center justify-between text-[12px]">
         <span className="text-slate-500 font-medium">Độ mạnh mật khẩu:</span>
         <span

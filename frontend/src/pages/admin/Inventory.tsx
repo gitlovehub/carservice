@@ -1,4 +1,4 @@
-import AdminHubNav from "../../components/AdminHubNav";
+import { Button, PageHeader, Modal } from "../../components/ui";
 import { useMemo, useState } from "react";
 
 type PartStatus = "Còn hàng" | "Sắp hết" | "Hết hàng";
@@ -205,40 +205,14 @@ function Inventory() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="min-h-screen bg-cs-bg text-[#20252B]">
 
       <div className="lg:ml-[250px]">
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
-            <div className="mb-8">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
-                KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
-              </p>
-
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
-                  PT
-                </div>
-
-                <div>
-                  <h1 className="text-2xl font-bold tracking-normal sm:text-3xl">
-                    Phụ tùng & tồn kho
-                  </h1>
-                  <p className="mt-1 text-xs text-[#66717C]">
-                    Quản lý phụ tùng, số lượng và tình trạng tồn kho của gara.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={openAddModal}
-                  className="cs-btn cs-btn-primary"
-                >
-                  + Nhập phụ tùng
-                </button>
-              </div>
-            </div>
+            <PageHeader title="Kho phụ tùng" description="Quản lý phụ tùng, số lượng và tình trạng tồn kho của gara."
+              actions={<Button variant="primary" icon="plus" onClick={openAddModal}>Nhập phụ tùng</Button>}/>
 
             {message && (
               <div
@@ -249,7 +223,7 @@ function Inventory() {
                 <button
                   type="button"
                   onClick={() => setMessage("")}
-                  className="ml-3 font-semibold text-[#8A949E] hover:text-[#20252B]"
+                  className="ml-3 font-semibold text-cs-muted hover:text-[#20252B]"
                 >
                   Đóng
                 </button>
@@ -283,18 +257,17 @@ function Inventory() {
                   key={item.label}
                   className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
                 >
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
                     {item.label}
                   </p>
                   <p className="mt-4 text-2xl font-bold">{item.value}</p>
-                  <p className="mt-1 text-[11px] text-[#8A949E]">
+                  <p className="mt-1 text-[11px] text-cs-muted">
                     {item.description}
                   </p>
                 </div>
               ))}
             </div>
 
-            <AdminHubNav />
 
             <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:p-6">
               <div className="mb-5">
@@ -344,7 +317,7 @@ function Inventory() {
                     setSelectedCategory("Tất cả danh mục");
                     setSelectedStatus("Tất cả trạng thái");
                   }}
-                  className="rounded-xl border border-[#D9DDE1] bg-white px-5 py-3 text-xs font-semibold transition hover:bg-[#F3F4F2]"
+                  className="rounded-xl border border-[#D9DDE1] bg-white px-5 py-3 text-xs font-semibold transition hover:bg-cs-surface-2"
                 >
                   Xóa bộ lọc
                 </button>
@@ -355,13 +328,13 @@ function Inventory() {
               <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                    INVENTORY MANAGEMENT
+                    TỒN KHO
                   </p>
                   <h2 className="mt-1 text-base font-bold">
                     Danh sách phụ tùng
                   </h2>
                 </div>
-                <p className="text-xs text-[#8A949E]">
+                <p className="text-xs text-cs-muted">
                   {filteredParts.length} / {parts.length} mặt hàng
                 </p>
               </div>
@@ -371,7 +344,7 @@ function Inventory() {
                   <p className="text-sm font-semibold">
                     Không tìm thấy phụ tùng
                   </p>
-                  <p className="mt-2 text-xs text-[#8A949E]">
+                  <p className="mt-2 text-xs text-cs-muted">
                     Thử thay đổi từ khóa hoặc điều kiện lọc.
                   </p>
                 </div>
@@ -380,7 +353,7 @@ function Inventory() {
                   {filteredParts.map((part, index) => (
                     <article
                       key={part.id}
-                      className="rounded-2xl border border-[#E5E8EA] bg-[#FAFAF8] p-4 transition hover:border-[#D5D9DC] sm:p-5"
+                      className="rounded-2xl border border-[#E5E8EA] bg-cs-surface-2 p-4 transition hover:border-[#D5D9DC] sm:p-5"
                     >
                       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                         <div className="flex min-w-0 items-start gap-4">
@@ -403,7 +376,7 @@ function Inventory() {
                                 {part.status}
                               </span>
                             </div>
-                            <p className="mt-1 text-[11px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-cs-muted">
                               {part.id} · {part.category}
                             </p>
                           </div>
@@ -411,7 +384,7 @@ function Inventory() {
 
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:min-w-[480px]">
                           <div>
-                            <p className="text-[11px] text-[#8A949E]">
+                            <p className="text-[11px] text-cs-muted">
                               SỐ LƯỢNG
                             </p>
                             <p className="mt-1 text-xs font-bold">
@@ -420,7 +393,7 @@ function Inventory() {
                           </div>
 
                           <div>
-                            <p className="text-[11px] text-[#8A949E]">
+                            <p className="text-[11px] text-cs-muted">
                               ĐƠN GIÁ
                             </p>
                             <p className="mt-1 text-xs font-bold">
@@ -429,7 +402,7 @@ function Inventory() {
                           </div>
 
                           <div>
-                            <p className="text-[11px] text-[#8A949E]">
+                            <p className="text-[11px] text-cs-muted">
                               DANH MỤC
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -438,7 +411,7 @@ function Inventory() {
                           </div>
 
                           <div>
-                            <p className="text-[11px] text-[#8A949E]">
+                            <p className="text-[11px] text-cs-muted">
                               MÃ PHỤ TÙNG
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -454,7 +427,7 @@ function Inventory() {
                               setSelectedPart(part);
                               setModal("detail");
                             }}
-                            className="flex-1 rounded-xl border border-[#D9DDE1] bg-white px-3 py-2.5 text-[11px] font-semibold transition hover:bg-[#F3F4F2] sm:flex-none"
+                            className="flex-1 rounded-xl border border-[#D9DDE1] bg-white px-3 py-2.5 text-[11px] font-semibold transition hover:bg-cs-surface-2 sm:flex-none"
                           >
                             Chi tiết
                           </button>
@@ -477,18 +450,7 @@ function Inventory() {
       </div>
 
       {modal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-4"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setModal(null);
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="inventory-modal-title"
-            className="my-auto w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-7"
-          >
+        <Modal bare open onClose={() => setModal(null)} title={modal === "add" ? "Nhập phụ tùng" : modal === "edit" ? "Cập nhật phụ tùng" : "Chi tiết phụ tùng"} className="my-auto w-full max-w-lg rounded-2xl bg-cs-surface p-5 shadow-overlay sm:p-7">
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
@@ -509,7 +471,7 @@ function Inventory() {
                 type="button"
                 onClick={() => setModal(null)}
                 aria-label="Đóng"
-                className="rounded-lg px-3 py-2 text-lg text-[#66717C] hover:bg-[#F3F4F2]"
+                className="rounded-lg px-3 py-2 text-lg text-cs-muted hover:bg-cs-surface-2"
               >
                 ×
               </button>
@@ -529,7 +491,7 @@ function Inventory() {
                     key={label}
                     className="flex items-start justify-between gap-4 border-b border-[#EEF0F2] pb-3"
                   >
-                    <span className="text-xs text-[#8A949E]">{label}</span>
+                    <span className="text-xs text-cs-muted">{label}</span>
                     <span className="text-right text-xs font-semibold">
                       {value}
                     </span>
@@ -634,7 +596,7 @@ function Inventory() {
                   <button
                     type="button"
                     onClick={() => setModal(null)}
-                    className="flex-1 rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold hover:bg-[#F3F4F2]"
+                    className="flex-1 rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold hover:bg-cs-surface-2"
                   >
                     Hủy
                   </button>
@@ -648,8 +610,7 @@ function Inventory() {
                 </div>
               </div>
             )}
-          </section>
-        </div>
+          </Modal>
       )}
     </div>
   );

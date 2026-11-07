@@ -1,3 +1,4 @@
+import { Modal } from "../../components/ui";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -160,8 +161,8 @@ function Cars() {
       <main className="mx-auto max-w-[1250px] px-[34px] pb-[82px] pt-12 max-[670px]:px-[18px] max-[670px]:pb-[60px] max-[670px]:pt-[34px]">
         <div className="mb-[33px] flex items-center justify-between gap-6 max-[670px]:flex-col max-[670px]:items-start">
           <div>
-            <p className="text-[12px] font-extrabold uppercase leading-[1.6] tracking-[0.145em] text-[#cf2935]">MY GARAGE / VEHICLES</p>
-            <h1 className="mb-2 mt-3 text-[clamp(31px,3.4vw,46px)] font-extrabold leading-[1.16] tracking-normal">Garage của tôi</h1>
+            <p className="text-[12px] font-extrabold uppercase leading-[1.6] tracking-[0.145em] text-cs-accent-text">GARA CỦA TÔI / XE</p>
+            <h1 className="mb-2 mt-3 text-[clamp(31px,3.4vw,46px)] font-extrabold leading-[1.16] tracking-normal">Xe của tôi</h1>
             <p className="text-sm leading-[1.7] text-cs-muted">Quản lý danh sách xe để đặt lịch nhanh hơn.</p>
           </div>
           <button type="button" className="cs-btn cs-btn-primary w-max" onClick={() => {
@@ -190,7 +191,7 @@ function Cars() {
                     value={newModel}
                     onChange={(e) => setNewModel(e.target.value)}
                     disabled={loading || saving}
-                    className="h-11 w-full rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-3.5 text-xs outline-none"
+                    className="h-11 w-full rounded-xl border border-[#DDE1E4] bg-cs-surface-2 px-3.5 text-xs outline-none"
                   >
                     <option value="" disabled>Chọn dòng xe</option>
                     {supportedVehicleModels.map((model) => <option key={model} value={model}>Toyota {model}</option>)}
@@ -209,7 +210,7 @@ function Cars() {
                     onChange={(e) => setNewPlate(e.target.value)}
                     placeholder="Ví dụ: 30A-123.45"
                     disabled={saving}
-                    className="h-11 w-full rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-3.5 font-mono text-xs uppercase outline-none focus:border-[#cf2935] focus:bg-white"
+                    className="h-11 w-full rounded-xl border border-[#DDE1E4] bg-cs-surface-2 px-3.5 font-mono text-xs uppercase outline-none focus:border-[#cf2935] focus:bg-white"
                   />
                 </div>
 
@@ -225,7 +226,7 @@ function Cars() {
                     onChange={(e) => setNewMileage(e.target.value)}
                     placeholder="Ví dụ: 35000"
                     disabled={saving}
-                    className="h-11 w-full rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-3.5 text-xs outline-none focus:border-[#cf2935] focus:bg-white"
+                    className="h-11 w-full rounded-xl border border-[#DDE1E4] bg-cs-surface-2 px-3.5 text-xs outline-none focus:border-[#cf2935] focus:bg-white"
                   />
                 </div>
 
@@ -242,7 +243,7 @@ function Cars() {
                     onChange={(e) => setNewYear(e.target.value)}
                     placeholder="Ví dụ: 2022"
                     disabled={saving}
-                    className="h-11 w-full rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-3.5 text-xs outline-none focus:border-[#cf2935] focus:bg-white"
+                    className="h-11 w-full rounded-xl border border-[#DDE1E4] bg-cs-surface-2 px-3.5 text-xs outline-none focus:border-[#cf2935] focus:bg-white"
                   />
                 </div>
               </div>
@@ -272,7 +273,7 @@ function Cars() {
         ) : cars.length === 0 ? (
           <div className="flex min-h-[280px] flex-col items-center justify-center gap-[15px] rounded-[18px] border border-cs-border bg-cs-surface p-[30px] text-center text-cs-muted [&_h2]:text-[19px] [&_h2]:font-extrabold [&_h2]:text-cs-text">
             <Icon name="car" size={38}/>
-            <h2>Garage đang trống</h2>
+            <h2>Bạn chưa có xe nào</h2>
             <p>Thêm chiếc xe đầu tiên để đặt lịch bảo dưỡng.</p>
             <button type="button" className="cs-btn cs-btn-primary w-max" onClick={() => setIsAddFormOpen(true)}>Thêm xe</button>
           </div>
@@ -284,10 +285,10 @@ function Cars() {
               return (
                 <article className="min-w-0 rounded-[19px] border border-cs-border bg-cs-surface p-6 transition-colors hover:border-[#cf29358c] max-[670px]:p-[21px] [&>h2]:break-words [&>h2]:text-[19px] [&>h2]:font-extrabold [&>h2]:leading-[1.35] [&>h2]:tracking-normal" key={car.id}>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] font-extrabold uppercase leading-[1.6] tracking-[0.145em] text-[#cf2935]">{brand.toUpperCase()}</span>
+                    <span className="text-[12px] font-extrabold uppercase leading-[1.6] tracking-[0.145em] text-cs-accent-text">{brand.toUpperCase()}</span>
                     <span className="rounded-lg bg-cs-surface-2 px-2.5 py-1.5 text-[12px] font-extrabold text-cs-muted">{car.year ?? "—"}</span>
                   </div>
-                  <div className="mb-6 mt-[22px] text-[#cf2935]"><Icon name="car" size={40}/></div>
+                  <div className="mb-6 mt-[22px] text-cs-accent-text"><Icon name="car" size={40}/></div>
                   <h2>{getVehicleName(car)}</h2>
                   <p className="mt-[7px] min-h-9 text-xs leading-[1.55] text-cs-muted">{car.variant || "Hồ sơ phương tiện đã đăng ký"}</p>
                   <span className="mt-[13px] inline-block rounded-lg bg-cs-surface-2 px-3 py-2.5 text-xs font-extrabold tracking-[0.035em] text-cs-text">{car.license_plate || "CHƯA CÓ BIỂN"}</span>
@@ -304,12 +305,11 @@ function Cars() {
             })}
           </div>
         )}
-        <div className="mt-7 text-xs font-extrabold text-[#cf2935] [&_a]:inline-flex [&_a]:items-center [&_a]:gap-2"><Link to="/customer/booking">Đặt lịch bảo dưỡng cho xe của tôi <Icon name="arrow" size={15}/></Link></div>
+        <div className="mt-7 text-xs font-extrabold text-cs-accent-text [&_a]:inline-flex [&_a]:items-center [&_a]:gap-2"><Link to="/customer/booking">Đặt lịch bảo dưỡng cho xe của tôi <Icon name="arrow" size={15}/></Link></div>
       </main>
       {/* MODAL SỬA THÔNG TIN XE */}
       {editingVehicle && (
-        <div className="cs-garage-dialog fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
+        <Modal bare open onClose={() => setEditingVehicle(null)} dismissible={!saving} title={"Cập nhật xe"} className="w-full max-w-md rounded-3xl bg-cs-surface p-6 shadow-overlay md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-[#1F2933]">
                 Cập nhật xe: {getVehicleName(editingVehicle)}
@@ -383,14 +383,12 @@ function Cars() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </Modal>
       )}
 
       {/* MODAL XÁC NHẬN XÓA XE */}
       {deletingVehicle && (
-        <div className="cs-garage-dialog fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
+        <Modal bare open onClose={() => setDeletingVehicle(null)} dismissible={!deleting} title={"Xác nhận xóa xe"} className="w-full max-w-sm rounded-3xl bg-cs-surface p-6 shadow-overlay">
             <h3 className="text-base font-bold text-[#1F2933]">Xác nhận xóa xe?</h3>
             <p className="mt-2 text-xs text-slate-600">
               Bạn có chắc chắn muốn xóa xe{" "}
@@ -415,14 +413,12 @@ function Cars() {
                 {deleting ? "Đang xóa..." : "Xóa vĩnh viễn"}
               </button>
             </div>
-          </div>
-        </div>
+          </Modal>
       )}
 
       {/* MODAL CHI TIẾT XE */}
       {detailVehicle && (
-        <div className="cs-garage-dialog fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
+        <Modal bare open onClose={() => setDetailVehicle(null)} title={"Thông tin xe"} className="w-full max-w-md rounded-3xl bg-cs-surface p-6 shadow-overlay md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#D6A85F]">
@@ -491,8 +487,7 @@ function Cars() {
                 Đóng
               </button>
             </div>
-          </div>
-        </div>
+          </Modal>
       )}
 
     </div>

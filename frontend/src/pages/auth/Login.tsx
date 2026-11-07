@@ -424,28 +424,28 @@ function Login() {
             <AtelierField htmlFor="login-password" label="Mật khẩu" error={errors.password}>
               <div className="relative">
                 <input id="login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Nhập mật khẩu" value={form.password} onChange={handleChange} aria-invalid={!!errors.password} className={`${fieldClass} pr-16`} />
-                <button type="button" aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"} onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-[#757575] hover:text-[#cf2935]">{showPassword ? "Ẩn" : "Hiện"}</button>
+                <button type="button" aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"} onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-cs-muted hover:text-[#cf2935]">{showPassword ? "Ẩn" : "Hiện"}</button>
               </div>
             </AtelierField>
-            <div className="flex flex-wrap items-center justify-between gap-3 py-1 text-xs text-[#757575]">
+            <div className="flex flex-wrap items-center justify-between gap-3 py-1 text-xs text-cs-muted">
               <label htmlFor="login-remember" className="inline-flex cursor-pointer items-center gap-2.5">
                 <input id="login-remember" type="checkbox" checked={rememberMe} onChange={e => { setRememberMe(e.target.checked); if (!e.target.checked) localStorage.removeItem(REMEMBER_EMAIL_KEY); }} className="size-4 cursor-pointer accent-[#cf2935]" />
                 Ghi nhớ đăng nhập
               </label>
               <Link to="/forgot-password" className="cursor-pointer font-bold hover:text-[#cf2935] hover:underline">Quên mật khẩu?</Link>
             </div>
-            <button type="submit" disabled={isLoading} className={primaryClass}>{isLoading ? "Đang đăng nhập..." : "Đăng nhập"}</button>
+            <button type="submit" disabled={isLoading} aria-busy={isLoading || undefined} className={primaryClass}>{isLoading ? "Đang đăng nhập..." : "Đăng nhập"}</button>
           </form>
-          <p className="mt-5 mb-3 text-center text-sm text-[#757575]">Chưa có tài khoản?</p>
+          <p className="mt-5 mb-3 text-center text-sm text-cs-muted">Chưa có tài khoản?</p>
           <Link to="/register" className="flex min-h-14 w-full cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-[#252525] px-6 py-4 text-sm font-bold text-white transition hover:bg-[#393939] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935]">Đăng ký</Link>
         </>
       ) : (
         <>
           <form className="grid gap-4" onSubmit={handleOtpSubmit} noValidate>
             <OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!apiError} />
-            <button type="submit" disabled={isLoading || otp.length !== 6} className={primaryClass}>{isLoading ? "Đang xác thực..." : "Xác thực email →"}</button>
+            <button type="submit" disabled={isLoading || otp.length !== 6} aria-busy={isLoading || undefined} className={primaryClass}>{isLoading ? "Đang xác thực..." : "Xác thực email →"}</button>
           </form>
-          <div className="mt-5 grid gap-3 text-xs text-[#757575] [&_button]:cursor-pointer [&_button]:text-left [&_button]:font-extrabold [&_button]:text-[#cf2935] [&_button:disabled]:cursor-not-allowed">
+          <div className="mt-5 grid gap-3 text-xs text-cs-muted [&_button]:cursor-pointer [&_button]:text-left [&_button]:font-extrabold [&_button]:text-[#cf2935] [&_button:disabled]:cursor-not-allowed">
             {resendCountdown > 0 ? <span>Gửi lại OTP sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại OTP</button>}
             <button type="button" onClick={() => { setStep("login"); setOtp(""); setApiError(""); }}>← Quay lại đăng nhập</button>
           </div>

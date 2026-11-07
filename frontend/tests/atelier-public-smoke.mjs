@@ -10,14 +10,14 @@ const shell = read('src/components/AtelierPublic.tsx');
 const login = read('src/pages/auth/Login.tsx');
 const register = read('src/pages/auth/Register.tsx');
 const forgot = read('src/pages/auth/ForgotPassword.tsx');
-const styles = read('src/styles/atelier-public.css');
 const source = read('src/App.tsx');
+// Phase 5: trang chủ đã làm lại bằng Tailwind + token (atelier-public.css không còn được import, đã gỡ).
+// Kiểm tra nội dung & cấu trúc hiện hành thay vì class cũ at-hero-car / at-feature-band.
 assert.ok(existsSync(path.join(frontend, 'src/assets/car-atelier.svg')), 'Car artwork should be local');
-assert.match(home, /Chăm sóc xe\./);
-assert.match(home, /Chuẩn từng chi tiết\./);
-assert.match(home, /at-hero-car/);
-assert.match(home, /at-feature-band/);
-assert.match(home, /id="services"/);
+assert.match(home, /Chăm sóc xe/);
+assert.match(home, /Chuẩn từng chi tiết/);
+assert.match(home, /<AtelierCar /, 'Hero must show the local car artwork');
+assert.match(home, /\/services/, 'Home must link to the services catalogue');
 assert.match(shell, /AtelierPublicHeader/);
 assert.match(shell, /AtelierAuthLayout/);
 assert.match(shell, /toggleTheme/);
@@ -28,9 +28,10 @@ assert.match(register, /fetchApi\("\/register"/);
 assert.match(register, /fetchApi\("\/verify-email-otp"/);
 assert.match(forgot, /fetchApi\("\/forgot-password"/);
 assert.match(forgot, /fetchApi\("\/reset-password"/);
-assert.match(styles, /--at-accent:#cf2935/);
-assert.match(styles, /\.at-auth-story/);
-assert.match(styles, /@media\(max-width:820px\)/);
+// Màu thương hiệu và responsive của header công khai: token + breakpoint thay cho CSS cũ.
+assert.match(read('src/styles/tokens.css'), /--cs-brand: #cf2935/);
+assert.match(shell, /min-\[821px\]:flex/, 'Desktop navigation breakpoint');
+assert.match(shell, /aria-expanded=\{menuOpen\}/, 'Mobile menu exposes its state');
 assert.match(source, /<Home\/>/);
 assert.doesNotMatch(shell, /quick-login|123456|session_authenticated/);
 for(const f of [home,login,register,forgot])assert.doesNotMatch(f, /#D6A85F|#B98B43/, 'gold must not remain in recreated public pages');

@@ -164,7 +164,7 @@ export default function ServicePicker({
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-900">
                     {item.type === "package" && (
-                      <span className="mr-1.5 rounded bg-[var(--cs-soft,#fff1f1)] px-1.5 py-0.5 text-[11px] font-bold uppercase text-[#cf2935]">
+                      <span className="mr-1.5 rounded bg-[var(--cs-soft,#fff1f1)] px-1.5 py-0.5 text-[11px] font-bold uppercase text-cs-accent-text">
                         Gói
                       </span>
                     )}
@@ -177,7 +177,7 @@ export default function ServicePicker({
                   <button
                     type="button"
                     onClick={() => toggle(item)}
-                    className="text-xs font-semibold text-[#cf2935] hover:underline"
+                    className="text-xs font-semibold text-cs-accent-text hover:underline"
                     aria-label={`Bỏ ${item.name}`}
                   >
                     Bỏ
@@ -216,7 +216,7 @@ export default function ServicePicker({
             placeholder="VD: Phanh kêu khi dừng, điều hòa không mát..."
             className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm"
           />
-          <p className="mt-1 text-xs text-slate-500">Garage sẽ kiểm tra và báo giá trước khi làm.</p>
+          <p className="mt-1 text-xs text-slate-500">Gara sẽ kiểm tra và báo giá trước khi làm.</p>
         </div>
       )}
 

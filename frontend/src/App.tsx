@@ -9,6 +9,7 @@ import PublicLayout from "./layouts/PublicLayout";
 import { AdminLayout, AdvisorLayout, CustomerLayout } from "./layouts/AppShell";
 import ModulePlaceholder from "./pages/shared/ModulePlaceholder";
 import Home from "./pages/Home";
+import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -58,6 +59,7 @@ function App() {
     <Route path="/forgot-password" element={<ForgotPassword/>}/>
     <Route path="/role-selector" element={<Navigate to="/login" replace/>}/>
     <Route path="/services" element={<Services/>}/>
+    <Route path="*" element={<NotFound/>}/>
 
     {/* Customer shell: all legacy business pages retained, not rewritten. */}
     <Route element={<ProtectedRoute allowedRoles={["CUSTOMER"]}><CustomerLayout/></ProtectedRoute>}>
@@ -91,7 +93,7 @@ function App() {
       <Route path="service-orders/:orderId" element={<AdvisorRepairOrderDetail/>}/>
       <Route path="customers" element={<AdvisorCustomers/>}/>
       <Route path="customer-cars" element={<AdvisorCustomerCars/>}/>
-      <Route path="create-booking" element={<ModulePlaceholder area="Cố vấn" title="Đặt lịch hộ" description="Chỉ là màn hình tham chiếu demo; chưa cấp quyền tạo lịch hộ khi chưa có nghiệp vụ và API được nhóm trưởng chốt." owner="Nhóm module lịch hẹn"/>}/>
+      <Route path="create-booking" element={<ModulePlaceholder area="Cố vấn" title="Đặt lịch hộ" description="Tạo lịch hẹn thay cho khách gọi điện hoặc đến trực tiếp." owner="Nhóm module lịch hẹn"/>}/>
       {/* Báo giá, tiến độ, thanh toán được thao tác trên chi tiết phiếu; các menu cũ trỏ vào danh sách đã lọc. */}
       <Route path="repair-status" element={<Navigate to="/advisor/service-orders?status=IN_PROGRESS" replace/>}/>
       <Route path="quotation" element={<Navigate to="/advisor/service-orders?status=QUOTING" replace/>}/>
@@ -109,12 +111,11 @@ function App() {
       <Route path="maintenance-packages" element={<AdminMaintenancePackages/>}/>
       <Route path="working-hours" element={<AdminWorkingHours/>}/>
       <Route path="inventory" element={<AdminInventory/>}/>
-      <Route path="parts" element={<ModulePlaceholder area="Quản trị" title="Danh mục phụ tùng" description="Màn hình khung để gắn vào API danh mục phụ tùng khi module sẵn sàng." owner="Nhóm module phụ tùng"/>}/>
+      <Route path="parts" element={<ModulePlaceholder area="Quản trị" title="Danh mục phụ tùng" description="Quản lý mã, tên, đơn vị và giá bán của phụ tùng." owner="Nhóm module phụ tùng"/>}/>
       <Route path="reports" element={<AdminReports/>}/>
-      <Route path="staff" element={<ModulePlaceholder area="Quản trị" title="Nhân sự" description="Trang khung để tích hợp quản lý nhân sự khi có API và card triển khai." owner="Frontend module Admin"/>}/>
+      <Route path="staff" element={<ModulePlaceholder area="Quản trị" title="Nhân sự" description="Quản lý hồ sơ cố vấn dịch vụ và kỹ thuật viên." owner="Frontend module Admin"/>}/>
     </Route>
 
-    <Route path="*" element={<div style={{ padding: 30 }}>Không tìm thấy trang. <a href="/">Về trang chủ</a></div>}/>
   </Routes><ChatWidget/></FeedbackProvider></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;
 }
 export default App;

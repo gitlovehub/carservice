@@ -1,3 +1,4 @@
+import { Button, PageHeader, Modal } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import {
   useCallback,
@@ -610,41 +611,14 @@ function MaintenancePackages() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="min-h-screen bg-cs-bg text-[#20252B]">
 
       <div className="lg:ml-[250px]">
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
-            <div className="mb-8">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
-                KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
-              </p>
-
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
-                    GB
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold tracking-normal sm:text-3xl">
-                      Gói bảo dưỡng
-                    </h1>
-                    <p className="mt-1 text-xs text-[#66717C]">
-                      Quản lý gói bảo dưỡng, dịch vụ và phụ tùng đi kèm.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={openCreateModal}
-                  className="cs-btn cs-btn-primary"
-                >
-                  + Thêm gói bảo dưỡng
-                </button>
-              </div>
-            </div>
+            <PageHeader title="Gói bảo dưỡng" description="Quản lý gói bảo dưỡng, dịch vụ và phụ tùng đi kèm."
+              actions={<Button variant="primary" icon="plus" onClick={openCreateModal}>Thêm gói bảo dưỡng</Button>}/>
 
             {notice && (
               <div
@@ -664,7 +638,7 @@ function MaintenancePackages() {
 
             {catalogError && (
               <div className="mb-5 rounded-xl border border-[#E1E4E6] bg-white p-4">
-                <p className="text-sm text-[#66717C]">{catalogError}</p>
+                <p className="text-sm text-cs-muted">{catalogError}</p>
                 <button
                   type="button"
                   onClick={() => void loadCatalog()}
@@ -702,13 +676,13 @@ function MaintenancePackages() {
                   key={item.label}
                   className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
                 >
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
                     {item.label}
                   </p>
                   <p className="mt-4 text-2xl font-bold">
                     {new Intl.NumberFormat("vi-VN").format(item.value)}
                   </p>
-                  <p className="mt-1 text-[11px] text-[#8A949E]">
+                  <p className="mt-1 text-[11px] text-cs-muted">
                     {item.description}
                   </p>
                 </div>
@@ -782,7 +756,7 @@ function MaintenancePackages() {
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold transition hover:bg-[#F3F4F2]"
+                    className="rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold transition hover:bg-cs-surface-2"
                   >
                     Xóa lọc
                   </button>
@@ -794,13 +768,13 @@ function MaintenancePackages() {
               <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                    MAINTENANCE PACKAGES
+                    GÓI BẢO DƯỠNG
                   </p>
                   <h2 className="mt-1 text-base font-bold">
                     Danh sách gói bảo dưỡng
                   </h2>
                 </div>
-                <p className="text-xs text-[#8A949E]">
+                <p className="text-xs text-cs-muted">
                   {total} kết quả
                 </p>
               </div>
@@ -826,7 +800,7 @@ function MaintenancePackages() {
                   <p className="text-sm font-semibold">
                     Đang tải gói bảo dưỡng...
                   </p>
-                  <p className="mt-2 text-xs text-[#8A949E]">
+                  <p className="mt-2 text-xs text-cs-muted">
                     Vui lòng chờ trong giây lát.
                   </p>
                 </div>
@@ -835,7 +809,7 @@ function MaintenancePackages() {
                   <p className="text-sm font-semibold">
                     Không tìm thấy gói bảo dưỡng
                   </p>
-                  <p className="mt-2 text-xs text-[#8A949E]">
+                  <p className="mt-2 text-xs text-cs-muted">
                     Hãy thay đổi điều kiện lọc hoặc thêm gói mới.
                   </p>
                   <button
@@ -851,7 +825,7 @@ function MaintenancePackages() {
                   {packages.map((pkg, index) => (
                     <article
                       key={pkg.id}
-                      className="rounded-2xl border border-[#E5E8EA] bg-[#FAFAF8] p-4 transition hover:border-[#D5D9DC] sm:p-5"
+                      className="rounded-2xl border border-[#E5E8EA] bg-cs-surface-2 p-4 transition hover:border-[#D5D9DC] sm:p-5"
                     >
                       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                         <div className="flex min-w-0 items-start gap-4">
@@ -868,7 +842,7 @@ function MaintenancePackages() {
                                 className={`rounded-full px-3 py-1.5 text-[11px] font-semibold ${
                                   pkg.status === "ACTIVE"
                                     ? "bg-[#E6F2E8] text-[#28643B]"
-                                    : "bg-[#F3F4F2] text-[#66717C]"
+                                    : "bg-cs-surface-2 text-cs-muted"
                                 }`}
                               >
                                 {pkg.status === "ACTIVE"
@@ -877,16 +851,16 @@ function MaintenancePackages() {
                               </span>
                             </div>
 
-                            <p className="mt-1 text-[11px] text-[#8A949E]">
+                            <p className="mt-1 text-[11px] text-cs-muted">
                               GB-{String(pkg.id).padStart(3, "0")} ·{" "}
                               {modelLabel(pkg.vehicle_model)}
                             </p>
 
-                            <p className="mt-2 max-w-md text-xs leading-5 text-[#66717C]">
+                            <p className="mt-2 max-w-md text-xs leading-5 text-cs-muted">
                               {pkg.description || "Chưa có mô tả."}
                             </p>
 
-                            <p className="mt-2 text-[11px] text-[#8A949E]">
+                            <p className="mt-2 text-[11px] text-cs-muted">
                               {pkg.services.length} dịch vụ ·{" "}
                               {pkg.parts.length} phụ tùng
                             </p>
@@ -895,7 +869,7 @@ function MaintenancePackages() {
 
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:min-w-[340px]">
                           <div>
-                            <p className="text-[11px] text-[#8A949E]">
+                            <p className="text-[11px] text-cs-muted">
                               GIÁ ƯỚC TÍNH
                             </p>
                             <p className="mt-1 text-xs font-bold">
@@ -904,7 +878,7 @@ function MaintenancePackages() {
                           </div>
 
                           <div>
-                            <p className="text-[11px] text-[#8A949E]">
+                            <p className="text-[11px] text-cs-muted">
                               MỐC KM
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -915,7 +889,7 @@ function MaintenancePackages() {
                           </div>
 
                           <div>
-                            <p className="text-[11px] text-[#8A949E]">
+                            <p className="text-[11px] text-cs-muted">
                               MỐC THÁNG
                             </p>
                             <p className="mt-1 text-xs font-semibold">
@@ -930,7 +904,7 @@ function MaintenancePackages() {
                           <button
                             type="button"
                             onClick={() => void openDetailModal(pkg)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-[#F3F4F2]"
+                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-cs-surface-2"
                           >
                             Chi tiết
                           </button>
@@ -938,7 +912,7 @@ function MaintenancePackages() {
                           <button
                             type="button"
                             onClick={() => openEditModal(pkg)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-[#F3F4F2]"
+                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-cs-surface-2"
                           >
                             Chỉnh sửa
                           </button>
@@ -960,7 +934,7 @@ function MaintenancePackages() {
               )}
 
               <div className="flex flex-col gap-3 border-t border-[#EEF0F2] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-xs text-[#66717C]">
+                <span className="text-xs text-cs-muted">
                   Trang {page} / {lastPage} · Tổng {total} gói
                 </span>
                 <div className="flex gap-2">
@@ -970,7 +944,7 @@ function MaintenancePackages() {
                     onClick={() =>
                       setPage((current) => Math.max(1, current - 1))
                     }
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-[#F3F4F2] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-cs-surface-2 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     ← Trước
                   </button>
@@ -980,7 +954,7 @@ function MaintenancePackages() {
                     onClick={() =>
                       setPage((current) => Math.min(lastPage, current + 1))
                     }
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-[#F3F4F2] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-cs-surface-2 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Tiếp →
                   </button>
@@ -991,7 +965,7 @@ function MaintenancePackages() {
             <div className="mt-6">
               <Link
                 to="/admin/services"
-                className="text-xs font-semibold text-[#66717C] transition hover:text-[#20252B]"
+                className="text-xs font-semibold text-cs-muted transition hover:text-[#20252B]"
               >
                 ← Quản lý danh mục dịch vụ
               </Link>
@@ -1001,20 +975,7 @@ function MaintenancePackages() {
       </div>
 
       {modal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-3 sm:p-5"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget && !isSaving) {
-              setModal(null);
-            }
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="package-modal-title"
-            className="my-auto w-full max-w-3xl rounded-2xl bg-white p-5 shadow-xl sm:p-7"
-          >
+        <Modal bare open onClose={() => setModal(null)} dismissible={!isSaving} title={"Gói bảo dưỡng"} className="my-auto w-full max-w-3xl rounded-2xl bg-cs-surface p-5 shadow-overlay sm:p-7">
             {modal === "form" ? (
               <>
                 <div className="mb-6">
@@ -1178,7 +1139,7 @@ function MaintenancePackages() {
                           return (
                             <div
                               key={service.id}
-                              className="rounded-xl bg-[#FAFAF8] p-3"
+                              className="rounded-xl bg-cs-surface-2 p-3"
                             >
                               <label className="flex cursor-pointer items-start gap-2">
                                 <input
@@ -1192,11 +1153,11 @@ function MaintenancePackages() {
                                     {service.name}
                                   </span>
                                   {service.category && (
-                                    <span className="mt-1 block text-[11px] text-[#8A949E]">
+                                    <span className="mt-1 block text-[11px] text-cs-muted">
                                       {service.category}
                                     </span>
                                   )}
-                                  <span className="mt-1 block text-[11px] text-[#66717C]">
+                                  <span className="mt-1 block text-[11px] text-cs-muted">
                                     {formatPrice(service.base_price)}
                                   </span>
                                 </span>
@@ -1206,7 +1167,7 @@ function MaintenancePackages() {
                                 <div className="mt-3 flex items-center justify-between border-t border-[#E5E8EA] pt-3">
                                   <label
                                     htmlFor={`service-quantity-${service.id}`}
-                                    className="text-[11px] text-[#66717C]"
+                                    className="text-[11px] text-cs-muted"
                                   >
                                     Số lượng
                                   </label>
@@ -1231,7 +1192,7 @@ function MaintenancePackages() {
                         })}
 
                         {filteredServices.length === 0 && (
-                          <p className="py-5 text-center text-xs text-[#8A949E]">
+                          <p className="py-5 text-center text-xs text-cs-muted">
                             Không tìm thấy dịch vụ.
                           </p>
                         )}
@@ -1263,7 +1224,7 @@ function MaintenancePackages() {
                           return (
                             <div
                               key={part.id}
-                              className="rounded-xl bg-[#FAFAF8] p-3"
+                              className="rounded-xl bg-cs-surface-2 p-3"
                             >
                               <label className="flex cursor-pointer items-start gap-2">
                                 <input
@@ -1276,10 +1237,10 @@ function MaintenancePackages() {
                                   <span className="block text-xs font-semibold">
                                     {part.name}
                                   </span>
-                                  <span className="mt-1 block text-[11px] text-[#8A949E]">
+                                  <span className="mt-1 block text-[11px] text-cs-muted">
                                     {part.sku}
                                   </span>
-                                  <span className="mt-1 block text-[11px] text-[#66717C]">
+                                  <span className="mt-1 block text-[11px] text-cs-muted">
                                     {formatPrice(part.sell_price)}
                                   </span>
                                 </span>
@@ -1289,7 +1250,7 @@ function MaintenancePackages() {
                                 <div className="mt-3 flex items-center justify-between border-t border-[#E5E8EA] pt-3">
                                   <label
                                     htmlFor={`part-quantity-${part.id}`}
-                                    className="text-[11px] text-[#66717C]"
+                                    className="text-[11px] text-cs-muted"
                                   >
                                     Số lượng
                                   </label>
@@ -1314,7 +1275,7 @@ function MaintenancePackages() {
                         })}
 
                         {filteredParts.length === 0 && (
-                          <p className="py-5 text-center text-xs text-[#8A949E]">
+                          <p className="py-5 text-center text-xs text-cs-muted">
                             Không tìm thấy phụ tùng.
                           </p>
                         )}
@@ -1336,7 +1297,7 @@ function MaintenancePackages() {
                       type="button"
                       onClick={() => setModal(null)}
                       disabled={isSaving}
-                      className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-50"
+                      className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold transition hover:bg-cs-surface-2 disabled:opacity-50"
                     >
                       Hủy
                     </button>
@@ -1369,26 +1330,26 @@ function MaintenancePackages() {
                 </div>
 
                 {isLoadingDetail ? (
-                  <p className="py-10 text-center text-sm text-[#66717C]">
+                  <p className="py-10 text-center text-sm text-cs-muted">
                     Đang tải thông tin...
                   </p>
                 ) : selectedPackage ? (
                   <div className="space-y-5">
-                    <div className="grid gap-4 rounded-2xl bg-[#FAFAF8] p-4 sm:grid-cols-2">
+                    <div className="grid gap-4 rounded-2xl bg-cs-surface-2 p-4 sm:grid-cols-2">
                       <div>
-                        <p className="text-xs text-[#8A949E]">Tên gói</p>
+                        <p className="text-xs text-cs-muted">Tên gói</p>
                         <p className="mt-1 text-sm font-semibold">
                           {selectedPackage.name}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-[#8A949E]">Dòng xe</p>
+                        <p className="text-xs text-cs-muted">Dòng xe</p>
                         <p className="mt-1 text-sm font-semibold">
                           {modelLabel(selectedPackage.vehicle_model)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-[#8A949E]">
+                        <p className="text-xs text-cs-muted">
                           Giá ước tính
                         </p>
                         <p className="mt-1 text-sm font-semibold">
@@ -1399,7 +1360,7 @@ function MaintenancePackages() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-[#8A949E]">Trạng thái</p>
+                        <p className="text-xs text-cs-muted">Trạng thái</p>
                         <p className="mt-1 text-sm font-semibold">
                           {selectedPackage.status === "ACTIVE"
                             ? "Đang hoạt động"
@@ -1407,7 +1368,7 @@ function MaintenancePackages() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-[#8A949E]">Mốc km</p>
+                        <p className="text-xs text-cs-muted">Mốc km</p>
                         <p className="mt-1 text-sm font-semibold">
                           {selectedPackage.mileage_milestone
                             ? `${new Intl.NumberFormat("vi-VN").format(selectedPackage.mileage_milestone)} km`
@@ -1415,7 +1376,7 @@ function MaintenancePackages() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-[#8A949E]">Mốc tháng</p>
+                        <p className="text-xs text-cs-muted">Mốc tháng</p>
                         <p className="mt-1 text-sm font-semibold">
                           {selectedPackage.month_milestone
                             ? `${selectedPackage.month_milestone} tháng`
@@ -1426,7 +1387,7 @@ function MaintenancePackages() {
 
                     <div>
                       <p className="text-xs font-bold">Mô tả</p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#66717C]">
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-cs-muted">
                         {selectedPackage.description || "Chưa có mô tả."}
                       </p>
                     </div>
@@ -1444,14 +1405,14 @@ function MaintenancePackages() {
                             <span className="text-xs font-semibold">
                               {service.name}
                             </span>
-                            <span className="text-xs text-[#66717C]">
+                            <span className="text-xs text-cs-muted">
                               SL {service.pivot?.quantity ?? 1} ·{" "}
                               {formatPrice(service.base_price)}
                             </span>
                           </div>
                         ))}
                         {selectedPackage.services.length === 0 && (
-                          <p className="text-xs text-[#8A949E]">
+                          <p className="text-xs text-cs-muted">
                             Chưa gắn dịch vụ.
                           </p>
                         )}
@@ -1472,18 +1433,18 @@ function MaintenancePackages() {
                               <p className="text-xs font-semibold">
                                 {part.name}
                               </p>
-                              <p className="mt-1 text-[11px] text-[#8A949E]">
+                              <p className="mt-1 text-[11px] text-cs-muted">
                                 {part.sku}
                               </p>
                             </div>
-                            <span className="text-xs text-[#66717C]">
+                            <span className="text-xs text-cs-muted">
                               SL {part.pivot?.quantity ?? 1} ·{" "}
                               {formatPrice(part.sell_price)}
                             </span>
                           </div>
                         ))}
                         {selectedPackage.parts.length === 0 && (
-                          <p className="text-xs text-[#8A949E]">
+                          <p className="text-xs text-cs-muted">
                             Chưa gắn phụ tùng.
                           </p>
                         )}
@@ -1491,7 +1452,7 @@ function MaintenancePackages() {
                     </div>
                   </div>
                 ) : (
-                  <p className="py-6 text-sm text-[#66717C]">
+                  <p className="py-6 text-sm text-cs-muted">
                     Không có thông tin gói bảo dưỡng.
                   </p>
                 )}
@@ -1500,7 +1461,7 @@ function MaintenancePackages() {
                   <button
                     type="button"
                     onClick={() => setModal(null)}
-                    className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold hover:bg-[#F3F4F2]"
+                    className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold hover:bg-cs-surface-2"
                   >
                     Đóng
                   </button>
@@ -1516,8 +1477,7 @@ function MaintenancePackages() {
                 </div>
               </>
             )}
-          </section>
-        </div>
+          </Modal>
       )}
     </div>
   );

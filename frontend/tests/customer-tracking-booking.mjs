@@ -9,7 +9,7 @@ const customerCss = read('src/styles/atelier-customer-pages.css');
 assert.match(tracking,/getMyRepairOrderDetail\(order\.id\)/,'Tracking must read actual Laravel history');
 assert.match(tracking,/statusHistory \?\? detail\?\.status_history/,'Read actual API history keys');
 assert.match(tracking,/Nhật ký gần đây/);
-assert.match(tracking,/at-tracking-timeline/);
+assert.match(tracking,/<section aria-label="Tiến độ công việc">[\s\S]*<ol/,'Progress timeline must be an ordered list');
 assert.match(tracking,/WAITING_FOR_PARTS/);
 assert.match(tracking,/QUOTING/);
 assert.match(tracking,/isEarlyClosed/,'Do not mark bypassed workflow as completed');

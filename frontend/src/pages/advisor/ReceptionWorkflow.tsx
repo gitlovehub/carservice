@@ -6,7 +6,7 @@ import {
   listReceptionAppointments, receiveRepairOrder, type WorkflowAppointment, type WorkflowOrder,
 } from "../../services/workflowService";
 import { card, input, action, outline, WorkflowTitle, Notice, Status } from "./WorkflowUI";
-import { errorText } from "./workflowFormat";
+import { errorText, formatSlot } from "./workflowFormat";
 import CustomerRequestSummary from "./CustomerRequestSummary";
 
 export default function ReceptionWorkflow() {
@@ -62,7 +62,7 @@ export default function ReceptionWorkflow() {
     if (!selected || selected.status !== "PENDING") return;
     const approved = await confirm({
       title: "Xác minh lịch hẹn với khách", reference: selected.appointment_code, phone: selected.customer?.phone,
-      description: `Hãy gọi ${selected.customer?.full_name || "khách hàng"} qua ${selected.customer?.phone || "số điện thoại trên hồ sơ"} để xác nhận thời gian ${selected.appointment_date} lúc ${selected.appointment_time}. Không xác nhận nếu chưa được khách đồng ý.`,
+      description: `Hãy gọi ${selected.customer?.full_name || "khách hàng"} qua ${selected.customer?.phone || "số điện thoại trên hồ sơ"} để xác nhận thời gian ${formatSlot(selected.appointment_date, selected.appointment_time)}. Không xác nhận nếu chưa được khách đồng ý.`,
       confirmText: "Khách đồng ý – Xác nhận", cancelText: "Chưa xác minh / Để sau",
       checklist: ["Đã trao đổi trực tiếp với khách về xe, dịch vụ và giờ hẹn.", "Khách đồng ý lịch hẹn và gara có khả năng tiếp nhận."],
     });
@@ -88,7 +88,7 @@ export default function ReceptionWorkflow() {
     setWorking(true); setError(""); setMessage("");
     try {
       const updated = await checkInConfirmedAppointment(selected.id);
-      setSelected(updated); notify("Đã xác nhận xe đến gara và tiếp nhận thành công.", "success"); setMessage("Đã check-in. Tiếp theo hãy ghi tình trạng xe để tạo một phiếu sửa chữa.");
+      setSelected(updated); notify("Đã xác nhận xe đến gara và tiếp nhận thành công.", "success"); setMessage("Đã nhận xe. Tiếp theo hãy ghi tình trạng xe để tạo một phiếu sửa chữa.");
       const existing = await findOrderForAppointment(selected.id);
       setOrder(existing);
       await refresh();
@@ -127,8 +127,8 @@ export default function ReceptionWorkflow() {
     finally { setWorking(false); }
   }
 
-  return <main className="mx-auto max-w-6xl pb-12">
-    <WorkflowTitle label="SERVICE DESK / RECEPTION" title="Tiếp nhận xe" sub="Lịch chờ → xác nhận → check-in → lập một phiếu sửa chữa. Kết quả cập nhật trực tiếp trên Laravel."/>
+  return <main className="page-container">
+    <WorkflowTitle label="QUẦY DỊCH VỤ / TIẾP NHẬN" title="Tiếp nhận xe" sub="Lịch chờ → xác nhận → nhận xe → lập phiếu sửa chữa. Mỗi lịch hẹn chỉ có một phiếu."/>
     {error && <Notice tone="error">{error}</Notice>}
     {message && <Notice tone="success">{message}</Notice>}
     <div className="grid gap-6 xl:grid-cols-[minmax(310px,0.8fr)_minmax(0,1.2fr)]">
@@ -140,24 +140,24 @@ export default function ReceptionWorkflow() {
           {appointments.map(item => <button key={item.id} type="button" onClick={() => selectAppointment(item.id)} className={`w-full rounded-xl border p-4 text-left transition hover:border-cs-accent hover:bg-cs-soft ${selectedId === item.id ? "border-cs-accent bg-cs-soft" : "border-cs-border"}`}>
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><strong className="text-sm text-cs-text">{item.appointment_code || `Lịch #${item.id}`}</strong><Status status={item.status}/></div>
             <p className="text-sm text-cs-text">{item.customer?.full_name || `Khách #${item.customer_id || "?"}`} — {item.vehicle?.license_plate || "Chưa có biển số"}</p>
-            <p className="mt-1 text-xs text-cs-muted">{item.appointment_date} · {item.appointment_time}</p>
+            <p className="mt-1 text-xs text-cs-muted">{formatSlot(item.appointment_date, item.appointment_time)}</p>
           </button>)}
         </div>
         <Link to="/advisor/appointments" className={`${outline} mt-5`}>Xem đầy đủ danh sách lịch →</Link>
       </section>
       <section className={card}>
         {selectedId > 0 && busy ? <div className="py-16 text-center text-cs-muted">Đang kiểm tra lịch và phiếu đã tồn tại...</div> : !selected ? <div className="py-16 text-center text-cs-muted">Chọn một lịch để thực hiện tiếp nhận. Bạn cũng có thể vào đây từ nút Tiếp nhận trên trang Lịch hẹn.</div> : <>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-cs-accent">Lịch {selected.appointment_code || selected.id}</p><h2 className="mt-2 text-xl font-bold text-cs-text">{selected.customer?.full_name || "Khách hàng"}</h2></div><Status status={selected.status}/></div>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-cs-accent-text">Lịch {selected.appointment_code || selected.id}</p><h2 className="mt-2 text-xl font-bold text-cs-text">{selected.customer?.full_name || "Khách hàng"}</h2></div><Status status={selected.status}/></div>
           <dl className="grid gap-3 border-y border-cs-border py-5 text-sm sm:grid-cols-2">
             <div><dt className="text-xs text-cs-muted">Khách hàng</dt><dd className="mt-1 text-cs-text">{selected.customer?.full_name || `#${selected.customer_id || "?"}`}</dd></div>
             <div><dt className="text-xs text-cs-muted">Điện thoại</dt><dd className="mt-1 text-cs-text">{selected.customer?.phone || "—"}</dd></div>
             <div><dt className="text-xs text-cs-muted">Xe</dt><dd className="mt-1 text-cs-text">{selected.vehicle?.license_plate || `#${selected.vehicle_id || "?"}`}</dd></div>
-            <div><dt className="text-xs text-cs-muted">Ngày / giờ</dt><dd className="mt-1 text-cs-text">{selected.appointment_date} · {selected.appointment_time}</dd></div>
+            <div><dt className="text-xs text-cs-muted">Ngày / giờ</dt><dd className="mt-1 text-cs-text">{formatSlot(selected.appointment_date, selected.appointment_time)}</dd></div>
             <div className="sm:col-span-2"><dt className="mb-2 text-xs text-cs-muted">Khách yêu cầu</dt><dd><CustomerRequestSummary request={selected}/></dd></div>
           </dl>
           <ol className="my-6 flex flex-wrap gap-2 text-xs font-semibold text-cs-muted"><li className="rounded-full bg-cs-soft px-3 py-2">1. Đặt lịch</li><li className="rounded-full bg-cs-soft px-3 py-2">2. Xác nhận</li><li className="rounded-full bg-cs-soft px-3 py-2">3. Check-in</li><li className="rounded-full bg-cs-soft px-3 py-2">4. Phiếu sửa chữa</li></ol>
           {selected.status === "PENDING" && <div><p className="mb-4 text-sm text-cs-muted">Cần xác nhận lịch trước khi tiếp nhận.</p><button type="button" className={action} disabled={working} onClick={() => void handleConfirm()}>{working ? "Đang xử lý..." : "Xác nhận lịch hẹn"}</button></div>}
-          {selected.status === "CONFIRMED" && <div><p className="mb-4 text-sm text-cs-muted">Chỉ check-in sau khi xe thực sự đến gara.</p><button type="button" className={action} disabled={working} onClick={() => void handleCheckIn()}>{working ? "Đang tiếp nhận..." : "Tiếp nhận xe (CHECKED_IN)"}</button></div>}
+          {selected.status === "CONFIRMED" && <div><p className="mb-4 text-sm text-cs-muted">Chỉ nhận xe sau khi xe thực sự đến gara.</p><button type="button" className={action} disabled={working} onClick={() => void handleCheckIn()}>{working ? "Đang tiếp nhận..." : "Xác nhận xe đã đến"}</button></div>}
           {selected.status === "CHECKED_IN" && (order ? <div><Notice tone="success">Lịch đã có phiếu {order.repair_order_code || `#${order.id}`}. Không được tạo phiếu thứ hai.</Notice><Link className={action} to={`/advisor/service-orders/${order.id}`}>Xem phiếu sửa chữa →</Link></div>
             : <form onSubmit={event => void submitReceive(event)} className="space-y-4"><h3 className="text-lg font-bold text-cs-text">Lập phiếu sửa chữa (RECEIVED)</h3>
               <label className="block text-sm font-semibold text-cs-text">Số km khi tiếp nhận (không bắt buộc)<input className={input} type="number" min="0" step="1" inputMode="numeric" value={mileage} onChange={event => setMileage(event.target.value)} placeholder="Ví dụ 35000"/></label>

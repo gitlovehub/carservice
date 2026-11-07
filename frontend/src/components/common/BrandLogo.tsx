@@ -58,7 +58,7 @@ export default function BrandLogo({
         {subtitle && (
           <p
             className={`mt-1.5 font-semibold uppercase ${subtitleClass} ${
-              isDark ? "text-[#AEB8C1]" : "text-[#8A949E]"
+              isDark ? "text-cs-muted" : "text-cs-muted"
             }`}
           >
             {subtitle}

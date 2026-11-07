@@ -97,7 +97,7 @@ function Reviews() {
   };
 
   return (
-    <div className="at-customer-reviews min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="at-customer-reviews min-h-screen bg-cs-bg text-[#20252B]">
       <CustomerHeader />
       <CustomerTopbar />
 
@@ -116,7 +116,7 @@ function Reviews() {
               Đánh giá dịch vụ
             </h1>
 
-            <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#66717C]">
+            <p className="mt-2 max-w-2xl text-[13px] leading-6 text-cs-muted">
               Chia sẻ trải nghiệm của bạn sau khi bảo dưỡng, sửa chữa xe tại CarService. Ý kiến của bạn giúp chúng tôi không ngừng hoàn thiện.
             </p>
           </div>
@@ -147,7 +147,7 @@ function Reviews() {
                     <select
                       value={selectedOrderId}
                       onChange={(e) => setSelectedOrderId(e.target.value)}
-                      className="h-11 w-full cursor-pointer rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-3 font-medium outline-none focus:border-[#D6A85F] focus:bg-white"
+                      className="h-11 w-full cursor-pointer rounded-xl border border-[#DDE1E4] bg-cs-surface-2 px-3 font-medium outline-none focus:border-[#D6A85F] focus:bg-white"
                     >
                       {finishedOrders.map((o) => {
                         const isRev = reviewedIds.has(o.id);
@@ -174,14 +174,14 @@ function Reviews() {
                         className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl text-base transition ${
                           item <= rating
                             ? "bg-[#D6A85F] text-[#3A3020]"
-                            : "border border-[#DDE1E4] bg-white text-[#8A949E] hover:border-[#D6A85F]"
+                            : "border border-[#DDE1E4] bg-white text-cs-muted hover:border-[#D6A85F]"
                         }`}
                       >
                         ★
                       </button>
                     ))}
                   </div>
-                  <p className="mt-1.5 text-[12px] text-[#8A949E]">
+                  <p className="mt-1.5 text-[12px] text-cs-muted">
                     {rating === 5
                       ? "Rất hài lòng (5/5 sao)"
                       : rating === 4
@@ -264,13 +264,13 @@ function Reviews() {
                   </h2>
                 </div>
 
-                <div className="rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[12px] font-semibold text-[#66717C]">
+                <div className="rounded-full bg-cs-surface-2 px-3 py-1.5 text-[12px] font-semibold text-cs-muted">
                   {reviews.length} đánh giá
                 </div>
               </div>
 
               {loading ? (
-                <p className="p-12 text-center text-xs text-[#8A949E]">Đang tải đánh giá...</p>
+                <p className="p-12 text-center text-xs text-cs-muted">Đang tải đánh giá...</p>
               ) : error ? (
                 <div className="p-8 text-center text-xs text-red-600">
                   <p>{error}</p>
@@ -289,7 +289,7 @@ function Reviews() {
                     return (
                       <div
                         key={rev.id}
-                        className="rounded-2xl border border-[#E5E8EA] bg-[#FAFAF9] p-5 transition hover:border-[#D6A85F]"
+                        className="rounded-2xl border border-[#E5E8EA] bg-cs-surface-2 p-5 transition hover:border-[#D6A85F]"
                       >
                         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                           <div>
@@ -351,7 +351,7 @@ function Reviews() {
                 <p className="text-[13px] font-semibold text-[#20252B]">
                   Góp ý của bạn rất quan trọng
                 </p>
-                <p className="mt-1 text-[12px] leading-5 text-[#7B858F]">
+                <p className="mt-1 text-[12px] leading-5 text-cs-muted">
                   Hãy đánh giá trung thực để CarService không ngừng nâng cao tay nghề kỹ thuật và chất lượng phục vụ khách hàng.
                 </p>
               </div>

@@ -7,6 +7,7 @@ import {
   repairStatusLabel,
   type CustomerRepairOrder,
 } from "../../services/customerApi";
+import { StatusBadge } from "../../components/ui/Badge";
 
 // Presentation stages follow the ATELIER timeline, mapped to the actual Laravel
 // repair-order state machine. No demo statuses are sent to the backend.
@@ -26,18 +27,12 @@ function stageIndex(status: string): number {
   return stages.findIndex(stage => stage.status === status);
 }
 
-function statusColor(status: string) {
-  if (status === "WAITING_APPROVAL" || status === "WAITING_FOR_PARTS" || status === "QUOTING") return "amber";
-  if (status === "COMPLETED" || status === "HANDED_OVER") return "green";
-  if (status === "CLOSED") return "muted";
-  return "blue";
-}
-
+// Màu theo token trạng thái (đổi theo sáng/tối), cùng bảng màu với StatusBadge.
 const statusColorClasses: Record<"blue" | "amber" | "green" | "muted", string> = {
-  blue: "bg-[#e5effe] text-[#275184] dark:bg-[#263d5d] dark:text-[#a9ccff]",
-  amber: "bg-[#fff0dc] text-[#955c12] dark:bg-[#4b3522] dark:text-[#f4be69]",
-  green: "bg-[#e3f5e9] text-[#276044] dark:bg-[#203f32] dark:text-[#96d9ae]",
-  muted: "bg-[#eceff3] text-[#535e6d] dark:bg-[#2a3039] dark:text-[#b1b8c5]",
+  blue: "bg-info-soft text-info-fg",
+  amber: "bg-warning-soft text-warning-fg",
+  green: "bg-success-soft text-success-fg",
+  muted: "bg-neutral-soft text-neutral-fg",
 };
 
 function formatEventTime(date?: string | null) {
@@ -74,16 +69,14 @@ function TrackingCard({ order }: { order: CustomerRepairOrder }) {
     <article className="mb-5 rounded-[18px] border bg-[var(--cs-surface,#fff)] border-[var(--cs-border,#e9e9e6)] p-5 sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-5 border-b border-[var(--cs-border,#e9e9e6)] pb-6 [&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:tracking-normal">
         <div>
-          <p className="mb-2 text-[13px] font-extrabold tracking-[0.11em] text-[#cf2935]">{order.repair_order_code}</p>
+          <p className="mb-2 text-[13px] font-extrabold tracking-[0.11em] text-cs-accent-text">{order.repair_order_code}</p>
           <h2>{getVehicleName(order.vehicle)}</h2>
           <p className="mt-1 text-[13px] text-[var(--cs-muted,#757575)]">
             {order.vehicle?.license_plate ?? "Chưa có biển số"}
             {order.received_at ? ` · Tiếp nhận ${formatEventTime(order.received_at)}` : ""}
           </p>
         </div>
-        <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-2 text-[12px] font-extrabold ${statusColorClasses[statusColor(status)]}`}>
-          ● {repairStatusLabel[status] ?? status}
-        </span>
+        <StatusBadge domain="repair" status={status} audience="customer"/>
       </div>
       <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12 [&_h3]:mb-5 [&_h3]:text-[17px] [&_h3]:font-extrabold">
         <section aria-label="Tiến độ công việc">
@@ -139,7 +132,7 @@ export default function RepairStatus() {
   return <section className="min-h-[calc(100dvh-180px)] px-5 py-12 sm:px-6 sm:pb-16 bg-[var(--cs-bg,#f7f7f6)] text-[var(--cs-text,#191919)] ">
     <div className="mx-auto w-full max-w-[1200px]">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-5 [&_h1]:text-[clamp(29px,4vw,46px)] [&_h1]:font-extrabold [&_h1]:tracking-normal [&_h1]:leading-[1.16] [&_p:not(:first-child)]:mt-2.5 [&_p:not(:first-child)]:text-sm [&_p:not(:first-child)]:text-[var(--cs-muted,#757575)]"><div>
-        <p className="mb-2.5 text-xs font-extrabold tracking-[0.16em] text-[#cf2935]">MY GARAGE / TRACKING</p>
+        <p className="mb-2.5 text-xs font-extrabold tracking-[0.16em] text-cs-accent-text">GARA CỦA TÔI / TIẾN ĐỘ</p>
         <h1>Hành trình sửa chữa</h1>
         <p>Biết xe đang ở công đoạn nào và công việc tiếp theo là gì.</p>
       </div></header>

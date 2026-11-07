@@ -251,7 +251,7 @@ function CustomerDashboard() {
       await navigator.clipboard.writeText(HOTLINE_DISPLAY);
       showToast(`Đã sao chép số ${HOTLINE_DISPLAY}.`, "success");
     } catch {
-      showToast(`Hotline: ${HOTLINE_DISPLAY}`, "info");
+      showToast(`Đường dây nóng: ${HOTLINE_DISPLAY}`, "info");
     }
   };
 
@@ -298,7 +298,7 @@ function CustomerDashboard() {
   ];
 
   return (
-    <div className="at-customer-dashboard min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="at-customer-dashboard min-h-screen bg-cs-bg text-[#20252B]">
 
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
@@ -315,7 +315,7 @@ function CustomerDashboard() {
               <h1 className="mt-2 text-[28px] font-bold tracking-normal text-[#1F2933]">
                 Xin chào, {getUserDisplayName(user)}
               </h1>
-              <p className="mt-1.5 text-[13px] leading-6 text-[#66717C]">
+              <p className="mt-1.5 text-[13px] leading-6 text-cs-muted">
                 {loading
                   ? "Đang đồng bộ dữ liệu của bạn..."
                   : "Theo dõi xe đang ở gara, lịch hẹn và toàn bộ lịch sử dịch vụ tại một nơi."}
@@ -361,10 +361,10 @@ function CustomerDashboard() {
                 className="group flex min-h-[116px] cursor-pointer flex-col justify-between rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)] transition hover:border-[#D6A85F] hover:shadow-md"
               >
                 <div className="flex items-start justify-between">
-                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-cs-muted">
                     {kpi.label}
                   </p>
-                  <span className="text-sm text-[#B5BDC5] transition group-hover:translate-x-0.5 group-hover:text-[#D6A85F]">
+                  <span className="text-sm text-cs-muted transition group-hover:translate-x-0.5 group-hover:text-[#D6A85F]">
                     →
                   </span>
                 </div>
@@ -372,7 +372,7 @@ function CustomerDashboard() {
                   <p className="text-2xl font-bold tracking-normal text-[#20252B]">
                     {loading ? "…" : kpi.value}
                   </p>
-                  <p className="mt-1 text-[12px] text-[#66717C]">{loading ? " " : kpi.hint}</p>
+                  <p className="mt-1 text-[12px] text-cs-muted">{loading ? " " : kpi.hint}</p>
                 </div>
               </Link>
             ))}
@@ -400,7 +400,7 @@ function CustomerDashboard() {
                             {activeOrder.vehicle?.license_plate ?? "—"}
                           </span>
                         </h2>
-                        <p className="mt-1 text-xs text-[#66717C]">
+                        <p className="mt-1 text-xs text-cs-muted">
                           Phiếu <strong>{activeOrder.repair_order_code}</strong> · Tiếp nhận{" "}
                           {formatDate(activeOrder.received_at)} {formatTime(activeOrder.received_at?.slice(11))} ·{" "}
                           {repairStatusLabel[activeOrder.status] ?? activeOrder.status}
@@ -450,14 +450,14 @@ function CustomerDashboard() {
                                   ? "border-emerald-500 bg-emerald-500 text-white"
                                   : state === "active"
                                     ? "border-amber-500 bg-amber-50 text-amber-700 ring-4 ring-amber-100"
-                                    : "border-[#E1E4E6] bg-white text-[#8A949E]"
+                                    : "border-[#E1E4E6] bg-white text-cs-muted"
                               }`}
                             >
                               {state === "done" ? "✓" : step.n}
                             </button>
                             <p
                               className={`mt-2 text-xs font-bold ${
-                                state === "todo" ? "text-[#8A949E]" : "text-[#20252B]"
+                                state === "todo" ? "text-cs-muted" : "text-[#20252B]"
                               }`}
                             >
                               {step.title}
@@ -474,7 +474,7 @@ function CustomerDashboard() {
                     </p>
                     {!loading && (
                       <>
-                        <p className="mt-1 text-xs text-[#8A949E]">
+                        <p className="mt-1 text-xs text-cs-muted">
                           Khi gara tiếp nhận xe của bạn, tiến độ sẽ hiển thị tại đây.
                         </p>
                         <Link
@@ -493,7 +493,7 @@ function CustomerDashboard() {
               <section className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
                 <div>
                   <h2 className="text-lg font-bold text-[#1F2933]">Lịch sử dịch vụ</h2>
-                  <p className="mt-0.5 text-xs text-[#66717C]">
+                  <p className="mt-0.5 text-xs text-cs-muted">
                     Các phiếu bảo dưỡng, sửa chữa đã hoàn tất và chi phí từng lần.
                   </p>
                 </div>
@@ -505,13 +505,13 @@ function CustomerDashboard() {
                       value={searchKeyword}
                       onChange={(e) => setSearchKeyword(e.target.value)}
                       placeholder="Tìm mã phiếu, biển số, tên xe..."
-                      className="h-10 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3.5 pr-8 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
+                      className="h-10 w-full rounded-xl border border-[#E1E4E6] bg-cs-bg px-3.5 pr-8 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
                     />
                     {searchKeyword && (
                       <button
                         type="button"
                         onClick={() => setSearchKeyword("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-[#8A949E] hover:text-[#20252B]"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-cs-muted hover:text-[#20252B]"
                       >
                         ✕
                       </button>
@@ -520,7 +520,7 @@ function CustomerDashboard() {
                   <select
                     value={vehicleFilter}
                     onChange={(e) => setVehicleFilter(e.target.value)}
-                    className="h-10 w-full cursor-pointer rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
+                    className="h-10 w-full cursor-pointer rounded-xl border border-[#E1E4E6] bg-cs-bg px-3 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
                   >
                     <option value="ALL">Tất cả xe</option>
                     {vehicles.map((v) => (
@@ -533,13 +533,13 @@ function CustomerDashboard() {
 
                 <div className="mt-5 divide-y divide-[#EEF0F2] rounded-xl border border-[#E1E4E6]">
                   {loading ? (
-                    <p className="p-10 text-center text-xs text-[#8A949E]">Đang tải lịch sử...</p>
+                    <p className="p-10 text-center text-xs text-cs-muted">Đang tải lịch sử...</p>
                   ) : filteredHistory.length === 0 ? (
                     <div className="p-10 text-center">
                       <p className="text-sm font-semibold text-[#20252B]">
                         {history.length === 0 ? "Chưa có lịch sử dịch vụ" : "Không có phiếu phù hợp"}
                       </p>
-                      <p className="mt-1 text-xs text-[#8A949E]">
+                      <p className="mt-1 text-xs text-cs-muted">
                         {history.length === 0
                           ? "Sau khi hoàn tất dịch vụ đầu tiên, phiếu sẽ xuất hiện tại đây."
                           : "Thử đổi từ khóa hoặc bộ lọc xe."}
@@ -562,16 +562,16 @@ function CustomerDashboard() {
                       <div
                         key={o.id}
                         onClick={() => void openOrderDetail(o)}
-                        className="flex cursor-pointer flex-col gap-3 p-4 transition hover:bg-[#FAF8F5] md:flex-row md:items-center md:justify-between"
+                        className="flex cursor-pointer flex-col gap-3 p-4 transition hover:bg-cs-surface-2 md:flex-row md:items-center md:justify-between"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2 text-xs">
-                            <span className="rounded-md border border-[#E5B869]/50 bg-[#FAF8F5] px-2 py-0.5 font-mono font-bold text-[#8F641B]">
+                            <span className="rounded-md border border-[#E5B869]/50 bg-cs-surface-2 px-2 py-0.5 font-mono font-bold text-[#8F641B]">
                               {o.vehicle?.license_plate ?? "—"}
                             </span>
                             <span className="font-semibold text-[#20252B]">{getVehicleName(o.vehicle)}</span>
                             {o.mileage_received != null && (
-                              <span className="text-[#8A949E]">
+                              <span className="text-cs-muted">
                                 · {Number(o.mileage_received).toLocaleString("vi-VN")} km
                               </span>
                             )}
@@ -579,7 +579,7 @@ function CustomerDashboard() {
                               {repairStatusLabel[o.status] ?? o.status}
                             </span>
                           </div>
-                          <p className="mt-1.5 text-[12px] text-[#66717C]">
+                          <p className="mt-1.5 text-[12px] text-cs-muted">
                             Phiếu <strong>{o.repair_order_code}</strong> · Hoàn tất{" "}
                             {formatDate(o.completed_at ?? o.handed_over_at ?? o.received_at)}
                           </p>
@@ -606,7 +606,7 @@ function CustomerDashboard() {
                                 e.stopPropagation();
                                 navigate(o.vehicle_id ? `/booking?vehicle_id=${o.vehicle_id}` : "/booking");
                               }}
-                              className="cursor-pointer rounded-lg border border-[#E5B869]/50 bg-[#FAF8F5] px-3 py-1.5 text-[12px] font-bold text-[#8F641B] transition hover:bg-[#F3E8D2]"
+                              className="cursor-pointer rounded-lg border border-[#E5B869]/50 bg-cs-surface-2 px-3 py-1.5 text-[12px] font-bold text-[#8F641B] transition hover:bg-[#F3E8D2]"
                             >
                               Đặt lịch lại
                             </button>
@@ -634,7 +634,7 @@ function CustomerDashboard() {
 
                 <div className="mt-4 space-y-3">
                   {loading ? (
-                    <p className="text-xs text-[#8A949E]">Đang tải...</p>
+                    <p className="text-xs text-cs-muted">Đang tải...</p>
                   ) : upcoming.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-[#E1E4E6] p-5 text-center">
                       <p className="text-xs font-semibold text-[#20252B]">Chưa có lịch hẹn nào</p>
@@ -650,7 +650,7 @@ function CustomerDashboard() {
                       <Link
                         key={a.id}
                         to="/customer/appointments"
-                        className="block cursor-pointer rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4 transition hover:border-[#D6A85F]"
+                        className="block cursor-pointer rounded-xl border border-[#E1E4E6] bg-cs-bg p-4 transition hover:border-[#D6A85F]"
                       >
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-bold text-[#20252B]">
@@ -660,16 +660,16 @@ function CustomerDashboard() {
                             className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                               a.status === "CONFIRMED"
                                 ? "bg-[#F3E8D2] text-[#3A3020]"
-                                : "bg-white text-[#66717C]"
+                                : "bg-white text-cs-muted"
                             }`}
                           >
                             {appointmentStatusLabel[a.status] ?? a.status}
                           </span>
                         </div>
-                        <p className="mt-1.5 text-[12px] text-[#66717C]">
+                        <p className="mt-1.5 text-[12px] text-cs-muted">
                           {getVehicleName(a.vehicle)} · {a.vehicle?.license_plate ?? "—"}
                         </p>
-                        <p className="mt-0.5 text-[12px] text-[#8A949E]">
+                        <p className="mt-0.5 text-[12px] text-cs-muted">
                           {requestTypeLabel[a.request_type] ?? a.request_type} · {a.appointment_code}
                         </p>
                       </Link>
@@ -680,13 +680,13 @@ function CustomerDashboard() {
 
               <section className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
                 <h2 className="text-base font-bold text-[#1F2933]">Cần hỗ trợ?</h2>
-                <p className="mt-0.5 text-xs leading-5 text-[#66717C]">
+                <p className="mt-0.5 text-xs leading-5 text-cs-muted">
                   Liên hệ gara khi xe gặp sự cố hoặc cần tư vấn, báo giá.
                 </p>
 
                 <div className="mt-4 rounded-xl bg-[#1F2933] p-4 text-white">
                   <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#E5B869]">
-                    Hotline hỗ trợ kỹ thuật
+                    Đường dây nóng hỗ trợ kỹ thuật
                   </p>
                   <a
                     href={`tel:${HOTLINE_TEL}`}
@@ -705,7 +705,7 @@ function CustomerDashboard() {
 
                 <Link
                   to="/contact"
-                  className="mt-3 block cursor-pointer rounded-xl border border-[#E1E4E6] py-2.5 text-center text-xs font-bold text-[#20252B] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
+                  className="mt-3 block cursor-pointer rounded-xl border border-[#E1E4E6] py-2.5 text-center text-xs font-bold text-[#20252B] transition hover:border-[#D6A85F] hover:bg-cs-bg"
                 >
                   Gửi yêu cầu hỗ trợ
                 </Link>
@@ -742,14 +742,14 @@ function CustomerDashboard() {
             </div>
 
             {detailLoading ? (
-              <p className="py-10 text-center text-xs text-[#8A949E]">Đang tải chi tiết...</p>
+              <p className="py-10 text-center text-xs text-cs-muted">Đang tải chi tiết...</p>
             ) : detailError ? (
               <p className="my-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
                 {detailError}
               </p>
             ) : (
               <div className="mt-4 space-y-4 text-xs">
-                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-[#F7F7F5] p-4">
+                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-cs-bg p-4">
                   <div>
                     <p className="text-slate-400">Trạng thái</p>
                     <p className="mt-0.5 font-bold text-slate-800">
@@ -795,7 +795,7 @@ function CustomerDashboard() {
                     </p>
                     <div className="overflow-x-auto rounded-xl border border-slate-200">
                       <table className="w-full text-left">
-                        <thead className="border-b border-slate-200 bg-[#FAF8F5] font-bold text-slate-500">
+                        <thead className="border-b border-slate-200 bg-cs-surface-2 font-bold text-slate-500">
                           <tr>
                             <th className="px-3 py-2.5">Nội dung</th>
                             <th className="px-3 py-2.5 text-center">SL</th>
@@ -817,7 +817,7 @@ function CustomerDashboard() {
                             </tr>
                           ))}
                         </tbody>
-                        <tfoot className="border-t border-slate-200 bg-[#FAF8F5] font-bold">
+                        <tfoot className="border-t border-slate-200 bg-cs-surface-2 font-bold">
                           <tr>
                             <td colSpan={3} className="px-3 py-3 text-right text-slate-700">
                               Tổng cộng
