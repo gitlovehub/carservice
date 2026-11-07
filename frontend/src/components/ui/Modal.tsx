@@ -95,13 +95,28 @@ function OverlayHeader({ titleId, descId, title, description, onClose, dismissib
 
 const modalWidth = { sm: "max-w-md", md: "max-w-xl", lg: "max-w-3xl", xl: "max-w-5xl" } as const;
 
-/** Hộp thoại giữa màn hình. Trên điện thoại chiếm gần toàn chiều cao, nội dung tự cuộn. */
-export function Modal({ size = "md", ...props }: OverlayProps & { size?: keyof typeof modalWidth }) {
+/**
+ * Hộp thoại giữa màn hình. Trên điện thoại chiếm gần toàn chiều cao, nội dung tự cuộn.
+ *
+ * `bare`: dành cho modal cũ đã có sẵn header/form riêng — giữ nguyên nội dung trang, chỉ dùng hành vi chung
+ * (Esc, khóa cuộn, giữ & trả focus, role="dialog", aria-modal, màu theo vai trò). `title` (chuỗi) thành aria-label;
+ * `className` thay toàn bộ class của khung (bề rộng, bo góc, nền…).
+ */
+export function Modal({ size = "md", bare = false, ...props }: OverlayProps & { size?: keyof typeof modalWidth; bare?: boolean }) {
   const { open, onClose, title, description, children, footer, dismissible = true, className = "" } = props;
   const area = useOverlayArea();
   const { panelRef, rendered, state } = useOverlay(props);
   const titleId = useId(), descId = useId();
   if (!rendered) return null;
+  // Render tại chỗ (không portal): modal cũ còn class màu cố định, cần nằm trong .cs-shell
+  // để các quy tắc dark-mode cầu nối trong shell.css vẫn áp dụng như trước.
+  if (bare) return <div className="cs-overlay cs-feedback-layer fixed inset-0 z-[300] flex items-center justify-center overflow-y-auto p-4" data-area={area} data-state={state}>
+    <div className="cs-overlay-backdrop fixed inset-0 bg-cs-overlay" aria-hidden="true" onMouseDown={() => { if (dismissible && open) onClose(); }}/>
+    <div ref={panelRef} role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : undefined} tabIndex={-1}
+      className={`cs-modal-panel relative text-cs-text outline-none ${className}`}>
+      {children}
+    </div>
+  </div>;
   return createPortal(
     <div className="cs-overlay cs-feedback-layer fixed inset-0 z-[300] flex items-end justify-center p-0 sm:items-center sm:p-6" data-area={area} data-state={state}>
       <div className="cs-overlay-backdrop absolute inset-0 bg-cs-overlay" aria-hidden="true" onMouseDown={() => { if (dismissible && open) onClose(); }}/>

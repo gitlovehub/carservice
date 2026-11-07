@@ -27,7 +27,7 @@ function CustomerTopbar() {
     <header className="sticky top-0 z-40 flex h-[76px] items-center border-b border-[#E1E4E6] bg-white">
       <Link
         to="/"
-        className="ml-4 flex cursor-pointer items-center gap-2 rounded-xl border border-[#E1E4E6] px-4 py-2.5 text-[12px] font-semibold text-[#66717C] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5] hover:text-[#20252B] lg:ml-6"
+        className="ml-4 flex cursor-pointer items-center gap-2 rounded-xl border border-[#E1E4E6] px-4 py-2.5 text-[12px] font-semibold text-cs-muted transition hover:border-[#D6A85F] hover:bg-cs-bg hover:text-[#20252B] lg:ml-6"
       >
         <span>←</span>
         Trang chủ
@@ -38,7 +38,7 @@ function CustomerTopbar() {
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-[#D6A85F]" />
 
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-cs-muted">
               CARSERVICE
             </p>
           </div>

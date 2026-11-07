@@ -211,7 +211,7 @@ html[data-theme="dark"] .cs-workspace[data-area="admin"] .ws-button-primary{back
 .cs-workspace[data-area="admin"] :is(a,button).hover\:bg-\[\#151D24\]:hover{background:var(--cs-accent-hover)!important;color:var(--cs-accent-contrast)!important;filter:none}
 
 /* Admin module-switch cards, role-safe hover colors (ATELIER). */
-/* AdminHubNav is styled with Tailwind v4 utilities in AdminHubNav.tsx. */
+/* Điều hướng module Admin nằm ở sidebar (layouts/navigation.ts). */
 /* Customer navigation: persist active treatment at booking and alias routes. */
 .cs-customer-layout .cs-public-nav .cs-nav-link{position:relative;color:var(--cs-muted);transition:color .15s}
 .cs-customer-layout .cs-public-nav .cs-nav-link:is(:hover,.is-active){color:var(--cs-text)}

@@ -1,3 +1,4 @@
+import { PageHeader } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useState } from "react";
@@ -111,70 +112,57 @@ function AdminCustomers() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="min-h-screen bg-cs-bg text-[#20252B]">
 
       <div className="lg:ml-[250px]">
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
-            <div className="mb-8">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
-                QUẢN TRỊ HỆ THỐNG / KHÁCH HÀNG
-              </p>
-
-              <h1 className="text-2xl font-bold tracking-normal sm:text-3xl">
-                Quản lý khách hàng
-              </h1>
-
-              <p className="mt-2 text-xs text-[#66717C]">
-                Theo dõi thông tin, số lượng xe và trạng thái khách hàng
-                trong hệ thống.
-              </p>
-            </div>
+            <PageHeader title="Khách hàng" description="Theo dõi thông tin, số lượng xe và trạng thái khách hàng trong hệ thống."/>
 
             <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
                   Tổng khách hàng
                 </p>
                 <p className="mt-4 text-2xl font-bold">
                   {customers.length}
                 </p>
-                <p className="mt-2 text-[11px] text-[#66717C]">
+                <p className="mt-2 text-[11px] text-cs-muted">
                   Khách hàng trong danh sách
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
                   Đang hoạt động
                 </p>
                 <p className="mt-4 text-2xl font-bold text-[#3F7047]">
                   {activeCustomers}
                 </p>
-                <p className="mt-2 text-[11px] text-[#66717C]">
+                <p className="mt-2 text-[11px] text-cs-muted">
                   Khách hàng đang hoạt động
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
                   Tạm khóa
                 </p>
                 <p className="mt-4 text-2xl font-bold text-[#A24A4A]">
                   {lockedCustomers}
                 </p>
-                <p className="mt-2 text-[11px] text-[#66717C]">
+                <p className="mt-2 text-[11px] text-cs-muted">
                   Khách hàng đang bị khóa
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
                   Tổng số xe
                 </p>
                 <p className="mt-4 text-2xl font-bold">{totalCars}</p>
-                <p className="mt-2 text-[11px] text-[#66717C]">
+                <p className="mt-2 text-[11px] text-cs-muted">
                   Xe đã đăng ký trong danh sách
                 </p>
               </div>
@@ -190,7 +178,7 @@ function AdminCustomers() {
                   Khách hàng
                 </h2>
 
-                <p className="mt-1 text-xs text-[#8A949E]">
+                <p className="mt-1 text-xs text-cs-muted">
                   Hiển thị {filteredCustomers.length} / {customers.length}{" "}
                   khách hàng
                 </p>
@@ -205,7 +193,7 @@ function AdminCustomers() {
                     setMessage("");
                   }}
                   placeholder="Tìm mã KH, tên, số điện thoại, email..."
-                  className="w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-4 py-3 text-xs outline-none transition focus:border-[#D6A85F] lg:flex-1"
+                  className="w-full rounded-xl border border-[#E1E4E6] bg-cs-bg px-4 py-3 text-xs outline-none transition focus:border-[#D6A85F] lg:flex-1"
                 />
 
                 <select
@@ -247,22 +235,22 @@ function AdminCustomers() {
                 <table className="w-full min-w-[850px]">
                   <thead>
                     <tr className="border-b border-[#E1E4E6] text-left">
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
                         Mã KH
                       </th>
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
                         Khách hàng
                       </th>
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
                         Liên hệ
                       </th>
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
                         Số xe
                       </th>
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
                         Trạng thái
                       </th>
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
                         Thao tác
                       </th>
                     </tr>
@@ -285,15 +273,15 @@ function AdminCustomers() {
                         </td>
 
                         <td className="px-3 py-4">
-                          <p className="text-xs text-[#66717C]">
+                          <p className="text-xs text-cs-muted">
                             {customer.phone}
                           </p>
-                          <p className="mt-1 text-[11px] text-[#8A949E]">
+                          <p className="mt-1 text-[11px] text-cs-muted">
                             {customer.email}
                           </p>
                         </td>
 
-                        <td className="px-3 py-4 text-xs text-[#66717C]">
+                        <td className="px-3 py-4 text-xs text-cs-muted">
                           {customer.cars} xe
                         </td>
 
@@ -331,10 +319,10 @@ function AdminCustomers() {
 
                 {filteredCustomers.length === 0 && (
                   <div className="py-12 text-center">
-                    <p className="text-sm font-semibold text-[#66717C]">
+                    <p className="text-sm font-semibold text-cs-muted">
                       Không tìm thấy khách hàng
                     </p>
-                    <p className="mt-2 text-xs text-[#8A949E]">
+                    <p className="mt-2 text-xs text-cs-muted">
                       Hãy thử từ khóa khác hoặc thay đổi bộ lọc.
                     </p>
                     <button

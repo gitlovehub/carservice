@@ -76,7 +76,7 @@ function AccountMenu({ area }: { area: WorkArea }) {
     header={<div className="min-w-0">
       <p className="truncate text-small font-semibold text-cs-text">{name}</p>
       {account?.email && <p className="truncate text-caption text-cs-muted">{account.email}</p>}
-      <p className="mt-1 text-caption text-cs-accent">{roleLabel[area]}</p>
+      <p className="mt-1 text-caption text-cs-accent-text">{roleLabel[area]}</p>
     </div>}
     items={[
       { label: "Website công khai", icon: "arrow", onSelect: () => navigate("/") },

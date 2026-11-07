@@ -1,3 +1,4 @@
+import { Modal } from "../../components/ui";
 import { useEffect, useState, useRef, type ChangeEvent } from "react";
 import Header from "../../components/Header";
 import { fetchApi } from "../../services/api";
@@ -399,7 +400,7 @@ function Account() {
   };
 
   return (
-    <div className="at-customer-account min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="at-customer-account min-h-screen bg-cs-bg text-[#20252B]">
       <Header />
 
       {/* Toast Notification */}
@@ -416,14 +417,14 @@ function Account() {
         <section className="border-b border-[#E1E4E6] bg-white">
           <div className="mx-auto max-w-[1280px] px-6 py-14 md:px-8 md:py-16">
             <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-              MY GARAGE / ACCOUNT
+              GARA CỦA TÔI / TÀI KHOẢN
             </p>
 
             <h1 className="mt-3 text-[38px] font-bold tracking-normal text-[#1F2933] md:text-[50px]">
               Hồ sơ của tôi
             </h1>
 
-            <p className="mt-3 max-w-[620px] text-[13px] leading-6 text-[#66717C]">
+            <p className="mt-3 max-w-[620px] text-[13px] leading-6 text-cs-muted">
               Quản lý thông tin cá nhân và các cài đặt tài khoản.
             </p>
           </div>
@@ -499,7 +500,7 @@ function Account() {
                   <button
                     type="button"
                     onClick={handleOpenAvatarModal}
-                    className="mt-4 inline-flex items-center gap-1.5 text-xs text-[#AEB8C1] hover:text-[#D6A85F] transition cursor-pointer font-medium"
+                    className="mt-4 inline-flex items-center gap-1.5 text-xs text-cs-muted hover:text-[#D6A85F] transition cursor-pointer font-medium"
                   >
                     <span>📷 Thay đổi ảnh đại diện</span>
                   </button>
@@ -513,7 +514,7 @@ function Account() {
 
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-[13px] text-[#8A949E]">
+                      <span className="text-[13px] text-cs-muted">
                         Mã định danh
                       </span>
                       <span className="font-mono text-[13px] font-bold text-[#1F2933] bg-slate-100 px-2 py-0.5 rounded-md">
@@ -522,7 +523,7 @@ function Account() {
                     </div>
 
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-[13px] text-[#8A949E]">
+                      <span className="text-[13px] text-cs-muted">
                         Ngày tham gia
                       </span>
                       <span className="text-[13px] font-semibold text-[#20252B]">
@@ -531,7 +532,7 @@ function Account() {
                     </div>
 
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-[13px] text-[#8A949E]">
+                      <span className="text-[13px] text-cs-muted">
                         Xe đã đăng ký
                       </span>
                       <span className="text-[13px] font-semibold text-[#20252B]">
@@ -545,7 +546,7 @@ function Account() {
                   </div>
 
                   <div className="mt-6 border-t border-[#E1E4E6] pt-4 space-y-3">
-                    <p className="text-[12px] leading-5 text-[#66717C]">
+                    <p className="text-[12px] leading-5 text-cs-muted">
                       Thông tin này được sử dụng để định danh trong toàn bộ các quy trình dịch vụ và chăm sóc xe tại CarService.
                     </p>
 
@@ -573,7 +574,7 @@ function Account() {
                       <h2 className="mt-1 text-[18px] font-bold text-[#20252B]">
                         Thông tin cá nhân
                       </h2>
-                      <p className="mt-1 text-[13px] text-[#66717C]">
+                      <p className="mt-1 text-[13px] text-cs-muted">
                         Thông tin hiển thị khi liên hệ, đặt lịch hẹn và nhận xe.
                       </p>
                     </div>
@@ -601,8 +602,8 @@ function Account() {
                   </div>
 
                   <div className="grid gap-4 p-6 md:grid-cols-2">
-                    <div className="rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4">
-                      <p className="text-[12px] font-medium text-[#8A949E]">
+                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-bg p-4">
+                      <p className="text-[12px] font-medium text-cs-muted">
                         Họ và tên
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
@@ -610,8 +611,8 @@ function Account() {
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4">
-                      <p className="text-[12px] font-medium text-[#8A949E]">
+                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-bg p-4">
+                      <p className="text-[12px] font-medium text-cs-muted">
                         Số điện thoại
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
@@ -619,8 +620,8 @@ function Account() {
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4">
-                      <p className="text-[12px] font-medium text-[#8A949E]">
+                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-bg p-4">
+                      <p className="text-[12px] font-medium text-cs-muted">
                         Email liên hệ
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
@@ -628,8 +629,8 @@ function Account() {
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4">
-                      <p className="text-[12px] font-medium text-[#8A949E]">
+                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-bg p-4">
+                      <p className="text-[12px] font-medium text-cs-muted">
                         Vai trò
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#D6A85F]">
@@ -637,8 +638,8 @@ function Account() {
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4 md:col-span-2">
-                      <p className="text-[12px] font-medium text-[#8A949E]">
+                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-bg p-4 md:col-span-2">
+                      <p className="text-[12px] font-medium text-cs-muted">
                         Địa chỉ
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
@@ -657,14 +658,14 @@ function Account() {
                     <h2 className="mt-1 text-[18px] font-bold text-[#20252B]">
                       Thông tin đăng nhập
                     </h2>
-                    <p className="mt-1 text-[13px] text-[#66717C]">
+                    <p className="mt-1 text-[13px] text-cs-muted">
                       Quản lý tài khoản đăng nhập và mật khẩu an toàn.
                     </p>
                   </div>
 
                   <div className="grid gap-4 p-6 md:grid-cols-2">
-                    <div className="rounded-xl border border-[#E1E4E6] bg-[#FAFAF9] p-4">
-                      <p className="text-[12px] font-medium text-[#8A949E]">
+                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-surface-2 p-4">
+                      <p className="text-[12px] font-medium text-cs-muted">
                         Email đăng nhập
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
@@ -675,8 +676,8 @@ function Account() {
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-[#E1E4E6] bg-[#FAFAF9] p-4">
-                      <p className="text-[12px] font-medium text-[#8A949E]">
+                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-surface-2 p-4">
+                      <p className="text-[12px] font-medium text-cs-muted">
                         Mật khẩu
                       </p>
                       <p className="mt-1.5 text-[14px] font-semibold tracking-[0.2em] text-[#20252B]">
@@ -723,7 +724,7 @@ function Account() {
                       <p className="text-[14px] font-bold text-[#20252B]">
                         Khuyến nghị bảo mật từ CarService
                       </p>
-                      <p className="mt-1 text-[13px] leading-5 text-[#66717C]">
+                      <p className="mt-1 text-[13px] leading-5 text-cs-muted">
                         Không chia sẻ mật khẩu của bạn với bất kỳ ai. Để tài khoản an toàn tối đa, hãy đặt mật khẩu có ít nhất 8 ký tự, bao gồm cả chữ in hoa, chữ thường và chữ số.
                       </p>
                     </div>
@@ -739,14 +740,13 @@ function Account() {
       {/* MODAL 1: CHỈNH SỬA THÔNG TIN CÁ NHÂN                     */}
       {/* ========================================================= */}
       {isEditProfileOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#E1E4E6] bg-white shadow-2xl transition-all">
+        <Modal bare open onClose={() => setIsEditProfileOpen(false)} dismissible={!isSubmitting} title={"Chỉnh sửa thông tin cá nhân"} className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#E1E4E6] bg-cs-surface shadow-overlay transition-all">
             <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#E1E4E6] bg-white px-6 py-4">
               <div>
                 <h3 className="text-lg font-bold text-[#1F2933]">
                   Chỉnh sửa thông tin cá nhân
                 </h3>
-                <p className="mt-0.5 text-xs text-[#66717C]">
+                <p className="mt-0.5 text-xs text-cs-muted">
                   Cập nhật thông tin liên hệ cho tài khoản của bạn.
                 </p>
               </div>
@@ -877,22 +877,20 @@ function Account() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </Modal>
       )}
 
       {/* ========================================================= */}
       {/* MODAL 2: ĐỔI MẬT KHẨU                                     */}
       {/* ========================================================= */}
       {isChangePasswordOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#E1E4E6] bg-white shadow-2xl transition-all">
+        <Modal bare open onClose={() => setIsChangePasswordOpen(false)} dismissible={!isSubmitting} title={"Đổi mật khẩu"} className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#E1E4E6] bg-cs-surface shadow-overlay transition-all">
             <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#E1E4E6] bg-white px-6 py-4">
               <div>
                 <h3 className="text-lg font-bold text-[#1F2933]">
                   Đổi mật khẩu tài khoản
                 </h3>
-                <p className="mt-0.5 text-xs text-[#66717C]">
+                <p className="mt-0.5 text-xs text-cs-muted">
                   Cập nhật mật khẩu mới có độ bảo mật cao cho tài khoản của bạn.
                 </p>
               </div>
@@ -1066,22 +1064,20 @@ function Account() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </Modal>
       )}
 
       {/* ========================================================= */}
       {/* MODAL 3: ĐỔI ẢNH ĐẠI DIỆN (AVATAR)                        */}
       {/* ========================================================= */}
       {isAvatarModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#E1E4E6] bg-white shadow-2xl transition-all">
+        <Modal bare open onClose={() => setIsAvatarModalOpen(false)} dismissible={!isSubmitting} title={"Đổi ảnh đại diện"} className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#E1E4E6] bg-cs-surface shadow-overlay transition-all">
             <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#E1E4E6] bg-white px-6 py-4">
               <div>
                 <h3 className="text-lg font-bold text-[#1F2933]">
                   Thay đổi ảnh đại diện
                 </h3>
-                <p className="mt-0.5 text-xs text-[#66717C]">
+                <p className="mt-0.5 text-xs text-cs-muted">
                   Tải ảnh từ máy tính hoặc chọn avatar phong cách có sẵn.
                 </p>
               </div>
@@ -1212,8 +1208,7 @@ function Account() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+          </Modal>
       )}
     </div>
   );

@@ -83,7 +83,8 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
   content: ""; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 3px;
   border-radius: 0 3px 3px 0; background: var(--cs-sidebar-accent);
 }
-.cs-ws-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Nhãn dài (kèm "Sắp có") được xuống dòng thay vì bị cắt "…". */
+.cs-ws-label { flex: 1; min-width: 0; line-height: 1.3; overflow-wrap: anywhere; }
 .cs-ws-soon {
   flex-shrink: 0; padding: 2px 7px; border-radius: 999px;
   border: 1px solid var(--cs-sidebar-border); color: var(--cs-sidebar-muted);

@@ -83,6 +83,7 @@
   --color-cs-border-strong: var(--cs-border-strong);
   --color-cs-accent: var(--cs-accent);
   --color-cs-accent-hover: var(--cs-accent-hover);
+  --color-cs-accent-text: var(--cs-accent-text);
   --color-cs-soft: var(--cs-soft);
   --color-cs-accent-contrast: var(--cs-accent-contrast);
   --color-cs-overlay: var(--cs-overlay);

@@ -2,7 +2,7 @@
 .at-customer-page{min-height:calc(100vh - 180px);padding:46px 22px 65px;color:var(--cs-text);background:var(--cs-bg)}
 .at-customer-container{max-width:1200px;margin:auto}
 .at-customer-heading{display:flex;align-items:end;justify-content:space-between;gap:22px;margin-bottom:28px}
-.at-customer-eyebrow{font-size:13px;letter-spacing:.16em;font-weight:700;color:var(--cs-accent);margin-bottom:10px}
+.at-customer-eyebrow{font-size:13px;letter-spacing:.16em;font-weight:700;color:var(--cs-accent-text);margin-bottom:10px}
 .at-customer-heading h1{font:700 clamp(29px,4vw,46px)/1.16 var(--font-sans);letter-spacing:.005em}
 .at-customer-heading p:not(.at-customer-eyebrow){margin-top:10px;color:var(--cs-muted);font-size:14px}
 .at-customer-primary{border:1px solid var(--cs-accent,#cf2935);background:var(--cs-accent,#cf2935);color:var(--cs-accent-contrast,#fff)!important;font-weight:700;font-size:13px;border-radius:11px;padding:11px 18px;min-height:40px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px}

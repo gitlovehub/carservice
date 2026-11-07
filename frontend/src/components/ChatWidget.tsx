@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import { useLocation } from "react-router-dom";
 import { apiClient } from "../services/api";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -29,6 +30,7 @@ function loadHistory(): ChatMessage[] {
 }
 
 export default function ChatWidget() {
+  const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(loadHistory);
   const [input, setInput] = useState("");
@@ -83,6 +85,9 @@ export default function ChatWidget() {
     setMessages([GREETING]);
     sessionStorage.removeItem(STORAGE_KEY);
   }
+
+  // Trợ lý dành cho khách hàng; ẩn trong khu vực làm việc Advisor/Admin để không che nút thao tác.
+  if (/^\/(advisor|admin)(\/|$)/.test(pathname)) return null;
 
   return (
     <div className="fixed bottom-5 right-5 z-[90] flex flex-col items-end gap-3 print:hidden">

@@ -29,7 +29,7 @@ export function Toast({
     success: "bg-emerald-50 border-emerald-300 text-emerald-900 shadow-emerald-500/10",
     error: "bg-rose-50 border-rose-300 text-rose-900 shadow-rose-500/10",
     warning: "bg-amber-50 border-amber-300 text-amber-900 shadow-amber-500/10",
-    info: "bg-[#FAF8F5] border-[#D6A85F] text-[#20252B] shadow-amber-900/10",
+    info: "bg-cs-surface-2 border-[#D6A85F] text-[#20252B] shadow-amber-900/10",
   }[type];
 
   const icon = {

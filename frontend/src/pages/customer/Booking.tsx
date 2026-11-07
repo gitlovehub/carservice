@@ -848,7 +848,7 @@ export default function Booking() {
                   <div className="mb-5 rounded-2xl border border-slate-200 p-4">
                     <div className="mb-2 flex items-center justify-between">
                       <h3 className="text-sm font-bold text-slate-900">Liên hệ</h3>
-                      <Link to="/customer/account" className="text-xs font-semibold text-[#cf2935] hover:underline">
+                      <Link to="/customer/account" className="text-xs font-semibold text-cs-accent-text hover:underline">
                         Cập nhật
                       </Link>
                     </div>
@@ -895,7 +895,7 @@ export default function Booking() {
                   <i className="fa-solid fa-check"></i>
                 </div>
                 <h2 className="text-2xl font-extrabold text-slate-900">Đã đặt lịch</h2>
-                <p className="mt-1 text-sm text-slate-500">Garage sẽ xác nhận sớm.</p>
+                <p className="mt-1 text-sm text-slate-500">Gara sẽ xác nhận sớm.</p>
 
                 <div className="mx-auto mt-6 max-w-md rounded-2xl border border-slate-200 bg-slate-50 p-5 text-left text-sm">
                   <p className="text-xs font-bold uppercase text-slate-400">Mã lịch hẹn</p>

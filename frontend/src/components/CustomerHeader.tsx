@@ -98,7 +98,7 @@ function CustomerHeader() {
         </div>
 
         <div className="px-4 py-5">
-          <p className="px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#8F9AA4]">
+          <p className="px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-cs-muted">
             MENU KHÁCH HÀNG
           </p>
 
@@ -150,7 +150,7 @@ function CustomerHeader() {
                   {getUserDisplayName(user)}
                 </p>
 
-                <p className="mt-0.5 text-[11px] text-[#AEB8C1]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Khách hàng
                 </p>
               </div>

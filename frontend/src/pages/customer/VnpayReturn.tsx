@@ -61,7 +61,7 @@ export default function VnpayReturn() {
   const stillPending = data?.result === "PENDING";
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="min-h-screen bg-cs-bg text-[#20252B]">
       <main className="lg:ml-[250px]">
         <div className="mx-auto max-w-[640px] px-6 py-10 md:py-14">
           <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
@@ -76,7 +76,7 @@ export default function VnpayReturn() {
                 <p className="mt-2 text-xs text-slate-500">{shownError}</p>
               </div>
             ) : !data || !style ? (
-              <p className="p-12 text-center text-xs text-[#8A949E]">Đang kiểm tra kết quả giao dịch với hệ thống...</p>
+              <p className="p-12 text-center text-xs text-cs-muted">Đang kiểm tra kết quả giao dịch với hệ thống...</p>
             ) : (
               <>
                 <div className={`m-6 rounded-2xl border p-5 ${style.tone}`} role="status" aria-live="polite">
@@ -93,20 +93,20 @@ export default function VnpayReturn() {
                 </div>
 
                 <dl className="grid gap-3 px-6 pb-6 text-xs sm:grid-cols-2">
-                  <div className="rounded-xl bg-[#F7F7F5] p-4">
-                    <dt className="font-bold text-[#8A949E]">HÓA ĐƠN</dt>
+                  <div className="rounded-xl bg-cs-bg p-4">
+                    <dt className="font-bold text-cs-muted">HÓA ĐƠN</dt>
                     <dd className="mt-1 text-sm font-bold">{data.invoice.invoice_code}</dd>
                   </div>
-                  <div className="rounded-xl bg-[#F7F7F5] p-4">
-                    <dt className="font-bold text-[#8A949E]">SỐ TIỀN GIAO DỊCH</dt>
+                  <div className="rounded-xl bg-cs-bg p-4">
+                    <dt className="font-bold text-cs-muted">SỐ TIỀN GIAO DỊCH</dt>
                     <dd className="mt-1 text-sm font-bold">{formatMoney(data.payment.amount)}</dd>
                   </div>
                   <div className="rounded-xl border border-[#E1E4E6] p-4">
-                    <dt className="font-bold text-[#8A949E]">MÃ GIAO DỊCH VNPAY</dt>
+                    <dt className="font-bold text-cs-muted">MÃ GIAO DỊCH VNPAY</dt>
                     <dd className="mt-1 font-mono text-sm">{data.payment.transaction_code ?? "—"}</dd>
                   </div>
                   <div className="rounded-xl border border-[#E1E4E6] p-4">
-                    <dt className="font-bold text-[#8A949E]">TRẠNG THÁI HÓA ĐƠN</dt>
+                    <dt className="font-bold text-cs-muted">TRẠNG THÁI HÓA ĐƠN</dt>
                     <dd className="mt-1 text-sm font-bold">{invoiceStatusLabel[data.invoice.status] ?? data.invoice.status}</dd>
                   </div>
                 </dl>

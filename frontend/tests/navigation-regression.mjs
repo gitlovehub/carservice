@@ -31,5 +31,7 @@ assert.match(services, /fetchApi<Service\[\] \| { data: Service\[\] }>\("\/servi
 assert.match(services, /radial-gradient/); // migrated ATELIER hero uses Tailwind utilities
 assert.match(services, /Không tải được dịch vụ/);
 assert.doesNotMatch(services, /SERVICE_PRODUCTS/);
-assert.match(src('styles/atelier-booking.css'), /at-booking-legacy/);
+// Phase 5: atelier-booking.css chưa từng được import (đã gỡ); kiểm tra CSS thực sự được nạp cho trang đặt lịch.
+assert.match(src('pages/customer/booking/ServicePicker.tsx'), /import "\.\/servicePicker\.css"/);
+assert.match(src('pages/customer/booking/servicePicker.css'), /prefers-reduced-motion/);
 console.log('PASS: crash, real services API, login redirect, role-safe routes, customer ATELIER styling.');

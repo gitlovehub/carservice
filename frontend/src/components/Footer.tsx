@@ -100,7 +100,7 @@ function Footer() {
 
             <div className="mt-4 space-y-3 text-xs text-slate-600">
               <div>
-                <p className="font-semibold text-slate-800">Hotline hỗ trợ kỹ thuật</p>
+                <p className="font-semibold text-slate-800">Đường dây nóng hỗ trợ kỹ thuật</p>
                 <a
                   href="tel:0332405972"
                   className="mt-0.5 block font-mono text-sm font-semibold text-slate-900 transition hover:text-amber-600"

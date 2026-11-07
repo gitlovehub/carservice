@@ -64,20 +64,20 @@ export default function AdvisorRepairOrderDetail() {
     setSuccess(message); notify(message, "success");
   }, [fetchOrder, notify]);
 
-  return <main data-print-repair-order className="mx-auto max-w-6xl pb-12">
+  return <main data-print-repair-order className="page-container">
     <div className="cs-btn-row mb-4 print:hidden">
       <Link className={outline} to="/advisor/service-orders">← Danh sách phiếu</Link>
       <button type="button" disabled={loading} className={outline} onClick={() => void load()}>Làm mới</button>
       <button type="button" className={outline} onClick={() => window.print()}>In phiếu sửa chữa</button>
     </div>
-    <WorkflowTitle label="SERVICE DESK / REPAIR ORDER" title={order?.repair_order_code || `Phiếu sửa chữa #${id}`} sub="Mọi bước của phiếu thao tác trên trang này: kiểm tra, báo giá, sửa chữa, thu tiền và bàn giao."/>
+    <WorkflowTitle label="QUẦY DỊCH VỤ / CHI TIẾT PHIẾU" title={order?.repair_order_code || `Phiếu sửa chữa #${id}`} sub="Mọi bước của phiếu thao tác trên trang này: kiểm tra, báo giá, sửa chữa, thu tiền và bàn giao."/>
     {error && <Notice tone="error">{error}</Notice>}{success && <Notice tone="success">{success}</Notice>}
     {loading && <p className="text-cs-muted">Đang tải dữ liệu phiếu...</p>}
     {!loading && order && <>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cs-border bg-cs-soft px-5 py-4"><div className="text-sm font-semibold text-cs-text">Trạng thái hiện tại</div><Status status={order.status}/></div>
       {order.status === "CLOSED" ? <Notice tone="error">Phiếu đã đóng, không còn thao tác tiếp.</Notice> : <StepTracker status={order.status}/>}
       <section className={card}>
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent print:hidden">Bước 1 · Tiếp nhận</p>
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text print:hidden">Bước 1 · Tiếp nhận</p>
         <h2 className="mb-5 mt-1 text-lg font-bold text-cs-text">Phiếu tiếp nhận</h2>
         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[
           ["Khách hàng", order.customer?.full_name || `#${order.customer_id || "?"}`],

@@ -7,7 +7,7 @@ const toneClass: Record<StatusTone, string> = {
   warning: "bg-warning-soft text-warning-fg",
   success: "bg-success-soft text-success-fg",
   danger: "bg-danger-soft text-danger-fg",
-  accent: "bg-cs-soft text-cs-accent",
+  accent: "bg-cs-soft text-cs-accent-text",
 };
 
 /** Nhãn nhỏ có màu theo ý nghĩa. Màu luôn đi kèm chữ, không dùng màu làm tín hiệu duy nhất. */

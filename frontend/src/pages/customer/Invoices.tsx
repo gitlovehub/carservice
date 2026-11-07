@@ -1,3 +1,4 @@
+import { Modal } from "../../components/ui";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -88,7 +89,7 @@ export default function InvoicesPage() {
     .reduce((sum, r) => sum + Number(r.invoice.total_amount), 0);
 
   return (
-    <div className="at-customer-invoices min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="at-customer-invoices min-h-screen bg-cs-bg text-[#20252B]">
 
       <main className="lg:ml-[250px]">
         <div className="mx-auto max-w-[1200px] px-6 py-10 md:px-8 md:py-14">
@@ -102,13 +103,13 @@ export default function InvoicesPage() {
                 <h1 className="text-[30px] font-bold tracking-normal text-[#1F2933]">
                   Hóa đơn của tôi
                 </h1>
-                <p className="mt-2 text-[13px] leading-6 text-[#66717C]">
+                <p className="mt-2 text-[13px] leading-6 text-cs-muted">
                   Theo dõi các hóa đơn và lịch sử thanh toán dịch vụ của các xe.
                 </p>
               </div>
 
               <div className="hidden rounded-xl border border-[#E1E4E6] bg-white px-4 py-3 sm:block">
-                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-cs-muted">
                   TỔNG ĐÃ CHI TRẢ
                 </p>
                 <p className="mt-1 text-[14px] font-bold text-[#1F2933]">
@@ -123,13 +124,13 @@ export default function InvoicesPage() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-cs-muted">
                     TỔNG HÓA ĐƠN
                   </p>
                   <p className="mt-3 text-2xl font-bold tracking-normal text-[#20252B]">
                     {loading ? "…" : rows.length}
                   </p>
-                  <p className="mt-1 text-[12px] text-[#66717C]">Hóa đơn phát hành</p>
+                  <p className="mt-1 text-[12px] text-cs-muted">Hóa đơn phát hành</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1F2933] text-[12px] font-bold text-white">
                   HĐ
@@ -140,13 +141,13 @@ export default function InvoicesPage() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-cs-muted">
                     ĐÃ THANH TOÁN
                   </p>
                   <p className="mt-3 text-2xl font-bold tracking-normal text-emerald-700">
                     {loading ? "…" : paidCount}
                   </p>
-                  <p className="mt-1 text-[12px] text-[#66717C]">Giao dịch hoàn tất</p>
+                  <p className="mt-1 text-[12px] text-cs-muted">Giao dịch hoàn tất</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-sm font-bold text-emerald-800">
                   ✓
@@ -157,13 +158,13 @@ export default function InvoicesPage() {
             <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-cs-muted">
                     CHƯA THANH TOÁN
                   </p>
                   <p className="mt-3 text-2xl font-bold tracking-normal text-amber-600">
                     {loading ? "…" : unpaidCount}
                   </p>
-                  <p className="mt-1 text-[12px] text-[#66717C]">Cần thanh toán</p>
+                  <p className="mt-1 text-[12px] text-cs-muted">Cần thanh toán</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-sm font-bold text-amber-800">
                   !
@@ -181,12 +182,12 @@ export default function InvoicesPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Tìm mã hóa đơn, biển số xe..."
-                  className="h-10 w-full sm:w-72 rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3.5 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
+                  className="h-10 w-full sm:w-72 rounded-xl border border-[#E1E4E6] bg-cs-bg px-3.5 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
                 />
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="h-10 cursor-pointer rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
+                  className="h-10 cursor-pointer rounded-xl border border-[#E1E4E6] bg-cs-bg px-3 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
                 >
                   <option value="ALL">Tất cả trạng thái</option>
                   <option value="PAID">Đã thanh toán</option>
@@ -195,13 +196,13 @@ export default function InvoicesPage() {
                 </select>
               </div>
 
-              <span className="rounded-full bg-[#F3F4F2] px-3 py-1.5 text-[12px] font-semibold text-[#66717C]">
+              <span className="rounded-full bg-cs-surface-2 px-3 py-1.5 text-[12px] font-semibold text-cs-muted">
                 {filtered.length} hóa đơn
               </span>
             </div>
 
             {loading ? (
-              <p className="p-10 text-center text-xs text-[#8A949E]">Đang tải danh sách hóa đơn...</p>
+              <p className="p-10 text-center text-xs text-cs-muted">Đang tải danh sách hóa đơn...</p>
             ) : error ? (
               <div className="p-8 text-center text-xs text-red-600">
                 <p>{error}</p>
@@ -216,7 +217,7 @@ export default function InvoicesPage() {
             ) : filtered.length === 0 ? (
               <div className="p-12 text-center">
                 <p className="text-sm font-bold text-[#20252B]">Chưa có hóa đơn nào</p>
-                <p className="mt-1 text-xs text-[#8A949E]">
+                <p className="mt-1 text-xs text-cs-muted">
                   Khi xe của bạn hoàn tất dịch vụ sửa chữa, hóa đơn sẽ hiển thị tại đây.
                 </p>
               </div>
@@ -231,7 +232,7 @@ export default function InvoicesPage() {
                   return (
                     <div
                       key={invoice.id}
-                      className="rounded-2xl border border-[#E1E4E6] bg-[#FAFAF9] p-5 transition hover:border-[#D6A85F] hover:shadow-[0_8px_25px_rgba(31,41,51,0.05)]"
+                      className="rounded-2xl border border-[#E1E4E6] bg-cs-surface-2 p-5 transition hover:border-[#D6A85F] hover:shadow-[0_8px_25px_rgba(31,41,51,0.05)]"
                     >
                       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex items-start gap-4">
@@ -266,7 +267,7 @@ export default function InvoicesPage() {
                                 {order.vehicle?.license_plate ?? "—"}
                               </span>
                             </p>
-                            <p className="mt-0.5 text-[12px] text-[#66717C]">
+                            <p className="mt-0.5 text-[12px] text-cs-muted">
                               Phiếu dịch vụ: <strong>{order.repair_order_code}</strong>
                             </p>
                           </div>
@@ -274,7 +275,7 @@ export default function InvoicesPage() {
 
                         <div className="grid grid-cols-2 gap-5 border-t border-[#E1E4E6] pt-4 sm:grid-cols-3 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
                           <div>
-                            <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                            <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-cs-muted">
                               Ngày lập
                             </p>
                             <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
@@ -283,7 +284,7 @@ export default function InvoicesPage() {
                           </div>
 
                           <div>
-                            <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
+                            <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-cs-muted">
                               Tổng tiền
                             </p>
                             <p className="mt-1 text-[14px] font-bold text-[#1F2933]">
@@ -329,7 +330,7 @@ export default function InvoicesPage() {
               </div>
               <div>
                 <p className="text-[14px] font-bold text-[#20252B]">Hỗ trợ hóa đơn & thanh toán</p>
-                <p className="mt-1 text-[12px] leading-5 text-[#66717C]">
+                <p className="mt-1 text-[12px] leading-5 text-cs-muted">
                   Quý khách có nhu cầu xuất hóa đơn VAT điện tử cho doanh nghiệp hoặc cần tra soát các giao dịch chuyển khoản, vui lòng liên hệ hotline: <strong>033 240 5972</strong>.
                 </p>
               </div>
@@ -340,8 +341,7 @@ export default function InvoicesPage() {
 
       {/* MODAL CHI TIẾT HÓA ĐƠN */}
       {selectedInvoiceRow && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl md:p-8">
+        <Modal bare open onClose={() => setSelectedInvoiceRow(null)} title={"Chi tiết hóa đơn"} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-cs-surface p-6 shadow-overlay md:p-8">
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#D6A85F]">
@@ -368,7 +368,7 @@ export default function InvoicesPage() {
             </div>
 
             <div className="mt-4 space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3 rounded-2xl bg-[#F7F7F5] p-4">
+              <div className="grid grid-cols-2 gap-3 rounded-2xl bg-cs-bg p-4">
                 <div>
                   <p className="text-slate-400">Trạng thái thanh toán</p>
                   <p className="mt-0.5 font-bold text-slate-800">
@@ -393,7 +393,7 @@ export default function InvoicesPage() {
                 </p>
                 <div className="overflow-x-auto rounded-xl border border-slate-200">
                   <table className="w-full text-left">
-                    <thead className="border-b border-slate-200 bg-[#FAF8F5] font-bold text-slate-500">
+                    <thead className="border-b border-slate-200 bg-cs-surface-2 font-bold text-slate-500">
                       <tr>
                         <th className="px-3 py-2.5">Nội dung</th>
                         <th className="px-3 py-2.5 text-center">SL</th>
@@ -418,7 +418,7 @@ export default function InvoicesPage() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="border-t border-slate-200 bg-[#FAF8F5] font-bold">
+                    <tfoot className="border-t border-slate-200 bg-cs-surface-2 font-bold">
                       <tr>
                         <td colSpan={3} className="px-3 py-3 text-right text-slate-700">
                           Tổng cộng
@@ -476,8 +476,7 @@ export default function InvoicesPage() {
                 Đóng
               </button>
             </div>
-          </div>
-        </div>
+          </Modal>
       )}
     </div>
   );

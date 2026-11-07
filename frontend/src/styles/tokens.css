@@ -43,6 +43,7 @@
   --cs-accent-contrast: #ffffff;   /* chữ đặt trên nền accent */
   --cs-soft: var(--cs-brand-soft); /* nền nhạt của accent: pill, mục đang chọn */
   --cs-focus: var(--cs-accent);    /* viền focus bàn phím */
+  --cs-accent-text: var(--cs-accent); /* chữ màu nhấn trên nền surface (đạt AA ở cả hai theme) */
 
   /* ---- Trạng thái (dùng chung mọi vai trò) ---- */
   --cs-success: #15803d;  --cs-success-soft: #e7f6ec;  --cs-success-fg: #166534;
@@ -111,12 +112,19 @@ html[data-theme="dark"] {
   --cs-disabled-fg: #6f747a;
 
   --cs-sidebar-bg: #151619;
+  /* Đỏ thương hiệu làm màu chữ trên nền tối chỉ đạt 3.3:1 — dùng tông sáng hơn (≥ 5:1). */
+  --cs-accent-text: #ff7d85;
 }
 
 /* ---------- Màu nhấn theo vai trò ---------- */
 /* Biến tham chiếu accent phải khai báo lại tại phần tử có data-area, nếu không sẽ giữ giá trị tính ở :root. */
 [data-area] {
   --cs-focus: var(--cs-accent);
+  --cs-accent-text: var(--cs-accent);
+}
+html[data-theme="dark"] [data-area="customer"],
+html[data-theme="dark"] [data-area="admin"] {
+  --cs-accent-text: #ff7d85;
 }
 
 /* Advisor: vàng đồng. */

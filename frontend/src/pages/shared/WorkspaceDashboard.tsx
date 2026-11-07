@@ -72,7 +72,7 @@ function StatCard({ label, load, hint, to, icon, highlight }: {
   return <Link to={to} className="group flex min-h-[132px] flex-col justify-between gap-3 rounded-card border border-cs-border bg-cs-surface p-card shadow-card transition-colors hover:border-cs-accent focus-visible:border-cs-accent">
     <div className="flex items-start justify-between gap-3">
       <p className="text-small font-medium text-cs-text-2">{label}</p>
-      <span className={`grid size-9 shrink-0 place-items-center rounded-control ${highlight ? "bg-cs-accent text-cs-accent-contrast" : "bg-cs-soft text-cs-accent"}`} aria-hidden="true">
+      <span className={`grid size-9 shrink-0 place-items-center rounded-control ${highlight ? "bg-cs-accent text-cs-accent-contrast" : "bg-cs-soft text-cs-accent-text"}`} aria-hidden="true">
         <Icon name={icon} size={18}/>
       </span>
     </div>
@@ -116,7 +116,7 @@ function TodayAppointments({ load, role, onRetry }: { load: Load<Appointment[]>;
       <StatusBadge domain="appointment" status={item.status} className="max-sm:col-start-2 max-sm:justify-self-start"/>
     </li>)}
     {items.length > 8 && <li className="px-5 py-3 text-caption text-cs-muted">
-      và {items.length - 8} lịch khác — <Link className="font-medium text-cs-accent hover:underline" to={`/${role}/appointments`}>xem tất cả</Link>
+      và {items.length - 8} lịch khác — <Link className="font-medium text-cs-accent-text hover:underline" to={`/${role}/appointments`}>xem tất cả</Link>
     </li>}
   </ul>;
 }

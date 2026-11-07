@@ -8,16 +8,18 @@ const shell = read('layouts/shell.css');
 const garage = read('pages/customer/Cars.tsx');
 const theme = read('index.css');
 const account = read('pages/admin/Accounts.tsx');
-const hub = read('components/AdminHubNav.tsx');
+const nav = read('layouts/navigation.ts');
 assert.match(shell,/tbody tr:hover.*--cs-row-hover/,'Table rows must use role-aware hover tokens');
 // Hàng bảng khi hover dùng token --cs-hover; tokens.css định nghĩa giá trị tối riêng cho dark mode.
 assert.match(shell,/--cs-row-hover:var\(--cs-hover\)/,'Row hover must come from the shared hover token');
 assert.match(read('styles/tokens.css'),/html\[data-theme="dark"\][\s\S]*--cs-hover: #2a2d32/,'Dark row hover must stay dark');
 assert.match(shell,/cs-admin-current-tile/,'Admin highlighted tile must be readable');
-assert.match(account,/<AdminHubNav \/>/,'Admin accounts must use consistent admin navigation');
-assert.match(hub,/group flex min-h-/, 'Admin module navigation now uses Tailwind utility cards');
-for (const dest of ['/admin/accounts','/admin/services','/admin/inventory','/admin/reports']) assert.ok(hub.includes(dest), 'Admin hub missing '+dest);
-for (const page of ['Accounts','Services','Inventory','Reports']) assert.match(read('pages/admin/'+page+'.tsx'),/<AdminHubNav \/>/,page+' must use same hub');
+// Phase 5: điều hướng module Admin thống nhất ở sidebar (navigation.ts); AdminHubNav trùng lặp đã gỡ.
+assert.doesNotMatch(account,/AdminHubNav/,'Admin accounts must rely on the shared sidebar navigation');
+for (const dest of ['/admin/accounts','/admin/services','/admin/inventory','/admin/reports']) assert.ok(nav.includes(`path: "${dest}"`), 'Admin navigation missing '+dest);
+for (const page of ['Accounts','Services','Inventory','Reports']) assert.doesNotMatch(read('pages/admin/'+page+'.tsx'),/AdminHubNav/,page+' must not duplicate navigation');
+// Chữ chú thích dùng token đạt tương phản AA thay vì xám viết cứng (#8A949E chỉ 3.08:1).
+for (const page of ['Accounts','Services','Inventory','AdminAppointments']) assert.doesNotMatch(read('pages/admin/'+page+'.tsx'),/text-\[#8A949E\]/i,page+' must not use low-contrast caption gray');
 assert.match(garage,/grid grid-cols-3 items-stretch/, 'Vehicle cards should use a responsive Tailwind grid');
 assert.match(garage,/getMyVehicles\(\)/,'Vehicle cards must use backend data');
 assert.match(garage,/await addMyVehicle\(payload\)/,'Vehicle add must remain API-backed');

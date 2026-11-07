@@ -520,7 +520,7 @@ export default function VietnamAddressSelector({
                       className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-xs transition ${
                         isSelected
                           ? "bg-[#D6A85F]/20 font-bold text-[#3A3020]"
-                          : "text-[#20252B] hover:bg-[#F7F7F5]"
+                          : "text-[#20252B] hover:bg-cs-bg"
                       }`}
                     >
                       <div className="flex items-center gap-2">

@@ -26,7 +26,7 @@ function Contact() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="min-h-screen bg-cs-bg text-[#20252B]">
       <Header />
 
       <main>
@@ -40,7 +40,7 @@ function Contact() {
               Liên hệ với chúng tôi
             </h1>
 
-            <p className="mt-3 max-w-2xl text-[13px] leading-6 text-[#66717C]">
+            <p className="mt-3 max-w-2xl text-[13px] leading-6 text-cs-muted">
               Nếu bạn cần hỗ trợ về dịch vụ, lịch hẹn hoặc tình trạng xe,
               hãy liên hệ với CarService.
             </p>
@@ -60,20 +60,20 @@ function Contact() {
                     Thông tin liên hệ
                   </h2>
 
-                  <p className="mt-2 text-[12px] leading-5 text-[#66717C]">
+                  <p className="mt-2 text-[12px] leading-5 text-cs-muted">
                     Bạn có thể liên hệ với CarService thông qua các thông tin
                     dưới đây.
                   </p>
 
                   <div className="mt-6 space-y-3">
-                    <div className="group rounded-2xl border border-[#E1E4E6] bg-[#F7F7F5] p-4 transition hover:border-[#D6A85F] hover:bg-white">
+                    <div className="group rounded-2xl border border-[#E1E4E6] bg-cs-bg p-4 transition hover:border-[#D6A85F] hover:bg-white">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-xs font-bold text-white">
                           ☎
                         </div>
 
                         <div>
-                          <p className="text-[12px] text-[#8A949E]">
+                          <p className="text-[12px] text-cs-muted">
                             Điện thoại
                           </p>
 
@@ -84,14 +84,14 @@ function Contact() {
                       </div>
                     </div>
 
-                    <div className="group rounded-2xl border border-[#E1E4E6] bg-[#F7F7F5] p-4 transition hover:border-[#D6A85F] hover:bg-white">
+                    <div className="group rounded-2xl border border-[#E1E4E6] bg-cs-bg p-4 transition hover:border-[#D6A85F] hover:bg-white">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F3E8D2] text-xs font-bold text-[#1F2933]">
                           @
                         </div>
 
                         <div>
-                          <p className="text-[12px] text-[#8A949E]">
+                          <p className="text-[12px] text-cs-muted">
                             Email
                           </p>
 
@@ -102,14 +102,14 @@ function Contact() {
                       </div>
                     </div>
 
-                    <div className="group rounded-2xl border border-[#E1E4E6] bg-[#F7F7F5] p-4 transition hover:border-[#D6A85F] hover:bg-white">
+                    <div className="group rounded-2xl border border-[#E1E4E6] bg-cs-bg p-4 transition hover:border-[#D6A85F] hover:bg-white">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F3E8D2] text-xs font-bold text-[#1F2933]">
                           ĐC
                         </div>
 
                         <div>
-                          <p className="text-[12px] text-[#8A949E]">
+                          <p className="text-[12px] text-cs-muted">
                             Địa chỉ gara
                           </p>
 
@@ -120,14 +120,14 @@ function Contact() {
                       </div>
                     </div>
 
-                    <div className="group rounded-2xl border border-[#E1E4E6] bg-[#F7F7F5] p-4 transition hover:border-[#D6A85F] hover:bg-white">
+                    <div className="group rounded-2xl border border-[#E1E4E6] bg-cs-bg p-4 transition hover:border-[#D6A85F] hover:bg-white">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F3E8D2] text-xs font-bold text-[#1F2933]">
                           TG
                         </div>
 
                         <div>
-                          <p className="text-[12px] text-[#8A949E]">
+                          <p className="text-[12px] text-cs-muted">
                             Thời gian làm việc
                           </p>
 
@@ -135,7 +135,7 @@ function Contact() {
                             08:00 – 17:30
                           </p>
 
-                          <p className="mt-1 text-[12px] text-[#8A949E]">
+                          <p className="mt-1 text-[12px] text-cs-muted">
                             Thứ 2 – Thứ 7
                           </p>
                         </div>
@@ -155,7 +155,7 @@ function Contact() {
                         Hỗ trợ khách hàng
                       </p>
 
-                      <p className="mt-1 text-[12px] leading-5 text-[#AEB8C1]">
+                      <p className="mt-1 text-[12px] leading-5 text-cs-muted">
                         Đội ngũ CarService sẽ tiếp nhận và phản hồi yêu cầu
                         của bạn trong thời gian sớm nhất.
                       </p>
@@ -167,14 +167,14 @@ function Contact() {
               <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
                 <div className="border-b border-[#E1E4E6] px-6 py-5">
                   <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                    SEND MESSAGE
+                    GỬI TIN NHẮN
                   </p>
 
                   <h2 className="mt-1 text-[17px] font-bold text-[#20252B]">
                     Gửi yêu cầu hỗ trợ
                   </h2>
 
-                  <p className="mt-2 text-[12px] leading-5 text-[#66717C]">
+                  <p className="mt-2 text-[12px] leading-5 text-cs-muted">
                     Điền thông tin bên dưới để CarService có thể hỗ trợ bạn.
                   </p>
                 </div>
@@ -191,7 +191,7 @@ function Contact() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Nhập họ và tên"
-                        className="w-full rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[13px] text-[#20252B] outline-none transition placeholder:text-[#A1A9B0] focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
+                        className="w-full rounded-xl border border-[#DDE1E4] bg-cs-surface-2 px-4 py-3 text-[13px] text-[#20252B] outline-none transition placeholder:text-[#A1A9B0] focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
                       />
                     </div>
 
@@ -205,7 +205,7 @@ function Contact() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="Nhập số điện thoại"
-                        className="w-full rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[13px] text-[#20252B] outline-none transition placeholder:text-[#A1A9B0] focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
+                        className="w-full rounded-xl border border-[#DDE1E4] bg-cs-surface-2 px-4 py-3 text-[13px] text-[#20252B] outline-none transition placeholder:text-[#A1A9B0] focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
                       />
                     </div>
                   </div>
@@ -220,7 +220,7 @@ function Contact() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Nhập email"
-                      className="w-full rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[13px] text-[#20252B] outline-none transition placeholder:text-[#A1A9B0] focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
+                      className="w-full rounded-xl border border-[#DDE1E4] bg-cs-surface-2 px-4 py-3 text-[13px] text-[#20252B] outline-none transition placeholder:text-[#A1A9B0] focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
                     />
                   </div>
 
@@ -234,12 +234,12 @@ function Contact() {
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="Nhập nội dung cần hỗ trợ..."
-                      className="w-full resize-none rounded-xl border border-[#DDE1E4] bg-[#FAFAF9] px-4 py-3 text-[13px] text-[#20252B] outline-none transition placeholder:text-[#A1A9B0] focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
+                      className="w-full resize-none rounded-xl border border-[#DDE1E4] bg-cs-surface-2 px-4 py-3 text-[13px] text-[#20252B] outline-none transition placeholder:text-[#A1A9B0] focus:border-[#D6A85F] focus:bg-white focus:ring-2 focus:ring-[#D6A85F]/10"
                     />
                   </div>
 
                   <div className="flex flex-col justify-between gap-4 border-t border-[#E1E4E6] pt-5 sm:flex-row sm:items-center">
-                    <p className="max-w-md text-[12px] leading-5 text-[#8A949E]">
+                    <p className="max-w-md text-[12px] leading-5 text-cs-muted">
                       Vui lòng cung cấp thông tin chính xác để CarService
                       có thể liên hệ lại với bạn.
                     </p>

@@ -97,7 +97,7 @@ function Payment() {
   };
 
   return (
-    <div className="at-customer-payment min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="at-customer-payment min-h-screen bg-cs-bg text-[#20252B]">
 
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
@@ -115,7 +115,7 @@ function Payment() {
                 <h1 className="text-[30px] font-bold tracking-normal text-[#1F2933]">
                   Thanh toán dịch vụ
                 </h1>
-                <p className="mt-2 text-[13px] leading-6 text-[#66717C]">
+                <p className="mt-2 text-[13px] leading-6 text-cs-muted">
                   Thông tin hóa đơn, thanh toán trực tuyến qua VNPay hoặc tiền mặt tại quầy.
                 </p>
               </div>
@@ -130,7 +130,7 @@ function Payment() {
           </div>
 
           {loading ? (
-            <p className="p-16 text-center text-xs text-[#8A949E]">Đang tải dữ liệu hóa đơn...</p>
+            <p className="p-16 text-center text-xs text-cs-muted">Đang tải dữ liệu hóa đơn...</p>
           ) : error ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-xs text-red-700">
               <p>{error}</p>
@@ -176,15 +176,15 @@ function Payment() {
                   </div>
 
                   <div className="grid gap-4 p-6 sm:grid-cols-2">
-                    <div className="rounded-xl bg-[#F7F7F5] p-4 text-xs">
-                      <p className="font-bold text-[#8A949E]">LỆNH DỊCH VỤ</p>
+                    <div className="rounded-xl bg-cs-bg p-4 text-xs">
+                      <p className="font-bold text-cs-muted">LỆNH DỊCH VỤ</p>
                       <p className="mt-1 text-sm font-bold text-[#20252B]">
                         {order?.repair_order_code}
                       </p>
                     </div>
 
-                    <div className="rounded-xl bg-[#F7F7F5] p-4 text-xs">
-                      <p className="font-bold text-[#8A949E]">TRẠNG THÁI THANH TOÁN</p>
+                    <div className="rounded-xl bg-cs-bg p-4 text-xs">
+                      <p className="font-bold text-cs-muted">TRẠNG THÁI THANH TOÁN</p>
                       <p
                         className={`mt-1 text-sm font-bold ${
                           isPaid ? "text-emerald-700" : "text-amber-600"
@@ -195,7 +195,7 @@ function Payment() {
                     </div>
 
                     <div className="rounded-xl border border-[#E1E4E6] p-4 text-xs">
-                      <p className="font-bold text-[#8A949E]">PHƯƠNG TIỆN</p>
+                      <p className="font-bold text-cs-muted">PHƯƠNG TIỆN</p>
                       <p className="mt-1 text-sm font-bold text-[#20252B]">
                         {getVehicleName(order?.vehicle)}
                       </p>
@@ -205,7 +205,7 @@ function Payment() {
                     </div>
 
                     <div className="rounded-xl border border-[#E1E4E6] p-4 text-xs">
-                      <p className="font-bold text-[#8A949E]">NGÀY LẬP HÓA ĐƠN</p>
+                      <p className="font-bold text-cs-muted">NGÀY LẬP HÓA ĐƠN</p>
                       <p className="mt-1 text-sm font-bold text-[#20252B]">
                         {formatDate(order?.completed_at ?? order?.received_at)}
                       </p>
@@ -219,7 +219,7 @@ function Payment() {
                     </p>
                     <div className="overflow-x-auto rounded-xl border border-slate-200">
                       <table className="w-full text-left text-xs">
-                        <thead className="border-b border-slate-200 bg-[#FAF8F5] font-bold text-slate-500">
+                        <thead className="border-b border-slate-200 bg-cs-surface-2 font-bold text-slate-500">
                           <tr>
                             <th className="px-3 py-2.5">Hạng mục</th>
                             <th className="px-3 py-2.5 text-center">SL</th>
@@ -244,7 +244,7 @@ function Payment() {
                             </tr>
                           ))}
                         </tbody>
-                        <tfoot className="border-t border-slate-200 bg-[#FAF8F5] font-bold">
+                        <tfoot className="border-t border-slate-200 bg-cs-surface-2 font-bold">
                           <tr>
                             <td colSpan={3} className="px-3 py-3 text-right text-slate-700">
                               Tổng thanh toán
@@ -294,7 +294,7 @@ function Payment() {
                       </div>
                     )}
                     <p className="mb-2 font-bold text-slate-700">Hình thức thanh toán</p>
-                    <div className="rounded-2xl bg-[#FAF8F5] p-4 text-slate-700">
+                    <div className="rounded-2xl bg-cs-surface-2 p-4 text-slate-700">
                         <p className="font-bold text-[#1F2933]">{canPayOnline ? "Hoặc tiền mặt tại quầy gara" : "Tiền mặt tại quầy gara"}</p>
                       <p className="mt-2 font-semibold leading-5">
                         {isPaid
@@ -305,7 +305,7 @@ function Payment() {
 
                     <div className="mt-6 border-t border-slate-100 pt-4 text-center">
                       <p className="text-[12px] text-slate-500">
-                        Hotline hỗ trợ tài chính / tra soát:
+                        Đường dây nóng hỗ trợ thanh toán / tra soát:
                       </p>
                       <a
                         href="tel:0332405972"

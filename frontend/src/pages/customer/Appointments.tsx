@@ -1,3 +1,4 @@
+import { Modal } from "../../components/ui";
 import "../../styles/atelier-customer-pages.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -14,14 +15,7 @@ import {
   type CustomerAppointment,
   type Pagination,
 } from "../../services/customerApi";
-
-const statusBadge: Record<string, string> = {
-  PENDING: "bg-[#F3F4F2] text-[#66717C]",
-  CONFIRMED: "bg-[#F3E8D2] text-[#3A3020]",
-  CHECKED_IN: "bg-emerald-50 text-emerald-700",
-  CANCELLED: "bg-red-50 text-red-700",
-  NO_SHOW: "bg-slate-100 text-slate-500",
-};
+import { StatusBadge } from "../../components/ui/Badge";
 
 const canCancel = (a: CustomerAppointment) => ["PENDING", "CONFIRMED"].includes(a.status);
 const canEdit = (a: CustomerAppointment) => a.status === "PENDING";
@@ -166,13 +160,12 @@ function Appointments() {
 
   const awaitingCount = items.filter(a => ["PENDING", "CREATED"].includes(a.status)).length;
   const confirmedCount = items.filter(a => a.status === "CONFIRMED").length;
-  const badgeKind = (value: string) => value === "CONFIRMED" ? "confirmed" : ["PENDING", "CREATED"].includes(value) ? "pending" : value === "CANCELLED" ? "cancelled" : "neutral";
 
   return (
     <div className="at-customer-page at-customer-appointments">
       <div className="at-customer-container">
         <div className="at-customer-heading">
-          <div><p className="at-customer-eyebrow">MY GARAGE / APPOINTMENTS</p>
+          <div><p className="at-customer-eyebrow">GARA CỦA TÔI / LỊCH HẸN</p>
           <h1>Lịch hẹn của tôi</h1>
           <p>Theo dõi lịch đã gửi, xác nhận từ gara và thông tin tiếp nhận.</p></div>
           <Link className="at-customer-primary" to="/customer/booking">＋ Đặt lịch mới</Link>
@@ -198,7 +191,7 @@ function Appointments() {
         {!loading && filtered.map(a => <article key={a.id} className="at-appointment-card">
           <div className="at-appointment-top">
             <div><p className="at-appointment-code">{a.appointment_code}</p><h2>{getVehicleName(a.vehicle)}</h2><p className="at-appointment-description">{a.vehicle?.license_plate ?? "Chưa có biển số"} · {servicesText(a)}</p></div>
-            <span className={`at-customer-status is-${badgeKind(a.status)}`}>● {appointmentStatusLabel[a.status] ?? a.status}</span>
+            <StatusBadge domain="appointment" status={a.status} audience="customer"/>
           </div>
           <div className="at-appointment-bottom">
             <strong>▣ {formatDate(a.appointment_date)} · {formatTime(a.appointment_time)}</strong>
@@ -214,21 +207,14 @@ function Appointments() {
       </div>
 
       {selected && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
-          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl md:p-8">
+        <Modal bare open onClose={closeModal} dismissible={!saving} title={"Chi tiết lịch hẹn"} className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-cs-surface p-6 shadow-overlay md:p-8">
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#D6A85F]">
                   CHI TIẾT LỊCH HẸN
                 </p>
                 <h3 className="text-lg font-extrabold text-[#1F2933]">{selected.appointment_code}</h3>
-                <span
-                  className={`mt-1 inline-block rounded-full px-3 py-1 text-[11px] font-semibold ${
-                    statusBadge[selected.status] ?? statusBadge.PENDING
-                  }`}
-                >
-                  {appointmentStatusLabel[selected.status] ?? selected.status}
-                </span>
+                <StatusBadge domain="appointment" status={selected.status} audience="customer" className="mt-1"/>
               </div>
               <button
                 type="button"
@@ -240,10 +226,10 @@ function Appointments() {
             </div>
 
             {detailLoading ? (
-              <p className="py-8 text-center text-xs text-[#8A949E]">Đang tải chi tiết...</p>
+              <p className="py-8 text-center text-xs text-cs-muted">Đang tải chi tiết...</p>
             ) : (
               <div className="mt-4 space-y-3 text-xs">
-                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-[#F7F7F5] p-4">
+                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-cs-bg p-4">
                   <div>
                     <p className="text-slate-400">Xe</p>
                     <p className="mt-0.5 font-bold text-slate-800">{getVehicleName(selected.vehicle)}</p>
@@ -399,8 +385,7 @@ function Appointments() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
+          </Modal>
       )}
     </div>
   );

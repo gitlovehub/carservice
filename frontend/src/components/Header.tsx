@@ -157,7 +157,7 @@ function Header() {
     `rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
       active
         ? "bg-[#F5E8D0] text-[#1F2933]"
-        : "text-[#58636E] hover:bg-[#F7F7F5] hover:text-[#1F2933]"
+        : "text-[#58636E] hover:bg-cs-bg hover:text-[#1F2933]"
     }`;
 
   const handleLogout = () => {
@@ -184,7 +184,7 @@ function Header() {
               ? `rounded-xl px-4 py-3 text-sm font-semibold transition ${
                   isActive(item.path)
                     ? "bg-[#F5E8D0] text-[#1F2933]"
-                    : "text-[#58636E] hover:bg-[#F7F7F5] hover:text-[#1F2933]"
+                    : "text-[#58636E] hover:bg-cs-bg hover:text-[#1F2933]"
                 }`
               : navLinkClass(isActive(item.path))
           }
@@ -211,7 +211,7 @@ function Header() {
             <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D9DEE2] bg-white px-3 text-xs font-semibold text-[#1F2933] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5] sm:px-4"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D9DEE2] bg-white px-3 text-xs font-semibold text-[#1F2933] transition hover:border-[#D6A85F] hover:bg-cs-bg sm:px-4"
               >
                 Đăng nhập
               </Link>
@@ -276,7 +276,7 @@ function Header() {
                   className="absolute right-0 top-full z-50 mt-2.5 w-64 rounded-2xl border border-[#E1E4E6] bg-white p-2 shadow-xl shadow-slate-900/10"
                 >
                   <div className="border-b border-[#EEF0F2] px-3 py-2">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#8A949E]">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-cs-muted">
                       Tài khoản người dùng
                     </p>
                     <p className="mt-1 truncate text-xs font-semibold text-[#1F2933]">
@@ -288,7 +288,7 @@ function Header() {
                     <Link
                       role="menuitem"
                       to="/"
-                      className="flex items-center rounded-xl px-3 py-2.5 text-xs font-medium text-[#58636E] transition hover:bg-[#F7F7F5] hover:text-[#1F2933]"
+                      className="flex items-center rounded-xl px-3 py-2.5 text-xs font-medium text-[#58636E] transition hover:bg-cs-bg hover:text-[#1F2933]"
                     >
                       Trang chủ
                     </Link>
@@ -297,7 +297,7 @@ function Header() {
                       <Link
                         role="menuitem"
                         to={managementPage.path}
-                        className="flex items-center rounded-xl px-3 py-2.5 text-xs font-medium text-[#58636E] transition hover:bg-[#F7F7F5] hover:text-[#1F2933]"
+                        className="flex items-center rounded-xl px-3 py-2.5 text-xs font-medium text-[#58636E] transition hover:bg-cs-bg hover:text-[#1F2933]"
                       >
                         {managementPage.label}
                       </Link>
@@ -306,7 +306,7 @@ function Header() {
                     <Link
                       role="menuitem"
                       to="/account"
-                      className="flex items-center rounded-xl px-3 py-2.5 text-xs font-medium text-[#58636E] transition hover:bg-[#F7F7F5] hover:text-[#1F2933]"
+                      className="flex items-center rounded-xl px-3 py-2.5 text-xs font-medium text-[#58636E] transition hover:bg-cs-bg hover:text-[#1F2933]"
                     >
                       Thông tin tài khoản
                     </Link>
@@ -375,7 +375,7 @@ function Header() {
             <div className="flex gap-2 px-5 pb-4 lg:hidden">
               <Link
                 to="/login"
-                className="flex flex-1 items-center justify-center rounded-xl border border-[#D9DEE2] px-4 py-3 text-sm font-semibold text-[#1F2933] transition hover:bg-[#F7F7F5]"
+                className="flex flex-1 items-center justify-center rounded-xl border border-[#D9DEE2] px-4 py-3 text-sm font-semibold text-[#1F2933] transition hover:bg-cs-bg"
               >
                 Đăng nhập
               </Link>

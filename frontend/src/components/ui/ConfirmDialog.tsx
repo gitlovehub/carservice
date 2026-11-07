@@ -10,7 +10,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
 const variantStyle = {
   danger: { icon: "alert", box: "bg-danger-soft text-danger" },
   warning: { icon: "alert", box: "bg-warning-soft text-warning" },
-  info: { icon: "info", box: "bg-cs-soft text-cs-accent" },
+  info: { icon: "info", box: "bg-cs-soft text-cs-accent-text" },
 } as const;
 
 /**

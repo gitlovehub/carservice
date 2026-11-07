@@ -59,7 +59,7 @@ export default function BookingSummary({ vehicleLabel, items, hasSymptom, timeLa
       {duration && <p className="mt-1 text-right text-xs text-slate-500">{duration}</p>}
 
       <p className="mt-4 rounded-xl bg-[var(--cs-soft,#fff1f1)] px-3 py-2 text-xs text-slate-600">
-        Giá chốt sau khi kiểm tra xe. Garage chỉ làm khi bạn đồng ý.
+        Giá chốt sau khi kiểm tra xe. Gara chỉ làm khi bạn đồng ý.
       </p>
     </aside>
   );

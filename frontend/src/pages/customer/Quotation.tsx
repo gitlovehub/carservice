@@ -1,3 +1,4 @@
+import { Modal } from "../../components/ui";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Toast, type ToastType } from "../../components/auth/Toast";
@@ -13,6 +14,7 @@ import {
   type CustomerQuotation,
   type CustomerRepairOrder,
 } from "../../services/customerApi";
+import { StatusBadge } from "../../components/ui/Badge";
 
 type QuotationRow = {
   quotation: CustomerQuotation;
@@ -158,7 +160,7 @@ export default function QuotationPage() {
   return <section className="at-customer-page at-customer-quotes"><div className="at-customer-container">
     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)}/>}
     <header className="at-customer-heading"><div>
-      <p className="at-customer-eyebrow">MY GARAGE / QUOTATIONS</p>
+      <p className="at-customer-eyebrow">GARA CỦA TÔI / BÁO GIÁ</p>
       <h1>Báo giá của tôi</h1>
       <p>Xem từng hạng mục và quyết định những công việc được phép thực hiện.</p>
     </div></header>
@@ -185,7 +187,7 @@ export default function QuotationPage() {
         <p className="at-appointment-code">{row.quotation.quotation_code}</p>
         <h2>{getVehicleName(row.order.vehicle)}</h2>
         <p className="at-appointment-description">{row.order.vehicle?.license_plate ?? "Chưa có biển số"} · {row.order.repair_order_code}</p>
-      </div><span className={`at-customer-status ${row.quotation.status === "SENT" ? "is-pending" : row.quotation.status === "REJECTED" || row.quotation.status === "CANCELLED" ? "is-cancelled" : "is-confirmed"}`}>● {quotationStatusLabel[row.quotation.status] ?? row.quotation.status}</span></div>
+      </div><StatusBadge domain="quotation" status={row.quotation.status} audience="customer"/></div>
       <div className="at-quote-bottom"><div><small>TỔNG DỰ KIẾN</small><strong>{formatMoney(row.quotation.total_amount)}</strong>
         <span>{row.quotation.items?.length ?? 0} hạng mục · Phiên bản {row.quotation.version}</span></div>
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -200,8 +202,7 @@ export default function QuotationPage() {
     </article>)}
     <p className="at-customer-footnote">Báo giá chỉ có hiệu lực sau khi bạn phê duyệt các hạng mục. Gara không tự duyệt thay bạn.</p>
   </div>
-  {selectedRow && <div className="at-customer-modal-backdrop" role="presentation" onMouseDown={event => {if(event.target===event.currentTarget)closeModal();}}>
-    <div className="at-customer-modal" role="dialog" aria-modal="true" aria-labelledby="quote-modal-title">
+  {selectedRow && <Modal bare open onClose={closeModal} title={"Chi tiết báo giá"} className="at-customer-modal">
       <div className="at-modal-head"><div><p className="at-customer-eyebrow">CHI TIẾT / BÁO GIÁ</p>
         <h2 id="quote-modal-title">{selectedRow.quotation.quotation_code}</h2>
         <p>{getVehicleName(selectedRow.order.vehicle)} · {selectedRow.order.vehicle?.license_plate ?? "Chưa có biển số"}</p>
@@ -231,8 +232,7 @@ export default function QuotationPage() {
         {selectedRow.quotation.status === "SENT" && <><button type="button" disabled={submitting} className="at-danger-outline" onClick={() => void handleRespond(true)}>Từ chối</button>
           <button type="button" disabled={submitting || !selectedRow.quotation.items?.length} className="at-customer-primary" aria-busy={submitting} onClick={() => void handleRespond(false)}>{submitting ? "Đang gửi..." : "Xác nhận duyệt báo giá"}</button></>}
       </div>
-    </div>
-  </div>}
+    </Modal>}
   </section>;
 
 }

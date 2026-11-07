@@ -10,7 +10,7 @@ type ConfirmState = { options: ConfirmOptions; resolve: (result: boolean) => voi
 const toastStyle: Record<ToastTone, { icon: "check" | "alert" | "info"; box: string }> = {
   success: { icon: "check", box: "bg-success-soft text-success" },
   error: { icon: "alert", box: "bg-danger-soft text-danger" },
-  info: { icon: "info", box: "bg-cs-soft text-cs-accent" },
+  info: { icon: "info", box: "bg-cs-soft text-cs-accent-text" },
 };
 
 /** Cơ chế xác nhận + thông báo DUY NHẤT của hệ thống: useAppFeedback().confirm / notify. */

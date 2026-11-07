@@ -98,7 +98,7 @@ export function OtpInput({
             hasError
               ? "border-red-400 bg-red-50/50 text-red-700 focus:border-red-500 focus:ring-4 focus:ring-red-100"
               : digit
-              ? "border-[#D6A85F] bg-[#FAF8F5] text-[#20252B] shadow-sm ring-1 ring-[#D6A85F]/30"
+              ? "border-[#D6A85F] bg-cs-surface-2 text-[#20252B] shadow-sm ring-1 ring-[#D6A85F]/30"
               : "border-[#E1E4E6] bg-white text-[#20252B] hover:border-slate-300 focus:border-[#D6A85F] focus:ring-4 focus:ring-[#D6A85F]/15"
           } ${disabled ? "opacity-50 cursor-not-allowed bg-slate-100" : "cursor-text"}`}
         />
