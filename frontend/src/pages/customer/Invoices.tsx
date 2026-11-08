@@ -1,4 +1,5 @@
 import { Modal } from "../../components/ui";
+import { Button } from "../../components/ui";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -465,13 +466,7 @@ export default function InvoicesPage() {
             </div>
 
             <div className="mt-6 flex justify-end border-t border-slate-100 pt-4">
-              <button
-                type="button"
-                onClick={() => setSelectedInvoiceRow(null)}
-                className="cs-btn cs-btn-primary"
-              >
-                Đóng
-              </button>
+              <Button variant="secondary" onClick={() => setSelectedInvoiceRow(null)}>Đóng</Button>
             </div>
           </Modal>
       )}

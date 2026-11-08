@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Button } from "../../components/ui";
 import { Link, useSearchParams } from "react-router-dom";
 import { Toast, type ToastType } from "../../components/auth/Toast";
 import {
@@ -276,15 +277,7 @@ function Payment() {
                                         {canPayOnline && (
                       <div className="mb-5">
                         <p className="mb-2 font-bold text-slate-700">Thanh toán trực tuyến</p>
-                        <button
-                          type="button"
-                          onClick={() => void handleVnpay()}
-                          disabled={redirecting}
-                          aria-busy={redirecting}
-                          className="w-full cursor-pointer rounded-xl bg-[#005BAA] px-4 py-3 text-sm font-bold text-white hover:bg-[#004A8C] disabled:cursor-wait disabled:opacity-60"
-                        >
-                          {redirecting ? "Đang chuyển sang VNPay..." : "Thanh toán qua VNPay"}
-                        </button>
+                        <Button variant="primary" size="lg" block icon="card" loading={redirecting} loadingText="Đang chuyển sang VNPay..." onClick={() => void handleVnpay()}>Thanh toán qua VNPay</Button>
                         <p className="mt-2 leading-5 text-slate-500">
                           Hỗ trợ thẻ ATM/tài khoản ngân hàng, thẻ quốc tế và VNPay QR. Hệ thống tự cập nhật khi VNPay xác nhận.
                         </p>

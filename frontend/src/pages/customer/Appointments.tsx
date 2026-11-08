@@ -1,4 +1,6 @@
 import { Modal } from "../../components/ui";
+import { Button, IconButton, buttonClass } from "../../components/ui";
+import { Icon } from "../../components/ui/Icon";
 import "../../styles/garage-customer-pages.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -168,9 +170,9 @@ function Appointments() {
           <div>
           <h1>Lịch hẹn của tôi</h1>
           <p>Theo dõi lịch đã gửi, xác nhận từ gara và thông tin tiếp nhận.</p></div>
-          <Link className="at-customer-primary" to="/customer/booking">＋ Đặt lịch mới</Link>
+          <Link className={buttonClass({ variant: "primary" })} to="/customer/booking"><Icon name="plus" size={16}/>Đặt lịch mới</Link>
         </div>
-        {notice && <div role="status" className="at-customer-notice">{notice}<button onClick={() => setNotice("")} aria-label="Đóng thông báo">×</button></div>}
+        {notice && <div role="status" className="at-customer-notice">{notice}<IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setNotice("")}/></div>}
         <div className="at-customer-stats">
           <div className="at-customer-stat"><span>TỔNG LỊCH HẸN</span><strong>{loading ? "…" : pagination.total}</strong><small>Trong tài khoản của bạn</small></div>
           <div className="at-customer-stat"><span>CHỜ XÁC NHẬN</span><strong>{loading ? "…" : awaitingCount}</strong><small>Trên trang hiện tại · Cố vấn sẽ phản hồi</small></div>
@@ -185,7 +187,7 @@ function Appointments() {
           <label className="at-search-label" htmlFor="appointment-keyword">Tìm kiếm</label>
           <input id="appointment-keyword" value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Mã lịch, biển số, tên xe…" />
         </div>
-        {error && <div role="alert" className="at-customer-notice at-customer-error"><span>{error}</span><button type="button" onClick={() => setReloadKey(k=>k+1)}>Thử lại</button></div>}
+        {error && <div role="alert" className="at-customer-notice at-customer-error"><span>{error}</span><Button size="sm" variant="secondary" icon="refresh" onClick={() => setReloadKey(k=>k+1)}>Thử lại</Button></div>}
         {loading && <div className="at-customer-empty">Đang tải lịch hẹn...</div>}
         {!loading && filtered.length===0 && <div className="at-customer-empty"><h2>Chưa có lịch hẹn phù hợp</h2><p>Thử đổi bộ lọc hoặc tạo lịch bảo dưỡng mới.</p><Link to="/customer/booking" className="at-customer-primary">Đặt lịch bảo dưỡng</Link></div>}
         {!loading && filtered.map(a => <article key={a.id} className="at-appointment-card">
@@ -195,14 +197,14 @@ function Appointments() {
           </div>
           <div className="at-appointment-bottom">
             <strong>▣ {formatDate(a.appointment_date)} · {formatTime(a.appointment_time)}</strong>
-            <div className="at-appointment-actions"><button type="button" onClick={() => void openDetail(a)}>Chi tiết</button>
-              {canCancel(a) && <button type="button" onClick={() => { void openDetail(a).then(() => setCancelling(true)); }}>Hủy lịch</button>}
+            <div className="at-appointment-actions"><Button size="sm" variant="ghost" icon="eye" onClick={() => void openDetail(a)}>Chi tiết</Button>
+              {canCancel(a) && <Button size="sm" variant="danger-outline" icon="x" onClick={() => { void openDetail(a).then(() => setCancelling(true)); }}>Hủy lịch</Button>}
             </div>
           </div>
         </article>)}
         {pagination.last_page>1 && <div className="at-customer-pagination"><span>Trang {pagination.current_page}/{pagination.last_page} · {pagination.total} lịch hẹn</span><div>
-          <button disabled={page<=1} onClick={() => setPage(p=>Math.max(1,p-1))}>← Trước</button>
-          <button disabled={page>=pagination.last_page} onClick={() => setPage(p=>p+1)}>Sau →</button>
+          <Button size="sm" variant="outline" icon="chevron-left" disabled={page<=1} onClick={() => setPage(p=>Math.max(1,p-1))}>Trước</Button>
+          <Button size="sm" variant="outline" iconRight="chevron-right" disabled={page>=pagination.last_page} onClick={() => setPage(p=>p+1)}>Sau</Button>
         </div></div>}
       </div>
 
@@ -319,67 +321,23 @@ function Appointments() {
                 <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
                   {editing ? (
                     <>
-                      <button
-                        type="button"
-                        onClick={() => setEditing(false)}
-                        className="cs-btn cs-btn-secondary"
-                      >
-                        Bỏ qua
-                      </button>
-                      <button
-                        type="button"
-                        disabled={saving}
-                        onClick={() => void handleSaveEdit()}
-                        className="cs-btn cs-btn-primary"
-                      >
-                        {saving ? "Đang lưu..." : "Lưu thay đổi"}
-                      </button>
+                      <Button variant="secondary" onClick={() => setEditing(false)}>Bỏ qua</Button>
+                      <Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void handleSaveEdit()}>Lưu thay đổi</Button>
                     </>
                   ) : cancelling ? (
                     <>
-                      <button
-                        type="button"
-                        onClick={() => setCancelling(false)}
-                        className="cs-btn cs-btn-secondary"
-                      >
-                        Không hủy
-                      </button>
-                      <button
-                        type="button"
-                        disabled={saving}
-                        onClick={() => void handleCancel()}
-                        className="cs-btn cs-btn-danger"
-                      >
-                        {saving ? "Đang hủy..." : "Xác nhận hủy lịch"}
-                      </button>
+                      <Button variant="secondary" onClick={() => setCancelling(false)}>Không hủy</Button>
+                      <Button variant="danger" icon="x" loading={saving} loadingText="Đang hủy..." onClick={() => void handleCancel()}>Xác nhận hủy lịch</Button>
                     </>
                   ) : (
                     <>
                       {canEdit(selected) && (
-                        <button
-                          type="button"
-                          onClick={() => setEditing(true)}
-                          className="cs-btn cs-btn-secondary"
-                        >
-                          Đổi ngày giờ
-                        </button>
+                        <Button variant="secondary" icon="calendar" onClick={() => setEditing(true)}>Đổi ngày giờ</Button>
                       )}
                       {canCancel(selected) && (
-                        <button
-                          type="button"
-                          onClick={() => setCancelling(true)}
-                          className="cs-btn cs-btn-danger-outline"
-                        >
-                          Hủy lịch
-                        </button>
+                        <Button variant="danger-outline" icon="x" onClick={() => setCancelling(true)}>Hủy lịch</Button>
                       )}
-                      <button
-                        type="button"
-                        onClick={closeModal}
-                        className="cs-btn cs-btn-primary"
-                      >
-                        Đóng
-                      </button>
+                      <Button variant="secondary" onClick={closeModal}>Đóng</Button>
                     </>
                   )}
                 </div>

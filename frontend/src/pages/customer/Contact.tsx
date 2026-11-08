@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
@@ -243,13 +244,7 @@ function Contact() {
                       có thể liên hệ lại với bạn.
                     </p>
 
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      className="cs-btn cs-btn-primary"
-                    >
-                      Gửi yêu cầu
-                    </button>
+                    <Button variant="primary" icon="send" onClick={handleSubmit}>Gửi yêu cầu</Button>
                   </div>
                 </div>
               </div>

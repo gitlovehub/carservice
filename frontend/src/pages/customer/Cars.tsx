@@ -1,4 +1,5 @@
 import { Modal } from "../../components/ui";
+import { Button, IconButton } from "../../components/ui";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -164,11 +165,9 @@ function Cars() {
             <h1 className="mb-2 mt-3 text-[clamp(31px,3.4vw,46px)] font-extrabold leading-[1.16] tracking-normal">Xe của tôi</h1>
             <p className="text-sm leading-[1.7] text-cs-muted">Quản lý danh sách xe để đặt lịch nhanh hơn.</p>
           </div>
-          <button type="button" className="cs-btn cs-btn-primary w-max" onClick={() => {
+          <Button variant="tonal" icon={isAddFormOpen ? "x" : "plus"} className="w-max" onClick={() => {
             setError(""); setIsAddFormOpen((previous) => !previous);
-          }}>
-            <Icon name="plus" size={17} /> {isAddFormOpen ? "Đóng biểu mẫu" : "Thêm xe"}
-          </button>
+          }}>{isAddFormOpen ? "Đóng biểu mẫu" : "Thêm xe"}</Button>
         </div>
 
         {error && <div role="alert" className="mb-5 rounded-[10px] border border-[#84424c] bg-[#44262d] px-[17px] py-[14px] text-[13px] text-[#ffc0c8]">{error}</div>}
@@ -248,20 +247,8 @@ function Cars() {
               </div>
 
               <div className="mt-5 flex justify-end gap-3 border-t border-[#EEF0F2] pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAddFormOpen(false)}
-                  className="cs-btn cs-btn-secondary"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || saving}
-                  className="cs-btn cs-btn-primary"
-                >
-                  {saving ? "Đang lưu..." : "Lưu xe"}
-                </button>
+                <Button variant="secondary" onClick={() => setIsAddFormOpen(false)}>Hủy</Button>
+                <Button type="submit" variant="primary" icon="check" disabled={loading} loading={saving} loadingText="Đang lưu...">Lưu xe</Button>
               </div>
             </form>
           )}
@@ -274,7 +261,7 @@ function Cars() {
             <Icon name="car" size={38}/>
             <h2>Bạn chưa có xe nào</h2>
             <p>Thêm chiếc xe đầu tiên để đặt lịch bảo dưỡng.</p>
-            <button type="button" className="cs-btn cs-btn-primary w-max" onClick={() => setIsAddFormOpen(true)}>Thêm xe</button>
+            <Button variant="tonal" icon="plus" className="w-max" onClick={() => setIsAddFormOpen(true)}>Thêm xe</Button>
           </div>
         ) : (
           <div className="grid grid-cols-3 items-stretch gap-5 max-[1050px]:grid-cols-2 max-[670px]:grid-cols-1">
@@ -293,10 +280,10 @@ function Cars() {
                   <span className="mt-[13px] inline-block rounded-lg bg-cs-surface-2 px-3 py-2.5 text-xs font-extrabold tracking-[0.035em] text-cs-text">{car.license_plate || "CHƯA CÓ BIỂN"}</span>
                   <div className="mt-[25px] flex flex-wrap items-center justify-between gap-3 border-t border-cs-border pt-[18px] text-xs text-cs-muted">
                     <span>{mileage} km</span>
-                    <div className="flex flex-wrap items-center gap-[15px] [&_button]:cursor-pointer [&_button]:border-0 [&_button]:bg-transparent [&_button]:px-0 [&_button]:py-1.5 [&_button]:text-xs [&_button]:font-extrabold [&_button]:text-cs-text [&_button:hover]:text-[#cf2935]">
-                      <button type="button" onClick={() => setDetailVehicle(car)}>Chi tiết</button>
-                      <button type="button" onClick={() => openEditModal(car)}>Sửa</button>
-                      <button type="button" onClick={() => setDeletingVehicle(car)}>Xóa</button>
+                    <div className="flex items-center gap-1">
+                      <IconButton icon="eye" label="Chi tiết xe" onClick={() => setDetailVehicle(car)}/>
+                      <IconButton icon="edit" label="Sửa xe" onClick={() => openEditModal(car)}/>
+                      <IconButton icon="trash" tone="danger" label="Xóa xe" onClick={() => setDeletingVehicle(car)}/>
                     </div>
                   </div>
                 </article>
@@ -396,21 +383,8 @@ function Cars() {
             </p>
 
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeletingVehicle(null)}
-                className="cs-btn cs-btn-secondary"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={() => void handleDeleteVehicle()}
-                className="cs-btn cs-btn-danger"
-              >
-                {deleting ? "Đang xóa..." : "Xóa vĩnh viễn"}
-              </button>
+              <Button variant="secondary" onClick={() => setDeletingVehicle(null)}>Hủy</Button>
+              <Button variant="danger" icon="trash" loading={deleting} loadingText="Đang xóa..." onClick={() => void handleDeleteVehicle()}>Xóa vĩnh viễn</Button>
             </div>
           </Modal>
       )}
