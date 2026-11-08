@@ -51,7 +51,7 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 | ID | Mô tả | Phụ thuộc | Trạng thái |
 |---|---|---|---|
 | P3-DB | `quotation_item_responses` (ghi mỗi lần khách quyết định, gắn `customer_confirmation_id`); `quotations.type` (mặc định INITIAL)/`parent_quotation_id`/`reason`; model `QuotationItemResponse`, `Quotation::TYPE_*` | P1 | VERIFIED — suite 183/183 · commit `feat(quotation): record per-line approval history` |
-| P3-BE | Gộp `INITIAL` mới nhất + mọi `SUPPLEMENT` (không gộp bản báo giá lại — xem P0-02); SUPPLEMENT khi IN_PROGRESS | P3-DB | PENDING |
+| P3-BE | `latestQuotation` chỉ INITIAL; `billableQuotationIds()` = INITIAL hiệu lực + SUPPLEMENT APPROVED/PARTIALLY (hóa đơn, xuất kho); SUPPLEMENT chỉ khi IN_PROGRESS/WAITING_FOR_PARTS, bắt buộc lý do, **không giảm giá** (chưa có quy tắc), tối đa 1 bản chờ trả lời; duyệt xong → tạo work_items; chặn hoàn tất khi còn phát sinh SENT | P3-DB | VERIFIED — `SupplementalQuotationTest` 5/5 (500k / 650k / 300k), test P0 vẫn đạt, suite 188/188 |
 | P3-FE | Khách xem chẩn đoán, nhãn phát sinh; Advisor lập phát sinh, lịch sử duyệt | P3-BE | PENDING |
 | P3-QA | Test + trình duyệt + hồi quy | P3-FE | PENDING |
 

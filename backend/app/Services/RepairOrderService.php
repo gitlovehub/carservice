@@ -268,11 +268,33 @@ class RepairOrderService
         Employee $advisor,
         array $itemsInput,
         float $discountAmount = 0,
-        ?string $validUntil = null
+        ?string $validUntil = null,
+        string $type = Quotation::TYPE_INITIAL,
+        ?string $reason = null,
     ): Quotation {
         $this->assertAdvisor($advisor);
 
-        if (! in_array($ro->status, [RepairOrder::INSPECTING, RepairOrder::QUOTING, RepairOrder::WAITING_APPROVAL], true)) {
+        $parentId = null;
+        if ($type === Quotation::TYPE_SUPPLEMENT) {
+            // P3: phát sinh khi đang sửa — cộng thêm vào báo giá gốc, khách duyệt riêng từng dòng.
+            if (! in_array($ro->status, [RepairOrder::IN_PROGRESS, RepairOrder::WAITING_FOR_PARTS], true)) {
+                throw InvalidStatusTransitionException::because('Chỉ lập báo giá phát sinh khi phiếu đang sửa chữa hoặc chờ phụ tùng.');
+            }
+            if (mb_strlen(trim((string) $reason)) < 5) {
+                throw InvalidStatusTransitionException::because('Báo giá phát sinh cần lý do (ít nhất 5 ký tự).');
+            }
+            if ($discountAmount > 0) {
+                // Chưa có quy tắc giảm giá cho phát sinh được duyệt: không cho phép để không đổi cách tính tiền.
+                throw InvalidStatusTransitionException::because('Báo giá phát sinh không áp dụng giảm giá.');
+            }
+            if ($ro->supplementQuotations()->whereIn('status', [Quotation::DRAFT, Quotation::SENT])->exists()) {
+                throw InvalidStatusTransitionException::because('Đang có báo giá phát sinh chưa được khách trả lời. Xử lý xong trước khi lập bản mới.');
+            }
+            $parentId = $ro->latestQuotation()->value('id');
+            if (! $parentId) {
+                throw InvalidStatusTransitionException::because('Chưa có báo giá gốc để lập phát sinh.');
+            }
+        } elseif (! in_array($ro->status, [RepairOrder::INSPECTING, RepairOrder::QUOTING, RepairOrder::WAITING_APPROVAL], true)) {
             throw InvalidStatusTransitionException::because(
                 'Chỉ lập báo giá khi Phiếu sửa chữa đang INSPECTING, QUOTING (báo giá đầu) hoặc WAITING_APPROVAL (báo giá lại).'
             );
@@ -284,7 +306,7 @@ class RepairOrderService
             ->pluck('part_id')
             ->all();
 
-        return DB::transaction(function () use ($ro, $advisor, $itemsInput, $discountAmount, $validUntil, $recommendedPartIds) {
+        return DB::transaction(function () use ($ro, $advisor, $itemsInput, $discountAmount, $validUntil, $recommendedPartIds, $type, $reason, $parentId) {
             $nextVersion = (int) $ro->quotations()->max('version') + 1;
 
             $quotation = Quotation::create([
@@ -292,6 +314,9 @@ class RepairOrderService
                 'repair_order_id' => $ro->id,
                 'advisor_id' => $advisor->id,
                 'version' => $nextVersion,
+                'type' => $type,
+                'parent_quotation_id' => $parentId,
+                'reason' => $type === Quotation::TYPE_SUPPLEMENT ? trim((string) $reason) : null,
                 'discount_amount' => $discountAmount,
                 'status' => Quotation::DRAFT,
                 'valid_until' => $validUntil,
@@ -386,6 +411,21 @@ class RepairOrderService
             };
             $quotation->customer_response_at = now();
             $quotation->save();
+
+            // P3: phát sinh được duyệt (khách trả lời hết) → tạo công việc cho dịch vụ được đồng ý.
+            if ($quotation->type === Quotation::TYPE_SUPPLEMENT
+                && in_array($quotation->status, [Quotation::APPROVED, Quotation::PARTIALLY_APPROVED], true)) {
+                foreach ($items->where('item_type', QuotationItem::TYPE_SERVICE)->where('is_approved', true) as $item) {
+                    WorkItem::create([
+                        'repair_order_id' => $quotation->repair_order_id,
+                        'service_id' => $item->service_id,
+                        'description' => $item->description,
+                        'status' => WorkItem::PENDING,
+                    ]);
+                }
+                $this->logHistory($quotation->repairOrder, $quotation->repairOrder->status, null,
+                    "Khách đã trả lời báo giá phát sinh {$quotation->quotation_code}.");
+            }
 
             return $quotation->fresh('items');
         });
@@ -484,7 +524,9 @@ class RepairOrderService
             throw InvalidStatusTransitionException::because('Chỉ ghi nhận phụ tùng thực dùng khi phiếu đang IN_PROGRESS.');
         }
 
-        $approvedItem = $ro->latestQuotation?->items()
+        // Báo giá gốc đang hiệu lực + phát sinh đã duyệt (P3).
+        $approvedItem = QuotationItem::query()
+            ->whereIn('quotation_id', $ro->billableQuotationIds())
             ->where('item_type', QuotationItem::TYPE_PART)
             ->where('is_approved', true)
             ->where('part_id', $data['part_id'])
@@ -555,6 +597,10 @@ class RepairOrderService
             throw InvalidStatusTransitionException::because('Còn hạng mục công việc chưa hoàn thành (PENDING/IN_PROGRESS).');
         }
 
+        if ($ro->supplementQuotations()->where('status', Quotation::SENT)->exists()) {
+            throw InvalidStatusTransitionException::because('Còn báo giá phát sinh đang chờ khách trả lời.');
+        }
+
         $this->transition($ro, RepairOrder::COMPLETED, $actor, $note ?? 'Hoàn tất toàn bộ công việc sửa chữa.');
 
         return $ro;
@@ -604,8 +650,13 @@ class RepairOrderService
                 'status' => Invoice::UNPAID,
             ]);
 
+            // Báo giá gốc đang hiệu lực + phát sinh đã duyệt (P3). Không gộp bản báo giá lại cũ (P0).
             $quotation = $ro->latestQuotation;
-            $approvedItems = $quotation ? $quotation->items()->where('is_approved', true)->get() : collect();
+            $approvedItems = QuotationItem::query()
+                ->whereIn('quotation_id', $ro->billableQuotationIds())
+                ->where('is_approved', true)
+                ->orderBy('quotation_id')->orderBy('id')
+                ->get();
 
             foreach ($approvedItems as $item) {
                 InvoiceItem::create([
