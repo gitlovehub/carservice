@@ -36,14 +36,22 @@
   /* ---- Viền ---- */
   --cs-border: #e5e5e2;
   --cs-border-strong: #d2d3cf;
+  --cs-btn-border: var(--cs-border); /* viền nút secondary (Admin: trắng 10%) */
 
   /* ---- Màu nhấn theo vai trò (mặc định: Customer = đỏ thương hiệu) ---- */
   --cs-accent: var(--cs-brand);
   --cs-accent-hover: var(--cs-brand-hover);
   --cs-accent-contrast: #ffffff;   /* chữ đặt trên nền accent */
-  --cs-soft: var(--cs-brand-soft); /* nền nhạt của accent: pill, mục đang chọn */
+  --cs-soft: var(--cs-brand-soft); /* nền nhạt của accent: pill, mục đang chọn, nút Tonal */
+  --cs-soft-hover: #ffe1e3;        /* nền Tonal khi hover */
+  --cs-on-soft: #a51f29;           /* chữ trên nền soft (nút Tonal) */
   --cs-focus: var(--cs-accent);    /* viền focus bàn phím */
   --cs-accent-text: var(--cs-accent); /* chữ màu nhấn trên nền surface (đạt AA ở cả hai theme) */
+  /* Nút chính: nền đặc (Customer/Advisor) hoặc gradient (Admin). */
+  --cs-accent-fill: var(--cs-accent);
+  --cs-accent-fill-hover: var(--cs-accent-hover);
+  --cs-btn-radius: 11px;           /* bo góc nút theo vai trò (Admin: viên thuốc) */
+  --cs-card-radius: 16px;          /* bo góc card / section theo vai trò (Admin: 24px) */
 
   /* ---- Trạng thái (dùng chung mọi vai trò) ---- */
   --cs-success: #15803d;  --cs-success-soft: #e7f6ec;  --cs-success-fg: #166534;
@@ -56,6 +64,11 @@
   --cs-danger-solid: #b91c1c;   --cs-danger-solid-hover: #991b1b;
   --cs-success-solid: #15803d;  --cs-success-solid-hover: #166534;
   --cs-on-solid: #ffffff;
+  /* Nút Success: Customer/Advisor nền đặc chữ trắng; Admin ghi đè thành kiểu tonal (nền tối, chữ xanh). */
+  --cs-success-btn-bg: var(--cs-success-solid);  --cs-success-btn-hover: var(--cs-success-solid-hover);
+  --cs-success-btn-fg: var(--cs-on-solid);       --cs-success-btn-border: var(--cs-success-solid);
+  /* Viền nút danger-outline (45% danger). */
+  --cs-danger-border: color-mix(in srgb, var(--cs-danger) 45%, transparent);
 
   /* ---- Vô hiệu ---- */
   --cs-disabled-bg: #ecece9;
@@ -86,6 +99,8 @@ html[data-theme="dark"] {
   color-scheme: dark;
 
   --cs-brand-soft: #3a2226;
+  --cs-soft-hover: #4a2a2f;
+  --cs-on-soft: #ffb3ba;
 
   --cs-bg: #111214;
   --cs-surface: #191b1e;
@@ -121,10 +136,27 @@ html[data-theme="dark"] {
 [data-area] {
   --cs-focus: var(--cs-accent);
   --cs-accent-text: var(--cs-accent);
+  --cs-accent-fill: var(--cs-accent);
+  --cs-accent-fill-hover: var(--cs-accent-hover);
 }
-html[data-theme="dark"] [data-area="customer"],
-html[data-theme="dark"] [data-area="admin"] {
+html[data-theme="dark"] [data-area="customer"] {
   --cs-accent-text: #ff7d85;
+}
+
+/* Customer: đỏ thương hiệu. */
+[data-area="customer"] {
+  --cs-accent: #cf2935;
+  --cs-accent-hover: #b3222d;
+  --cs-accent-contrast: #ffffff;
+  --cs-soft: #fff1f1;
+  --cs-soft-hover: #ffe1e3;
+  --cs-on-soft: #a51f29;
+  --cs-btn-radius: 11px;
+}
+html[data-theme="dark"] [data-area="customer"] {
+  --cs-soft: #3a2226;
+  --cs-soft-hover: #4a2a2f;
+  --cs-on-soft: #ffb3ba;
 }
 
 /* Advisor: vàng đồng. */
@@ -133,6 +165,9 @@ html[data-theme="dark"] [data-area="admin"] {
   --cs-accent-hover: #7a561e;
   --cs-accent-contrast: #ffffff;
   --cs-soft: #fbf2de;
+  --cs-soft-hover: #f3e3bd;
+  --cs-on-soft: #6e4e1a;
+  --cs-btn-radius: 11px;
   --cs-sidebar-bg: #211f1b;
   --cs-sidebar-accent: #e3bb6f;
 }
@@ -141,18 +176,72 @@ html[data-theme="dark"] [data-area="advisor"] {
   --cs-accent-hover: #edca88;
   --cs-accent-contrast: #1e1b14;
   --cs-soft: #302719;
+  --cs-soft-hover: #3b301d;
+  --cs-on-soft: #f0d08f;
   --cs-sidebar-bg: #181713;
 }
 
-/* Admin: nền graphite, nhấn bằng đỏ thương hiệu (không còn xanh neon). */
-[data-area="admin"] {
-  --cs-accent: var(--cs-brand);
-  --cs-accent-hover: var(--cs-brand-hover);
-  --cs-accent-contrast: #ffffff;
-  --cs-soft: var(--cs-brand-soft);
-  --cs-sidebar-bg: #1c1f23;
-  --cs-sidebar-accent: #f06a71;
-}
+/*
+ * Admin: navy + lime neon — khu LUÔN TỐI (cả khi html[data-theme="light"]).
+ * Ghi đè toàn bộ nền, chữ, viền, trạng thái; chữ trên nút chính là navy (#0b1022 trên lime ≈ 14:1),
+ * không dùng chữ trắng trên lime.
+ */
+[data-area="admin"],
 html[data-theme="dark"] [data-area="admin"] {
-  --cs-sidebar-bg: #141619;
+  color-scheme: dark;
+
+  --cs-accent: #c8f53c;
+  --cs-accent-hover: #b5e52c;
+  --cs-accent-fill: linear-gradient(135deg, #e2fb5a 0%, #9be86a 100%);
+  --cs-accent-fill-hover: linear-gradient(135deg, #d2f040 0%, #84dc56 100%);
+  --cs-accent-contrast: #0b1022;
+  --cs-accent-text: #c8f53c;
+  --cs-soft: #26301f;
+  --cs-soft-hover: #313d24;
+  --cs-on-soft: #d8f86a;
+  --cs-focus: #c8f53c;
+  --cs-btn-radius: 999px;
+  --cs-card-radius: 24px;
+
+  --cs-bg: #0b1022;
+  --cs-surface: #141a2e;
+  --cs-surface-2: #232a3f;
+  --cs-hover: #2c3450;
+  --cs-overlay: rgb(3 6 16 / 0.72);
+  --cs-text: #f4f6fb;
+  --cs-text-2: #c3c9d8;
+  --cs-muted: #aab2c5;
+  --cs-border: #232a3f;
+  --cs-border-strong: rgba(255, 255, 255, 0.24);
+  --cs-btn-border: rgba(255, 255, 255, 0.10);
+  --cs-disabled-bg: #1d2234;
+  --cs-disabled-fg: #6b7287;
+
+  --cs-success: #6ee7a0;  --cs-success-soft: #123524;  --cs-success-fg: #6ee7a0;
+  --cs-warning: #fbbf24;  --cs-warning-soft: #3a2f19;  --cs-warning-fg: #f6d48f;
+  --cs-danger:  #ff8a8a;  --cs-danger-soft:  #3a1f2a;  --cs-danger-fg:  #ffb3ba;
+  --cs-info:    #93c5fd;  --cs-info-soft:    #1d3049;  --cs-info-fg:    #b9d7ff;
+  --cs-neutral: #c3c9d8;  --cs-neutral-soft: #232a3f;  --cs-neutral-fg: #c3c9d8;
+  --cs-danger-solid: #d93a3a;  --cs-danger-solid-hover: #e85050;
+
+  /* Success ở Admin là kiểu tonal: nền tối, chữ xanh — khác hẳn nút chính lime chữ tối. */
+  --cs-success-btn-bg: #123524;  --cs-success-btn-hover: #174530;
+  --cs-success-btn-fg: #6ee7a0;  --cs-success-btn-border: rgba(110, 231, 160, 0.35);
+
+  --cs-sidebar-bg: #080c1a;
+  --cs-sidebar-fg: #f4f6fb;
+  --cs-sidebar-muted: #aab2c5;
+  --cs-sidebar-hover: rgb(255 255 255 / 0.06);
+  --cs-sidebar-border: rgb(255 255 255 / 0.08);
+  --cs-sidebar-accent: #c8f53c;
+
+  /* Ô tìm kiếm + thẻ lối tắt Admin. */
+  --cs-search-bg: #121933;
+  --cs-search-border: rgba(200, 245, 60, 0.35);
+  --cs-tile-navy: #161d36;
+  --cs-tile-violet: linear-gradient(120deg, #4a2a8f 0%, #1b1f40 85%);
+  --cs-tile-icon-bg: #26301f;
+
+  background: var(--cs-bg);
+  color: var(--cs-text);
 }

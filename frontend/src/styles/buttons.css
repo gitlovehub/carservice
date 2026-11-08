@@ -5,13 +5,16 @@
  * hoặc hàm buttonClass() cho <Link> trông như nút. Không tự viết class màu cho nút.
  *
  * Mức ưu tiên:
- *   primary   — hành động chính, tối đa MỘT nút trong mỗi khối thao tác, đặt cuối hàng.
- *   secondary — hành động phụ ngang hàng (Quay lại, Làm mới, In).
+ *   primary   — hành động chính, tối đa MỘT nút trong mỗi khối thao tác, đặt cuối hàng (Admin: gradient lime).
+ *   tonal     — hành động quan trọng thứ hai (Thêm xe, Gửi báo giá, Phân quyền, Thêm hạng mục).
+ *   secondary — hành động phụ ngang hàng (Quay lại, Làm mới, Hủy trong hộp thoại).
  *   outline   — ít ưu tiên hơn (Bộ lọc, Xuất file, Xem chi tiết).
  *   ghost     — thao tác nhẹ trong danh sách / thanh công cụ.
- *   danger    — xóa, hủy, đóng phiếu (luôn kèm hộp thoại xác nhận).
- *   danger-outline — hủy đặt cạnh nút chính, ít nổi bật hơn danger.
- *   success   — xác nhận thu tiền / hoàn tất.
+ *   danger    — nền đặc: CHỈ trong hộp thoại xác nhận (Xóa vĩnh viễn, Hủy lịch hẹn, Đóng phiếu).
+ *   danger-outline — Từ chối, Bỏ, Khóa tài khoản: đặt cạnh nút chính; ngoài danh sách dùng thay cho danger.
+ *   success   — tiền & hoàn tất (Customer/Advisor nền đặc; Admin kiểu tonal xanh).
+ *   .cs-btn-tone-danger — nút icon ghost chữ đỏ (Xóa trong dòng).
+ * Bo góc theo vai trò: var(--cs-btn-radius) (Admin 999px → nút icon tròn).
  *
  * Kích thước: sm 32px · md 40px (44px trên điện thoại) · lg 48px. Icon: 14 / 16 / 18px.
  *
@@ -44,6 +47,7 @@
 :where(button, input[type="submit"], input[type="button"]):disabled,
 :where(button)[aria-disabled="true"] {
   cursor: not-allowed;
+  /* Nút cũ chưa dùng .cs-btn: vẫn làm mờ; .cs-btn dùng token vô hiệu (mục 2). */
   opacity: 0.5;
   box-shadow: none;
   transform: none;
@@ -54,7 +58,7 @@
 .cs-unified-btn {
   --btn-bg: var(--cs-surface-2);
   --btn-fg: var(--cs-text);
-  --btn-border: var(--cs-border);
+  --btn-border: var(--cs-btn-border, var(--cs-border));
   --btn-hover-bg: var(--cs-hover);
   --btn-hover-border: var(--cs-border-strong);
   --btn-hover-fg: var(--btn-fg);
@@ -68,7 +72,7 @@
   min-height: 40px;
   padding: 8px 16px;
   border: 1px solid var(--btn-border);
-  border-radius: var(--radius-control, 11px);
+  border-radius: var(--cs-btn-radius, 11px);
   background: var(--btn-bg);
   color: var(--btn-fg);
   font-family: var(--font-sans);
@@ -105,11 +109,20 @@
 /* Hành động chính. */
 .cs-btn-primary,
 .cs-unified-primary {
-  --btn-bg: var(--cs-accent);
+  --btn-bg: var(--cs-accent-fill, var(--cs-accent));
   --btn-fg: var(--cs-accent-contrast);
-  --btn-border: var(--cs-accent);
-  --btn-hover-bg: var(--cs-accent-hover);
-  --btn-hover-border: var(--cs-accent-hover);
+  --btn-border: transparent;
+  --btn-hover-bg: var(--cs-accent-fill-hover, var(--cs-accent-hover));
+  --btn-hover-border: transparent;
+}
+
+/* Quan trọng thứ hai: nền soft, chữ on-soft, viền trong suốt. */
+.cs-btn-tonal {
+  --btn-bg: var(--cs-soft);
+  --btn-fg: var(--cs-on-soft);
+  --btn-border: transparent;
+  --btn-hover-bg: var(--cs-soft-hover);
+  --btn-hover-border: transparent;
 }
 
 /* Hành động phụ. */
@@ -117,7 +130,7 @@
 .cs-unified-secondary {
   --btn-bg: var(--cs-surface-2);
   --btn-fg: var(--cs-text);
-  --btn-border: var(--cs-border);
+  --btn-border: var(--cs-btn-border, var(--cs-border));
 }
 
 /* Ít ưu tiên: nền trong suốt, viền rõ. */
@@ -126,7 +139,7 @@
   --btn-fg: var(--cs-text);
   --btn-border: var(--cs-border-strong);
   --btn-hover-bg: var(--cs-surface-2);
-  --btn-hover-border: var(--cs-accent);
+  --btn-hover-border: var(--cs-focus, var(--cs-accent)); /* viền đổi sang màu vai trò */
 }
 
 /* Thao tác nhẹ: không viền, nền chỉ hiện khi rê chuột. */
@@ -152,7 +165,7 @@
 .cs-btn-danger-outline {
   --btn-bg: transparent;
   --btn-fg: var(--cs-danger);
-  --btn-border: color-mix(in srgb, var(--cs-danger) 45%, transparent);
+  --btn-border: var(--cs-danger-border);
   --btn-hover-bg: var(--cs-danger-soft);
   --btn-hover-border: var(--cs-danger);
   --btn-hover-fg: var(--cs-danger-fg);
@@ -160,12 +173,32 @@
 
 /* Hoàn tất / đã thu tiền. */
 .cs-btn-success {
-  --btn-bg: var(--cs-success-solid);
-  --btn-fg: var(--cs-on-solid);
-  --btn-border: var(--cs-success-solid);
-  --btn-hover-bg: var(--cs-success-solid-hover);
-  --btn-hover-border: var(--cs-success-solid-hover);
+  --btn-bg: var(--cs-success-btn-bg);
+  --btn-fg: var(--cs-success-btn-fg);
+  --btn-border: var(--cs-success-btn-border);
+  --btn-hover-bg: var(--cs-success-btn-hover);
+  --btn-hover-border: var(--cs-success-btn-border);
 }
+
+/* Nút icon chữ đỏ (Xóa trong dòng): ghost, hover nền danger-soft + viền danger. */
+.cs-btn.cs-btn-tone-danger {
+  --btn-fg: var(--cs-danger);
+  --btn-hover-fg: var(--cs-danger);
+  --btn-hover-bg: var(--cs-danger-soft);
+  --btn-hover-border: var(--cs-danger-border);
+}
+
+/* Vô hiệu: dùng token thay vì chỉ làm mờ. */
+.cs-btn:disabled:not([aria-busy="true"]), .cs-btn[aria-disabled="true"],
+.cs-unified-btn:disabled:not([aria-busy="true"]) {
+  opacity: 1;
+  background: var(--cs-disabled-bg);
+  color: var(--cs-disabled-fg);
+  border-color: var(--cs-disabled-bg);
+}
+
+/* Admin: nút icon ghost là vòng tròn nền surface-2. */
+[data-area="admin"] .cs-btn-icon.cs-btn-ghost { --btn-bg: var(--cs-surface-2); }
 
 /* ---------- 3. Kích thước ---------- */
 .cs-btn-sm { --btn-icon: 14px; min-height: 32px; padding: 5px 12px; gap: 6px; font-size:13px; }
@@ -192,7 +225,7 @@
 }
 /* Nút icon đang xử lý: thay icon bằng vòng quay. */
 .cs-btn-icon[aria-busy="true"] > svg { display: none; }
-.cs-btn[aria-busy="true"]:disabled { opacity: 0.75; cursor: progress; }
+.cs-btn[aria-busy="true"]:disabled { opacity: 0.8; cursor: progress; }
 
 @keyframes cs-btn-spin { to { transform: rotate(360deg); } }
 

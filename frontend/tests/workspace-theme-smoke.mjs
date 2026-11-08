@@ -6,7 +6,8 @@ const tokens = read('../src/styles/tokens.css');
 const dashboard = read('../src/pages/shared/WorkspaceDashboard.tsx');
 const app = read('../src/App.tsx');
 // Màu nhấn theo vai trò (sáng + tối) khai báo tập trung trong tokens.css.
-for (const [name, darkAccent] of Object.entries({advisor: '--cs-accent: #e3bb6f', admin: '--cs-sidebar-bg: #141619'})) {
+// Admin luôn tối (docs/ui-button-redesign.md): sidebar navy #080c1a, nút chính lime chữ tối.
+for (const [name, darkAccent] of Object.entries({advisor: '--cs-accent: #e3bb6f', admin: '--cs-sidebar-bg: #080c1a'})) {
   assert(tokens.includes(`html[data-theme="dark"] [data-area="${name}"]`), `${name} dark token scope absent`);
   assert(tokens.includes(darkAccent), `${name} dark token absent`);
   assert(css.includes(`data-area="${name}"`), `${name} role scope absent`);
