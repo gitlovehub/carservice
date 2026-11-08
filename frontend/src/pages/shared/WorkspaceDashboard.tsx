@@ -152,12 +152,20 @@ function TaskLink({ to, label, hint, load }: { to: string; label: string; hint: 
   </li>;
 }
 
-const adminShortcuts: Array<{ to: string; label: string; hint: string; icon: IconName }> = [
-  { to: "/admin/services", label: "Dịch vụ", hint: "Danh mục và giá dịch vụ", icon: "settings" },
-  { to: "/admin/maintenance-packages", label: "Gói bảo dưỡng", hint: "Gói theo mốc km", icon: "clipboard" },
+/** Thẻ lối tắt Admin (2 cột, xen kẽ navy / tím) — chỉ trỏ tới route có sẵn. */
+const adminTiles: Array<{ to: string; label: string; hint: string; icon: IconName }> = [
+  { to: "/admin/services", label: "Dịch vụ & gói", hint: "Danh mục, giá dịch vụ và gói bảo dưỡng", icon: "settings" },
   { to: "/admin/inventory", label: "Kho phụ tùng", hint: "Tồn kho và nhập xuất", icon: "box" },
   { to: "/admin/accounts", label: "Tài khoản", hint: "Nhân viên và phân quyền", icon: "shield" },
-  { to: "/admin/working-hours", label: "Giờ làm việc", hint: "Khung giờ nhận lịch", icon: "clock" },
+  { to: "/admin/reports", label: "Báo cáo", hint: "Doanh thu và hiệu suất", icon: "chart" },
+];
+
+/** Hàng "Tiện ích": nút icon tròn 60px, nhãn bên dưới. */
+const adminUtilities: Array<{ to: string; label: string; icon: IconName }> = [
+  { to: "/admin/appointments", label: "Lịch hẹn", icon: "calendar" },
+  { to: "/admin/inventory", label: "Nhập kho", icon: "box" },
+  { to: "/admin/working-hours", label: "Giờ làm việc", icon: "clock" },
+  { to: "/admin/maintenance-packages", label: "Gói bảo dưỡng", icon: "clipboard" },
 ];
 
 export default function WorkspaceDashboard({ role }: { role: Mode }) {
@@ -210,6 +218,16 @@ export default function WorkspaceDashboard({ role }: { role: Mode }) {
       </>}
     </section>
 
+    {!advisor && <section aria-label="Lối tắt quản trị" className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2" data-testid="admin-shortcut-tiles">
+      {adminTiles.map((tile, index) => <Link key={tile.to} to={tile.to} className={`cs-admin-tile ${index % 4 === 1 || index % 4 === 2 ? "is-violet" : ""}`}>
+        <span className="min-w-0">
+          <span className="block text-section text-cs-text">{tile.label}</span>
+          <span className="mt-1 block text-small text-cs-text-2">{tile.hint}</span>
+        </span>
+        <span className="cs-admin-tile-icon" aria-hidden="true"><Icon name={tile.icon} size={22}/></span>
+      </Link>)}
+    </section>}
+
     <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
       <Panel title="Lịch hẹn hôm nay" description="Sắp xếp theo giờ hẹn"
         action={<Link className={buttonClass({ variant: "ghost", size: "sm" })} to={`${base}/appointments`}>Xem tất cả<Icon name="chevron-right" size={14}/></Link>}>
@@ -230,16 +248,12 @@ export default function WorkspaceDashboard({ role }: { role: Mode }) {
             action={<Link className={buttonClass({ variant: "ghost", size: "sm" })} to="/advisor/service-orders">Xem tất cả<Icon name="chevron-right" size={14}/></Link>}>
             <RecentOrders load={recentOrders} onRetry={retry}/>
           </Panel>
-        </> : <Panel title="Quản lý nhanh" description="Danh mục và cấu hình hệ thống">
-          <ul className="divide-y divide-cs-border">
-            {adminShortcuts.map(item => <li key={item.to}>
-              <Link to={item.to} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-cs-hover">
-                <span className="grid size-9 shrink-0 place-items-center rounded-control bg-cs-surface-2 text-cs-text-2" aria-hidden="true"><Icon name={item.icon} size={18}/></span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-small font-medium text-cs-text">{item.label}</p>
-                  <p className="text-caption text-cs-muted">{item.hint}</p>
-                </div>
-                <Icon name="chevron-right" size={16} className="text-cs-muted"/>
+        </> : <Panel title="Tiện ích" description="Mở nhanh các màn hình hay dùng">
+          <ul className="grid grid-cols-4 gap-2 px-4 py-5" data-testid="admin-utilities">
+            {adminUtilities.map(item => <li key={item.label}>
+              <Link to={item.to} className="cs-admin-utility">
+                <span className="cs-admin-utility-icon" aria-hidden="true"><Icon name={item.icon} size={22}/></span>
+                <span className="text-caption text-cs-text-2">{item.label}</span>
               </Link>
             </li>)}
           </ul>

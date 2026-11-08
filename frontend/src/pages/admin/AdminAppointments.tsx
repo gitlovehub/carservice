@@ -1,4 +1,5 @@
-import { Button, PageHeader } from "../../components/ui";
+import { Button, IconButton, PageHeader, buttonClass } from "../../components/ui";
+import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { StatusBadge } from "../../components/ui/Badge";
 
@@ -284,13 +285,7 @@ function AdminAppointments() {
                 className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[#D9E8D8] bg-[#F0F7EF] px-4 py-3 text-xs text-[#315B35]"
               >
                 <p>{message}</p>
-                <button
-                  type="button"
-                  onClick={() => setMessage("")}
-                  className="font-bold"
-                >
-                  Đóng
-                </button>
+                <IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setMessage("")}/>
               </div>
             )}
 
@@ -300,14 +295,7 @@ function AdminAppointments() {
                 className="mb-4 flex flex-col justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 sm:flex-row sm:items-center"
               >
                 <p>{error}</p>
-                <button
-                  type="button"
-                  onClick={() => void loadAppointments()}
-                  disabled={loading}
-                  className="shrink-0 font-semibold underline underline-offset-4 disabled:opacity-50"
-                >
-                  Thử tải lại
-                </button>
+                <Button size="sm" variant="secondary" icon="refresh" className="shrink-0" disabled={loading} onClick={() => void loadAppointments()}>Thử tải lại</Button>
               </div>
             )}
 
@@ -345,16 +333,10 @@ function AdminAppointments() {
                     ))}
                   </select>
 
-                  <button
-                    type="button"
-                    onClick={() => {
+                  <Button variant="outline" icon="filter" onClick={() => {
                       setSearch("");
                       setStatus("Tất cả");
-                    }}
-                    className="cs-btn cs-btn-secondary"
-                  >
-                    Xóa lọc
-                  </button>
+                    }}>Xóa lọc</Button>
                 </div>
               </div>
 
@@ -445,9 +427,9 @@ function AdminAppointments() {
                                       "Đã xác nhận",
                                     )
                                   }
-                                  className="rounded-xl bg-[#1F2933] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#151D24] disabled:cursor-not-allowed disabled:opacity-50"
+                                  className={buttonClass({ variant: "success", size: "sm" })}
                                 >
-                                  {isUpdating ? "Đang xử lý..." : "Duyệt"}
+                                  <Icon name="check" size={14}/>{isUpdating ? "Đang xử lý..." : "Duyệt"}
                                 </button>
 
                                 <button
@@ -459,9 +441,9 @@ function AdminAppointments() {
                                       "Đã hủy",
                                     )
                                   }
-                                  className="rounded-xl border border-[#E1E4E6] px-3 py-2 text-[11px] font-semibold text-[#A24A4A] transition hover:bg-[#FDEEEE] disabled:cursor-not-allowed disabled:opacity-50"
+                                  className={buttonClass({ variant: "danger-outline", size: "sm" })}
                                 >
-                                  Hủy
+                                  <Icon name="x" size={14}/>Hủy
                                 </button>
                               </div>
                             )}
@@ -476,9 +458,9 @@ function AdminAppointments() {
                                     "Đã tiếp nhận",
                                   )
                                 }
-                                className="whitespace-nowrap rounded-xl border border-[#E1E4E6] px-3 py-2 text-[11px] font-semibold text-cs-muted transition hover:border-[#D6A85F] hover:bg-cs-bg disabled:cursor-not-allowed disabled:opacity-50"
+                                className={buttonClass({ variant: "primary", size: "sm", className: "whitespace-nowrap" })}
                               >
-                                {isUpdating ? "Đang xử lý..." : "Tiếp nhận"}
+                                <Icon name="car" size={14}/>{isUpdating ? "Đang xử lý..." : "Tiếp nhận"}
                               </button>
                             )}
 

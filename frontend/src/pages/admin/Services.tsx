@@ -1,4 +1,4 @@
-import { Button, Modal, PageHeader } from "../../components/ui";
+import { Button, IconButton, Modal, PageHeader } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { useEffect, useState, type FormEvent } from "react";
 import { fetchApi } from "../../services/api";
@@ -454,20 +454,9 @@ function Services() {
                 </select>
 
                 <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="cs-btn cs-btn-primary flex-1"
-                  >
-                    Tìm kiếm
-                  </button>
+                  <Button type="submit" variant="outline" icon="search" className="flex-1">Tìm kiếm</Button>
 
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold transition hover:bg-cs-surface-2"
-                  >
-                    Xóa lọc
-                  </button>
+                  <Button variant="ghost" icon="x" onClick={clearFilters}>Xóa lọc</Button>
                 </div>
               </form>
             </section>
@@ -475,14 +464,7 @@ function Services() {
             {notice && (
               <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-[#D8E8D9] bg-[#F0F7F0] px-4 py-3 text-sm text-[#35633B]">
                 <p>{notice}</p>
-                <button
-                  type="button"
-                  onClick={() => setNotice("")}
-                  className="font-bold"
-                  aria-label="Đóng thông báo"
-                >
-                  ×
-                </button>
+                <IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setNotice("")}/>
               </div>
             )}
 
@@ -508,14 +490,7 @@ function Services() {
                   className="m-5 flex items-start justify-between gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-700"
                 >
                   <p>{error}</p>
-                  <button
-                    type="button"
-                    onClick={() => setError("")}
-                    className="font-bold"
-                    aria-label="Đóng thông báo lỗi"
-                  >
-                    ×
-                  </button>
+                  <IconButton size="sm" icon="close" label="Đóng thông báo lỗi" onClick={() => setError("")}/>
                 </div>
               )}
 
@@ -536,13 +511,7 @@ function Services() {
                   <p className="mt-1 text-xs text-cs-muted">
                     Thử thay đổi từ khóa hoặc xóa bộ lọc.
                   </p>
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="mt-4 rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-xs font-semibold hover:bg-cs-surface-2"
-                  >
-                    Xóa bộ lọc
-                  </button>
+                  <Button variant="outline" icon="filter" className="mt-4" onClick={clearFilters}>Xóa bộ lọc</Button>
                 </div>
               ) : (
                 <div className="space-y-3 p-4 sm:p-5">
@@ -628,34 +597,12 @@ function Services() {
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => void openDetailModal(service)}
-                            disabled={isLoadingDetail}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-cs-surface-2 disabled:opacity-50"
-                          >
-                            Chi tiết
-                          </button>
+                          <IconButton icon="eye" label="Chi tiết" disabled={isLoadingDetail} onClick={() => void openDetailModal(service)}/>
 
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(service)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-cs-surface-2"
-                          >
-                            Chỉnh sửa
-                          </button>
+                          <IconButton icon="edit" label="Chỉnh sửa" onClick={() => openEditModal(service)}/>
 
                           {service.status === "ACTIVE" && (
-                            <button
-                              type="button"
-                              disabled={isDeleting}
-                              onClick={() => void handleDelete(service)}
-                              className="cs-btn cs-btn-danger-outline"
-                            >
-                              {deletingId === service.id
-                                ? "Đang xử lý..."
-                                : "Ẩn dịch vụ"}
-                            </button>
+                            <IconButton icon="trash" tone="danger" label="Ẩn dịch vụ" disabled={isDeleting} loading={deletingId === service.id} onClick={() => void handleDelete(service)}/>
                           )}
                         </div>
                       </div>
@@ -670,25 +617,9 @@ function Services() {
                 </span>
 
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={page <= 1 || isLoading}
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-cs-surface-2 disabled:opacity-40"
-                  >
-                    Trước
-                  </button>
+                  <Button size="sm" variant="outline" icon="chevron-left" disabled={page <= 1 || isLoading} onClick={() => setPage((current) => Math.max(1, current - 1))}>Trước</Button>
 
-                  <button
-                    type="button"
-                    disabled={page >= lastPage || isLoading}
-                    onClick={() =>
-                      setPage((current) => Math.min(lastPage, current + 1))
-                    }
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-cs-surface-2 disabled:opacity-40"
-                  >
-                    Tiếp
-                  </button>
+                  <Button size="sm" variant="outline" iconRight="chevron-right" disabled={page >= lastPage || isLoading} onClick={() => setPage((current) => Math.min(lastPage, current + 1))}>Tiếp</Button>
                 </div>
               </div>
             </section>
@@ -876,22 +807,9 @@ function Services() {
                   )}
 
                   <div className="flex flex-wrap justify-end gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setModal(null)}
-                      disabled={isSaving}
-                      className="rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-xs font-semibold disabled:opacity-50"
-                    >
-                      Hủy
-                    </button>
+                    <Button variant="secondary" disabled={isSaving} onClick={() => setModal(null)}>Hủy</Button>
 
-                    <button
-                      type="submit"
-                      disabled={isSaving}
-                      className="cs-btn cs-btn-primary"
-                    >
-                      {isSaving ? "Đang lưu..." : "Lưu dịch vụ"}
-                    </button>
+                    <Button type="submit" variant="primary" icon="check" loading={isSaving} loadingText="Đang lưu...">Lưu dịch vụ</Button>
                   </div>
                 </form>
               </>

@@ -1,4 +1,4 @@
-import { PageHeader } from "../../components/ui";
+import { Button, IconButton, PageHeader } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useState } from "react";
@@ -209,25 +209,13 @@ function AdminCustomers() {
                   <option value="Tạm khóa">Tạm khóa</option>
                 </select>
 
-                <button
-                  type="button"
-                  onClick={handleResetFilter}
-                  className="cs-btn cs-btn-secondary"
-                >
-                  Đặt lại
-                </button>
+                <Button variant="outline" icon="filter" onClick={handleResetFilter}>Đặt lại</Button>
               </div>
 
               {message && (
                 <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[#DCEBDD] bg-[#EEF7EF] px-4 py-3">
                   <p className="text-xs text-[#3F7047]">{message}</p>
-                  <button
-                    type="button"
-                    onClick={() => setMessage("")}
-                    className="text-xs font-semibold text-[#3F7047]"
-                  >
-                    Đóng
-                  </button>
+                  <IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setMessage("")}/>
                 </div>
               )}
 
@@ -298,19 +286,9 @@ function AdminCustomers() {
                         </td>
 
                         <td className="px-3 py-4">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleStatus(customer)}
-                            className={`rounded-xl border px-3 py-2 text-[11px] font-semibold transition ${
-                              customer.status === "Hoạt động"
-                                ? "border-[#F0D6D6] text-[#A24A4A] hover:bg-[#FDEEEE]"
-                                : "border-[#DCEBDD] text-[#3F7047] hover:bg-[#EEF7EF]"
-                            }`}
-                          >
-                            {customer.status === "Hoạt động"
-                              ? "Khóa"
-                              : "Mở khóa"}
-                          </button>
+                          {customer.status === "Hoạt động"
+                            ? <Button size="sm" variant="danger-outline" icon="lock" onClick={() => handleToggleStatus(customer)}>Khóa</Button>
+                            : <Button size="sm" variant="success" icon="check" onClick={() => handleToggleStatus(customer)}>Mở khóa</Button>}
                         </td>
                       </tr>
                     ))}
@@ -325,13 +303,7 @@ function AdminCustomers() {
                     <p className="mt-2 text-xs text-cs-muted">
                       Hãy thử từ khóa khác hoặc thay đổi bộ lọc.
                     </p>
-                    <button
-                      type="button"
-                      onClick={handleResetFilter}
-                      className="cs-btn cs-btn-primary mt-4"
-                    >
-                      Xóa bộ lọc
-                    </button>
+                    <Button variant="outline" icon="filter" className="mt-4" onClick={handleResetFilter}>Xóa bộ lọc</Button>
                   </div>
                 )}
               </div>

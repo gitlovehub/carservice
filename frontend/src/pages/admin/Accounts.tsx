@@ -1,4 +1,4 @@
-import { PageHeader } from "../../components/ui";
+import { Button, IconButton, PageHeader } from "../../components/ui";
 import { useMemo, useState } from "react";
 
 type AccountRole = "Cố vấn dịch vụ" | "Kỹ thuật viên" | "Quản trị viên";
@@ -244,13 +244,7 @@ function Accounts() {
             {message && (
               <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[#D9E8D8] bg-[#F0F7EF] px-4 py-3 text-xs text-[#315B35]">
                 <p>{message}</p>
-                <button
-                  type="button"
-                  onClick={() => setMessage("")}
-                  className="font-bold"
-                >
-                  Đóng
-                </button>
+                <IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setMessage("")}/>
               </div>
             )}
 
@@ -265,13 +259,7 @@ function Accounts() {
                   </h2>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={openCreateForm}
-                  className="cs-btn cs-btn-primary"
-                >
-                  + Tạo tài khoản
-                </button>
+                <Button variant="primary" icon="plus" onClick={openCreateForm}>Tạo tài khoản</Button>
               </div>
 
               <form onSubmit={handleSearch}>
@@ -305,12 +293,7 @@ function Accounts() {
                     <option>Khóa</option>
                   </select>
 
-                  <button
-                    type="submit"
-                    className="cs-btn cs-btn-primary"
-                  >
-                    Tìm kiếm
-                  </button>
+                  <Button type="submit" variant="outline" icon="search">Tìm kiếm</Button>
                 </div>
               </form>
 
@@ -318,18 +301,12 @@ function Accounts() {
                 <p className="text-[11px] text-cs-muted">
                   Tìm kiếm và lọc danh sách theo thông tin hiện có.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => {
+                <Button size="sm" variant="ghost" icon="x" onClick={() => {
                     setKeyword("");
                     setSearchText("");
                     setRoleFilter("Tất cả vai trò");
                     setStatusFilter("Tất cả trạng thái");
-                  }}
-                  className="text-[11px] font-semibold text-cs-muted underline underline-offset-4 hover:text-[#20252B]"
-                >
-                  Xóa bộ lọc
-                </button>
+                  }}>Xóa bộ lọc</Button>
               </div>
             </div>
 
@@ -344,13 +321,7 @@ function Accounts() {
                       {editingAccount ? "Phân quyền tài khoản" : "Tạo tài khoản mới"}
                     </h2>
                   </div>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="rounded-lg border border-[#D9DDE1] px-3 py-2 text-xs hover:bg-cs-bg"
-                  >
-                    Đóng
-                  </button>
+                  <IconButton icon="close" label="Đóng" onClick={resetForm}/>
                 </div>
 
                 <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
@@ -418,19 +389,8 @@ function Accounts() {
                   )}
 
                   <div className="flex flex-wrap gap-3 md:col-span-2">
-                    <button
-                      type="submit"
-                      className="cs-btn cs-btn-primary"
-                    >
-                      {editingAccount ? "Lưu phân quyền" : "Tạo tài khoản"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                      className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold hover:bg-cs-bg"
-                    >
-                      Hủy
-                    </button>
+                    <Button type="submit" variant="primary" icon={editingAccount ? "check" : "plus"}>{editingAccount ? "Lưu phân quyền" : "Tạo tài khoản"}</Button>
+                    <Button variant="secondary" onClick={resetForm}>Hủy</Button>
                   </div>
                 </form>
               </div>
@@ -509,20 +469,10 @@ function Accounts() {
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openRoleForm(account)}
-                            className="rounded-xl border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#20252B] transition hover:bg-cs-surface-2"
-                          >
-                            Phân quyền
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleStatus(account)}
-                            className="rounded-xl border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#20252B] transition hover:bg-cs-surface-2"
-                          >
-                            {account.status === "Hoạt động" ? "Khóa" : "Mở khóa"}
-                          </button>
+                          <Button size="sm" variant="tonal" icon="key" onClick={() => openRoleForm(account)}>Phân quyền</Button>
+                          {account.status === "Hoạt động"
+                            ? <Button size="sm" variant="danger-outline" icon="lock" onClick={() => toggleStatus(account)}>Khóa</Button>
+                            : <Button size="sm" variant="success" icon="check" onClick={() => toggleStatus(account)}>Mở khóa</Button>}
                         </div>
                       </div>
                     </div>

@@ -192,3 +192,27 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
 /* Badge trạng thái Admin: đang hoạt động = nền tối lime, trung tính = navy. */
 [data-area="admin"] :is(.cs-admin-badge-active, [data-status="ACTIVE"]) { background: var(--cs-soft); color: var(--cs-on-soft); }
 [data-area="admin"] .cs-admin-badge-neutral { background: var(--cs-surface-2); color: var(--cs-text-2); }
+
+/* Dashboard Admin: thẻ lối tắt (navy / tím, bo 24px, icon lime trong ô tối) + hàng "Tiện ích" (nút tròn 60px). */
+.cs-admin-tile {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 112px; padding: 20px 22px; border-radius: var(--cs-card-radius);
+  background: var(--cs-tile-navy); border: 1px solid var(--cs-btn-border);
+  transition: transform var(--cs-duration) ease, border-color var(--cs-duration) ease;
+}
+.cs-admin-tile.is-violet { background: var(--cs-tile-violet); }
+.cs-admin-tile:hover { border-color: var(--cs-search-border); transform: translateY(-1px); }
+.cs-admin-tile:focus-visible { outline: 2px solid var(--cs-focus); outline-offset: 2px; }
+.cs-admin-tile-icon {
+  display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 999px;
+  background: var(--cs-tile-icon-bg); color: var(--cs-accent);
+}
+.cs-admin-utility { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; border-radius: 16px; padding: 4px; }
+.cs-admin-utility-icon {
+  display: grid; place-items: center; width: 60px; height: 60px; border-radius: 999px;
+  background: var(--cs-surface-2); color: var(--cs-accent);
+  transition: background-color var(--cs-duration) ease;
+}
+.cs-admin-utility:hover .cs-admin-utility-icon { background: var(--cs-soft-hover); }
+.cs-admin-utility:focus-visible { outline: 2px solid var(--cs-focus); outline-offset: 2px; }
+@media (max-width: 420px) { .cs-admin-utility-icon { width: 52px; height: 52px; } }
