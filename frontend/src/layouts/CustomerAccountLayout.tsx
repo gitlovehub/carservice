@@ -2,19 +2,31 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { Icon } from "../components/ui/Icon";
 import { useAuthSession } from "../contexts/authSession";
 import { getUserDisplayName } from "../pages/auth/auth";
-import { CUSTOMER_ACCOUNT_LINKS, isAccountLinkActive } from "./customerAccountNav";
+import { CUSTOMER_ACCOUNT_GROUPS, CUSTOMER_ACCOUNT_LINKS, isAccountLinkActive } from "./customerAccountNav";
 
 /**
  * Khu "Hồ sơ của tôi": Hồ sơ, Lịch hẹn, Xe của tôi, Tiến độ xe, Báo giá, Lịch sử dùng chung một sidebar tài khoản
  * (desktop: cột trái; điện thoại: thanh tab cuộn ngang). Chưa đăng nhập khách → để trang tự xử lý như cũ.
  */
+function readCachedCustomer(): { avatar?: string | null; email?: string | null; role?: string } & Parameters<typeof getUserDisplayName>[0] | null {
+  try {
+    if (localStorage.getItem("role") !== "CUSTOMER" || !localStorage.getItem("token")) return null;
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    return user?.role === "CUSTOMER" ? user : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function CustomerAccountLayout() {
   const session = useAuthSession();
   const location = useLocation();
-  const isCustomer = session.status === "authenticated" && session.account.role === "CUSTOMER";
-  if (!isCustomer) return <Outlet/>;
+  // Lúc đang kiểm tra phiên (tải trang lần đầu), dùng hồ sơ đã lưu để hiện khung ngay — chỉ để hiển thị,
+  // không dùng để phân quyền (các trang và API vẫn tự kiểm tra).
+  const cached = session.status === "checking" ? readCachedCustomer() : null;
+  const account = session.status === "authenticated" && session.account.role === "CUSTOMER" ? session.account : cached;
+  if (!account) return <Outlet/>;
 
-  const account = session.account;
   const name = getUserDisplayName(account) || "Khách hàng";
   const initials = name.trim().split(/\s+/).map(part => part[0]).filter(Boolean).slice(-2).join("").toUpperCase() || "KH";
 
@@ -29,14 +41,19 @@ export default function CustomerAccountLayout() {
           <span className="mt-0.5 inline-block rounded-full bg-cs-soft px-2 py-0.5 text-[11px] font-semibold text-cs-accent-text">Khách hàng</span>
         </span>
       </Link>
-      <nav className="flex gap-1 overflow-x-auto lg:mt-3 lg:flex-col lg:border-t lg:border-cs-border lg:pt-3" aria-label="Menu tài khoản">
-        {CUSTOMER_ACCOUNT_LINKS.map(link => {
-          const active = isAccountLinkActive(link, location.pathname);
-          return <Link key={link.to} to={link.to} aria-current={active ? "page" : undefined}
-            className={`flex shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition ${active ? "bg-cs-soft text-cs-accent-text lg:shadow-[inset_3px_0_0_var(--cs-accent)]" : "text-cs-text hover:bg-cs-hover"}`}>
-            <Icon name={link.icon} size={18}/>{link.label}
-          </Link>;
-        })}
+      {/* Desktop: nhóm có tiêu đề; điện thoại: một hàng tab cuộn ngang (tự cuộn tới mục đang mở). */}
+      <nav className="flex gap-1 overflow-x-auto [scrollbar-width:none] lg:mt-3 lg:flex-col lg:gap-0 lg:overflow-visible lg:border-t lg:border-cs-border lg:pt-1" aria-label="Menu tài khoản">
+        {CUSTOMER_ACCOUNT_GROUPS.map(group => <div key={group} className="contents lg:block lg:pt-3">
+          <p className="hidden px-3 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-cs-muted lg:block">{group}</p>
+          {CUSTOMER_ACCOUNT_LINKS.filter(link => link.group === group).map(link => {
+            const active = isAccountLinkActive(link, location.pathname);
+            return <Link key={link.to} to={link.to} aria-current={active ? "page" : undefined}
+              ref={active ? el => el?.scrollIntoView({ block: "nearest", inline: "center" }) : undefined}
+              className={`flex min-h-10 shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold no-underline transition ${active ? "bg-cs-soft text-cs-accent-text lg:shadow-[inset_3px_0_0_var(--cs-accent)]" : "text-cs-text hover:bg-cs-hover"}`}>
+              <Icon name={link.icon} size={18}/>{link.label}
+            </Link>;
+          })}
+        </div>)}
       </nav>
     </aside>
     <div className="min-w-0 [&>*]:min-h-0">

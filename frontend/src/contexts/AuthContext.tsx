@@ -28,7 +28,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       queueMicrotask(() => { if (active) setSession({ status: "guest", account: null }); });
       return () => { active = false; };
     }
-    queueMicrotask(() => { if (active) setSession({ status: "checking", account: null }); });
+    // Đang đăng nhập mà kiểm tra lại (user-updated / storage): giữ phiên cũ tới khi /me trả lời,
+    // tránh header nháy "Đăng nhập" và layout tài khoản biến mất. Quyền vẫn do server quyết định.
+    queueMicrotask(() => { if (active) setSession(previous => previous.status === "authenticated" ? previous : { status: "checking", account: null }); });
     void fetchApi("/me")
       .then((response: { account?: NonNullable<AuthUserInfo> }) => {
         if (!active) return;

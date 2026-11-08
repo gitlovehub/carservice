@@ -3,7 +3,7 @@ import type { ShellNavItem } from "../../layouts/navigation";
 
 export type IconName = ShellNavItem["icon"] | "sun" | "moon" | "menu" | "close" | "logout" | "arrow" | "plus"
   | "search" | "chevron-left" | "chevron-right" | "chevron-down" | "edit" | "trash" | "more" | "check"
-  | "alert" | "info" | "eye" | "filter" | "user" | "refresh" | "sidebar";
+  | "alert" | "info" | "eye" | "filter" | "user" | "refresh" | "sidebar" | "card" | "star" | "file";
 type Props = { name: IconName; size?: number; className?: string };
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-6h6v6"/></>,
@@ -40,6 +40,9 @@ const paths: Record<IconName, ReactNode> = {
   user: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
   refresh: <><path d="M20 11a8 8 0 0 0-14.6-4.5M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5M20 20v-4h-4"/></>,
   sidebar: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></>,
+  card: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></>,
+  star: <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>,
+  file: <><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></>,
 };
 export function Icon({ name, size = 18, className }: Props) {
   return <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
