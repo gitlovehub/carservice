@@ -51,6 +51,12 @@ class CustomerRepairOrderController extends Controller
             'workItems',
             'invoice.items',
             'invoice.payments',
+            // P3: kết quả chẩn đoán cho khách — chỉ cột công khai, không có ghi chú nội bộ (inspection_items.note).
+            'inspections:id,repair_order_id,condition_description,diagnosis,inspected_at',
+            'inspections.items:id,inspection_id,item_name,condition_status,condition_description',
+            'inspections.recommendations:id,inspection_id,item_type,service_id,part_id,quantity',
+            'inspections.recommendations.service:id,name',
+            'inspections.recommendations.part:id,name',
             // Biên bản giao nhận đã gửi khách (không lộ bản nháp).
             'handovers' => fn ($query) => $query->whereIn('status', [VehicleHandover::STATUS_SUBMITTED, VehicleHandover::STATUS_CONFIRMED]),
             'handovers.checklistItems',

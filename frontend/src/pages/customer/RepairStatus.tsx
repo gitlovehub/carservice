@@ -115,9 +115,27 @@ function TrackingCard({ order }: { order: CustomerRepairOrder }) {
             <p className="text-sm leading-relaxed text-[var(--cs-muted,#757575)]">{detail?.note || order.note}</p>}
         </section>
       </div>
+      {!!detail?.inspections?.[0]?.inspected_at && <CustomerDiagnosisBlock inspection={detail.inspections[0]}/>}
       {!!detail?.handovers?.length && <CustomerHandoverBlock handovers={detail.handovers} onConfirmed={() => setDetailKey(key => key + 1)}/>}
     </article>
   );
+}
+
+const INSPECTION_TEXT: Record<string, string> = { PASSED: "Đạt", WARNING: "Cần lưu ý", FAILED: "Không đạt", NORMAL: "Bình thường", NEEDS_SERVICE: "Cần bảo dưỡng", NEEDS_REPLACEMENT: "Cần thay thế" };
+
+/** Kết quả chẩn đoán gara ghi nhận (P3): khách xem trước khi duyệt báo giá. */
+function CustomerDiagnosisBlock({ inspection }: { inspection: NonNullable<CustomerRepairOrder["inspections"]>[number] }) {
+  return <section aria-label="Kết quả chẩn đoán" className="mt-6 border-t border-[var(--cs-border,#e9e9e6)] pt-6 text-sm">
+    <h3 className="text-[17px] font-extrabold">Kết quả chẩn đoán</h3>
+    {inspection.diagnosis && <p className="mt-2 whitespace-pre-wrap">{inspection.diagnosis}</p>}
+    {!!inspection.items?.length && <ul className="mt-3 divide-y divide-[var(--cs-border,#e9e9e6)]">{inspection.items.map(item => <li key={item.id} className="flex flex-wrap justify-between gap-3 py-2">
+      <span>{item.item_name}{item.condition_description ? <span className="text-[var(--cs-muted,#757575)]"> · {item.condition_description}</span> : null}</span>
+      <strong className="text-xs">{INSPECTION_TEXT[item.condition_status ?? ""] ?? item.condition_status ?? "—"}</strong>
+    </li>)}</ul>}
+    {!!inspection.recommendations?.length && <><p className="mt-3 text-xs font-bold text-[var(--cs-muted,#757575)]">Gara đề xuất</p>
+      <ul className="mt-1">{inspection.recommendations.map(rec => <li key={rec.id}>• {rec.item_type === "PART" ? "Phụ tùng" : "Dịch vụ"}: {rec.part?.name || rec.service?.name || "—"} × {rec.quantity ?? 1}</li>)}</ul></>}
+    <PhotoUploader type="inspection" id={inspection.id} readOnly title="Ảnh chẩn đoán"/>
+  </section>;
 }
 
 /** Biên bản nhận xe gara gửi khách: xem và tự xác nhận trong tài khoản (P2). */

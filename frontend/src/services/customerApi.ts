@@ -79,6 +79,9 @@ export type CustomerQuotation = {
   id: number;
   repair_order_id: number;
   quotation_code: string;
+  /** P3: SUPPLEMENT = phát sinh khi đang sửa (cộng thêm, không thay thế báo giá gốc). */
+  type?: "INITIAL" | "SUPPLEMENT";
+  reason?: string | null;
   version: number;
   subtotal: number | string;
   discount_amount: number | string;
@@ -93,6 +96,12 @@ export type CustomerRepairOrder = {
   id: number;
   /** Biên bản giao nhận đã gửi khách (P2). */
   handovers?: import("./workflowService").WorkflowHandover[];
+  /** Kết quả chẩn đoán (P3) — chỉ cột công khai. */
+  inspections?: Array<{
+    id: number; condition_description?: string | null; diagnosis?: string | null; inspected_at?: string | null;
+    items?: Array<{ id: number; item_name: string; condition_status?: string | null; condition_description?: string | null }>;
+    recommendations?: Array<{ id: number; item_type: "SERVICE" | "PART"; quantity?: number | null; service?: { name?: string } | null; part?: { name?: string } | null }>;
+  }>;
   repair_order_code: string;
   vehicle_id: number;
   mileage_received?: number | null;

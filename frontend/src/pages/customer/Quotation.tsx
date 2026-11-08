@@ -184,7 +184,8 @@ export default function QuotationPage() {
       <p>Khi gara lập báo giá cho xe của bạn, thông tin sẽ xuất hiện tại đây.</p></div>}
     {!loading && !error && filtered.map(row => <article key={row.quotation.id} className="at-quote-card">
       <div className="at-appointment-top"><div>
-        <p className="at-appointment-code">{row.quotation.quotation_code}</p>
+        <p className="at-appointment-code">{row.quotation.quotation_code}{row.quotation.type === "SUPPLEMENT" && <span className="ml-2 rounded-full bg-cs-soft px-2 py-0.5 text-xs font-bold">Phát sinh</span>}</p>
+        {row.quotation.type === "SUPPLEMENT" && row.quotation.reason && <p className="text-xs text-cs-muted">Lý do phát sinh: {row.quotation.reason}</p>}
         <h2>{getVehicleName(row.order.vehicle)}</h2>
         <p className="at-appointment-description">{row.order.vehicle?.license_plate ?? "Chưa có biển số"} · {row.order.repair_order_code}</p>
       </div><StatusBadge domain="quotation" status={row.quotation.status} audience="customer"/></div>
@@ -208,6 +209,7 @@ export default function QuotationPage() {
         <p>{getVehicleName(selectedRow.order.vehicle)} · {selectedRow.order.vehicle?.license_plate ?? "Chưa có biển số"}</p>
       </div><button type="button" className="at-modal-close" onClick={closeModal} aria-label="Đóng cửa sổ">✕</button></div>
       <div className="at-modal-summary"><span>{quotationStatusLabel[selectedRow.quotation.status] ?? selectedRow.quotation.status}</span><strong>{formatMoney(selectedRow.quotation.total_amount)}</strong></div>
+      {selectedRow.quotation.type === "SUPPLEMENT" && <p className="at-quote-instruction"><strong>Báo giá phát sinh</strong> trong lúc sửa{selectedRow.quotation.reason ? `: ${selectedRow.quotation.reason}` : ""}. Hạng mục bạn từ chối sẽ không được làm và không tính tiền.</p>}
       <p className="at-quote-instruction">{selectedRow.quotation.status === "SENT" ? "Chọn hạng mục bạn đồng ý thực hiện. Bỏ chọn những hạng mục chưa muốn sửa." : "Danh sách hạng mục trong báo giá."}</p>
       {selectedRow.quotation.status === "SENT" && <div className="at-quote-select-all"><button type="button" className="cs-btn cs-btn-ghost cs-btn-sm" onClick={() => handleSelectAll(true)}>Chọn tất cả</button><button type="button" className="cs-btn cs-btn-ghost cs-btn-sm" onClick={() => handleSelectAll(false)}>Bỏ chọn</button></div>}
       <div className="at-quote-items">{(selectedRow.quotation.items ?? []).map(item => <label className="at-quote-item" key={item.id}>

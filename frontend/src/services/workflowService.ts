@@ -55,6 +55,7 @@ export type WorkflowQuotationItem = {
 };
 export type WorkflowQuotation = {
   id: number; quotation_code?: string; version?: number; status: string;
+  type?: "INITIAL" | "SUPPLEMENT"; reason?: string | null; parent_quotation_id?: number | null;
   subtotal?: Money; discount_amount?: Money; total_amount?: Money; items?: WorkflowQuotationItem[];
 };
 export type WorkflowWorkItem = {
@@ -215,8 +216,20 @@ export type CatalogPart = { id: number; sku: string; name: string; unit?: string
 export type QuotationLineInput = {
   item_type: "SERVICE" | "PART"; service_id?: number; part_id?: number; description?: string; quantity: number; unit_price?: number;
 };
+/** Báo giá gốc đang hiệu lực = INITIAL version cao nhất (khớp RepairOrder::latestQuotation). Phát sinh không thay thế. */
 export function latestQuotation(order: { quotations?: WorkflowQuotation[] }): WorkflowQuotation | null {
-  return [...(order.quotations ?? [])].sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0] ?? null;
+  return [...(order.quotations ?? [])].filter(q => (q.type ?? "INITIAL") === "INITIAL").sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0] ?? null;
+}
+
+/** Báo giá phát sinh (P3), cũ → mới. */
+export function supplementQuotations(order: { quotations?: WorkflowQuotation[] }): WorkflowQuotation[] {
+  return [...(order.quotations ?? [])].filter(q => q.type === "SUPPLEMENT").sort((a, b) => (a.version ?? 0) - (b.version ?? 0));
+}
+
+/** Dòng phụ tùng khách đã duyệt trong báo giá gốc + phát sinh đã trả lời xong (khớp billableQuotationIds). */
+export function billableQuotations(order: { quotations?: WorkflowQuotation[] }): WorkflowQuotation[] {
+  const initial = latestQuotation(order);
+  return [...(initial ? [initial] : []), ...supplementQuotations(order).filter(q => ["APPROVED", "PARTIALLY_APPROVED"].includes(q.status))];
 }
 /** Laravel decimal columns arrive as strings ("450000.00"). */
 export function toNumber(value: Money): number {
@@ -249,7 +262,7 @@ export const workflowApi = {
   technicians: () => fetchApi<TechnicianOption[]>("/technicians"),
   services: () => fetchApi<CatalogService[]>("/services"),
   parts: () => fetchApi<CatalogPart[]>("/parts"),
-  createQuotation: (id: number, payload: { discount_amount?: number; items: QuotationLineInput[] }) =>
+  createQuotation: (id: number, payload: { discount_amount?: number; items: QuotationLineInput[]; type?: "INITIAL" | "SUPPLEMENT"; reason?: string }) =>
     fetchApi<WorkflowQuotation>(`/repair-orders/${id}/quotations`, { method: "POST", body: JSON.stringify(payload) }),
   sendQuotation: (quotationId: number) => fetchApi<WorkflowQuotation>(`/quotations/${quotationId}/send`, { method: "POST" }),
   // Không có "respondQuotation" phía nhân viên: chỉ khách duyệt báo giá (customerApi.respondQuotation → /me/...).

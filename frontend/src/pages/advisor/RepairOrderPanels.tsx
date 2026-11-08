@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import {
-  formatVnd, latestQuotation, toNumber, workflowApi,
+  billableQuotations, formatVnd, latestQuotation, toNumber, workflowApi,
   type CatalogPart, type CatalogService, type InspectionResult, type QuotationLineInput, type RecommendationInput,
   type WorkflowOrder, type WorkflowQuotation,
 } from "../../services/workflowService";
@@ -188,7 +188,8 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
   const [partId, setPartId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [note, setNote] = useState("");
-  const approvedParts = latestQuotation(order)?.items?.filter(item => item.item_type === "PART" && item.is_approved) ?? [];
+  // Báo giá gốc + phát sinh đã duyệt (khớp backend billableQuotationIds).
+  const approvedParts = billableQuotations(order).flatMap(q => q.items ?? []).filter(item => item.item_type === "PART" && item.is_approved);
   const workItems = order.work_items ?? [];
   const unfinished = workItems.filter(item => ["PENDING", "IN_PROGRESS"].includes(item.status)).length;
   const inRepair = ["IN_PROGRESS", "WAITING_FOR_PARTS"].includes(order.status);
