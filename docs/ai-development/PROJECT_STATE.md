@@ -20,8 +20,9 @@
 | Quyết định | Q1–Q7 đã chốt (D-005 … D-012) |
 | Phase hiện tại | **P1 – Hạ tầng bằng chứng và xác nhận** |
 | Chế độ | AUTONOMOUS DONE MODE (D-015): tự commit từng chức năng, không push |
-| Bước vừa xong | P1A `a67819e`, P1B `b533524`, P1C confirmation (commit `feat(confirmation)`) |
-| Bước tiếp theo | **P1D-01**: frontend ConfirmationPanel + PhotoUploader |
+| Bước vừa xong | **P1 xong**: P1A `a67819e`, P1B `b533524`, P1C `26389df`, P1D (commit `feat(confirmation-ui)`) |
+| Bước tiếp theo | **P2-A**: schema biên bản giao nhận xe |
+| DB dev | Đã migrate 3 bảng P1 (D-016) |
 
 ## Kiểm thử gần nhất
 

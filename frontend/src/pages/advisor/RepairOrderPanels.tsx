@@ -9,6 +9,8 @@ import { action, card, danger, input, Notice, outline, success } from "./Workflo
 import { errorText } from "./workflowFormat";
 import { StatusBadge } from "../../components/ui/Badge";
 import { getStatus } from "../../config/status";
+import { PhotoUploader } from "../../components/evidence/PhotoUploader";
+import { CounterApprovalPanel } from "./CounterApprovalPanel";
 
 /** Panels for the steps after diagnosis; every action calls Laravel and then reloads the order. */
 type PanelProps = { order: WorkflowOrder; onChanged: (message: string) => Promise<void> };
@@ -140,7 +142,8 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
 
     {quotation?.status === "DRAFT" && <div className="mt-5 flex flex-wrap gap-3"><button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void sendQuotation()}>Gửi báo giá cho khách</button></div>}
     {quotation?.status === "SENT" && <div className="mt-5">
-      <Notice>Đang chờ khách duyệt. Chỉ khách được đồng ý hoặc từ chối từng hạng mục, trong tài khoản của mình (mục "Báo giá"). Nếu khách đang ở quầy, hãy hướng dẫn khách đăng nhập để tự duyệt, sau đó bấm "Làm mới".</Notice>
+      <Notice>Đang chờ khách duyệt. Chỉ khách được đồng ý hoặc từ chối từng hạng mục: trong tài khoản của mình (mục "Báo giá", sau đó bấm "Làm mới"), hoặc tại quầy bằng mã gửi tới email chủ xe bên dưới.</Notice>
+      <CounterApprovalPanel quotation={quotation} onDone={onChanged}/>
     </div>}
     {quotation && ["APPROVED", "PARTIALLY_APPROVED"].includes(quotation.status) && order.status === "WAITING_APPROVAL" &&
       <div className="mt-5"><button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void startRepair()}>Bắt đầu sửa chữa →</button></div>}
@@ -456,6 +459,7 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
           : <p className="text-cs-muted">Chưa có đề xuất.</p>}
       </div>
       <p className="text-xs text-cs-muted">{inspection.recorded_by?.full_name ? `Người nhập: ${inspection.recorded_by.full_name} · ` : ""}{inspection.inspected_at ? `Hoàn tất ${new Date(inspection.inspected_at).toLocaleString("vi-VN")}` : "Chưa hoàn tất chẩn đoán"}</p>
+      <div className="print:hidden"><PhotoUploader type="inspection" id={inspection.id} title="Ảnh chẩn đoán"/></div>
     </div>}
 
     {canFinish && <form className="mt-5 space-y-4 border-t border-cs-border pt-5 print:hidden" onSubmit={event => void addMore(event)}>
