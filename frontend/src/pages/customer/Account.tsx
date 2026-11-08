@@ -7,7 +7,7 @@ import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthInd
 import VietnamAddressSelector from "../../components/common/VietnamAddressSelector";
 import { logout } from "../auth/auth";
 import { Link } from "react-router-dom";
-import { Button } from "../../components/ui/Button";
+import { Button, IconButton } from "../../components/ui/Button";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -458,7 +458,7 @@ function Account() {
               <h1>Hồ sơ của tôi</h1>
               <p>Quản lý thông tin cá nhân, ảnh đại diện và bảo mật tài khoản.</p>
             </div>
-            <button type="button" className="at-customer-primary" onClick={handleOpenEditProfile}>Chỉnh sửa thông tin</button>
+            <Button variant="primary" icon="edit" onClick={handleOpenEditProfile}>Chỉnh sửa thông tin</Button>
           </div>
 
           <div role="tablist" aria-label="Hồ sơ" className="flex gap-2 border-b border-cs-border">
@@ -496,7 +496,7 @@ function Account() {
             {account?.role === "CUSTOMER" && <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6" data-testid="profile-vehicles">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="flex items-center gap-2.5 text-lg font-bold text-cs-text"><span className="text-cs-accent-text"><Icon name="car" size={22}/></span>Xe của tôi</h2>
-                <Link to="/customer/cars" className={buttonClass({ variant: "danger-outline", size: "sm", className: "no-underline" })}><Icon name="plus" size={16}/>Thêm xe</Link>
+                <Link to="/customer/cars" className={buttonClass({ variant: "tonal", size: "sm", className: "no-underline" })}><Icon name="plus" size={14}/>Thêm xe</Link>
               </div>
               {vehicles === null ? <p className="mt-4 text-sm text-cs-muted">Đang tải xe…</p>
                 : !vehicles.length ? <p className="mt-4 rounded-xl bg-cs-surface-2 px-4 py-6 text-center text-sm text-cs-muted">Bạn chưa đăng ký xe nào.</p>
@@ -507,7 +507,7 @@ function Account() {
                       <div className="min-w-0 flex-1"><p className="truncate font-bold text-cs-text">{name}</p><p className="font-mono text-sm text-cs-muted">{vehicle.license_plate}{vehicle.year ? ` · ${vehicle.year}` : ""}</p></div>
                       <div className="ml-auto flex gap-1">
                         <Link to="/customer/cars" aria-label={`Sửa xe ${vehicle.license_plate}`} title="Sửa xe" className="inline-flex size-10 items-center justify-center rounded-lg text-cs-text hover:bg-cs-hover"><Icon name="edit" size={18}/></Link>
-                        <button type="button" aria-label={`Xóa xe ${vehicle.license_plate}`} title="Xóa xe" onClick={() => void handleDeleteVehicle(vehicle.id, vehicle.license_plate)} className="inline-flex size-10 cursor-pointer items-center justify-center rounded-lg text-cs-danger hover:bg-cs-hover"><Icon name="trash" size={18}/></button>
+                        <IconButton icon="trash" tone="danger" label={`Xóa xe ${vehicle.license_plate}`} onClick={() => void handleDeleteVehicle(vehicle.id, vehicle.license_plate)}/>
                       </div>
                     </li>;
                   })}</ul>}

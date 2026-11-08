@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Button } from "../../components/ui";
 import CustomerHeader from "../../components/CustomerHeader";
 import CustomerTopbar from "../../components/CustomerTopbar";
 import { Toast, type ToastType } from "../../components/auth/Toast";
@@ -239,13 +240,7 @@ function Reviews() {
                   </p>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={submitting || finishedOrders.length === 0}
-                  className="cs-btn cs-btn-primary cs-btn-block" aria-busy={submitting}
-                >
-                  {submitting ? "Đang gửi..." : "Gửi đánh giá"}
-                </button>
+                <Button type="submit" variant="primary" icon="send" block loading={submitting} loadingText="Đang gửi..." disabled={finishedOrders.length === 0}>Gửi đánh giá</Button>
               </div>
             </form>
 

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Button, buttonClass } from "../../components/ui";
+import { Icon } from "../../components/ui/Icon";
 import { Link, useSearchParams } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { fetchApi } from "../../services/api";
@@ -910,15 +912,11 @@ export default function Booking() {
                 </div>
 
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                  <button type="button" onClick={copyBookingCode} className="cs-btn cs-btn-secondary">
-                    <i className="fa-regular fa-copy"></i> Sao chép mã
-                  </button>
-                  <Link to="/customer/appointments" className="cs-btn cs-btn-secondary">
-                    Xem lịch hẹn
+                  <Button variant="secondary" icon="file" onClick={copyBookingCode}>Sao chép mã</Button>
+                  <Link to="/customer/appointments" className={buttonClass({ variant: "outline" })}>
+                    <Icon name="calendar" size={16}/>Xem lịch hẹn
                   </Link>
-                  <button type="button" onClick={resetFormToStart} className="cs-btn cs-btn-primary">
-                    <i className="fa-solid fa-plus"></i> Đặt lịch khác
-                  </button>
+                  <Button variant="primary" icon="plus" onClick={resetFormToStart}>Đặt lịch khác</Button>
                 </div>
               </div>
             )}
@@ -926,25 +924,22 @@ export default function Booking() {
             {currentStep <= BOOKING_STEPS.length && (
               <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
                 {currentStep > 1 ? (
-                  <button type="button" onClick={() => goToStep(currentStep - 1)} className="cs-btn cs-btn-ghost">
-                    <i className="fa-solid fa-arrow-left"></i> Quay lại
-                  </button>
+                  <Button variant="secondary" icon="arrow-left" onClick={() => goToStep(currentStep - 1)}>Quay lại</Button>
                 ) : (
                   <div />
                 )}
-                <button
-                  type="button"
-                  disabled={submitting || (currentStep === BOOKING_STEPS.length && !isLoggedIn)}
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="ml-auto"
+                  iconRight={currentStep === BOOKING_STEPS.length ? "check" : "arrow-right"}
+                  loading={submitting}
+                  loadingText="Đang gửi..."
+                  disabled={currentStep === BOOKING_STEPS.length && !isLoggedIn}
                   onClick={handleNextClick}
-                  className="cs-btn cs-btn-primary ml-auto"
                 >
-                  {submitting
-                    ? "Đang gửi..."
-                    : currentStep === BOOKING_STEPS.length
-                      ? "Đặt lịch"
-                      : "Tiếp tục"}
-                  {!submitting && <i className={`fa-solid ${currentStep === BOOKING_STEPS.length ? "fa-check" : "fa-arrow-right"} text-xs`}></i>}
-                </button>
+                  {currentStep === BOOKING_STEPS.length ? "Xác nhận đặt lịch" : "Tiếp tục"}
+                </Button>
               </div>
             )}
           </div>
