@@ -30,10 +30,10 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 | P1B-02 | API `POST /media` (ADVISOR), `GET /media?attachable_type&attachable_id`, `GET /media/{id}` (theo `RepairOrderPolicy::view`); test 422/403/401 | P1B-01 | VERIFIED — suite 160/160 |
 | P1C-01 | `ConfirmationService`: hash nội dung (báo giá + lựa chọn từng dòng); `/me/quotations/{id}/respond` ghi thêm `CustomerConfirmation` ACCOUNT (logic duyệt không đổi) | P1A-02, Q4 | VERIFIED |
 | P1C-02 | OTP email `ConfirmationOtpMail` (liệt kê Đồng ý/Từ chối + tổng): TTL 10', tối đa 5 lần sai, dùng 1 lần, OTP mới vô hiệu OTP cũ, throttle 5/phút gửi, 10/phút verify | P1C-01, Q1 | VERIFIED |
-| P1C-03 | API ADVISOR `POST /quotations/{q}/otp`, `POST /quotations/{q}/verify-otp` (code + responses; đổi lựa chọn sau khi gửi → 422); `CustomerConfirmation` EMAIL_OTP + nhân viên chứng kiến | P1C-02 | VERIFIED — `QuotationConfirmationTest` 9/9, suite 169/169 |
-| P1D-01 | Frontend `PhotoUploader`, `ConfirmationPanel` (`components/ui`) | P1B-02, P1C-03 | PENDING |
+| P1C-03 | API ADVISOR `POST /quotations/{q}/otp`, `POST /quotations/{q}/verify-otp` (code + responses; đổi lựa chọn sau khi gửi → 422); `CustomerConfirmation` EMAIL_OTP + nhân viên chứng kiến | P1C-02 | VERIFIED — `QuotationConfirmationTest` 9/9, suite 169/169 · commit `26389df` |
+| P1D-01 | Frontend `components/evidence/PhotoUploader` (nén ≤ 1600 px, blob kèm token) gắn ở bước Chẩn đoán; `pages/advisor/CounterApprovalPanel` (chọn Đồng ý/Từ chối → gửi OTP → nhập mã) ở báo giá SENT; `services/evidenceService.ts` | P1B-02, P1C-03 | VERIFIED — tsc, build, eslint 0, smoke 15/15 (`evidence-confirmation-ui.mjs`) |
 | ~~P1D-02~~ | ~~`SignaturePad`~~ — **Hủy** theo D-012 | — | Không làm |
-| P1D-03 | Smoke test + kiểm trình duyệt + hồi quy toàn bộ P1; cập nhật baseline | P1D-01 | PENDING |
+| P1D-03 | Smoke test + kiểm trình duyệt + hồi quy toàn bộ P1; cập nhật baseline | P1D-01 | VERIFIED một phần — trình duyệt (phiếu #10, sáng/tối): panel hiển thị, Đồng ý/Từ chối cập nhật tổng (220.000 → 0 ₫), PhotoUploader liệt kê ảnh (GET 200), 0 lỗi console, 0 request ghi. **BROWSER_NOT_VERIFIED**: gửi/nhập OTP thật (sẽ gửi email thật) và upload ảnh (sẽ tạo dữ liệu trong DB dev) — bao phủ bởi `QuotationConfirmationTest`, `MediaApiTest` |
 
 ## P2 – Check-in, đổi xe, khách vãng lai (chia nhỏ khi đến lượt)
 
