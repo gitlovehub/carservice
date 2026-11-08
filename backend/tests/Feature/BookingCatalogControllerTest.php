@@ -54,7 +54,8 @@ class BookingCatalogControllerTest extends TestCase
         $packages = [
             'shared10k' => MaintenancePackage::factory()->create(['vehicle_model_id' => null, 'mileage_milestone' => 10000]),
             'vios20k' => MaintenancePackage::factory()->create(['vehicle_model_id' => $vios->id, 'mileage_milestone' => 20000]),
-            'otherModel' => MaintenancePackage::factory()->create(['vehicle_model_id' => VehicleModel::factory()->create()->id]),
+            // Dòng xe khác cùng hãng: tránh factory sinh ngẫu nhiên lại tên hãng "Toyota" (UNIQUE) — QA-01.
+            'otherModel' => MaintenancePackage::factory()->create(['vehicle_model_id' => VehicleModel::factory()->create(['brand_id' => $brand->id, 'name' => 'Corolla Altis'])->id]),
             'inactive' => MaintenancePackage::factory()->create(['vehicle_model_id' => null, 'status' => 'INACTIVE']),
         ];
         MaintenancePackage::factory()->create(['vehicle_model_id' => null]);
