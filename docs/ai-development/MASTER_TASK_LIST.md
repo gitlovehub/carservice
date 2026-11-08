@@ -26,11 +26,11 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 |---|---|---|---|
 | P1A-01 | Migration (chỉ thêm bảng): `media_attachments`, `customer_confirmations`, `confirmation_otps` | P0-04, G-02 | VERIFIED (SQLite test) · commit `a67819e` — `EvidenceSchemaTest` 4/4, suite 150/150, Pint đạt. Chưa migrate DB dev |
 | P1A-02 | Model, quan hệ, hằng số phương thức/mục đích; xác nhận chỉ thêm; test model | P1A-01 | VERIFIED — `EvidenceModelsTest` 3/3, suite 153/153 |
-| P1B-01 | `MediaService`: lưu private, SHA-256, kiểm loại/kích thước/số lượng; khóa thêm ảnh khi chứng từ đã được khách xác nhận | P1A-02, Q3 | VERIFIED — `MediaApiTest` 7/7 |
+| P1B-01 | `MediaService`: lưu private, SHA-256, kiểm loại/kích thước/số lượng; khóa thêm ảnh khi chứng từ đã được khách xác nhận | P1A-02, Q3 | VERIFIED — `MediaApiTest` 7/7 · commit `b533524` |
 | P1B-02 | API `POST /media` (ADVISOR), `GET /media?attachable_type&attachable_id`, `GET /media/{id}` (theo `RepairOrderPolicy::view`); test 422/403/401 | P1B-01 | VERIFIED — suite 160/160 |
-| P1C-01 | `ConfirmationService`: snapshot + hash nội dung, xác nhận bằng tài khoản khách | P1A-02, Q4 | PENDING |
-| P1C-02 | OTP email: `ConfirmationOtpMail`, hết hạn 10 phút, tối đa 5 lần sai, không dùng lại, throttle | P1C-01, Q1 | PENDING |
-| P1C-03 | API confirmation (gửi OTP, verify OTP tại quầy, khách xác nhận `/me/…`); test nhân viên không thể tự xác nhận | P1C-02 | PENDING |
+| P1C-01 | `ConfirmationService`: hash nội dung (báo giá + lựa chọn từng dòng); `/me/quotations/{id}/respond` ghi thêm `CustomerConfirmation` ACCOUNT (logic duyệt không đổi) | P1A-02, Q4 | VERIFIED |
+| P1C-02 | OTP email `ConfirmationOtpMail` (liệt kê Đồng ý/Từ chối + tổng): TTL 10', tối đa 5 lần sai, dùng 1 lần, OTP mới vô hiệu OTP cũ, throttle 5/phút gửi, 10/phút verify | P1C-01, Q1 | VERIFIED |
+| P1C-03 | API ADVISOR `POST /quotations/{q}/otp`, `POST /quotations/{q}/verify-otp` (code + responses; đổi lựa chọn sau khi gửi → 422); `CustomerConfirmation` EMAIL_OTP + nhân viên chứng kiến | P1C-02 | VERIFIED — `QuotationConfirmationTest` 9/9, suite 169/169 |
 | P1D-01 | Frontend `PhotoUploader`, `ConfirmationPanel` (`components/ui`) | P1B-02, P1C-03 | PENDING |
 | ~~P1D-02~~ | ~~`SignaturePad`~~ — **Hủy** theo D-012 | — | Không làm |
 | P1D-03 | Smoke test + kiểm trình duyệt + hồi quy toàn bộ P1; cập nhật baseline | P1D-01 | PENDING |

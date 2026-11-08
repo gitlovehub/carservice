@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Quotation;
 use App\Models\RepairOrder;
+use App\Services\ConfirmationService;
 use App\Services\RepairOrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -61,7 +62,7 @@ class CustomerRepairOrderController extends Controller
         return response()->json($repairOrder->invoice()->with('items', 'payments')->firstOrFail());
     }
 
-    public function respondQuotation(Request $request, Quotation $quotation): JsonResponse
+    public function respondQuotation(Request $request, Quotation $quotation, ConfirmationService $confirmations): JsonResponse
     {
         $this->authorizeCustomerResource($request, 'respond', $quotation);
 
@@ -77,7 +78,8 @@ class CustomerRepairOrderController extends Controller
             'responses.*.is_approved' => ['required', 'boolean'],
         ]);
 
-        return response()->json($this->service->recordCustomerResponse($quotation, $data['responses']));
+        // Logic duyệt giữ nguyên (RepairOrderService::recordCustomerResponse); thêm bằng chứng ACCOUNT.
+        return response()->json($confirmations->respondViaAccount($quotation, $data['responses'], $request));
     }
 
     private function customerId(Request $request): int

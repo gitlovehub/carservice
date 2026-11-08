@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\MaintenancePackageController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\PartController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\QuotationConfirmationController;
 use App\Http\Controllers\Api\QuotationController;
 use App\Http\Controllers\Api\RepairOrderController;
 use App\Http\Controllers\Api\ServiceController;
@@ -294,6 +295,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::prefix('quotations/{quotation}')->group(function (): void {
                 Route::post('send', 'send');
             });
+        });
+
+        // Khách duyệt tại quầy: OTP gửi email chủ xe, gắn với đúng lựa chọn từng dòng (D-005, D-008).
+        Route::controller(QuotationConfirmationController::class)->prefix('quotations/{quotation}')->group(function (): void {
+            Route::post('otp', 'requestOtp')->middleware('throttle:5,1');
+            Route::post('verify-otp', 'verifyOtp')->middleware('throttle:10,1');
         });
 
         /*
