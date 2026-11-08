@@ -75,6 +75,11 @@ export type HandoverChecklistItem = {
   /** CHECK_OUT: khác với biên bản nhận xe (P4). */
   is_discrepancy?: boolean;
 };
+/** Phụ tùng chờ đặt hàng (P6). */
+export type PartRequestRow = {
+  id: number; part_id: number; quantity: number; status: "REQUESTED" | "ORDERED" | "RECEIVED" | "CANCELLED";
+  eta_date?: string | null; supplier_note?: string | null; received_at?: string | null; part?: { name?: string; unit?: string | null } | null;
+};
 export type PickupAuthorization = {
   id: number; full_name: string; phone: string; id_last4: string; valid_until?: string | null;
   status: "ACTIVE" | "USED" | "REVOKED"; created_at?: string;
@@ -97,6 +102,7 @@ export type WorkflowOrder = {
   handovers?: WorkflowHandover[];
   pickup_authorizations?: PickupAuthorization[];
   flow_type?: "QUICK" | null;
+  part_requests?: PartRequestRow[];
   estimated_ready_at?: string | null;
   appointment_id?: number | null;
   appointment?: (CustomerRequest & { id: number; appointment_code?: string }) | null;
