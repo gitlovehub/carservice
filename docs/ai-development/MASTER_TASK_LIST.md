@@ -39,8 +39,9 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 
 | ID | Mô tả | Phụ thuộc | Trạng thái |
 |---|---|---|---|
-| P2-DB | `vehicle_handovers`, `handover_checklist_items`; cột mới `repair_orders` | P1 | PENDING |
-| P2-BE | Đổi xe (cùng chủ + lý do + audit), WALK_IN, `HandoverService`, chặn INSPECTING khi CHECK_IN chưa CONFIRMED | P2-DB | PENDING |
+| P2-DB | `vehicle_handovers`, `handover_checklist_items`; `repair_orders` + `booked_vehicle_id`, `vehicle_change_reason`, `source`, `requires_check_in` (mặc định false → phiếu cũ không bị chặn) | P1 | VERIFIED |
+| P2-B | `receive()`: đổi xe so với lịch hẹn nếu cùng chủ + lý do ≥ 5 ký tự + `audit_logs`; `source` APPOINTMENT/WALK_IN; phiếu mới `requires_check_in = true` | P2-DB | VERIFIED — `ReceptionVehicleChangeTest` 4/4, suite 173/173 |
+| P2-C | `HandoverService` + API CHECK_IN (DRAFT sửa được → SUBMITTED khóa → khách xác nhận ACCOUNT/OTP → CONFIRMED; VOID + lý do); chặn INSPECTING khi `requires_check_in` mà chưa có CHECK_IN CONFIRMED; media alias `handover` | P2-B | PENDING |
 | P2-FE | Advisor: chọn xe/vãng lai/biên bản CHECK_IN; Customer: xác nhận tình trạng | P2-BE | PENDING |
 | P2-QA | Test + trình duyệt + hồi quy | P2-FE | PENDING |
 
