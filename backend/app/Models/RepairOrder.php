@@ -86,6 +86,11 @@ class RepairOrder extends Model
         return $this->hasMany(VehicleHandover::class)->orderBy('id');
     }
 
+    public function partRequests(): HasMany
+    {
+        return $this->hasMany(PartRequest::class)->orderBy('id');
+    }
+
     public function pickupAuthorizations(): HasMany
     {
         return $this->hasMany(PickupAuthorization::class)->orderByDesc('id');

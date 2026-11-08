@@ -13,6 +13,9 @@ class InventoryTransaction extends Model
 
     public const TYPE_OUT = 'OUT';
 
+    /** P6: nhập kho khi phụ tùng đặt hàng về. */
+    public const TYPE_IN = 'IN';
+
     public function inventory(): BelongsTo
     {
         return $this->belongsTo(Inventory::class);
