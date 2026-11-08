@@ -20,8 +20,8 @@
 | Quyết định | Q1–Q7 đã chốt (D-005 … D-012) |
 | Phase hiện tại | **P1 – Hạ tầng bằng chứng và xác nhận** |
 | Chế độ | AUTONOMOUS DONE MODE (D-015): tự commit từng chức năng, không push |
-| Bước vừa xong | P1A (`a67819e`), P1B media (commit `feat(media)`) |
-| Bước tiếp theo | **P1C**: xác nhận khách + OTP email |
+| Bước vừa xong | P1A `a67819e`, P1B `b533524`, P1C confirmation (commit `feat(confirmation)`) |
+| Bước tiếp theo | **P1D-01**: frontend ConfirmationPanel + PhotoUploader |
 
 ## Kiểm thử gần nhất
 

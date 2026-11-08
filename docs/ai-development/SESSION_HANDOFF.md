@@ -8,23 +8,25 @@
 | Chức năng | Commit |
 |---|---|
 | P1A evidence schema + models | `a67819e` |
-| P1B media storage + authorization | commit `feat(media)` (hash: `git log --oneline -1 -- backend/app/Services/MediaService.php`) |
+| P1B media storage + authorization | `b533524` |
+| P1C customer confirmation + OTP | commit `feat(confirmation)` (xem `git log --oneline -1 -- backend/app/Services/ConfirmationService.php`) |
 
-## Vừa xong: P1B
+## Vừa xong: P1C
 
-- `app/Services/MediaService.php`: whitelist alias (`repair_order`, `quotation`, `inspection`), quy về phiếu sửa chữa để kiểm quyền; MIME thật (finfo) JPEG/PNG/WebP, ≤ 10 MB, ≤ 30 ảnh/đối tượng (lock), lưu `evidence/Y/m/uuid.ext` trên disk `local` (= storage/app/private), SHA-256; chặn thêm ảnh khi đối tượng đã có `customer_confirmations`.
-- `MediaController`: `GET /api/media` (list), `GET /api/media/{media}` (stream, nosniff, private cache) — quyền `RepairOrderPolicy::view`; `POST /api/media` — chỉ ADVISOR + `RepairOrderPolicy::update`, throttle 60/phút.
-- Test `MediaApiTest` 7/7. Suite 160/160.
+- `app/Services/ConfirmationService.php`: `quotationContentHash` (định danh + giá + lựa chọn từng dòng, không gồm status), `respondViaAccount` (gọi `RepairOrderService::recordCustomerResponse` + ghi ACCOUNT), `requestQuotationOtp` (chỉ SENT; email = customer.email → account.email; OTP 6 số Hash::make; vô hiệu OTP cũ), `verifyQuotationOtp` (kiểm usable → hash khớp → mã đúng; sai tăng attempts ngoài transaction; đúng: lock, used_at, ghi phản hồi + EMAIL_OTP + witness).
+- `QuotationConfirmationController` + route ADVISOR `POST /api/quotations/{q}/otp` (throttle 5/1), `POST /api/quotations/{q}/verify-otp` (throttle 10/1). Response gửi OTP che email (`ow***@domain`).
+- Mail `ConfirmationOtpMail` + `resources/views/emails/confirmation-otp.blade.php`.
+- `CustomerRepairOrderController::respondQuotation` dùng `respondViaAccount` (quy tắc duyệt không đổi).
+- Test `QuotationConfirmationTest` 9/9 (Mail::fake). Suite 169/169. Smoke P0 vẫn đạt.
 
-## Tiếp theo: P1C (một commit `feat(confirmation)`)
+## Tiếp theo: P1D-01 (frontend, commit `feat(confirmation-ui)`)
 
-- `ConfirmationService`:
-  - `contentHash(Quotation)`: SHA-256 của JSON chuẩn hóa (id, version, status, total, items: id/type/ref/qty/unit_price/amount).
-  - `requestOtp(quotation, advisorAccount)`: chỉ khi SENT; mã 6 số `random_int`, lưu `Hash::make`, TTL 10', gửi `ConfirmationOtpMail` tới email chủ xe (customer.email, fallback account.email); throttle route; vô hiệu OTP cũ cùng target (set used_at? → không: đánh dấu bằng attempts=MAX hoặc xóa? → **đặt `expires_at = now()`** cho OTP cũ chưa dùng).
-  - `verifyOtpAndRespond(quotation, code, responses, witnessEmployee, request)`: kiểm OTP usable, so hash nội dung hiện tại với `content_sha256` của OTP (khác → 409/422), sai mã → attempts++; đúng → `used_at`, gọi lại logic phản hồi hiện có của khách (RepairOrderService / CustomerRepairOrderController::respondQuotation — tái sử dụng service, không nhân bản), tạo `CustomerConfirmation` EMAIL_OTP + witness.
-  - Khách tự duyệt trong tài khoản (`POST /me/quotations/{id}/respond` hiện có): thêm ghi `CustomerConfirmation` METHOD_ACCOUNT (IP, UA, hash) — **không đổi** quy tắc duyệt/tính tiền.
-- API: `POST /api/quotations/{quotation}/otp` (ADVISOR), `POST /api/quotations/{quotation}/verify-otp-response` (ADVISOR, body: code + responses). Tên theo roadmap P3 nhưng chức năng thuộc P1 (D-005, D-008).
-- Test: `Mail::fake`; OTP sai 5 lần khóa; hết hạn; dùng lại bị từ chối; nội dung đổi sau khi gửi → thất bại; advisor không gọi được `/me/...`; xác nhận ACCOUNT được ghi.
+1. `frontend/src/services/workflowService.ts`: thêm `requestQuotationOtp(id, responses)`, `verifyQuotationOtp(id, code, responses)`; `mediaApi` (list/upload/blob) — fetch blob kèm token (img không gửi được header).
+2. `components/ui/ConfirmationPanel.tsx`: chọn Đồng ý/Từ chối từng dòng → "Gửi mã tới email chủ xe" → ô 6 số → "Xác nhận". Hiển thị email đã che + thời hạn.
+3. `components/ui/PhotoUploader.tsx`: chọn/chụp ảnh (`accept="image/jpeg,image/png,image/webp" capture="environment"`), nén ≤ 1600 px phía client (canvas), xem trước, upload tuần tự, danh sách ảnh đã có (blob URL, revoke khi unmount).
+4. `RepairOrderPanels.tsx` (SENT): thay Notice bằng Notice + `ConfirmationPanel`. **Cập nhật smoke `customer-approval-only.mjs`**: vẫn cấm `respondQuotation`/"Ghi nhận phản hồi tại quầy"/`/quotations/${id}/respond`; cho phép flow OTP. Không làm yếu kiểm tra P0.
+5. Chỗ dùng `PhotoUploader` trong P1: bước Kiểm tra & chẩn đoán (attachable `inspection`) — hoặc để P2 (biên bản) nếu P1 chưa có chỗ hợp lý. Ưu tiên: gắn ở InspectionPanel khi đã có inspection.
+6. tsc, build, eslint file sửa, smoke.
 
 ## Cần PO
 
