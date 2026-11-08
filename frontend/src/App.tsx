@@ -80,12 +80,12 @@ function App() {
         <Route path="/repair-status" element={<RepairStatus/>}/>
         <Route path="/quotation" element={<Quotation/>}/>
         <Route path="/customer/service-history" element={<ServiceHistory/>}/>
+        <Route path="/reviews" element={<Reviews/>}/>
+        <Route path="/invoices" element={<Invoices/>}/>
+        <Route path="/payment" element={<Payment/>}/>
+        <Route path="/payment/vnpay-return" element={<VnpayReturn/>}/>
       </Route>
       <Route path="/contact" element={<Contact/>}/>
-      <Route path="/payment" element={<Payment/>}/>
-        <Route path="/payment/vnpay-return" element={<VnpayReturn/>}/>
-      <Route path="/invoices" element={<Invoices/>}/>
-      <Route path="/reviews" element={<Reviews/>}/>
     </Route>
     </Route>
     {/* Shared account alias for older links and other existing roles. */}

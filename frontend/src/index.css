@@ -228,5 +228,6 @@ img {
 
 /* Hiệu ứng chuyển trang mượt (PageTransition) */
 @keyframes cs-page-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-.cs-page-enter { animation: cs-page-enter .28s cubic-bezier(.22,.61,.36,1) both; }
+/* `backwards` (không phải `both`): hết hiệu ứng thì không còn transform — nếu còn, modal `position: fixed` bên trong sẽ canh theo khung trang thay vì màn hình. */
+.cs-page-enter { animation: cs-page-enter .28s cubic-bezier(.22,.61,.36,1) backwards; }
 @media (prefers-reduced-motion: reduce) { .cs-page-enter { animation: none; } }

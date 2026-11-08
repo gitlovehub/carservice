@@ -48,7 +48,7 @@ export function AtelierPublicHeader() {
   const themeLabel = theme === "dark" ? "Bật chế độ sáng" : "Bật chế độ tối";
   const displayName = isAuthenticated ? getUserDisplayName(session.account) : "";
   const initial = (displayName.charAt(0) || "K").toUpperCase();
-  const accountLinks: Array<{ label: string; to: string; icon: IconName }> = isCustomer
+  const accountLinks: AccountLink[] = isCustomer
     ? CUSTOMER_ACCOUNT_LINKS
     : [{ label: "Trang quản lý", to: dashboard, icon: "home" }];
   const avatar = (size: string) => <span className={`inline-flex ${size} shrink-0 items-center justify-center overflow-hidden rounded-full bg-cs-accent text-xs font-bold text-cs-accent-contrast`}>
@@ -62,7 +62,10 @@ export function AtelierPublicHeader() {
       <IconButton icon={theme === "dark" ? "sun" : "moon"} label={themeLabel} variant="outline" onClick={toggleTheme} className="max-[820px]:hidden!"/>
       {isAuthenticated
         ? <div className="max-[820px]:hidden"><AccountMenu name={displayName} email={session.account.email} trigger={avatar("size-10")} links={accountLinks}/></div>
-        : <Link className={buttonClass({ variant: "outline", size: "sm", className: "no-underline max-[820px]:hidden!" })} to="/login">Đăng nhập</Link>}
+        : session.status === "checking"
+          // Đang kiểm tra phiên: giữ chỗ cho avatar, không hiện nhầm "Đăng nhập".
+          ? <span className="size-10 animate-pulse rounded-full bg-cs-surface-2 max-[820px]:hidden" aria-hidden="true"/>
+          : <Link className={buttonClass({ variant: "outline", size: "sm", className: "no-underline max-[820px]:hidden!" })} to="/login">Đăng nhập</Link>}
       <IconButton icon="menu" label="Mở menu" variant="outline" aria-expanded={menuOpen} aria-controls="mobile-drawer" onClick={() => setMenuOpen(true)} className="min-[821px]:hidden!"/>
     </div>
     <MobileDrawer open={menuOpen} onClose={() => setMenuOpen(false)}>
@@ -76,9 +79,12 @@ export function AtelierPublicHeader() {
         {!isAuthenticated && <><Link to="/login" onClick={() => setMenuOpen(false)}>Đăng nhập</Link><Link to="/register" onClick={() => setMenuOpen(false)}>Đăng ký</Link></>}
       </nav>
       {isAuthenticated && <nav className="mt-3 grid gap-1 border-t border-cs-border pt-3" aria-label="Tài khoản của tôi">
-        <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-cs-muted">{isCustomer ? "Tài khoản của tôi" : "Quản lý"}</p>
-        {accountLinks.map(l => <Link key={l.to} to={l.to} onClick={() => setMenuOpen(false)} aria-current={location.pathname === l.to ? "page" : undefined}
-          className={`flex items-center gap-3 rounded-control px-3 py-2.5 text-sm font-semibold no-underline hover:bg-cs-hover ${location.pathname === l.to ? "bg-cs-soft text-cs-accent-text" : "text-cs-text"}`}><Icon name={l.icon} size={18}/>{l.label}</Link>)}
+        {!isCustomer && <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-cs-muted">Quản lý</p>}
+        {accountLinks.map((l, i) => <div key={l.to}>
+          {groupStart(accountLinks, i) && <p className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-cs-muted">{groupStart(accountLinks, i)}</p>}
+          <Link to={l.to} onClick={() => setMenuOpen(false)} aria-current={location.pathname === l.to ? "page" : undefined}
+            className={`flex items-center gap-3 rounded-control px-3 py-2.5 text-sm font-semibold no-underline hover:bg-cs-hover ${location.pathname === l.to ? "bg-cs-soft text-cs-accent-text" : "text-cs-text"}`}><Icon name={l.icon} size={18}/>{l.label}</Link>
+        </div>)}
       </nav>}
       <div className="mt-auto grid gap-2 border-t border-cs-border pt-4">
         <Button variant="outline" size="sm" icon={theme === "dark" ? "sun" : "moon"} onClick={toggleTheme}>{theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}</Button>
@@ -89,7 +95,12 @@ export function AtelierPublicHeader() {
 }
 
 /** Dropdown tài khoản: mở khi rê chuột / bấm / focus vào avatar; chứa liên kết tài khoản và Đăng xuất. */
-function AccountMenu({ name, email, trigger, links }: { name: string; email?: string | null; trigger: ReactNode; links: Array<{ label: string; to: string; icon: IconName }> }) {
+type AccountLink = { label: string; to: string; icon: IconName; group?: string };
+
+/** Tiêu đề nhóm khi sang nhóm mới (Tài khoản / Dịch vụ / Chi phí). */
+const groupStart = (links: AccountLink[], index: number) => links[index].group && (index === 0 || links[index - 1].group !== links[index].group) ? links[index].group : null;
+
+function AccountMenu({ name, email, trigger, links }: { name: string; email?: string | null; trigger: ReactNode; links: AccountLink[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<number | undefined>(undefined);
@@ -115,7 +126,10 @@ function AccountMenu({ name, email, trigger, links }: { name: string; email?: st
       onClick={() => setOpen(o => !o)}>{trigger}</button>
     {open && <div role="menu" className="absolute right-0 top-full z-[70] mt-2 w-64 rounded-2xl border border-cs-border bg-cs-surface p-2 shadow-raised">
       <div className="border-b border-cs-border px-3 pb-3 pt-2"><p className="truncate text-sm font-bold text-cs-text">{name}</p>{email && <p className="truncate text-xs text-cs-muted">{email}</p>}</div>
-      <div className="py-1">{links.map(l => <Link key={l.to} role="menuitem" to={l.to} className="flex items-center gap-2.5 rounded-control px-3 py-2 text-sm font-semibold text-cs-text no-underline hover:bg-cs-hover"><Icon name={l.icon} size={16}/>{l.label}</Link>)}</div>
+      <div className="max-h-[min(70dvh,520px)] overflow-y-auto py-1">{links.map((l, i) => <div key={l.to}>
+        {groupStart(links, i) && <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-cs-muted">{groupStart(links, i)}</p>}
+        <Link role="menuitem" to={l.to} className="flex items-center gap-2.5 rounded-control px-3 py-2 text-sm font-semibold text-cs-text no-underline hover:bg-cs-hover"><Icon name={l.icon} size={16}/>{l.label}</Link>
+      </div>)}</div>
       <button type="button" role="menuitem" onClick={() => void logout()} className="flex w-full cursor-pointer items-center gap-2.5 rounded-control border-t border-cs-border px-3 py-2.5 text-sm font-semibold text-cs-danger hover:bg-cs-hover"><Icon name="logout" size={16}/>Đăng xuất</button>
     </div>}
   </div>;
@@ -135,7 +149,7 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
     return () => { document.body.style.overflow = overflow; document.removeEventListener("keydown", onKey); };
   }, [open, onClose]);
 
-  return <div className={`fixed inset-0 z-[80] min-[821px]:hidden ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+  return <div className={`fixed inset-0 z-[80] min-[821px]:hidden ${open ? "" : "pointer-events-none"}`} aria-hidden={!open} inert={!open}>
     <div className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0"}`} onClick={onClose}/>
     <aside id="mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu"
       className={`absolute right-0 top-0 flex h-dvh w-[min(320px,86vw)] flex-col overflow-y-auto bg-cs-surface p-4 shadow-raised transition-transform duration-300 ease-out ${open ? "translate-x-0" : "translate-x-full"}`}>

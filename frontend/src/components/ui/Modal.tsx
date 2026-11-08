@@ -110,10 +110,11 @@ export function Modal({ size = "md", bare = false, ...props }: OverlayProps & { 
   if (!rendered) return null;
   // Render tại chỗ (không portal): modal cũ còn class màu cố định, cần nằm trong .cs-shell
   // để các quy tắc dark-mode cầu nối trong shell.css vẫn áp dụng như trước.
-  if (bare) return <div className="cs-overlay cs-feedback-layer fixed inset-0 z-[300] flex items-center justify-center overflow-y-auto p-4" data-area={area} data-state={state}>
+  // `m-auto` (không dùng items-center): hộp ngắn nằm giữa màn hình, hộp cao hơn màn hình cuộn được từ đầu (không bị cắt).
+  if (bare) return <div className="cs-overlay cs-feedback-layer fixed inset-0 z-[300] flex overflow-y-auto overscroll-contain p-3 sm:p-6" data-area={area} data-state={state}>
     <div className="cs-overlay-backdrop fixed inset-0 bg-cs-overlay" aria-hidden="true" onMouseDown={() => { if (dismissible && open) onClose(); }}/>
     <div ref={panelRef} role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : undefined} tabIndex={-1}
-      className={`cs-modal-panel relative text-cs-text outline-none ${className}`}>
+      className={`cs-modal-panel relative m-auto text-cs-text outline-none ${className}`}>
       {children}
     </div>
   </div>;
