@@ -1,6 +1,7 @@
 # Đặc tả: Thiết kế lại hệ thống nút theo vai trò (đã duyệt)
 
-Bản thiết kế đã được duyệt: https://claude.ai/artifact/YWPyvoc1XFtVTuCm3Jxwjw
+Cập nhật 09/11/2026: Admin bỏ phong cách navy + lime luôn tối, dùng hệ màu cơ bản đỏ thương hiệu theo theme.
+Bản thiết kế ban đầu: https://claude.ai/artifact/YWPyvoc1XFtVTuCm3Jxwjw
 File này là nguồn sự thật để triển khai vào code. Phạm vi: **toàn bộ giao diện web của cả 3 tác nhân**
 (Customer, Advisor, Admin) trong `frontend/src`.
 
@@ -22,46 +23,39 @@ File này là nguồn sự thật để triển khai vào code. Phạm vi: **to�
 Thêm vào mỗi vai trò các token: `--cs-accent`, `--cs-accent-hover`, `--cs-accent-contrast`, `--cs-soft`,
 `--cs-soft-hover` (mới), `--cs-on-soft` (mới), `--cs-focus`, `--cs-btn-radius` (mới).
 
-| Token | Customer (đỏ) | Advisor (vàng đồng) | Admin (navy + lime neon) |
+| Token | Customer (đỏ) | Advisor (vàng đồng) | Admin (đỏ thương hiệu) |
 |---|---|---|---|
-| accent | `#cf2935` | `#8f6624` | `#c8f53c` |
-| accent-hover | `#b3222d` | `#7a561e` | `#b5e52c` |
-| accent-gradient (mới) | — | — | `linear-gradient(135deg, #e2fb5a 0%, #9be86a 100%)` |
-| accent-gradient-hover | — | — | `linear-gradient(135deg, #d2f040 0%, #84dc56 100%)` |
-| accent-contrast (chữ trên nút chính) | `#ffffff` | `#ffffff` | `#0b1022` |
-| soft (nền Tonal) | `#fff1f1` | `#fbf2de` | `#26301f` |
-| soft-hover | `#ffe1e3` | `#f3e3bd` | `#313d24` |
-| on-soft (chữ Tonal) | `#a51f29` | `#6e4e1a` | `#d8f86a` |
-| focus | `#cf2935` | `#8f6624` | `#c8f53c` |
-| btn-radius | `11px` | `11px` | `999px` (viên thuốc) |
+| accent | `#cf2935` | `#8f6624` | `var(--cs-brand)` = `#cf2935` |
+| accent-hover | `#b3222d` | `#7a561e` | `var(--cs-brand-hover)` = `#b3222d` |
+| accent-contrast (chữ trên nút chính) | `#ffffff` | `#ffffff` | `#ffffff` |
+| soft (nền Tonal) | `#fff1f1` | `#fbf2de` | `var(--cs-brand-soft)` |
+| soft-hover | `#ffe1e3` | `#f3e3bd` | mặc định chung (`#ffe1e3`; tối `#4a2a2f`) |
+| on-soft (chữ Tonal) | `#a51f29` | `#6e4e1a` | mặc định chung (`#a51f29`; tối `#ffb3ba`) |
+| focus | `#cf2935` | `#8f6624` | `#cf2935` |
+| btn-radius | `11px` | `11px` | `11px` (mặc định chung) |
 
 Giữ nguyên các giá trị dark-mode hiện có của Customer và Advisor; thêm `--cs-soft-hover` và `--cs-on-soft` tương ứng
 cho dark mode (gợi ý: Customer `#4a2a2f` / `#ffb3ba`, Advisor `#3b301d` / `#f0d08f`).
 
-### Admin = khu luôn tối (bất kể theme sáng/tối)
+### Admin = hệ màu cơ bản, theo theme sáng/tối
 
-`[data-area="admin"]` ghi đè **toàn bộ** token nền, chữ, viền, trạng thái sang bộ navy sau. Áp dụng cả khi
-`html[data-theme="light"]`; đặt `color-scheme: dark` cho khu này.
+`[data-area="admin"]` **chỉ** đổi nhóm accent và sidebar. Nền, chữ, viền, trạng thái, bo góc nút/card dùng token chung
+và tự đổi theo `html[data-theme]` (không ép `color-scheme`, không gradient, không viên thuốc 999px, không card 24px).
 
 | Token | Giá trị Admin |
 |---|---|
-| `--cs-bg` | `#0b1022` |
-| `--cs-surface` | `#141a2e` |
-| `--cs-surface-2` | `#232a3f` |
-| `--cs-hover` | `#2c3450` |
-| `--cs-border` | `#232a3f` (viền nút: `rgba(255,255,255,0.10)`) |
-| `--cs-border-strong` | `rgba(255,255,255,0.24)` |
-| `--cs-text` / `--cs-text-2` / `--cs-muted` | `#f4f6fb` / `#c3c9d8` / `#aab2c5` |
-| `--cs-disabled-bg` / `--cs-disabled-fg` | `#1d2234` / `#6b7287` |
-| `--cs-danger` (chữ/viền) / `--cs-danger-soft` | `#ff8a8a` / `#3a1f2a` |
-| `--cs-danger-solid` / hover | `#d93a3a` / `#e85050` |
-| Success (Admin dùng kiểu tonal) | nền `#123524`, hover `#174530`, chữ `#6ee7a0`, viền `rgba(110,231,160,0.35)` |
-| `--cs-sidebar-bg` | `#080c1a`; `--cs-sidebar-accent: #c8f53c` |
-| Ô tìm kiếm | nền `#121933`, viền `rgba(200,245,60,0.35)`, bo `999px`, icon lime |
-| Thẻ lối tắt | navy `#161d36` hoặc tím `linear-gradient(120deg, #4a2a8f 0%, #1b1f40 85%)`, bo `24px`, icon lime trong ô `#26301f` |
-| Card / section | bo góc `24px` |
+| `--cs-accent` / hover | `var(--cs-brand)` (#cf2935) / `var(--cs-brand-hover)` |
+| `--cs-accent-contrast` | `#fff` — nút primary nền đỏ đặc, chữ trắng |
+| `--cs-soft` | `var(--cs-brand-soft)` |
+| `--cs-accent-text` (theme tối) | `#ff7d85` (đỏ đọc được trên nền tối) |
+| `--cs-sidebar-bg` | `var(--cs-surface)` — trắng ở theme sáng, surface tối ở theme tối; viền phải `--cs-border` |
+| Chữ sidebar / tiêu đề nhóm / hover | `--cs-text-2` / `--cs-muted` / nền `--cs-hover` |
+| Mục đang chọn (`--cs-sidebar-active-bg/fg`) | nền đỏ đặc `#cf2935`, chữ + icon trắng, bo `10px` (cả hai theme) |
+| Ô tìm kiếm | style chung (`SearchInput`), không style riêng |
+| Thẻ lối tắt dashboard | thẻ trung tính `--cs-surface` + viền `--cs-border`, icon màu nhấn trên nền `--cs-soft` |
 
-Màu xanh lá của Success ở khu Admin phải là kiểu **tonal** (nền tối, chữ xanh), để khác hẳn nút chính lime chữ tối.
+Xanh lá ở khu Admin **chỉ** dùng cho badge trạng thái thành công ("Đang áp dụng", "Đã thanh toán"…) dạng chấm + chữ
+trên nền nhạt (`Badge tone="success"`). Nút ở Admin không dùng biến thể success (Mở khóa, Duyệt = secondary + icon check).
 
 ## 2. Hệ thống nút (`src/styles/buttons.css` + `components/ui/buttonClass.ts` + `Button.tsx`)
 
@@ -69,17 +63,17 @@ Màu xanh lá của Success ở khu Admin phải là kiểu **tonal** (nền t�
 
 | Variant | Mặc định | Hover | Khi dùng |
 |---|---|---|---|
-| primary | nền accent (Admin: gradient), chữ accent-contrast | accent-hover / gradient-hover | Hành động chính, tiến bước trong luồng. Tối đa 1 nút mỗi khối. |
+| primary | nền accent đặc, chữ accent-contrast | accent-hover | Hành động chính, tiến bước trong luồng. Tối đa 1 nút mỗi khối. |
 | **tonal (mới)** | nền soft, chữ on-soft, viền trong suốt | soft-hover | Hành động quan trọng thứ hai: Thêm xe, Gửi báo giá, Phân quyền, Thêm hạng mục. |
 | secondary | surface-2, viền border | hover, viền border-strong | Quay lại, Làm mới, Hủy trong hộp thoại. |
 | outline | trong suốt, viền border-strong | nền surface-2, **viền đổi sang focus (màu vai trò)** | Xem chi tiết, In, Lọc, Xuất file. |
 | ghost | trong suốt, chữ text-2 | nền hover, chữ text | Thao tác trong dòng bảng / toolbar. |
-| success | Customer/Advisor: nền `#15803d` chữ trắng; Admin: tonal xanh | đậm hơn | Đồng ý báo giá, Đã nhận tiền mặt, Bàn giao xe, Duyệt nhập kho, Kích hoạt. |
+| success | nền `#15803d` chữ trắng (kiểu chung) | đậm hơn | Customer/Advisor: Đồng ý báo giá, Đã nhận tiền mặt, Bàn giao xe, Xuất kho. Admin không dùng. |
 | danger-outline | trong suốt, chữ danger, viền danger 45% | nền danger-soft | Từ chối, Bỏ, Khóa tài khoản: đặt cạnh nút chính. |
 | danger | nền danger-solid chữ trắng | danger-solid-hover | Xóa vĩnh viễn, Hủy lịch hẹn, Đóng phiếu: **chỉ trong ConfirmDialog**. |
 
-- `border-radius: var(--cs-btn-radius)` cho mọi `.cs-btn`. Admin là `999px`, nên nút icon (`.cs-btn-icon`) thành hình tròn.
-- Ở Admin, nút icon ghost có nền mặc định `--cs-surface-2` (vòng tròn xám xanh). Icon xóa trong dòng: chữ `--cs-danger`; khi hover thì nền `--cs-danger-soft` và viền danger.
+- `border-radius: var(--cs-btn-radius)` cho mọi `.cs-btn` (11px cho cả ba vai trò).
+- Icon xóa trong dòng: chữ `--cs-danger`; khi hover thì nền `--cs-danger-soft` và viền danger.
 - Kích thước giữ nguyên: sm 32 / md 40 (44 trên điện thoại) / lg 48. Icon 14 / 16 / 18.
 - Focus: `outline: 2px solid var(--cs-focus); outline-offset: 2px`.
 - Disabled: `background: var(--cs-disabled-bg); color: var(--cs-disabled-fg); border-color: var(--cs-disabled-bg)`, bỏ `opacity`.
@@ -107,14 +101,16 @@ Màu xanh lá của Success ở khu Admin phải là kiểu **tonal** (nền t�
 - Dòng lịch hẹn: `Chi tiết` = ghost sm; `Tiếp nhận` = primary sm. `Từ chối` = danger-outline sm.
 - `Xuất kho`: primary hoặc success tuỳ ngữ cảnh hoàn tất (ưu tiên success).
 
-### Admin (`pages/admin/*`, `AdminHubNav`, layout workspace khi `data-area="admin"`)
-- Toàn khu: nền navy, card `#141a2e` bo 24px, sidebar `#080c1a` với mục đang chọn màu lime.
-- Toolbar bảng: `Lọc`, `Xuất file` = outline viên thuốc; `Thêm …` = primary gradient lime (Thêm dịch vụ, Thêm gói, Thêm tài khoản, Nhập kho…).
-- Dòng bảng: Sửa = IconButton tròn; Xóa = IconButton tròn chữ đỏ → ConfirmDialog (`Hủy` secondary, `Xóa vĩnh viễn` danger + trash).
-- Accounts: `Khóa` = danger-outline; `Kích hoạt` = success (tonal xanh); `Phân quyền` = tonal lime.
-- Dashboard admin: thêm lưới **thẻ lối tắt** 2 cột (Dịch vụ & gói, Kho phụ tùng, Tài khoản, Báo cáo), đó là `<Link>` dạng thẻ, xen kẽ navy/tím, icon lime bên phải. Thêm hàng "Tiện ích" gồm nút icon tròn 60px kèm nhãn dưới (Lịch hẹn, Nhập kho, Giờ làm việc, Gói bảo dưỡng), trỏ tới route có sẵn.
-- Badge trạng thái ở Admin: "đang hoạt động" = nền `#26301f` chữ `#d8f86a`; trung tính = nền `#232a3f` chữ `#c3c9d8`.
-- Ô tìm kiếm Admin: bo viên thuốc, viền lime mờ, icon lime.
+### Admin (`pages/admin/*`, layout workspace khi `data-area="admin"`)
+- Toàn khu: nền trung tính theo theme sáng/tối như Customer; màu nhấn đỏ thương hiệu; sidebar theo theme (sáng: nền trắng),
+  mục đang chọn nền đỏ đặc chữ trắng.
+- Toolbar bảng: `Lọc`, `Xuất file`, `Tìm kiếm` = outline; `Thêm …` = primary đỏ đặc (Thêm dịch vụ, Thêm gói, Tạo tài khoản, Nhập phụ tùng…).
+- Dòng bảng: Xem/Sửa = IconButton ghost; Xóa/Ẩn = IconButton chữ đỏ → ConfirmDialog (`Hủy` secondary, `Xóa vĩnh viễn` danger + trash).
+- Accounts / Khách hàng: `Khóa` = danger-outline + icon khóa; `Mở khóa` = secondary + icon check; `Phân quyền` = tonal.
+- Lịch hẹn: `Duyệt` = secondary + check; `Hủy` = danger-outline + X; `Tiếp nhận` = primary sm.
+- Dashboard admin: lưới **thẻ lối tắt** 2 cột (Dịch vụ & gói, Kho phụ tùng, Tài khoản, Báo cáo) dạng thẻ trung tính, icon đỏ
+  trên nền soft. Hàng "Tiện ích": nút icon tròn 60px (nền soft, icon đỏ) kèm nhãn dưới (Lịch hẹn, Nhập kho, Giờ làm việc, Gói bảo dưỡng).
+- Badge trạng thái: dùng `Badge` chung (chấm + chữ trên nền nhạt); xanh lá chỉ cho trạng thái thành công.
 
 ### Dùng chung
 - `ConfirmDialog` / `confirmPresets.ts`: nút xác nhận xóa/hủy = danger + icon trash/X; nút còn lại = secondary.
@@ -123,8 +119,8 @@ Màu xanh lá của Success ở khu Admin phải là kiểu **tonal** (nền t�
 - Thay các `<button className="...">` tự viết trong `pages/**` bằng `<Button>` / `<IconButton>` / `buttonClass()`.
 
 ## 4. Độ tương phản (bắt buộc đạt WCAG AA)
-- Chữ trắng trên lime: **không dùng**. Dùng `#0b1022` trên lime (khoảng 14:1).
-- Chữ trắng trên `#cf2935` (~5:1), trên `#8f6624` (~5:1), trên `#d93a3a` (~4.6:1): đạt.
+- Chữ trắng trên `#cf2935` (~5:1, nút primary và mục sidebar đang chọn của Customer/Admin), trên `#8f6624` (~5:1): đạt.
+- Chữ đỏ trên nền tối dùng `--cs-accent-text: #ff7d85` (≥ 5:1).
 - Chạy `npm run test:contrast` sau khi đổi token.
 
 ## 5. Kiểm tra trước khi xong
@@ -137,6 +133,7 @@ npm run test:contrast
 npm run test:workspace
 npm run test:layout
 npm run test:nav
+npm run test:buttons
 ```
 Nếu test nào kiểm tra class hay màu cũ (ví dụ admin dùng đỏ), cập nhật test cho khớp đặc tả này; **không** skip test.
 Ghi tóm tắt thay đổi vào `docs/ai-development/SESSION_HANDOFF.md`.
