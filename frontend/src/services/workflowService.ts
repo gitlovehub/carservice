@@ -27,8 +27,13 @@ const requestTypeText: Record<string, string> = {
 export function requestTypeLabel(type?: string | null): string {
   return type ? requestTypeText[type] ?? type : "Chưa xác định";
 }
+type StaffRef = { id: number; email?: string; employee?: { full_name?: string } | null };
 export type WorkflowAppointment = CustomerRequest & {
   id: number;
+  /** Nhân viên xử lý gần nhất / người tạo hộ + lịch sử thao tác. */
+  handled_by?: StaffRef | null;
+  created_by?: StaffRef | null;
+  activities?: Array<{ id: number; action: string; created_at: string; reason?: string | null; account?: StaffRef | null; old_values?: Record<string, string> | null; new_values?: Record<string, string> | null }>;
   appointment_code?: string;
   appointment_date?: string;
   appointment_time?: string;

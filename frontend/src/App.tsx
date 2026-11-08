@@ -45,6 +45,7 @@ import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminServices from "./pages/admin/Services";
 import AdminWorkingHours from "./pages/admin/WorkingHours";
+import AdminAdvisorActivity from "./pages/admin/AdvisorActivity";
 import AdminMaintenancePackages from "./pages/admin/MaintenancePackages";
 import AdminInventory from "./pages/admin/Inventory";
 import AdminReports from "./pages/admin/Reports";
@@ -105,6 +106,7 @@ function App() {
     <Route path="/admin" element={<ProtectedRoute allowedRoles={["ADMIN"]}><AdminLayout/></ProtectedRoute>}>
       <Route index element={<AdminDashboard/>}/>
       <Route path="accounts" element={<AdminAccounts/>}/>
+      <Route path="advisor-activity" element={<AdminAdvisorActivity/>}/>
       <Route path="customers" element={<AdminCustomers/>}/>
       <Route path="appointments" element={<AdminAppointments/>}/>
       <Route path="services" element={<AdminServices/>}/>

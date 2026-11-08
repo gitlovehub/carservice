@@ -9,6 +9,7 @@ import { card, input, action, outline, WorkflowTitle, Notice, Status } from "./W
 import { errorText, formatSlot } from "./workflowFormat";
 import CustomerRequestSummary from "./CustomerRequestSummary";
 import { CapacityWeek } from "./CapacityWeek";
+import { AppointmentHistoryPanel } from "./AppointmentHistoryPanel";
 
 export default function ReceptionWorkflow() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -183,6 +184,7 @@ export default function ReceptionWorkflow() {
             <div><dt className="text-xs text-cs-muted">Ngày / giờ</dt><dd className="mt-1 text-cs-text">{formatSlot(selected.appointment_date, selected.appointment_time)}</dd></div>
             <div className="sm:col-span-2"><dt className="mb-2 text-xs text-cs-muted">Khách yêu cầu</dt><dd><CustomerRequestSummary request={selected}/></dd></div>
           </dl>
+          <AppointmentHistoryPanel key={`history-${selected.id}-${selected.appointment_date}-${selected.appointment_time}-${selected.status}`} appointment={selected} onChanged={(updated, text) => { void advisorAppointment(updated.id).then(setSelected).catch(() => setSelected({ ...selected, ...updated })); setMessage(text); notify(text, "success"); void refresh(); }}/>
           <ol className="my-6 flex flex-wrap gap-2 text-xs font-semibold text-cs-muted"><li className="rounded-full bg-cs-soft px-3 py-2">1. Đặt lịch</li><li className="rounded-full bg-cs-soft px-3 py-2">2. Xác nhận</li><li className="rounded-full bg-cs-soft px-3 py-2">3. Check-in</li><li className="rounded-full bg-cs-soft px-3 py-2">4. Phiếu sửa chữa</li></ol>
           {selected.status === "PENDING" && <div><p className="mb-4 text-sm text-cs-muted">Cần xác nhận lịch trước khi tiếp nhận.</p><button type="button" className={action} disabled={working} onClick={() => void handleConfirm()}>{working ? "Đang xử lý..." : "Xác nhận lịch hẹn"}</button></div>}
           {selected.status === "CONFIRMED" && <div><p className="mb-4 text-sm text-cs-muted">Chỉ nhận xe sau khi xe thực sự đến gara.</p><button type="button" className={action} disabled={working} onClick={() => void handleCheckIn()}>{working ? "Đang tiếp nhận..." : "Xác nhận xe đã đến"}</button></div>}
