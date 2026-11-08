@@ -2,7 +2,7 @@
 
 - **Nhánh:** `fix/apt` (chưa push). **Ngày:** 08/11/2026.
 - **Phạm vi:** roadmap nghiệp vụ P0–P7 (`BUSINESS_IMPLEMENTATION_ROADMAP.md`).
-- **Kết quả:** backend **211/211** test (1229 assertion) · frontend smoke **21/21** · `tsc -b` + `vite build` đạt · ESLint không tăng so với trước (vẫn còn 22 lỗi `set-state-in-effect` có từ trước — nợ Phase 5).
+- **Kết quả:** backend **220/220** test · frontend smoke **23/23** · `tsc -b` + `vite build` đạt · ESLint không tăng so với trước (vẫn còn 22 lỗi `set-state-in-effect` có từ trước — nợ Phase 5).
 
 ## 1. Chức năng và commit
 
@@ -18,6 +18,8 @@
 | P6 | Phụ tùng chờ: tự tạo khi thiếu hàng, ETA, nhập kho khi về, báo khách | `31f7214` `bf5f429` |
 | P7 | Công suất gara theo phút/ngày (chỉ cảnh báo), gợi ý ngày còn chỗ, bảng tải 7 ngày | `d734ffa` `2f58501` |
 | QA | Sửa test chập chờn (trùng tên hãng xe) | `b237658` |
+| Bổ sung | Theo dõi cố vấn xử lý lịch hẹn (tạo hộ / xác nhận / tiếp nhận / đổi / hủy + lịch sử), cố vấn đổi lịch giúp khách (lý do + email), trang Admin "Hoạt động cố vấn" | `2a1ba97` `bf3bde2` |
+| Bổ sung | Thông tin gara có thể sửa + gợi ý địa chỉ (Goong khi có `GOONG_API_KEY`, không có thì OpenStreetMap), Footer / Liên hệ đọc địa chỉ cấu hình | `37782ea` + commit giao diện |
 
 ## 2. Migration (chỉ thêm, không xóa / đổi tên)
 
@@ -72,3 +74,10 @@ Chuẩn bị: Laragon (backend `127.0.0.1:8000`) + `cd frontend; npm run dev`. H
 8. **Khách** có thể khai báo "Ủy quyền nhận xe". **Biên bản trả xe** (cố vấn): người nhận là chủ xe hoặc người được ủy quyền (đối chiếu 4 số cuối giấy tờ) → chủ xe xác nhận → **Bàn giao xe**.
 
 Lưu ý demo: phiếu tạo trước hôm nay không có các bước biên bản (không bắt bổ sung ngược) — dùng phiếu **mới** để thấy luồng đầy đủ.
+
+## 9. Cấu hình thêm (bổ sung)
+
+- **Gợi ý địa chỉ Goong:** đăng ký key tại goong.io, thêm `GOONG_API_KEY=...` vào `backend/.env` (local) / biến môi trường Railway. Không có key → tự dùng OpenStreetMap (đã kiểm tra chạy thật trên dev).
+- **Thông tin gara:** Admin › Hệ thống › Thông tin gara. Chưa nhập thì Footer / Liên hệ giữ địa chỉ cũ.
+- **Hoạt động cố vấn:** Admin › Con người › Hoạt động cố vấn. Lịch hẹn xử lý **trước** hôm nay không có dữ liệu người xử lý (chỉ ghi từ bây giờ).
+- Migration mới: `2026_11_08_170000` (appointments + created_by / handled_by), `2026_11_08_180000` (garage_settings) — đã migrate DB dev.
