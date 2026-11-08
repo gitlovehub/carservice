@@ -416,13 +416,9 @@ class RepairOrderService
             if ($quotation->type === Quotation::TYPE_SUPPLEMENT
                 && in_array($quotation->status, [Quotation::APPROVED, Quotation::PARTIALLY_APPROVED], true)) {
                 foreach ($items->where('item_type', QuotationItem::TYPE_SERVICE)->where('is_approved', true) as $item) {
-                    WorkItem::create([
-                        'repair_order_id' => $quotation->repair_order_id,
-                        'service_id' => $item->service_id,
-                        'description' => $item->description,
-                        'status' => WorkItem::PENDING,
-                    ]);
+                    $this->createWorkItemsFor($quotation->repairOrder, $item);
                 }
+                $this->refreshEstimatedReadyAt($quotation->repairOrder);
                 $this->logHistory($quotation->repairOrder, $quotation->repairOrder->status, null,
                     "Khách đã trả lời báo giá phát sinh {$quotation->quotation_code}.");
             }
@@ -453,16 +449,12 @@ class RepairOrderService
                 ->get();
 
             foreach ($approvedServices as $item) {
-                WorkItem::create([
-                    'repair_order_id' => $ro->id,
-                    'service_id' => $item->service_id,
-                    'description' => $item->description,
-                    'status' => WorkItem::PENDING,
-                ]);
+                $this->createWorkItemsFor($ro, $item);
             }
 
             $this->transition($ro, RepairOrder::IN_PROGRESS, $actor,
                 "Bắt đầu sửa chữa theo báo giá {$quotation->quotation_code}.");
+            $this->refreshEstimatedReadyAt($ro);
 
             return $ro;
         });
@@ -861,6 +853,44 @@ class RepairOrderService
         }
 
         return (int) $appointment->vehicle_id;
+    }
+
+    /**
+     * P5: dịch vụ có bước chuẩn → một công việc / bước (kèm phút chuẩn); không có bước → một công việc
+     * với phút chuẩn = estimated_minutes × số lượng. Không ảnh hưởng tiền (hóa đơn lấy từ báo giá).
+     */
+    private function createWorkItemsFor(RepairOrder $ro, QuotationItem $item): void
+    {
+        $service = $item->service_id ? Service::query()->with('steps')->find($item->service_id) : null;
+        if ($service && $service->steps->isNotEmpty()) {
+            foreach ($service->steps as $step) {
+                WorkItem::create([
+                    'repair_order_id' => $ro->id,
+                    'service_id' => $service->id,
+                    'service_step_id' => $step->id,
+                    'description' => "{$service->name} · {$step->step_order}. {$step->name}",
+                    'standard_minutes' => $step->standard_minutes,
+                    'status' => WorkItem::PENDING,
+                ]);
+            }
+
+            return;
+        }
+
+        WorkItem::create([
+            'repair_order_id' => $ro->id,
+            'service_id' => $item->service_id,
+            'description' => $item->description,
+            'standard_minutes' => $service?->estimated_minutes ? $service->estimated_minutes * max(1, (int) $item->quantity) : null,
+            'status' => WorkItem::PENDING,
+        ]);
+    }
+
+    /** Giờ dự kiến xong = bây giờ + tổng phút chuẩn của công việc chưa xong (null nếu chưa có phút chuẩn). */
+    private function refreshEstimatedReadyAt(RepairOrder $ro): void
+    {
+        $minutes = (int) $ro->workItems()->whereIn('status', [WorkItem::PENDING, WorkItem::IN_PROGRESS])->sum('standard_minutes');
+        $ro->forceFill(['estimated_ready_at' => $minutes > 0 ? now()->addMinutes($minutes) : null])->save();
     }
 
     /** P2: phiếu tạo sau khi triển khai biên bản phải có CHECK_IN được khách xác nhận trước khi kiểm tra. */

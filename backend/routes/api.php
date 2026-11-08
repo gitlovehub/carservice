@@ -207,6 +207,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
             [CustomerController::class, 'destroy']
         );
 
+        // P5: bước chuẩn + phút chuẩn của dịch vụ.
+        Route::get('admin/services/{service}/steps', [AdminServiceController::class, 'steps']);
+        Route::put('admin/services/{service}/steps', [AdminServiceController::class, 'syncSteps']);
+
         // Quản trị danh mục dịch vụ (DELETE = xóa mềm, status = INACTIVE)
         Route::apiResource('admin/services', AdminServiceController::class)
             ->parameters(['services' => 'service'])

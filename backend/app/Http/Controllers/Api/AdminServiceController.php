@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -68,6 +69,8 @@ class AdminServiceController extends Controller
             'status' => ['sometimes', 'required', Rule::in(['ACTIVE', 'INACTIVE'])],
             'is_popular' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'service_level' => ['sometimes', Rule::in(Service::LEVELS)],
+            'requires_vehicle_stay' => ['sometimes', 'boolean'],
         ]);
 
         $validated['status'] ??= 'ACTIVE';
@@ -100,6 +103,8 @@ class AdminServiceController extends Controller
             'status' => ['sometimes', 'required', Rule::in(['ACTIVE', 'INACTIVE'])],
             'is_popular' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'service_level' => ['sometimes', Rule::in(Service::LEVELS)],
+            'requires_vehicle_stay' => ['sometimes', 'boolean'],
         ]);
 
         $service->update($validated);
@@ -109,6 +114,44 @@ class AdminServiceController extends Controller
             'message' => 'Cập nhật dịch vụ thành công.',
             'data' => $service->fresh(),
         ]);
+    }
+
+    /** GET /api/admin/services/{service}/steps — bước chuẩn + phút chuẩn (P5). */
+    public function steps(Service $service): JsonResponse
+    {
+        return response()->json(['data' => $service->steps()->get()]);
+    }
+
+    /**
+     * PUT /api/admin/services/{service}/steps — thay toàn bộ danh sách bước (theo thứ tự gửi lên).
+     * Chỉ ảnh hưởng công việc tạo sau đó; công việc cũ giữ nguyên (service_step_id null khi bước bị xóa).
+     */
+    public function syncSteps(Request $request, Service $service): JsonResponse
+    {
+        $data = $request->validate([
+            'steps' => ['present', 'array', 'max:30'],
+            'steps.*.name' => ['required', 'string', 'max:150'],
+            'steps.*.standard_minutes' => ['required', 'integer', 'min:0', 'max:1440'],
+            'steps.*.requires_photo' => ['sometimes', 'boolean'],
+        ]);
+
+        DB::transaction(function () use ($service, $data): void {
+            $service->steps()->delete();
+            foreach (array_values($data['steps']) as $index => $step) {
+                $service->steps()->create([
+                    'step_order' => $index + 1,
+                    'name' => $step['name'],
+                    'standard_minutes' => $step['standard_minutes'],
+                    'requires_photo' => $step['requires_photo'] ?? false,
+                ]);
+            }
+            // Phút chuẩn của dịch vụ = tổng các bước (khi có bước).
+            if ($data['steps']) {
+                $service->update(['estimated_minutes' => max(1, array_sum(array_column($data['steps'], 'standard_minutes')))]);
+            }
+        });
+
+        return response()->json(['data' => $service->steps()->get(), 'service' => $service->fresh()]);
     }
 
     /**
