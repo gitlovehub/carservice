@@ -176,3 +176,19 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
   .cs-workspace { display: block; }
   .cs-work-main { background: white !important; }
 }
+
+/* ---------- Khu Admin luôn tối (docs/ui-button-redesign.md §1, §3) ---------- */
+/* Card / section bo 24px: rounded-card và rounded-2xl trong khu admin đọc --cs-card-radius. */
+[data-area="admin"] { --radius-card: var(--cs-card-radius); --radius-2xl: var(--cs-card-radius); }
+/* Mục đang chọn ở sidebar: nền lime mờ, chữ lime, bo viên thuốc. */
+[data-area="admin"] .cs-ws-link { border-radius: var(--cs-btn-radius); }
+[data-area="admin"] .cs-ws-link.is-active { background: var(--cs-tile-icon-bg); color: var(--cs-sidebar-accent); }
+/* Ô tìm kiếm: viên thuốc, nền navy, viền lime mờ, icon lime. */
+[data-area="admin"] [data-ui="search"] > input,
+[data-area="admin"] input[type="search"] {
+  border-radius: 999px; background: var(--cs-search-bg); border-color: var(--cs-search-border);
+}
+[data-area="admin"] [data-ui="search"] > svg { color: var(--cs-accent); }
+/* Badge trạng thái Admin: đang hoạt động = nền tối lime, trung tính = navy. */
+[data-area="admin"] :is(.cs-admin-badge-active, [data-status="ACTIVE"]) { background: var(--cs-soft); color: var(--cs-on-soft); }
+[data-area="admin"] .cs-admin-badge-neutral { background: var(--cs-surface-2); color: var(--cs-text-2); }

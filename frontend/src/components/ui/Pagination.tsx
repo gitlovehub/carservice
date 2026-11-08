@@ -1,5 +1,6 @@
 import { LABELS } from "../../config/labels";
 import { IconButton } from "./Button";
+import { buttonClass } from "./buttonClass";
 
 /** Dãy số trang rút gọn: 1 … 4 5 6 … 20. */
 function pageItems(page: number, total: number): (number | "gap")[] {
@@ -31,7 +32,7 @@ export function Pagination({ page, totalPages, onChange, totalItems, pageSize, d
           ? <span key={`gap-${i}`} className="px-1 text-caption text-cs-muted" aria-hidden="true">…</span>
           : <button key={item} type="button" disabled={disabled} onClick={() => go(item)} aria-current={item === page ? "page" : undefined}
               aria-label={`${LABELS.pagination.page} ${item}`}
-              className={`cs-btn cs-btn-sm min-w-8 px-2 ${item === page ? "cs-btn-primary" : "cs-btn-ghost"}`}>{item}</button>)}
+              className={buttonClass({ variant: item === page ? "tonal" : "outline", size: "sm", className: "min-w-8 px-2" })}>{item}</button>)}
       </div>
       <span className="px-2 text-caption text-cs-text sm:hidden">{page} / {totalPages}</span>
       <IconButton icon="chevron-right" label={LABELS.pagination.next} size="sm" variant="outline" disabled={disabled || page >= totalPages} onClick={() => go(page + 1)}/>

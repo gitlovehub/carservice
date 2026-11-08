@@ -1,3 +1,4 @@
+import type { IconName } from "./Icon";
 import { createContext, useContext } from "react";
 
 export type ConfirmOptions = {
@@ -9,6 +10,8 @@ export type ConfirmOptions = {
   checklist?: string[];
   reference?: string;
   phone?: string;
+  /** Icon nút xác nhận. Mặc định với variant danger: "trash" nếu là xóa, ngược lại "x" (hủy/đóng/từ chối). */
+  confirmIcon?: IconName;
 };
 
 export type ToastTone = "success" | "error" | "info";

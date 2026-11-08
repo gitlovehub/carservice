@@ -11,8 +11,8 @@ const toneClass: Record<StatusTone, string> = {
 };
 
 /** Nhãn nhỏ có màu theo ý nghĩa. Màu luôn đi kèm chữ, không dùng màu làm tín hiệu duy nhất. */
-export function Badge({ tone = "neutral", children, className = "" }: { tone?: StatusTone; children: ReactNode; className?: string }) {
-  return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-caption font-semibold ${toneClass[tone]} ${className}`}>
+export function Badge({ tone = "neutral", children, className = "", status }: { tone?: StatusTone; children: ReactNode; className?: string; status?: string }) {
+  return <span data-status={status} className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-caption font-semibold ${toneClass[tone]} ${className}`}>
     <span className="size-1.5 shrink-0 rounded-full bg-current opacity-70" aria-hidden="true"/>
     {children}
   </span>;
@@ -23,5 +23,5 @@ export function StatusBadge({ domain, status, audience = "staff", className }: {
   domain: StatusDomain; status: string | null | undefined; audience?: StatusAudience; className?: string;
 }) {
   const { label, tone } = getStatus(domain, status, audience);
-  return <Badge tone={tone} className={className}>{label}</Badge>;
+  return <Badge tone={tone} status={status ?? undefined} className={className}>{label}</Badge>;
 }

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { LABELS } from "../../config/labels";
 import { Button, IconButton } from "./Button";
-import { Icon } from "./Icon";
+import { buttonClass } from "./buttonClass";
+import { Icon, type IconName } from "./Icon";
 import type { ConfirmOptions } from "./feedbackContext";
 import "./overlay.css";
 
@@ -17,6 +18,13 @@ const variantStyle = {
  * Giao diện hộp xác nhận. KHÔNG dùng trực tiếp trong trang — gọi `useAppFeedback().confirm({...})`,
  * FeedbackProvider sẽ render component này (một hàng đợi xác nhận duy nhất cho toàn hệ thống).
  */
+/** Nút xác nhận danger luôn có icon: thùng rác cho xóa, X cho hủy/đóng/từ chối. */
+function confirmIconFor(options: ConfirmOptions, variant: string): IconName | undefined {
+  if (options.confirmIcon) return options.confirmIcon;
+  if (variant !== "danger") return undefined;
+  return /xóa|xoá/i.test(options.confirmText ?? "") ? "trash" : "x";
+}
+
 export function ConfirmDialog({ options, area, onClose }: { options: ConfirmOptions; area: string; onClose: (result: boolean) => void }) {
   const variant = options.variant ?? "info";
   const [checked, setChecked] = useState<boolean[]>(() => options.checklist?.map(() => false) ?? []);
@@ -60,7 +68,7 @@ export function ConfirmDialog({ options, area, onClose }: { options: ConfirmOpti
       </header>
       <div className="space-y-4 px-6 pb-5 pl-[80px] max-sm:pl-6">
         <p id="cs-confirm-desc" className="text-small text-cs-text-2">{options.description}</p>
-        {options.phone && <a className="cs-btn cs-btn-outline cs-btn-sm" href={`tel:${options.phone.replace(/[^+\d]/g, "")}`}>Gọi {options.phone}</a>}
+        {options.phone && <a className={buttonClass({ variant: "outline", size: "sm" })} href={`tel:${options.phone.replace(/[^+\d]/g, "")}`}>Gọi {options.phone}</a>}
         {options.checklist?.length ? <div className="space-y-3 rounded-card border border-cs-border bg-cs-surface-2 p-4">
           {options.checklist.map((item, i) => <label key={i} className="flex cursor-pointer items-start gap-3 text-small text-cs-text">
             <input type="checkbox" className="mt-0.5 size-4 shrink-0 cursor-pointer accent-[var(--cs-accent)]" checked={checked[i] || false}
@@ -72,7 +80,7 @@ export function ConfirmDialog({ options, area, onClose }: { options: ConfirmOpti
       </div>
       <footer className="cs-btn-row cs-btn-row-end border-t border-cs-border bg-cs-surface-2 px-6 py-3.5">
         <Button ref={cancelRef} variant="secondary" onClick={() => onClose(false)}>{options.cancelText || LABELS.action.back}</Button>
-        <Button variant={variant === "danger" ? "danger" : "primary"} disabled={!canConfirm} onClick={() => onClose(true)}>{options.confirmText || LABELS.action.confirm}</Button>
+        <Button variant={variant === "danger" ? "danger" : "primary"} icon={confirmIconFor(options, variant)} disabled={!canConfirm} onClick={() => onClose(true)}>{options.confirmText || LABELS.action.confirm}</Button>
       </footer>
     </section>
   </div>;
