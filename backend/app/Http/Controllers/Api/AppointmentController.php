@@ -11,6 +11,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
 use App\Services\AppointmentSlotService;
+use App\Support\VehicleCatalogSelection;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -90,8 +91,22 @@ class AppointmentController extends Controller
                             $existingVehicle->restore();
                         }
                         $vehicle = $existingVehicle;
+                    } elseif (! empty($input['model_id'])) {
+                        // Chọn từ bộ chọn xe: dòng xe/phiên bản phải đang hiển thị và khớp nhau.
+                        ['model' => $model, 'trim' => $trim] = VehicleCatalogSelection::resolve(
+                            (int) $input['model_id'],
+                            empty($input['trim_id']) ? null : (int) $input['trim_id'],
+                            'new_vehicle.',
+                        );
+                        $vehicle = Vehicle::create([
+                            'customer_id' => $customer->id,
+                            'model_id' => $model->id,
+                            'trim_id' => $trim?->id,
+                            'variant' => $trim?->name,
+                            'license_plate' => $plate,
+                        ]);
                     } else {
-                        // Loại thân xe (body_type) lấy theo danh mục có sẵn; dòng xe mới do khách nhập để trống.
+                        // Cách cũ (gửi tên): loại thân xe lấy theo danh mục có sẵn; dòng xe mới do khách nhập để trống.
                         $brand = VehicleBrand::firstOrCreate(['name' => trim($input['brand'])], ['status' => 'ACTIVE']);
                         $model = VehicleModel::firstOrCreate(
                             ['brand_id' => $brand->id, 'name' => trim($input['model'])],
@@ -180,8 +195,9 @@ class AppointmentController extends Controller
 
             // 2. Query lịch hẹn kèm thông tin xe, dịch vụ và gói bảo dưỡng
             $query = Appointment::with([
-                'vehicle:id,customer_id,model_id,license_plate,variant,year',
+                'vehicle:id,customer_id,model_id,trim_id,license_plate,variant,year',
                 'vehicle.model:id,brand_id,name',
+                'vehicle.trim:id,name',
                 'vehicle.model.brand:id,name',
                 'services:id,name,base_price',
                 'packages:id,name,mileage_milestone',
@@ -232,6 +248,7 @@ class AppointmentController extends Controller
 
         $appointment = Appointment::with([
             'vehicle.model.brand',
+            'vehicle.trim:id,name',
             'services:id,name,base_price,estimated_minutes',
             'packages:id,name,mileage_milestone',
         ])

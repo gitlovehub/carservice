@@ -29,8 +29,11 @@ class StoreAppointmentRequest extends FormRequest
                 'array',
             ],
 
-            'new_vehicle.brand' => ['required_with:new_vehicle', 'string', 'max:100'],
-            'new_vehicle.model' => ['required_with:new_vehicle', 'string', 'max:100'],
+            // Chọn từ danh mục (model_id, trim_id tùy chọn) hoặc gửi tên hãng/dòng xe như trước.
+            'new_vehicle.model_id' => ['nullable', 'integer'],
+            'new_vehicle.trim_id' => ['nullable', 'integer'],
+            'new_vehicle.brand' => [Rule::requiredIf($this->needsVehicleNames()), 'nullable', 'string', 'max:100'],
+            'new_vehicle.model' => [Rule::requiredIf($this->needsVehicleNames()), 'nullable', 'string', 'max:100'],
             'new_vehicle.license_plate' => ['nullable', 'string', 'max:20'],
             'appointment_date' => ['required', 'date_format:Y-m-d'],
             'appointment_time' => ['required', 'date_format:H:i'],
@@ -42,6 +45,11 @@ class StoreAppointmentRequest extends FormRequest
             'package_ids' => ['sometimes', 'array', 'max:1'],
             'package_ids.*' => ['integer', 'distinct', Rule::exists('maintenance_packages', 'id')->where('status', 'ACTIVE')],
         ];
+    }
+
+    private function needsVehicleNames(): bool
+    {
+        return $this->has('new_vehicle') && ! $this->filled('new_vehicle.model_id');
     }
 
     /**
@@ -76,8 +84,10 @@ class StoreAppointmentRequest extends FormRequest
             'vehicle_id.exists' => 'Xe không tồn tại hoặc đã bị xóa.',
             'new_vehicle.required_without' => 'Vui lòng chọn xe có sẵn hoặc khai báo xe mới.',
             'new_vehicle.prohibited_unless' => 'Chỉ chọn xe có sẵn hoặc khai báo xe mới, không chọn cả hai.',
-            'new_vehicle.brand.required_with' => 'Vui lòng nhập hãng xe.',
-            'new_vehicle.model.required_with' => 'Vui lòng nhập dòng xe.',
+            'new_vehicle.brand.required' => 'Vui lòng chọn hãng xe.',
+            'new_vehicle.model.required' => 'Vui lòng chọn dòng xe.',
+            'new_vehicle.model_id.integer' => 'Dòng xe đã chọn không hợp lệ.',
+            'new_vehicle.trim_id.integer' => 'Phiên bản đã chọn không hợp lệ.',
             'new_vehicle.license_plate.unique' => 'Biển số đã tồn tại.',
             'new_vehicle.license_plate.max' => 'Biển số không được quá 20 ký tự.',
             'appointment_date.required' => 'Vui lòng chọn ngày hẹn.',

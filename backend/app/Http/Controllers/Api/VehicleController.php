@@ -6,11 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Vehicle;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
+use App\Support\VehicleCatalogSelection;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class VehicleController extends Controller
 {
+    /** Hãng, dòng xe và phiên bản để giao diện hiển thị đủ tên xe. */
+    private const CATALOG_RELATIONS = ['model.brand:id,name', 'trim:id,model_id,name,status'];
+
     /*
     |--------------------------------------------------------------------------
     | ADMIN / ADVISOR - QUẢN LÝ XE
@@ -25,7 +29,7 @@ class VehicleController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Vehicle::with(['customer', 'model']);
+        $query = Vehicle::with(['customer', ...self::CATALOG_RELATIONS]);
 
         if ($request->filled('customer_id')) {
             $query->where('customer_id', $request->customer_id);
@@ -70,6 +74,11 @@ class VehicleController extends Controller
                 'exists:vehicle_models,id',
             ],
 
+            'trim_id' => [
+                'nullable',
+                'integer',
+            ],
+
             'variant' => [
                 'nullable',
                 'string',
@@ -109,12 +118,11 @@ class VehicleController extends Controller
             ],
         ]);
 
+        $validated = VehicleCatalogSelection::apply($validated, allowHidden: true);
+
         $vehicle = Vehicle::create($validated);
 
-        $vehicle->load([
-            'customer',
-            'model',
-        ]);
+        $vehicle->load(['customer', ...self::CATALOG_RELATIONS]);
 
         return response()->json([
             'success' => true,
@@ -130,10 +138,7 @@ class VehicleController extends Controller
      */
     public function show(Vehicle $vehicle)
     {
-        $vehicle->load([
-            'customer',
-            'model',
-        ]);
+        $vehicle->load(['customer', ...self::CATALOG_RELATIONS]);
 
         return response()->json([
             'success' => true,
@@ -158,6 +163,11 @@ class VehicleController extends Controller
             'model_id' => [
                 'sometimes',
                 'exists:vehicle_models,id',
+            ],
+
+            'trim_id' => [
+                'nullable',
+                'integer',
             ],
 
             'variant' => [
@@ -201,12 +211,9 @@ class VehicleController extends Controller
             ],
         ]);
 
-        $vehicle->update($validated);
+        $vehicle->update(VehicleCatalogSelection::apply($validated, $vehicle, allowHidden: true));
 
-        $vehicle->load([
-            'customer',
-            'model',
-        ]);
+        $vehicle->load(['customer', ...self::CATALOG_RELATIONS]);
 
         return response()->json([
             'success' => true,
@@ -237,7 +244,7 @@ class VehicleController extends Controller
      */
     public function byCustomer($customerId)
     {
-        $vehicles = Vehicle::with('model')
+        $vehicles = Vehicle::with(self::CATALOG_RELATIONS)
             ->where('customer_id', $customerId)
             ->latest()
             ->get();
@@ -278,7 +285,7 @@ class VehicleController extends Controller
             return $this->customerProfileNotFoundResponse();
         }
 
-        $vehicles = Vehicle::with('model')
+        $vehicles = Vehicle::with(self::CATALOG_RELATIONS)
             ->where('customer_id', $customer->id)
             ->latest()
             ->get();
@@ -325,6 +332,11 @@ class VehicleController extends Controller
                 'nullable',
                 'required_without:model_id',
                 Rule::in($modelNames),
+            ],
+
+            'trim_id' => [
+                'nullable',
+                'integer',
             ],
 
             'variant' => [
@@ -379,12 +391,14 @@ class VehicleController extends Controller
             unset($validated['model_name']);
         }
 
+        $validated = VehicleCatalogSelection::apply($validated);
+
         // Không cho client tự chọn customer_id.
         $validated['customer_id'] = $customer->id;
 
         $vehicle = Vehicle::create($validated);
 
-        $vehicle->load('model');
+        $vehicle->load(self::CATALOG_RELATIONS);
 
         return response()->json([
             'success' => true,
@@ -408,7 +422,7 @@ class VehicleController extends Controller
 
         $this->authorize('view', $vehicle);
 
-        $vehicle->load('model');
+        $vehicle->load(self::CATALOG_RELATIONS);
 
         return response()->json([
             'success' => true,
@@ -440,6 +454,11 @@ class VehicleController extends Controller
             'model_id' => [
                 'sometimes',
                 'exists:vehicle_models,id',
+            ],
+
+            'trim_id' => [
+                'nullable',
+                'integer',
             ],
 
             'variant' => [
@@ -483,9 +502,9 @@ class VehicleController extends Controller
             ],
         ]);
 
-        $vehicle->update($validated);
+        $vehicle->update(VehicleCatalogSelection::apply($validated, $vehicle));
 
-        $vehicle->load('model');
+        $vehicle->load(self::CATALOG_RELATIONS);
 
         return response()->json([
             'success' => true,
