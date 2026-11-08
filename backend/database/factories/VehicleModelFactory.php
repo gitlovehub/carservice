@@ -14,7 +14,7 @@ class VehicleModelFactory extends Factory
     {
         return [
             'brand_id' => VehicleBrand::factory(),
-            'name' => fake()->word(),
+            'name' => fake()->unique()->bothify('?????-##'),
             'body_type' => fake()->randomElement(['SEDAN', 'SUV', 'HATCHBACK', 'MPV', 'PICKUP']),
             'year_from' => fake()->numberBetween(2015, 2020),
             'year_to' => fake()->numberBetween(2021, 2025),

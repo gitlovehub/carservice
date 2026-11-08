@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable([
     'customer_id',
     'model_id',
+    'trim_id',
     'variant',
     'year',
     'license_plate',
@@ -31,6 +32,11 @@ class Vehicle extends Model
     public function model(): BelongsTo
     {
         return $this->belongsTo(VehicleModel::class, 'model_id');
+    }
+
+    public function trim(): BelongsTo
+    {
+        return $this->belongsTo(VehicleTrim::class, 'trim_id');
     }
 
     public function appointments(): HasMany
