@@ -1,8 +1,11 @@
 import { useInAppShell } from "../layouts/ShellContext";
 import { Link } from "react-router-dom";
 import BrandLogo from "./common/BrandLogo";
+import { formatGarageAddress, useGarageInfo } from "../services/garageService";
 
 function Footer() {
+  // Địa chỉ do Admin cấu hình (Thông tin gara); chưa cấu hình thì giữ nội dung cũ.
+  const garageAddress = formatGarageAddress(useGarageInfo());
   const inShell = useInAppShell();
   if (inShell) return null;
 
@@ -116,7 +119,7 @@ function Footer() {
 
               <div>
                 <p className="font-semibold text-slate-800">Địa chỉ trung tâm</p>
-                <p className="mt-0.5">Hà Nội, Việt Nam</p>
+                <p className="mt-0.5">{garageAddress ?? "Hà Nội, Việt Nam"}</p>
               </div>
 
               <div>

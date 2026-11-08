@@ -46,6 +46,7 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Kho phụ tùng", path: "/admin/inventory", icon: "box", group: "Danh mục" },
     { label: "Danh mục phụ tùng", path: "/admin/parts", icon: "box", group: "Danh mục", soon: true },
     { label: "Giờ làm việc", path: "/admin/working-hours", icon: "clock", group: "Hệ thống" },
+    { label: "Thông tin gara", path: "/admin/garage", icon: "settings", group: "Hệ thống" },
   ],
 };
 
