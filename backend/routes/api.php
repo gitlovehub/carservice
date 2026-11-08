@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\CustomerReviewController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\MaintenancePackageController;
+use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\PartController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\QuotationController;
@@ -83,6 +84,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('me/change-password', 'changePassword');
         Route::post('logout', 'logout');
     });
+
+    // Ảnh bằng chứng: xem theo quyền xem phiếu sửa chữa liên quan (MediaController).
+    Route::get('media', [MediaController::class, 'index']);
+    Route::get('media/{media}', [MediaController::class, 'show']);
 
     /*
     |--------------------------------------------------------------------------
@@ -251,6 +256,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         */
 
         Route::get('technicians', [TechnicianController::class, 'index']);
+
+        // Tải ảnh bằng chứng lên disk private (D-007).
+        Route::post('media', [MediaController::class, 'store'])->middleware('throttle:60,1');
 
         Route::controller(RepairOrderController::class)->group(function (): void {
 

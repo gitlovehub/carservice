@@ -24,10 +24,10 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 
 | ID | Mô tả | Phụ thuộc | Trạng thái |
 |---|---|---|---|
-| P1A-01 | Migration (chỉ thêm bảng): `media_attachments`, `customer_confirmations`, `confirmation_otps` | P0-04, G-02 | VERIFIED (SQLite test) — `EvidenceSchemaTest` 4/4, suite 150/150, Pint đạt. Chưa migrate DB dev |
+| P1A-01 | Migration (chỉ thêm bảng): `media_attachments`, `customer_confirmations`, `confirmation_otps` | P0-04, G-02 | VERIFIED (SQLite test) · commit `a67819e` — `EvidenceSchemaTest` 4/4, suite 150/150, Pint đạt. Chưa migrate DB dev |
 | P1A-02 | Model, quan hệ, hằng số phương thức/mục đích; xác nhận chỉ thêm; test model | P1A-01 | VERIFIED — `EvidenceModelsTest` 3/3, suite 153/153 |
-| P1B-01 | `MediaService`: lưu private, SHA-256, kiểm loại/kích thước/số lượng | P1A-02, Q3 | PENDING |
-| P1B-02 | API `POST /media`, `GET /media/{id}` + policy (nhân viên / chủ phiếu); test 422/403 | P1B-01 | PENDING |
+| P1B-01 | `MediaService`: lưu private, SHA-256, kiểm loại/kích thước/số lượng; khóa thêm ảnh khi chứng từ đã được khách xác nhận | P1A-02, Q3 | VERIFIED — `MediaApiTest` 7/7 |
+| P1B-02 | API `POST /media` (ADVISOR), `GET /media?attachable_type&attachable_id`, `GET /media/{id}` (theo `RepairOrderPolicy::view`); test 422/403/401 | P1B-01 | VERIFIED — suite 160/160 |
 | P1C-01 | `ConfirmationService`: snapshot + hash nội dung, xác nhận bằng tài khoản khách | P1A-02, Q4 | PENDING |
 | P1C-02 | OTP email: `ConfirmationOtpMail`, hết hạn 10 phút, tối đa 5 lần sai, không dùng lại, throttle | P1C-01, Q1 | PENDING |
 | P1C-03 | API confirmation (gửi OTP, verify OTP tại quầy, khách xác nhận `/me/…`); test nhân viên không thể tự xác nhận | P1C-02 | PENDING |
