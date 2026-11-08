@@ -46,6 +46,7 @@ import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminServices from "./pages/admin/Services";
 import AdminWorkingHours from "./pages/admin/WorkingHours";
 import AdminAdvisorActivity from "./pages/admin/AdvisorActivity";
+import AdminGarageSettings from "./pages/admin/GarageSettings";
 import AdminMaintenancePackages from "./pages/admin/MaintenancePackages";
 import AdminInventory from "./pages/admin/Inventory";
 import AdminReports from "./pages/admin/Reports";
@@ -112,6 +113,7 @@ function App() {
       <Route path="services" element={<AdminServices/>}/>
       <Route path="maintenance-packages" element={<AdminMaintenancePackages/>}/>
       <Route path="working-hours" element={<AdminWorkingHours/>}/>
+      <Route path="garage" element={<AdminGarageSettings/>}/>
       <Route path="inventory" element={<AdminInventory/>}/>
       <Route path="parts" element={<ModulePlaceholder area="Quản trị" title="Danh mục phụ tùng" description="Quản lý mã, tên, đơn vị và giá bán của phụ tùng." owner="Nhóm module phụ tùng"/>}/>
       <Route path="reports" element={<AdminReports/>}/>

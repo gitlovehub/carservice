@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import { formatGarageAddress, useGarageInfo } from "../../services/garageService";
 
 function Contact() {
+  const garageAddress = formatGarageAddress(useGarageInfo());
   const { notify } = useAppFeedback();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -114,7 +116,7 @@ function Contact() {
                           </p>
 
                           <p className="mt-1 text-[13px] font-semibold text-[#20252B]">
-                            Hà Nội, Việt Nam
+                            {garageAddress ?? "Hà Nội, Việt Nam"}
                           </p>
                         </div>
                       </div>
