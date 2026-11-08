@@ -68,8 +68,25 @@ export type WorkflowInvoice = {
   items?: Array<{ id: number; description?: string | null; quantity: number; unit_price: Money; amount: Money }>;
   payments?: WorkflowPayment[];
 };
+export type HandoverChecklistItem = {
+  id?: number; category: "EXTERIOR" | "INTERIOR" | "ACCESSORY" | "KEY" | "DOCUMENT"; position_code?: string | null;
+  label: string; condition: "OK" | "SCRATCH" | "DENT" | "BROKEN" | "MISSING" | "PRESENT"; quantity?: number | null; note?: string | null;
+};
+export type WorkflowHandover = {
+  id: number; type: "CHECK_IN" | "CHECK_OUT"; status: "DRAFT" | "SUBMITTED" | "CONFIRMED" | "VOID";
+  mileage?: number | null; fuel_level?: string | null; general_condition?: string | null; valuables_note?: string | null;
+  person_name: string; person_phone?: string | null; person_id_last4?: string | null; person_relation: "OWNER" | "AUTHORIZED" | "OTHER";
+  submitted_at?: string | null; confirmed_at?: string | null; void_reason?: string | null;
+  checklist_items?: HandoverChecklistItem[];
+  confirmations?: Array<{ id: number; method: "ACCOUNT" | "EMAIL_OTP"; confirmed_at: string; comment?: string | null }>;
+};
 export type WorkflowOrder = {
   id: number;
+  requires_check_in?: boolean;
+  source?: "APPOINTMENT" | "WALK_IN" | null;
+  booked_vehicle_id?: number | null;
+  vehicle_change_reason?: string | null;
+  handovers?: WorkflowHandover[];
   appointment_id?: number | null;
   appointment?: (CustomerRequest & { id: number; appointment_code?: string }) | null;
   repair_order_code?: string;
@@ -99,7 +116,15 @@ export type ReceivePayload = {
   mileage_received?: number;
   initial_condition?: string;
   note?: string;
+  /** Bắt buộc khi xe mang tới khác xe trong lịch hẹn (cùng chủ). */
+  vehicle_change_reason?: string;
 };
+export type CustomerVehicleOption = { id: number; license_plate: string; model?: { name?: string } | null };
+
+export async function customerVehicles(customerId: number): Promise<CustomerVehicleOption[]> {
+  const response = await fetchApi<{ data: CustomerVehicleOption[] }>(`/customers/${customerId}/vehicles`);
+  return response.data ?? [];
+}
 
 export async function advisorAppointment(id: number): Promise<WorkflowAppointment> {
   const response = await getAdvisorAppointment(id) as { data: WorkflowAppointment };
@@ -166,7 +191,8 @@ export async function receiveRepairOrder(data: ReceivePayload): Promise<{ order:
   const actualCustomer = appointment.customer?.id ?? appointment.customer_id;
   const actualVehicle = appointment.vehicle?.id ?? appointment.vehicle_id;
   if (!actualCustomer || !actualVehicle) throw new Error("Lịch thiếu khách hàng hoặc xe. Không thể tạo phiếu.");
-  if (data.customer_id !== actualCustomer || data.vehicle_id !== actualVehicle) throw new Error("Thông tin xe/khách không khớp lịch hẹn.");
+  if (data.customer_id !== actualCustomer) throw new Error("Thông tin khách không khớp lịch hẹn.");
+  if (data.vehicle_id !== actualVehicle && !data.vehicle_change_reason?.trim()) throw new Error("Xe khác lịch hẹn: nhập lý do đổi xe.");
   const old = await findOrderForAppointment(appointment.id);
   if (old) return { order: old, existing: true };
   try {

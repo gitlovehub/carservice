@@ -25,7 +25,19 @@
 - P2-C (commit `feat(handover)`): `HandoverService`, `HandoverController` (ADVISOR: index/store/update/submit/void/otp/verify-otp), `CustomerHandoverController` (`GET /me/repair-orders/{id}/handovers`, `POST /me/handovers/{id}/confirm`), `HandoverOtpMail` + view, gate `assertCheckInConfirmed` trong `assignTechnician` + `recordInspection`, `MediaService` alias `handover`. `ConfirmationService` refactor: `issueOtp`/`checkOtp`/`consumeOtp`/`record` dùng chung. Test `VehicleCheckInTest` 9/9; suite 182/182.
 - QA-01 sửa (`b237658`).
 
-## Tiếp theo: P2-D (frontend)
+- P2-D (commit `feat(handover-ui)`): xong; xem MASTER_TASK_LIST. DB dev đã migrate P2.
+
+## Tiếp theo: P3 — chia nhỏ
+
+| Bước | Nội dung |
+|---|---|
+| P3-A | Migration: `quotations` + `type` (default INITIAL), `parent_quotation_id`, `reason`; `quotation_item_responses` (quotation_item_id, decision, customer_confirmation_id). Ghi `quotation_item_responses` trong `respondViaAccount` / `verifyQuotationOtp` (lịch sử từng lần duyệt). Test |
+| P3-B | SUPPLEMENT: `createQuotation(type=SUPPLEMENT, reason)` cho phép khi IN_PROGRESS/WAITING_FOR_PARTS; khách duyệt như báo giá thường; dòng SUPPLEMENT duyệt → tạo `work_items`; `generateInvoice`/`recordUsedPart`/`startRepair` lấy INITIAL mới nhất (đang hiệu lực) + mọi SUPPLEMENT không hủy. **Giữ test P0 chống tính trùng.** Không đổi quy tắc tính tiền với báo giá thường |
+| P3-C | Khách xem chẩn đoán (`CustomerRepairOrderController::show` thêm `inspections.items` không có ghi chú nội bộ, `inspections.recommendations`, ảnh chẩn đoán); frontend Customer + Advisor (nút "Lập báo giá phát sinh" khi đang sửa; nhãn "Phát sinh"; lịch sử duyệt) |
+
+Lưu ý P3-B: `latestQuotation` hiện là `latestOfMany('version')` trên mọi báo giá — phải đổi để chỉ lấy INITIAL (nếu không SUPPLEMENT mới sẽ thành "bản mới nhất" và thay thế báo giá gốc → **sai tiền**). Đây là điểm rủi ro chính.
+
+## (Cũ) P2-D (frontend)
 
 - Advisor `ReceptionWorkflow.tsx`: khi chọn lịch hẹn, cho chọn xe khác của cùng khách + ô lý do (bắt buộc khi khác xe); gửi `vehicle_change_reason`.
 - Advisor trang Chi tiết phiếu: panel "Biên bản nhận xe" khi `requires_check_in` (hoặc luôn hiện): form (km, nhiên liệu, tình trạng chung, đồ giá trị, người giao + quan hệ, checklist mặc định: 4 góc ngoại thất + chìa khóa + giấy tờ), `PhotoUploader type="handover"` khi DRAFT, nút "Gửi khách xác nhận" (submit), sau đó chọn: khách tự xác nhận trong tài khoản (Làm mới) **hoặc** OTP tại quầy (gửi mã / nhập mã), hủy (lý do). Thông báo chặn khi giao KTV mà chưa CONFIRMED.

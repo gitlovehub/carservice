@@ -1,9 +1,9 @@
 import { apiClient } from "./api";
-import type { WorkflowQuotation } from "./workflowService";
+import type { HandoverChecklistItem, WorkflowHandover, WorkflowQuotation } from "./workflowService";
 
 /** Ảnh bằng chứng (P1B) và xác nhận tại quầy bằng OTP email (P1C). */
 
-export type MediaAttachableType = "repair_order" | "quotation" | "inspection";
+export type MediaAttachableType = "repair_order" | "quotation" | "inspection" | "handover";
 export type MediaItem = {
   id: number; attachable_type: MediaAttachableType; attachable_id: number; mime: string; size_bytes: number;
   sha256: string; caption?: string | null; position_code?: string | null; taken_at?: string | null; created_at?: string | null; url: string;
@@ -25,6 +25,23 @@ export const mediaApi = {
   },
   /** Ảnh nằm sau API có kiểm quyền: tải blob kèm token rồi hiển thị bằng object URL. */
   blob: async (id: number) => (await apiClient.get<Blob>(`/media/${id}`, { responseType: "blob" })).data,
+};
+
+export type HandoverInput = Omit<WorkflowHandover, "id" | "type" | "status" | "checklist_items" | "confirmations" | "submitted_at" | "confirmed_at" | "void_reason"> & {
+  items: HandoverChecklistItem[];
+};
+
+/** Biên bản giao nhận xe (P2). Khách xác nhận trong tài khoản hoặc OTP email chủ xe tại quầy. */
+export const handoverApi = {
+  create: async (orderId: number, input: HandoverInput) =>
+    (await apiClient.post<WorkflowHandover>(`/repair-orders/${orderId}/handovers`, { type: "CHECK_IN", ...input })).data,
+  update: async (id: number, input: Partial<HandoverInput>) => (await apiClient.patch<WorkflowHandover>(`/handovers/${id}`, input)).data,
+  submit: async (id: number) => (await apiClient.post<WorkflowHandover>(`/handovers/${id}/submit`)).data,
+  void: async (id: number, reason: string) => (await apiClient.post<WorkflowHandover>(`/handovers/${id}/void`, { reason })).data,
+  requestOtp: async (id: number) => (await apiClient.post<OtpSent>(`/handovers/${id}/otp`)).data,
+  verifyOtp: async (id: number, code: string) => (await apiClient.post<WorkflowHandover>(`/handovers/${id}/verify-otp`, { code })).data,
+  /** Khách tự xác nhận (ACCOUNT). */
+  confirmAsCustomer: async (id: number, comment?: string) => (await apiClient.post<WorkflowHandover>(`/me/handovers/${id}/confirm`, { comment })).data,
 };
 
 export const counterApprovalApi = {

@@ -20,6 +20,7 @@
 | 08/11/2026 | Chạy lại khi khởi tạo | **146/146 (634)** | **14/14** | **đạt** | không chạy lại | — | — |
 | 08/11/2026 | P0-03 | — | — | — | — | — | Chi tiết phiếu Advisor: 8/8 lượt đạt (4 trạng thái × sáng/tối) |
 
+| 08/11/2026 | **Kết thúc P2** | 182/182 (≈915) | **16/16** | đạt | đạt | file mới 0; nợ cũ không tăng | Hồi quy #10 đạt; CheckInPanel/đổi xe: BROWSER_NOT_VERIFIED |
 | 08/11/2026 | **Kết thúc P1** | 169/169 | **15/15** | đạt | đạt | file sửa: 0 lỗi | P1D: 2/2 (sáng/tối); OTP gửi/nhập + upload: BROWSER_NOT_VERIFIED |
 | 08/11/2026 | P1C | **169/169 (796)** | 14/14 | — | — | — | — |
 | 08/11/2026 | P1B | **160/160 (698)** | 14/14 | — | — | — | — |
