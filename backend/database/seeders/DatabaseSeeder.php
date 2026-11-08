@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RealDataSeeder::class);
         $this->call(VietnamVehicleCatalogSeeder::class);
+        $this->call(VietnamVehicleCsvSeeder::class);
         $this->call(DemoAccountsSeeder::class);
         $this->call(PartInventorySeeder::class);
         $this->call(ServiceCatalogSeeder::class);
