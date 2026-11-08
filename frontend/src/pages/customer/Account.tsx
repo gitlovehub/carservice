@@ -11,7 +11,7 @@ import { Button } from "../../components/ui/Button";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
-import carArt from "../../assets/car-atelier.svg";
+import carArt from "../../assets/car-garage.svg";
 
 type AccountInfo = {
   id: number;
@@ -70,7 +70,7 @@ const getInitials = (name: string) => {
 type ProfileVehicle = { id: number; license_plate: string; year?: number | null; variant?: string | null; model?: { name?: string; brand?: { name?: string } | null } | null };
 
 /** Icon nhỏ cho các dòng thông tin (bổ sung cho bộ Icon chung). */
-function ProfileGlyph({ name }: { name: "user" | "phone" | "mail" | "pin" | "lock" | "id" | "calendar" }) {
+function ProfileGlyph({ name }: { name: "user" | "phone" | "mail" | "pin" | "lock" | "id" | "calendar" | "shield" }) {
   const paths: Record<typeof name, string> = {
     user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0",
     phone: "M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2",
@@ -79,6 +79,7 @@ function ProfileGlyph({ name }: { name: "user" | "phone" | "mail" | "pin" | "loc
     lock: "M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4",
     id: "M3 5h18v14H3zM7 10h4M7 14h6M15 9h3v6h-3z",
     calendar: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
+    shield: "M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6zM9 12l2 2 4-4",
   };
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d={paths[name]}/></svg>;
 }
@@ -449,26 +450,18 @@ function Account() {
         />
       )}
 
-      <main className="min-w-0">
+      <main className="at-customer-page"><div className="at-customer-container">
         {/* Cột phải */}
         <section className="min-w-0">
-          <div className="flex flex-wrap items-center gap-4">
-            <button type="button" onClick={handleOpenAvatarModal} title="Đổi ảnh đại diện" aria-label="Đổi ảnh đại diện" className="group relative shrink-0 cursor-pointer rounded-full">
-              {account?.avatar
-                ? <img src={account.avatar} alt="" className="size-16 rounded-full object-cover"/>
-                : <span className="flex size-16 items-center justify-center rounded-full bg-cs-accent text-xl font-bold text-cs-accent-contrast">{fullName === "Chưa cập nhật" ? "KH" : getInitials(fullName)}</span>}
-              <span className="absolute -bottom-0.5 -right-0.5 flex size-6 items-center justify-center rounded-full border-2 border-cs-surface bg-cs-surface-2 text-cs-text shadow-sm transition group-hover:scale-110"><Icon name="edit" size={12}/></span>
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-cs-text md:text-3xl">Hồ sơ của tôi</h1>
-              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-cs-muted">
-                <span className="rounded-full bg-cs-soft px-2.5 py-0.5 text-xs font-semibold text-cs-accent-text">{roleName}</span>
-                <span className="flex items-center gap-1.5"><span className={`size-2 rounded-full ${account?.status === "ACTIVE" ? "bg-cs-success" : "bg-cs-muted"}`}/>Tài khoản {status.toLowerCase()}</span>
-              </p>
+          <div className="at-customer-heading">
+            <div>
+              <h1>Hồ sơ của tôi</h1>
+              <p>Quản lý thông tin cá nhân, ảnh đại diện và bảo mật tài khoản.</p>
             </div>
+            <button type="button" className="at-customer-primary" onClick={handleOpenEditProfile}>Chỉnh sửa thông tin</button>
           </div>
 
-          <div role="tablist" aria-label="Hồ sơ" className="mt-5 flex gap-2 border-b border-cs-border">
+          <div role="tablist" aria-label="Hồ sơ" className="flex gap-2 border-b border-cs-border">
             {([["profile", "Thông tin cá nhân", "user"], ["security", "Bảo mật", "shield"]] as const).map(([key, label, icon]) =>
               <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
                 className={`-mb-px flex cursor-pointer items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition ${tab === key ? "border-cs-accent text-cs-accent-text" : "border-transparent text-cs-muted hover:text-cs-text"}`}>
@@ -480,9 +473,18 @@ function Account() {
             <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-lg font-bold text-cs-text">Thông tin cá nhân</h2>
-                <Button variant="secondary" size="sm" icon="edit" onClick={handleOpenEditProfile}>Chỉnh sửa</Button>
+
               </div>
               <dl className="mt-4 space-y-2.5">
+                <div className="grid gap-1.5 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
+                  <dt className="flex items-center gap-3 text-sm text-cs-muted"><ProfileGlyph name="user"/>Ảnh đại diện</dt>
+                  <dd className="flex items-center gap-3 rounded-xl bg-cs-surface-2 px-4 py-2">
+                    {account?.avatar
+                      ? <img src={account.avatar} alt="" className="size-10 rounded-full object-cover"/>
+                      : <span className="flex size-10 items-center justify-center rounded-full bg-cs-accent text-sm font-bold text-cs-accent-contrast">{fullName === "Chưa cập nhật" ? "KH" : getInitials(fullName)}</span>}
+                    <Button size="sm" variant="ghost" icon="edit" onClick={handleOpenAvatarModal}>Đổi ảnh</Button>
+                  </dd>
+                </div>
                 {([["user", "Họ và tên", fullName], ["phone", "Số điện thoại", phone], ["mail", "Email", email], ["pin", "Địa chỉ", address]] as const).map(([icon, label, value]) =>
                   <div key={label} className="grid gap-1.5 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
                     <dt className="flex items-center gap-3 text-sm text-cs-muted"><ProfileGlyph name={icon}/>{label}</dt>
@@ -517,7 +519,7 @@ function Account() {
                 <Button variant="secondary" size="sm" icon="shield" onClick={handleOpenChangePassword}>Đổi mật khẩu</Button>
               </div>
               <dl className="mt-4 space-y-2.5">
-                {([["mail", "Email đăng nhập", email], ["lock", "Mật khẩu", "••••••••••"], ["id", "Mã khách hàng", profileNumber], ["calendar", "Ngày tham gia", formatDate(account?.created_at)]] as const).map(([icon, label, value]) =>
+                {([["mail", "Email đăng nhập", email], ["lock", "Mật khẩu", "••••••••••"], ["id", "Mã khách hàng", profileNumber], ["calendar", "Ngày tham gia", formatDate(account?.created_at)], ["user", "Vai trò", roleName], ["shield", "Trạng thái", `Tài khoản ${status.toLowerCase()}`]] as const).map(([icon, label, value]) =>
                   <div key={label} className="grid gap-1.5 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
                     <dt className="flex items-center gap-3 text-sm text-cs-muted"><ProfileGlyph name={icon}/>{label}</dt>
                     <dd className="break-words rounded-xl bg-cs-surface-2 px-4 py-2.5 text-sm font-semibold text-cs-text">{value}</dd>
@@ -531,7 +533,7 @@ function Account() {
             <Button variant="danger-outline" icon="logout" onClick={() => void logout()}>Đăng xuất</Button>
           </div>}
         </section>
-      </main>
+      </div></main>
 
       {/* ========================================================= */}
       {/* MODAL 1: CHỈNH SỬA THÔNG TIN CÁ NHÂN                     */}

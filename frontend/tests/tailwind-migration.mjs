@@ -20,9 +20,9 @@ for (const [name, code, utility] of [
   ['Advisor/Admin dashboard', dash, 'grid-cols-4'],
   ['Common components', ui, 'bg-cs-surface'],
 ]) assert.ok(code.includes(utility), `${name} does not contain migrated Tailwind utilities`);
-for (const style of ['atelier-garage.css','atelier-services.css','workspace-dashboard.css'])
+for (const style of ['garage-garage.css','garage-services.css','workspace-dashboard.css'])
   assert.equal(existsSync(path.join(process.cwd(),'src/styles',style)), false, `${style} is obsolete`);
-assert.doesNotMatch(garage + services + dash, /atelier-(garage|services)\.css|workspace-dashboard\.css/);
+assert.doesNotMatch(garage + services + dash, /garage-(garage|services)\.css|workspace-dashboard\.css/);
 assert.match(shell, /data-area="admin"/);
 assert.match(shell, /data-area="advisor"/);
 assert.match(garage, /getMyVehicles\(\)/);

@@ -1,4 +1,4 @@
-/* ATELIER Customer: cards and timelines reflect API data, never demo localStorage. */
+/* GARAGE Customer: cards and timelines reflect API data, never demo localStorage. */
 .at-customer-page{min-height:calc(100vh - 180px);padding:46px 22px 65px;color:var(--cs-text);background:var(--cs-bg)}
 .at-customer-container{max-width:1200px;margin:auto}
 .at-customer-heading{display:flex;align-items:end;justify-content:space-between;gap:22px;margin-bottom:28px}
@@ -57,7 +57,7 @@ html[data-theme="light"] .at-customer-status.is-cancelled{background:#ffeaed;col
 html[data-theme="dark"] .cs-customer-main :is(.text-\[\#8A949E\],.text-\[\#AEB8C1\]){color:var(--cs-muted)!important}
 @media(max-width:760px){.at-customer-page{padding:28px 15px 40px}.at-customer-heading{align-items:start;flex-direction:column}.at-customer-stats{gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}.at-customer-stats>div:first-child{grid-column:span 2}.at-customer-stat{min-height:108px;padding:16px}.at-appointment-top,.at-appointment-bottom{align-items:flex-start;flex-direction:column}.at-tracking-details{grid-template-columns:1fr}}
 
-/* Repair tracking: original ATELIER two-column timeline and real Laravel status journal. */
+/* Repair tracking: original GARAGE two-column timeline and real Laravel status journal. */
 .at-customer-tracking .at-customer-container{max-width:1200px}
 .at-customer-tracking .at-tracking-card{padding:30px 28px;margin-bottom:22px}
 .at-customer-tracking .at-tracking-details{gap:clamp(25px,5vw,60px);margin-top:23px;grid-template-columns:1fr 1fr}
@@ -86,3 +86,8 @@ html[data-theme="light"] .at-track-status-muted{background:#eceff3!important;col
 .at-tracking-event span{font-size:13px;color:var(--cs-muted)}
 .at-tracking-waiting{background:var(--cs-soft);color:var(--cs-text);border-left:3px solid var(--cs-accent);padding:11px 14px;margin-bottom:20px;border-radius:8px;font-size:13px;line-height:1.6}
 @media(max-width:760px){.at-customer-tracking .at-tracking-details{grid-template-columns:1fr}.at-customer-tracking .at-tracking-card{padding:20px 17px}}
+
+/* Khu "Hồ sơ của tôi": mọi trang dùng chung một kiểu tiêu đề (trước đây 30px / 46px, đậm 700 / 800 tùy trang).
+   CSS ngoài @layer nên thắng class tiện ích Tailwind của các trang cũ. */
+.cs-account-content h1{font:700 clamp(28px,3.6vw,40px)/1.18 var(--font-sans);letter-spacing:.005em;color:var(--cs-text);margin-top:0}
+.cs-account-content > :is(.at-customer-page,main,section),.cs-account-content > * > :is(.at-customer-page,main){padding-top:0}

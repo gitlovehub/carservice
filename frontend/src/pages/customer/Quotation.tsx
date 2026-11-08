@@ -2,8 +2,8 @@ import { Modal } from "../../components/ui";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Toast, type ToastType } from "../../components/auth/Toast";
-import "../../styles/atelier-customer-pages.css";
-import "../../styles/atelier-customer-complete.css";
+import "../../styles/garage-customer-pages.css";
+import "../../styles/garage-customer-complete.css";
 import {
   formatMoney,
   getMyRepairOrderDetail,
@@ -160,7 +160,6 @@ export default function QuotationPage() {
   return <section className="at-customer-page at-customer-quotes"><div className="at-customer-container">
     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)}/>}
     <header className="at-customer-heading"><div>
-      <p className="at-customer-eyebrow">GARA CỦA TÔI / BÁO GIÁ</p>
       <h1>Báo giá của tôi</h1>
       <p>Xem từng hạng mục và quyết định những công việc được phép thực hiện.</p>
     </div></header>

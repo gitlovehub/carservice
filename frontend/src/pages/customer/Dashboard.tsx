@@ -309,9 +309,6 @@ function CustomerDashboard() {
           {/* ===== TIÊU ĐỀ TRANG ===== */}
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-                KHÁCH HÀNG / TỔNG QUAN DỊCH VỤ
-              </p>
               <h1 className="mt-2 text-[28px] font-bold tracking-normal text-[#1F2933]">
                 Xin chào, {getUserDisplayName(user)}
               </h1>

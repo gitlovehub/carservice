@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const src=f=>readFileSync(path.join(here,'../src',f),'utf8');
-const app=src('App.tsx'), dashboard=src('pages/shared/WorkspaceDashboard.tsx'), header=src('components/AtelierPublic.tsx');
+const app=src('App.tsx'), dashboard=src('pages/shared/WorkspaceDashboard.tsx'), header=src('components/GaragePublic.tsx');
 const auth=src('pages/auth/auth.ts'), guard=src('pages/auth/ProtectedRoute.tsx'), services=src('pages/customer/Services.tsx');
 const login=src('pages/auth/Login.tsx'), boundary=src('components/AppErrorBoundary.tsx');
 // Lỗi cũ: dùng biến `advisor` trước khi khai báo. Phase 4 viết lại dashboard — vẫn kiểm tra không dùng trước khai báo.
@@ -28,10 +28,10 @@ assert.match(guard, /state={{ from: location }}/);
 assert.match(auth, /path: "\/customer\/appointments"/);
 assert.match(login, /role === "CUSTOMER"/);
 assert.match(services, /fetchApi<Service\[\] \| { data: Service\[\] }>\("\/services"\)/);
-assert.match(services, /radial-gradient/); // migrated ATELIER hero uses Tailwind utilities
+assert.match(services, /radial-gradient/); // migrated GARAGE hero uses Tailwind utilities
 assert.match(services, /Không tải được dịch vụ/);
 assert.doesNotMatch(services, /SERVICE_PRODUCTS/);
-// Phase 5: atelier-booking.css chưa từng được import (đã gỡ); kiểm tra CSS thực sự được nạp cho trang đặt lịch.
+// Phase 5: garage-booking.css chưa từng được import (đã gỡ); kiểm tra CSS thực sự được nạp cho trang đặt lịch.
 assert.match(src('pages/customer/booking/ServicePicker.tsx'), /import "\.\/servicePicker\.css"/);
 assert.match(src('pages/customer/booking/servicePicker.css'), /prefers-reduced-motion/);
-console.log('PASS: crash, real services API, login redirect, role-safe routes, customer ATELIER styling.');
+console.log('PASS: crash, real services API, login redirect, role-safe routes, customer GARAGE styling.');

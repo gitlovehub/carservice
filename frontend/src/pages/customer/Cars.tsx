@@ -161,7 +161,6 @@ function Cars() {
       <main className="mx-auto max-w-[1250px] px-[34px] pb-[82px] pt-12 max-[670px]:px-[18px] max-[670px]:pb-[60px] max-[670px]:pt-[34px]">
         <div className="mb-[33px] flex items-center justify-between gap-6 max-[670px]:flex-col max-[670px]:items-start">
           <div>
-            <p className="text-[12px] font-extrabold uppercase leading-[1.6] tracking-[0.145em] text-cs-accent-text">GARA CỦA TÔI / XE</p>
             <h1 className="mb-2 mt-3 text-[clamp(31px,3.4vw,46px)] font-extrabold leading-[1.16] tracking-normal">Xe của tôi</h1>
             <p className="text-sm leading-[1.7] text-cs-muted">Quản lý danh sách xe để đặt lịch nhanh hơn.</p>
           </div>

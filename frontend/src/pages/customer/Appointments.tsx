@@ -1,5 +1,5 @@
 import { Modal } from "../../components/ui";
-import "../../styles/atelier-customer-pages.css";
+import "../../styles/garage-customer-pages.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -165,7 +165,7 @@ function Appointments() {
     <div className="at-customer-page at-customer-appointments">
       <div className="at-customer-container">
         <div className="at-customer-heading">
-          <div><p className="at-customer-eyebrow">GARA CỦA TÔI / LỊCH HẸN</p>
+          <div>
           <h1>Lịch hẹn của tôi</h1>
           <p>Theo dõi lịch đã gửi, xác nhận từ gara và thông tin tiếp nhận.</p></div>
           <Link className="at-customer-primary" to="/customer/booking">＋ Đặt lịch mới</Link>

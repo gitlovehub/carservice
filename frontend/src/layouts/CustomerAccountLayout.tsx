@@ -28,7 +28,9 @@ export default function CustomerAccountLayout() {
   if (!account) return <Outlet/>;
 
   const name = getUserDisplayName(account) || "Khách hàng";
-  const initials = name.trim().split(/\s+/).map(part => part[0]).filter(Boolean).slice(-2).join("").toUpperCase() || "KH";
+  // Chữ đầu của từ đầu + từ cuối (giống trang Hồ sơ): "Khách hàng TÈO" → "KT".
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const initials = (words.length > 1 ? words[0][0] + words[words.length - 1][0] : (words[0] ?? "KH").slice(0, 2)).toUpperCase();
 
   return <div className="mx-auto grid w-full max-w-[1360px] grid-cols-[minmax(0,1fr)] gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:px-8 lg:py-8" data-testid="customer-account-layout">
     <aside className="h-fit min-w-0 rounded-2xl border border-cs-border bg-cs-surface p-3 lg:sticky lg:top-24 lg:p-4" aria-label="Tài khoản của tôi">
@@ -56,7 +58,8 @@ export default function CustomerAccountLayout() {
         </div>)}
       </nav>
     </aside>
-    <div className="min-w-0 [&>*]:min-h-0">
+    {/* cs-account-content: chuẩn hóa tiêu đề trang (h1) cho mọi trang trong khu tài khoản — xem garage-customer-pages.css. */}
+    <div className="cs-account-content min-w-0 [&>*]:min-h-0">
       <Outlet/>
     </div>
   </div>;

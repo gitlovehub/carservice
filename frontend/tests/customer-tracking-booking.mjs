@@ -5,7 +5,7 @@ const tracking = read('src/pages/customer/RepairStatus.tsx');
 const picker = read('src/pages/customer/booking/ServicePicker.tsx');
 const api = read('src/services/customerApi.ts');
 const pickerCss = read('src/pages/customer/booking/servicePicker.css');
-const customerCss = read('src/styles/atelier-customer-pages.css');
+const customerCss = read('src/styles/garage-customer-pages.css');
 assert.match(tracking,/getMyRepairOrderDetail\(order\.id\)/,'Tracking must read actual Laravel history');
 assert.match(tracking,/statusHistory \?\? detail\?\.status_history/,'Read actual API history keys');
 assert.match(tracking,/Nhật ký gần đây/);

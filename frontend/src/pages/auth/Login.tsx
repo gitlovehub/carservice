@@ -4,7 +4,7 @@ import { fetchApi } from "../../services/api";
 import { getRoleManagementPage, setUserRole } from "./auth";
 import OtpInput from "../../components/auth/OtpInput";
 import Toast, { type ToastType } from "../../components/auth/Toast";
-import { AtelierAuthError, AtelierAuthLayout, AtelierField } from "../../components/AtelierPublic";
+import { GarageAuthError, GarageAuthLayout, GarageField } from "../../components/GaragePublic";
 
 const REMEMBER_EMAIL_KEY = "carservice_remembered_email";
 
@@ -409,24 +409,24 @@ function Login() {
   const primaryClass = "flex min-h-14 w-full cursor-pointer items-center justify-center rounded-xl bg-[#cf2935] px-6 py-4 text-sm font-bold !font-semibold text-white transition hover:bg-[#b92430] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] disabled:cursor-not-allowed disabled:opacity-55";
 
   return (
-    <AtelierAuthLayout
+    <GarageAuthLayout
       title={step === "login" ? "Đăng nhập" : "Xác thực email"}
       description={step === "login" ? "Vui lòng nhập địa chỉ email và mật khẩu của bạn:" : `Nhập mã OTP được gửi tới ${pendingEmail}.`}
     >
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      {apiError && <AtelierAuthError message={apiError} />}
+      {apiError && <GarageAuthError message={apiError} />}
       {step === "login" ? (
         <>
           <form className="grid gap-4" onSubmit={handleSubmit} noValidate>
-            <AtelierField htmlFor="login-email" label="Địa chỉ email" error={errors.email}>
+            <GarageField htmlFor="login-email" label="Địa chỉ email" error={errors.email}>
               <input id="login-email" name="email" type="email" autoComplete="username" placeholder="you@example.com" value={form.email} onChange={handleChange} aria-invalid={!!errors.email} className={fieldClass} />
-            </AtelierField>
-            <AtelierField htmlFor="login-password" label="Mật khẩu" error={errors.password}>
+            </GarageField>
+            <GarageField htmlFor="login-password" label="Mật khẩu" error={errors.password}>
               <div className="relative">
                 <input id="login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Nhập mật khẩu" value={form.password} onChange={handleChange} aria-invalid={!!errors.password} className={`${fieldClass} pr-16`} />
                 <button type="button" aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"} onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-cs-muted hover:text-[#cf2935]">{showPassword ? "Ẩn" : "Hiện"}</button>
               </div>
-            </AtelierField>
+            </GarageField>
             <div className="flex flex-wrap items-center justify-between gap-3 py-1 text-xs text-cs-muted">
               <label htmlFor="login-remember" className="inline-flex cursor-pointer items-center gap-2.5">
                 <input id="login-remember" type="checkbox" checked={rememberMe} onChange={e => { setRememberMe(e.target.checked); if (!e.target.checked) localStorage.removeItem(REMEMBER_EMAIL_KEY); }} className="size-4 cursor-pointer accent-[#cf2935]" />
@@ -451,7 +451,7 @@ function Login() {
           </div>
         </>
       )}
-    </AtelierAuthLayout>
+    </GarageAuthLayout>
   );
 }
 

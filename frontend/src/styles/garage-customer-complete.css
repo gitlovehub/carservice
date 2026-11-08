@@ -1,4 +1,4 @@
-/* Customer ATELIER parity. Scoped to Customer so Advisor/Admin are untouched.
+/* Customer GARAGE parity. Scoped to Customer so Advisor/Admin are untouched.
    Tokens match assets/css/design.css in carservice-demo(3).zip. */
 /* Màu Customer = token mặc định (đỏ thương hiệu) trong src/styles/tokens.css. */
 .cs-customer-layout .cs-public-header { min-height:81px;padding:0 clamp(20px,5vw,76px);gap:20px; }
@@ -98,7 +98,7 @@ html[data-theme="dark"] .at-danger-outline{color:#fca5a5;border-color:color-mix(
 .cs-customer-layout :is(.at-customer-invoices,.at-customer-payment,.at-customer-reviews,.at-customer-dashboard) :is(.hover\:bg-\[\#FAFAF9\],.hover\:bg-\[\#FAFAF8\],.hover\:bg-slate-50):hover{background:var(--cs-surface-2)!important;}
 .cs-customer-layout :is(.at-customer-invoices,.at-customer-payment,.at-customer-reviews,.at-customer-dashboard) :is(button,a).bg-\[\#1F2933\] {background:var(--cs-accent)!important;color:white!important;}
 .cs-customer-layout :is(.at-customer-invoices,.at-customer-payment,.at-customer-reviews,.at-customer-dashboard) .fixed.inset-0>div{background:var(--cs-surface)!important;color:var(--cs-text)!important;}
-/* ATELIER booking accent and continuity with Customer header. */
+/* GARAGE booking accent and continuity with Customer header. */
 .cs-customer-layout .at-booking-legacy main>div:nth-child(2) h1 {font-size:clamp(30px,3.6vw,43px);}
 .cs-customer-layout .at-booking-legacy :is(.bg-\[\#1F2933\],button.bg-\[\#1F2933\]){background:var(--cs-accent)!important;color:white!important;}
 .cs-customer-layout .at-booking-legacy .ring-4 {--tw-ring-color:var(--cs-soft)!important;}

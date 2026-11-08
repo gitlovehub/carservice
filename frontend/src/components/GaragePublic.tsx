@@ -5,15 +5,15 @@ import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "../contexts/theme";
 import { useAuthSession } from "../contexts/authSession";
 import { getRoleManagementPage, getUserDisplayName, logout } from "../pages/auth/auth";
-import carArt from "../assets/car-atelier.svg";
+import carArt from "../assets/car-garage.svg";
 import { Button, IconButton } from "./ui/Button";
 import { buttonClass } from "./ui/buttonClass";
 
-export function AtelierBrand({ to = "/" }: { to?: string }) {
-  return <Link className="inline-flex min-w-0 shrink items-center gap-2.5 whitespace-nowrap text-xl leading-tight font-bold text-cs-text no-underline" to={to} aria-label="CarService Atelier – Trang chủ">
+export function GarageBrand({ to = "/" }: { to?: string }) {
+  return <Link className="inline-flex min-w-0 shrink items-center gap-2.5 whitespace-nowrap text-xl leading-tight font-bold text-cs-text no-underline" to={to} aria-label="CarService Garage – Trang chủ">
     <span className="flex size-8 shrink-0 -rotate-6 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white">C</span>
     {/* Dòng phụ ẩn trên màn hình rất hẹp để header không tràn. */}
-    <span className="min-w-0">CarService<small className="mt-0.5 hidden text-[11px] font-semibold tracking-[0.12em] text-cs-muted min-[420px]:block">ATELIER · CHĂM SÓC Ô TÔ</small></span>
+    <span className="min-w-0">CarService<small className="mt-0.5 hidden text-[11px] font-semibold tracking-[0.12em] text-cs-muted min-[420px]:block">GARAGE · CHĂM SÓC Ô TÔ</small></span>
   </Link>;
 }
 
@@ -25,7 +25,7 @@ const guestLinks = [
   { label: "Lịch hẹn", href: "/appointments" },
 ];
 
-export function AtelierPublicHeader() {
+export function GaragePublicHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const session = useAuthSession();
@@ -56,7 +56,7 @@ export function AtelierPublicHeader() {
   </span>;
 
   return <header className="sticky top-0 z-[60] flex h-[81px] items-center justify-between gap-3 border-b border-cs-border bg-cs-surface px-4 sm:gap-5 sm:px-[5vw] xl:px-[76px]">
-    <AtelierBrand />
+    <GarageBrand />
     <nav className="hidden items-center gap-4 min-[821px]:flex xl:gap-6 [&_a]:relative [&_a]:whitespace-nowrap [&_a]:text-[13px] [&_a]:font-semibold [&_a]:text-cs-text-2 [&_a]:hover:text-cs-accent-text" aria-label="Điều hướng chính">{links}</nav>
     <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
       <IconButton icon={theme === "dark" ? "sun" : "moon"} label={themeLabel} variant="outline" onClick={toggleTheme} className="max-[820px]:hidden!"/>
@@ -159,15 +159,15 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
   </div>;
 }
 
-export function AtelierPublicFooter() {
+export function GaragePublicFooter() {
   return <footer className="flex flex-wrap justify-between gap-5 border-t border-cs-border bg-cs-surface px-5 py-7 text-xs text-cs-muted sm:px-[5vw] xl:px-[76px]"><span>© {new Date().getFullYear()} CarService — Thiết kế trải nghiệm chăm sóc ô tô.</span><span>Website quản lý dịch vụ bảo dưỡng ô tô</span></footer>;
 }
 
-export function AtelierCar({ className = "" }: { className?: string }) {
-  return <img className={className} src={carArt} alt="Minh họa ô tô thể thao CarService Atelier" />;
+export function GarageCar({ className = "" }: { className?: string }) {
+  return <img className={className} src={carArt} alt="Minh họa ô tô thể thao CarService Garage" />;
 }
 
-export function AtelierAuthLayout({ title, description, children }: { title: string; description: string; children: ReactNode }) {
+export function GarageAuthLayout({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
     <>
       <main className="flex w-full flex-1 items-center justify-center px-5 py-12 sm:px-8 sm:py-16">
@@ -185,10 +185,10 @@ export function AtelierAuthLayout({ title, description, children }: { title: str
   );
 }
 
-export function AtelierField({ label, htmlFor, error, children }: { label: string; htmlFor?: string; error?: string; children: ReactNode }) {
+export function GarageField({ label, htmlFor, error, children }: { label: string; htmlFor?: string; error?: string; children: ReactNode }) {
   return <div className="grid gap-2"><label className="text-xs font-bold" htmlFor={htmlFor}>{label}</label>{children}{error && <p className="text-xs font-semibold text-danger">{error}</p>}</div>;
 }
 
-export function AtelierAuthError({ message }: { message: string }) {
+export function GarageAuthError({ message }: { message: string }) {
   return <div className="mb-4 rounded-xl border border-danger/30 bg-danger-soft px-4 py-3 leading-6 text-danger-fg" role="alert">{message}</div>;
 }

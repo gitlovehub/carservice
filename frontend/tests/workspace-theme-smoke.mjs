@@ -19,4 +19,4 @@ assert(!/#[0-9a-f]{6}/i.test(dashboard), 'Dashboard colors must come from tokens
 assert(!/[A-Z]{4,} [A-Z]{3,}/.test(dashboard.replace(/"[A-Z_]+"/g, '')), 'No decorative English captions on the dashboard');
 assert(app.includes('<WorkspaceDashboard role="advisor"/>'));
 for (const variant of ['sm:grid-cols-2', 'xl:grid-cols-4', 'xl:grid-cols-[']) assert(dashboard.includes(variant), `Tailwind responsive variant ${variant} must remain`);
-console.log('PASS: role scoped theme, legacy dark compatibility, responsive ATELIER dashboards and real appointment integration.');
+console.log('PASS: role scoped theme, legacy dark compatibility, responsive GARAGE dashboards and real appointment integration.');

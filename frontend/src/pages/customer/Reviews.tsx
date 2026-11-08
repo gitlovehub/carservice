@@ -108,9 +108,6 @@ function Reviews() {
       <main className="lg:ml-[250px]">
         <div className="mx-auto max-w-[1200px] px-6 py-10 md:px-8 md:py-14">
           <div className="mb-8">
-            <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-              KHÁCH HÀNG / ĐÁNH GIÁ
-            </p>
 
             <h1 className="text-[30px] font-bold tracking-normal text-[#1F2933]">
               Đánh giá dịch vụ

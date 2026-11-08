@@ -51,7 +51,6 @@ export default function Services() {
   return <main className="flex-1">
     <section className="bg-[radial-gradient(ellipse_at_88%_45%,#71232b88,transparent_53%)] bg-[#1d1114] py-16 text-white min-[601px]:py-[94px]">
       <div className="mx-auto max-w-[1250px] px-5 md:px-7">
-        <span className="text-[12px] font-extrabold tracking-[0.17em] text-[#ff9fa5] uppercase">CARSERVICE / DANH MỤC DỊCH VỤ</span>
         <h1 className="my-6 text-[clamp(2.5rem,5vw,4.4rem)] leading-[1.08] font-extrabold tracking-normal">Chăm sóc đúng cách.<br /><em className="not-italic text-[#fd646e]">Vận hành an tâm.</em></h1>
         <p className="mb-7 max-w-[600px] text-[15px] leading-8 text-[#c7bfc2]">Mỗi chiếc xe có nhu cầu riêng. Khám phá dịch vụ đang được gara cung cấp và chủ động đặt lịch bảo dưỡng.</p>
         <Link className={btnPrimary} to="/booking">Đặt lịch bảo dưỡng <span aria-hidden="true">↗</span></Link>
