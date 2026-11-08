@@ -61,9 +61,9 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 | ID | Mô tả | Phụ thuộc | Trạng thái |
 |---|---|---|---|
 | P4-DB | `pickup_authorizations` (không thêm FK vào bảng cũ — kiểm ở tầng ứng dụng); CHECK_OUT dùng `vehicle_handovers` | P1, P2 | VERIFIED |
-| P4-BE | Khách tạo/thu hồi ủy quyền (`/me/repair-orders/{id}/pickup-authorizations`, `DELETE /me/pickup-authorizations/{id}`, tối đa 3, ghi ACCOUNT); CHECK_OUT: người nhận OWNER hoặc AUTHORIZED (ủy quyền còn hiệu lực + 4 số cuối khớp, tên/SĐT lấy theo ủy quyền), đối chiếu CHECK_IN → `is_discrepancy`; chủ xe xác nhận (tài khoản / OTP email chủ xe); ủy quyền → USED; thu hồi sau khi lập → chặn xác nhận; `handOver` + `closeRepairOrder` (xe đã nhận theo biên bản) bắt buộc CHECK_OUT CONFIRMED khi `requires_check_in` | P4-DB | VERIFIED — `VehicleCheckOutTest` 6/6, suite 195/195 |
-| P4-FE | Màn check-out so sánh; khách ủy quyền / xác nhận nhận xe | P4-BE | PENDING |
-| P4-QA | Test + trình duyệt + hồi quy | P4-FE | PENDING |
+| P4-BE | Khách tạo/thu hồi ủy quyền (`/me/repair-orders/{id}/pickup-authorizations`, `DELETE /me/pickup-authorizations/{id}`, tối đa 3, ghi ACCOUNT); CHECK_OUT: người nhận OWNER hoặc AUTHORIZED (ủy quyền còn hiệu lực + 4 số cuối khớp, tên/SĐT lấy theo ủy quyền), đối chiếu CHECK_IN → `is_discrepancy`; chủ xe xác nhận (tài khoản / OTP email chủ xe); ủy quyền → USED; thu hồi sau khi lập → chặn xác nhận; `handOver` + `closeRepairOrder` (xe đã nhận theo biên bản) bắt buộc CHECK_OUT CONFIRMED khi `requires_check_in` | P4-DB | VERIFIED — `VehicleCheckOutTest` 6/6, suite 195/195 · commit `1b37879` |
+| P4-FE | `CheckInPanel type="CHECK_OUT"` (checklist điền sẵn từ CHECK_IN, người nhận Chủ xe / Người được ủy quyền chọn từ danh sách chủ xe khai báo + 4 số cuối, hiển thị "Khác lúc nhận xe", mở sớm khi trả xe không sửa); Customer `CustomerPickupBlock` (thêm / thu hồi ủy quyền) | P4-BE | VERIFIED (tự động) — tsc, build, eslint không tăng, smoke 18/18, backend 195/195 |
+| P4-QA | Trình duyệt + hồi quy | P4-FE | Hồi quy #10 + /repair-status: 0 lỗi console, 0 request ghi. **BROWSER_NOT_VERIFIED**: panel trả xe + khối ủy quyền (không có phiếu phù hợp / tạo dữ liệu). DB dev đã migrate P4 |
 
 ## P5–P7
 

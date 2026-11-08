@@ -1,5 +1,5 @@
 import { apiClient } from "./api";
-import type { HandoverChecklistItem, WorkflowHandover, WorkflowQuotation } from "./workflowService";
+import type { HandoverChecklistItem, PickupAuthorization, WorkflowHandover, WorkflowQuotation } from "./workflowService";
 
 /** Ảnh bằng chứng (P1B) và xác nhận tại quầy bằng OTP email (P1C). */
 
@@ -33,8 +33,8 @@ export type HandoverInput = Omit<WorkflowHandover, "id" | "type" | "status" | "c
 
 /** Biên bản giao nhận xe (P2). Khách xác nhận trong tài khoản hoặc OTP email chủ xe tại quầy. */
 export const handoverApi = {
-  create: async (orderId: number, input: HandoverInput) =>
-    (await apiClient.post<WorkflowHandover>(`/repair-orders/${orderId}/handovers`, { type: "CHECK_IN", ...input })).data,
+  create: async (orderId: number, input: HandoverInput, type: "CHECK_IN" | "CHECK_OUT" = "CHECK_IN") =>
+    (await apiClient.post<WorkflowHandover>(`/repair-orders/${orderId}/handovers`, { type, ...input })).data,
   update: async (id: number, input: Partial<HandoverInput>) => (await apiClient.patch<WorkflowHandover>(`/handovers/${id}`, input)).data,
   submit: async (id: number) => (await apiClient.post<WorkflowHandover>(`/handovers/${id}/submit`)).data,
   void: async (id: number, reason: string) => (await apiClient.post<WorkflowHandover>(`/handovers/${id}/void`, { reason })).data,
@@ -42,6 +42,14 @@ export const handoverApi = {
   verifyOtp: async (id: number, code: string) => (await apiClient.post<WorkflowHandover>(`/handovers/${id}/verify-otp`, { code })).data,
   /** Khách tự xác nhận (ACCOUNT). */
   confirmAsCustomer: async (id: number, comment?: string) => (await apiClient.post<WorkflowHandover>(`/me/handovers/${id}/confirm`, { comment })).data,
+};
+
+/** Ủy quyền nhận xe (P4, N9) — chỉ chủ xe, trong tài khoản của mình. */
+export const pickupAuthorizationApi = {
+  list: async (orderId: number) => (await apiClient.get<{ data: PickupAuthorization[] }>(`/me/repair-orders/${orderId}/pickup-authorizations`)).data.data,
+  create: async (orderId: number, input: { full_name: string; phone: string; id_last4: string; valid_until?: string | null }) =>
+    (await apiClient.post<PickupAuthorization>(`/me/repair-orders/${orderId}/pickup-authorizations`, input)).data,
+  revoke: async (id: number) => (await apiClient.delete<PickupAuthorization>(`/me/pickup-authorizations/${id}`)).data,
 };
 
 export const counterApprovalApi = {

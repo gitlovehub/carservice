@@ -72,11 +72,18 @@ export type WorkflowInvoice = {
 export type HandoverChecklistItem = {
   id?: number; category: "EXTERIOR" | "INTERIOR" | "ACCESSORY" | "KEY" | "DOCUMENT"; position_code?: string | null;
   label: string; condition: "OK" | "SCRATCH" | "DENT" | "BROKEN" | "MISSING" | "PRESENT"; quantity?: number | null; note?: string | null;
+  /** CHECK_OUT: khác với biên bản nhận xe (P4). */
+  is_discrepancy?: boolean;
+};
+export type PickupAuthorization = {
+  id: number; full_name: string; phone: string; id_last4: string; valid_until?: string | null;
+  status: "ACTIVE" | "USED" | "REVOKED"; created_at?: string;
 };
 export type WorkflowHandover = {
   id: number; type: "CHECK_IN" | "CHECK_OUT"; status: "DRAFT" | "SUBMITTED" | "CONFIRMED" | "VOID";
   mileage?: number | null; fuel_level?: string | null; general_condition?: string | null; valuables_note?: string | null;
   person_name: string; person_phone?: string | null; person_id_last4?: string | null; person_relation: "OWNER" | "AUTHORIZED" | "OTHER";
+  pickup_authorization_id?: number | null;
   submitted_at?: string | null; confirmed_at?: string | null; void_reason?: string | null;
   checklist_items?: HandoverChecklistItem[];
   confirmations?: Array<{ id: number; method: "ACCOUNT" | "EMAIL_OTP"; confirmed_at: string; comment?: string | null }>;
@@ -88,6 +95,7 @@ export type WorkflowOrder = {
   booked_vehicle_id?: number | null;
   vehicle_change_reason?: string | null;
   handovers?: WorkflowHandover[];
+  pickup_authorizations?: PickupAuthorization[];
   appointment_id?: number | null;
   appointment?: (CustomerRequest & { id: number; appointment_code?: string }) | null;
   repair_order_code?: string;
