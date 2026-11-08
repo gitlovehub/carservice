@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminAdvisorActivityController;
 use App\Http\Controllers\Api\AdminMaintenancePackageController;
 use App\Http\Controllers\Api\AdminServiceController;
 use App\Http\Controllers\Api\AdvisorAppointmentController;
@@ -178,6 +179,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('/{id}/confirm', [AdvisorAppointmentController::class, 'confirm']);
             Route::post('/{id}/check-in', [AdvisorAppointmentController::class, 'checkIn']);
             Route::post('/{id}/cancel', [AdvisorAppointmentController::class, 'cancel']);
+            // Đổi lịch giúp khách: bắt buộc lý do, ghi ai đổi, báo khách (web + email).
+            Route::post('/{id}/reschedule', [AdvisorAppointmentController::class, 'reschedule'])->middleware('throttle:20,1');
         });
 
         // P7: công suất gara theo phút / ngày (Q6: chỉ cảnh báo).
@@ -220,6 +223,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
             'customers/{customer}',
             [CustomerController::class, 'destroy']
         );
+
+        // Hoạt động của từng cố vấn với lịch hẹn / phiếu sửa chữa.
+        Route::get('admin/advisor-activity', [AdminAdvisorActivityController::class, 'index']);
 
         // P5: bước chuẩn + phút chuẩn của dịch vụ.
         Route::get('admin/services/{service}/steps', [AdminServiceController::class, 'steps']);
