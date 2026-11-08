@@ -45,12 +45,12 @@ export function PartRequestsPanel({ order, onChanged }: { order: WorkflowOrder; 
           <label className="text-xs font-semibold text-cs-muted">Ngày dự kiến về<input className={`${input} mt-1`} type="date" min={today} value={eta[row.id] ?? row.eta_date ?? ""} onChange={e => setEta({ ...eta, [row.id]: e.target.value })}/></label>
           <label className="min-w-40 flex-1 text-xs font-semibold text-cs-muted">Ghi chú nhà cung cấp<input className={`${input} mt-1`} maxLength={1000} value={note[row.id] ?? row.supplier_note ?? ""} onChange={e => setNote({ ...note, [row.id]: e.target.value })}/></label>
           <Button size="sm" variant="secondary" disabled={working || !(eta[row.id] ?? row.eta_date)} onClick={() => void run(() => post(`/part-requests/${row.id}/order`, { eta_date: eta[row.id] ?? row.eta_date, supplier_note: note[row.id] ?? row.supplier_note ?? null }), "Đã ghi đặt hàng và ngày dự kiến về.")}>Lưu đặt hàng</Button>
-          <Button size="sm" variant="primary" disabled={working} onClick={() => void run(() => post(`/part-requests/${row.id}/receive`, {}), "Phụ tùng đã về: đã nhập kho và báo khách.")}>Đã về</Button>
+          <Button size="sm" variant="success" icon="check" disabled={working} onClick={() => void run(() => post(`/part-requests/${row.id}/receive`, {}), "Phụ tùng đã về: đã nhập kho và báo khách.")}>Đã về</Button>
           {cancelReason[row.id] === undefined
-            ? <Button size="sm" variant="ghost" disabled={working} onClick={() => setCancelReason({ ...cancelReason, [row.id]: "" })}>Hủy</Button>
+            ? <Button size="sm" variant="ghost" tone="danger" icon="x" disabled={working} onClick={() => setCancelReason({ ...cancelReason, [row.id]: "" })}>Hủy</Button>
             : <span className="flex flex-wrap items-end gap-2">
               <input className={`${input} mt-0 w-56`} aria-label="Lý do hủy" placeholder="Lý do hủy (≥ 5 ký tự)" minLength={5} value={cancelReason[row.id]} onChange={e => setCancelReason({ ...cancelReason, [row.id]: e.target.value })}/>
-              <Button size="sm" variant="danger" disabled={working || (cancelReason[row.id] ?? "").trim().length < 5} onClick={() => void run(() => post(`/part-requests/${row.id}/cancel`, { reason: cancelReason[row.id] }), "Đã hủy yêu cầu phụ tùng.")}>Xác nhận hủy</Button>
+              <Button size="sm" variant="danger-outline" icon="x" disabled={working || (cancelReason[row.id] ?? "").trim().length < 5} onClick={() => void run(() => post(`/part-requests/${row.id}/cancel`, { reason: cancelReason[row.id] }), "Đã hủy yêu cầu phụ tùng.")}>Xác nhận hủy</Button>
             </span>}
         </div>}
       </li>;

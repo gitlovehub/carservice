@@ -1,4 +1,4 @@
-import { Button, PageHeader, Modal } from "../../components/ui";
+import { Button, IconButton, PageHeader, Modal } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -219,20 +219,9 @@ function Customers() {
                   className="w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-[13px] outline-none transition placeholder:text-cs-muted focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
                 />
 
-                <button
-                  type="submit"
-                  className="cs-btn cs-btn-primary"
-                >
-                  Tìm kiếm
-                </button>
+                <Button type="submit" variant="outline" icon="search">Tìm kiếm</Button>
 
-                <button
-                  type="button"
-                  onClick={resetSearch}
-                  className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-[12px] font-semibold text-[#374151] transition hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
-                >
-                  Xóa bộ lọc
-                </button>
+                <Button variant="ghost" icon="x" onClick={resetSearch}>Xóa bộ lọc</Button>
               </form>
             </div>
 
@@ -255,13 +244,7 @@ function Customers() {
               {error && (
                 <div className="m-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
                   <p>{error}</p>
-                  <button
-                    type="button"
-                    onClick={() => void loadCustomers()}
-                    className="mt-2 font-semibold underline"
-                  >
-                    Thử tải lại
-                  </button>
+                  <Button size="sm" variant="secondary" icon="refresh" className="mt-2" onClick={() => void loadCustomers()}>Thử tải lại</Button>
                 </div>
               )}
 
@@ -344,13 +327,7 @@ function Customers() {
 
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => openEditModal(customer)}
-                                className="rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[11px] font-semibold text-[#374151] transition hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
-                              >
-                                Sửa
-                              </button>
+                              <IconButton icon="edit" label="Sửa khách hàng" onClick={() => openEditModal(customer)}/>
                               <Link
                                 to={`/advisor/customer-cars?customerId=${customer.id}`}
                                 className="inline-flex rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[11px] font-semibold text-[#374151] transition hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
@@ -383,24 +360,8 @@ function Customers() {
                 </p>
 
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={page <= 1 || loading}
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#374151] transition hover:bg-cs-bg disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Trước
-                  </button>
-                  <button
-                    type="button"
-                    disabled={page >= lastPage || loading}
-                    onClick={() =>
-                      setPage((current) => Math.min(lastPage, current + 1))
-                    }
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-[11px] font-semibold text-[#374151] transition hover:bg-cs-bg disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Tiếp
-                  </button>
+                  <Button size="sm" variant="outline" icon="chevron-left" disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))}>Trước</Button>
+                  <Button size="sm" variant="outline" iconRight="chevron-right" disabled={page >= lastPage || loading} onClick={() => setPage((current) => Math.min(lastPage, current + 1))}>Tiếp</Button>
                 </div>
               </div>
             </div>
@@ -423,15 +384,7 @@ function Customers() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                disabled={saving}
-                onClick={closeModal}
-                aria-label="Đóng biểu mẫu"
-                className="rounded-lg px-2 py-1 text-lg text-cs-muted hover:bg-cs-surface-2 disabled:opacity-40"
-              >
-                ×
-              </button>
+              <IconButton icon="close" label="Đóng biểu mẫu" disabled={saving} onClick={closeModal}/>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -522,25 +475,8 @@ function Customers() {
               )}
 
               <div className="flex justify-end gap-3 border-t border-[#EEF0F2] pt-5">
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={closeModal}
-                  className="rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-cs-bg disabled:opacity-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded-xl bg-[#1F2933] px-5 py-2.5 text-[12px] font-semibold text-white transition hover:bg-[#151D24] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving
-                    ? "Đang lưu..."
-                    : editingCustomer
-                      ? "Lưu thay đổi"
-                      : "Thêm khách hàng"}
-                </button>
+                <Button variant="secondary" disabled={saving} onClick={closeModal}>Hủy</Button>
+                <Button type="submit" variant="primary" icon={editingCustomer ? "check" : "plus"} loading={saving} loadingText="Đang lưu...">{editingCustomer ? "Lưu thay đổi" : "Thêm khách hàng"}</Button>
               </div>
             </form>
           </Modal>

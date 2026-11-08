@@ -46,7 +46,7 @@ export function QuickServicePanel({ order, onChanged }: { order: WorkflowOrder; 
     </li>)}</ul>
     <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
       <p className="text-sm text-cs-text">Tổng: <strong>{formatVnd(total)}</strong></p>
-      <Button variant="primary" loading={working} disabled={!selected.length} onClick={() => void submit()}>Gửi báo giá dịch vụ nhanh</Button>
+      <Button variant="primary" icon="send" loading={working} disabled={!selected.length} onClick={() => void submit()}>Gửi báo giá dịch vụ nhanh</Button>
     </div>
   </section>;
 }

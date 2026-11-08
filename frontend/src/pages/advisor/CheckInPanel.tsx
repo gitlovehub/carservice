@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Button } from "../../components/ui/Button";
+import { Button, IconButton } from "../../components/ui/Button";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
 import { handoverApi, VEHICLE_POSITIONS, type HandoverInput, type OtpSent } from "../../services/evidenceService";
 import type { HandoverChecklistItem, WorkflowHandover, WorkflowOrder } from "../../services/workflowService";
@@ -119,13 +119,13 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
           <td className="py-1.5 pr-2"><select className={`${input} mt-0`} aria-label="Tình trạng" value={item.condition} onChange={e => setItem(index, { condition: e.target.value as HandoverChecklistItem["condition"] })}>{Object.entries(CONDITION_TEXT).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></td>
           <td className="w-20 py-1.5 pr-2"><input className={`${input} mt-0`} aria-label="Số lượng" type="number" min="0" value={item.quantity ?? ""} onChange={e => setItem(index, { quantity: e.target.value === "" ? null : Number(e.target.value) })}/></td>
           <td className="py-1.5 pr-2"><input className={`${input} mt-0`} aria-label="Ghi chú" maxLength={500} value={item.note ?? ""} onChange={e => setItem(index, { note: e.target.value })}/></td>
-          <td><Button size="sm" variant="ghost" aria-label="Xóa dòng" onClick={() => setForm({ ...form, items: form.items.filter((_, i) => i !== index) })}>✕</Button></td>
+          <td><IconButton size="sm" icon="trash" tone="danger" label="Xóa dòng" onClick={() => setForm({ ...form, items: form.items.filter((_, i) => i !== index) })}/></td>
         </tr>)}</tbody></table></div>
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="secondary" onClick={() => setForm({ ...form, items: [...form.items, { category: "EXTERIOR", label: "", condition: "OK" }] })}>Thêm dòng</Button>
+        <Button size="sm" variant="tonal" icon="plus" onClick={() => setForm({ ...form, items: [...form.items, { category: "EXTERIOR", label: "", condition: "OK" }] })}>Thêm dòng</Button>
         <span className="flex-1"/>
         <Button type="submit" variant="secondary" loading={working}>{handover ? "Lưu nháp" : "Tạo biên bản"}</Button>
-        {handover && <Button variant="primary" loading={working} onClick={() => void run(async () => { await handoverApi.update(handover.id, form); await handoverApi.submit(handover.id); }, "Đã gửi biên bản. Chờ chủ xe xác nhận.")}>Gửi khách xác nhận</Button>}
+        {handover && <Button variant="primary" icon="send" loading={working} onClick={() => void run(async () => { await handoverApi.update(handover.id, form); await handoverApi.submit(handover.id); }, "Đã gửi biên bản. Chờ chủ xe xác nhận.")}>Gửi khách xác nhận</Button>}
       </div>
       {handover && <PhotoUploader type="handover" id={handover.id} title="Ảnh tình trạng xe (chọn vị trí trước khi chụp; dịch vụ nhanh cần đủ 4 góc)" positions={VEHICLE_POSITIONS}/>}
     </form> : handover && <HandoverSummary handover={handover}/>}
@@ -142,11 +142,11 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
     {handover && handover.status !== "DRAFT" && <PhotoUploader type="handover" id={handover.id} readOnly title="Ảnh tình trạng xe"/>}
 
     {handover && ["DRAFT", "SUBMITTED"].includes(handover.status) && (voidReason === null
-      ? <div className="mt-4"><Button size="sm" variant="danger-outline" disabled={working} onClick={() => setVoidReason("")}>Hủy biên bản</Button></div>
+      ? <div className="mt-4"><Button size="sm" variant="danger-outline" icon="x" disabled={working} onClick={() => setVoidReason("")}>Hủy biên bản</Button></div>
       : <form className="mt-4 flex flex-wrap items-end gap-2" onSubmit={event => { event.preventDefault(); void run(() => handoverApi.void(handover.id, voidReason), "Đã hủy biên bản. Lập biên bản mới."); }}>
         <label className="min-w-64 flex-1 text-xs font-semibold text-cs-muted">Lý do hủy<input className={input} required minLength={5} maxLength={1000} value={voidReason} onChange={e => setVoidReason(e.target.value)}/></label>
         <Button size="sm" variant="secondary" onClick={() => setVoidReason(null)}>Thôi</Button>
-        <Button type="submit" size="sm" variant="danger" loading={working}>Hủy biên bản</Button>
+        <Button type="submit" size="sm" variant="danger-outline" icon="x" loading={working}>Hủy biên bản</Button>
       </form>)}
   </section>;
 }

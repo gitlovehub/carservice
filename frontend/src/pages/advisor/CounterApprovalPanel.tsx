@@ -51,15 +51,15 @@ export function CounterApprovalPanel({ quotation, onDone }: { quotation: Workflo
       {items.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-sm">
         <span className="text-cs-text">{item.description || `Hạng mục #${item.id}`} <span className="text-cs-muted">· {formatVnd(item.amount)}</span></span>
         <span className="inline-flex gap-1" role="group" aria-label={`Lựa chọn cho ${item.description ?? item.id}`}>
-          <Button size="sm" variant={decisions[item.id] ? "primary" : "secondary"} aria-pressed={decisions[item.id] === true} disabled={working} onClick={() => toggle(item.id, true)}>Đồng ý</Button>
-          <Button size="sm" variant={decisions[item.id] ? "secondary" : "danger"} aria-pressed={decisions[item.id] === false} disabled={working} onClick={() => toggle(item.id, false)}>Từ chối</Button>
+          <Button size="sm" variant={decisions[item.id] ? "success" : "secondary"} icon="check" aria-pressed={decisions[item.id] === true} disabled={working} onClick={() => toggle(item.id, true)}>Đồng ý</Button>
+          <Button size="sm" variant={decisions[item.id] ? "secondary" : "danger-outline"} icon="x" aria-pressed={decisions[item.id] === false} disabled={working} onClick={() => toggle(item.id, false)}>Từ chối</Button>
         </span>
       </li>)}
     </ul>
     <p className="mt-2 text-right text-sm text-cs-text">Tổng khách đồng ý: <strong>{formatVnd(approvedTotal)}</strong></p>
     {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
     {!sent
-      ? <div className="mt-3 flex justify-end"><Button variant="primary" loading={working} onClick={() => void sendCode()}>Gửi mã tới email chủ xe</Button></div>
+      ? <div className="mt-3 flex justify-end"><Button variant="primary" icon="send" loading={working} onClick={() => void sendCode()}>Gửi mã tới email chủ xe</Button></div>
       : <form className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end" onSubmit={event => void verify(event)}>
         <label className="text-xs font-semibold text-cs-muted">Mã 6 số đã gửi tới {sent.sent_to} (hết hạn {new Date(sent.expires_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })})
           <input className={input} inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} required value={code} onChange={event => setCode(event.target.value.replace(/\D/g, ""))}/>

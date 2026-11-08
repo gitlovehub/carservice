@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Button } from "../../components/ui/Button";
+import { Button, IconButton } from "../../components/ui/Button";
 import { StatusBadge } from "../../components/ui/Badge";
 import {
   formatVnd, supplementQuotations, workflowApi,
@@ -80,7 +80,7 @@ export function SupplementPanel({ order, onChanged }: { order: WorkflowOrder; on
         <span>{item.description} × {item.quantity}</span>
         <span className="text-xs">{formatVnd(item.amount)} · {item.is_approved == null ? "Chưa trả lời" : item.is_approved ? "✓ Đồng ý" : "✗ Từ chối"}</span>
       </li>)}</ul>
-      {q.status === "DRAFT" && <div className="mt-3"><Button variant="primary" loading={working} onClick={() => void run(() => workflowApi.sendQuotation(q.id), "Đã gửi báo giá phát sinh cho khách.")}>Gửi khách duyệt</Button></div>}
+      {q.status === "DRAFT" && <div className="mt-3"><Button variant="primary" icon="send" loading={working} onClick={() => void run(() => workflowApi.sendQuotation(q.id), "Đã gửi báo giá phát sinh cho khách.")}>Gửi khách duyệt</Button></div>}
       {q.status === "SENT" && <>
         <div className="mt-3"><Notice>Chờ khách duyệt: trong tài khoản (sau đó bấm "Làm mới") hoặc tại quầy bằng mã gửi email chủ xe.</Notice></div>
         <CounterApprovalPanel quotation={q} onDone={onChanged}/>
@@ -92,15 +92,15 @@ export function SupplementPanel({ order, onChanged }: { order: WorkflowOrder; on
       <label className="block text-xs font-semibold text-cs-muted">Lý do phát sinh (khách sẽ thấy)<textarea className={input} rows={2} required minLength={5} maxLength={1000} value={reason} onChange={e => setReason(e.target.value)}/></label>
       <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
         <select className={input} aria-label="Dịch vụ phát sinh" value={serviceId} onChange={e => setServiceId(e.target.value)}><option value="">Chọn dịch vụ…</option>{services.map(s => <option key={s.id} value={s.id}>{s.name} · {formatVnd(s.base_price)}</option>)}</select>
-        <Button variant="secondary" disabled={!serviceId} onClick={() => addLine("SERVICE")}>Thêm dịch vụ</Button>
+        <Button variant="tonal" icon="plus" disabled={!serviceId} onClick={() => addLine("SERVICE")}>Thêm dịch vụ</Button>
       </div>
       <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
         <select className={input} aria-label="Phụ tùng phát sinh" value={partId} onChange={e => setPartId(e.target.value)}><option value="">Chọn phụ tùng đã có trong đề xuất chẩn đoán…</option>{recommendedParts.map(r => <option key={r.id} value={r.part_id ?? ""}>{r.part?.name}</option>)}</select>
-        <Button variant="secondary" disabled={!partId} onClick={() => addLine("PART")}>Thêm phụ tùng</Button>
+        <Button variant="tonal" icon="plus" disabled={!partId} onClick={() => addLine("PART")}>Thêm phụ tùng</Button>
       </div>
       {lines.length > 0 && <ul className="space-y-1 text-sm">{lines.map((line, index) => <li key={index} className="flex justify-between gap-3">
         <span>{line.item_type === "PART" ? "Phụ tùng" : "Dịch vụ"}: {line.label} × {line.quantity}</span>
-        <Button size="sm" variant="ghost" aria-label="Bỏ dòng" onClick={() => setLines(lines.filter((_, i) => i !== index))}>✕</Button>
+        <IconButton size="sm" icon="x" tone="danger" label="Bỏ dòng" onClick={() => setLines(lines.filter((_, i) => i !== index))}/>
       </li>)}</ul>}
       <Button type="submit" variant="primary" loading={working} disabled={!lines.length || reason.trim().length < 5}>Lập báo giá phát sinh</Button>
     </form>}

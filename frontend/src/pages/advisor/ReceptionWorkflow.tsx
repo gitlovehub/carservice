@@ -5,7 +5,10 @@ import {
   advisorAppointment, checkInConfirmedAppointment, confirmPendingAppointment, findOrderForAppointment,
   capacityApi, customerVehicles, listReceptionAppointments, receiveRepairOrder, type CustomerVehicleOption, type WorkflowAppointment, type WorkflowOrder,
 } from "../../services/workflowService";
-import { card, input, action, outline, WorkflowTitle, Notice, Status } from "./WorkflowUI";
+import { card, input, WorkflowTitle, Notice, Status } from "./WorkflowUI";
+import { Button } from "../../components/ui/Button";
+import { buttonClass } from "../../components/ui/buttonClass";
+import { Icon } from "../../components/ui/Icon";
 import { errorText, formatSlot } from "./workflowFormat";
 import CustomerRequestSummary from "./CustomerRequestSummary";
 import { CapacityWeek } from "./CapacityWeek";
@@ -161,7 +164,7 @@ export default function ReceptionWorkflow() {
     {message && <Notice tone="success">{message}</Notice>}
     <div className="grid gap-6 xl:grid-cols-[minmax(310px,0.8fr)_minmax(0,1.2fr)]">
       <section className={card}>
-        <div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-lg font-bold text-cs-text">Lịch đang xử lý</h2><button type="button" className={outline} disabled={busy || working} onClick={() => void refresh()}>Làm mới</button></div>
+        <div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-lg font-bold text-cs-text">Lịch đang xử lý</h2><Button size="sm" variant="secondary" icon="refresh" disabled={busy || working} onClick={() => void refresh()}>Làm mới</Button></div>
         {busy && <p className="text-sm text-cs-muted">Đang tải lịch từ API...</p>}
         {!busy && !appointments.length && <p className="text-sm text-cs-muted">Chưa có lịch PENDING, CONFIRMED hoặc CHECKED_IN.</p>}
         <div className="max-h-[630px] space-y-3 overflow-y-auto pr-1">
@@ -171,7 +174,7 @@ export default function ReceptionWorkflow() {
             <p className="mt-1 text-xs text-cs-muted">{formatSlot(item.appointment_date, item.appointment_time)}</p>
           </button>)}
         </div>
-        <Link to="/advisor/appointments" className={`${outline} mt-5`}>Xem đầy đủ danh sách lịch →</Link>
+        <Link to="/advisor/appointments" className={buttonClass({ variant: "outline", className: "mt-5" })}>Xem đầy đủ danh sách lịch<Icon name="arrow-right" size={16}/></Link>
         <CapacityWeek/>
       </section>
       <section className={card}>
@@ -186,9 +189,9 @@ export default function ReceptionWorkflow() {
           </dl>
           <AppointmentHistoryPanel key={`history-${selected.id}-${selected.appointment_date}-${selected.appointment_time}-${selected.status}`} appointment={selected} onChanged={(updated, text) => { void advisorAppointment(updated.id).then(setSelected).catch(() => setSelected({ ...selected, ...updated })); setMessage(text); notify(text, "success"); void refresh(); }}/>
           <ol className="my-6 flex flex-wrap gap-2 text-xs font-semibold text-cs-muted"><li className="rounded-full bg-cs-soft px-3 py-2">1. Đặt lịch</li><li className="rounded-full bg-cs-soft px-3 py-2">2. Xác nhận</li><li className="rounded-full bg-cs-soft px-3 py-2">3. Check-in</li><li className="rounded-full bg-cs-soft px-3 py-2">4. Phiếu sửa chữa</li></ol>
-          {selected.status === "PENDING" && <div><p className="mb-4 text-sm text-cs-muted">Cần xác nhận lịch trước khi tiếp nhận.</p><button type="button" className={action} disabled={working} onClick={() => void handleConfirm()}>{working ? "Đang xử lý..." : "Xác nhận lịch hẹn"}</button></div>}
-          {selected.status === "CONFIRMED" && <div><p className="mb-4 text-sm text-cs-muted">Chỉ nhận xe sau khi xe thực sự đến gara.</p><button type="button" className={action} disabled={working} onClick={() => void handleCheckIn()}>{working ? "Đang tiếp nhận..." : "Xác nhận xe đã đến"}</button></div>}
-          {selected.status === "CHECKED_IN" && (order ? <div><Notice tone="success">Lịch đã có phiếu {order.repair_order_code || `#${order.id}`}. Không được tạo phiếu thứ hai.</Notice><Link className={action} to={`/advisor/service-orders/${order.id}`}>Xem phiếu sửa chữa →</Link></div>
+          {selected.status === "PENDING" && <div><p className="mb-4 text-sm text-cs-muted">Cần xác nhận lịch trước khi tiếp nhận.</p><Button variant="primary" icon="check" loading={working} loadingText="Đang xử lý..." onClick={() => void handleConfirm()}>Xác nhận lịch hẹn</Button></div>}
+          {selected.status === "CONFIRMED" && <div><p className="mb-4 text-sm text-cs-muted">Chỉ nhận xe sau khi xe thực sự đến gara.</p><Button variant="primary" icon="car" loading={working} loadingText="Đang tiếp nhận..." onClick={() => void handleCheckIn()}>Xác nhận xe đã đến</Button></div>}
+          {selected.status === "CHECKED_IN" && (order ? <div><Notice tone="success">Lịch đã có phiếu {order.repair_order_code || `#${order.id}`}. Không được tạo phiếu thứ hai.</Notice><Link className={buttonClass({ variant: "primary" })} to={`/advisor/service-orders/${order.id}`}>Xem phiếu sửa chữa<Icon name="arrow-right" size={16}/></Link></div>
             : <form onSubmit={event => void submitReceive(event)} className="space-y-4"><h3 className="text-lg font-bold text-cs-text">Lập phiếu sửa chữa (RECEIVED)</h3>
               {vehicles.length > 1 && <label className="block text-sm font-semibold text-cs-text">Xe thực tế mang tới
                 <select className={input} value={chosenVehicleId ?? ""} onChange={event => setVehicleChoice(Number(event.target.value))}>
@@ -198,7 +201,7 @@ export default function ReceptionWorkflow() {
               <label className="block text-sm font-semibold text-cs-text">Số km khi tiếp nhận (không bắt buộc)<input className={input} type="number" min="0" step="1" inputMode="numeric" value={mileage} onChange={event => setMileage(event.target.value)} placeholder="Ví dụ 35000"/></label>
               <label className="block text-sm font-semibold text-cs-text">Tình trạng xe ban đầu<textarea className={input} rows={3} value={condition} onChange={event => setCondition(event.target.value)} placeholder="Ghi nhận hư hỏng, ngoại thất, hiện trạng..."/></label>
               <label className="block text-sm font-semibold text-cs-text">Ghi chú tiếp nhận<textarea className={input} rows={3} value={note} onChange={event => setNote(event.target.value)} placeholder="Ghi chú bàn giao và yêu cầu của khách"/></label>
-              <button type="submit" className={action} disabled={working}>{working ? "Đang lập phiếu..." : "Tạo phiếu sửa chữa →"}</button>
+              <Button type="submit" variant="primary" iconRight="arrow-right" loading={working} loadingText="Đang lập phiếu...">Tạo phiếu sửa chữa</Button>
               <p className="text-xs leading-5 text-cs-muted">Phiếu được tạo ở trạng thái RECEIVED. Bước tiếp theo: ghi kết quả kiểm tra ngay trên trang phiếu.</p>
             </form>)}
           {selected.status === "CANCELLED" && <Notice tone="error">Lịch đã hủy, không thể tiếp nhận.</Notice>}

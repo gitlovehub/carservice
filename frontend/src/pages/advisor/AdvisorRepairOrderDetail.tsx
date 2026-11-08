@@ -2,7 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { latestQuotation, workflowApi, type WorkflowOrder } from "../../services/workflowService";
-import { card, outline, WorkflowTitle, Notice, Status } from "./WorkflowUI";
+import { card, WorkflowTitle, Notice, Status } from "./WorkflowUI";
+import { Button } from "../../components/ui/Button";
+import { buttonClass } from "../../components/ui/buttonClass";
+import { Icon } from "../../components/ui/Icon";
 import { errorText, formatDateTime } from "./workflowFormat";
 import { InspectionPanel, PaymentPanel, QuotationPanel, RepairPanel } from "./RepairOrderPanels";
 import CustomerRequestSummary from "./CustomerRequestSummary";
@@ -69,9 +72,9 @@ export default function AdvisorRepairOrderDetail() {
 
   return <main data-print-repair-order className="page-container">
     <div className="cs-btn-row mb-4 print:hidden">
-      <Link className={outline} to="/advisor/service-orders">← Danh sách phiếu</Link>
-      <button type="button" disabled={loading} className={outline} onClick={() => void load()}>Làm mới</button>
-      <button type="button" className={outline} onClick={() => window.print()}>In phiếu sửa chữa</button>
+      <Link className={buttonClass({ variant: "secondary", size: "sm" })} to="/advisor/service-orders"><Icon name="arrow-left" size={14}/>Danh sách phiếu</Link>
+      <Button size="sm" variant="secondary" icon="refresh" disabled={loading} onClick={() => void load()}>Làm mới</Button>
+      <Button size="sm" variant="outline" icon="printer" onClick={() => window.print()}>In phiếu sửa chữa</Button>
     </div>
     <WorkflowTitle label="QUẦY DỊCH VỤ / CHI TIẾT PHIẾU" title={order?.repair_order_code || `Phiếu sửa chữa #${id}`} sub="Mọi bước của phiếu thao tác trên trang này: kiểm tra, báo giá, sửa chữa, thu tiền và bàn giao."/>
     {error && <Notice tone="error">{error}</Notice>}{success && <Notice tone="success">{success}</Notice>}
