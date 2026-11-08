@@ -21,6 +21,7 @@ Chỉ ghi quyết định đã được PO phê duyệt vào mục "Đã phê du
 | D-014 | 08/11/2026 | Cho commit local (không push) Phase 5 và P0 thành 2 commit riêng | PO chọn "Cho commit". Chỉ áp dụng cho checkpoint này; commit sau vẫn phải hỏi | PO |
 | D-015 | 08/11/2026 | **AUTONOMOUS DONE MODE**: tự triển khai roadmap P1→P7 + UI/UX; **tự commit** từng chức năng khi test đạt (Conventional Commits). Không push/merge/deploy; không thao tác DB production; không email/OTP thật; không đổi tính tiền, phương thức xác nhận, chính sách ủy quyền khi còn mơ hồ | Prompt "AUTONOMOUS DONE MODE" | PO |
 | D-016 | 08/11/2026 | Chạy `php artisan migrate` trên **DB dev local** (`127.0.0.1/carservice_db`, `APP_ENV=local`) cho 3 migration chỉ tạo bảng P1A | Trong phạm vi D-015 ("thêm migration không phá hủy dữ liệu"); không phải production; rollback được | AI theo D-015 |
+| T-002 | 08/11/2026 | Báo giá phát sinh **không cho giảm giá** (422) | Chưa có quy tắc giảm giá cho phát sinh; tránh tự đặt quy tắc tính tiền mới. Nếu PO muốn cho giảm giá phát sinh → cần quyết định cách cộng vào hóa đơn | Kỹ thuật, chờ PO xác nhận (không chặn) |
 | D-012 | 08/11/2026 | **Không** làm ký tay trên màn hình (SignaturePad) trong P1; khách không dùng email → tạo/kích hoạt tài khoản tại quầy hoặc dùng OTP email | Phương án đơn giản theo chỉ đạo PO | PO |
 
 Lưu ý triển khai D-005: OTP đi chung đường gửi với OTP quên mật khẩu; test dùng `Mail::fake()`. Việc xác minh tên miền trên Resend và cấu hình Railway do PO làm, ngoài code.

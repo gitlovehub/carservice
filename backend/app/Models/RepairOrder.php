@@ -136,9 +136,39 @@ class RepairOrder extends Model
         return $this->hasMany(Quotation::class)->orderByDesc('version');
     }
 
+    /**
+     * Báo giá gốc đang hiệu lực = bản INITIAL có version cao nhất (báo giá lại thay thế bản cũ).
+     * Không gồm SUPPLEMENT: phát sinh cộng thêm, không thay thế báo giá gốc (xem billableQuotationIds).
+     */
     public function latestQuotation(): HasOne
     {
-        return $this->hasOne(Quotation::class)->latestOfMany('version');
+        return $this->hasOne(Quotation::class)->ofMany(
+            ['version' => 'max'],
+            fn ($query) => $query->where('type', Quotation::TYPE_INITIAL),
+        );
+    }
+
+    public function supplementQuotations(): HasMany
+    {
+        return $this->hasMany(Quotation::class)->where('type', Quotation::TYPE_SUPPLEMENT)->orderBy('version');
+    }
+
+    /**
+     * Báo giá được tính tiền / xuất kho: INITIAL đang hiệu lực + mọi SUPPLEMENT khách đã trả lời xong
+     * (APPROVED / PARTIALLY_APPROVED). Không gộp các bản INITIAL cũ (sẽ tính trùng — P0).
+     *
+     * @return list<int>
+     */
+    public function billableQuotationIds(): array
+    {
+        $ids = [];
+        if ($initial = $this->latestQuotation()->first()) {
+            $ids[] = $initial->id;
+        }
+
+        return [...$ids, ...$this->supplementQuotations()
+            ->whereIn('status', [Quotation::APPROVED, Quotation::PARTIALLY_APPROVED])
+            ->pluck('id')->map(fn ($id) => (int) $id)->all()];
     }
 
     public function workItems(): HasMany

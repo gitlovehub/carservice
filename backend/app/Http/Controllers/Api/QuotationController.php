@@ -28,12 +28,16 @@ class QuotationController extends Controller
             'items.*.description' => ['nullable', 'string'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            // P3: SUPPLEMENT = phát sinh khi đang sửa (bắt buộc lý do).
+            'type' => ['nullable', 'string', 'in:'.Quotation::TYPE_INITIAL.','.Quotation::TYPE_SUPPLEMENT],
+            'reason' => ['nullable', 'string', 'max:1000', 'required_if:type,'.Quotation::TYPE_SUPPLEMENT],
         ]);
 
         $advisor = $request->user()->employee;
 
         $quotation = $this->service->createQuotation(
-            $repairOrder, $advisor, $data['items'], $data['discount_amount'] ?? 0, $data['valid_until'] ?? null
+            $repairOrder, $advisor, $data['items'], $data['discount_amount'] ?? 0, $data['valid_until'] ?? null,
+            $data['type'] ?? Quotation::TYPE_INITIAL, $data['reason'] ?? null,
         );
 
         return response()->json($quotation, 201);
