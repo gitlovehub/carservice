@@ -44,6 +44,21 @@ function QuotationTable({ quotation }: { quotation: WorkflowQuotation }) {
 
 type DraftLine = { key: number; item_type: "SERVICE" | "PART"; ref_id: string; quantity: string; unit_price: string; description: string };
 
+/** Lịch sử khách duyệt / từ chối (P3): mỗi lần xác nhận là một mục, kèm phương thức (tài khoản / mã email tại quầy). */
+function ApprovalHistory({ quotation }: { quotation: WorkflowQuotation }) {
+  const rows = (quotation.items ?? []).flatMap(item => (item.responses ?? []).map(response => ({ ...response, label: item.description ?? `#${item.id}` })));
+  if (!rows.length) return null;
+  const groups = new Map<number, typeof rows>();
+  rows.forEach(row => { const key = row.confirmation?.id ?? row.id; groups.set(key, [...(groups.get(key) ?? []), row]); });
+  return <details className="mt-3 rounded-xl border border-cs-border p-3 text-xs text-cs-text" data-testid="approval-history">
+    <summary className="cursor-pointer font-semibold">Lịch sử khách duyệt ({groups.size} lần xác nhận)</summary>
+    <ul className="mt-2 space-y-2">{[...groups.values()].map(group => <li key={group[0].confirmation?.id ?? group[0].id}>
+      <p className="text-cs-muted">{group[0].confirmation ? new Date(group[0].confirmation.confirmed_at).toLocaleString("vi-VN") : ""} · {group[0].confirmation?.method === "EMAIL_OTP" ? "Mã email tại quầy" : "Khách tự duyệt trong tài khoản"}</p>
+      <p>{group.map(row => `${row.decision === "APPROVED" ? "✓" : "✗"} ${row.label}`).join(" · ")}</p>
+    </li>)}</ul>
+  </details>;
+}
+
 export function QuotationPanel({ order, onChanged }: PanelProps) {
   const { confirm } = useAppFeedback();
   const quotation = latestQuotation(order);
@@ -140,6 +155,7 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
     <div className="mt-4">{error && <Notice tone="error">{error}</Notice>}</div>
 
     {quotation && <QuotationTable quotation={quotation}/>}
+    {quotation && <ApprovalHistory quotation={quotation}/>}
 
     {quotation?.status === "DRAFT" && <div className="mt-5 flex flex-wrap gap-3"><button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void sendQuotation()}>Gửi báo giá cho khách</button></div>}
     {quotation?.status === "SENT" && <div className="mt-5">

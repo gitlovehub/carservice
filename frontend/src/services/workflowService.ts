@@ -52,6 +52,8 @@ export type Money = string | number | null | undefined;
 export type WorkflowQuotationItem = {
   id: number; item_type: "SERVICE" | "PART"; service_id?: number | null; part_id?: number | null;
   description?: string | null; quantity: number; unit_price: Money; amount: Money; is_approved?: boolean | null;
+  /** P3: lịch sử từng lần khách quyết định dòng này. */
+  responses?: Array<{ id: number; decision: "APPROVED" | "REJECTED"; created_at?: string; confirmation?: { id: number; method: "ACCOUNT" | "EMAIL_OTP"; confirmed_at: string } | null }>;
 };
 export type WorkflowQuotation = {
   id: number; quotation_code?: string; version?: number; status: string;

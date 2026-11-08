@@ -130,6 +130,10 @@ class QuotationConfirmationTest extends TestCase
         $this->assertSame(QuotationItemResponse::APPROVED, $byType['SERVICE']);
         $this->assertSame(QuotationItemResponse::REJECTED, $byType['PART']);
         $this->assertSame(Quotation::TYPE_INITIAL, $this->quotation->fresh()->type);
+
+        // Cố vấn xem được lịch sử kèm phương thức xác nhận.
+        $this->actingAs($this->advisor)->getJson("/api/repair-orders/{$this->order->id}")->assertOk()
+            ->assertJsonPath('quotations.0.items.0.responses.0.confirmation.method', CustomerConfirmation::METHOD_ACCOUNT);
     }
 
     public function test_counter_otp_flow_records_email_otp_confirmation_with_witness(): void
