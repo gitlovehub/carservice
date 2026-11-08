@@ -11,8 +11,8 @@ import { StatusBadge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
 import { HandoverSummary } from "../advisor/CheckInPanel";
-import { handoverApi } from "../../services/evidenceService";
-import type { WorkflowHandover } from "../../services/workflowService";
+import { handoverApi, pickupAuthorizationApi } from "../../services/evidenceService";
+import type { PickupAuthorization, WorkflowHandover } from "../../services/workflowService";
 
 // Presentation stages follow the ATELIER timeline, mapped to the actual Laravel
 // repair-order state machine. No demo statuses are sent to the backend.
@@ -117,8 +117,57 @@ function TrackingCard({ order }: { order: CustomerRepairOrder }) {
       </div>
       {!!detail?.inspections?.[0]?.inspected_at && <CustomerDiagnosisBlock inspection={detail.inspections[0]}/>}
       {!!detail?.handovers?.length && <CustomerHandoverBlock handovers={detail.handovers} onConfirmed={() => setDetailKey(key => key + 1)}/>}
+      {detail && !["HANDED_OVER", "CLOSED"].includes(status) && <CustomerPickupBlock orderId={order.id}/>}
     </article>
   );
+}
+
+/** Ủy quyền nhận xe (P4, N9): chủ xe khai báo trước người được nhận xe thay; gara đối chiếu 4 số cuối giấy tờ. */
+function CustomerPickupBlock({ orderId }: { orderId: number }) {
+  const [items, setItems] = useState<PickupAuthorization[]>([]);
+  const [form, setForm] = useState({ full_name: "", phone: "", id_last4: "", valid_until: "" });
+  const [open, setOpen] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    pickupAuthorizationApi.list(orderId).then(list => { if (active) setItems(list); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [orderId, reloadKey]);
+
+  async function act(task: () => Promise<unknown>) {
+    setWorking(true); setError("");
+    try { await task(); setReloadKey(key => key + 1); return true; }
+    catch (err) { setError(err instanceof Error ? err.message : "Không thực hiện được."); return false; }
+    finally { setWorking(false); }
+  }
+  const active = items.filter(item => item.status === "ACTIVE");
+  const muted = "text-[var(--cs-muted,#757575)]";
+  const field = "mt-1 w-full rounded-xl border border-[var(--cs-border,#e9e9e6)] bg-transparent p-2.5 text-sm";
+
+  return <section aria-label="Ủy quyền nhận xe" className="mt-6 border-t border-[var(--cs-border,#e9e9e6)] pt-6 text-sm">
+    <h3 className="text-[17px] font-extrabold">Ủy quyền nhận xe</h3>
+    <p className={`mt-1 text-xs ${muted}`}>Nhờ người khác nhận xe? Khai báo trước tại đây. Gara chỉ giao xe khi người nhận có tên trong danh sách, khớp 4 số cuối giấy tờ, và bạn xác nhận biên bản trả xe.</p>
+    {active.length > 0 && <ul className="mt-3 divide-y divide-[var(--cs-border,#e9e9e6)]">{active.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
+      <span>{item.full_name} · {item.phone} · giấy tờ ••••{item.id_last4}{item.valid_until ? ` · đến ${new Date(item.valid_until).toLocaleString("vi-VN")}` : ""}</span>
+      <Button size="sm" variant="danger-outline" disabled={working} onClick={() => void act(() => pickupAuthorizationApi.revoke(item.id))}>Thu hồi</Button>
+    </li>)}</ul>}
+    {error && <p role="alert" className="mt-2 text-sm font-semibold text-cs-danger">{error}</p>}
+    {!open ? <div className="mt-3"><Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Thêm người được ủy quyền</Button></div>
+      : <form className="mt-3 grid gap-3 sm:grid-cols-2" onSubmit={event => {
+        event.preventDefault();
+        void act(() => pickupAuthorizationApi.create(orderId, { ...form, valid_until: form.valid_until ? new Date(form.valid_until).toISOString() : null }))
+          .then(ok => { if (ok) { setOpen(false); setForm({ full_name: "", phone: "", id_last4: "", valid_until: "" }); } });
+      }}>
+        <label className={`text-xs font-semibold ${muted}`}>Họ tên<input className={field} required maxLength={150} value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })}/></label>
+        <label className={`text-xs font-semibold ${muted}`}>Số điện thoại<input className={field} required inputMode="tel" maxLength={20} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}/></label>
+        <label className={`text-xs font-semibold ${muted}`}>4 số cuối CCCD / giấy tờ<input className={field} required inputMode="numeric" pattern="\d{4}" maxLength={4} value={form.id_last4} onChange={e => setForm({ ...form, id_last4: e.target.value.replace(/\D/g, "") })}/></label>
+        <label className={`text-xs font-semibold ${muted}`}>Hiệu lực đến (không bắt buộc)<input className={field} type="datetime-local" value={form.valid_until} onChange={e => setForm({ ...form, valid_until: e.target.value })}/></label>
+        <div className="flex gap-2 sm:col-span-2"><Button size="sm" variant="secondary" onClick={() => setOpen(false)}>Hủy</Button><Button type="submit" size="sm" variant="primary" loading={working}>Lưu ủy quyền</Button></div>
+      </form>}
+  </section>;
 }
 
 const INSPECTION_TEXT: Record<string, string> = { PASSED: "Đạt", WARNING: "Cần lưu ý", FAILED: "Không đạt", NORMAL: "Bình thường", NEEDS_SERVICE: "Cần bảo dưỡng", NEEDS_REPLACEMENT: "Cần thay thế" };

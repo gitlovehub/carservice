@@ -23,7 +23,8 @@
     "test:approval": "node tests/customer-approval-only.mjs",
     "test:evidence": "node tests/evidence-confirmation-ui.mjs",
     "test:check-in": "node tests/handover-check-in-ui.mjs",
-    "test:supplement": "node tests/supplement-diagnosis-ui.mjs"
+    "test:supplement": "node tests/supplement-diagnosis-ui.mjs",
+    "test:check-out": "node tests/check-out-pickup-ui.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
