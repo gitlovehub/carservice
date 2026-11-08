@@ -11,9 +11,16 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 #[Fillable([
     'quotation_code', 'repair_order_id', 'advisor_id', 'version', 'subtotal',
     'discount_amount', 'total_amount', 'status', 'valid_until', 'customer_response_at',
+    'type', 'parent_quotation_id', 'reason',
 ])]
 class Quotation extends Model
 {
+    /** Báo giá gốc; một bản INITIAL mới (version cao hơn) thay thế bản INITIAL cũ (báo giá lại). */
+    public const TYPE_INITIAL = 'INITIAL';
+
+    /** Báo giá phát sinh khi đang sửa; cộng thêm vào INITIAL đang hiệu lực, không thay thế. */
+    public const TYPE_SUPPLEMENT = 'SUPPLEMENT';
+
     public const DRAFT = 'DRAFT';
 
     public const SENT = 'SENT';

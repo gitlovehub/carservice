@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\CustomerConfirmation;
 use App\Models\Employee;
 use App\Models\Quotation;
+use App\Models\QuotationItemResponse;
 use App\Models\VehicleHandover;
 use Illuminate\Contracts\Mail\Mailable;
 use Illuminate\Database\Eloquent\Model;
@@ -75,7 +76,8 @@ class ConfirmationService
 
         return DB::transaction(function () use ($quotation, $responses, $request, $hash): Quotation {
             $result = $this->repairOrders->recordCustomerResponse($quotation, $responses);
-            $this->record($quotation, $quotation->repairOrder->customer_id, CustomerConfirmation::METHOD_ACCOUNT, $hash, $request);
+            $confirmation = $this->record($quotation, $quotation->repairOrder->customer_id, CustomerConfirmation::METHOD_ACCOUNT, $hash, $request);
+            $this->recordItemHistory($responses, $confirmation);
 
             return $result;
         });
@@ -106,10 +108,23 @@ class ConfirmationService
         return DB::transaction(function () use ($otp, $quotation, $responses, $witness, $request): Quotation {
             $locked = $this->consumeOtp($otp);
             $result = $this->repairOrders->recordCustomerResponse($quotation, $responses);
-            $this->record($quotation, $quotation->repairOrder->customer_id, CustomerConfirmation::METHOD_EMAIL_OTP, $locked->content_sha256, $request, $locked, $witness);
+            $confirmation = $this->record($quotation, $quotation->repairOrder->customer_id, CustomerConfirmation::METHOD_EMAIL_OTP, $locked->content_sha256, $request, $locked, $witness);
+            $this->recordItemHistory($responses, $confirmation);
 
             return $result;
         });
+    }
+
+    /** Lịch sử từng lần khách quyết định từng dòng, gắn với bằng chứng xác nhận (P3). */
+    private function recordItemHistory(array $responses, CustomerConfirmation $confirmation): void
+    {
+        foreach ($responses as $response) {
+            QuotationItemResponse::query()->create([
+                'quotation_item_id' => (int) $response['item_id'],
+                'decision' => (bool) $response['is_approved'] ? QuotationItemResponse::APPROVED : QuotationItemResponse::REJECTED,
+                'customer_confirmation_id' => $confirmation->id,
+            ]);
+        }
     }
 
     /*
