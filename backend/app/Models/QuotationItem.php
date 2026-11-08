@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'quotation_id', 'item_type', 'service_id', 'part_id', 'description',
@@ -40,5 +41,11 @@ class QuotationItem extends Model
     public function part(): BelongsTo
     {
         return $this->belongsTo(Part::class);
+    }
+
+    /** Lịch sử quyết định của khách cho dòng này (P3). */
+    public function responses(): HasMany
+    {
+        return $this->hasMany(QuotationItemResponse::class)->orderBy('id');
     }
 }

@@ -13,6 +13,7 @@ use App\Models\InspectionRecommendation;
 use App\Models\Part;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
+use App\Models\QuotationItemResponse;
 use App\Models\RepairOrder;
 use App\Models\Service;
 use App\Models\Vehicle;
@@ -115,6 +116,22 @@ class QuotationConfirmationTest extends TestCase
         $this->assertSame(64, strlen($confirmation->content_sha256));
     }
 
+    public function test_each_decision_is_kept_in_item_history_linked_to_the_confirmation(): void
+    {
+        $this->actingAs($this->customerAccount)
+            ->postJson("/api/me/quotations/{$this->quotation->id}/respond", ['responses' => $this->responses()])
+            ->assertOk();
+
+        $confirmation = CustomerConfirmation::query()->sole();
+        $history = QuotationItemResponse::query()->orderBy('quotation_item_id')->get();
+        $this->assertCount(2, $history);
+        $this->assertTrue($history->every(fn ($row) => $row->customer_confirmation_id === $confirmation->id));
+        $byType = $history->mapWithKeys(fn ($row) => [$row->item->item_type => $row->decision]);
+        $this->assertSame(QuotationItemResponse::APPROVED, $byType['SERVICE']);
+        $this->assertSame(QuotationItemResponse::REJECTED, $byType['PART']);
+        $this->assertSame(Quotation::TYPE_INITIAL, $this->quotation->fresh()->type);
+    }
+
     public function test_counter_otp_flow_records_email_otp_confirmation_with_witness(): void
     {
         $code = $this->requestOtp();
@@ -130,6 +147,7 @@ class QuotationConfirmationTest extends TestCase
         $this->assertSame($otp->content_sha256, $confirmation->content_sha256);
         $this->assertSame($this->advisor->employee->id, $confirmation->witness_employee_id);
         $this->assertNotNull($otp->fresh()->used_at);
+        $this->assertSame(2, QuotationItemResponse::query()->where('customer_confirmation_id', $confirmation->id)->count());
     }
 
     public function test_used_otp_cannot_be_reused(): void
