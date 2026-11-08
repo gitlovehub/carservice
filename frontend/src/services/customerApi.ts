@@ -91,6 +91,8 @@ export type CustomerQuotation = {
 
 export type CustomerRepairOrder = {
   id: number;
+  /** Biên bản giao nhận đã gửi khách (P2). */
+  handovers?: import("./workflowService").WorkflowHandover[];
   repair_order_code: string;
   vehicle_id: number;
   mileage_received?: number | null;

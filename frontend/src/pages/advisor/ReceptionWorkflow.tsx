@@ -3,7 +3,7 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   advisorAppointment, checkInConfirmedAppointment, confirmPendingAppointment, findOrderForAppointment,
-  listReceptionAppointments, receiveRepairOrder, type WorkflowAppointment, type WorkflowOrder,
+  customerVehicles, listReceptionAppointments, receiveRepairOrder, type CustomerVehicleOption, type WorkflowAppointment, type WorkflowOrder,
 } from "../../services/workflowService";
 import { card, input, action, outline, WorkflowTitle, Notice, Status } from "./WorkflowUI";
 import { errorText, formatSlot } from "./workflowFormat";
@@ -24,6 +24,21 @@ export default function ReceptionWorkflow() {
   const [mileage, setMileage] = useState("");
   const [condition, setCondition] = useState("");
   const [note, setNote] = useState("");
+  const [vehicles, setVehicles] = useState<CustomerVehicleOption[]>([]);
+  const [vehicleChoice, setVehicleChoice] = useState<number | null>(null);
+  const [changeReason, setChangeReason] = useState("");
+  const bookedVehicleId = selected ? (selected.vehicle?.id ?? selected.vehicle_id ?? null) : null;
+  const chosenVehicleId = vehicleChoice ?? bookedVehicleId;
+  const vehicleChanged = chosenVehicleId != null && bookedVehicleId != null && chosenVehicleId !== bookedVehicleId;
+
+  // Xe của cùng khách: cho phép nhận xe khác lịch hẹn (bắt buộc lý do, backend ghi audit).
+  useEffect(() => {
+    const customerId = selected?.customer?.id ?? selected?.customer_id;
+    if (selected?.status !== "CHECKED_IN" || !customerId) return;
+    let active = true;
+    customerVehicles(customerId).then(list => { if (active) setVehicles(list); }).catch(() => { if (active) setVehicles([]); });
+    return () => { active = false; };
+  }, [selected]);
 
   const refresh = useCallback(async () => {
     setBusy(true); setError("");
@@ -56,7 +71,7 @@ export default function ReceptionWorkflow() {
     return () => { active = false; };
   }, [selectedId]);
 
-  function selectAppointment(id: number) { setSearchParams({ appointment: String(id) }); setCondition(""); setNote(""); setMileage(""); }
+  function selectAppointment(id: number) { setSearchParams({ appointment: String(id) }); setCondition(""); setNote(""); setMileage(""); setVehicleChoice(null); setChangeReason(""); setVehicles([]); }
 
   async function handleConfirm() {
     if (!selected || selected.status !== "PENDING") return;
@@ -100,8 +115,9 @@ export default function ReceptionWorkflow() {
     event.preventDefault();
     if (!selected || selected.status !== "CHECKED_IN" || working) return;
     const customerId = selected.customer?.id ?? selected.customer_id;
-    const vehicleId = selected.vehicle?.id ?? selected.vehicle_id;
+    const vehicleId = chosenVehicleId;
     if (!customerId || !vehicleId) { setError("Không xác định được khách hàng hoặc xe trong lịch hẹn."); return; }
+    if (vehicleChanged && changeReason.trim().length < 5) { setError("Xe mang tới khác xe trong lịch hẹn: nhập lý do đổi xe (ít nhất 5 ký tự)."); return; }
     if (mileage.trim() && (!/^\d+$/.test(mileage.trim()) || !Number.isSafeInteger(Number(mileage)))) {
       setError("Số km phải là số nguyên không âm."); return;
     }
@@ -120,6 +136,7 @@ export default function ReceptionWorkflow() {
         ...(mileage.trim() ? { mileage_received: Number(mileage) } : {}),
         ...(condition.trim() ? { initial_condition: condition.trim() } : {}),
         ...(note.trim() ? { note: note.trim() } : {}),
+        ...(vehicleChanged ? { vehicle_change_reason: changeReason.trim() } : {}),
       });
       setOrder(result.order);
       navigate(`/advisor/service-orders/${result.order.id}`, { replace: true, state: { success: result.existing ? "Phiếu đã tồn tại, không tạo trùng." : "Đã tạo phiếu sửa chữa thành công." } });
@@ -160,6 +177,11 @@ export default function ReceptionWorkflow() {
           {selected.status === "CONFIRMED" && <div><p className="mb-4 text-sm text-cs-muted">Chỉ nhận xe sau khi xe thực sự đến gara.</p><button type="button" className={action} disabled={working} onClick={() => void handleCheckIn()}>{working ? "Đang tiếp nhận..." : "Xác nhận xe đã đến"}</button></div>}
           {selected.status === "CHECKED_IN" && (order ? <div><Notice tone="success">Lịch đã có phiếu {order.repair_order_code || `#${order.id}`}. Không được tạo phiếu thứ hai.</Notice><Link className={action} to={`/advisor/service-orders/${order.id}`}>Xem phiếu sửa chữa →</Link></div>
             : <form onSubmit={event => void submitReceive(event)} className="space-y-4"><h3 className="text-lg font-bold text-cs-text">Lập phiếu sửa chữa (RECEIVED)</h3>
+              {vehicles.length > 1 && <label className="block text-sm font-semibold text-cs-text">Xe thực tế mang tới
+                <select className={input} value={chosenVehicleId ?? ""} onChange={event => setVehicleChoice(Number(event.target.value))}>
+                  {vehicles.map(vehicle => <option key={vehicle.id} value={vehicle.id}>{vehicle.license_plate}{vehicle.model?.name ? ` · ${vehicle.model.name}` : ""}{vehicle.id === bookedVehicleId ? " (xe đặt lịch)" : ""}</option>)}
+                </select></label>}
+              {vehicleChanged && <label className="block text-sm font-semibold text-cs-text">Lý do đổi xe (bắt buộc, được ghi vết)<input className={input} required minLength={5} maxLength={500} value={changeReason} onChange={event => setChangeReason(event.target.value)} placeholder="Ví dụ: xe đặt lịch đang đi công tác, khách mang xe còn lại"/></label>}
               <label className="block text-sm font-semibold text-cs-text">Số km khi tiếp nhận (không bắt buộc)<input className={input} type="number" min="0" step="1" inputMode="numeric" value={mileage} onChange={event => setMileage(event.target.value)} placeholder="Ví dụ 35000"/></label>
               <label className="block text-sm font-semibold text-cs-text">Tình trạng xe ban đầu<textarea className={input} rows={3} value={condition} onChange={event => setCondition(event.target.value)} placeholder="Ghi nhận hư hỏng, ngoại thất, hiện trạng..."/></label>
               <label className="block text-sm font-semibold text-cs-text">Ghi chú tiếp nhận<textarea className={input} rows={3} value={note} onChange={event => setNote(event.target.value)} placeholder="Ghi chú bàn giao và yêu cầu của khách"/></label>

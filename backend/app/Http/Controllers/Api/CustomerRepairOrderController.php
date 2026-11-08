@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Quotation;
 use App\Models\RepairOrder;
+use App\Models\VehicleHandover;
 use App\Services\ConfirmationService;
 use App\Services\RepairOrderService;
 use Illuminate\Http\JsonResponse;
@@ -50,6 +51,10 @@ class CustomerRepairOrderController extends Controller
             'workItems',
             'invoice.items',
             'invoice.payments',
+            // Biên bản giao nhận đã gửi khách (không lộ bản nháp).
+            'handovers' => fn ($query) => $query->whereIn('status', [VehicleHandover::STATUS_SUBMITTED, VehicleHandover::STATUS_CONFIRMED]),
+            'handovers.checklistItems',
+            'handovers.confirmations',
         ]);
 
         return response()->json($repairOrder);

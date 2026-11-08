@@ -41,10 +41,10 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 |---|---|---|---|
 | P2-DB | `vehicle_handovers`, `handover_checklist_items`; `repair_orders` + `booked_vehicle_id`, `vehicle_change_reason`, `source`, `requires_check_in` (mặc định false → phiếu cũ không bị chặn) | P1 | VERIFIED |
 | P2-B | `receive()`: đổi xe so với lịch hẹn nếu cùng chủ + lý do ≥ 5 ký tự + `audit_logs`; `source` APPOINTMENT/WALK_IN; phiếu mới `requires_check_in = true` | P2-DB | VERIFIED — `ReceptionVehicleChangeTest` 4/4, suite 173/173 · commit `b9e40cb` |
-| P2-C | `HandoverService` + API CHECK_IN (DRAFT sửa được → SUBMITTED khóa + snapshot SHA-256 gồm hash ảnh → khách xác nhận ACCOUNT `/me/handovers/{id}/confirm` hoặc OTP email tại quầy → CONFIRMED; VOID + lý do khi chưa xác nhận); chặn RECEIVED→INSPECTING (giao KTV, ghi chẩn đoán) khi `requires_check_in` mà chưa có CHECK_IN CONFIRMED; media alias `handover` (khóa ảnh khi đã gửi); `ConfirmationService` tổng quát hóa lõi OTP | P2-B | VERIFIED — `VehicleCheckInTest` 9/9, suite 182/182 |
+| P2-C | `HandoverService` + API CHECK_IN (DRAFT sửa được → SUBMITTED khóa + snapshot SHA-256 gồm hash ảnh → khách xác nhận ACCOUNT `/me/handovers/{id}/confirm` hoặc OTP email tại quầy → CONFIRMED; VOID + lý do khi chưa xác nhận); chặn RECEIVED→INSPECTING (giao KTV, ghi chẩn đoán) khi `requires_check_in` mà chưa có CHECK_IN CONFIRMED; media alias `handover` (khóa ảnh khi đã gửi); `ConfirmationService` tổng quát hóa lõi OTP | P2-B | VERIFIED — `VehicleCheckInTest` 9/9, suite 182/182 · commit `6fe0f37` |
 | QA-01 fix | Test chập chờn BookingCatalog | — | VERIFIED · commit `b237658` |
-| P2-FE | Advisor: chọn xe/vãng lai/biên bản CHECK_IN; Customer: xác nhận tình trạng | P2-BE | PENDING |
-| P2-QA | Test + trình duyệt + hồi quy | P2-FE | PENDING |
+| P2-FE | Advisor: `CheckInPanel` (form + checklist mặc định + ảnh + gửi khách + OTP tại quầy + hủy có lý do), `ReceptionWorkflow` chọn xe khác cùng chủ + lý do; Customer: `RepairStatus` khối biên bản (xem + "Xác nhận đúng tình trạng"); API show trả `handovers` (khách: chỉ SUBMITTED/CONFIRMED) | P2-C | VERIFIED (tự động) — tsc, build, eslint file mới 0 (RepairStatus/ReceptionWorkflow giữ nguyên số lỗi cũ 2/1), smoke 16/16, backend 182/182 |
+| P2-QA | Trình duyệt + hồi quy | P2-FE | Hồi quy trình duyệt phiếu #10: 0 lỗi console, 0 request ghi. **BROWSER_NOT_VERIFIED**: CheckInPanel + chọn xe khi tiếp nhận (DB dev không có phiếu RECEIVED/lịch CHECKED_IN chưa có phiếu; tạo mới = tạo dữ liệu). DB dev đã migrate 2 migration P2 |
 
 ## P3 – Báo giá phát sinh và lịch sử duyệt
 

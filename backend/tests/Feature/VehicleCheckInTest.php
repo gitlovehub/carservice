@@ -187,6 +187,8 @@ class VehicleCheckInTest extends TestCase
     {
         $draft = $this->createDraft();
         $this->actingAs($this->owner)->getJson("/api/me/repair-orders/{$this->orderId}/handovers")->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($this->owner)->getJson("/api/me/repair-orders/{$this->orderId}")->assertOk()->assertJsonCount(0, 'handovers');
+        $this->actingAs($this->advisor)->getJson("/api/repair-orders/{$this->orderId}")->assertOk()->assertJsonCount(1, 'handovers')->assertJsonPath('requires_check_in', true);
         $this->actingAs($this->owner)->postJson("/api/me/handovers/{$draft}/confirm")->assertUnprocessable();
 
         $this->actingAs($this->advisor)->postJson("/api/handovers/{$draft}/submit")->assertOk();

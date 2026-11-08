@@ -6,6 +6,7 @@ import { card, outline, WorkflowTitle, Notice, Status } from "./WorkflowUI";
 import { errorText, formatDateTime } from "./workflowFormat";
 import { InspectionPanel, PaymentPanel, QuotationPanel, RepairPanel } from "./RepairOrderPanels";
 import CustomerRequestSummary from "./CustomerRequestSummary";
+import { CheckInPanel } from "./CheckInPanel";
 
 /** Các bước của phiếu sửa chữa theo thứ tự cố vấn thao tác; mỗi bước gồm những trạng thái thuộc về nó. */
 const steps: Array<{ label: string; statuses: string[] }> = [
@@ -95,6 +96,7 @@ export default function AdvisorRepairOrderDetail() {
           <CustomerRequestSummary request={order.appointment}/>
         </div>}
       </section>
+      <CheckInPanel key={`check-in-${order.handovers?.map(h => `${h.id}:${h.status}`).join(",") ?? ""}`} order={order} onChanged={refreshAfterAction}/>
       <InspectionPanel key={`inspection-${order.inspections?.[0]?.id ?? 0}-${order.inspections?.[0]?.recommendations?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
       <QuotationPanel key={`quotation-${latestQuotation(order)?.id ?? 0}-${order.inspections?.[0]?.recommendations?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
       <RepairPanel order={order} onChanged={refreshAfterAction}/>

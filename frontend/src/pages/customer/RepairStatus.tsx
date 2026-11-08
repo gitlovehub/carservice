@@ -8,6 +8,11 @@ import {
   type CustomerRepairOrder,
 } from "../../services/customerApi";
 import { StatusBadge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { PhotoUploader } from "../../components/evidence/PhotoUploader";
+import { HandoverSummary } from "../advisor/CheckInPanel";
+import { handoverApi } from "../../services/evidenceService";
+import type { WorkflowHandover } from "../../services/workflowService";
 
 // Presentation stages follow the ATELIER timeline, mapped to the actual Laravel
 // repair-order state machine. No demo statuses are sent to the backend.
@@ -45,6 +50,7 @@ function TrackingCard({ order }: { order: CustomerRepairOrder }) {
   const [detail, setDetail] = useState<CustomerRepairOrder | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState(false);
+  const [detailKey, setDetailKey] = useState(0);
   useEffect(() => {
     let active = true;
     setLoadingHistory(true);
@@ -54,7 +60,7 @@ function TrackingCard({ order }: { order: CustomerRepairOrder }) {
       .catch(() => { if (active) setHistoryError(true); })
       .finally(() => { if (active) setLoadingHistory(false); });
     return () => { active = false; };
-  }, [order.id]);
+  }, [order.id, detailKey]);
 
   const status = detail?.status ?? order.status;
   const current = stageIndex(status);
@@ -109,8 +115,35 @@ function TrackingCard({ order }: { order: CustomerRepairOrder }) {
             <p className="text-sm leading-relaxed text-[var(--cs-muted,#757575)]">{detail?.note || order.note}</p>}
         </section>
       </div>
+      {!!detail?.handovers?.length && <CustomerHandoverBlock handovers={detail.handovers} onConfirmed={() => setDetailKey(key => key + 1)}/>}
     </article>
   );
+}
+
+/** Biên bản nhận xe gara gửi khách: xem và tự xác nhận trong tài khoản (P2). */
+function CustomerHandoverBlock({ handovers, onConfirmed }: { handovers: WorkflowHandover[]; onConfirmed: () => void }) {
+  const [comment, setComment] = useState("");
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
+  return <section aria-label="Biên bản nhận xe" className="mt-6 border-t border-[var(--cs-border,#e9e9e6)] pt-6">
+    {handovers.map(handover => <div key={handover.id} className="mb-4">
+      <h3 className="text-[17px] font-extrabold">Biên bản {handover.type === "CHECK_OUT" ? "trả xe" : "nhận xe"} · {handover.status === "CONFIRMED" ? "Bạn đã xác nhận" : "Chờ bạn xác nhận"}</h3>
+      <HandoverSummary handover={handover}/>
+      <PhotoUploader type="handover" id={handover.id} readOnly title="Ảnh tình trạng xe"/>
+      {handover.status === "SUBMITTED" && <form className="mt-4 space-y-3" onSubmit={event => {
+        event.preventDefault(); setWorking(true); setError("");
+        handoverApi.confirmAsCustomer(handover.id, comment.trim() || undefined).then(onConfirmed)
+          .catch((err: unknown) => setError(err instanceof Error ? err.message : "Không xác nhận được."))
+          .finally(() => setWorking(false));
+      }}>
+        <p className="text-sm text-[var(--cs-muted,#757575)]">Kiểm tra số km, tình trạng và ảnh. Chỉ xác nhận nếu đúng với xe của bạn khi giao cho gara.</p>
+        <label className="block text-xs font-semibold text-[var(--cs-muted,#757575)]">Ghi chú (không bắt buộc)<textarea className="mt-2 w-full rounded-xl border border-[var(--cs-border,#e9e9e6)] bg-transparent p-3 text-sm" rows={2} maxLength={1000} value={comment} onChange={event => setComment(event.target.value)}/></label>
+        {error && <p role="alert" className="text-sm font-semibold text-cs-danger">{error}</p>}
+        <Button type="submit" variant="primary" loading={working}>Xác nhận đúng tình trạng</Button>
+      </form>}
+      {handover.confirmations?.[0] && <p className="mt-3 text-xs text-[var(--cs-muted,#757575)]">Đã xác nhận lúc {new Date(handover.confirmations[0].confirmed_at).toLocaleString("vi-VN")}.</p>}
+    </div>)}
+  </section>;
 }
 
 export default function RepairStatus() {
