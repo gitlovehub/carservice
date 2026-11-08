@@ -1,0 +1,61 @@
+// Khóa đặc tả docs/ui-button-redesign.md: token theo vai trò, biến thể tonal, Admin luôn tối (lime chữ navy),
+// nút danger nền đặc chỉ trong hộp thoại xác nhận, các ánh xạ chính theo màn hình.
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { strict as assert } from 'node:assert';
+const read = file => readFileSync(new URL(file, import.meta.url), 'utf8');
+
+const tokens = read('../src/styles/tokens.css');
+const buttons = read('../src/styles/buttons.css');
+const buttonClass = read('../src/components/ui/buttonClass.ts');
+const confirm = read('../src/components/ui/ConfirmDialog.tsx');
+const pagination = read('../src/components/ui/Pagination.tsx');
+
+// 1. Token theo vai trò.
+for (const token of ['--cs-soft-hover', '--cs-on-soft', '--cs-btn-radius', '--cs-accent-fill', '--cs-success-btn-bg', '--cs-danger-border']) {
+  assert(tokens.includes(token), `tokens.css thiếu ${token}`);
+}
+const admin = tokens.slice(tokens.indexOf('[data-area="admin"],'));
+for (const needle of ['color-scheme: dark', '--cs-accent: #c8f53c', '--cs-accent-contrast: #0b1022', '--cs-btn-radius: 999px', '--cs-card-radius: 24px', '--cs-bg: #0b1022', '--cs-sidebar-bg: #080c1a', 'linear-gradient(135deg, #e2fb5a 0%, #9be86a 100%)', '--cs-success-btn-bg: #123524']) {
+  assert(admin.includes(needle), `Admin token thiếu: ${needle}`);
+}
+assert(!/--cs-accent-contrast:\s*#fff/i.test(admin), 'Không dùng chữ trắng trên lime');
+
+// 2. Hệ thống nút.
+assert(/"primary" \| "tonal" \| "secondary" \| "outline" \| "ghost" \| "success" \| "danger-outline" \| "danger"/.test(buttonClass), 'ButtonVariant phải theo đặc tả');
+for (const needle of ['.cs-btn-tonal', 'var(--cs-soft-hover)', 'border-radius: var(--cs-btn-radius', 'var(--cs-accent-fill', 'var(--cs-disabled-bg)', '.cs-btn-tone-danger', '.cs-unified-primary']) {
+  assert(buttons.includes(needle), `buttons.css thiếu ${needle}`);
+}
+
+// 3. Dùng chung.
+assert(/confirmIconFor|icon=\{confirmIconFor/.test(confirm) && confirm.includes('"trash"') && confirm.includes('"x"'), 'Nút xác nhận danger phải có icon trash/X');
+assert(pagination.includes('"tonal"') && pagination.includes('"outline"'), 'Pagination: outline, trang hiện tại tonal');
+
+// Danger nền đặc chỉ trong hộp thoại xác nhận (file có Modal) — không nằm trong trang thường.
+const walk = dir => readdirSync(dir).flatMap(name => { const p = join(dir, name); return statSync(p).isDirectory() ? walk(p) : p.endsWith('.tsx') ? [p] : []; });
+const pagesDir = new URL('../src/pages', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+for (const file of walk(pagesDir)) {
+  const src = readFileSync(file, 'utf8');
+  // Nút thật: JSX variant="danger", buttonClass({ variant: "danger" }) hoặc class cs-btn-danger. (variant: "danger" trong
+  // confirm({...}) là tùy chọn của ConfirmDialog nên hợp lệ.)
+  const solid = src.match(/variant="danger"(?!-)|buttonClass\(\{\s*variant: "danger"(?!-)|cs-btn-danger(?!-)/g) ?? [];
+  if (solid.length) assert(src.includes('<Modal'), `${file}: danger nền đặc ngoài hộp thoại xác nhận`);
+}
+
+// 4. Ánh xạ chính theo màn hình.
+const quotation = read('../src/pages/customer/Quotation.tsx');
+assert(quotation.includes('variant="success" size="lg" icon="check"') && quotation.includes('variant="danger-outline" icon="x"'), 'Báo giá: Đồng ý = success lg, Từ chối = danger-outline X');
+const booking = read('../src/pages/customer/Booking.tsx');
+assert(booking.includes('icon="arrow-left"') && booking.includes('"arrow-right"') && booking.includes('size="lg"'), 'Đặt lịch: Quay lại + mũi tên, Tiếp tục primary lg');
+const cars = read('../src/pages/customer/Cars.tsx');
+assert(cars.includes('variant="tonal" icon="plus"') && cars.includes('icon="trash" tone="danger"'), 'Xe của tôi: Thêm xe tonal, Xóa icon đỏ');
+const panels = read('../src/pages/advisor/RepairOrderPanels.tsx');
+for (const needle of ['icon="send"', 'iconRight="arrow-right"', 'variant="success" icon="cash"', 'disabled={invoice.status !== "PAID"}', 'variant="tonal" icon="plus"']) {
+  assert(panels.includes(needle), `Phiếu sửa chữa thiếu ${needle}`);
+}
+const dashboard = read('../src/pages/shared/WorkspaceDashboard.tsx');
+assert(dashboard.includes('admin-shortcut-tiles') && dashboard.includes('admin-utilities') && dashboard.includes('"/admin/reports"'), 'Dashboard Admin: thẻ lối tắt + hàng Tiện ích');
+const accounts = read('../src/pages/admin/Accounts.tsx');
+assert(accounts.includes('variant="tonal" icon="key"') && accounts.includes('variant="danger-outline" icon="lock"') && accounts.includes('variant="success"'), 'Tài khoản: Phân quyền tonal, Khóa danger-outline, Mở khóa success');
+
+console.log('PASS button redesign: role tokens, tonal variant, admin navy+lime, confirm-only solid danger, screen mappings, admin shortcuts.');

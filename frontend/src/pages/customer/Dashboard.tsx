@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { buttonClass } from "../../components/ui/buttonClass";
 import { Link, useNavigate } from "react-router-dom";
 import { Toast, type ToastType } from "../../components/auth/Toast";
 import { fetchApi } from "../../services/api";
@@ -323,7 +324,7 @@ function CustomerDashboard() {
               <button
                 type="button"
                 onClick={openOdoModal}
-                className="cs-btn cs-btn-secondary"
+                className={buttonClass({ variant: "secondary" })}
               >
                 Cập nhật số ODO
               </button>
@@ -548,7 +549,7 @@ function CustomerDashboard() {
                             setSearchKeyword("");
                             setVehicleFilter("ALL");
                           }}
-                          className="cs-btn cs-btn-primary mt-4"
+                          className={buttonClass({ variant: "primary", className: "mt-4" })}
                         >
                           Xóa bộ lọc
                         </button>
@@ -593,7 +594,7 @@ function CustomerDashboard() {
                                 e.stopPropagation();
                                 void openOrderDetail(o);
                               }}
-                              className="cs-btn cs-btn-secondary"
+                              className={buttonClass({ variant: "secondary" })}
                             >
                               Chi tiết
                             </button>
@@ -857,7 +858,7 @@ function CustomerDashboard() {
               <button
                 type="button"
                 onClick={() => setSelectedOrderId(null)}
-                className="cs-btn cs-btn-primary"
+                className={buttonClass({ variant: "primary" })}
               >
                 Đóng
               </button>
@@ -925,14 +926,14 @@ function CustomerDashboard() {
                 <button
                   type="button"
                   onClick={() => setShowOdoModal(false)}
-                  className="cs-btn cs-btn-secondary"
+                  className={buttonClass({ variant: "secondary" })}
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={odoSaving}
-                  className="cs-btn cs-btn-primary"
+                  className={buttonClass({ variant: "primary" })}
                 >
                   {odoSaving ? "Đang lưu..." : "Lưu số ODO"}
                 </button>

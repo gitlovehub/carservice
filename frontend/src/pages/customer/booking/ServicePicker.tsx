@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { buttonClass } from "../../../components/ui/buttonClass";
 import { createPortal } from "react-dom";
 import "./servicePicker.css";
 import {
@@ -189,11 +190,11 @@ export default function ServicePicker({
         )}
 
         <div className="flex flex-wrap gap-2 border-t border-slate-200 px-4 py-3">
-          <button ref={openButtonRef} type="button" onClick={openDrawer} className="cs-btn cs-btn-primary" disabled={loading} aria-haspopup="dialog">
+          <button ref={openButtonRef} type="button" onClick={openDrawer} className={buttonClass({ variant: "primary" })} disabled={loading} aria-haspopup="dialog">
             <i className="fa-solid fa-plus text-xs"></i> {loading ? "Đang tải dịch vụ..." : "Thêm dịch vụ"}
           </button>
           {!showSymptom && (
-            <button type="button" onClick={() => setShowSymptom(true)} className="cs-btn cs-btn-ghost">
+            <button type="button" onClick={() => setShowSymptom(true)} className={buttonClass({ variant: "ghost" })}>
               Chưa rõ xe bị gì?
             </button>
           )}
@@ -370,7 +371,7 @@ export default function ServicePicker({
                     ))}
                   </ul>
                 )}
-                <button type="button" onClick={closeDrawer} className="cs-btn cs-btn-primary w-full justify-center">
+                <button type="button" onClick={closeDrawer} className={buttonClass({ variant: "primary", className: "w-full justify-center" })}>
                   {selectedItems.length > 0 ? `Xong (${selectedItems.length})` : "Đóng"}
                 </button>
               </footer>

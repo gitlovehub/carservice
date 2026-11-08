@@ -189,7 +189,7 @@ function Appointments() {
         </div>
         {error && <div role="alert" className="at-customer-notice at-customer-error"><span>{error}</span><Button size="sm" variant="secondary" icon="refresh" onClick={() => setReloadKey(k=>k+1)}>Thử lại</Button></div>}
         {loading && <div className="at-customer-empty">Đang tải lịch hẹn...</div>}
-        {!loading && filtered.length===0 && <div className="at-customer-empty"><h2>Chưa có lịch hẹn phù hợp</h2><p>Thử đổi bộ lọc hoặc tạo lịch bảo dưỡng mới.</p><Link to="/customer/booking" className="at-customer-primary">Đặt lịch bảo dưỡng</Link></div>}
+        {!loading && filtered.length===0 && <div className="at-customer-empty"><h2>Chưa có lịch hẹn phù hợp</h2><p>Thử đổi bộ lọc hoặc tạo lịch bảo dưỡng mới.</p><Link to="/customer/booking" className={buttonClass({ variant: "primary" })}><Icon name="calendar" size={16}/>Đặt lịch bảo dưỡng</Link></div>}
         {!loading && filtered.map(a => <article key={a.id} className="at-appointment-card">
           <div className="at-appointment-top">
             <div><p className="at-appointment-code">{a.appointment_code}</p><h2>{getVehicleName(a.vehicle)}</h2><p className="at-appointment-description">{a.vehicle?.license_plate ?? "Chưa có biển số"} · {servicesText(a)}</p></div>

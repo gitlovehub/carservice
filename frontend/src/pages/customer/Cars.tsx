@@ -1,4 +1,5 @@
 import { Modal } from "../../components/ui";
+import { buttonClass } from "../../components/ui/buttonClass";
 import { Button, IconButton } from "../../components/ui";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
@@ -356,14 +357,14 @@ function Cars() {
                 <button
                   type="button"
                   onClick={() => setEditingVehicle(null)}
-                  className="cs-btn cs-btn-secondary"
+                  className={buttonClass({ variant: "secondary" })}
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={updating}
-                  className="cs-btn cs-btn-primary"
+                  className={buttonClass({ variant: "primary" })}
                 >
                   {updating ? "Đang lưu..." : "Cập nhật"}
                 </button>
@@ -455,7 +456,7 @@ function Cars() {
               <button
                 type="button"
                 onClick={() => setDetailVehicle(null)}
-                className="cs-btn cs-btn-secondary"
+                className={buttonClass({ variant: "secondary" })}
               >
                 Đóng
               </button>
