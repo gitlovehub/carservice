@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
 use App\Models\VehicleTrim;
+use App\Support\VehicleName;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -185,13 +186,7 @@ class VietnamVehicleCsvSeeder extends Seeder
      */
     public static function clean(string $value): string
     {
-        $value = preg_replace('/^\x{FEFF}/u', '', $value) ?? $value;
-
-        if (class_exists(\Normalizer::class)) {
-            $value = \Normalizer::normalize($value, \Normalizer::FORM_C) ?: $value;
-        }
-
-        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+        return VehicleName::clean($value);
     }
 
     /**
@@ -199,7 +194,7 @@ class VietnamVehicleCsvSeeder extends Seeder
      */
     public static function key(string $value): string
     {
-        return mb_strtolower(self::clean($value));
+        return VehicleName::key($value);
     }
 
     private static function valid(string $value, int $max): bool

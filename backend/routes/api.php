@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdminAdvisorActivityController;
 use App\Http\Controllers\Api\AdminMaintenancePackageController;
 use App\Http\Controllers\Api\AdminServiceController;
+use App\Http\Controllers\Api\AdminVehicleCatalogController;
 use App\Http\Controllers\Api\AdvisorAppointmentController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\Api\QuotationController;
 use App\Http\Controllers\Api\RepairOrderController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\TechnicianController;
+use App\Http\Controllers\Api\VehicleCatalogController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\VnpayController;
 use App\Http\Controllers\Api\WorkingHoursController;
@@ -61,6 +63,18 @@ Route::get('services/{service}', [ServiceController::class, 'show']);
 Route::get('maintenance-packages', [MaintenancePackageController::class, 'index']);
 Route::get('maintenance-packages/{maintenancePackage}', [MaintenancePackageController::class, 'show']);
 Route::get('booking-catalog', [BookingCatalogController::class, 'index']);
+
+// Danh mục xe công khai: Hãng → Dòng xe → Phiên bản (chỉ bản ghi đang hiển thị).
+Route::controller(VehicleCatalogController::class)
+    ->prefix('vehicle-catalog')
+    ->middleware('throttle:120,1')
+    ->name('vehicle-catalog.')
+    ->group(function (): void {
+        Route::get('brands', 'brands')->name('brands');
+        Route::get('brands/{brand}/models', 'models')->whereNumber('brand')->name('models');
+        Route::get('models/{model}/trims', 'trims')->whereNumber('model')->name('trims');
+        Route::get('search', 'search')->name('search');
+    });
 
 Route::get('/working-hours', [WorkingHoursController::class, 'index']);
 
@@ -262,6 +276,24 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::apiResource('admin/maintenance-packages', AdminMaintenancePackageController::class)
             ->parameters(['maintenance-packages' => 'maintenancePackage'])
             ->names('admin.maintenance-packages');
+
+        // Quản trị danh mục xe: hãng, dòng xe, phiên bản (xóa bị chặn khi đang được dùng).
+        Route::controller(AdminVehicleCatalogController::class)->prefix('admin')->group(function (): void {
+            Route::get('vehicle-brands', 'brandIndex');
+            Route::post('vehicle-brands', 'brandStore');
+            Route::patch('vehicle-brands/{brand}', 'brandUpdate')->whereNumber('brand');
+            Route::delete('vehicle-brands/{brand}', 'brandDestroy')->whereNumber('brand');
+
+            Route::get('vehicle-models', 'modelIndex');
+            Route::post('vehicle-models', 'modelStore');
+            Route::patch('vehicle-models/{model}', 'modelUpdate')->whereNumber('model');
+            Route::delete('vehicle-models/{model}', 'modelDestroy')->whereNumber('model');
+
+            Route::get('vehicle-trims', 'trimIndex');
+            Route::post('vehicle-trims', 'trimStore');
+            Route::patch('vehicle-trims/{trim}', 'trimUpdate')->whereNumber('trim');
+            Route::delete('vehicle-trims/{trim}', 'trimDestroy')->whereNumber('trim');
+        });
 
         Route::get('/admin/working-hours', [WorkingHoursController::class, 'index']);
 
