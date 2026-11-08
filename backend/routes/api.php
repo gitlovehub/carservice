@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\CustomerHandoverController;
 use App\Http\Controllers\Api\CustomerPickupAuthorizationController;
 use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\CustomerReviewController;
+use App\Http\Controllers\Api\GarageSettingController;
 use App\Http\Controllers\Api\HandoverController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
@@ -63,6 +64,9 @@ Route::get('booking-catalog', [BookingCatalogController::class, 'index']);
 
 Route::get('/working-hours', [WorkingHoursController::class, 'index']);
 
+// Thông tin gara (Footer, trang Liên hệ).
+Route::get('garage-settings', [GarageSettingController::class, 'show']);
+
 Route::post('chatbot', [ChatbotController::class, 'chat'])->middleware('throttle:20,1');
 
 // VNPay: IPN do máy chủ VNPay gọi; Return do Frontend gọi để hiển thị kết quả. Bảo vệ bằng chữ ký.
@@ -91,6 +95,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('me/change-password', 'changePassword');
         Route::post('logout', 'logout');
     });
+
+    // Gợi ý địa chỉ (Goong / OpenStreetMap qua backend — key không lộ ra trình duyệt).
+    Route::get('address/suggest', [GarageSettingController::class, 'suggest'])->middleware('throttle:60,1');
+    Route::get('address/place', [GarageSettingController::class, 'place'])->middleware('throttle:60,1');
 
     // Ảnh bằng chứng: xem theo quyền xem phiếu sửa chữa liên quan (MediaController).
     Route::get('media', [MediaController::class, 'index']);
@@ -223,6 +231,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
             'customers/{customer}',
             [CustomerController::class, 'destroy']
         );
+
+        // Thông tin gara: tên, liên hệ, địa chỉ (chọn từ gợi ý bản đồ).
+        Route::put('admin/garage-settings', [GarageSettingController::class, 'update']);
 
         // Hoạt động của từng cố vấn với lịch hẹn / phiếu sửa chữa.
         Route::get('admin/advisor-activity', [AdminAdvisorActivityController::class, 'index']);
