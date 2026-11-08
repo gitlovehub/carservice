@@ -50,6 +50,7 @@ import AdminAdvisorActivity from "./pages/admin/AdvisorActivity";
 import AdminGarageSettings from "./pages/admin/GarageSettings";
 import AdminMaintenancePackages from "./pages/admin/MaintenancePackages";
 import AdminInventory from "./pages/admin/Inventory";
+import AdminVehicleCatalog from "./pages/admin/VehicleCatalog";
 import AdminReports from "./pages/admin/Reports";
 
 function App() {
@@ -116,6 +117,7 @@ function App() {
       <Route path="appointments" element={<AdminAppointments/>}/>
       <Route path="services" element={<AdminServices/>}/>
       <Route path="maintenance-packages" element={<AdminMaintenancePackages/>}/>
+      <Route path="vehicle-catalog" element={<AdminVehicleCatalog/>}/>
       <Route path="working-hours" element={<AdminWorkingHours/>}/>
       <Route path="garage" element={<AdminGarageSettings/>}/>
       <Route path="inventory" element={<AdminInventory/>}/>
