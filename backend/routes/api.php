@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AdvisorAppointmentController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingCatalogController;
+use App\Http\Controllers\Api\CapacityController;
 use App\Http\Controllers\Api\ChatbotController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerHandoverController;
@@ -178,6 +179,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('/{id}/check-in', [AdvisorAppointmentController::class, 'checkIn']);
             Route::post('/{id}/cancel', [AdvisorAppointmentController::class, 'cancel']);
         });
+
+        // P7: công suất gara theo phút / ngày (Q6: chỉ cảnh báo).
+        Route::get('advisor/capacity', [CapacityController::class, 'show']);
+        Route::get('advisor/capacity/range', [CapacityController::class, 'range']);
 
         // P6: phụ tùng chờ — đặt hàng (ETA), nhận hàng (nhập kho), hủy.
         Route::controller(PartRequestController::class)->prefix('part-requests')->group(function (): void {

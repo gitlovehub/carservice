@@ -19,11 +19,15 @@ class WorkingHour extends Model
         'close_time',
         'max_slots',
         'is_active',
+        'daily_capacity_minutes',
+        'bay_count',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'max_slots' => 'integer',
         'day_of_week' => 'integer',
+        'daily_capacity_minutes' => 'integer',
+        'bay_count' => 'integer',
     ];
 }

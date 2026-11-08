@@ -27,6 +27,9 @@ class WorkingHoursController extends Controller
             'close_time' => ['required', 'date_format:H:i', 'after:open_time'],
             'max_slots' => ['required', 'integer', 'min:0', 'max:100'],
             'is_active' => ['required', 'boolean'],
+            // P7: năng lực ngày (phút) + số cầu nâng — chỉ dùng để cảnh báo (Q6).
+            'daily_capacity_minutes' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:100000'],
+            'bay_count' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:50'],
         ]);
 
         $workingHour = DB::table('working_hours')
