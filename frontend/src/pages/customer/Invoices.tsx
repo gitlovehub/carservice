@@ -94,9 +94,6 @@ export default function InvoicesPage() {
       <main className="lg:ml-[250px]">
         <div className="mx-auto max-w-[1200px] px-6 py-10 md:px-8 md:py-14">
           <div className="mb-8">
-            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-              KHÁCH HÀNG / HÓA ĐƠN
-            </p>
 
             <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>

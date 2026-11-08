@@ -28,7 +28,7 @@ Frontend: React 19 + Vite + TypeScript + Tailwind CSS v4 (`frontend/`). Backend:
 
 | Vai trò | Tiền tố | Layout | Điều hướng |
 |---|---|---|---|
-| Khách vãng lai / Customer | `/`, `/customer/*`, `/booking`, `/repair-status`… | `PublicLayout` → `CustomerLayout` | Header `AtelierPublicHeader` (`components/AtelierPublic.tsx`) |
+| Khách vãng lai / Customer | `/`, `/customer/*`, `/booking`, `/repair-status`… | `PublicLayout` → `CustomerLayout` | Header `GaragePublicHeader` (`components/GaragePublic.tsx`) |
 | Advisor | `/advisor/*` | `AdvisorLayout` = `WorkLayout area="advisor"` | Sidebar từ `navigation.ts` (`advisor`) |
 | Admin | `/admin/*` | `AdminLayout` = `WorkLayout area="admin"` | Sidebar từ `navigation.ts` (`admin`) |
 
@@ -92,7 +92,7 @@ Thêm trạng thái mới: chỉ sửa `status.ts`.
 
 **Việt hóa**
 - Mọi chữ người dùng thấy (kể cả placeholder, aria-label, thông báo lỗi) đều bằng tiếng Việt.
-- Giữ nguyên tên thương hiệu "CarService" và "ATELIER".
+- Giữ nguyên tên thương hiệu "CarService" và "GARAGE".
 - Không đưa thuật ngữ kỹ thuật (Laravel, backend, API, seeder) ra giao diện.
 
 **Responsive**

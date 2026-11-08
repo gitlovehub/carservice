@@ -14,7 +14,7 @@ import { HandoverSummary } from "../advisor/CheckInPanel";
 import { handoverApi, pickupAuthorizationApi } from "../../services/evidenceService";
 import type { PickupAuthorization, WorkflowHandover } from "../../services/workflowService";
 
-// Presentation stages follow the ATELIER timeline, mapped to the actual Laravel
+// Presentation stages follow the GARAGE timeline, mapped to the actual Laravel
 // repair-order state machine. No demo statuses are sent to the backend.
 const stages = [
   { status: "RECEIVED", label: "Đã tiếp nhận", color: "blue" },
@@ -237,7 +237,6 @@ export default function RepairStatus() {
   return <section className="min-h-[calc(100dvh-180px)] px-5 py-12 sm:px-6 sm:pb-16 bg-[var(--cs-bg,#f7f7f6)] text-[var(--cs-text,#191919)] ">
     <div className="mx-auto w-full max-w-[1200px]">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-5 [&_h1]:text-[clamp(29px,4vw,46px)] [&_h1]:font-extrabold [&_h1]:tracking-normal [&_h1]:leading-[1.16] [&_p:not(:first-child)]:mt-2.5 [&_p:not(:first-child)]:text-sm [&_p:not(:first-child)]:text-[var(--cs-muted,#757575)]"><div>
-        <p className="mb-2.5 text-xs font-extrabold tracking-[0.16em] text-cs-accent-text">GARA CỦA TÔI / TIẾN ĐỘ</p>
         <h1>Hành trình sửa chữa</h1>
         <p>Biết xe đang ở công đoạn nào và công việc tiếp theo là gì.</p>
       </div></header>

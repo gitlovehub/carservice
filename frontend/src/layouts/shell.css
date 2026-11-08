@@ -39,7 +39,7 @@ html[data-theme="dark"] .cs-shell input,html[data-theme="dark"] .cs-shell select
 .cs-auth-error button {display:block;margin-top:12px;background:var(--cs-warning);border:0;border-radius:9px;padding:9px 15px;color:#fff;cursor:pointer;}
 
 /* Role-aware legacy module bridge. Existing modules keep their API and behavior;
-   only hard-coded UI colors are translated to ATELIER tokens. */
+   only hard-coded UI colors are translated to GARAGE tokens. */
 .cs-workspace :is(a,button,input,select,textarea):focus-visible {outline:2px solid var(--cs-accent);outline-offset:2px}
 .cs-workspace :is(button,a).cs-button:hover {filter:brightness(.93)}
 
@@ -162,7 +162,7 @@ html[data-theme="dark"] .cs-workspace .border-\[\#F0D6D6\] {border-color:color-m
 .cs-workspace :is(a,button).bg-\[\#D6A85F\]:hover{filter:brightness(.92)}
 html[data-theme="dark"] .cs-workspace :is(input[type="checkbox"],input[type="radio"]){background:initial!important;accent-color:var(--cs-accent)!important;color:var(--cs-text)}
 
-/* Customer legacy modules: dark-mode contrast and red ATELIER accents. */
+/* Customer legacy modules: dark-mode contrast and red GARAGE accents. */
 .cs-customer-layout .cs-public-header {min-height:82px}
 .cs-customer-layout .cs-nav-link.is-active {box-shadow:0 2px 0 var(--cs-accent);}
 .cs-customer-layout .cs-account-link:hover {filter:brightness(.9)}
@@ -210,7 +210,7 @@ html[data-theme="dark"] .cs-workspace[data-area="admin"] .ws-metric-featured{bac
 html[data-theme="dark"] .cs-workspace[data-area="admin"] .ws-button-primary{background:var(--cs-accent);color:var(--cs-accent-contrast)!important}
 .cs-workspace[data-area="admin"] :is(a,button).hover\:bg-\[\#151D24\]:hover{background:var(--cs-accent-hover)!important;color:var(--cs-accent-contrast)!important;filter:none}
 
-/* Admin module-switch cards, role-safe hover colors (ATELIER). */
+/* Admin module-switch cards, role-safe hover colors (GARAGE). */
 /* Điều hướng module Admin nằm ở sidebar (layouts/navigation.ts). */
 /* Customer navigation: persist active treatment at booking and alias routes. */
 .cs-customer-layout .cs-public-nav .cs-nav-link{position:relative;color:var(--cs-muted);transition:color .15s}

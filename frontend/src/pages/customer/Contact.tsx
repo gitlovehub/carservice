@@ -34,9 +34,6 @@ function Contact() {
       <main>
         <section className="border-b border-[#E1E4E6] bg-white">
           <div className="mx-auto max-w-[1280px] px-6 py-12 md:py-14">
-            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-              CARSERVICE / LIÊN HỆ
-            </p>
 
             <h1 className="mt-3 text-[32px] font-bold tracking-normal text-[#1F2933] md:text-[42px]">
               Liên hệ với chúng tôi

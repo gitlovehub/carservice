@@ -33,4 +33,4 @@ assert.match(read('components/ui/Icon.tsx'),/plus: <path/,'Add vehicle icon must
 const vehicleController = readFileSync(path.join(here,'../../backend/app/Http/Controllers/Api/VehicleController.php'),'utf8');
 assert.match(vehicleController,/Rule::in\(\$modelNames\)/,'Backend currently restricts accepted model names');
 assert.match(garage,/const supportedVehicleModels = \[/,'UI must only offer accepted models');
-console.log('PASS: dark hover and admin tile contrast; API-backed ATELIER customer garage with responsive cards.');
+console.log('PASS: dark hover and admin tile contrast; API-backed GARAGE customer garage with responsive cards.');

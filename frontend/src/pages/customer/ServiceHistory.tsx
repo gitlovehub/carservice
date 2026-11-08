@@ -29,7 +29,6 @@ export default function ServiceHistory() {
 
   return <section className="min-h-[calc(100dvh-180px)] px-5 py-12 sm:px-6 sm:pb-16 bg-[var(--cs-bg,#f7f7f6)] text-[var(--cs-text,#191919)] "><div className="mx-auto w-full max-w-[1200px]">
     <header className="mb-7 flex flex-wrap items-end justify-between gap-5 [&_h1]:text-[clamp(29px,4vw,46px)] [&_h1]:font-extrabold [&_h1]:tracking-normal [&_h1]:leading-[1.16] [&_p:not(:first-child)]:mt-2.5 [&_p:not(:first-child)]:text-sm [&_p:not(:first-child)]:text-[var(--cs-muted,#757575)]"><div>
-      <p className="mb-2.5 text-xs font-extrabold tracking-[0.16em] text-cs-accent-text">GARA CỦA TÔI / LỊCH SỬ</p>
       <h1>Lịch sử chăm sóc xe</h1>
       <p>Tra cứu các lần bảo dưỡng, sửa chữa đã hoàn tất tại gara.</p>
     </div><Link to="/customer/booking" className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#cf2935] bg-[#cf2935] px-5 py-3 text-[13px] font-extrabold text-white transition-colors hover:bg-[#af1f2b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935]">+ Đặt lịch mới</Link></header>

@@ -11,7 +11,7 @@ import { areaInfo, crumbs, navGroups, shellNavigation } from "./navigation";
 import { ShellContext } from "./ShellContext";
 import "./shell.css";
 import "./workspace.css";
-import "../styles/atelier-customer-complete.css";
+import "../styles/garage-customer-complete.css";
 
 type WorkArea = "advisor" | "admin";
 const SIDEBAR_KEY = "carservice-sidebar";
