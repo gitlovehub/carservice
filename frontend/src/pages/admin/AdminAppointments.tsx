@@ -427,7 +427,7 @@ function AdminAppointments() {
                                       "Đã xác nhận",
                                     )
                                   }
-                                  className={buttonClass({ variant: "success", size: "sm" })}
+                                  className={buttonClass({ variant: "secondary", size: "sm" })}
                                 >
                                   <Icon name="check" size={14}/>{isUpdating ? "Đang xử lý..." : "Duyệt"}
                                 </button>

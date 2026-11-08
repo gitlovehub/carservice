@@ -1,4 +1,4 @@
-// Khóa đặc tả docs/ui-button-redesign.md: token theo vai trò, biến thể tonal, Admin luôn tối (lime chữ navy),
+// Khóa đặc tả docs/ui-button-redesign.md: token theo vai trò, biến thể tonal, Admin đỏ thương hiệu theo theme sáng/tối,
 // nút danger nền đặc chỉ trong hộp thoại xác nhận, các ánh xạ chính theo màn hình.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,11 +15,19 @@ const pagination = read('../src/components/ui/Pagination.tsx');
 for (const token of ['--cs-soft-hover', '--cs-on-soft', '--cs-btn-radius', '--cs-accent-fill', '--cs-success-btn-bg', '--cs-danger-border']) {
   assert(tokens.includes(token), `tokens.css thiếu ${token}`);
 }
-const admin = tokens.slice(tokens.indexOf('[data-area="admin"],'));
-for (const needle of ['color-scheme: dark', '--cs-accent: #c8f53c', '--cs-accent-contrast: #0b1022', '--cs-btn-radius: 999px', '--cs-card-radius: 24px', '--cs-bg: #0b1022', '--cs-sidebar-bg: #080c1a', 'linear-gradient(135deg, #e2fb5a 0%, #9be86a 100%)', '--cs-success-btn-bg: #123524']) {
+// Admin: đỏ thương hiệu, theo theme sáng/tối — chỉ đổi accent + sidebar, không ghi đè nền/chữ/viền/trạng thái.
+const adminStart = tokens.indexOf('[data-area="admin"] {');
+assert(adminStart > 0, 'Thiếu khối token Admin');
+const admin = tokens.slice(adminStart, tokens.indexOf('}', adminStart));
+for (const needle of ['--cs-accent: var(--cs-brand)', '--cs-accent-hover: var(--cs-brand-hover)', '--cs-accent-contrast: #ffffff', '--cs-soft: var(--cs-brand-soft)', '--cs-sidebar-bg: var(--cs-surface)', '--cs-sidebar-active-bg: #cf2935']) {
   assert(admin.includes(needle), `Admin token thiếu: ${needle}`);
 }
-assert(!/--cs-accent-contrast:\s*#fff/i.test(admin), 'Không dùng chữ trắng trên lime');
+for (const banned of ['color-scheme', 'gradient', '--cs-bg:', '--cs-surface:', '--cs-text:', '--cs-btn-radius', '--cs-card-radius', '--cs-success', '--cs-search-', '--cs-tile-']) {
+  assert(!admin.includes(banned), `Admin không được ghi đè ${banned}`);
+}
+for (const old of ['c8f53c', '080c1a', '0b1022', '141a2e', 'lime']) assert(!tokens.toLowerCase().includes(old), `tokens.css còn ${old}`);
+const workspace = read('../src/layouts/workspace.css');
+assert(!/lime|--cs-search-|--cs-tile-|is-violet/.test(workspace), 'workspace.css còn style lime / navy riêng của Admin');
 
 // 2. Hệ thống nút.
 assert(/"primary" \| "tonal" \| "secondary" \| "outline" \| "ghost" \| "success" \| "danger-outline" \| "danger"/.test(buttonClass), 'ButtonVariant phải theo đặc tả');
@@ -56,6 +64,6 @@ for (const needle of ['icon="send"', 'iconRight="arrow-right"', 'variant="succes
 const dashboard = read('../src/pages/shared/WorkspaceDashboard.tsx');
 assert(dashboard.includes('admin-shortcut-tiles') && dashboard.includes('admin-utilities') && dashboard.includes('"/admin/reports"'), 'Dashboard Admin: thẻ lối tắt + hàng Tiện ích');
 const accounts = read('../src/pages/admin/Accounts.tsx');
-assert(accounts.includes('variant="tonal" icon="key"') && accounts.includes('variant="danger-outline" icon="lock"') && accounts.includes('variant="success"'), 'Tài khoản: Phân quyền tonal, Khóa danger-outline, Mở khóa success');
+assert(accounts.includes('variant="tonal" icon="key"') && accounts.includes('variant="danger-outline" icon="lock"') && !accounts.includes('variant="success"'), 'Tài khoản: Phân quyền tonal, Khóa danger-outline, Mở khóa kiểu chung (không xanh)');
 
-console.log('PASS button redesign: role tokens, tonal variant, admin navy+lime, confirm-only solid danger, screen mappings, admin shortcuts.');
+console.log('PASS button redesign: role tokens, tonal variant, admin red + theme-following sidebar, confirm-only solid danger, screen mappings, admin shortcuts.');
