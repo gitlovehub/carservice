@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'repair_order_id', 'service_id', 'technician_id', 'description',
-    'status', 'started_at', 'completed_at',
+    'status', 'started_at', 'completed_at', 'standard_minutes', 'service_step_id',
 ])]
 class WorkItem extends Model
 {

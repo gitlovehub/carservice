@@ -13,9 +13,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'mileage_received', 'initial_condition', 'status', 'received_at', 'completed_at',
     'handed_over_at', 'closed_at', 'close_reason', 'note',
     'booked_vehicle_id', 'vehicle_change_reason', 'source', 'requires_check_in',
+    'flow_type', 'estimated_ready_at',
 ])]
 class RepairOrder extends Model
 {
+    /** P5: luồng dịch vụ nhanh — RECEIVED → WAITING_APPROVAL bằng báo giá niêm yết (bỏ chẩn đoán). */
+    public const FLOW_QUICK = 'QUICK';
+
     public const SOURCE_APPOINTMENT = 'APPOINTMENT';
 
     public const SOURCE_WALK_IN = 'WALK_IN';
@@ -67,6 +71,7 @@ class RepairOrder extends Model
             'handed_over_at' => 'datetime',
             'closed_at' => 'datetime',
             'requires_check_in' => 'boolean',
+            'estimated_ready_at' => 'datetime',
         ];
     }
 
