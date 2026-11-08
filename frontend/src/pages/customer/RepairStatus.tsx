@@ -116,6 +116,10 @@ function TrackingCard({ order }: { order: CustomerRepairOrder }) {
             <p className="text-sm leading-relaxed text-[var(--cs-muted,#757575)]">{detail?.note || order.note}</p>}
         </section>
       </div>
+      {!!detail?.part_requests?.some(r => ["REQUESTED", "ORDERED"].includes(r.status)) && <section aria-label="Phụ tùng đang chờ" className="mt-6 border-t border-[var(--cs-border,#e9e9e6)] pt-6 text-sm">
+        <h3 className="text-[17px] font-extrabold">Phụ tùng đang chờ</h3>
+        <ul className="mt-2">{detail.part_requests.filter(r => ["REQUESTED", "ORDERED"].includes(r.status)).map(r => <li key={r.id}>• {r.part?.name ?? "Phụ tùng"} × {r.quantity} · {r.eta_date ? `dự kiến về ${new Date(r.eta_date).toLocaleDateString("vi-VN")}` : "gara đang đặt hàng"}</li>)}</ul>
+      </section>}
       {!!detail?.inspections?.[0]?.inspected_at && <CustomerDiagnosisBlock inspection={detail.inspections[0]}/>}
       {!!detail?.handovers?.length && <CustomerHandoverBlock handovers={detail.handovers} onConfirmed={() => setDetailKey(key => key + 1)}/>}
       {detail && !["HANDED_OVER", "CLOSED"].includes(status) && <CustomerPickupBlock orderId={order.id}/>}

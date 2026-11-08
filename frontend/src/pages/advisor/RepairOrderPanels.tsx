@@ -11,6 +11,7 @@ import { StatusBadge } from "../../components/ui/Badge";
 import { getStatus } from "../../config/status";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
 import { CounterApprovalPanel } from "./CounterApprovalPanel";
+import { PartRequestsPanel } from "./PartRequestsPanel";
 
 /** Panels for the steps after diagnosis; every action calls Laravel and then reloads the order. */
 type PanelProps = { order: WorkflowOrder; onChanged: (message: string) => Promise<void> };
@@ -231,6 +232,7 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
       </div>}
     </li>)}</ul> : <p className="text-sm text-cs-muted">Báo giá không có dịch vụ nào được duyệt nên không có công việc.</p>}
 
+    <PartRequestsPanel order={order} onChanged={onChanged}/>
     <h3 className="mb-2 mt-6 text-sm font-bold text-cs-text">Phụ tùng thực dùng (đã xuất kho)</h3>
     {order.used_parts?.length ? <ul className="space-y-1 text-sm text-cs-text">{order.used_parts.map(part => <li key={part.id}>• {part.part?.name || `Phụ tùng #${part.part_id}`} × {part.quantity} · {formatVnd(part.unit_price)}</li>)}</ul>
       : <p className="text-sm text-cs-muted">Chưa xuất phụ tùng nào.</p>}

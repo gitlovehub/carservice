@@ -96,6 +96,8 @@ export type CustomerRepairOrder = {
   id: number;
   /** Biên bản giao nhận đã gửi khách (P2). */
   handovers?: import("./workflowService").WorkflowHandover[];
+  /** Phụ tùng đang chờ (P6). */
+  part_requests?: Array<{ id: number; quantity: number; status: "REQUESTED" | "ORDERED" | "RECEIVED" | "CANCELLED"; eta_date?: string | null; part?: { name?: string; unit?: string | null } | null }>;
   /** Giờ dự kiến xong (P5) theo phút chuẩn. */
   estimated_ready_at?: string | null;
   /** Kết quả chẩn đoán (P3) — chỉ cột công khai. */
