@@ -1,4 +1,4 @@
-import { Button, PageHeader, Modal } from "../../components/ui";
+import { Button, IconButton, PageHeader, Modal } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -313,28 +313,16 @@ function CustomerCars() {
                   ))}
                 </select>
 
-                <button
-                  type="button"
-                  onClick={() => void loadCars()}
-                  className="cs-btn cs-btn-primary"
-                >
-                  Tìm kiếm
-                </button>
+                <Button variant="outline" icon="search" onClick={() => void loadCars()}>Tìm kiếm</Button>
               </div>
 
               {(search || brand) && (
                 <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
+                  <Button size="sm" variant="ghost" icon="x" onClick={() => {
                       setSearch("");
                       setBrand("");
                       setPage(1);
-                    }}
-                    className="text-[11px] font-semibold text-cs-muted hover:text-[#20252B]"
-                  >
-                    Xóa bộ lọc
-                  </button>
+                    }}>Xóa bộ lọc</Button>
                 </div>
               )}
             </div>
@@ -457,22 +445,9 @@ function CustomerCars() {
                                 Lịch hẹn
                               </Link>
 
-                              <button
-                                type="button"
-                                onClick={() => openEditModal(car)}
-                                className="rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[11px] font-semibold hover:border-[#D6A85F]"
-                              >
-                                Sửa
-                              </button>
+                              <IconButton icon="edit" label="Sửa xe" onClick={() => openEditModal(car)}/>
 
-                              <button
-                                type="button"
-                                disabled={deletingId === car.id}
-                                onClick={() => void handleDelete(car)}
-                                className="cs-btn cs-btn-danger-outline"
-                              >
-                                {deletingId === car.id ? "Đang xóa..." : "Xóa"}
-                              </button>
+                              <IconButton icon="trash" tone="danger" label="Xóa xe" loading={deletingId === car.id} onClick={() => void handleDelete(car)}/>
                             </div>
                           </td>
                         </tr>
@@ -488,22 +463,8 @@ function CustomerCars() {
                     Trang {page} / {lastPage}
                   </p>
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      disabled={page <= 1}
-                      onClick={() => setPage((current) => current - 1)}
-                      className="rounded-lg border border-[#D9DDE1] px-3 py-2 text-[11px] font-semibold disabled:opacity-40"
-                    >
-                      Trang trước
-                    </button>
-                    <button
-                      type="button"
-                      disabled={page >= lastPage}
-                      onClick={() => setPage((current) => current + 1)}
-                      className="rounded-lg border border-[#D9DDE1] px-3 py-2 text-[11px] font-semibold disabled:opacity-40"
-                    >
-                      Trang sau
-                    </button>
+                    <Button size="sm" variant="outline" icon="chevron-left" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>Trang trước</Button>
+                    <Button size="sm" variant="outline" iconRight="chevron-right" disabled={page >= lastPage} onClick={() => setPage((current) => current + 1)}>Trang sau</Button>
                   </div>
                 </div>
               )}
@@ -523,14 +484,7 @@ function CustomerCars() {
                   Nhập thông tin theo dữ liệu hợp lệ trong hệ thống.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={closeModal}
-                disabled={saving}
-                className="rounded-lg px-3 py-2 text-sm text-cs-muted hover:bg-cs-surface-2"
-              >
-                Đóng
-              </button>
+              <IconButton icon="close" label="Đóng" disabled={saving} onClick={closeModal}/>
             </div>
 
             <form onSubmit={handleSave} className="space-y-5 p-6">
@@ -670,21 +624,8 @@ function CustomerCars() {
               </div>
 
               <div className="flex justify-end gap-3 border-t border-[#EEF0F2] pt-5">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  disabled={saving}
-                  className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold disabled:opacity-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="cs-btn cs-btn-primary"
-                >
-                  {saving ? "Đang lưu..." : editingCar ? "Lưu thay đổi" : "Thêm xe"}
-                </button>
+                <Button variant="secondary" disabled={saving} onClick={closeModal}>Hủy</Button>
+                <Button type="submit" variant="primary" icon={editingCar ? "check" : "plus"} loading={saving} loadingText="Đang lưu...">{editingCar ? "Lưu thay đổi" : "Thêm xe"}</Button>
               </div>
             </form>
           </Modal>

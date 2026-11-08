@@ -1,4 +1,5 @@
-import { Modal } from "../../components/ui";
+import { Button, IconButton, Modal } from "../../components/ui";
+import { buttonClass } from "../../components/ui/buttonClass";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -499,13 +500,7 @@ function Appointments() {
                 </div>
 
                 <div className="flex items-end">
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="cs-btn cs-btn-secondary"
-                  >
-                    Xóa bộ lọc
-                  </button>
+                  <Button variant="outline" icon="filter" onClick={handleReset}>Xóa bộ lọc</Button>
                 </div>
               </div>
 
@@ -514,12 +509,9 @@ function Appointments() {
                   <button
                     key={item.value || "all"}
                     type="button"
+                    aria-pressed={status === item.value}
                     onClick={() => handleStatusTab(item.value)}
-                    className={`rounded-xl px-4 py-2 text-xs font-semibold transition ${
-                      status === item.value
-                        ? "bg-slate-900 text-white shadow-sm"
-                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                    }`}
+                    className={buttonClass({ variant: status === item.value ? "tonal" : "outline", size: "sm" })}
                   >
                     {item.label}
                   </button>
@@ -628,66 +620,31 @@ function Appointments() {
 
                             <td className="px-5 py-4">
                               <div className="flex flex-wrap items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenDetail(appointment)}
-                                  className="cs-unified-btn cs-unified-secondary"
-                                >
-                                  Chi tiết
-                                </button>
+                                <Button size="sm" variant="ghost" icon="eye" onClick={() => handleOpenDetail(appointment)}>Chi tiết</Button>
 
                                 {appointment.status === "PENDING" && (
                                   <>
-                                    <button
-                                      type="button"
-                                      disabled={isConfirming}
-                                      onClick={() => handleConfirm(appointment)}
-                                      className="cs-unified-btn cs-unified-primary"
-                                    >
-                                      {isConfirming ? "Đang xử lý..." : "Xác nhận"}
-                                    </button>
+                                    <Button size="sm" variant="primary" icon="check" loading={isConfirming} loadingText="Đang xử lý..." onClick={() => handleConfirm(appointment)}>Xác nhận</Button>
 
-                                    <button
-                                      type="button"
-                                      onClick={() => {
+                                    <Button size="sm" variant="danger-outline" icon="x" onClick={() => {
                                         setCancelAppointment(appointment);
                                         setCancelReason("");
-                                      }}
-                                      className="cs-unified-btn cs-unified-secondary"
-                                    >
-                                      Từ chối
-                                    </button>
+                                      }}>Từ chối</Button>
                                   </>
                                 )}
 
                                 {appointment.status === "CHECKED_IN" && (
-                                  <button type="button" onClick={() => navigate(`/advisor/reception?appointment=${appointment.id}`)}
-                                    className="cs-unified-btn cs-unified-secondary">
-                                    Tạo / xem phiếu
-                                  </button>
+                                  <Button size="sm" variant="tonal" icon="clipboard" onClick={() => navigate(`/advisor/reception?appointment=${appointment.id}`)}>Tạo / xem phiếu</Button>
                                 )}
 
                                 {appointment.status === "CONFIRMED" && (
                                   <>
-                                    <button
-                                      type="button"
-                                      disabled={isCheckingIn}
-                                      onClick={() => handleCheckIn(appointment)}
-                                      className="cs-unified-btn cs-unified-primary"
-                                    >
-                                      {isCheckingIn ? "Đang xử lý..." : "Tiếp nhận"}
-                                    </button>
+                                    <Button size="sm" variant="primary" icon="car" loading={isCheckingIn} loadingText="Đang xử lý..." onClick={() => handleCheckIn(appointment)}>Tiếp nhận</Button>
 
-                                    <button
-                                      type="button"
-                                      onClick={() => {
+                                    <Button size="sm" variant="danger-outline" icon="x" onClick={() => {
                                         setCancelAppointment(appointment);
                                         setCancelReason("");
-                                      }}
-                                      className="cs-unified-btn cs-unified-secondary"
-                                    >
-                                      Từ chối
-                                    </button>
+                                      }}>Từ chối</Button>
                                   </>
                                 )}
                               </div>
@@ -711,13 +668,7 @@ function Appointments() {
                   <p className="mx-auto mt-1 max-w-sm text-xs text-slate-400">
                     Không tìm thấy lịch hẹn phù hợp với bộ lọc hiện tại.
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="cs-btn cs-btn-secondary mt-4"
-                  >
-                    Xóa bộ lọc
-                  </button>
+                  <Button variant="outline" icon="filter" className="mt-4" onClick={handleReset}>Xóa bộ lọc</Button>
                 </div>
               )}
 
@@ -729,14 +680,7 @@ function Appointments() {
                   </p>
 
                   <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                      className="cs-btn cs-btn-secondary cs-btn-sm"
-                    >
-                      Trước
-                    </button>
+                    <Button size="sm" variant="outline" icon="chevron-left" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>Trước</Button>
 
                     {Array.from({ length: totalPages }, (_, index) => index + 1).map(
                       (page) => (
@@ -744,27 +688,15 @@ function Appointments() {
                           key={page}
                           type="button"
                           onClick={() => setCurrentPage(page)}
-                          className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                            currentPage === page
-                              ? "bg-slate-900 text-white"
-                              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                          }`}
+                          aria-current={currentPage === page ? "page" : undefined}
+                          className={buttonClass({ variant: currentPage === page ? "tonal" : "outline", size: "sm", className: "min-w-8 px-2" })}
                         >
                           {page}
                         </button>
                       )
                     )}
 
-                    <button
-                      type="button"
-                      disabled={currentPage === totalPages}
-                      onClick={() =>
-                        setCurrentPage((page) => Math.min(totalPages, page + 1))
-                      }
-                      className="cs-btn cs-btn-secondary cs-btn-sm"
-                    >
-                      Sau
-                    </button>
+                    <Button size="sm" variant="outline" iconRight="chevron-right" disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>Sau</Button>
                   </div>
                 </div>
               )}
@@ -778,7 +710,7 @@ function Appointments() {
         <Modal bare open onClose={() => setSelectedAppointment(null)} dismissible={!loadingAction} title={"Chi tiết lịch hẹn"} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[20px] border border-cs-border bg-cs-surface text-cs-text shadow-overlay">
             <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-cs-border bg-cs-surface px-6 py-5">
               <div><h2 id="advisor-appointment-title" className="text-lg font-extrabold">Chi tiết lịch hẹn</h2><p className="mt-1 font-mono text-xs text-cs-muted">{selectedAppointment.appointment_code}</p></div>
-              <button type="button" aria-label="Đóng chi tiết" onClick={() => setSelectedAppointment(null)} className="cs-unified-btn cs-unified-secondary min-w-0 px-3">✕</button>
+              <IconButton icon="close" label="Đóng chi tiết" onClick={() => setSelectedAppointment(null)}/>
             </header>
             {loadingDetail ? <div className="p-6 text-sm text-cs-muted">Đang tải chi tiết lịch hẹn...</div> : <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-6">
               {[
@@ -790,7 +722,7 @@ function Appointments() {
               <div className="cs-info-panel p-4 sm:col-span-2"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-cs-muted">Khách yêu cầu</p><CustomerRequestSummary request={selectedAppointment}/></div>
               {selectedAppointment.cancel_reason && <div className="cs-info-panel p-4 sm:col-span-2"><p className="text-xs font-bold text-red-400">Lý do hủy</p><p className="mt-2 text-sm text-cs-text">{selectedAppointment.cancel_reason}</p></div>}
             </div>}
-            <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-cs-border px-6 py-4"><p className="text-xs text-cs-muted">Thông tin từ hệ thống gara</p><button className="cs-unified-btn cs-unified-secondary" onClick={() => setSelectedAppointment(null)}>Đóng</button></footer>
+            <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-cs-border px-6 py-4"><p className="text-xs text-cs-muted">Thông tin từ hệ thống gara</p><Button variant="secondary" onClick={() => setSelectedAppointment(null)}>Đóng</Button></footer>
           </Modal>
       )}
 
@@ -808,16 +740,10 @@ function Appointments() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
+              <IconButton icon="close" label="Đóng" size="sm" onClick={() => {
                   setCancelAppointment(null);
                   setCancelReason("");
-                }}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-cs-muted transition hover:bg-cs-surface-2 hover:text-cs-text"
-              >
-                ✕
-              </button>
+                }}/>
             </div>
 
             <div className="p-6">
@@ -841,30 +767,12 @@ function Appointments() {
             </div>
 
             <div className="flex justify-end gap-2 border-t border-cs-border px-6 py-4">
-              <button
-                type="button"
-                onClick={() => {
+              <Button variant="secondary" onClick={() => {
                   setCancelAppointment(null);
                   setCancelReason("");
-                }}
-                className="cs-btn cs-btn-secondary"
-              >
-                Hủy bỏ
-              </button>
+                }}>Hủy bỏ</Button>
 
-              <button
-                type="button"
-                disabled={
-                  cancelReason.trim() === "" ||
-                  loadingAction === `cancel-${cancelAppointment.id}`
-                }
-                onClick={handleCancel}
-                className="cs-btn cs-btn-danger"
-              >
-                {loadingAction === `cancel-${cancelAppointment.id}`
-                  ? "Đang xử lý..."
-                  : "Xác nhận từ chối"}
-              </button>
+              <Button variant="danger" icon="x" disabled={cancelReason.trim() === ""} loading={loadingAction === `cancel-${cancelAppointment.id}`} loadingText="Đang xử lý..." onClick={handleCancel}>Xác nhận từ chối</Button>
             </div>
           </Modal>
       )}
