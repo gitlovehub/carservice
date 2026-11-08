@@ -1,4 +1,5 @@
 import { Modal } from "../../components/ui";
+import { buttonClass } from "../../components/ui/buttonClass";
 import { Button } from "../../components/ui";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -207,7 +208,7 @@ export default function InvoicesPage() {
                 <button
                   type="button"
                   onClick={() => void loadData()}
-                  className="cs-btn cs-btn-secondary cs-btn-sm mt-3"
+                  className={buttonClass({ variant: "secondary", size: "sm", className: "mt-3" })}
                 >
                   Thử lại
                 </button>
@@ -307,7 +308,7 @@ export default function InvoicesPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedInvoiceRow({ invoice, order })}
-                              className="cs-btn cs-btn-secondary cs-btn-sm"
+                              className={buttonClass({ variant: "secondary", size: "sm" })}
                             >
                               Xem chi tiết
                             </button>

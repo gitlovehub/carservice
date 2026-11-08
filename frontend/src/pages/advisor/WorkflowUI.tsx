@@ -4,11 +4,7 @@ import { PageHeader } from "../../components/ui/PageHeader";
 import { STATUS } from "../../config/status";
 export const card = "rounded-2xl border border-cs-border bg-cs-surface p-5 shadow-sm sm:p-6";
 export const input = "mt-2 min-h-11 w-full rounded-xl border border-cs-border bg-cs-surface-2 px-3 py-2.5 text-sm text-cs-text outline-none transition hover:border-cs-accent/60 focus:border-cs-accent focus:ring-2 focus:ring-cs-accent/20 disabled:opacity-50";
-/** Nút thao tác chuẩn (styles/buttons.css): action = bước tiếp theo, outline = thao tác phụ. */
-export const action = "cs-btn cs-btn-primary";
-export const outline = "cs-btn cs-btn-secondary";
-export const danger = "cs-btn cs-btn-danger-outline";
-export const success = "cs-btn cs-btn-success";
+/* Nút: dùng <Button>/<IconButton> hoặc buttonClass() từ components/ui (docs/ui-button-redesign.md). */
 /**
  * Đầu trang của luồng nghiệp vụ Advisor = PageHeader chung. `label` (nhãn trang trí cũ) không còn hiển thị:
  * breadcrumb trên topbar đã cho biết vị trí trang.

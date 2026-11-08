@@ -62,105 +62,79 @@ html[data-theme="dark"] .cs-shell input,html[data-theme="dark"] .cs-shell select
 .cs-workspace[data-area="admin"] :is(a,button).bg-\[\#1F2933\] {background:var(--cs-accent)!important;color:var(--cs-accent-contrast)!important}
 
 /* Dark: surfaces, neutral copy, structural borders from Tailwind-era pages. */
-html[data-theme="dark"] .cs-workspace .bg-white {background-color:var(--cs-surface)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#F7F7F5\] {background-color:var(--cs-bg)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#F3F4F2\] {background-color:var(--cs-surface-2)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#FAFAF8\] {background-color:var(--cs-surface)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#FAFAF9\] {background-color:var(--cs-surface)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#FCFCFA\] {background-color:var(--cs-surface)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#F1F2F3\] {background-color:var(--cs-surface-2)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#EEF0F2\] {background-color:var(--cs-surface-2)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#ECEEED\] {background-color:var(--cs-surface-2)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#F0F1EF\] {background-color:var(--cs-surface-2)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#F3E8D2\] {background-color:var(--cs-soft)!important}
-html[data-theme="dark"] .cs-workspace .bg-slate-50 {background-color:var(--cs-surface)!important}
-html[data-theme="dark"] .cs-workspace .bg-slate-100 {background-color:var(--cs-surface-2)!important}
-html[data-theme="dark"] .cs-workspace .bg-slate-800 {background-color:#262a2f!important}
-html[data-theme="dark"] .cs-workspace .bg-slate-900 {background-color:#22262a!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#1F2933\] {background-color:#25292f!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#151D24\] {background-color:#25292f!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#20252B\] {color:var(--cs-text)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#1F2933\] {color:var(--cs-text)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#374151\] {color:var(--cs-text)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#3A3020\] {color:var(--cs-text)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#66717C\] {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#8A949E\] {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#8A9299\] {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#A0A8AF\] {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#A0A8AE\] {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#AEB8C1\] {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#8F9AA4\] {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#7B858F\] {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#5F6871\] {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .text-slate-900 {color:var(--cs-text)!important}
-html[data-theme="dark"] .cs-workspace .text-slate-800 {color:var(--cs-text)!important}
-html[data-theme="dark"] .cs-workspace .text-slate-700 {color:var(--cs-text)!important}
-html[data-theme="dark"] .cs-workspace .text-slate-600 {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .text-slate-500 {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .text-slate-400 {color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .border-\[\#E1E4E6\] {border-color:var(--cs-border)!important}
-html[data-theme="dark"] .cs-workspace .border-\[\#D9DDE1\] {border-color:var(--cs-border)!important}
-html[data-theme="dark"] .cs-workspace .border-\[\#EEF0F2\] {border-color:var(--cs-border)!important}
-html[data-theme="dark"] .cs-workspace .border-\[\#E5E8EA\] {border-color:var(--cs-border)!important}
-html[data-theme="dark"] .cs-workspace .border-\[\#D5D9DC\] {border-color:var(--cs-border)!important}
-html[data-theme="dark"] .cs-workspace .border-\[\#F0F1EF\] {border-color:var(--cs-border)!important}
+html[data-theme="dark"] .cs-workspace .bg-white,.cs-workspace[data-area="admin"] .bg-white{background-color:var(--cs-surface)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#F7F7F5\],.cs-workspace[data-area="admin"] .bg-\[\#F7F7F5\]{background-color:var(--cs-bg)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#F3F4F2\],.cs-workspace[data-area="admin"] .bg-\[\#F3F4F2\]{background-color:var(--cs-surface-2)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#FAFAF8\],.cs-workspace[data-area="admin"] .bg-\[\#FAFAF8\]{background-color:var(--cs-surface)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#FAFAF9\],.cs-workspace[data-area="admin"] .bg-\[\#FAFAF9\]{background-color:var(--cs-surface)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#FCFCFA\],.cs-workspace[data-area="admin"] .bg-\[\#FCFCFA\]{background-color:var(--cs-surface)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#F1F2F3\],.cs-workspace[data-area="admin"] .bg-\[\#F1F2F3\]{background-color:var(--cs-surface-2)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#EEF0F2\],.cs-workspace[data-area="admin"] .bg-\[\#EEF0F2\]{background-color:var(--cs-surface-2)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#ECEEED\],.cs-workspace[data-area="admin"] .bg-\[\#ECEEED\]{background-color:var(--cs-surface-2)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#F0F1EF\],.cs-workspace[data-area="admin"] .bg-\[\#F0F1EF\]{background-color:var(--cs-surface-2)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#F3E8D2\],.cs-workspace[data-area="admin"] .bg-\[\#F3E8D2\]{background-color:var(--cs-soft)!important}
+html[data-theme="dark"] .cs-workspace .bg-slate-50,.cs-workspace[data-area="admin"] .bg-slate-50{background-color:var(--cs-surface)!important}
+html[data-theme="dark"] .cs-workspace .bg-slate-100,.cs-workspace[data-area="admin"] .bg-slate-100{background-color:var(--cs-surface-2)!important}
+html[data-theme="dark"] .cs-workspace .bg-slate-800,.cs-workspace[data-area="admin"] .bg-slate-800{background-color:#262a2f!important}
+html[data-theme="dark"] .cs-workspace .bg-slate-900,.cs-workspace[data-area="admin"] .bg-slate-900{background-color:#22262a!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#1F2933\],.cs-workspace[data-area="admin"] .bg-\[\#1F2933\]{background-color:#25292f!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#151D24\],.cs-workspace[data-area="admin"] .bg-\[\#151D24\]{background-color:#25292f!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#20252B\],.cs-workspace[data-area="admin"] .text-\[\#20252B\]{color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#1F2933\],.cs-workspace[data-area="admin"] .text-\[\#1F2933\]{color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#374151\],.cs-workspace[data-area="admin"] .text-\[\#374151\]{color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#3A3020\],.cs-workspace[data-area="admin"] .text-\[\#3A3020\]{color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#66717C\],.cs-workspace[data-area="admin"] .text-\[\#66717C\]{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#8A949E\],.cs-workspace[data-area="admin"] .text-\[\#8A949E\]{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#8A9299\],.cs-workspace[data-area="admin"] .text-\[\#8A9299\]{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#A0A8AF\],.cs-workspace[data-area="admin"] .text-\[\#A0A8AF\]{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#A0A8AE\],.cs-workspace[data-area="admin"] .text-\[\#A0A8AE\]{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#AEB8C1\],.cs-workspace[data-area="admin"] .text-\[\#AEB8C1\]{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#8F9AA4\],.cs-workspace[data-area="admin"] .text-\[\#8F9AA4\]{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#7B858F\],.cs-workspace[data-area="admin"] .text-\[\#7B858F\]{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#5F6871\],.cs-workspace[data-area="admin"] .text-\[\#5F6871\]{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .text-slate-900,.cs-workspace[data-area="admin"] .text-slate-900{color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-workspace .text-slate-800,.cs-workspace[data-area="admin"] .text-slate-800{color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-workspace .text-slate-700,.cs-workspace[data-area="admin"] .text-slate-700{color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-workspace .text-slate-600,.cs-workspace[data-area="admin"] .text-slate-600{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .text-slate-500,.cs-workspace[data-area="admin"] .text-slate-500{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .text-slate-400,.cs-workspace[data-area="admin"] .text-slate-400{color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .border-\[\#E1E4E6\],.cs-workspace[data-area="admin"] .border-\[\#E1E4E6\]{border-color:var(--cs-border)!important}
+html[data-theme="dark"] .cs-workspace .border-\[\#D9DDE1\],.cs-workspace[data-area="admin"] .border-\[\#D9DDE1\]{border-color:var(--cs-border)!important}
+html[data-theme="dark"] .cs-workspace .border-\[\#EEF0F2\],.cs-workspace[data-area="admin"] .border-\[\#EEF0F2\]{border-color:var(--cs-border)!important}
+html[data-theme="dark"] .cs-workspace .border-\[\#E5E8EA\],.cs-workspace[data-area="admin"] .border-\[\#E5E8EA\]{border-color:var(--cs-border)!important}
+html[data-theme="dark"] .cs-workspace .border-\[\#D5D9DC\],.cs-workspace[data-area="admin"] .border-\[\#D5D9DC\]{border-color:var(--cs-border)!important}
+html[data-theme="dark"] .cs-workspace .border-\[\#F0F1EF\],.cs-workspace[data-area="admin"] .border-\[\#F0F1EF\]{border-color:var(--cs-border)!important}
 
 /* Fixed dark-on-dark text and form controls from older components. */
-html[data-theme="dark"] .cs-workspace :is(input,textarea,select){background:var(--cs-surface-2)!important;color:var(--cs-text)!important;border-color:var(--cs-border)!important}
-html[data-theme="dark"] .cs-workspace :is(input,textarea)::placeholder {color:var(--cs-muted)!important;opacity:1}
-html[data-theme="dark"] .cs-workspace :is(table,thead,tbody,tr,th,td){border-color:var(--cs-border)}
-html[data-theme="dark"] .cs-workspace :is(th,td){color:var(--cs-text)}
-html[data-theme="dark"] .cs-workspace .bg-white\/10 {background-color:#ffffff1a!important}
-html[data-theme="dark"] .cs-workspace .text-black {color:var(--cs-text)!important}
-html[data-theme="dark"] .cs-workspace .border-white\/20 {border-color:#ffffff36!important}
-html[data-theme="dark"] .cs-workspace :is(button,a):disabled {opacity:.55}
+html[data-theme="dark"] .cs-workspace :is(input,textarea,select),.cs-workspace[data-area="admin"] :is(input,textarea,select){background:var(--cs-surface-2)!important;color:var(--cs-text)!important;border-color:var(--cs-border)!important}
+html[data-theme="dark"] .cs-workspace :is(input,textarea)::placeholder,.cs-workspace[data-area="admin"] :is(input,textarea)::placeholder{color:var(--cs-muted)!important;opacity:1}
+html[data-theme="dark"] .cs-workspace :is(table,thead,tbody,tr,th,td),.cs-workspace[data-area="admin"] :is(table,thead,tbody,tr,th,td){border-color:var(--cs-border)}
+html[data-theme="dark"] .cs-workspace :is(th,td),.cs-workspace[data-area="admin"] :is(th,td){color:var(--cs-text)}
+html[data-theme="dark"] .cs-workspace .bg-white\/10,.cs-workspace[data-area="admin"] .bg-white\/10{background-color:#ffffff1a!important}
+html[data-theme="dark"] .cs-workspace .text-black,.cs-workspace[data-area="admin"] .text-black{color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-workspace .border-white\/20,.cs-workspace[data-area="admin"] .border-white\/20{border-color:#ffffff36!important}
+html[data-theme="dark"] .cs-workspace :is(button,a):disabled,.cs-workspace[data-area="admin"] :is(button,a):disabled{opacity:.55}
 /* Old gold primary CTA must be legible on the light role accent in dark mode. */
-html[data-theme="dark"] .cs-workspace :is(button,a).bg-\[\#D6A85F\] {background:var(--cs-accent)!important;color:var(--cs-accent-contrast)!important}
-html[data-theme="dark"] .cs-workspace :is(button,a).bg-\[\#1F2933\] {background:var(--cs-accent)!important;color:var(--cs-accent-contrast)!important}
-html[data-theme="dark"] .cs-workspace :is(button,a).bg-\[\#D6A85F\] :is(span,svg),html[data-theme="dark"] .cs-workspace :is(button,a).bg-\[\#1F2933\] :is(span,svg){color:inherit!important}
-/* Colored badges, soft panels and validation states remain readable on dark surfaces. */
-html[data-theme="dark"] .cs-workspace .bg-\[\#EEF7EF\],
-html[data-theme="dark"] .cs-workspace .bg-\[\#EEF7F0\],
-html[data-theme="dark"] .cs-workspace .bg-\[\#E7F3E8\],
-html[data-theme="dark"] .cs-workspace .bg-\[\#E6F2E8\],
-html[data-theme="dark"] .cs-workspace .bg-\[\#EDF7EF\],
-html[data-theme="dark"] .cs-workspace .bg-\[\#F0F7EF\],
-html[data-theme="dark"] .cs-workspace .bg-\[\#F0F7F0\] {background-color:var(--cs-success-soft)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#FDEEEE\],
-html[data-theme="dark"] .cs-workspace .bg-\[\#FBEFEF\],
-html[data-theme="dark"] .cs-workspace .bg-\[\#FBE5E5\] {background-color:var(--cs-danger-soft)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#F7F2E9\],
-html[data-theme="dark"] .cs-workspace .bg-\[\#F8EBD3\],
-html[data-theme="dark"] .cs-workspace .bg-\[\#FFF6E6\],
-html[data-theme="dark"] .cs-workspace .bg-\[\#F5F1E8\] {background-color:var(--cs-warning-soft)!important}
-html[data-theme="dark"] .cs-workspace .bg-\[\#EEF4FA\] {background-color:var(--cs-info-soft)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#A24A4A\],
-html[data-theme="dark"] .cs-workspace .text-\[\#A12B2B\],
-html[data-theme="dark"] .cs-workspace .text-\[\#D9AAAA\] {color:var(--cs-danger-fg)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#3F7047\],
-html[data-theme="dark"] .cs-workspace .text-\[\#28643B\],
-html[data-theme="dark"] .cs-workspace .text-\[\#397044\],
-html[data-theme="dark"] .cs-workspace .text-\[\#39734A\],
-html[data-theme="dark"] .cs-workspace .text-\[\#315B35\],
-html[data-theme="dark"] .cs-workspace .text-\[\#35633B\] {color:var(--cs-success-fg)!important}
-html[data-theme="dark"] .cs-workspace .text-\[\#9A6B22\],
-html[data-theme="dark"] .cs-workspace .text-\[\#6D542A\],
-html[data-theme="dark"] .cs-workspace .text-\[\#5B4630\],
-html[data-theme="dark"] .cs-workspace .text-\[\#8A5A13\],
-html[data-theme="dark"] .cs-workspace .text-\[\#876D35\] {color:var(--cs-warning-fg)!important}
-html[data-theme="dark"] .cs-workspace .border-\[\#1F2933\] {border-color:var(--cs-border)!important}
-html[data-theme="dark"] .cs-workspace .border-\[\#EDEFF0\] {border-color:var(--cs-border)!important}
-html[data-theme="dark"] .cs-workspace .border-\[\#DCEBDD\],
-html[data-theme="dark"] .cs-workspace .border-\[\#D9E8D8\],
-html[data-theme="dark"] .cs-workspace .border-\[\#D8E8D9\],
-html[data-theme="dark"] .cs-workspace .border-\[\#D9E9DC\] {border-color:color-mix(in srgb, var(--cs-success) 35%, transparent)!important}
-html[data-theme="dark"] .cs-workspace .border-\[\#E7C5C5\],
-html[data-theme="dark"] .cs-workspace .border-\[\#F0D6D6\] {border-color:color-mix(in srgb, var(--cs-danger) 35%, transparent)!important}
+html[data-theme="dark"] .cs-workspace :is(button,a).bg-\[\#D6A85F\],.cs-workspace[data-area="admin"] :is(button,a).bg-\[\#D6A85F\]{background:var(--cs-accent)!important;color:var(--cs-accent-contrast)!important}
+html[data-theme="dark"] .cs-workspace :is(button,a).bg-\[\#1F2933\],.cs-workspace[data-area="admin"] :is(button,a).bg-\[\#1F2933\]{background:var(--cs-accent)!important;color:var(--cs-accent-contrast)!important}
+html[data-theme="dark"] .cs-workspace :is(button,a).bg-\[\#D6A85F\] :is(span,svg),html[data-theme="dark"] .cs-workspace :is(button,a).bg-\[\#1F2933\] :is(span,svg),.cs-workspace[data-area="admin"] :is(button,a).bg-\[\#D6A85F\] :is(span,svg),.cs-workspace[data-area="admin"] :is(button,a).bg-\[\#1F2933\] :is(span,svg){color:inherit!important}
+/* Colored badges,soft panels and validation states remain readable on dark surfaces. */
+html[data-theme="dark"] .cs-workspace .bg-\[\#EEF7EF\],html[data-theme="dark"] .cs-workspace .bg-\[\#EEF7F0\],html[data-theme="dark"] .cs-workspace .bg-\[\#E7F3E8\],html[data-theme="dark"] .cs-workspace .bg-\[\#E6F2E8\],html[data-theme="dark"] .cs-workspace .bg-\[\#EDF7EF\],html[data-theme="dark"] .cs-workspace .bg-\[\#F0F7EF\],html[data-theme="dark"] .cs-workspace .bg-\[\#F0F7F0\],.cs-workspace[data-area="admin"] .bg-\[\#EEF7F0\],.cs-workspace[data-area="admin"] .bg-\[\#E7F3E8\],.cs-workspace[data-area="admin"] .bg-\[\#E6F2E8\],.cs-workspace[data-area="admin"] .bg-\[\#EDF7EF\],.cs-workspace[data-area="admin"] .bg-\[\#F0F7EF\],.cs-workspace[data-area="admin"] .bg-\[\#F0F7F0\],.cs-workspace[data-area="admin"] .bg-\[\#EEF7EF\]{background-color:var(--cs-success-soft)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#FDEEEE\],html[data-theme="dark"] .cs-workspace .bg-\[\#FBEFEF\],html[data-theme="dark"] .cs-workspace .bg-\[\#FBE5E5\],.cs-workspace[data-area="admin"] .bg-\[\#FDEEEE\],.cs-workspace[data-area="admin"] .bg-\[\#FBEFEF\],.cs-workspace[data-area="admin"] .bg-\[\#FBE5E5\]{background-color:var(--cs-danger-soft)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#F7F2E9\],html[data-theme="dark"] .cs-workspace .bg-\[\#F8EBD3\],html[data-theme="dark"] .cs-workspace .bg-\[\#FFF6E6\],html[data-theme="dark"] .cs-workspace .bg-\[\#F5F1E8\],.cs-workspace[data-area="admin"] .bg-\[\#F7F2E9\],.cs-workspace[data-area="admin"] .bg-\[\#F8EBD3\],.cs-workspace[data-area="admin"] .bg-\[\#FFF6E6\],.cs-workspace[data-area="admin"] .bg-\[\#F5F1E8\]{background-color:var(--cs-warning-soft)!important}
+html[data-theme="dark"] .cs-workspace .bg-\[\#EEF4FA\],.cs-workspace[data-area="admin"] .bg-\[\#EEF4FA\]{background-color:var(--cs-info-soft)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#A24A4A\],html[data-theme="dark"] .cs-workspace .text-\[\#A12B2B\],html[data-theme="dark"] .cs-workspace .text-\[\#D9AAAA\],.cs-workspace[data-area="admin"] .text-\[\#A24A4A\],.cs-workspace[data-area="admin"] .text-\[\#A12B2B\],.cs-workspace[data-area="admin"] .text-\[\#D9AAAA\]{color:var(--cs-danger-fg)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#3F7047\],html[data-theme="dark"] .cs-workspace .text-\[\#28643B\],html[data-theme="dark"] .cs-workspace .text-\[\#397044\],html[data-theme="dark"] .cs-workspace .text-\[\#39734A\],html[data-theme="dark"] .cs-workspace .text-\[\#315B35\],html[data-theme="dark"] .cs-workspace .text-\[\#35633B\],.cs-workspace[data-area="admin"] .text-\[\#3F7047\],.cs-workspace[data-area="admin"] .text-\[\#28643B\],.cs-workspace[data-area="admin"] .text-\[\#397044\],.cs-workspace[data-area="admin"] .text-\[\#39734A\],.cs-workspace[data-area="admin"] .text-\[\#315B35\],.cs-workspace[data-area="admin"] .text-\[\#35633B\]{color:var(--cs-success-fg)!important}
+html[data-theme="dark"] .cs-workspace .text-\[\#9A6B22\],html[data-theme="dark"] .cs-workspace .text-\[\#6D542A\],html[data-theme="dark"] .cs-workspace .text-\[\#5B4630\],html[data-theme="dark"] .cs-workspace .text-\[\#8A5A13\],html[data-theme="dark"] .cs-workspace .text-\[\#876D35\],.cs-workspace[data-area="admin"] .text-\[\#9A6B22\],.cs-workspace[data-area="admin"] .text-\[\#6D542A\],.cs-workspace[data-area="admin"] .text-\[\#5B4630\],.cs-workspace[data-area="admin"] .text-\[\#8A5A13\],.cs-workspace[data-area="admin"] .text-\[\#876D35\]{color:var(--cs-warning-fg)!important}
+html[data-theme="dark"] .cs-workspace .border-\[\#1F2933\],.cs-workspace[data-area="admin"] .border-\[\#1F2933\]{border-color:var(--cs-border)!important}
+html[data-theme="dark"] .cs-workspace .border-\[\#EDEFF0\],.cs-workspace[data-area="admin"] .border-\[\#EDEFF0\]{border-color:var(--cs-border)!important}
+html[data-theme="dark"] .cs-workspace .border-\[\#DCEBDD\],html[data-theme="dark"] .cs-workspace .border-\[\#D9E8D8\],html[data-theme="dark"] .cs-workspace .border-\[\#D8E8D9\],html[data-theme="dark"] .cs-workspace .border-\[\#D9E9DC\],.cs-workspace[data-area="admin"] .border-\[\#DCEBDD\],.cs-workspace[data-area="admin"] .border-\[\#D9E8D8\],.cs-workspace[data-area="admin"] .border-\[\#D8E8D9\],.cs-workspace[data-area="admin"] .border-\[\#D9E9DC\]{border-color:color-mix(in srgb, var(--cs-success) 35%, transparent)!important}
+html[data-theme="dark"] .cs-workspace .border-\[\#E7C5C5\],html[data-theme="dark"] .cs-workspace .border-\[\#F0D6D6\],.cs-workspace[data-area="admin"] .border-\[\#E7C5C5\],.cs-workspace[data-area="admin"] .border-\[\#F0D6D6\]{border-color:color-mix(in srgb, var(--cs-danger) 35%, transparent)!important}
 /* Interactive colors on light/dark follow role accent, not shared legacy gold. */
 .cs-workspace[data-area="advisor"] :is(a,button).hover\:bg-\[\#151D24\]:hover,
 .cs-workspace[data-area="admin"] :is(a,button).hover\:bg-\[\#151D24\]:hover {background:var(--cs-accent)!important;color:var(--cs-accent-contrast)!important;filter:brightness(.91)}
 .cs-workspace :is(a,button).bg-\[\#D6A85F\]:hover{filter:brightness(.92)}
-html[data-theme="dark"] .cs-workspace :is(input[type="checkbox"],input[type="radio"]){background:initial!important;accent-color:var(--cs-accent)!important;color:var(--cs-text)}
+html[data-theme="dark"] .cs-workspace :is(input[type="checkbox"],input[type="radio"]),.cs-workspace[data-area="admin"] :is(input[type="checkbox"],input[type="radio"]){background:initial!important;accent-color:var(--cs-accent)!important;color:var(--cs-text)}
 
 /* Customer legacy modules: dark-mode contrast and red GARAGE accents. */
 .cs-customer-layout .cs-public-header {min-height:82px}
@@ -193,12 +167,7 @@ html[data-theme="dark"] .cs-customer-layout .cs-customer-main .text-amber-700{co
 .cs-workspace tbody tr:hover :is(td,th){background-color:transparent!important}
 .cs-workspace :is(table,tbody) tr{transition:background-color .14s ease}
 /* Do not let Tailwind's fixed light hover variants paint white over dark text. */
-html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-\[\#F7F7F5\]:hover,
-html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-\[\#F3F4F2\]:hover,
-html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-\[\#FAFAF8\]:hover,
-html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-\[\#FAFAF9\]:hover,
-html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-slate-50:hover,
-html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-slate-100:hover{background:var(--cs-surface-2)!important;color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-\[\#F7F7F5\]:hover,html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-\[\#F3F4F2\]:hover,html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-\[\#FAFAF8\]:hover,html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-\[\#FAFAF9\]:hover,html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-slate-50:hover,html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-slate-100:hover,.cs-workspace[data-area="admin"] :is(button,a).hover\:bg-\[\#F3F4F2\]:hover,.cs-workspace[data-area="admin"] :is(button,a).hover\:bg-\[\#FAFAF8\]:hover,.cs-workspace[data-area="admin"] :is(button,a).hover\:bg-\[\#FAFAF9\]:hover,.cs-workspace[data-area="admin"] :is(button,a).hover\:bg-slate-50:hover,.cs-workspace[data-area="admin"] :is(button,a).hover\:bg-slate-100:hover,.cs-workspace[data-area="admin"] :is(button,a).hover\:bg-\[\#F7F7F5\]:hover{background:var(--cs-surface-2)!important;color:var(--cs-text)!important}
 /* Admin: nút nền tối cũ dùng màu nhấn của vai trò (đỏ thương hiệu). */
 .cs-workspace[data-area="admin"] :is(a,button).bg-\[\#1F2933\]{background:var(--cs-action-bg)!important;color:var(--cs-action-text)!important}
 .cs-workspace[data-area="admin"] .cs-admin-current-tile{background:var(--cs-sidebar-bg)!important;border-color:var(--cs-sidebar-border)!important;color:var(--cs-sidebar-fg)!important}
@@ -236,25 +205,26 @@ html[data-theme="dark"] .cs-workspace[data-area="admin"] .ws-button-primary{back
 .cs-appointment-page .cs-status-checked{background:var(--cs-success-soft);color:var(--cs-success-fg);border:1px solid color-mix(in srgb, var(--cs-success) 35%, transparent)}
 .cs-appointment-page .cs-status-cancelled{background:var(--cs-danger-soft);color:var(--cs-danger-fg);border:1px solid color-mix(in srgb, var(--cs-danger) 35%, transparent)}
 /* Fix white/light backgrounds on cards and hover in legacy forms without flattening their status badges. */
-html[data-theme="dark"] .cs-workspace .cs-appointment-page .bg-slate-50\/60,
-html[data-theme="dark"] .cs-workspace .cs-appointment-page .bg-slate-50\/70{background-color:var(--cs-surface-2)!important}
-html[data-theme="dark"] .cs-workspace .cs-appointment-page :is(.border-slate-100,.border-slate-200){border-color:var(--cs-border)!important}
-html[data-theme="dark"] .cs-workspace .cs-appointment-page :is(.text-slate-700,.text-slate-600,.text-slate-500){color:var(--cs-muted)!important}
-html[data-theme="dark"] .cs-workspace .cs-appointment-page .text-slate-900 {color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-workspace .cs-appointment-page .bg-slate-50\/60,html[data-theme="dark"] .cs-workspace .cs-appointment-page .bg-slate-50\/70,.cs-workspace[data-area="admin"] .cs-appointment-page .bg-slate-50\/70,.cs-workspace[data-area="admin"] .cs-appointment-page .bg-slate-50\/60{background-color:var(--cs-surface-2)!important}
+html[data-theme="dark"] .cs-workspace .cs-appointment-page :is(.border-slate-100,.border-slate-200),.cs-workspace[data-area="admin"] .cs-appointment-page :is(.border-slate-100,.border-slate-200){border-color:var(--cs-border)!important}
+html[data-theme="dark"] .cs-workspace .cs-appointment-page :is(.text-slate-700,.text-slate-600,.text-slate-500),.cs-workspace[data-area="admin"] .cs-appointment-page :is(.text-slate-700,.text-slate-600,.text-slate-500){color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-workspace .cs-appointment-page .text-slate-900,.cs-workspace[data-area="admin"] .cs-appointment-page .text-slate-900{color:var(--cs-text)!important}
 .cs-workspace :is(button,a,select,input,textarea){transition:background-color .18s ease,color .18s ease,border-color .18s ease}
 .cs-workspace :is(button,a):focus-visible{outline:2px solid var(--cs-accent);outline-offset:2px}
 /* Interactive items may be hovered in dark mode without turning light grey or hiding labels. */
-html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-slate-50:hover,
-html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-slate-100:hover{background:var(--cs-surface-2)!important;color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-slate-50:hover,html[data-theme="dark"] .cs-workspace :is(button,a).hover\:bg-slate-100:hover,.cs-workspace[data-area="admin"] :is(button,a).hover\:bg-slate-100:hover,.cs-workspace[data-area="admin"] :is(button,a).hover\:bg-slate-50:hover{background:var(--cs-surface-2)!important;color:var(--cs-text)!important}
 @media(max-width:640px){.cs-unified-btn{min-height:42px}.cs-appointment-page .cs-unified-btn{min-height:42px}}
 /* Remaining contextual alert panels in legacy forms must never become pastel-on-white in Dark Mode. */
-html[data-theme="dark"] .cs-workspace .bg-rose-50 {background:var(--cs-danger-soft)!important}
-html[data-theme="dark"] .cs-workspace :is(.text-rose-700,.text-rose-800){color:var(--cs-danger-fg)!important}
-html[data-theme="dark"] .cs-workspace .bg-amber-50 {background:var(--cs-warning-soft)!important}
-html[data-theme="dark"] .cs-workspace :is(.text-amber-700,.text-amber-800,.text-amber-900){color:var(--cs-warning-fg)!important}
-html[data-theme="dark"] .cs-workspace .bg-emerald-50 {background:var(--cs-success-soft)!important}
-html[data-theme="dark"] .cs-workspace :is(.text-emerald-700,.text-emerald-800){color:var(--cs-success-fg)!important}
-html[data-theme="dark"] .cs-workspace .bg-blue-50 {background:var(--cs-info-soft)!important}
-html[data-theme="dark"] .cs-workspace :is(.text-blue-700,.text-blue-800){color:var(--cs-info-fg)!important}
+html[data-theme="dark"] .cs-workspace .bg-rose-50,.cs-workspace[data-area="admin"] .bg-rose-50{background:var(--cs-danger-soft)!important}
+html[data-theme="dark"] .cs-workspace :is(.text-rose-700,.text-rose-800),.cs-workspace[data-area="admin"] :is(.text-rose-700,.text-rose-800){color:var(--cs-danger-fg)!important}
+html[data-theme="dark"] .cs-workspace .bg-amber-50,.cs-workspace[data-area="admin"] .bg-amber-50{background:var(--cs-warning-soft)!important}
+html[data-theme="dark"] .cs-workspace :is(.text-amber-700,.text-amber-800,.text-amber-900),.cs-workspace[data-area="admin"] :is(.text-amber-700,.text-amber-800,.text-amber-900){color:var(--cs-warning-fg)!important}
+html[data-theme="dark"] .cs-workspace .bg-emerald-50,.cs-workspace[data-area="admin"] .bg-emerald-50{background:var(--cs-success-soft)!important}
+html[data-theme="dark"] .cs-workspace :is(.text-emerald-700,.text-emerald-800),.cs-workspace[data-area="admin"] :is(.text-emerald-700,.text-emerald-800){color:var(--cs-success-fg)!important}
+html[data-theme="dark"] .cs-workspace .bg-blue-50,.cs-workspace[data-area="admin"] .bg-blue-50{background:var(--cs-info-soft)!important}
+html[data-theme="dark"] .cs-workspace :is(.text-blue-700,.text-blue-800),.cs-workspace[data-area="admin"] :is(.text-blue-700,.text-blue-800){color:var(--cs-info-fg)!important}
 
 /* Đồng bộ logo thanh bên cố vấn/admin với header trang chủ */
+
+/* Đường chia danh sách màu sáng cũ → token viền (dark theme + khu Admin luôn tối). */
+html[data-theme="dark"] .cs-workspace .divide-\[\#EEF0F2\] > :not(:last-child),.cs-workspace[data-area="admin"] .divide-\[\#EEF0F2\] > :not(:last-child){border-color:var(--cs-border)!important}

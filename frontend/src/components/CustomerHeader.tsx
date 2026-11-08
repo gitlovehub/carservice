@@ -1,4 +1,5 @@
 import { useInAppShell } from "../layouts/ShellContext";
+import { buttonClass } from "./ui/buttonClass";
 
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -167,7 +168,7 @@ function CustomerHeader() {
               <button
                 type="button"
                 onClick={logout}
-                className="cs-btn cs-btn-danger-outline flex-1"
+                className={buttonClass({ variant: "danger-outline", className: "flex-1" })}
               >
                 Đăng xuất
               </button>

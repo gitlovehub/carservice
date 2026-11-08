@@ -655,7 +655,7 @@ function Account() {
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => setIsEditProfileOpen(false)}
-                  className="cs-btn cs-btn-secondary"
+                  className={buttonClass({ variant: "secondary" })}
                 >
                   Hủy bỏ
                 </button>
@@ -663,7 +663,7 @@ function Account() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="cs-btn cs-btn-primary"
+                  className={buttonClass({ variant: "primary" })}
                 >
                   {isSubmitting ? (
                     <>
@@ -842,7 +842,7 @@ function Account() {
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => setIsChangePasswordOpen(false)}
-                  className="cs-btn cs-btn-secondary"
+                  className={buttonClass({ variant: "secondary" })}
                 >
                   Hủy bỏ
                 </button>
@@ -850,7 +850,7 @@ function Account() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="cs-btn cs-btn-primary"
+                  className={buttonClass({ variant: "primary" })}
                 >
                   {isSubmitting ? (
                     <>
@@ -924,7 +924,7 @@ function Account() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="cs-btn cs-btn-secondary"
+                    className={buttonClass({ variant: "secondary" })}
                   >
                     <span>📁 Tải ảnh từ thiết bị</span>
                   </button>
@@ -933,7 +933,7 @@ function Account() {
                     <button
                       type="button"
                       onClick={() => setSelectedAvatar("")}
-                      className="cs-btn cs-btn-danger-outline"
+                      className={buttonClass({ variant: "danger-outline" })}
                     >
                       Dùng chữ cái mặc định
                     </button>
@@ -985,7 +985,7 @@ function Account() {
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => setIsAvatarModalOpen(false)}
-                  className="cs-btn cs-btn-secondary"
+                  className={buttonClass({ variant: "secondary" })}
                 >
                   Hủy bỏ
                 </button>
@@ -994,7 +994,7 @@ function Account() {
                   type="button"
                   disabled={isSubmitting}
                   onClick={handleSaveAvatar}
-                  className="cs-btn cs-btn-primary"
+                  className={buttonClass({ variant: "primary" })}
                 >
                   {isSubmitting ? (
                     <>

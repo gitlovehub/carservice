@@ -1,4 +1,5 @@
 import { useInAppShell } from "../layouts/ShellContext";
+import { buttonClass } from "./ui/buttonClass";
 
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -230,7 +231,7 @@ function Header() {
                 onClick={() => setOpen((previous) => !previous)}
                 aria-expanded={open}
                 aria-haspopup="menu"
-                className="cs-btn cs-btn-secondary"
+                className={buttonClass({ variant: "secondary" })}
               >
                 {user?.avatar ? (
                   <img
@@ -332,7 +333,7 @@ function Header() {
             onClick={() => setMobileOpen((previous) => !previous)}
             aria-label={mobileOpen ? "Đóng menu" : "Mở menu"}
             aria-expanded={mobileOpen}
-            className="cs-btn cs-btn-secondary lg:hidden"
+            className={buttonClass({ variant: "secondary", className: "lg:hidden" })}
           >
             {mobileOpen ? (
               <svg
