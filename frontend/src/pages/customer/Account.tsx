@@ -98,7 +98,8 @@ function Account() {
     account?.customer || null,
   );
   const [vehicles, setVehicles] = useState<ProfileVehicle[] | null>(null);
-  const [tab, setTab] = useState<"profile" | "security">("profile");
+  // ?tab=security mở thẳng tab Bảo mật (liên kết "Cài đặt" / đổi mật khẩu).
+  const [tab, setTab] = useState<"profile" | "security">(() => new URLSearchParams(window.location.search).get("tab") === "security" ? "security" : "profile");
   const { confirm } = useAppFeedback();
 
   // Toast notification
@@ -436,7 +437,7 @@ function Account() {
   };
 
   return (
-    <div className="at-customer-account min-h-screen bg-cs-bg text-cs-text">
+    <div className="at-customer-account text-cs-text">
       <Header />
 
       {/* Toast Notification */}
@@ -448,45 +449,24 @@ function Account() {
         />
       )}
 
-      <main className="mx-auto grid max-w-[1280px] grid-cols-[minmax(0,1fr)] gap-6 px-4 py-6 sm:px-6 md:py-10 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-8">
-        {/* Cột trái: thẻ tài khoản + menu tài khoản */}
-        <aside className="h-fit min-w-0 rounded-2xl border border-cs-border bg-cs-surface p-4 lg:sticky lg:top-24" aria-label="Tài khoản">
-          <div className="flex items-center gap-3 border-b border-cs-border pb-4 lg:flex-col lg:items-start xl:flex-row xl:items-center">
-            <button type="button" onClick={handleOpenAvatarModal} title="Đổi ảnh đại diện" className="group relative shrink-0 cursor-pointer rounded-full">
+      <main className="min-w-0">
+        {/* Cột phải */}
+        <section className="min-w-0">
+          <div className="flex flex-wrap items-center gap-4">
+            <button type="button" onClick={handleOpenAvatarModal} title="Đổi ảnh đại diện" aria-label="Đổi ảnh đại diện" className="group relative shrink-0 cursor-pointer rounded-full">
               {account?.avatar
-                ? <img src={account.avatar} alt={fullName} className="size-16 rounded-full object-cover"/>
+                ? <img src={account.avatar} alt="" className="size-16 rounded-full object-cover"/>
                 : <span className="flex size-16 items-center justify-center rounded-full bg-cs-accent text-xl font-bold text-cs-accent-contrast">{fullName === "Chưa cập nhật" ? "KH" : getInitials(fullName)}</span>}
               <span className="absolute -bottom-0.5 -right-0.5 flex size-6 items-center justify-center rounded-full border-2 border-cs-surface bg-cs-surface-2 text-cs-text shadow-sm transition group-hover:scale-110"><Icon name="edit" size={12}/></span>
             </button>
             <div className="min-w-0">
-              <p className="truncate text-[15px] font-bold text-cs-text">{fullName}</p>
-              <span className="mt-1 inline-block rounded-full bg-cs-soft px-2.5 py-0.5 text-xs font-semibold text-cs-accent-text">{roleName}</span>
-              <p className="mt-1.5 flex items-center gap-1.5 text-xs text-cs-muted"><span className={`size-2 rounded-full ${account?.status === "ACTIVE" ? "bg-cs-success" : "bg-cs-muted"}`}/>Tài khoản {status.toLowerCase()}</p>
+              <h1 className="text-2xl font-bold text-cs-text md:text-3xl">Hồ sơ của tôi</h1>
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-cs-muted">
+                <span className="rounded-full bg-cs-soft px-2.5 py-0.5 text-xs font-semibold text-cs-accent-text">{roleName}</span>
+                <span className="flex items-center gap-1.5"><span className={`size-2 rounded-full ${account?.status === "ACTIVE" ? "bg-cs-success" : "bg-cs-muted"}`}/>Tài khoản {status.toLowerCase()}</span>
+              </p>
             </div>
           </div>
-          <nav className="mt-3 flex gap-1 overflow-x-auto lg:flex-col" aria-label="Menu tài khoản">
-            {[
-              { label: "Hồ sơ của tôi", icon: "user" as const, active: tab === "profile", onClick: () => setTab("profile") },
-              { label: "Xe của tôi", icon: "car" as const, to: "/customer/cars" },
-              { label: "Lịch hẹn", icon: "calendar" as const, to: "/customer/appointments" },
-              { label: "Lịch sử bảo dưỡng", icon: "clock" as const, to: "/customer/service-history" },
-              { label: "Cài đặt", icon: "settings" as const, active: tab === "security", onClick: () => setTab("security") },
-            ].map(item => {
-              const cls = `flex shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition ${item.active ? "bg-cs-soft text-cs-accent-text lg:shadow-[inset_3px_0_0_var(--cs-accent)]" : "text-cs-text hover:bg-cs-hover"}`;
-              return item.to
-                ? <Link key={item.label} to={item.to} className={cls}><Icon name={item.icon} size={18}/>{item.label}</Link>
-                : <button key={item.label} type="button" onClick={item.onClick} aria-current={item.active ? "page" : undefined} className={`${cls} cursor-pointer text-left`}><Icon name={item.icon} size={18}/>{item.label}</button>;
-            })}
-          </nav>
-        </aside>
-
-        {/* Cột phải */}
-        <section className="min-w-0">
-          <div className="flex items-center gap-3">
-            <span className="text-cs-text"><Icon name="user" size={28}/></span>
-            <h1 className="text-2xl font-bold text-cs-text md:text-3xl">Hồ sơ của tôi</h1>
-          </div>
-          <p className="mt-1 text-sm text-cs-muted">Quản lý thông tin cá nhân và xe đã đăng ký.</p>
 
           <div role="tablist" aria-label="Hồ sơ" className="mt-5 flex gap-2 border-b border-cs-border">
             {([["profile", "Thông tin cá nhân", "user"], ["security", "Bảo mật", "shield"]] as const).map(([key, label, icon]) =>
