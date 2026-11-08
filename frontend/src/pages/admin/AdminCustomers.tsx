@@ -288,7 +288,7 @@ function AdminCustomers() {
                         <td className="px-3 py-4">
                           {customer.status === "Hoạt động"
                             ? <Button size="sm" variant="danger-outline" icon="lock" onClick={() => handleToggleStatus(customer)}>Khóa</Button>
-                            : <Button size="sm" variant="success" icon="check" onClick={() => handleToggleStatus(customer)}>Mở khóa</Button>}
+                            : <Button size="sm" variant="secondary" icon="check" onClick={() => handleToggleStatus(customer)}>Mở khóa</Button>}
                         </td>
                       </tr>
                     ))}

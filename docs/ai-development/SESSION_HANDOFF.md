@@ -3,7 +3,11 @@
 > Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
 > Cập nhật: 09/11/2026 — triển khai đặc tả nút `docs/ui-button-redesign.md` (sau P7).
 
-## Mới nhất: hệ thống nút theo vai trò (09/11/2026)
+## Mới nhất: Admin bỏ navy + lime, dùng đỏ thương hiệu theo theme (09/11/2026)
+
+PO đổi quyết định: khu Admin **không còn luôn tối**. `tokens.css` khối `[data-area="admin"]` chỉ đổi accent (= `--cs-brand`, chữ trắng, nút primary đỏ đặc, không gradient) và sidebar (`--cs-sidebar-bg: var(--cs-surface)`, mục đang chọn `--cs-sidebar-active-bg #cf2935` / chữ trắng, bo 10px); nền/chữ/viền/trạng thái/bo góc dùng token chung theo `html[data-theme]`. `workspace.css`: bỏ mục chọn lime, ô tìm kiếm lime, badge lime, thẻ navy/tím; thẻ lối tắt + hàng Tiện ích thành thẻ trung tính, icon đỏ trên nền soft. `shell.css`: gỡ phần nhân bản ánh xạ dark cho Admin (giờ chỉ áp khi theme tối). `buttons.css`: bỏ nút icon tròn riêng Admin. Nút Admin không dùng success (Mở khóa, Duyệt → secondary + check); xanh lá chỉ còn ở badge trạng thái thành công. Đã cập nhật `docs/ui-button-redesign.md` (§1, §2, §3 Admin, §4), `tests/button-redesign.mjs`, `tests/workspace-theme-smoke.mjs` (kiểm tra sidebar Admin nền surface, mục chọn đỏ, không còn mã navy/lime). `grep -i "c8f53c|080c1a|0b1022|141a2e|lime|navy" frontend/src` → không còn. 24/24 `test:*`, tsc, build đạt; ESLint giữ nguyên nợ cũ (22 + 2). Trình duyệt: `/admin/maintenance-packages` và `/admin` ở theme sáng (sidebar trắng) và tối (sidebar `#191b1e`), mục chọn đỏ đặc chữ trắng, nút primary đỏ, không tràn ngang, không lỗi console, 0 request ghi.
+
+## Trước đó: hệ thống nút theo vai trò (09/11/2026)
 
 Commit: `afdc38c` token + biến thể · `cf7abcd` component dùng chung · `8ad4551` Advisor · `1c752e2` Admin + dashboard · `933a942` Customer · `ae76c54` buttonClass còn lại + Admin luôn tối + test.
 

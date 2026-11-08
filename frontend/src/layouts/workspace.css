@@ -177,40 +177,34 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
   .cs-work-main { background: white !important; }
 }
 
-/* ---------- Khu Admin luôn tối (docs/ui-button-redesign.md §1, §3) ---------- */
-/* Card / section bo 24px: rounded-card và rounded-2xl trong khu admin đọc --cs-card-radius. */
-[data-area="admin"] { --radius-card: var(--cs-card-radius); --radius-2xl: var(--cs-card-radius); }
-/* Mục đang chọn ở sidebar: nền lime mờ, chữ lime, bo viên thuốc. */
-[data-area="admin"] .cs-ws-link { border-radius: var(--cs-btn-radius); }
-[data-area="admin"] .cs-ws-link.is-active { background: var(--cs-tile-icon-bg); color: var(--cs-sidebar-accent); }
-/* Ô tìm kiếm: viên thuốc, nền navy, viền lime mờ, icon lime. */
-[data-area="admin"] [data-ui="search"] > input,
-[data-area="admin"] input[type="search"] {
-  border-radius: 999px; background: var(--cs-search-bg); border-color: var(--cs-search-border);
+/* ---------- Khu Admin: đỏ thương hiệu, theo theme sáng/tối (docs/ui-button-redesign.md §1) ---------- */
+/* Sidebar sáng/tối theo theme: nền surface, viền phải, chữ text-2; mục đang chọn nền đỏ đặc chữ trắng. */
+[data-area="admin"] .cs-work-sidebar { border-right: 1px solid var(--cs-border); }
+[data-area="admin"] .cs-ws-group-label { color: var(--cs-muted); }
+[data-area="admin"] .cs-ws-link { border-radius: 10px; }
+[data-area="admin"] .cs-ws-link.is-active,
+[data-area="admin"] .cs-ws-link.is-active:hover {
+  background: var(--cs-sidebar-active-bg); color: var(--cs-sidebar-active-fg);
 }
-[data-area="admin"] [data-ui="search"] > svg { color: var(--cs-accent); }
-/* Badge trạng thái Admin: đang hoạt động = nền tối lime, trung tính = navy. */
-[data-area="admin"] :is(.cs-admin-badge-active, [data-status="ACTIVE"]) { background: var(--cs-soft); color: var(--cs-on-soft); }
-[data-area="admin"] .cs-admin-badge-neutral { background: var(--cs-surface-2); color: var(--cs-text-2); }
+[data-area="admin"] .cs-ws-link.is-active::before { display: none; }
 
-/* Dashboard Admin: thẻ lối tắt (navy / tím, bo 24px, icon lime trong ô tối) + hàng "Tiện ích" (nút tròn 60px). */
+/* Dashboard Admin: thẻ lối tắt (thẻ trung tính, icon đỏ trên nền soft) + hàng "Tiện ích" (nút tròn 60px). */
 .cs-admin-tile {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   min-height: 112px; padding: 20px 22px; border-radius: var(--cs-card-radius);
-  background: var(--cs-tile-navy); border: 1px solid var(--cs-btn-border);
-  transition: transform var(--cs-duration) ease, border-color var(--cs-duration) ease;
+  background: var(--cs-surface); border: 1px solid var(--cs-border);
+  transition: border-color var(--cs-duration) ease, background-color var(--cs-duration) ease;
 }
-.cs-admin-tile.is-violet { background: var(--cs-tile-violet); }
-.cs-admin-tile:hover { border-color: var(--cs-search-border); transform: translateY(-1px); }
+.cs-admin-tile:hover { border-color: var(--cs-border-strong); background: var(--cs-hover); }
 .cs-admin-tile:focus-visible { outline: 2px solid var(--cs-focus); outline-offset: 2px; }
 .cs-admin-tile-icon {
-  display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 999px;
-  background: var(--cs-tile-icon-bg); color: var(--cs-accent);
+  display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 12px;
+  background: var(--cs-soft); color: var(--cs-accent-text);
 }
-.cs-admin-utility { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; border-radius: 16px; padding: 4px; }
+.cs-admin-utility { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; border-radius: 12px; padding: 4px; }
 .cs-admin-utility-icon {
   display: grid; place-items: center; width: 60px; height: 60px; border-radius: 999px;
-  background: var(--cs-surface-2); color: var(--cs-accent);
+  background: var(--cs-soft); color: var(--cs-accent-text);
   transition: background-color var(--cs-duration) ease;
 }
 .cs-admin-utility:hover .cs-admin-utility-icon { background: var(--cs-soft-hover); }

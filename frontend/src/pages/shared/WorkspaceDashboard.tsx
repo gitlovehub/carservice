@@ -152,7 +152,7 @@ function TaskLink({ to, label, hint, load }: { to: string; label: string; hint: 
   </li>;
 }
 
-/** Thẻ lối tắt Admin (2 cột, xen kẽ navy / tím) — chỉ trỏ tới route có sẵn. */
+/** Thẻ lối tắt Admin (2 cột, thẻ trung tính, icon màu nhấn) — chỉ trỏ tới route có sẵn. */
 const adminTiles: Array<{ to: string; label: string; hint: string; icon: IconName }> = [
   { to: "/admin/services", label: "Dịch vụ & gói", hint: "Danh mục, giá dịch vụ và gói bảo dưỡng", icon: "settings" },
   { to: "/admin/inventory", label: "Kho phụ tùng", hint: "Tồn kho và nhập xuất", icon: "box" },
@@ -219,7 +219,7 @@ export default function WorkspaceDashboard({ role }: { role: Mode }) {
     </section>
 
     {!advisor && <section aria-label="Lối tắt quản trị" className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2" data-testid="admin-shortcut-tiles">
-      {adminTiles.map((tile, index) => <Link key={tile.to} to={tile.to} className={`cs-admin-tile ${index % 4 === 1 || index % 4 === 2 ? "is-violet" : ""}`}>
+      {adminTiles.map(tile => <Link key={tile.to} to={tile.to} className="cs-admin-tile">
         <span className="min-w-0">
           <span className="block text-section text-cs-text">{tile.label}</span>
           <span className="mt-1 block text-small text-cs-text-2">{tile.hint}</span>

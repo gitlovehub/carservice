@@ -472,7 +472,7 @@ function Accounts() {
                           <Button size="sm" variant="tonal" icon="key" onClick={() => openRoleForm(account)}>Phân quyền</Button>
                           {account.status === "Hoạt động"
                             ? <Button size="sm" variant="danger-outline" icon="lock" onClick={() => toggleStatus(account)}>Khóa</Button>
-                            : <Button size="sm" variant="success" icon="check" onClick={() => toggleStatus(account)}>Mở khóa</Button>}
+                            : <Button size="sm" variant="secondary" icon="check" onClick={() => toggleStatus(account)}>Mở khóa</Button>}
                         </div>
                       </div>
                     </div>
