@@ -1,4 +1,4 @@
-import { Button, PageHeader, Modal } from "../../components/ui";
+import { Button, IconButton, PageHeader, Modal } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import {
   useCallback,
@@ -626,26 +626,14 @@ function MaintenancePackages() {
                 className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-[#D9E9DC] bg-[#EDF7EF] px-4 py-3 text-sm text-[#28643B]"
               >
                 <span>{notice}</span>
-                <button
-                  type="button"
-                  onClick={() => setNotice("")}
-                  className="font-semibold"
-                >
-                  Đóng
-                </button>
+                <IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setNotice("")}/>
               </div>
             )}
 
             {catalogError && (
               <div className="mb-5 rounded-xl border border-[#E1E4E6] bg-white p-4">
                 <p className="text-sm text-cs-muted">{catalogError}</p>
-                <button
-                  type="button"
-                  onClick={() => void loadCatalog()}
-                  className="mt-3 text-xs font-semibold text-[#20252B] underline"
-                >
-                  Tải lại danh mục
-                </button>
+                <Button size="sm" variant="secondary" icon="refresh" className="mt-3" onClick={() => void loadCatalog()}>Tải lại danh mục</Button>
               </div>
             )}
 
@@ -747,19 +735,8 @@ function MaintenancePackages() {
                 </select>
 
                 <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="cs-btn cs-btn-primary flex-1"
-                  >
-                    Tìm kiếm
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    className="rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold transition hover:bg-cs-surface-2"
-                  >
-                    Xóa lọc
-                  </button>
+                  <Button type="submit" variant="outline" icon="search" className="flex-1">Tìm kiếm</Button>
+                  <Button variant="ghost" icon="x" onClick={resetFilters}>Xóa lọc</Button>
                 </div>
               </form>
             </section>
@@ -785,13 +762,7 @@ function MaintenancePackages() {
                   className="m-5 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700"
                 >
                   <p>{error}</p>
-                  <button
-                    type="button"
-                    onClick={() => setReloadKey((current) => current + 1)}
-                    className="mt-2 font-semibold underline"
-                  >
-                    Thử tải lại
-                  </button>
+                  <Button size="sm" variant="secondary" icon="refresh" className="mt-2" onClick={() => setReloadKey((current) => current + 1)}>Thử tải lại</Button>
                 </div>
               )}
 
@@ -812,13 +783,7 @@ function MaintenancePackages() {
                   <p className="mt-2 text-xs text-cs-muted">
                     Hãy thay đổi điều kiện lọc hoặc thêm gói mới.
                   </p>
-                  <button
-                    type="button"
-                    onClick={openCreateModal}
-                    className="cs-btn cs-btn-primary mt-5"
-                  >
-                    + Thêm gói bảo dưỡng
-                  </button>
+                  <Button variant="tonal" icon="plus" className="mt-5" onClick={openCreateModal}>Thêm gói bảo dưỡng</Button>
                 </div>
               ) : (
                 <div className="space-y-3 p-4 sm:p-5">
@@ -901,30 +866,12 @@ function MaintenancePackages() {
                         </div>
 
                         <div className="flex flex-wrap gap-2 xl:shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => void openDetailModal(pkg)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-cs-surface-2"
-                          >
-                            Chi tiết
-                          </button>
+                          <IconButton icon="eye" label="Chi tiết" onClick={() => void openDetailModal(pkg)}/>
 
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(pkg)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[11px] font-semibold transition hover:bg-cs-surface-2"
-                          >
-                            Chỉnh sửa
-                          </button>
+                          <IconButton icon="edit" label="Chỉnh sửa" onClick={() => openEditModal(pkg)}/>
 
                           {pkg.status === "ACTIVE" && (
-                            <button
-                              type="button"
-                              onClick={() => void handleDelete(pkg)}
-                              className="cs-btn cs-btn-danger-outline"
-                            >
-                              Ẩn gói
-                            </button>
+                            <IconButton icon="trash" tone="danger" label="Ẩn gói" onClick={() => void handleDelete(pkg)}/>
                           )}
                         </div>
                       </div>
@@ -938,26 +885,8 @@ function MaintenancePackages() {
                   Trang {page} / {lastPage} · Tổng {total} gói
                 </span>
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={page <= 1 || isLoading}
-                    onClick={() =>
-                      setPage((current) => Math.max(1, current - 1))
-                    }
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-cs-surface-2 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    ← Trước
-                  </button>
-                  <button
-                    type="button"
-                    disabled={page >= lastPage || isLoading}
-                    onClick={() =>
-                      setPage((current) => Math.min(lastPage, current + 1))
-                    }
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-cs-surface-2 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Tiếp →
-                  </button>
+                  <Button size="sm" variant="outline" icon="chevron-left" disabled={page <= 1 || isLoading} onClick={() => setPage((current) => Math.max(1, current - 1))}>Trước</Button>
+                  <Button size="sm" variant="outline" iconRight="chevron-right" disabled={page >= lastPage || isLoading} onClick={() => setPage((current) => Math.min(lastPage, current + 1))}>Tiếp</Button>
                 </div>
               </div>
             </section>
@@ -1293,25 +1222,8 @@ function MaintenancePackages() {
                   )}
 
                   <div className="flex flex-col-reverse gap-3 border-t border-[#EEF0F2] pt-5 sm:flex-row sm:justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setModal(null)}
-                      disabled={isSaving}
-                      className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold transition hover:bg-cs-surface-2 disabled:opacity-50"
-                    >
-                      Hủy
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSaving}
-                      className="rounded-xl bg-[#1F2933] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#151D24] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isSaving
-                        ? "Đang lưu..."
-                        : selectedPackage
-                          ? "Lưu thay đổi"
-                          : "Tạo gói bảo dưỡng"}
-                    </button>
+                    <Button variant="secondary" disabled={isSaving} onClick={() => setModal(null)}>Hủy</Button>
+                    <Button type="submit" variant="primary" icon={selectedPackage ? "check" : "plus"} loading={isSaving} loadingText="Đang lưu...">{selectedPackage ? "Lưu thay đổi" : "Tạo gói bảo dưỡng"}</Button>
                   </div>
                 </form>
               </>
@@ -1458,21 +1370,9 @@ function MaintenancePackages() {
                 )}
 
                 <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[#EEF0F2] pt-5 sm:flex-row sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setModal(null)}
-                    className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold hover:bg-cs-surface-2"
-                  >
-                    Đóng
-                  </button>
+                  <Button variant="secondary" onClick={() => setModal(null)}>Đóng</Button>
                   {selectedPackage && !isLoadingDetail && (
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(selectedPackage)}
-                      className="cs-btn cs-btn-primary"
-                    >
-                      Chỉnh sửa gói
-                    </button>
+                    <Button variant="primary" icon="edit" onClick={() => openEditModal(selectedPackage)}>Chỉnh sửa gói</Button>
                   )}
                 </div>
               </>

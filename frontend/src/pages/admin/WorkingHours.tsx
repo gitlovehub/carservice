@@ -268,13 +268,7 @@ function WorkingHours() {
             {error && (
               <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-[#E7C5C5] bg-[#FBEFEF] px-5 py-4 text-sm text-[#A24A4A]">
                 <span>{error}</span>
-                <button
-                  type="button"
-                  onClick={() => setReloadKey((current) => current + 1)}
-                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold"
-                >
-                  Thử lại
-                </button>
+                <Button size="sm" variant="secondary" icon="refresh" onClick={() => setReloadKey((current) => current + 1)}>Thử lại</Button>
               </div>
             )}
 
@@ -411,23 +405,9 @@ function WorkingHours() {
 
                         <div className="flex items-center justify-start gap-2 lg:justify-end">
                           {dirty && (
-                            <button
-                              type="button"
-                              onClick={() => resetRow(hour.id)}
-                              disabled={state?.saving}
-                              className="rounded-xl border border-[#D9DDE1] px-3 py-2.5 text-xs font-semibold text-cs-muted transition hover:bg-[#F1F2F3]"
-                            >
-                              Hoàn tác
-                            </button>
+                            <Button size="sm" variant="ghost" icon="refresh" disabled={state?.saving} onClick={() => resetRow(hour.id)}>Hoàn tác</Button>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => saveRow(hour)}
-                            disabled={!dirty || state?.saving}
-                            className="rounded-xl bg-[#1F2933] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#151D24] disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            {state?.saving ? "Đang lưu..." : "Lưu"}
-                          </button>
+                          <Button size="sm" variant="primary" icon="check" disabled={!dirty} loading={state?.saving} loadingText="Đang lưu..." onClick={() => saveRow(hour)}>Lưu</Button>
                         </div>
                       </div>
 

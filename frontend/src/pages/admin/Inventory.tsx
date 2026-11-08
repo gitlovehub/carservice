@@ -1,4 +1,4 @@
-import { Button, PageHeader, Modal } from "../../components/ui";
+import { Button, IconButton, PageHeader, Modal } from "../../components/ui";
 import { useMemo, useState } from "react";
 
 type PartStatus = "Còn hàng" | "Sắp hết" | "Hết hàng";
@@ -220,13 +220,7 @@ function Inventory() {
                 className="mb-5 rounded-xl border border-[#E1E4E6] bg-white px-4 py-3 text-sm text-[#20252B]"
               >
                 {message}
-                <button
-                  type="button"
-                  onClick={() => setMessage("")}
-                  className="ml-3 font-semibold text-cs-muted hover:text-[#20252B]"
-                >
-                  Đóng
-                </button>
+                <IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setMessage("")}/>
               </div>
             )}
 
@@ -310,17 +304,11 @@ function Inventory() {
                   <option>Hết hàng</option>
                 </select>
 
-                <button
-                  type="button"
-                  onClick={() => {
+                <Button variant="outline" icon="filter" onClick={() => {
                     setKeyword("");
                     setSelectedCategory("Tất cả danh mục");
                     setSelectedStatus("Tất cả trạng thái");
-                  }}
-                  className="rounded-xl border border-[#D9DDE1] bg-white px-5 py-3 text-xs font-semibold transition hover:bg-cs-surface-2"
-                >
-                  Xóa bộ lọc
-                </button>
+                  }}>Xóa bộ lọc</Button>
               </div>
             </section>
 
@@ -421,23 +409,11 @@ function Inventory() {
                         </div>
 
                         <div className="flex gap-2 xl:shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => {
+                          <IconButton icon="eye" label="Chi tiết" onClick={() => {
                               setSelectedPart(part);
                               setModal("detail");
-                            }}
-                            className="flex-1 rounded-xl border border-[#D9DDE1] bg-white px-3 py-2.5 text-[11px] font-semibold transition hover:bg-cs-surface-2 sm:flex-none"
-                          >
-                            Chi tiết
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(part)}
-                            className="cs-btn cs-btn-primary flex-1 sm:flex-none"
-                          >
-                            Cập nhật
-                          </button>
+                            }}/>
+                          <IconButton icon="edit" label="Cập nhật" onClick={() => openEditModal(part)}/>
                         </div>
                       </div>
                     </article>
@@ -467,14 +443,7 @@ function Inventory() {
                       : "Chi tiết phụ tùng"}
                 </h2>
               </div>
-              <button
-                type="button"
-                onClick={() => setModal(null)}
-                aria-label="Đóng"
-                className="rounded-lg px-3 py-2 text-lg text-cs-muted hover:bg-cs-surface-2"
-              >
-                ×
-              </button>
+              <IconButton icon="close" label="Đóng" onClick={() => setModal(null)}/>
             </div>
 
             {modal === "detail" && selectedPart ? (
@@ -497,13 +466,7 @@ function Inventory() {
                     </span>
                   </div>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => openEditModal(selectedPart)}
-                  className="cs-btn cs-btn-primary mt-3 cs-btn-block"
-                >
-                  Cập nhật phụ tùng
-                </button>
+                <Button variant="primary" icon="edit" block className="mt-3" onClick={() => openEditModal(selectedPart)}>Cập nhật phụ tùng</Button>
               </div>
             ) : (
               <div className="space-y-4">
@@ -593,20 +556,8 @@ function Inventory() {
                 )}
 
                 <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setModal(null)}
-                    className="flex-1 rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold hover:bg-cs-surface-2"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    className="cs-btn cs-btn-primary flex-1"
-                  >
-                    Lưu thông tin
-                  </button>
+                  <Button variant="secondary" className="flex-1" onClick={() => setModal(null)}>Hủy</Button>
+                  <Button variant="primary" icon="check" className="flex-1" onClick={handleSave}>Lưu thông tin</Button>
                 </div>
               </div>
             )}
