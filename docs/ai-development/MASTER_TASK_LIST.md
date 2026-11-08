@@ -40,8 +40,9 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 | ID | Mô tả | Phụ thuộc | Trạng thái |
 |---|---|---|---|
 | P2-DB | `vehicle_handovers`, `handover_checklist_items`; `repair_orders` + `booked_vehicle_id`, `vehicle_change_reason`, `source`, `requires_check_in` (mặc định false → phiếu cũ không bị chặn) | P1 | VERIFIED |
-| P2-B | `receive()`: đổi xe so với lịch hẹn nếu cùng chủ + lý do ≥ 5 ký tự + `audit_logs`; `source` APPOINTMENT/WALK_IN; phiếu mới `requires_check_in = true` | P2-DB | VERIFIED — `ReceptionVehicleChangeTest` 4/4, suite 173/173 |
-| P2-C | `HandoverService` + API CHECK_IN (DRAFT sửa được → SUBMITTED khóa → khách xác nhận ACCOUNT/OTP → CONFIRMED; VOID + lý do); chặn INSPECTING khi `requires_check_in` mà chưa có CHECK_IN CONFIRMED; media alias `handover` | P2-B | PENDING |
+| P2-B | `receive()`: đổi xe so với lịch hẹn nếu cùng chủ + lý do ≥ 5 ký tự + `audit_logs`; `source` APPOINTMENT/WALK_IN; phiếu mới `requires_check_in = true` | P2-DB | VERIFIED — `ReceptionVehicleChangeTest` 4/4, suite 173/173 · commit `b9e40cb` |
+| P2-C | `HandoverService` + API CHECK_IN (DRAFT sửa được → SUBMITTED khóa + snapshot SHA-256 gồm hash ảnh → khách xác nhận ACCOUNT `/me/handovers/{id}/confirm` hoặc OTP email tại quầy → CONFIRMED; VOID + lý do khi chưa xác nhận); chặn RECEIVED→INSPECTING (giao KTV, ghi chẩn đoán) khi `requires_check_in` mà chưa có CHECK_IN CONFIRMED; media alias `handover` (khóa ảnh khi đã gửi); `ConfirmationService` tổng quát hóa lõi OTP | P2-B | VERIFIED — `VehicleCheckInTest` 9/9, suite 182/182 |
+| QA-01 fix | Test chập chờn BookingCatalog | — | VERIFIED · commit `b237658` |
 | P2-FE | Advisor: chọn xe/vãng lai/biên bản CHECK_IN; Customer: xác nhận tình trạng | P2-BE | PENDING |
 | P2-QA | Test + trình duyệt + hồi quy | P2-FE | PENDING |
 
@@ -90,7 +91,7 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 
 | ID | Mô tả | Trạng thái |
 |---|---|---|
-| QA-01 | `BookingCatalogControllerTest::test_filters_packages_by_vehicle_model_name…` chập chờn: `VehicleBrandFactory` chọn ngẫu nhiên tên có thể trùng "Toyota" test tự tạo (UNIQUE `vehicle_brands.name`). Có từ trước P1; 1/4 lần chạy lỗi | PENDING |
+| QA-01 | `BookingCatalogControllerTest::test_filters_packages_by_vehicle_model_name…` chập chờn (factory tạo trùng hãng "Toyota") | VERIFIED — `b237658`, 6/6 lần chạy đạt |
 
 ## Kết thúc
 

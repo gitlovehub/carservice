@@ -18,6 +18,10 @@ class ConfirmationOtp extends Model
 {
     public const PURPOSE_QUOTATION_RESPONSE = 'QUOTATION_RESPONSE';
 
+    public const PURPOSE_CHECK_IN = 'CHECK_IN';
+
+    public const PURPOSE_CHECK_OUT = 'CHECK_OUT';
+
     public const TTL_MINUTES = 10;
 
     public const MAX_ATTEMPTS = 5;
