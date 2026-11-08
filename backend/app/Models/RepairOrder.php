@@ -45,7 +45,8 @@ class RepairOrder extends Model
     public const REVIEW_TEST = 'REVIEW_TEST';
 
     public const TRANSITIONS = [
-        self::RECEIVED => [self::INSPECTING, self::CLOSED],
+        // RECEIVED → WAITING_APPROVAL chỉ qua luồng dịch vụ nhanh (RepairOrderService::createQuickQuotation).
+        self::RECEIVED => [self::INSPECTING, self::WAITING_APPROVAL, self::CLOSED],
         self::INSPECTING => [self::QUOTING, self::WAITING_APPROVAL, self::CLOSED],
         self::QUOTING => [self::WAITING_APPROVAL, self::CLOSED],
         self::WAITING_APPROVAL => [self::IN_PROGRESS, self::CLOSED],

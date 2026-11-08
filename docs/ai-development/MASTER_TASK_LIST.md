@@ -69,8 +69,8 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 
 | ID | Mô tả | Phụ thuộc | Trạng thái |
 |---|---|---|---|
-| P5-A | `service_steps`; `services.service_level` (mặc định STANDARD) / `requires_vehicle_stay`; `work_items.standard_minutes` / `service_step_id`; `repair_orders.flow_type` / `estimated_ready_at`; Admin `GET/PUT /admin/services/{id}/steps`; công việc sinh theo bước; giờ dự kiến xong = now + Σ phút chuẩn công việc chưa xong (khi bắt đầu sửa / duyệt phát sinh) | P2, P3 | VERIFIED — `ServiceStepsTest` 3/3, suite 198/198 |
-| P5-B | Luồng QUICK: báo giá niêm yết từ dịch vụ `service_level = QUICK`, RECEIVED → WAITING_APPROVAL (bỏ chẩn đoán), bắt buộc CHECK_IN xác nhận + 4 ảnh tổng quan (D-011), khách vẫn duyệt giá | P5-A | PENDING |
+| P5-A | `service_steps`; `services.service_level` (mặc định STANDARD) / `requires_vehicle_stay`; `work_items.standard_minutes` / `service_step_id`; `repair_orders.flow_type` / `estimated_ready_at`; Admin `GET/PUT /admin/services/{id}/steps`; công việc sinh theo bước; giờ dự kiến xong = now + Σ phút chuẩn công việc chưa xong (khi bắt đầu sửa / duyệt phát sinh) | P2, P3 | VERIFIED — `ServiceStepsTest` 3/3, suite 198/198 · commit `47eef0d` |
+| P5-B | Luồng QUICK: báo giá niêm yết từ dịch vụ `service_level = QUICK`, RECEIVED → WAITING_APPROVAL (bỏ chẩn đoán), bắt buộc CHECK_IN xác nhận + 4 ảnh tổng quan FRONT/REAR/LEFT/RIGHT (D-011), khách vẫn duyệt giá; `POST /repair-orders/{id}/quick-quotation`; báo giá chỉ gồm dịch vụ (giá niêm yết), không phụ tùng (T-003) | P5-A | VERIFIED — `QuickServiceFlowTest` 3/3, suite 201/201 |
 | P5-C | Frontend: Admin bước + mức dịch vụ; Advisor nút "Báo giá dịch vụ nhanh"; Customer/Advisor giờ dự kiến xong | P5-B | PENDING |
 | P6 | Phụ tùng chờ, ETA | P3 | PENDING |
 | P7 | Công suất gara (Q6) | P5 | PENDING |
