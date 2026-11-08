@@ -57,6 +57,11 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    // Gợi ý địa chỉ (bản đồ Việt Nam). Không có key → dùng OpenStreetMap (Photon).
+    'goong' => [
+        'key' => env('GOONG_API_KEY'),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],
