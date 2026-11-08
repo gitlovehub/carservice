@@ -135,6 +135,7 @@ class RepairOrderService
             ]);
 
             if ($ro->status === RepairOrder::RECEIVED) {
+                $this->assertCheckInConfirmed($ro);
                 $this->transition($ro, RepairOrder::INSPECTING, $actor, 'Giao KTV kiểm tra/chẩn đoán.');
             }
 
@@ -168,6 +169,10 @@ class RepairOrderService
             throw InvalidStatusTransitionException::because(
                 'Mỗi lệnh sửa chữa chỉ thuộc về 1 phiếu kiểm tra tổng thể.'
             );
+        }
+
+        if ($ro->status === RepairOrder::RECEIVED) {
+            $this->assertCheckInConfirmed($ro);
         }
 
         return DB::transaction(function () use ($ro, $technician, $data, $recordedBy) {
@@ -795,6 +800,16 @@ class RepairOrderService
         }
 
         return (int) $appointment->vehicle_id;
+    }
+
+    /** P2: phiếu tạo sau khi triển khai biên bản phải có CHECK_IN được khách xác nhận trước khi kiểm tra. */
+    private function assertCheckInConfirmed(RepairOrder $ro): void
+    {
+        if ($ro->requires_check_in && ! $ro->confirmedCheckIn()->exists()) {
+            throw InvalidStatusTransitionException::because(
+                'Chưa có biên bản nhận xe (CHECK_IN) được khách xác nhận. Lập biên bản và gửi khách xác nhận trước khi kiểm tra.'
+            );
+        }
     }
 
     private function assertAdvisor(Employee $employee): void

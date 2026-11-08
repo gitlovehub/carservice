@@ -22,6 +22,18 @@
 
 - P2-A + P2-B (một commit `feat(reception)`): migration `2026_11_08_110000_create_vehicle_handovers_table.php`, `2026_11_08_110100_add_reception_columns_to_repair_orders_table.php`; model `VehicleHandover`, `HandoverChecklistItem`; `RepairOrder` (+ fillable, `bookedVehicle`, `handovers`, `confirmedCheckIn`, `SOURCE_*`); `RepairOrderService::receive` (đổi xe + audit + source + requires_check_in); test `ReceptionVehicleChangeTest`. **Chưa migrate DB dev cho 2 migration P2** (làm khi kiểm trình duyệt P2-D).
 
+- P2-C (commit `feat(handover)`): `HandoverService`, `HandoverController` (ADVISOR: index/store/update/submit/void/otp/verify-otp), `CustomerHandoverController` (`GET /me/repair-orders/{id}/handovers`, `POST /me/handovers/{id}/confirm`), `HandoverOtpMail` + view, gate `assertCheckInConfirmed` trong `assignTechnician` + `recordInspection`, `MediaService` alias `handover`. `ConfirmationService` refactor: `issueOtp`/`checkOtp`/`consumeOtp`/`record` dùng chung. Test `VehicleCheckInTest` 9/9; suite 182/182.
+- QA-01 sửa (`b237658`).
+
+## Tiếp theo: P2-D (frontend)
+
+- Advisor `ReceptionWorkflow.tsx`: khi chọn lịch hẹn, cho chọn xe khác của cùng khách + ô lý do (bắt buộc khi khác xe); gửi `vehicle_change_reason`.
+- Advisor trang Chi tiết phiếu: panel "Biên bản nhận xe" khi `requires_check_in` (hoặc luôn hiện): form (km, nhiên liệu, tình trạng chung, đồ giá trị, người giao + quan hệ, checklist mặc định: 4 góc ngoại thất + chìa khóa + giấy tờ), `PhotoUploader type="handover"` khi DRAFT, nút "Gửi khách xác nhận" (submit), sau đó chọn: khách tự xác nhận trong tài khoản (Làm mới) **hoặc** OTP tại quầy (gửi mã / nhập mã), hủy (lý do). Thông báo chặn khi giao KTV mà chưa CONFIRMED.
+- Customer: trong trang chi tiết phiếu (`RepairStatus.tsx`), khối "Biên bản nhận xe" (SUBMITTED → nút "Xác nhận đúng tình trạng" + ghi chú; CONFIRMED → hiển thị đã xác nhận), ảnh qua PhotoUploader readOnly.
+- Types trong `workflowService.ts` (`requires_check_in`, `handovers`) và `customerApi.ts`.
+- RepairOrderController::show phải trả `handovers` (kiểm tra `load`) — hoặc frontend gọi `GET /repair-orders/{id}/handovers`.
+- Smoke test mới; tsc/build/eslint; migrate DB dev 2 migration P2 (D-016 áp dụng tương tự); trình duyệt chỉ đọc.
+
 ## Kế hoạch P2 (gốc)
 
 | Bước | Nội dung | Commit dự kiến |

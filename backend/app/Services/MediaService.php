@@ -7,6 +7,7 @@ use App\Models\Inspection;
 use App\Models\MediaAttachment;
 use App\Models\Quotation;
 use App\Models\RepairOrder;
+use App\Models\VehicleHandover;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,7 @@ class MediaService
         'repair_order' => RepairOrder::class,
         'quotation' => Quotation::class,
         'inspection' => Inspection::class,
+        'handover' => VehicleHandover::class,
     ];
 
     public function resolveAttachable(string $alias, int $id): Model
@@ -50,7 +52,7 @@ class MediaService
     {
         return match (true) {
             $attachable instanceof RepairOrder => $attachable,
-            $attachable instanceof Quotation, $attachable instanceof Inspection => $attachable->repairOrder()->firstOrFail(),
+            $attachable instanceof Quotation, $attachable instanceof Inspection, $attachable instanceof VehicleHandover => $attachable->repairOrder()->firstOrFail(),
             default => throw new \InvalidArgumentException('Unsupported attachable '.$attachable::class),
         };
     }
@@ -110,6 +112,10 @@ class MediaService
     /** Chứng từ khách đã xác nhận thì bị khóa: không thêm ảnh sau khi xác nhận. */
     private function assertNotConfirmed(Model $attachable): void
     {
+        // Biên bản đã gửi khách thì ảnh đã nằm trong snapshot: không thêm nữa.
+        if ($attachable instanceof VehicleHandover && ! $attachable->isEditable()) {
+            throw ValidationException::withMessages(['attachable_id' => 'Biên bản đã khóa, không thể thêm ảnh.']);
+        }
         if (method_exists($attachable, 'confirmations') && $attachable->confirmations()->exists()) {
             throw ValidationException::withMessages(['attachable_id' => 'Chứng từ đã được khách xác nhận, không thể thêm ảnh.']);
         }

@@ -8,8 +8,10 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingCatalogController;
 use App\Http\Controllers\Api\ChatbotController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\CustomerHandoverController;
 use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\CustomerReviewController;
+use App\Http\Controllers\Api\HandoverController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\MaintenancePackageController;
@@ -104,6 +106,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('repair-orders/{repairOrder}', 'show');
             Route::get('repair-orders/{repairOrder}/invoice', 'invoice');
             Route::post('quotations/{quotation}/respond', 'respondQuotation');
+        });
+
+        // Biên bản giao nhận xe của khách: xem (đã gửi / đã xác nhận) và tự xác nhận.
+        Route::controller(CustomerHandoverController::class)->prefix('me')->group(function (): void {
+            Route::get('repair-orders/{repairOrder}/handovers', 'index');
+            Route::post('handovers/{handover}/confirm', 'confirm')->middleware('throttle:10,1');
         });
 
         // Thanh toán hóa đơn qua VNPay
@@ -295,6 +303,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::prefix('quotations/{quotation}')->group(function (): void {
                 Route::post('send', 'send');
             });
+        });
+
+        // Biên bản giao nhận xe (P2: CHECK_IN). Khách xác nhận qua tài khoản hoặc OTP email chủ xe.
+        Route::controller(HandoverController::class)->group(function (): void {
+            Route::get('repair-orders/{repairOrder}/handovers', 'index');
+            Route::post('repair-orders/{repairOrder}/handovers', 'store');
+            Route::patch('handovers/{handover}', 'update');
+            Route::post('handovers/{handover}/submit', 'submit');
+            Route::post('handovers/{handover}/void', 'void');
+            Route::post('handovers/{handover}/otp', 'requestOtp')->middleware('throttle:5,1');
+            Route::post('handovers/{handover}/verify-otp', 'verifyOtp')->middleware('throttle:10,1');
         });
 
         // Khách duyệt tại quầy: OTP gửi email chủ xe, gắn với đúng lựa chọn từng dòng (D-005, D-008).
