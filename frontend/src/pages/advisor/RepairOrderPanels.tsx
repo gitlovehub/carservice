@@ -220,6 +220,7 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
     <h2 className="mt-1 text-lg font-bold text-cs-text">Tiến độ sửa chữa</h2>
     <div className="mt-4">{error && <Notice tone="error">{error}</Notice>}</div>
     {order.status === "WAITING_FOR_PARTS" && <Notice>Phiếu đang chờ phụ tùng. Khi hàng về, bấm Tiếp tục sửa chữa.</Notice>}
+    {order.estimated_ready_at && inRepair && <p className="mb-3 text-sm text-cs-text" data-testid="estimated-ready">Dự kiến xong: <strong>{new Date(order.estimated_ready_at).toLocaleString("vi-VN")}</strong> <span className="text-xs text-cs-muted">(theo phút chuẩn của các bước)</span></p>}
 
     <h3 className="mb-2 text-sm font-bold text-cs-text">Công việc ({workItems.length - unfinished}/{workItems.length} xong)</h3>
     {workItems.length ? <ul className="space-y-2">{workItems.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 text-sm">

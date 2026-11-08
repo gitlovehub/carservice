@@ -3,6 +3,9 @@ import type { HandoverChecklistItem, PickupAuthorization, WorkflowHandover, Work
 
 /** Ảnh bằng chứng (P1B) và xác nhận tại quầy bằng OTP email (P1C). */
 
+/** Vị trí ảnh trên xe (biên bản). Dịch vụ nhanh bắt buộc đủ 4 góc FRONT/REAR/LEFT/RIGHT (D-011). */
+export const VEHICLE_POSITIONS: Record<string, string> = { FRONT: "Đầu xe", REAR: "Đuôi xe", LEFT: "Bên trái", RIGHT: "Bên phải", INTERIOR: "Nội thất", ODOMETER: "Đồng hồ km", OTHER: "Khác" };
+
 export type MediaAttachableType = "repair_order" | "quotation" | "inspection" | "handover";
 export type MediaItem = {
   id: number; attachable_type: MediaAttachableType; attachable_id: number; mime: string; size_bytes: number;
