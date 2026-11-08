@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "../../components/ui/Button";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
-import { handoverApi, type HandoverInput, type OtpSent } from "../../services/evidenceService";
+import { handoverApi, VEHICLE_POSITIONS, type HandoverInput, type OtpSent } from "../../services/evidenceService";
 import type { HandoverChecklistItem, WorkflowHandover, WorkflowOrder } from "../../services/workflowService";
 import { card, input, Notice } from "./WorkflowUI";
 import { errorText } from "./workflowFormat";
@@ -127,7 +127,7 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
         <Button type="submit" variant="secondary" loading={working}>{handover ? "Lưu nháp" : "Tạo biên bản"}</Button>
         {handover && <Button variant="primary" loading={working} onClick={() => void run(async () => { await handoverApi.update(handover.id, form); await handoverApi.submit(handover.id); }, "Đã gửi biên bản. Chờ chủ xe xác nhận.")}>Gửi khách xác nhận</Button>}
       </div>
-      {handover && <PhotoUploader type="handover" id={handover.id} title="Ảnh tình trạng xe"/>}
+      {handover && <PhotoUploader type="handover" id={handover.id} title="Ảnh tình trạng xe (chọn vị trí trước khi chụp; dịch vụ nhanh cần đủ 4 góc)" positions={VEHICLE_POSITIONS}/>}
     </form> : handover && <HandoverSummary handover={handover}/>}
 
     {handover?.status === "SUBMITTED" && <div className="mt-4 rounded-xl border border-cs-border bg-cs-surface-2 p-4">

@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/Button";
-import { compressImage, mediaApi, type MediaAttachableType, type MediaItem } from "../../services/evidenceService";
+import { compressImage, mediaApi, VEHICLE_POSITIONS, type MediaAttachableType, type MediaItem } from "../../services/evidenceService";
 
 /**
  * Ảnh bằng chứng (P1B). Ảnh lưu private trên server; hiển thị bằng blob tải kèm token.
  * readOnly: chỉ xem (khách, hoặc chứng từ đã khóa).
  */
-export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằng chứng" }: {
-  type: MediaAttachableType; id: number; readOnly?: boolean; title?: string;
+export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằng chứng", positions }: {
+  type: MediaAttachableType; id: number; readOnly?: boolean; title?: string; positions?: Record<string, string>;
 }) {
+  const [position, setPosition] = useState(positions ? Object.keys(positions)[0] : "");
   const [items, setItems] = useState<MediaItem[]>([]);
   const [urls, setUrls] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState(false);
@@ -47,7 +48,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
       for (const file of Array.from(files)) {
         const blob = await compressImage(file);
         const name = file.name.replace(/\.[^.]+$/, "") + (blob.type === "image/jpeg" ? ".jpg" : file.name.slice(file.name.lastIndexOf(".")));
-        await mediaApi.upload(type, id, blob, name);
+        await mediaApi.upload(type, id, blob, name, position ? { position_code: position } : {});
       }
       await load();
     } catch (err) {
@@ -62,6 +63,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
     <div className="flex flex-wrap items-center justify-between gap-2">
       <p className="text-xs font-bold text-cs-muted">{title} ({items.length})</p>
       {!readOnly && <>
+        {positions && <select aria-label="Vị trí ảnh" className="rounded-lg border border-cs-border bg-cs-surface-2 px-2 py-1 text-xs" value={position} onChange={event => setPosition(event.target.value)}>{Object.entries(positions).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select>}
         <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" multiple className="sr-only" aria-label="Chọn ảnh" onChange={event => void upload(event.target.files)}/>
         <Button size="sm" variant="secondary" loading={busy} loadingText="Đang tải ảnh…" onClick={() => fileInput.current?.click()}>Thêm ảnh</Button>
       </>}
@@ -72,7 +74,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
         {urls[item.id]
           ? <a href={urls[item.id]} target="_blank" rel="noreferrer"><img src={urls[item.id]} alt={item.caption || item.position_code || `Ảnh #${item.id}`} className="aspect-square w-full object-cover"/></a>
           : <div className="aspect-square w-full animate-pulse"/>}
-        <p className="truncate px-1.5 py-1 text-[11px] text-cs-muted" title={item.sha256}>{item.position_code || (item.created_at ? new Date(item.created_at).toLocaleString("vi-VN") : `#${item.id}`)}</p>
+        <p className="truncate px-1.5 py-1 text-[11px] text-cs-muted" title={item.sha256}>{(item.position_code && (positions?.[item.position_code] ?? VEHICLE_POSITIONS[item.position_code] ?? item.position_code)) || (item.created_at ? new Date(item.created_at).toLocaleString("vi-VN") : `#${item.id}`)}</p>
       </li>)}</ul>
       : <p className="mt-2 text-xs text-cs-muted">Chưa có ảnh.</p>}
   </div>;

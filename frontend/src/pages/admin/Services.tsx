@@ -2,6 +2,7 @@ import { Button, Modal, PageHeader } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { useEffect, useState, type FormEvent } from "react";
 import { fetchApi } from "../../services/api";
+import { ServiceStepsEditor } from "./ServiceStepsEditor";
 
 type ServiceStatus = "ACTIVE" | "INACTIVE";
 
@@ -15,6 +16,7 @@ type Service = {
   status: ServiceStatus;
   is_popular: boolean;
   sort_order: number;
+  service_level?: ServiceLevel;
   active_packages_count?: number;
 };
 
@@ -27,6 +29,7 @@ type ServiceForm = {
   status: ServiceStatus;
   is_popular: boolean;
   sort_order: string;
+  service_level: ServiceLevel;
 };
 
 type ServiceIndexResponse = {
@@ -51,7 +54,11 @@ const emptyForm: ServiceForm = {
   status: "ACTIVE",
   is_popular: false,
   sort_order: "0",
+  service_level: "STANDARD",
 };
+
+type ServiceLevel = "QUICK" | "STANDARD" | "MAJOR";
+const LEVEL_TEXT: Record<ServiceLevel, string> = { QUICK: "Nhanh (không cần chẩn đoán)", STANDARD: "Tiêu chuẩn", MAJOR: "Sửa lớn" };
 
 const fieldClass =
   "w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#1F2933] focus:ring-2 focus:ring-[#D6A85F]/20";
@@ -159,6 +166,7 @@ function Services() {
       status: service.status,
       is_popular: Boolean(service.is_popular),
       sort_order: String(service.sort_order ?? 0),
+      service_level: service.service_level ?? "STANDARD",
     });
     setFormError("");
     setModal("form");
@@ -253,6 +261,7 @@ function Services() {
       status: form.status,
       is_popular: form.is_popular,
       sort_order: sortOrder,
+      service_level: form.service_level,
     };
 
     setIsSaving(true);
@@ -785,6 +794,17 @@ function Services() {
                     </label>
 
                     <label className="block text-xs font-semibold">
+                      Mức dịch vụ
+                      <select
+                        value={form.service_level}
+                        onChange={(event) => setForm((current) => ({ ...current, service_level: event.target.value as ServiceLevel }))}
+                        className={`${fieldClass} mt-2 font-normal`}
+                      >
+                        {(Object.keys(LEVEL_TEXT) as ServiceLevel[]).map((level) => <option key={level} value={level}>{LEVEL_TEXT[level]}</option>)}
+                      </select>
+                    </label>
+
+                    <label className="block text-xs font-semibold">
                       Trạng thái
                       <select
                         value={form.status}
@@ -939,6 +959,12 @@ function Services() {
                           : "Ngừng hoạt động"}
                       </dd>
                     </div>
+
+                    <div>
+                      <dt className="text-xs text-cs-muted">Mức dịch vụ</dt>
+                      <dd className="mt-1">{LEVEL_TEXT[selectedService.service_level ?? "STANDARD"]}</dd>
+                    </div>
+                    <ServiceStepsEditor serviceId={selectedService.id} onSaved={(minutes) => setSelectedService((current) => current ? { ...current, estimated_minutes: minutes } : current)}/>
                   </dl>
                 ) : (
                   <p className="py-6 text-sm text-cs-muted">

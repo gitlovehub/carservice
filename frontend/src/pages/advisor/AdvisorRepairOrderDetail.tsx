@@ -8,6 +8,7 @@ import { InspectionPanel, PaymentPanel, QuotationPanel, RepairPanel } from "./Re
 import CustomerRequestSummary from "./CustomerRequestSummary";
 import { CheckInPanel } from "./CheckInPanel";
 import { SupplementPanel } from "./SupplementPanel";
+import { QuickServicePanel } from "./QuickServicePanel";
 
 /** Các bước của phiếu sửa chữa theo thứ tự cố vấn thao tác; mỗi bước gồm những trạng thái thuộc về nó. */
 const steps: Array<{ label: string; statuses: string[] }> = [
@@ -98,6 +99,7 @@ export default function AdvisorRepairOrderDetail() {
         </div>}
       </section>
       <CheckInPanel key={`check-in-${order.handovers?.map(h => `${h.id}:${h.status}`).join(",") ?? ""}`} order={order} onChanged={refreshAfterAction}/>
+      <QuickServicePanel key={`quick-${order.status}`} order={order} onChanged={refreshAfterAction}/>
       <InspectionPanel key={`inspection-${order.inspections?.[0]?.id ?? 0}-${order.inspections?.[0]?.recommendations?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
       <QuotationPanel key={`quotation-${latestQuotation(order)?.id ?? 0}-${order.inspections?.[0]?.recommendations?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
       <RepairPanel order={order} onChanged={refreshAfterAction}/>

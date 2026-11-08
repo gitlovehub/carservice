@@ -80,6 +80,7 @@ function TrackingCard({ order }: { order: CustomerRepairOrder }) {
           <p className="mt-1 text-[13px] text-[var(--cs-muted,#757575)]">
             {order.vehicle?.license_plate ?? "Chưa có biển số"}
             {order.received_at ? ` · Tiếp nhận ${formatEventTime(order.received_at)}` : ""}
+            {detail?.estimated_ready_at && ["IN_PROGRESS", "WAITING_FOR_PARTS"].includes(status) ? ` · Dự kiến xong ${formatEventTime(detail.estimated_ready_at)}` : ""}
           </p>
         </div>
         <StatusBadge domain="repair" status={status} audience="customer"/>

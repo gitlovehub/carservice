@@ -96,6 +96,8 @@ export type WorkflowOrder = {
   vehicle_change_reason?: string | null;
   handovers?: WorkflowHandover[];
   pickup_authorizations?: PickupAuthorization[];
+  flow_type?: "QUICK" | null;
+  estimated_ready_at?: string | null;
   appointment_id?: number | null;
   appointment?: (CustomerRequest & { id: number; appointment_code?: string }) | null;
   repair_order_code?: string;
@@ -219,7 +221,7 @@ export async function receiveRepairOrder(data: ReceivePayload): Promise<{ order:
   }
 }
 
-export type CatalogService = { id: number; name: string; category?: string | null; base_price?: Money };
+export type CatalogService = { id: number; name: string; category?: string | null; base_price?: Money; service_level?: "QUICK" | "STANDARD" | "MAJOR"; estimated_minutes?: number | null; status?: string };
 export type CatalogPart = { id: number; sku: string; name: string; unit?: string | null; sell_price?: Money; inventory?: { quantity: number } | null };
 export type QuotationLineInput = {
   item_type: "SERVICE" | "PART"; service_id?: number; part_id?: number; description?: string; quantity: number; unit_price?: number;
@@ -272,6 +274,9 @@ export const workflowApi = {
   parts: () => fetchApi<CatalogPart[]>("/parts"),
   createQuotation: (id: number, payload: { discount_amount?: number; items: QuotationLineInput[]; type?: "INITIAL" | "SUPPLEMENT"; reason?: string }) =>
     fetchApi<WorkflowQuotation>(`/repair-orders/${id}/quotations`, { method: "POST", body: JSON.stringify(payload) }),
+  /** P5: dịch vụ nhanh — báo giá niêm yết, bỏ chẩn đoán (backend kiểm điều kiện). */
+  quickQuotation: (id: number, serviceIds: number[]) =>
+    fetchApi<WorkflowQuotation>(`/repair-orders/${id}/quick-quotation`, { method: "POST", body: JSON.stringify({ service_ids: serviceIds }) }),
   sendQuotation: (quotationId: number) => fetchApi<WorkflowQuotation>(`/quotations/${quotationId}/send`, { method: "POST" }),
   // Không có "respondQuotation" phía nhân viên: chỉ khách duyệt báo giá (customerApi.respondQuotation → /me/...).
   transition: (id: number, step: "start-repair" | "waiting-for-parts" | "resume" | "complete" | "hand-over", note?: string) =>
