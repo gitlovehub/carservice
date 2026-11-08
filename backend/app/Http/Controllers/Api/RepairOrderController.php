@@ -67,6 +67,8 @@ class RepairOrderController extends Controller
             'mileage_received' => ['nullable', 'integer', 'min:0'],
             'initial_condition' => ['nullable', 'string'],
             'note' => ['nullable', 'string'],
+            // Bắt buộc khi xe mang tới khác xe trong lịch hẹn (RepairOrderService::receive).
+            'vehicle_change_reason' => ['nullable', 'string', 'max:500'],
         ]);
 
         $advisor = $request->user()->employee;

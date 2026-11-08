@@ -12,9 +12,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'repair_order_code', 'appointment_id', 'customer_id', 'vehicle_id', 'advisor_id',
     'mileage_received', 'initial_condition', 'status', 'received_at', 'completed_at',
     'handed_over_at', 'closed_at', 'close_reason', 'note',
+    'booked_vehicle_id', 'vehicle_change_reason', 'source', 'requires_check_in',
 ])]
 class RepairOrder extends Model
 {
+    public const SOURCE_APPOINTMENT = 'APPOINTMENT';
+
+    public const SOURCE_WALK_IN = 'WALK_IN';
+
     public const RECEIVED = 'RECEIVED';
 
     public const INSPECTING = 'INSPECTING';
@@ -61,7 +66,27 @@ class RepairOrder extends Model
             'completed_at' => 'datetime',
             'handed_over_at' => 'datetime',
             'closed_at' => 'datetime',
+            'requires_check_in' => 'boolean',
         ];
+    }
+
+    public function bookedVehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class, 'booked_vehicle_id');
+    }
+
+    public function handovers(): HasMany
+    {
+        return $this->hasMany(VehicleHandover::class)->orderBy('id');
+    }
+
+    /** Biên bản CHECK_IN đã được khách xác nhận (bản mới nhất). */
+    public function confirmedCheckIn(): HasOne
+    {
+        return $this->hasOne(VehicleHandover::class)
+            ->where('type', VehicleHandover::TYPE_CHECK_IN)
+            ->where('status', VehicleHandover::STATUS_CONFIRMED)
+            ->latestOfMany();
     }
 
     public function appointment(): BelongsTo

@@ -6,6 +6,7 @@ use App\Exceptions\InvalidStatusTransitionException;
 use App\Models\Account;
 use App\Models\Appointment;
 use App\Models\Assignment;
+use App\Models\AuditLog;
 use App\Models\Employee;
 use App\Models\Inspection;
 use App\Models\InspectionItem;
@@ -46,8 +47,14 @@ class RepairOrderService
                 throw InvalidStatusTransitionException::because('Xe không thuộc khách hàng đã chọn.');
             }
 
+            $bookedVehicleId = null;
             if (! empty($data['appointment_id'])) {
-                $this->assertAppointmentReadyForReceiving((int) $data['appointment_id'], $data);
+                $bookedVehicleId = $this->assertAppointmentReadyForReceiving((int) $data['appointment_id'], $data);
+            }
+            $vehicleChanged = $bookedVehicleId !== null && $bookedVehicleId !== (int) $vehicle->id;
+            $changeReason = trim((string) ($data['vehicle_change_reason'] ?? ''));
+            if ($vehicleChanged && mb_strlen($changeReason) < 5) {
+                throw InvalidStatusTransitionException::because('Xe mang tới khác xe trong lịch hẹn: nhập lý do đổi xe (ít nhất 5 ký tự).');
             }
 
             $openOrder = RepairOrder::query()
@@ -72,9 +79,30 @@ class RepairOrderService
                 'status' => RepairOrder::RECEIVED,
                 'received_at' => now(),
                 'note' => $data['note'] ?? null,
+                'source' => empty($data['appointment_id']) ? RepairOrder::SOURCE_WALK_IN : RepairOrder::SOURCE_APPOINTMENT,
+                'booked_vehicle_id' => $vehicleChanged ? $bookedVehicleId : null,
+                'vehicle_change_reason' => $vehicleChanged ? $changeReason : null,
+                // Phiếu mới phải có biên bản CHECK_IN được khách xác nhận trước khi kiểm tra (P2).
+                'requires_check_in' => true,
             ]);
 
-            $this->logHistory($ro, RepairOrder::RECEIVED, null, 'Tiếp nhận xe.');
+            $this->logHistory($ro, RepairOrder::RECEIVED, null, $vehicleChanged
+                ? "Tiếp nhận xe (đổi xe so với lịch hẹn: {$changeReason})."
+                : 'Tiếp nhận xe.');
+
+            if ($vehicleChanged) {
+                AuditLog::query()->create([
+                    'account_id' => $advisor->account_id,
+                    'action' => 'repair_order.vehicle_changed',
+                    'auditable_type' => RepairOrder::class,
+                    'auditable_id' => $ro->id,
+                    'old_values' => ['vehicle_id' => $bookedVehicleId],
+                    'new_values' => ['vehicle_id' => (int) $vehicle->id],
+                    'reason' => $changeReason,
+                    'ip_address' => request()->ip(),
+                    'user_agent' => substr((string) request()->userAgent(), 0, 1000),
+                ]);
+            }
 
             return $ro;
         });
@@ -737,7 +765,8 @@ class RepairOrderService
      *
      * @param  array{customer_id: int|string, vehicle_id: int|string}  $data
      */
-    private function assertAppointmentReadyForReceiving(int $appointmentId, array $data): void
+    /** @return int xe trong lịch hẹn (để phát hiện đổi xe) */
+    private function assertAppointmentReadyForReceiving(int $appointmentId, array $data): int
     {
         $appointment = Appointment::query()->lockForUpdate()->find($appointmentId);
 
@@ -751,9 +780,10 @@ class RepairOrderService
             );
         }
 
-        if ((int) $appointment->customer_id !== (int) $data['customer_id']
-            || (int) $appointment->vehicle_id !== (int) $data['vehicle_id']) {
-            throw InvalidStatusTransitionException::because('Khách hàng hoặc xe không khớp với lịch hẹn.');
+        // Xe có thể khác lịch hẹn (khách mang xe khác của mình) — receive() bắt buộc lý do + ghi audit.
+        // Xe phải thuộc đúng khách của lịch hẹn (receive() đã kiểm xe thuộc customer_id).
+        if ((int) $appointment->customer_id !== (int) $data['customer_id']) {
+            throw InvalidStatusTransitionException::because('Khách hàng không khớp với lịch hẹn.');
         }
 
         $existing = RepairOrder::query()->where('appointment_id', $appointmentId)->first();
@@ -763,6 +793,8 @@ class RepairOrderService
                 "Lịch hẹn này đã có phiếu sửa chữa {$existing->repair_order_code}, không tạo phiếu thứ hai."
             );
         }
+
+        return (int) $appointment->vehicle_id;
     }
 
     private function assertAdvisor(Employee $employee): void

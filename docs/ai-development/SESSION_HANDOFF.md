@@ -18,7 +18,11 @@
 - Trình duyệt: panel duyệt tại quầy + ảnh chẩn đoán hiển thị đúng; gửi/nhập OTP thật và upload ảnh **BROWSER_NOT_VERIFIED** (tránh email thật / dữ liệu giả).
 - Script trình duyệt: scratchpad `audit/p1check.mjs` (chỉ đọc + bấm toggle).
 
-## Tiếp theo: P2 — chia nhỏ
+## Đã xong trong P2
+
+- P2-A + P2-B (một commit `feat(reception)`): migration `2026_11_08_110000_create_vehicle_handovers_table.php`, `2026_11_08_110100_add_reception_columns_to_repair_orders_table.php`; model `VehicleHandover`, `HandoverChecklistItem`; `RepairOrder` (+ fillable, `bookedVehicle`, `handovers`, `confirmedCheckIn`, `SOURCE_*`); `RepairOrderService::receive` (đổi xe + audit + source + requires_check_in); test `ReceptionVehicleChangeTest`. **Chưa migrate DB dev cho 2 migration P2** (làm khi kiểm trình duyệt P2-D).
+
+## Kế hoạch P2 (gốc)
 
 | Bước | Nội dung | Commit dự kiến |
 |---|---|---|
