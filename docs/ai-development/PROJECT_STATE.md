@@ -38,3 +38,8 @@ Không có.
 
 - P1A-01 → P1A-02: migration chạy được trên SQLite test (`migrate:fresh` trong test), rollback được, toàn bộ test cũ vẫn đạt, không đổi bảng cũ.
 - Rời P1 khi P1D-03 VERIFIED và PO nghiệm thu P1.
+
+
+## Cập nhật 08/11/2026 (sau P7)
+
+P0–P7 đã triển khai và commit (xem SESSION_HANDOFF.md). Còn: UX-01..09, P3-FE-H, FINAL-01. Backend 211/211, smoke 21/21. DB dev migrate tới 2026_11_08_160000.

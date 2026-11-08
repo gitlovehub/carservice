@@ -1,30 +1,27 @@
 # SESSION HANDOFF
 
 > Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
-> Cập nhật: 08/11/2026 — sau P5.
+> Cập nhật: 08/11/2026 — sau P7.
 
 ## Commit (fix/apt, chưa push)
 
-`a67819e` P1A · `b533524` P1B · `26389df` P1C · `7452c1a` P1D · `b9e40cb` P2-A/B · `b237658` QA-01 · `6fe0f37` P2-C · `9f51b4c` P2-D · `2d64bd2` P3-A · `0967552` P3-B · `8fb42fa` P3-C · `1b37879` P4 BE · `2468b81` P4 FE · `47eef0d` P5-A · `09a3a0c` P5-B · `da44e68` P5-C.
+P1: `a67819e` `b533524` `26389df` `7452c1a` · P2: `b9e40cb` `6fe0f37` `9f51b4c` · QA-01: `b237658` · P3: `2d64bd2` `0967552` `8fb42fa` · P4: `1b37879` `2468b81` · P5: `47eef0d` `09a3a0c` `da44e68` · P6: `31f7214` `bf5f429` · P7: `d734ffa` `2f58501` · docs: `51beadc`.
 
-DB dev local đã migrate tới `2026_11_08_140000` (D-016).
+DB dev local đã migrate tới `2026_11_08_160000` (D-016).
 
 ## Kiểm thử gần nhất
 
-Backend 201/201 · smoke 19/19 · tsc + build đạt · ESLint không tăng so với trước · trình duyệt: hồi quy đạt, nhiều panel mới BROWSER_NOT_VERIFIED (xem MASTER_TASK_LIST).
+Backend **211/211** · smoke **21/21** · tsc + build đạt · ESLint không tăng so với trước (nợ cũ 22 lỗi `set-state-in-effect` vẫn còn — UX-06).
+Trình duyệt: hồi quy chỉ đọc đạt ở mỗi phase; nhiều panel mới BROWSER_NOT_VERIFIED (dữ liệu dev không có phiếu phù hợp; tránh tạo dữ liệu giả / gửi email thật). Admin không đăng nhập được bằng script (không có mật khẩu admin demo).
 
 ## Quyết định kỹ thuật chờ PO (không chặn)
 
-T-002 (không giảm giá phát sinh) · T-003 (dịch vụ nhanh chỉ gồm dịch vụ niêm yết).
+T-002 không giảm giá phát sinh · T-003 dịch vụ nhanh chỉ gồm dịch vụ niêm yết · T-004 lịch không rõ thời lượng = 60 phút.
 
-## Tiếp theo: P6 — Phụ tùng chờ + ETA
+## Còn lại
 
-Roadmap: bảng `part_requests` (repair_order_id, quotation_item_id, part_id, quantity, status REQUESTED/ORDERED/RECEIVED/CANCELLED, supplier_note, ordered_at, eta_date, received_at, created_by_account_id). Backend:
-- Khi dòng PART được duyệt (INITIAL lúc startRepair, SUPPLEMENT lúc duyệt) mà tồn kho < số lượng → tạo `part_requests` REQUESTED (không chặn bắt đầu sửa).
-- Advisor/Admin cập nhật ORDERED (+ ETA), RECEIVED → tạo `inventory_transactions` IN + tăng `inventories.quantity` (xem `recordUsedPart` để biết cấu trúc giao dịch kho).
-- `resumeFromWaitingForParts`: chặn khi còn yêu cầu chưa RECEIVED (trừ khi cố vấn ghi lý do — roadmap).
-- `notifications` khi hàng về (kiểm tra bảng notifications có sẵn).
-- Customer: phụ tùng đang chờ + ETA trong `/me/repair-orders/{id}`.
-**Lưu ý:** roadmap ghi "mở chuyển trạng thái WAITING_APPROVAL → WAITING_FOR_PARTS" — thay đổi máy trạng thái; cân nhắc giữ luồng hiện có (IN_PROGRESS → WAITING_FOR_PARTS đã có) để không đổi luồng; nếu cần mở thêm thì ghi T-004.
+1. **UX-01..09** (`FINAL_UI_UX_AUDIT_AFTER_PHASE5.md` §5): H4 nút trong bảng/form cũ → `Button`; M3 gộp Toast → `notify()`; M6 lưới mobile + vùng bấm; M2 `PageHeader` trang khách; M7 gỡ Font Awesome/emoji; 22 lỗi ESLint `set-state-in-effect`; tách bundle theo route; L6–L8; đo lại tương phản dark. Làm từng mục một, mỗi mục một commit; không đổi nghiệp vụ.
+2. **P3-FE-H**: giao diện lịch sử duyệt từng dòng (dữ liệu đã có).
+3. **FINAL-01**: chạy toàn bộ test, security review nhanh (route mới: quyền, throttle, rò rỉ dữ liệu khách), kiểm trình duyệt có thể, rồi tạo `FINAL_IMPLEMENTATION_REPORT.md` (danh sách chức năng + commit, migration/API mới, test, lỗi còn lại, quyết định chờ duyệt, bảo mật, trình duyệt, mức sẵn sàng demo).
 
-Sau đó: P7 (công suất, Q6 cảnh báo không chặn), UX-01..09, FINAL-01 + `FINAL_IMPLEMENTATION_REPORT.md`.
+Gợi ý thứ tự: FINAL-01 trước (để PO có báo cáo tổng sớm), rồi UX theo mức ảnh hưởng demo.
