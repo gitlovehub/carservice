@@ -68,6 +68,8 @@ type Appointment = {
   note?: string;
   status: AppointmentStatus;
   cancel_reason?: string;
+  /** Nhân viên xử lý gần nhất (xác nhận / tiếp nhận / đổi / hủy). */
+  handled_by?: { id: number; email?: string; employee?: { full_name?: string } | null } | null;
 };
 
 type AppointmentResponse = {
@@ -562,6 +564,7 @@ function Appointments() {
                         <th className="px-5 py-3.5">Dịch vụ</th>
                         <th className="px-5 py-3.5">Thời gian</th>
                         <th className="px-5 py-3.5">Trạng thái</th>
+                  <th className="px-5 py-3.5">Người xử lý</th>
                         <th className="px-5 py-3.5">Thao tác</th>
                       </tr>
                     </thead>
@@ -617,6 +620,10 @@ function Appointments() {
 
                             <td className="px-5 py-4">
                               <StatusBadge domain="appointment" status={appointment.status}/>
+                            </td>
+
+                            <td className="px-5 py-4 text-slate-600" data-testid="handled-by">
+                              {appointment.handled_by ? (appointment.handled_by.employee?.full_name || appointment.handled_by.email) : <span className="text-slate-400">Chưa xử lý</span>}
                             </td>
 
                             <td className="px-5 py-4">

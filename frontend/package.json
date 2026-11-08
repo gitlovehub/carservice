@@ -27,7 +27,8 @@
     "test:check-out": "node tests/check-out-pickup-ui.mjs",
     "test:service-flow": "node tests/service-flow-ui.mjs",
     "test:part-requests": "node tests/part-requests-ui.mjs",
-    "test:capacity": "node tests/capacity-ui.mjs"
+    "test:capacity": "node tests/capacity-ui.mjs",
+    "test:advisor-tracking": "node tests/advisor-tracking-ui.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
