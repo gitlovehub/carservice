@@ -17,6 +17,9 @@ Chỉ ghi quyết định đã được PO phê duyệt vào mục "Đã phê du
 | D-009 | 08/11/2026 | **Q5** Phí kiểm tra khi khách từ chối: ngoài phạm vi | như D-005 | PO |
 | D-010 | 08/11/2026 | **Q6** Công suất: chỉ cảnh báo theo tổng phút/ngày, không chặn cứng | như D-005 | PO |
 | D-011 | 08/11/2026 | **Q7** Dịch vụ nhanh bắt buộc 4 ảnh tổng quan | như D-005 | PO |
+| D-013 | 08/11/2026 | **Nghiệm thu P0**, gồm T-001 (hủy "gộp mọi báo giá") | PO chọn "Duyệt P0" | PO |
+| D-014 | 08/11/2026 | Cho commit local (không push) Phase 5 và P0 thành 2 commit riêng | PO chọn "Cho commit". Chỉ áp dụng cho checkpoint này; commit sau vẫn phải hỏi | PO |
+| D-015 | 08/11/2026 | **AUTONOMOUS DONE MODE**: tự triển khai roadmap P1→P7 + UI/UX; **tự commit** từng chức năng khi test đạt (Conventional Commits). Không push/merge/deploy; không thao tác DB production; không email/OTP thật; không đổi tính tiền, phương thức xác nhận, chính sách ủy quyền khi còn mơ hồ | Prompt "AUTONOMOUS DONE MODE" | PO |
 | D-012 | 08/11/2026 | **Không** làm ký tay trên màn hình (SignaturePad) trong P1; khách không dùng email → tạo/kích hoạt tài khoản tại quầy hoặc dùng OTP email | Phương án đơn giản theo chỉ đạo PO | PO |
 
 Lưu ý triển khai D-005: OTP đi chung đường gửi với OTP quên mật khẩu; test dùng `Mail::fake()`. Việc xác minh tên miền trên Resend và cấu hình Railway do PO làm, ngoài code.
@@ -25,4 +28,4 @@ Lưu ý triển khai D-005: OTP đi chung đường gửi với OTP quên mật 
 
 | ID | Ngày | Nội dung | Lý do | Trạng thái |
 |---|---|---|---|---|
-| T-001 | 08/11/2026 | Hủy mục roadmap P0 "hóa đơn gộp mọi báo giá"; giữ `latestQuotation`; việc gộp chuyển sang P3 (chỉ `INITIAL` + `SUPPLEMENT`) | Phiên bản báo giá là bản thay thế; gộp sẽ tính tiền hai lần. Có test khóa | Chờ PO xác nhận khi nghiệm thu P0 (P0-04) |
+| T-001 | 08/11/2026 | Hủy mục roadmap P0 "hóa đơn gộp mọi báo giá"; giữ `latestQuotation`; việc gộp chuyển sang P3 (chỉ `INITIAL` + `SUPPLEMENT`) | Phiên bản báo giá là bản thay thế; gộp sẽ tính tiền hai lần. Có test khóa | **Đã duyệt** (D-013) |

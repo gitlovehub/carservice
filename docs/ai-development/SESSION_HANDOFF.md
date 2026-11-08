@@ -1,32 +1,25 @@
 # SESSION HANDOFF
 
-> Cập nhật: 08/11/2026 — sau NEXT #1 (P0-03).
+> Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
+> Cập nhật: 08/11/2026.
 
-## Vừa làm
+## Vừa xong
 
-- P0-03 **VERIFIED**: kiểm trình duyệt trang Chi tiết phiếu Advisor (`/advisor/service-orders/{id}`) với 4 phiếu có sẵn trong DB dev (#10 SENT, #3 REJECTED, #5 APPROVED, #1 chưa báo giá), sáng + tối. Không còn nút "Ghi nhận phản hồi tại quầy", 0 ô tick, có hướng dẫn chỉ khách duyệt, cột "Khách" đúng dữ liệu, 0 lỗi console, 0 request ghi.
-- Cập nhật `PHASE_P0_REPORT.md` §5, §7, §8.
-- Trước đó: PO chốt Q1–Q7 theo đề xuất (D-005 … D-012), không làm ký tay.
+- P1A (P1A-01 migration + P1A-02 model) → commit `feat(evidence): add evidence schema and models` (hash ghi trong `MASTER_TASK_LIST.md` / `PROJECT_STATE.md` ở commit kế tiếp).
+- Model: `MediaAttachment` (ẩn disk/path, hằng số giới hạn D-007), `ConfirmationOtp` (ẩn code_hash, TTL 10', tối đa 5 lần, `isUsable()`), `CustomerConfirmation` (chỉ thêm: chặn update/delete), `Quotation::confirmations()`.
+- Test: `EvidenceSchemaTest` 4, `EvidenceModelsTest` 3. Suite 153/153 (có 1 test chập chờn có sẵn: QA-01).
 
-## Đang làm
+## Tiếp theo: P1B-01 + P1B-02 (một commit `feat(media)`)
 
-Không có. Không có code dở dang. Không sửa code trong NEXT này.
+- `MediaService`: lưu `storage/app/private/evidence/{yyyy}/{mm}/{uuid}.{ext}` (disk `local`), SHA-256, kiểm MIME thật (JPEG/PNG/WebP), ≤ 10 MB, ≤ 30 ảnh/đối tượng.
+- API: `POST /api/media` (ADVISOR; multipart `file`, `attachable_type` theo whitelist alias, `attachable_id`, `caption?`, `position_code?`, `taken_at?`) ; `GET /api/media/{id}` (stream; nhân viên ADVISOR/ADMIN hoặc khách sở hữu phiếu liên quan); `GET /api/media/{id}` trả 403 cho khách khác.
+- Whitelist alias P1: `quotation` → `Quotation`, `repair_order` → `RepairOrder`, `inspection` → `Inspection` (P2 thêm `handover`).
+- Test: 422 sai loại / quá dung lượng / quá số lượng; 403 khách khác; khách chủ phiếu xem được; Storage::fake.
 
-## Chưa làm / bị chặn
+## Sau đó
 
-- P0-04: PO nghiệm thu P0 + xác nhận T-001.
-- G-02: PO cho phép commit checkpoint (2 commit, không push), hoặc đồng ý làm tiếp khi chưa commit.
+P1C-01..03 (confirmation + OTP email, `Mail::fake`), P1D (frontend), rồi P2…
 
-## File vừa sửa
+## Cần PO
 
-`PHASE_P0_REPORT.md`, `docs/ai-development/*` (trạng thái). Script kiểm tra nằm ở scratchpad (không thuộc repo).
-
-## Lệnh NEXT tiếp theo sẽ làm
-
-- Nếu PO đã nghiệm thu P0 **và** (cho commit hoặc đồng ý không commit): làm G-02 (nếu được phép) rồi **P1A-01** — migration thêm 3 bảng `media_attachments`, `customer_confirmations`, `confirmation_otps` (chỉ thêm bảng; chạy trên SQLite test; **không** chạy `migrate` trên DB dev/thật nếu chưa hỏi).
-- Nếu chưa: NEXT báo BLOCKED và hỏi lại 2 điều trên.
-
-## Cần PO quyết định
-
-1. Nghiệm thu P0 (gồm T-001).
-2. Cho commit checkpoint không push? (có / không)
+Trước P1D-03 (trình duyệt): cho `php artisan migrate` (chỉ thêm bảng) trên DB dev Laragon? Nếu chưa được trả lời → ghi BROWSER_NOT_VERIFIED cho phần cần bảng mới.

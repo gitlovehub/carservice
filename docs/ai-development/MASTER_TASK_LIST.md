@@ -11,21 +11,21 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 | P0-01 | Gỡ đường nhân viên "ghi nhận khách đồng ý" (route, controller, UI, API client) | — | VERIFIED | Backend test `test_staff_cannot_respond_…`; smoke `customer-approval-only.mjs`; trình duyệt P0-03 |
 | P0-02 | Hủy việc "gộp mọi báo giá" (sẽ tính tiền 2 lần); thêm test khóa hành vi báo giá lại | — | VERIFIED (tự động) | `test_requote_replaces_…` (750.000), `test_new_quotation_cannot_be_created_while_repair_is_in_progress` |
 | P0-03 | Kiểm tra trình duyệt trang Chi tiết phiếu Advisor: bảng báo giá chỉ hiển thị, có hướng dẫn, không còn nút tại quầy | P0-01 | VERIFIED | 08/11/2026: 4 phiếu có sẵn (SENT/REJECTED/APPROVED/chưa báo giá) × sáng/tối; 0 lỗi console; 0 request ghi. `PHASE_P0_REPORT.md` §5 |
-| P0-04 | PO nghiệm thu P0 (gồm việc chấp nhận hủy mục "gộp báo giá") | P0-03 | BLOCKED (chờ PO) | — |
+| P0-04 | PO nghiệm thu P0 (gồm việc chấp nhận hủy mục "gộp báo giá") | P0-03 | VERIFIED | D-013 (08/11/2026) |
 
 ## Cổng trước P1
 
 | ID | Mô tả | Phụ thuộc | Trạng thái | Bằng chứng |
 |---|---|---|---|---|
 | G-01 | Chốt Q1–Q7 | — | VERIFIED | `DECISION_LOG.md` D-005 … D-012 (08/11/2026) |
-| G-02 | Checkpoint Git: commit Phase 5 và P0 thành 2 commit riêng | P0-04 | BLOCKED (cần PO cho phép commit) | — |
+| G-02 | Checkpoint Git: commit Phase 5 và P0 thành 2 commit riêng | P0-04 | VERIFIED | `2bec3e0` Phase 5 (81 file), `ea1b85e` P0 (17 file); không push; working tree sạch |
 
 ## P1 – Hạ tầng bằng chứng và xác nhận
 
 | ID | Mô tả | Phụ thuộc | Trạng thái |
 |---|---|---|---|
-| P1A-01 | Migration (chỉ thêm bảng): `media_attachments`, `customer_confirmations`, `confirmation_otps` | P0-04, G-02 | PENDING |
-| P1A-02 | Model, quan hệ, factory, enum phương thức xác nhận; test model | P1A-01 | PENDING |
+| P1A-01 | Migration (chỉ thêm bảng): `media_attachments`, `customer_confirmations`, `confirmation_otps` | P0-04, G-02 | VERIFIED (SQLite test) — `EvidenceSchemaTest` 4/4, suite 150/150, Pint đạt. Chưa migrate DB dev |
+| P1A-02 | Model, quan hệ, hằng số phương thức/mục đích; xác nhận chỉ thêm; test model | P1A-01 | VERIFIED — `EvidenceModelsTest` 3/3, suite 153/153 |
 | P1B-01 | `MediaService`: lưu private, SHA-256, kiểm loại/kích thước/số lượng | P1A-02, Q3 | PENDING |
 | P1B-02 | API `POST /media`, `GET /media/{id}` + policy (nhân viên / chủ phiếu); test 422/403 | P1B-01 | PENDING |
 | P1C-01 | `ConfirmationService`: snapshot + hash nội dung, xác nhận bằng tài khoản khách | P1A-02, Q4 | PENDING |
@@ -84,6 +84,12 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 | UX-08 | L6, L7, L8 | PENDING |
 | UX-09 | Đo lại tương phản dark mode trên trình duyệt | PENDING |
 | UX-B1..B3 | API `model.brand` cho `/me/vehicles`; API Tổng quan; API doanh thu | BLOCKED (thay đổi API, cần PO) |
+
+## Chất lượng test
+
+| ID | Mô tả | Trạng thái |
+|---|---|---|
+| QA-01 | `BookingCatalogControllerTest::test_filters_packages_by_vehicle_model_name…` chập chờn: `VehicleBrandFactory` chọn ngẫu nhiên tên có thể trùng "Toyota" test tự tạo (UNIQUE `vehicle_brands.name`). Có từ trước P1; 1/4 lần chạy lỗi | PENDING |
 
 ## Kết thúc
 

@@ -20,4 +20,7 @@
 | 08/11/2026 | Chạy lại khi khởi tạo | **146/146 (634)** | **14/14** | **đạt** | không chạy lại | — | — |
 | 08/11/2026 | P0-03 | — | — | — | — | — | Chi tiết phiếu Advisor: 8/8 lượt đạt (4 trạng thái × sáng/tối) |
 
+| 08/11/2026 | P1A-02 | **153/153 (657)** (QA-01 chập chờn 1/4) | 14/14 | — | — | — | — |
+| 08/11/2026 | P1A-01 | **150/150 (644)** | 14/14 (không đổi frontend) | — | — | — | — |
+
 Script trình duyệt (chỉ GET, dùng dữ liệu có sẵn): scratchpad `audit/p0check.mjs` + `audit/cdp.mjs` (thư mục tạm của phiên; nếu mất thì viết lại theo mô tả trong `PHASE_P0_REPORT.md` §5).
