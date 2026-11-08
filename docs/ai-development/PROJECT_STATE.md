@@ -1,42 +1,39 @@
 # PROJECT STATE – CarService WD_004
 
-> Cập nhật: 08/11/2026 (khởi tạo hệ thống tự quản lý).
+> Cập nhật: 08/11/2026 — sau NEXT #2 (P0-04 + G-02).
 > Đọc file này + `SESSION_HANDOFF.md` + `MASTER_TASK_LIST.md` ở đầu mỗi lệnh NEXT.
 
 ## Git
 
 | | |
 |---|---|
-| Nhánh | `fix/apt` |
-| Commit HEAD | `d864927` (Merge branch 'fix/apt') |
-| Nhánh chính | `main` |
-| Thay đổi chưa commit | ~91 mục: Phase 5 UI/UX (81 file) + P0 (6 file code/test) + tài liệu nghiệp vụ + `docs/ai-development/` |
-| Commit/push | **Chưa được phép.** Chỉ commit khi PO cho phép (task G-02) |
-
-File P0 chưa commit: `backend/routes/api.php`, `backend/app/Http/Controllers/Api/QuotationController.php`, `backend/tests/Feature/RepairFlowTest.php`, `frontend/src/pages/advisor/RepairOrderPanels.tsx`, `frontend/src/services/workflowService.ts`, `frontend/package.json`, `frontend/tests/customer-approval-only.mjs` (mới).
+| Nhánh | `fix/apt` (chưa push; remote vẫn ở `d864927`) |
+| Commit | `ea1b85e` P0: quotation approval is customer-only ← `2bec3e0` Phase 5: UI/UX refinement ← `d864927` |
+| Thay đổi chưa commit | Không (sau commit P1A) |
+| Commit/push | Mỗi lần commit phải hỏi PO (D-014 chỉ cho checkpoint này). Push: chưa được phép |
 
 ## Vị trí hiện tại
 
 | | |
 |---|---|
-| Phase hiện tại | **P0 – Sửa lỗi an toàn** |
-| Bước hiện tại | P0-04: chờ PO nghiệm thu P0 (P0-01..03 đã VERIFIED) |
-| Phase đã hoàn thành | Phase 3 (component), Phase 4 (layout), Phase 5 (UI/UX refinement, điểm 7.3), phân tích nghiệp vụ |
-| P0 | Đã triển khai, kiểm thử tự động và kiểm trình duyệt (08/11/2026). **Chưa** được PO nghiệm thu |
-| Phase tiếp theo | P1A (Q1–Q7 đã chốt; còn chờ nghiệm thu P0 và checkpoint Git) |
+| Phase đã hoàn thành | Phase 3, 4, 5; **P0 (nghiệm thu 08/11/2026)** |
+| Quyết định | Q1–Q7 đã chốt (D-005 … D-012) |
+| Phase hiện tại | **P1 – Hạ tầng bằng chứng và xác nhận** |
+| Chế độ | AUTONOMOUS DONE MODE (D-015): tự commit từng chức năng, không push |
+| Bước vừa xong | P1A (migration + model) |
+| Bước tiếp theo | **P1B**: MediaService + API media |
 
-## Kiểm thử gần nhất (chạy lại 08/11/2026 khi khởi tạo)
+## Kiểm thử gần nhất
 
-- Backend `php artisan test`: **146/146**, 634 assertion.
-- Frontend smoke `tests/*.mjs`: **14/14**.
-- `tsc -b`: đạt.
-- `vite build`: đạt ở lần chạy P0 (không chạy lại khi khởi tạo).
-- ESLint toàn dự án: 22 lỗi `set-state-in-effect` tồn từ trước (nợ kỹ thuật Phase 5).
+- Backend 146/146 (634), smoke 14/14, tsc đạt — chạy 08/11/2026 trên đúng nội dung của commit `ea1b85e`.
+- Trình duyệt P0-03: 8/8 đạt.
+- Commit trung gian `2bec3e0` (Phase 5 không có P0) **không** được build/test riêng; nội dung bằng HEAD cũ + thay đổi Phase 5 của `RepairOrderPanels.tsx`.
 
 ## Công việc đang dở
 
-Không có thay đổi code dở dang.
+Không có.
 
 ## Điều kiện chuyển bước
 
-- Rời P0 → P1A khi: P0-03 xong (hoặc PO chấp nhận bỏ qua), PO nghiệm thu P0 (P0-04), có checkpoint Git hoặc PO đồng ý làm tiếp không commit (G-02). G-01 (Q1–Q7) đã xong.
+- P1A-01 → P1A-02: migration chạy được trên SQLite test (`migrate:fresh` trong test), rollback được, toàn bộ test cũ vẫn đạt, không đổi bảng cũ.
+- Rời P1 khi P1D-03 VERIFIED và PO nghiệm thu P1.

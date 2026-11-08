@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
     'quotation_code', 'repair_order_id', 'advisor_id', 'version', 'subtotal',
@@ -49,6 +50,11 @@ class Quotation extends Model
     public function items(): HasMany
     {
         return $this->hasMany(QuotationItem::class);
+    }
+
+    public function confirmations(): MorphMany
+    {
+        return $this->morphMany(CustomerConfirmation::class, 'confirmable');
     }
 
     public function recalculateTotals(): void
