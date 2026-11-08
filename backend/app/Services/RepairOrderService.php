@@ -17,6 +17,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\MediaAttachment;
 use App\Models\Part;
+use App\Models\PartRequest;
 use App\Models\Payment;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
@@ -490,6 +491,7 @@ class RepairOrderService
                     $this->createWorkItemsFor($quotation->repairOrder, $item);
                 }
                 $this->refreshEstimatedReadyAt($quotation->repairOrder);
+                $this->syncPartShortages($quotation->repairOrder, $quotation, null);
                 $this->logHistory($quotation->repairOrder, $quotation->repairOrder->status, null,
                     "Khách đã trả lời báo giá phát sinh {$quotation->quotation_code}.");
             }
@@ -526,6 +528,7 @@ class RepairOrderService
             $this->transition($ro, RepairOrder::IN_PROGRESS, $actor,
                 "Bắt đầu sửa chữa theo báo giá {$quotation->quotation_code}.");
             $this->refreshEstimatedReadyAt($ro);
+            $this->syncPartShortages($ro, $quotation, $actor);
 
             return $ro;
         });
@@ -545,6 +548,11 @@ class RepairOrderService
 
     public function resumeFromWaitingForParts(RepairOrder $ro, ?Account $actor, ?string $note = null): RepairOrder
     {
+        // P6: còn phụ tùng đặt chưa về thì cố vấn phải ghi lý do tiếp tục.
+        if ($ro->partRequests()->whereIn('status', PartRequest::OPEN)->exists() && mb_strlen(trim((string) $note)) < 5) {
+            throw InvalidStatusTransitionException::because('Còn phụ tùng đặt hàng chưa về. Ghi lý do (ít nhất 5 ký tự) nếu vẫn tiếp tục sửa.');
+        }
+
         $this->transition($ro, RepairOrder::IN_PROGRESS, $actor, $note ?? 'Đã có đủ phụ tùng, tiếp tục sửa chữa.');
 
         return $ro;
@@ -955,6 +963,32 @@ class RepairOrderService
             'standard_minutes' => $service?->estimated_minutes ? $service->estimated_minutes * max(1, (int) $item->quantity) : null,
             'status' => WorkItem::PENDING,
         ]);
+    }
+
+    /**
+     * P6: dòng phụ tùng khách đã duyệt mà tồn kho không đủ → tạo yêu cầu đặt hàng (một lần / dòng).
+     * Không chặn bắt đầu sửa; cố vấn có thể chuyển phiếu sang WAITING_FOR_PARTS (luồng có sẵn).
+     */
+    private function syncPartShortages(RepairOrder $ro, Quotation $quotation, ?Account $actor): void
+    {
+        $parts = $quotation->items()->where('item_type', QuotationItem::TYPE_PART)->where('is_approved', true)->get();
+        foreach ($parts as $item) {
+            if (PartRequest::query()->where('quotation_item_id', $item->id)->where('status', '!=', PartRequest::CANCELLED)->exists()) {
+                continue;
+            }
+            $inStock = (int) Inventory::query()->where('part_id', $item->part_id)->value('quantity');
+            $missing = (int) $item->quantity - max(0, $inStock);
+            if ($missing > 0) {
+                PartRequest::query()->create([
+                    'repair_order_id' => $ro->id,
+                    'quotation_item_id' => $item->id,
+                    'part_id' => $item->part_id,
+                    'quantity' => $missing,
+                    'status' => PartRequest::REQUESTED,
+                    'created_by_account_id' => $actor?->id,
+                ]);
+            }
+        }
     }
 
     /** Giờ dự kiến xong = bây giờ + tổng phút chuẩn của công việc chưa xong (null nếu chưa có phút chuẩn). */

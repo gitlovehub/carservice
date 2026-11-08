@@ -57,6 +57,9 @@ class CustomerRepairOrderController extends Controller
             'inspections.recommendations:id,inspection_id,item_type,service_id,part_id,quantity',
             'inspections.recommendations.service:id,name',
             'inspections.recommendations.part:id,name',
+            // P6: phụ tùng đang chờ + ngày dự kiến về (không lộ ghi chú nhà cung cấp).
+            'partRequests:id,repair_order_id,part_id,quantity,status,eta_date,received_at',
+            'partRequests.part:id,name,unit',
             // Biên bản giao nhận đã gửi khách (không lộ bản nháp).
             'handovers' => fn ($query) => $query->whereIn('status', [VehicleHandover::STATUS_SUBMITTED, VehicleHandover::STATUS_CONFIRMED]),
             'handovers.checklistItems',

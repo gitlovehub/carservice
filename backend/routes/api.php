@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\MaintenancePackageController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\PartController;
+use App\Http\Controllers\Api\PartRequestController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\QuotationConfirmationController;
 use App\Http\Controllers\Api\QuotationController;
@@ -176,6 +177,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('/{id}/confirm', [AdvisorAppointmentController::class, 'confirm']);
             Route::post('/{id}/check-in', [AdvisorAppointmentController::class, 'checkIn']);
             Route::post('/{id}/cancel', [AdvisorAppointmentController::class, 'cancel']);
+        });
+
+        // P6: phụ tùng chờ — đặt hàng (ETA), nhận hàng (nhập kho), hủy.
+        Route::controller(PartRequestController::class)->prefix('part-requests')->group(function (): void {
+            Route::get('/', 'index');
+            Route::post('{partRequest}/order', 'order');
+            Route::post('{partRequest}/receive', 'receive');
+            Route::post('{partRequest}/cancel', 'cancel');
         });
 
         // Customer CRUD
