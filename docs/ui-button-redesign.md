@@ -1,7 +1,6 @@
 # Đặc tả: Thiết kế lại hệ thống nút theo vai trò (đã duyệt)
 
 Cập nhật 09/11/2026: Admin bỏ phong cách navy + lime luôn tối, dùng hệ màu cơ bản đỏ thương hiệu theo theme.
-Bản thiết kế ban đầu: https://claude.ai/artifact/YWPyvoc1XFtVTuCm3Jxwjw
 File này là nguồn sự thật để triển khai vào code. Phạm vi: **toàn bộ giao diện web của cả 3 tác nhân**
 (Customer, Advisor, Admin) trong `frontend/src`.
 
