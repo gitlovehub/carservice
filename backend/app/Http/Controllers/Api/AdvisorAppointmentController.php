@@ -7,6 +7,7 @@ use App\Http\Requests\StoreInternalAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Vehicle;
+use App\Services\AppointmentActivityService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -18,10 +19,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AdvisorAppointmentController extends Controller
 {
+    public function __construct(private readonly AppointmentActivityService $activity) {}
+
     public function store(StoreInternalAppointmentRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $appointment = DB::transaction(function () use ($data) {
+        $actor = $request->user();
+        $appointment = DB::transaction(function () use ($data, $actor) {
             $date = $data['appointment_date'];
             $time = $data['appointment_time'].':00';
             $when = Carbon::createFromFormat('Y-m-d H:i:s', "$date $time");
@@ -92,6 +96,8 @@ class AdvisorAppointmentController extends Controller
             ]);
 
             $appointment->syncRequestedItems($data['service_ids'] ?? [], $data['package_ids'] ?? []);
+            $appointment->forceFill(['created_by_account_id' => $actor->id])->save();
+            $this->activity->record($appointment, AppointmentActivityService::CREATED, $actor, [], ['status' => 'PENDING']);
 
             return $appointment;
         });
@@ -115,7 +121,14 @@ class AdvisorAppointmentController extends Controller
                 'vehicle.model.brand:id,name',
                 'services:id,name,base_price',
                 'packages:id,name,mileage_milestone',
+                // Nhân viên xử lý gần nhất.
+                'handledBy:id,email,role', 'handledBy.employee:id,account_id,full_name',
             ]);
+
+            // Lọc theo nhân viên xử lý (tài khoản cố vấn).
+            if ($request->filled('handled_by')) {
+                $query->where('handled_by_account_id', (int) $request->query('handled_by'));
+            }
 
             // Lọc theo ngày hẹn cụ thể (YYYY-MM-DD)
             if ($request->filled('date')) {
@@ -178,6 +191,11 @@ class AdvisorAppointmentController extends Controller
             'packages:id,name,description,mileage_milestone',
             'packages.services:id,name',
             'packages.parts:id,name,unit',
+            'handledBy:id,email,role', 'handledBy.employee:id,account_id,full_name',
+            'createdBy:id,email,role', 'createdBy.employee:id,account_id,full_name',
+            // Lịch sử: ai xác nhận / tiếp nhận / đổi / hủy, lúc nào, lý do.
+            'activities:id,account_id,action,auditable_type,auditable_id,old_values,new_values,reason,created_at',
+            'activities.account:id,email,role', 'activities.account.employee:id,account_id,full_name',
         ])->find($id);
 
         if (! $appointment) {
@@ -196,7 +214,7 @@ class AdvisorAppointmentController extends Controller
     /**
      * Cố vấn duyệt / xác nhận lịch hẹn (PENDING -> CONFIRMED)
      */
-    public function confirm(int $id): JsonResponse
+    public function confirm(Request $request, int $id): JsonResponse
     {
         $appointment = Appointment::find($id);
 
@@ -217,6 +235,7 @@ class AdvisorAppointmentController extends Controller
         $appointment->update([
             'status' => 'CONFIRMED',
         ]);
+        $this->activity->record($appointment, AppointmentActivityService::CONFIRMED, $request->user(), ['status' => 'PENDING'], ['status' => 'CONFIRMED']);
 
         return response()->json([
             'success' => true,
@@ -228,7 +247,7 @@ class AdvisorAppointmentController extends Controller
     /**
      * Tiếp nhận xe tại garage (CONFIRMED -> CHECKED_IN)
      */
-    public function checkIn(int $id): JsonResponse
+    public function checkIn(Request $request, int $id): JsonResponse
     {
         $appointment = Appointment::find($id);
 
@@ -249,6 +268,7 @@ class AdvisorAppointmentController extends Controller
         $appointment->update([
             'status' => 'CHECKED_IN',
         ]);
+        $this->activity->record($appointment, AppointmentActivityService::CHECKED_IN, $request->user(), ['status' => 'CONFIRMED'], ['status' => 'CHECKED_IN']);
 
         return response()->json([
             'success' => true,
@@ -282,15 +302,37 @@ class AdvisorAppointmentController extends Controller
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        $oldStatus = $appointment->status;
         $appointment->update([
             'status' => 'CANCELLED',
             'cancel_reason' => $request->input('cancel_reason'),
         ]);
+        $this->activity->record($appointment, AppointmentActivityService::CANCELLED, $request->user(), ['status' => $oldStatus], ['status' => 'CANCELLED'], $request->input('cancel_reason'));
 
         return response()->json([
             'success' => true,
             'message' => 'Đã hủy lịch hẹn thành công.',
             'data' => $appointment->fresh(),
+        ], Response::HTTP_OK);
+    }
+
+    /**
+     * Cố vấn đổi lịch giúp khách: bắt buộc lý do, kiểm khung giờ như khi đặt lịch, ghi ai đổi, báo khách (web + email).
+     */
+    public function reschedule(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate([
+            'appointment_date' => ['required', 'date_format:Y-m-d'],
+            'appointment_time' => ['required', 'date_format:H:i'],
+            'reason' => ['required', 'string', 'min:5', 'max:255'],
+        ]);
+        $appointment = Appointment::query()->findOrFail($id);
+        $updated = $this->activity->reschedule($appointment, $data['appointment_date'], $data['appointment_time'], $data['reason'], $request->user());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã đổi lịch và báo khách.',
+            'data' => $updated->fresh(['customer', 'vehicle', 'handledBy.employee']),
         ], Response::HTTP_OK);
     }
 }

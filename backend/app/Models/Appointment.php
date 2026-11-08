@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Validation\ValidationException;
 
 class Appointment extends Model
@@ -31,7 +32,26 @@ class Appointment extends Model
         'note',
         'status',
         'cancel_reason',
+        'created_by_account_id',
+        'handled_by_account_id',
     ];
+
+    /** Nhân viên xử lý gần nhất (xác nhận / tiếp nhận / đổi / hủy). */
+    public function handledBy(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'handled_by_account_id');
+    }
+
+    /** Nhân viên tạo lịch hộ khách (null = khách tự đặt). */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'created_by_account_id');
+    }
+
+    public function activities(): MorphMany
+    {
+        return $this->morphMany(AuditLog::class, 'auditable')->latest('id');
+    }
 
     public function customer(): BelongsTo
     {
