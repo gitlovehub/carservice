@@ -20,6 +20,8 @@
 | 08/11/2026 | Chạy lại khi khởi tạo | **146/146 (634)** | **14/14** | **đạt** | không chạy lại | — | — |
 | 08/11/2026 | P0-03 | — | — | — | — | — | Chi tiết phiếu Advisor: 8/8 lượt đạt (4 trạng thái × sáng/tối) |
 
+| 08/11/2026 | **Kết thúc P7** | 211/211 (1229) | **21/21** | đạt | đạt | không tăng | Tiếp nhận (P7) sáng/tối đạt; panel P6/admin P7: BROWSER_NOT_VERIFIED |
+| 08/11/2026 | **Kết thúc P6** | 206/206 (1201) | 20/20 | đạt | đạt | không tăng | Hồi quy đạt |
 | 08/11/2026 | **Kết thúc P5** | 201/201 (1145) | **19/19** | đạt | đạt | không tăng | Hồi quy đạt; panel P5: BROWSER_NOT_VERIFIED |
 | 08/11/2026 | **Kết thúc P4** | 195/195 (1072) | **18/18** | đạt | đạt | không tăng | Hồi quy đạt; panel trả xe/ủy quyền: BROWSER_NOT_VERIFIED |
 | 08/11/2026 | **Kết thúc P3** | 189/189 | **17/17** | đạt | đạt | file mới 0; nợ cũ không tăng | /repair-status sáng đạt; tối + /quotation chưa kết luận; SupplementPanel: BROWSER_NOT_VERIFIED |
