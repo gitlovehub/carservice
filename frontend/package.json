@@ -29,7 +29,8 @@
     "test:part-requests": "node tests/part-requests-ui.mjs",
     "test:capacity": "node tests/capacity-ui.mjs",
     "test:advisor-tracking": "node tests/advisor-tracking-ui.mjs",
-    "test:garage-address": "node tests/garage-address-ui.mjs"
+    "test:garage-address": "node tests/garage-address-ui.mjs",
+    "test:account-area": "node tests/customer-account-area.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

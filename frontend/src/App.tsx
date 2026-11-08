@@ -6,6 +6,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
 import PublicLayout from "./layouts/PublicLayout";
+import CustomerAccountLayout from "./layouts/CustomerAccountLayout";
 import { AdminLayout, AdvisorLayout, CustomerLayout } from "./layouts/AppShell";
 import ModulePlaceholder from "./pages/shared/ModulePlaceholder";
 import Home from "./pages/Home";
@@ -69,15 +70,18 @@ function App() {
       <Route path="/customer/dashboard" element={<CustomerDashboard/>}/>
       <Route path="/customer/booking" element={<Booking/>}/>
       <Route path="/booking" element={<Booking/>}/>
-      <Route path="/appointments" element={<Appointments/>}/>
-      <Route path="/customer/appointments" element={<Appointments/>}/>
-      <Route path="/cars" element={<Cars/>}/>
-      <Route path="/customer/cars" element={<Cars/>}/>
-      <Route path="/customer/service-history" element={<ServiceHistory/>}/>
-      <Route path="/customer/account" element={<Account/>}/>
+      {/* Khu "Hồ sơ của tôi": các trang tài khoản dùng chung sidebar (CustomerAccountLayout). */}
+      <Route element={<CustomerAccountLayout/>}>
+        <Route path="/customer/account" element={<Account/>}/>
+        <Route path="/appointments" element={<Appointments/>}/>
+        <Route path="/customer/appointments" element={<Appointments/>}/>
+        <Route path="/cars" element={<Cars/>}/>
+        <Route path="/customer/cars" element={<Cars/>}/>
+        <Route path="/repair-status" element={<RepairStatus/>}/>
+        <Route path="/quotation" element={<Quotation/>}/>
+        <Route path="/customer/service-history" element={<ServiceHistory/>}/>
+      </Route>
       <Route path="/contact" element={<Contact/>}/>
-      <Route path="/repair-status" element={<RepairStatus/>}/>
-      <Route path="/quotation" element={<Quotation/>}/>
       <Route path="/payment" element={<Payment/>}/>
         <Route path="/payment/vnpay-return" element={<VnpayReturn/>}/>
       <Route path="/invoices" element={<Invoices/>}/>

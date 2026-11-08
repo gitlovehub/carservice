@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "./ui/Icon";
+import { CUSTOMER_ACCOUNT_LINKS } from "../layouts/customerAccountNav";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "../contexts/theme";
 import { useAuthSession } from "../contexts/authSession";
@@ -16,12 +17,6 @@ export function AtelierBrand({ to = "/" }: { to?: string }) {
   </Link>;
 }
 
-const customerExtraLinks = [
-  { label: "Xe của tôi", href: "/customer/cars" },
-  { label: "Tiến độ xe", href: "/repair-status" },
-  { label: "Báo giá", href: "/quotation" },
-  { label: "Lịch sử", href: "/customer/service-history" },
-];
 
 const guestLinks = [
   { label: "Trang chủ", href: "/" },
@@ -38,7 +33,8 @@ export function AtelierPublicHeader() {
   const isAuthenticated = session.status === "authenticated";
   const dashboard = isAuthenticated ? (getRoleManagementPage(session.account.role)?.path ?? "/") : "/login";
   const isCustomer = isAuthenticated && session.account.role === "CUSTOMER";
-  const allLinks = isCustomer ? [...guestLinks, ...customerExtraLinks] : guestLinks;
+  // Khách: Lịch hẹn, Xe, Tiến độ, Báo giá, Lịch sử nằm trong khu "Hồ sơ của tôi" (avatar / menu tài khoản), không lặp ở menu chính.
+  const allLinks = isCustomer ? guestLinks.filter(link => link.label !== "Lịch hẹn") : guestLinks;
   const links = allLinks.map(({label,href}) => {
     const path = label === "Lịch hẹn" && isAuthenticated
       ? session.account.role === "ADMIN" ? "/admin/appointments"
@@ -52,9 +48,9 @@ export function AtelierPublicHeader() {
   const themeLabel = theme === "dark" ? "Bật chế độ sáng" : "Bật chế độ tối";
   const displayName = isAuthenticated ? getUserDisplayName(session.account) : "";
   const initial = (displayName.charAt(0) || "K").toUpperCase();
-  const accountLinks = isCustomer
-    ? [{ label: "Hồ sơ của tôi", to: "/customer/account", icon: "user" as const }, { label: "Xe của tôi", to: "/customer/cars", icon: "car" as const }, { label: "Lịch hẹn", to: "/customer/appointments", icon: "calendar" as const }]
-    : [{ label: "Trang quản lý", to: dashboard, icon: "home" as const }];
+  const accountLinks: Array<{ label: string; to: string; icon: IconName }> = isCustomer
+    ? CUSTOMER_ACCOUNT_LINKS
+    : [{ label: "Trang quản lý", to: dashboard, icon: "home" }];
   const avatar = (size: string) => <span className={`inline-flex ${size} shrink-0 items-center justify-center overflow-hidden rounded-full bg-cs-accent text-xs font-bold text-cs-accent-contrast`}>
     {isAuthenticated && session.account.avatar ? <img src={session.account.avatar} alt="" className="size-full object-cover" referrerPolicy="no-referrer"/> : initial}
   </span>;
@@ -65,7 +61,7 @@ export function AtelierPublicHeader() {
     <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
       <IconButton icon={theme === "dark" ? "sun" : "moon"} label={themeLabel} variant="outline" onClick={toggleTheme} className="max-[820px]:hidden!"/>
       {isAuthenticated
-        ? <AccountMenu name={displayName} email={session.account.email} trigger={avatar("size-10")} links={accountLinks}/>
+        ? <div className="max-[820px]:hidden"><AccountMenu name={displayName} email={session.account.email} trigger={avatar("size-10")} links={accountLinks}/></div>
         : <Link className={buttonClass({ variant: "outline", size: "sm", className: "no-underline max-[820px]:hidden!" })} to="/login">Đăng nhập</Link>}
       <IconButton icon="menu" label="Mở menu" variant="outline" aria-expanded={menuOpen} aria-controls="mobile-drawer" onClick={() => setMenuOpen(true)} className="min-[821px]:hidden!"/>
     </div>
@@ -76,9 +72,14 @@ export function AtelierPublicHeader() {
       </div>}
       <nav className="grid gap-1 [&_a]:rounded-control [&_a]:px-3 [&_a]:py-2.5 [&_a]:text-sm [&_a]:font-semibold [&_a]:text-cs-text [&_a]:no-underline [&_a]:hover:bg-cs-hover" aria-label="Điều hướng trên điện thoại">
         {links}
-        {isAuthenticated && accountLinks.filter(l => !allLinks.some(x => x.href === l.to || x.label === l.label)).map(l => <Link key={l.to} to={l.to} onClick={() => setMenuOpen(false)}>{l.label}</Link>)}
+
         {!isAuthenticated && <><Link to="/login" onClick={() => setMenuOpen(false)}>Đăng nhập</Link><Link to="/register" onClick={() => setMenuOpen(false)}>Đăng ký</Link></>}
       </nav>
+      {isAuthenticated && <nav className="mt-3 grid gap-1 border-t border-cs-border pt-3" aria-label="Tài khoản của tôi">
+        <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-cs-muted">{isCustomer ? "Tài khoản của tôi" : "Quản lý"}</p>
+        {accountLinks.map(l => <Link key={l.to} to={l.to} onClick={() => setMenuOpen(false)} aria-current={location.pathname === l.to ? "page" : undefined}
+          className={`flex items-center gap-3 rounded-control px-3 py-2.5 text-sm font-semibold no-underline hover:bg-cs-hover ${location.pathname === l.to ? "bg-cs-soft text-cs-accent-text" : "text-cs-text"}`}><Icon name={l.icon} size={18}/>{l.label}</Link>)}
+      </nav>}
       <div className="mt-auto grid gap-2 border-t border-cs-border pt-4">
         <Button variant="outline" size="sm" icon={theme === "dark" ? "sun" : "moon"} onClick={toggleTheme}>{theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}</Button>
         {isAuthenticated && <Button variant="danger-outline" size="sm" icon="logout" onClick={() => void logout()}>Đăng xuất</Button>}
