@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\BookingCatalogController;
 use App\Http\Controllers\Api\ChatbotController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerHandoverController;
+use App\Http\Controllers\Api\CustomerPickupAuthorizationController;
 use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\CustomerReviewController;
 use App\Http\Controllers\Api\HandoverController;
@@ -106,6 +107,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('repair-orders/{repairOrder}', 'show');
             Route::get('repair-orders/{repairOrder}/invoice', 'invoice');
             Route::post('quotations/{quotation}/respond', 'respondQuotation');
+        });
+
+        // Ủy quyền nhận xe (P4, N9): chủ xe khai báo / thu hồi trong tài khoản.
+        Route::controller(CustomerPickupAuthorizationController::class)->prefix('me')->group(function (): void {
+            Route::get('repair-orders/{repairOrder}/pickup-authorizations', 'index');
+            Route::post('repair-orders/{repairOrder}/pickup-authorizations', 'store')->middleware('throttle:10,1');
+            Route::delete('pickup-authorizations/{pickupAuthorization}', 'revoke');
         });
 
         // Biên bản giao nhận xe của khách: xem (đã gửi / đã xác nhận) và tự xác nhận.

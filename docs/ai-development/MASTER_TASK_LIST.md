@@ -52,7 +52,7 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 |---|---|---|---|
 | P3-DB | `quotation_item_responses` (ghi mỗi lần khách quyết định, gắn `customer_confirmation_id`); `quotations.type` (mặc định INITIAL)/`parent_quotation_id`/`reason`; model `QuotationItemResponse`, `Quotation::TYPE_*` | P1 | VERIFIED — suite 183/183 · commit `feat(quotation): record per-line approval history` |
 | P3-BE | `latestQuotation` chỉ INITIAL; `billableQuotationIds()` = INITIAL hiệu lực + SUPPLEMENT APPROVED/PARTIALLY (hóa đơn, xuất kho); SUPPLEMENT chỉ khi IN_PROGRESS/WAITING_FOR_PARTS, bắt buộc lý do, **không giảm giá** (chưa có quy tắc), tối đa 1 bản chờ trả lời; duyệt xong → tạo work_items; chặn hoàn tất khi còn phát sinh SENT | P3-DB | VERIFIED — `SupplementalQuotationTest` 5/5 (500k / 650k / 300k), test P0 vẫn đạt, suite 188/188 · commit `0967552` |
-| P3-FE | Advisor `SupplementPanel` (lập phát sinh + lý do, gửi, duyệt tại quầy bằng OTP); `latestQuotation` frontend chỉ INITIAL + `billableQuotations`; Customer: nhãn "Phát sinh" + lý do ở /quotation; `CustomerDiagnosisBlock` ở /repair-status; API khách trả chẩn đoán (không có ghi chú nội bộ) | P3-BE | VERIFIED (tự động) — tsc, build, eslint file mới 0 (file cũ không tăng lỗi), smoke 17/17, backend 189/189 |
+| P3-FE | Advisor `SupplementPanel` (lập phát sinh + lý do, gửi, duyệt tại quầy bằng OTP); `latestQuotation` frontend chỉ INITIAL + `billableQuotations`; Customer: nhãn "Phát sinh" + lý do ở /quotation; `CustomerDiagnosisBlock` ở /repair-status; API khách trả chẩn đoán (không có ghi chú nội bộ) | P3-BE | VERIFIED (tự động) — tsc, build, eslint file mới 0 (file cũ không tăng lỗi), smoke 17/17, backend 189/189 · commit `8fb42fa` |
 | P3-QA | Trình duyệt + hồi quy | P3-FE | Trình duyệt (chỉ đọc): /repair-status chế độ sáng hiện "Kết quả chẩn đoán" cho 9 phiếu có sẵn, 0 lỗi console, 0 request ghi; Advisor #5 (COMPLETED) không hiện panel phát sinh/check-in (đúng). **Chưa kết luận**: lượt chế độ tối và /quotation (script đọc DOM trước khi tải xong). SupplementPanel thao tác thật: BROWSER_NOT_VERIFIED (cần phiếu IN_PROGRESS + tạo dữ liệu). Lịch sử duyệt từng dòng: có ở API/DB, **chưa có giao diện xem** (P3-FE-H, PENDING) |
 | P3-FE-H | Giao diện xem lịch sử duyệt từng dòng (quotation_item_responses) | P3-DB | PENDING |
 
@@ -60,8 +60,8 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 
 | ID | Mô tả | Phụ thuộc | Trạng thái |
 |---|---|---|---|
-| P4-DB | `pickup_authorizations`; CHECK_OUT dùng `vehicle_handovers` | P1, P2 | PENDING |
-| P4-BE | `handOver`/`closeRepairOrder` bắt buộc CHECK_OUT + xác thực người nhận | P4-DB | PENDING |
+| P4-DB | `pickup_authorizations` (không thêm FK vào bảng cũ — kiểm ở tầng ứng dụng); CHECK_OUT dùng `vehicle_handovers` | P1, P2 | VERIFIED |
+| P4-BE | Khách tạo/thu hồi ủy quyền (`/me/repair-orders/{id}/pickup-authorizations`, `DELETE /me/pickup-authorizations/{id}`, tối đa 3, ghi ACCOUNT); CHECK_OUT: người nhận OWNER hoặc AUTHORIZED (ủy quyền còn hiệu lực + 4 số cuối khớp, tên/SĐT lấy theo ủy quyền), đối chiếu CHECK_IN → `is_discrepancy`; chủ xe xác nhận (tài khoản / OTP email chủ xe); ủy quyền → USED; thu hồi sau khi lập → chặn xác nhận; `handOver` + `closeRepairOrder` (xe đã nhận theo biên bản) bắt buộc CHECK_OUT CONFIRMED khi `requires_check_in` | P4-DB | VERIFIED — `VehicleCheckOutTest` 6/6, suite 195/195 |
 | P4-FE | Màn check-out so sánh; khách ủy quyền / xác nhận nhận xe | P4-BE | PENDING |
 | P4-QA | Test + trình duyệt + hồi quy | P4-FE | PENDING |
 

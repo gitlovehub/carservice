@@ -622,6 +622,11 @@ class RepairOrderService
             throw InvalidStatusTransitionException::because('close_reason không hợp lệ.');
         }
 
+        // P4: xe đã nhận theo biên bản thì phải có biên bản trả xe được chủ xe xác nhận trước khi đóng phiếu.
+        if ($ro->requires_check_in && $ro->confirmedCheckIn()->exists() && ! $ro->confirmedCheckOut()->exists()) {
+            throw InvalidStatusTransitionException::because('Chưa có biên bản trả xe (CHECK_OUT) được chủ xe xác nhận.');
+        }
+
         $ro->close_reason = $reason;
         $this->transition($ro, RepairOrder::CLOSED, $actor, $note);
 
@@ -767,6 +772,11 @@ class RepairOrderService
 
         if (! $invoice || $invoice->status !== Invoice::PAID) {
             throw InvalidStatusTransitionException::because('Chỉ bàn giao xe khi hóa đơn đã thanh toán đủ (PAID).');
+        }
+
+        // P4: xác định và xác thực người nhận — biên bản trả xe được chủ xe xác nhận (tài khoản / OTP email chủ xe).
+        if ($ro->requires_check_in && ! $ro->confirmedCheckOut()->exists()) {
+            throw InvalidStatusTransitionException::because('Chưa có biên bản trả xe (CHECK_OUT) được chủ xe xác nhận. Lập biên bản trả xe trước khi bàn giao.');
         }
 
         $this->transition($ro, RepairOrder::HANDED_OVER, $actor, 'Đã bàn giao xe cho khách.');

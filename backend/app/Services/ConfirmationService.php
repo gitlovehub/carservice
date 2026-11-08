@@ -9,6 +9,7 @@ use App\Models\ConfirmationOtp;
 use App\Models\Customer;
 use App\Models\CustomerConfirmation;
 use App\Models\Employee;
+use App\Models\PickupAuthorization;
 use App\Models\Quotation;
 use App\Models\QuotationItemResponse;
 use App\Models\VehicleHandover;
@@ -115,6 +116,12 @@ class ConfirmationService
         });
     }
 
+    /** Khách tự thao tác trong tài khoản trên một nội dung (vd. tạo ủy quyền nhận xe — P4): ghi bằng chứng ACCOUNT. */
+    public function recordAccountAction(Model $confirmable, int $customerId, array $content, Request $request): CustomerConfirmation
+    {
+        return $this->record($confirmable, $customerId, CustomerConfirmation::METHOD_ACCOUNT, $this->hash($content), $request);
+    }
+
     /** Lịch sử từng lần khách quyết định từng dòng, gắn với bằng chứng xác nhận (P3). */
     private function recordItemHistory(array $responses, CustomerConfirmation $confirmation): void
     {
@@ -183,11 +190,18 @@ class ConfirmationService
         if ($handover->status !== VehicleHandover::STATUS_SUBMITTED || ! $handover->snapshot_sha256) {
             throw ValidationException::withMessages(['handover' => 'Biên bản chưa được gửi khách xác nhận hoặc đã được xử lý.']);
         }
+        // Ủy quyền nhận xe bị chủ xe thu hồi / hết hạn sau khi lập biên bản → không giao.
+        if ($handover->pickup_authorization_id && ! $handover->pickupAuthorization?->isUsable()) {
+            throw ValidationException::withMessages(['pickup_authorization_id' => 'Ủy quyền nhận xe không còn hiệu lực.']);
+        }
     }
 
     private function markHandoverConfirmed(VehicleHandover $handover): VehicleHandover
     {
         $handover->forceFill(['status' => VehicleHandover::STATUS_CONFIRMED, 'confirmed_at' => now()])->save();
+        if ($handover->pickup_authorization_id) {
+            $handover->pickupAuthorization()->update(['status' => PickupAuthorization::USED, 'used_at' => now()]);
+        }
 
         return $handover->fresh(['checklistItems', 'confirmations']);
     }
