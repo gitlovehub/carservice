@@ -43,6 +43,21 @@ class QuotationController extends Controller
         return response()->json($quotation, 201);
     }
 
+    /** P5 — POST /repair-orders/{id}/quick-quotation: báo giá niêm yết cho dịch vụ nhanh (bỏ chẩn đoán). */
+    public function quick(Request $request, RepairOrder $repairOrder): JsonResponse
+    {
+        $this->authorize('create', Quotation::class);
+        $this->authorize('update', $repairOrder);
+        $data = $request->validate([
+            'service_ids' => ['required', 'array', 'min:1', 'max:10'],
+            'service_ids.*' => ['integer', 'distinct', 'exists:services,id'],
+        ]);
+        $advisor = $request->user()->employee;
+        abort_if($advisor === null, 403);
+
+        return response()->json($this->service->createQuickQuotation($repairOrder, $advisor, $data['service_ids'], $request->user()), 201);
+    }
+
     public function send(Request $request, Quotation $quotation): JsonResponse
     {
         $this->authorize('update', $quotation);

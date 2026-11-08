@@ -15,6 +15,7 @@ use App\Models\Inventory;
 use App\Models\InventoryTransaction;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\MediaAttachment;
 use App\Models\Part;
 use App\Models\Payment;
 use App\Models\Quotation;
@@ -25,6 +26,7 @@ use App\Models\Service;
 use App\Models\TechnicianProfile;
 use App\Models\UsedPart;
 use App\Models\Vehicle;
+use App\Models\VehicleHandover;
 use App\Models\WorkItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -353,6 +355,75 @@ class RepairOrderService
             }
 
             $quotation->recalculateTotals();
+
+            return $quotation->load('items');
+        });
+    }
+
+    /** Vị trí 4 ảnh tổng quan bắt buộc cho dịch vụ nhanh (D-011). */
+    public const QUICK_OVERVIEW_POSITIONS = ['FRONT', 'REAR', 'LEFT', 'RIGHT'];
+
+    /**
+     * P5 — Dịch vụ nhanh: báo giá theo giá niêm yết của các dịch vụ QUICK, gửi khách ngay,
+     * bỏ bước chẩn đoán (RECEIVED → WAITING_APPROVAL). Khách vẫn phải duyệt giá như mọi báo giá.
+     * Điều kiện: biên bản nhận xe đã được khách xác nhận và có đủ 4 ảnh tổng quan.
+     *
+     * @param  list<int>  $serviceIds
+     */
+    public function createQuickQuotation(RepairOrder $ro, Employee $advisor, array $serviceIds, ?Account $actor): Quotation
+    {
+        $this->assertAdvisor($advisor);
+        if ($ro->status !== RepairOrder::RECEIVED) {
+            throw InvalidStatusTransitionException::because('Báo giá dịch vụ nhanh chỉ lập khi phiếu vừa tiếp nhận (RECEIVED).');
+        }
+        $checkIn = $ro->confirmedCheckIn()->first();
+        if (! $checkIn) {
+            throw InvalidStatusTransitionException::because('Dịch vụ nhanh cần biên bản nhận xe đã được khách xác nhận.');
+        }
+        $positions = MediaAttachment::query()
+            ->where('attachable_type', VehicleHandover::class)->where('attachable_id', $checkIn->id)
+            ->whereIn('position_code', self::QUICK_OVERVIEW_POSITIONS)
+            ->distinct()->pluck('position_code')->all();
+        $missing = array_values(array_diff(self::QUICK_OVERVIEW_POSITIONS, $positions));
+        if ($missing) {
+            throw InvalidStatusTransitionException::because('Dịch vụ nhanh cần đủ 4 ảnh tổng quan trong biên bản nhận xe. Còn thiếu: '.implode(', ', $missing).'.');
+        }
+
+        $services = Service::query()->whereIn('id', array_unique($serviceIds))->get();
+        if ($services->isEmpty() || $services->count() !== count(array_unique($serviceIds))) {
+            throw InvalidStatusTransitionException::because('Danh sách dịch vụ không hợp lệ.');
+        }
+        $notQuick = $services->filter(fn (Service $s) => $s->service_level !== Service::LEVEL_QUICK || $s->status !== 'ACTIVE');
+        if ($notQuick->isNotEmpty()) {
+            throw InvalidStatusTransitionException::because('Chỉ dịch vụ nhanh đang hoạt động mới dùng luồng này: '.$notQuick->pluck('name')->implode(', ').'. Dịch vụ khác cần kiểm tra / chẩn đoán.');
+        }
+
+        return DB::transaction(function () use ($ro, $advisor, $services, $actor): Quotation {
+            $quotation = Quotation::create([
+                'quotation_code' => $this->generateCode('QT'),
+                'repair_order_id' => $ro->id,
+                'advisor_id' => $advisor->id,
+                'version' => (int) $ro->quotations()->max('version') + 1,
+                'type' => Quotation::TYPE_INITIAL,
+                'discount_amount' => 0,
+                'status' => Quotation::SENT,
+            ]);
+            foreach ($services as $service) {
+                QuotationItem::create([
+                    'quotation_id' => $quotation->id,
+                    'item_type' => QuotationItem::TYPE_SERVICE,
+                    'service_id' => $service->id,
+                    'description' => $service->name,
+                    'quantity' => 1,
+                    'unit_price' => $service->base_price,
+                    'amount' => $service->base_price,
+                ]);
+            }
+            $quotation->recalculateTotals();
+
+            $ro->flow_type = RepairOrder::FLOW_QUICK;
+            $this->transition($ro, RepairOrder::WAITING_APPROVAL, $actor,
+                "Dịch vụ nhanh: đã gửi báo giá niêm yết {$quotation->quotation_code} cho khách (không qua chẩn đoán).");
 
             return $quotation->load('items');
         });

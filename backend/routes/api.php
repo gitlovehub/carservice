@@ -310,6 +310,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
                 'store'
             );
 
+            // P5: dịch vụ nhanh — báo giá niêm yết, bỏ chẩn đoán, khách vẫn duyệt giá.
+            Route::post('repair-orders/{repairOrder}/quick-quotation', 'quick');
+
             // Phản hồi báo giá chỉ do khách thực hiện: POST /me/quotations/{id}/respond
             // (CustomerRepairOrderController). Không có route nào cho nhân viên duyệt thay khách.
             Route::prefix('quotations/{quotation}')->group(function (): void {
