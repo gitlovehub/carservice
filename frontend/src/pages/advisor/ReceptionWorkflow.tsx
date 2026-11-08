@@ -3,11 +3,12 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   advisorAppointment, checkInConfirmedAppointment, confirmPendingAppointment, findOrderForAppointment,
-  customerVehicles, listReceptionAppointments, receiveRepairOrder, type CustomerVehicleOption, type WorkflowAppointment, type WorkflowOrder,
+  capacityApi, customerVehicles, listReceptionAppointments, receiveRepairOrder, type CustomerVehicleOption, type WorkflowAppointment, type WorkflowOrder,
 } from "../../services/workflowService";
 import { card, input, action, outline, WorkflowTitle, Notice, Status } from "./WorkflowUI";
 import { errorText, formatSlot } from "./workflowFormat";
 import CustomerRequestSummary from "./CustomerRequestSummary";
+import { CapacityWeek } from "./CapacityWeek";
 
 export default function ReceptionWorkflow() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -75,9 +76,18 @@ export default function ReceptionWorkflow() {
 
   async function handleConfirm() {
     if (!selected || selected.status !== "PENDING") return;
+    // P7: cảnh báo quá tải theo phút (không chặn — Q6).
+    let capacityWarning = "";
+    try {
+      const day = selected.appointment_date ? await capacityApi.day(String(selected.appointment_date).slice(0, 10)) : null;
+      if (day?.over_capacity) {
+        const free = (day.suggestions ?? []).slice(0, 3).map(s => new Date(s.date).toLocaleDateString("vi-VN")).join(", ");
+        capacityWarning = ` ⚠ Ngày này đã vượt năng lực gara (${day.load_minutes}/${day.capacity_minutes} phút).${free ? ` Ngày còn chỗ: ${free}.` : ""} Có thể vẫn xác nhận nếu khách đồng ý chờ lâu hơn.`;
+      }
+    } catch { /* Không lấy được công suất thì xác nhận như cũ. */ }
     const approved = await confirm({
       title: "Xác minh lịch hẹn với khách", reference: selected.appointment_code, phone: selected.customer?.phone,
-      description: `Hãy gọi ${selected.customer?.full_name || "khách hàng"} qua ${selected.customer?.phone || "số điện thoại trên hồ sơ"} để xác nhận thời gian ${formatSlot(selected.appointment_date, selected.appointment_time)}. Không xác nhận nếu chưa được khách đồng ý.`,
+      description: `Hãy gọi ${selected.customer?.full_name || "khách hàng"} qua ${selected.customer?.phone || "số điện thoại trên hồ sơ"} để xác nhận thời gian ${formatSlot(selected.appointment_date, selected.appointment_time)}. Không xác nhận nếu chưa được khách đồng ý.${capacityWarning}`,
       confirmText: "Khách đồng ý – Xác nhận", cancelText: "Chưa xác minh / Để sau",
       checklist: ["Đã trao đổi trực tiếp với khách về xe, dịch vụ và giờ hẹn.", "Khách đồng ý lịch hẹn và gara có khả năng tiếp nhận."],
     });
@@ -161,6 +171,7 @@ export default function ReceptionWorkflow() {
           </button>)}
         </div>
         <Link to="/advisor/appointments" className={`${outline} mt-5`}>Xem đầy đủ danh sách lịch →</Link>
+        <CapacityWeek/>
       </section>
       <section className={card}>
         {selectedId > 0 && busy ? <div className="py-16 text-center text-cs-muted">Đang kiểm tra lịch và phiếu đã tồn tại...</div> : !selected ? <div className="py-16 text-center text-cs-muted">Chọn một lịch để thực hiện tiếp nhận. Bạn cũng có thể vào đây từ nút Tiếp nhận trên trang Lịch hẹn.</div> : <>

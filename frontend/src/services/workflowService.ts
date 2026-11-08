@@ -138,6 +138,13 @@ export type ReceivePayload = {
 };
 export type CustomerVehicleOption = { id: number; license_plate: string; model?: { name?: string } | null };
 
+/** P7: tải / năng lực gara theo ngày (chỉ cảnh báo — Q6). */
+export type CapacityDay = { date: string; capacity_minutes: number | null; load_minutes: number; booked_minutes: number; open_work_minutes: number; appointments: number; utilization: number | null; over_capacity: boolean; suggestions?: CapacityDay[] };
+export const capacityApi = {
+  day: (date: string) => fetchApi<CapacityDay>(`/advisor/capacity?date=${date}`),
+  range: async (from: string, days = 7) => (await fetchApi<{ data: CapacityDay[] }>(`/advisor/capacity/range?from=${from}&days=${days}`)).data,
+};
+
 export async function customerVehicles(customerId: number): Promise<CustomerVehicleOption[]> {
   const response = await fetchApi<{ data: CustomerVehicleOption[] }>(`/customers/${customerId}/vehicles`);
   return response.data ?? [];
