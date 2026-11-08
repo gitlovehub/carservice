@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Icon, type IconName } from "./ui/Icon";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "../contexts/theme";
 import { useAuthSession } from "../contexts/authSession";
@@ -49,27 +50,98 @@ export function AtelierPublicHeader() {
     return <Link key={label} to={path} onClick={() => setMenuOpen(false)} aria-current={active ? "page" : undefined} className={active ? "text-cs-accent-text! underline decoration-2 underline-offset-8" : ""}>{label}</Link>;
   });
   const themeLabel = theme === "dark" ? "Bật chế độ sáng" : "Bật chế độ tối";
+  const displayName = isAuthenticated ? getUserDisplayName(session.account) : "";
+  const initial = (displayName.charAt(0) || "K").toUpperCase();
+  const accountLinks = isCustomer
+    ? [{ label: "Hồ sơ của tôi", to: "/customer/account", icon: "user" as const }, { label: "Xe của tôi", to: "/customer/cars", icon: "car" as const }, { label: "Lịch hẹn", to: "/customer/appointments", icon: "calendar" as const }]
+    : [{ label: "Trang quản lý", to: dashboard, icon: "home" as const }];
+  const avatar = (size: string) => <span className={`inline-flex ${size} shrink-0 items-center justify-center overflow-hidden rounded-full bg-cs-accent text-xs font-bold text-cs-accent-contrast`}>
+    {isAuthenticated && session.account.avatar ? <img src={session.account.avatar} alt="" className="size-full object-cover" referrerPolicy="no-referrer"/> : initial}
+  </span>;
+
   return <header className="sticky top-0 z-[60] flex h-[81px] items-center justify-between gap-3 border-b border-cs-border bg-cs-surface px-4 sm:gap-5 sm:px-[5vw] xl:px-[76px]">
     <AtelierBrand />
     <nav className="hidden items-center gap-4 min-[821px]:flex xl:gap-6 [&_a]:relative [&_a]:whitespace-nowrap [&_a]:text-[13px] [&_a]:font-semibold [&_a]:text-cs-text-2 [&_a]:hover:text-cs-accent-text" aria-label="Điều hướng chính">{links}</nav>
     <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-      {/* Trên điện thoại nút sáng/tối nằm trong menu để header không tràn. */}
-      <IconButton icon={theme === "dark" ? "sun" : "moon"} label={themeLabel} variant="outline" onClick={toggleTheme} className="max-sm:hidden!"/>
-      {isAuthenticated ? <>
-        {isCustomer && <Link to="/customer/account" aria-label="Tài khoản của tôi" title="Tài khoản của tôi" className="inline-flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-cs-accent text-xs font-bold text-cs-accent-contrast no-underline ring-2 ring-transparent transition hover:ring-cs-accent/40">{session.account.avatar ? <img src={session.account.avatar} alt="Ảnh đại diện" className="size-full object-cover" referrerPolicy="no-referrer" /> : (getUserDisplayName(session.account).charAt(0) || "K").toUpperCase()}</Link>}
-        <Button variant="outline" size="sm" className="max-sm:hidden!" onClick={() => void logout()}>Đăng xuất</Button>
-      </> : <Link className={buttonClass({ variant: "outline", size: "sm", className: "no-underline" })} to="/login">Đăng nhập</Link>}
-      <IconButton icon={menuOpen ? "close" : "menu"} label={menuOpen ? "Đóng menu" : "Mở menu"} variant="outline" aria-expanded={menuOpen} onClick={() => setMenuOpen(open => !open)} className="min-[821px]:hidden!"/>
+      <IconButton icon={theme === "dark" ? "sun" : "moon"} label={themeLabel} variant="outline" onClick={toggleTheme} className="max-[820px]:hidden!"/>
+      {isAuthenticated
+        ? <AccountMenu name={displayName} email={session.account.email} trigger={avatar("size-10")} links={accountLinks}/>
+        : <Link className={buttonClass({ variant: "outline", size: "sm", className: "no-underline max-[820px]:hidden!" })} to="/login">Đăng nhập</Link>}
+      <IconButton icon="menu" label="Mở menu" variant="outline" aria-expanded={menuOpen} aria-controls="mobile-drawer" onClick={() => setMenuOpen(true)} className="min-[821px]:hidden!"/>
     </div>
-    {menuOpen && <nav className="absolute inset-x-0 top-full grid gap-1 border-b border-cs-border bg-cs-surface px-4 py-3 shadow-raised min-[821px]:hidden [&_a]:cursor-pointer [&_a]:rounded-control [&_a]:px-3 [&_a]:py-2.5 [&_a]:text-sm [&_a]:font-semibold [&_a]:text-cs-text [&_a]:hover:bg-cs-hover" aria-label="Điều hướng trên điện thoại">
-      {links}
-      {!isAuthenticated && <Link to="/register" onClick={() => setMenuOpen(false)}>Đăng ký</Link>}
-      <div className="mt-1 flex flex-wrap gap-2 border-t border-cs-border pt-3 sm:hidden">
+    <MobileDrawer open={menuOpen} onClose={() => setMenuOpen(false)}>
+      {isAuthenticated && <div className="mb-3 flex items-center gap-3 border-b border-cs-border pb-4">
+        {avatar("size-11")}
+        <div className="min-w-0"><p className="truncate text-sm font-bold text-cs-text">{displayName}</p><p className="truncate text-xs text-cs-muted">{session.account.email}</p></div>
+      </div>}
+      <nav className="grid gap-1 [&_a]:rounded-control [&_a]:px-3 [&_a]:py-2.5 [&_a]:text-sm [&_a]:font-semibold [&_a]:text-cs-text [&_a]:no-underline [&_a]:hover:bg-cs-hover" aria-label="Điều hướng trên điện thoại">
+        {links}
+        {isAuthenticated && accountLinks.filter(l => !allLinks.some(x => x.href === l.to || x.label === l.label)).map(l => <Link key={l.to} to={l.to} onClick={() => setMenuOpen(false)}>{l.label}</Link>)}
+        {!isAuthenticated && <><Link to="/login" onClick={() => setMenuOpen(false)}>Đăng nhập</Link><Link to="/register" onClick={() => setMenuOpen(false)}>Đăng ký</Link></>}
+      </nav>
+      <div className="mt-auto grid gap-2 border-t border-cs-border pt-4">
         <Button variant="outline" size="sm" icon={theme === "dark" ? "sun" : "moon"} onClick={toggleTheme}>{theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}</Button>
-        {isAuthenticated && <Button variant="outline" size="sm" icon="logout" onClick={() => void logout()}>Đăng xuất</Button>}
+        {isAuthenticated && <Button variant="danger-outline" size="sm" icon="logout" onClick={() => void logout()}>Đăng xuất</Button>}
       </div>
-    </nav>}
+    </MobileDrawer>
   </header>;
+}
+
+/** Dropdown tài khoản: mở khi rê chuột / bấm / focus vào avatar; chứa liên kết tài khoản và Đăng xuất. */
+function AccountMenu({ name, email, trigger, links }: { name: string; email?: string | null; trigger: ReactNode; links: Array<{ label: string; to: string; icon: IconName }> }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<number | undefined>(undefined);
+  const location = useLocation();
+  // Đóng menu khi chuyển trang.
+  const [path, setPath] = useState(location.pathname);
+  if (path !== location.pathname) { setPath(location.pathname); setOpen(false); }
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc); document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
+  const show = () => { window.clearTimeout(closeTimer.current); setOpen(true); };
+  const hide = () => { closeTimer.current = window.setTimeout(() => setOpen(false), 150); };
+
+  return <div ref={ref} className="relative" onMouseEnter={show} onMouseLeave={hide} data-testid="account-menu">
+    <button type="button" aria-haspopup="menu" aria-expanded={open} aria-label="Tài khoản" title={name}
+      className="inline-flex cursor-pointer rounded-full ring-2 ring-transparent transition hover:ring-cs-accent/40 focus-visible:ring-cs-accent"
+      onClick={() => setOpen(o => !o)}>{trigger}</button>
+    {open && <div role="menu" className="absolute right-0 top-full z-[70] mt-2 w-64 rounded-2xl border border-cs-border bg-cs-surface p-2 shadow-raised">
+      <div className="border-b border-cs-border px-3 pb-3 pt-2"><p className="truncate text-sm font-bold text-cs-text">{name}</p>{email && <p className="truncate text-xs text-cs-muted">{email}</p>}</div>
+      <div className="py-1">{links.map(l => <Link key={l.to} role="menuitem" to={l.to} className="flex items-center gap-2.5 rounded-control px-3 py-2 text-sm font-semibold text-cs-text no-underline hover:bg-cs-hover"><Icon name={l.icon} size={16}/>{l.label}</Link>)}</div>
+      <button type="button" role="menuitem" onClick={() => void logout()} className="flex w-full cursor-pointer items-center gap-2.5 rounded-control border-t border-cs-border px-3 py-2.5 text-sm font-semibold text-cs-danger hover:bg-cs-hover"><Icon name="logout" size={16}/>Đăng xuất</button>
+    </div>}
+  </div>;
+}
+
+/** Menu điện thoại: ngăn kéo trượt từ phải sang, nền mờ; đóng bằng nút ✕, bấm nền, Esc hoặc khi chuyển trang. */
+function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
+  const location = useLocation();
+  const [path, setPath] = useState(location.pathname);
+  if (path !== location.pathname) { setPath(location.pathname); if (open) onClose(); }
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = overflow; document.removeEventListener("keydown", onKey); };
+  }, [open, onClose]);
+
+  return <div className={`fixed inset-0 z-[80] min-[821px]:hidden ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+    <div className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0"}`} onClick={onClose}/>
+    <aside id="mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu"
+      className={`absolute right-0 top-0 flex h-dvh w-[min(320px,86vw)] flex-col overflow-y-auto bg-cs-surface p-4 shadow-raised transition-transform duration-300 ease-out ${open ? "translate-x-0" : "translate-x-full"}`}>
+      <div className="mb-3 flex items-center justify-between"><span className="text-sm font-bold text-cs-text">Menu</span><IconButton icon="close" label="Đóng menu" variant="ghost" onClick={onClose}/></div>
+      {children}
+    </aside>
+  </div>;
 }
 
 export function AtelierPublicFooter() {

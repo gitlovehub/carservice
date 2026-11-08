@@ -6,6 +6,12 @@ import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
 import VietnamAddressSelector from "../../components/common/VietnamAddressSelector";
 import { logout } from "../auth/auth";
+import { Link } from "react-router-dom";
+import { Button } from "../../components/ui/Button";
+import { buttonClass } from "../../components/ui/buttonClass";
+import { Icon } from "../../components/ui/Icon";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
+import carArt from "../../assets/car-atelier.svg";
 
 type AccountInfo = {
   id: number;
@@ -61,6 +67,22 @@ const getInitials = (name: string) => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
+type ProfileVehicle = { id: number; license_plate: string; year?: number | null; variant?: string | null; model?: { name?: string; brand?: { name?: string } | null } | null };
+
+/** Icon nhỏ cho các dòng thông tin (bổ sung cho bộ Icon chung). */
+function ProfileGlyph({ name }: { name: "user" | "phone" | "mail" | "pin" | "lock" | "id" | "calendar" }) {
+  const paths: Record<typeof name, string> = {
+    user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0",
+    phone: "M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2",
+    mail: "M3 6h18v12H3zM3 7l9 6 9-6",
+    pin: "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Zm0-8.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5",
+    lock: "M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4",
+    id: "M3 5h18v14H3zM7 10h4M7 14h6M15 9h3v6h-3z",
+    calendar: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
+  };
+  return <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d={paths[name]}/></svg>;
+}
+
 const VIETNAM_PHONE_REGEX = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
 
 function Account() {
@@ -75,7 +97,9 @@ function Account() {
   const [customer, setCustomer] = useState<CustomerProfile | null>(
     account?.customer || null,
   );
-  const [vehicleCount, setVehicleCount] = useState<number | null>(null);
+  const [vehicles, setVehicles] = useState<ProfileVehicle[] | null>(null);
+  const [tab, setTab] = useState<"profile" | "security">("profile");
+  const { confirm } = useAppFeedback();
 
   // Toast notification
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
@@ -143,7 +167,7 @@ function Account() {
             vehiclesResult.status === "fulfilled" &&
             Array.isArray(vehiclesResult.value?.data)
           ) {
-            setVehicleCount(vehiclesResult.value.data.length);
+            setVehicles(vehiclesResult.value.data as ProfileVehicle[]);
           }
         }
       }
@@ -181,6 +205,18 @@ function Account() {
       : account?.employee?.id
         ? `NV-${String(account.employee.id).padStart(3, "0")}`
         : "Chưa cập nhật";
+
+  // Xóa xe (cùng API trang "Xe của tôi"; backend chặn nếu xe đang có lịch / phiếu).
+  const handleDeleteVehicle = async (id: number, plate: string) => {
+    if (!await confirm({ title: "Xóa xe", reference: plate, description: "Xe sẽ bị xóa khỏi tài khoản. Không xóa được nếu xe đang có lịch hẹn hoặc đang sửa.", confirmText: "Xóa xe", variant: "danger" })) return;
+    try {
+      await fetchApi(`/me/vehicles/${id}`, { method: "DELETE" });
+      setVehicles(list => (list ?? []).filter(v => v.id !== id));
+      showToast("Đã xóa xe.", "success");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Không xóa được xe.", "error");
+    }
+  };
 
   // --- Handlers: Edit Profile ---
   const handleOpenEditProfile = () => {
@@ -400,7 +436,7 @@ function Account() {
   };
 
   return (
-    <div className="at-customer-account min-h-screen bg-cs-bg text-[#20252B]">
+    <div className="at-customer-account min-h-screen bg-cs-bg text-cs-text">
       <Header />
 
       {/* Toast Notification */}
@@ -412,327 +448,108 @@ function Account() {
         />
       )}
 
-      <main>
-        {/* Banner Section */}
-        <section className="border-b border-[#E1E4E6] bg-white">
-          <div className="mx-auto max-w-[1280px] px-6 py-14 md:px-8 md:py-16">
-            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-              GARA CỦA TÔI / TÀI KHOẢN
-            </p>
-
-            <h1 className="mt-3 text-[38px] font-bold tracking-normal text-[#1F2933] md:text-[50px]">
-              Hồ sơ của tôi
-            </h1>
-
-            <p className="mt-3 max-w-[620px] text-[13px] leading-6 text-cs-muted">
-              Quản lý thông tin cá nhân và các cài đặt tài khoản.
-            </p>
-          </div>
-        </section>
-
-        {/* Content Section */}
-        <section>
-          <div className="mx-auto max-w-[1100px] px-6 py-12 md:px-8 md:py-16">
-            <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-              {/* Left Column: User Profile Card */}
-              <div className="h-fit overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-xs">
-                <div className="bg-[#1F2933] px-6 py-8 text-center text-white relative">
-                  {/* Avatar with Camera badge */}
-                  <div className="relative mx-auto h-28 w-28">
-                    {account?.avatar ? (
-                      <img
-                        src={account.avatar}
-                        alt={fullName}
-                        className="h-28 w-28 rounded-full object-cover border-4 border-[#D6A85F] shadow-lg"
-                      />
-                    ) : (
-                      <div className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-[#3C4650] bg-[#D6A85F] text-3xl font-bold text-[#1F2933] shadow-lg">
-                        {fullName === "Chưa cập nhật"
-                          ? account?.role.slice(0, 2) || "TK"
-                          : getInitials(fullName)}
-                      </div>
-                    )}
-
-                    {/* Camera Button */}
-                    <button
-                      type="button"
-                      onClick={handleOpenAvatarModal}
-                      title="Đổi ảnh đại diện"
-                      className="absolute bottom-0 right-0 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-[#D6A85F] text-[#1F2933] shadow-md transition hover:scale-110 hover:bg-[#c49850]"
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <h2 className="mt-4 text-[18px] font-bold text-white">
-                    {fullName}
-                  </h2>
-
-                  <p className="mt-1 text-[13px] font-medium text-[#D6A85F]">
-                    {roleName}
-                  </p>
-
-                  <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full bg-[#29333D] px-4 py-1.5 border border-white/5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[12px] font-semibold text-[#E8ECEF]">
-                      Tài khoản {status.toLowerCase()}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleOpenAvatarModal}
-                    className="mt-4 inline-flex items-center gap-1.5 text-xs text-cs-muted hover:text-[#D6A85F] transition cursor-pointer font-medium"
-                  >
-                    <span>📷 Thay đổi ảnh đại diện</span>
-                  </button>
-                </div>
-
-                {/* Profile Stats & Details */}
-                <div className="p-6">
-                  <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                    THÔNG TIN HỆ THỐNG
-                  </p>
-
-                  <div className="mt-5 space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-[13px] text-cs-muted">
-                        Mã định danh
-                      </span>
-                      <span className="font-mono text-[13px] font-bold text-[#1F2933] bg-slate-100 px-2 py-0.5 rounded-md">
-                        {profileNumber}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-[13px] text-cs-muted">
-                        Ngày tham gia
-                      </span>
-                      <span className="text-[13px] font-semibold text-[#20252B]">
-                        {formatDate(account?.created_at)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-[13px] text-cs-muted">
-                        Xe đã đăng ký
-                      </span>
-                      <span className="text-[13px] font-semibold text-[#20252B]">
-                        {account?.role !== "CUSTOMER"
-                          ? "Không áp dụng"
-                          : vehicleCount === null
-                            ? "Đang tải..."
-                            : `${vehicleCount} xe`}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 border-t border-[#E1E4E6] pt-4 space-y-3">
-                    <p className="text-[12px] leading-5 text-cs-muted">
-                      Thông tin này được sử dụng để định danh trong toàn bộ các quy trình dịch vụ và chăm sóc xe tại CarService.
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={() => logout()}
-                      className="cs-btn cs-btn-danger-outline cs-btn-block"
-                    >
-                      <span>↪</span>
-                      Đăng xuất tài khoản
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Personal Info & Security Sections */}
-              <div className="space-y-6">
-                {/* 1. Personal Information */}
-                <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-xs">
-                  <div className="flex flex-col justify-between gap-4 border-b border-[#E1E4E6] px-6 py-5 md:flex-row md:items-center">
-                    <div>
-                      <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                        HỒ SƠ CÁ NHÂN
-                      </p>
-                      <h2 className="mt-1 text-[18px] font-bold text-[#20252B]">
-                        Thông tin cá nhân
-                      </h2>
-                      <p className="mt-1 text-[13px] text-cs-muted">
-                        Thông tin hiển thị khi liên hệ, đặt lịch hẹn và nhận xe.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleOpenEditProfile}
-                      className="cs-btn cs-btn-secondary"
-                    >
-                      <svg
-                        className="h-3.5 w-3.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                        />
-                      </svg>
-                      Chỉnh sửa thông tin
-                    </button>
-                  </div>
-
-                  <div className="grid gap-4 p-6 md:grid-cols-2">
-                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-bg p-4">
-                      <p className="text-[12px] font-medium text-cs-muted">
-                        Họ và tên
-                      </p>
-                      <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
-                        {fullName}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-bg p-4">
-                      <p className="text-[12px] font-medium text-cs-muted">
-                        Số điện thoại
-                      </p>
-                      <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
-                        {phone}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-bg p-4">
-                      <p className="text-[12px] font-medium text-cs-muted">
-                        Email liên hệ
-                      </p>
-                      <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
-                        {email}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-bg p-4">
-                      <p className="text-[12px] font-medium text-cs-muted">
-                        Vai trò
-                      </p>
-                      <p className="mt-1.5 text-[14px] font-semibold text-[#D6A85F]">
-                        {roleName}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-bg p-4 md:col-span-2">
-                      <p className="text-[12px] font-medium text-cs-muted">
-                        Địa chỉ
-                      </p>
-                      <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
-                        {address}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2. Login & Security */}
-                <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-xs">
-                  <div className="border-b border-[#E1E4E6] px-6 py-5">
-                    <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                      BẢO MẬT & ĐĂNG NHẬP
-                    </p>
-                    <h2 className="mt-1 text-[18px] font-bold text-[#20252B]">
-                      Thông tin đăng nhập
-                    </h2>
-                    <p className="mt-1 text-[13px] text-cs-muted">
-                      Quản lý tài khoản đăng nhập và mật khẩu an toàn.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-4 p-6 md:grid-cols-2">
-                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-surface-2 p-4">
-                      <p className="text-[12px] font-medium text-cs-muted">
-                        Email đăng nhập
-                      </p>
-                      <p className="mt-1.5 text-[14px] font-semibold text-[#20252B]">
-                        {email}
-                      </p>
-                      <p className="mt-1 text-[11px] text-slate-400">
-                        Email dùng để xác thực và nhận thông báo
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-[#E1E4E6] bg-cs-surface-2 p-4">
-                      <p className="text-[12px] font-medium text-cs-muted">
-                        Mật khẩu
-                      </p>
-                      <p className="mt-1.5 text-[14px] font-semibold tracking-[0.2em] text-[#20252B]">
-                        ••••••••••••
-                      </p>
-                      <p className="mt-1 text-[11px] text-emerald-600 font-medium">
-                        Đang được bảo vệ an toàn
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end border-t border-[#E1E4E6] px-6 py-4 bg-slate-50/50">
-                    <button
-                      type="button"
-                      onClick={handleOpenChangePassword}
-                      className="cs-btn cs-btn-secondary"
-                    >
-                      <svg
-                        className="h-3.5 w-3.5 text-[#D6A85F]"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                        />
-                      </svg>
-                      Đổi mật khẩu
-                    </button>
-                  </div>
-                </div>
-
-                {/* 3. Security Tip */}
-                <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-xs">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F3E8D2] text-sm font-bold text-[#1F2933]">
-                      🛡️
-                    </div>
-
-                    <div>
-                      <p className="text-[14px] font-bold text-[#20252B]">
-                        Khuyến nghị bảo mật từ CarService
-                      </p>
-                      <p className="mt-1 text-[13px] leading-5 text-cs-muted">
-                        Không chia sẻ mật khẩu của bạn với bất kỳ ai. Để tài khoản an toàn tối đa, hãy đặt mật khẩu có ít nhất 8 ký tự, bao gồm cả chữ in hoa, chữ thường và chữ số.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <main className="mx-auto grid max-w-[1280px] grid-cols-[minmax(0,1fr)] gap-6 px-4 py-6 sm:px-6 md:py-10 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-8">
+        {/* Cột trái: thẻ tài khoản + menu tài khoản */}
+        <aside className="h-fit min-w-0 rounded-2xl border border-cs-border bg-cs-surface p-4 lg:sticky lg:top-24" aria-label="Tài khoản">
+          <div className="flex items-center gap-3 border-b border-cs-border pb-4 lg:flex-col lg:items-start xl:flex-row xl:items-center">
+            <button type="button" onClick={handleOpenAvatarModal} title="Đổi ảnh đại diện" className="group relative shrink-0 cursor-pointer rounded-full">
+              {account?.avatar
+                ? <img src={account.avatar} alt={fullName} className="size-16 rounded-full object-cover"/>
+                : <span className="flex size-16 items-center justify-center rounded-full bg-cs-accent text-xl font-bold text-cs-accent-contrast">{fullName === "Chưa cập nhật" ? "KH" : getInitials(fullName)}</span>}
+              <span className="absolute -bottom-0.5 -right-0.5 flex size-6 items-center justify-center rounded-full border-2 border-cs-surface bg-cs-surface-2 text-cs-text shadow-sm transition group-hover:scale-110"><Icon name="edit" size={12}/></span>
+            </button>
+            <div className="min-w-0">
+              <p className="truncate text-[15px] font-bold text-cs-text">{fullName}</p>
+              <span className="mt-1 inline-block rounded-full bg-cs-soft px-2.5 py-0.5 text-xs font-semibold text-cs-accent-text">{roleName}</span>
+              <p className="mt-1.5 flex items-center gap-1.5 text-xs text-cs-muted"><span className={`size-2 rounded-full ${account?.status === "ACTIVE" ? "bg-cs-success" : "bg-cs-muted"}`}/>Tài khoản {status.toLowerCase()}</p>
             </div>
           </div>
+          <nav className="mt-3 flex gap-1 overflow-x-auto lg:flex-col" aria-label="Menu tài khoản">
+            {[
+              { label: "Hồ sơ của tôi", icon: "user" as const, active: tab === "profile", onClick: () => setTab("profile") },
+              { label: "Xe của tôi", icon: "car" as const, to: "/customer/cars" },
+              { label: "Lịch hẹn", icon: "calendar" as const, to: "/customer/appointments" },
+              { label: "Lịch sử bảo dưỡng", icon: "clock" as const, to: "/customer/service-history" },
+              { label: "Cài đặt", icon: "settings" as const, active: tab === "security", onClick: () => setTab("security") },
+            ].map(item => {
+              const cls = `flex shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition ${item.active ? "bg-cs-soft text-cs-accent-text lg:shadow-[inset_3px_0_0_var(--cs-accent)]" : "text-cs-text hover:bg-cs-hover"}`;
+              return item.to
+                ? <Link key={item.label} to={item.to} className={cls}><Icon name={item.icon} size={18}/>{item.label}</Link>
+                : <button key={item.label} type="button" onClick={item.onClick} aria-current={item.active ? "page" : undefined} className={`${cls} cursor-pointer text-left`}><Icon name={item.icon} size={18}/>{item.label}</button>;
+            })}
+          </nav>
+        </aside>
+
+        {/* Cột phải */}
+        <section className="min-w-0">
+          <div className="flex items-center gap-3">
+            <span className="text-cs-text"><Icon name="user" size={28}/></span>
+            <h1 className="text-2xl font-bold text-cs-text md:text-3xl">Hồ sơ của tôi</h1>
+          </div>
+          <p className="mt-1 text-sm text-cs-muted">Quản lý thông tin cá nhân và xe đã đăng ký.</p>
+
+          <div role="tablist" aria-label="Hồ sơ" className="mt-5 flex gap-2 border-b border-cs-border">
+            {([["profile", "Thông tin cá nhân", "user"], ["security", "Bảo mật", "shield"]] as const).map(([key, label, icon]) =>
+              <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
+                className={`-mb-px flex cursor-pointer items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition ${tab === key ? "border-cs-accent text-cs-accent-text" : "border-transparent text-cs-muted hover:text-cs-text"}`}>
+                <Icon name={icon} size={18}/>{label}
+              </button>)}
+          </div>
+
+          {tab === "profile" ? <div className="mt-5 space-y-5">
+            <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-lg font-bold text-cs-text">Thông tin cá nhân</h2>
+                <Button variant="secondary" size="sm" icon="edit" onClick={handleOpenEditProfile}>Chỉnh sửa</Button>
+              </div>
+              <dl className="mt-4 space-y-2.5">
+                {([["user", "Họ và tên", fullName], ["phone", "Số điện thoại", phone], ["mail", "Email", email], ["pin", "Địa chỉ", address]] as const).map(([icon, label, value]) =>
+                  <div key={label} className="grid gap-1.5 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
+                    <dt className="flex items-center gap-3 text-sm text-cs-muted"><ProfileGlyph name={icon}/>{label}</dt>
+                    <dd className={`break-words rounded-xl bg-cs-surface-2 px-4 py-2.5 text-sm font-semibold ${value === "Chưa cập nhật" ? "text-cs-muted" : "text-cs-text"}`}>{value}</dd>
+                  </div>)}
+              </dl>
+            </div>
+
+            {account?.role === "CUSTOMER" && <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6" data-testid="profile-vehicles">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="flex items-center gap-2.5 text-lg font-bold text-cs-text"><span className="text-cs-accent-text"><Icon name="car" size={22}/></span>Xe của tôi</h2>
+                <Link to="/customer/cars" className={buttonClass({ variant: "danger-outline", size: "sm", className: "no-underline" })}><Icon name="plus" size={16}/>Thêm xe</Link>
+              </div>
+              {vehicles === null ? <p className="mt-4 text-sm text-cs-muted">Đang tải xe…</p>
+                : !vehicles.length ? <p className="mt-4 rounded-xl bg-cs-surface-2 px-4 py-6 text-center text-sm text-cs-muted">Bạn chưa đăng ký xe nào.</p>
+                  : <ul className="mt-4 space-y-3">{vehicles.map(vehicle => {
+                    const name = [vehicle.model?.brand?.name, vehicle.model?.name, vehicle.variant].filter(Boolean).join(" ") || "Xe chưa rõ dòng";
+                    return <li key={vehicle.id} className="flex flex-wrap items-center gap-4 rounded-xl border border-cs-border p-3 sm:flex-nowrap">
+                      <img src={carArt} alt="" className="h-16 w-28 shrink-0 rounded-lg bg-cs-surface-2 object-contain p-1"/>
+                      <div className="min-w-0 flex-1"><p className="truncate font-bold text-cs-text">{name}</p><p className="font-mono text-sm text-cs-muted">{vehicle.license_plate}{vehicle.year ? ` · ${vehicle.year}` : ""}</p></div>
+                      <div className="ml-auto flex gap-1">
+                        <Link to="/customer/cars" aria-label={`Sửa xe ${vehicle.license_plate}`} title="Sửa xe" className="inline-flex size-10 items-center justify-center rounded-lg text-cs-text hover:bg-cs-hover"><Icon name="edit" size={18}/></Link>
+                        <button type="button" aria-label={`Xóa xe ${vehicle.license_plate}`} title="Xóa xe" onClick={() => void handleDeleteVehicle(vehicle.id, vehicle.license_plate)} className="inline-flex size-10 cursor-pointer items-center justify-center rounded-lg text-cs-danger hover:bg-cs-hover"><Icon name="trash" size={18}/></button>
+                      </div>
+                    </li>;
+                  })}</ul>}
+            </div>}
+          </div> : <div className="mt-5 space-y-5">
+            <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-lg font-bold text-cs-text">Thông tin đăng nhập</h2>
+                <Button variant="secondary" size="sm" icon="shield" onClick={handleOpenChangePassword}>Đổi mật khẩu</Button>
+              </div>
+              <dl className="mt-4 space-y-2.5">
+                {([["mail", "Email đăng nhập", email], ["lock", "Mật khẩu", "••••••••••"], ["id", "Mã khách hàng", profileNumber], ["calendar", "Ngày tham gia", formatDate(account?.created_at)]] as const).map(([icon, label, value]) =>
+                  <div key={label} className="grid gap-1.5 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
+                    <dt className="flex items-center gap-3 text-sm text-cs-muted"><ProfileGlyph name={icon}/>{label}</dt>
+                    <dd className="break-words rounded-xl bg-cs-surface-2 px-4 py-2.5 text-sm font-semibold text-cs-text">{value}</dd>
+                  </div>)}
+              </dl>
+            </div>
+            <div className="flex items-start gap-3 rounded-2xl border border-cs-border bg-cs-surface p-5">
+              <span className="text-cs-accent-text"><Icon name="shield" size={22}/></span>
+              <p className="text-sm leading-6 text-cs-muted">Không chia sẻ mật khẩu với bất kỳ ai. Nên đặt mật khẩu từ 8 ký tự, gồm chữ hoa, chữ thường và chữ số.</p>
+            </div>
+            <Button variant="danger-outline" icon="logout" onClick={() => void logout()}>Đăng xuất</Button>
+          </div>}
         </section>
       </main>
 
