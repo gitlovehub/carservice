@@ -17,7 +17,14 @@
 | P2-D handover UI | `9f51b4c` |
 | P3-A item history | `2d64bd2` |
 | P3-B supplements backend | `0967552` |
-| P3-C supplement + diagnosis UI | commit `feat(quotation-ui)` (xem `git log --oneline -1`) |
+| P3-C supplement + diagnosis UI | `8fb42fa` |
+| P4-A/B/C check-out + pickup authorization backend | commit `feat(handover): vehicle check-out...` (xem `git log --oneline -1`) |
+
+## P4 backend xong — tiếp theo P4-D (frontend)
+
+- Advisor: `CheckInPanel` tổng quát hóa thành biên bản theo `type` hoặc thêm `CheckOutPanel` (hiện khi COMPLETED hoặc khi đóng phiếu đã check-in): chọn người nhận (Chủ xe / Người được ủy quyền từ `order.pickup_authorizations` ACTIVE + ô 4 số cuối), checklist điền sẵn từ CHECK_IN, hiển thị mục khác biệt sau khi gửi, OTP chủ xe. `PaymentPanel` nút "Bàn giao xe": báo cần CHECK_OUT.
+- Customer: khối "Ủy quyền nhận xe" ở /repair-status (tạo: họ tên, SĐT, 4 số cuối, hạn; danh sách + thu hồi); khối biên bản đã có (CHECK_OUT dùng chung `CustomerHandoverBlock`).
+- Migrate DB dev `2026_11_08_130000`.
 
 DB dev local đã migrate tới `2026_11_08_120000` (D-016 áp dụng cho mọi migration chỉ thêm).
 

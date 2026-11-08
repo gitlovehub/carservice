@@ -32,7 +32,7 @@ class HandoverController extends Controller
     {
         abort_unless(Gate::allows('update', $repairOrder), 403);
         $data = $request->validate([
-            'type' => ['required', Rule::in([VehicleHandover::TYPE_CHECK_IN])],
+            'type' => ['required', Rule::in([VehicleHandover::TYPE_CHECK_IN, VehicleHandover::TYPE_CHECK_OUT])],
             ...$this->rules(true),
         ]);
         $staff = $request->user()->employee;
@@ -98,6 +98,8 @@ class HandoverController extends Controller
             'person_phone' => ['nullable', 'string', 'max:20'],
             'person_id_last4' => ['nullable', 'digits:4'],
             'person_relation' => [$required, Rule::in(VehicleHandover::RELATIONS)],
+            // CHECK_OUT do người được ủy quyền nhận (N9) — HandoverService đối chiếu ủy quyền + 4 số cuối giấy tờ.
+            'pickup_authorization_id' => ['nullable', 'integer'],
             'items' => [$creating ? 'nullable' : 'sometimes', 'array', 'max:100'],
             'items.*.category' => ['required', Rule::in(HandoverChecklistItem::CATEGORIES)],
             'items.*.position_code' => ['nullable', 'string', 'max:50', 'regex:/^[A-Z0-9_]+$/'],

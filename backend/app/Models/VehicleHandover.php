@@ -63,6 +63,11 @@ class VehicleHandover extends Model
         return $this->belongsTo(self::class, 'compared_handover_id');
     }
 
+    public function pickupAuthorization(): BelongsTo
+    {
+        return $this->belongsTo(PickupAuthorization::class);
+    }
+
     public function checklistItems(): HasMany
     {
         return $this->hasMany(HandoverChecklistItem::class)->orderBy('id');

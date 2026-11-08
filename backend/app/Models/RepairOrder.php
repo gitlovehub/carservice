@@ -80,6 +80,20 @@ class RepairOrder extends Model
         return $this->hasMany(VehicleHandover::class)->orderBy('id');
     }
 
+    public function pickupAuthorizations(): HasMany
+    {
+        return $this->hasMany(PickupAuthorization::class)->orderByDesc('id');
+    }
+
+    /** Biên bản CHECK_OUT đã được chủ xe xác nhận (bản mới nhất). */
+    public function confirmedCheckOut(): HasOne
+    {
+        return $this->hasOne(VehicleHandover::class)
+            ->where('type', VehicleHandover::TYPE_CHECK_OUT)
+            ->where('status', VehicleHandover::STATUS_CONFIRMED)
+            ->latestOfMany();
+    }
+
     /** Biên bản CHECK_IN đã được khách xác nhận (bản mới nhất). */
     public function confirmedCheckIn(): HasOne
     {

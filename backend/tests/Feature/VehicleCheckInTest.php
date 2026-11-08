@@ -201,7 +201,9 @@ class VehicleCheckInTest extends TestCase
 
     public function test_validation_rejects_bad_payload(): void
     {
-        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->orderId}/handovers", $this->payload(['type' => 'CHECK_OUT']))->assertUnprocessable();
+        // P4: CHECK_OUT hợp lệ, nhưng không giao xe cho "người khác" (không phải chủ xe / người được ủy quyền).
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->orderId}/handovers", $this->payload(['type' => 'CHECK_OUT', 'person_relation' => 'OTHER']))->assertUnprocessable();
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->orderId}/handovers", $this->payload(['type' => 'PICKUP']))->assertUnprocessable();
         $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->orderId}/handovers", $this->payload(['person_relation' => 'BOSS']))->assertUnprocessable();
         $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->orderId}/handovers", $this->payload(['items' => [['category' => 'ROOF', 'label' => 'x', 'condition' => 'OK']]]))->assertUnprocessable();
         $this->actingAs($this->owner)->postJson("/api/repair-orders/{$this->orderId}/handovers", $this->payload())->assertForbidden();

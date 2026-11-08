@@ -46,7 +46,7 @@ class RepairOrderController extends Controller
             'assignments.technician.employee', 'inspections.items', 'inspections.recordedBy', 'inspections.recommendations.service', 'inspections.recommendations.part',
             'quotations.items', 'workItems.technician', 'workItems.service', 'usedParts.part', 'invoice.items', 'invoice.payments',
             // Biên bản giao nhận xe (P2) + xác nhận của khách.
-            'handovers.checklistItems', 'handovers.confirmations',
+            'handovers.checklistItems', 'handovers.confirmations', 'pickupAuthorizations',
             // Yêu cầu khách chọn khi đặt lịch, dùng để điền sẵn đề xuất ở bước kiểm tra.
             'appointment:id,appointment_code,request_type,symptom_description,note',
             'appointment.services:id,name',
