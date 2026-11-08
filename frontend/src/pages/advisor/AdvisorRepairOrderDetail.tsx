@@ -7,6 +7,7 @@ import { errorText, formatDateTime } from "./workflowFormat";
 import { InspectionPanel, PaymentPanel, QuotationPanel, RepairPanel } from "./RepairOrderPanels";
 import CustomerRequestSummary from "./CustomerRequestSummary";
 import { CheckInPanel } from "./CheckInPanel";
+import { SupplementPanel } from "./SupplementPanel";
 
 /** Các bước của phiếu sửa chữa theo thứ tự cố vấn thao tác; mỗi bước gồm những trạng thái thuộc về nó. */
 const steps: Array<{ label: string; statuses: string[] }> = [
@@ -100,6 +101,7 @@ export default function AdvisorRepairOrderDetail() {
       <InspectionPanel key={`inspection-${order.inspections?.[0]?.id ?? 0}-${order.inspections?.[0]?.recommendations?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
       <QuotationPanel key={`quotation-${latestQuotation(order)?.id ?? 0}-${order.inspections?.[0]?.recommendations?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
       <RepairPanel order={order} onChanged={refreshAfterAction}/>
+      <SupplementPanel key={`supplement-${order.quotations?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
       <PaymentPanel key={`payment-${order.invoice?.id ?? 0}-${order.invoice?.payments?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
       <section className={`${card} mt-6`}><h2 className="mb-4 text-lg font-bold text-cs-text">Lịch sử xử lý phiếu</h2>
         {order.status_history?.length ? <ol className="space-y-3 border-l-2 border-cs-accent/40 pl-5">{order.status_history.map(item => <li key={item.id} className="text-sm text-cs-text"><Status status={item.status || ""}/><span className="ml-3 text-xs text-cs-muted">{formatDateTime(item.created_at)}</span>{item.note && <p className="mt-1 text-xs text-cs-muted">{item.note}</p>}</li>)}</ol> : <p className="text-sm text-cs-muted">Chưa có nhật ký.</p>}

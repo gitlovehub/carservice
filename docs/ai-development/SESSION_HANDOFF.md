@@ -1,62 +1,42 @@
 # SESSION HANDOFF
 
 > Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
-> Cập nhật: 08/11/2026.
+> Cập nhật: 08/11/2026 — sau P3.
 
-## Commit đã tạo trong chế độ này
+## Commit trong chế độ này (fix/apt, chưa push)
 
 | Chức năng | Commit |
 |---|---|
 | P1A evidence schema + models | `a67819e` |
-| P1B media storage + authorization | `b533524` |
-| P1C customer confirmation + OTP | `26389df` |
-| P1D confirmation + photo UI | commit `feat(confirmation-ui)` (xem `git log --oneline -1 -- frontend/src/pages/advisor/CounterApprovalPanel.tsx`) |
+| P1B media | `b533524` |
+| P1C confirmation + OTP | `26389df` |
+| P1D confirmation UI | `7452c1a` |
+| P2-A/B reception + handover schema | `b9e40cb` |
+| QA-01 flaky test | `b237658` |
+| P2-C handover backend | `6fe0f37` |
+| P2-D handover UI | `9f51b4c` |
+| P3-A item history | `2d64bd2` |
+| P3-B supplements backend | `0967552` |
+| P3-C supplement + diagnosis UI | commit `feat(quotation-ui)` (xem `git log --oneline -1`) |
 
-## P1 đã xong (chờ PO nghiệm thu khi xem FINAL report)
+DB dev local đã migrate tới `2026_11_08_120000` (D-016 áp dụng cho mọi migration chỉ thêm).
 
-- DB dev local đã migrate 3 bảng P1 (D-016).
-- Trình duyệt: panel duyệt tại quầy + ảnh chẩn đoán hiển thị đúng; gửi/nhập OTP thật và upload ảnh **BROWSER_NOT_VERIFIED** (tránh email thật / dữ liệu giả).
-- Script trình duyệt: scratchpad `audit/p1check.mjs` (chỉ đọc + bấm toggle).
+## Trạng thái
 
-## Đã xong trong P2
+P1, P2, P3 đã triển khai + kiểm thử tự động. Phần trình duyệt còn thiếu ghi trong `MASTER_TASK_LIST.md` (BROWSER_NOT_VERIFIED). Còn P3-FE-H (giao diện lịch sử duyệt) PENDING — nhỏ, làm khi rảnh.
 
-- P2-A + P2-B (một commit `feat(reception)`): migration `2026_11_08_110000_create_vehicle_handovers_table.php`, `2026_11_08_110100_add_reception_columns_to_repair_orders_table.php`; model `VehicleHandover`, `HandoverChecklistItem`; `RepairOrder` (+ fillable, `bookedVehicle`, `handovers`, `confirmedCheckIn`, `SOURCE_*`); `RepairOrderService::receive` (đổi xe + audit + source + requires_check_in); test `ReceptionVehicleChangeTest`. **Chưa migrate DB dev cho 2 migration P2** (làm khi kiểm trình duyệt P2-D).
+## Tiếp theo: P4 — Check-out + ủy quyền nhận xe
 
-- P2-C (commit `feat(handover)`): `HandoverService`, `HandoverController` (ADVISOR: index/store/update/submit/void/otp/verify-otp), `CustomerHandoverController` (`GET /me/repair-orders/{id}/handovers`, `POST /me/handovers/{id}/confirm`), `HandoverOtpMail` + view, gate `assertCheckInConfirmed` trong `assignTechnician` + `recordInspection`, `MediaService` alias `handover`. `ConfirmationService` refactor: `issueOtp`/`checkOtp`/`consumeOtp`/`record` dùng chung. Test `VehicleCheckInTest` 9/9; suite 182/182.
-- QA-01 sửa (`b237658`).
+Chính sách theo `BUSINESS_PROCESS_DESIGN.md` N9: chủ xe khai báo người ủy quyền trong tài khoản (họ tên, SĐT, 4 số cuối giấy tờ) **trước**; tại quầy cố vấn đối chiếu giấy tờ, OTP gửi **email chủ xe** (hoặc chủ xe xác nhận trong ứng dụng); không có ủy quyền thì không giao.
 
-- P2-D (commit `feat(handover-ui)`): xong; xem MASTER_TASK_LIST. DB dev đã migrate P2.
+**Điểm cần kiểm tra trước khi code P4 (có thể phải hỏi PO):**
+1. Chủ xe tự nhận xe: xác thực bằng xác nhận tài khoản / OTP email chủ xe — rõ.
+2. Người được ủy quyền: OTP gửi chủ xe → chủ xe đọc mã cho người nhận? (người nhận đứng ở quầy, chủ xe ở xa → chủ xe phải chuyển mã cho người nhận, hoặc chủ xe bấm xác nhận trong ứng dụng). Thiết kế N9 nói "hoặc chủ xe bấm xác nhận trong ứng dụng" — dùng ACCOUNT confirmation trên biên bản CHECK_OUT. Coi như đã rõ.
+3. `closeRepairOrder` (trả xe không sửa) cũng cần CHECK_OUT — thay đổi luồng đóng phiếu; đã có trong roadmap.
+4. Phiếu cũ (requires_check_in = false): có bắt CHECK_OUT không? Đề xuất: chỉ bắt với phiếu `requires_check_in = true` (nhất quán P2).
 
-## Tiếp theo: P3 — chia nhỏ
-
-| Bước | Nội dung |
-|---|---|
-| P3-A | Migration: `quotations` + `type` (default INITIAL), `parent_quotation_id`, `reason`; `quotation_item_responses` (quotation_item_id, decision, customer_confirmation_id). Ghi `quotation_item_responses` trong `respondViaAccount` / `verifyQuotationOtp` (lịch sử từng lần duyệt). Test |
-| P3-B | SUPPLEMENT: `createQuotation(type=SUPPLEMENT, reason)` cho phép khi IN_PROGRESS/WAITING_FOR_PARTS; khách duyệt như báo giá thường; dòng SUPPLEMENT duyệt → tạo `work_items`; `generateInvoice`/`recordUsedPart`/`startRepair` lấy INITIAL mới nhất (đang hiệu lực) + mọi SUPPLEMENT không hủy. **Giữ test P0 chống tính trùng.** Không đổi quy tắc tính tiền với báo giá thường |
-| P3-C | Khách xem chẩn đoán (`CustomerRepairOrderController::show` thêm `inspections.items` không có ghi chú nội bộ, `inspections.recommendations`, ảnh chẩn đoán); frontend Customer + Advisor (nút "Lập báo giá phát sinh" khi đang sửa; nhãn "Phát sinh"; lịch sử duyệt) |
-
-Lưu ý P3-B: `latestQuotation` hiện là `latestOfMany('version')` trên mọi báo giá — phải đổi để chỉ lấy INITIAL (nếu không SUPPLEMENT mới sẽ thành "bản mới nhất" và thay thế báo giá gốc → **sai tiền**). Đây là điểm rủi ro chính.
-
-## (Cũ) P2-D (frontend)
-
-- Advisor `ReceptionWorkflow.tsx`: khi chọn lịch hẹn, cho chọn xe khác của cùng khách + ô lý do (bắt buộc khi khác xe); gửi `vehicle_change_reason`.
-- Advisor trang Chi tiết phiếu: panel "Biên bản nhận xe" khi `requires_check_in` (hoặc luôn hiện): form (km, nhiên liệu, tình trạng chung, đồ giá trị, người giao + quan hệ, checklist mặc định: 4 góc ngoại thất + chìa khóa + giấy tờ), `PhotoUploader type="handover"` khi DRAFT, nút "Gửi khách xác nhận" (submit), sau đó chọn: khách tự xác nhận trong tài khoản (Làm mới) **hoặc** OTP tại quầy (gửi mã / nhập mã), hủy (lý do). Thông báo chặn khi giao KTV mà chưa CONFIRMED.
-- Customer: trong trang chi tiết phiếu (`RepairStatus.tsx`), khối "Biên bản nhận xe" (SUBMITTED → nút "Xác nhận đúng tình trạng" + ghi chú; CONFIRMED → hiển thị đã xác nhận), ảnh qua PhotoUploader readOnly.
-- Types trong `workflowService.ts` (`requires_check_in`, `handovers`) và `customerApi.ts`.
-- RepairOrderController::show phải trả `handovers` (kiểm tra `load`) — hoặc frontend gọi `GET /repair-orders/{id}/handovers`.
-- Smoke test mới; tsc/build/eslint; migrate DB dev 2 migration P2 (D-016 áp dụng tương tự); trình duyệt chỉ đọc.
-
-## Kế hoạch P2 (gốc)
-
-| Bước | Nội dung | Commit dự kiến |
-|---|---|---|
-| P2-A | Migration: `vehicle_handovers` (repair_order_id, type CHECK_IN/CHECK_OUT, status DRAFT/SUBMITTED/CONFIRMED/VOID, odometer_km, fuel_level, delivered_by_name/phone, received_by_employee_id, valuables_note, compared_handover_id, void_reason, submitted_at, confirmed_at), `handover_checklist_items` (theo design §5); `repair_orders` + `booked_vehicle_id`, `vehicle_change_reason`, `source` (default 'APPOINTMENT'). Model + test schema | `feat(handover): add handover schema` |
-| P2-B | `RepairOrderService::receive`: cho phép xe khác lịch hẹn nếu cùng chủ + bắt buộc lý do + audit_logs; hỗ trợ WALK_IN (không appointment). Test 422/audit | `feat(reception): allow vehicle change and walk-in` |
-| P2-C | `HandoverService` + API CHECK_IN (tạo/sửa ở DRAFT, submit → khách xác nhận qua ACCOUNT `/me/handovers/{id}/confirm` hoặc OTP email tại quầy, CONFIRMED khóa, VOID kèm lý do). Media alias `handover`. Chặn `INSPECTING` khi CHECK_IN chưa CONFIRMED — **chỉ áp dụng cho phiếu tạo sau khi triển khai** (cờ theo ngày tạo / cột `requires_handover`), để không chặn dữ liệu cũ | `feat(handover): implement vehicle check-in records` |
-| P2-D | Frontend Advisor (chọn xe + lý do, vãng lai, biên bản CHECK_IN + ảnh + xác nhận) + Customer (xem/xác nhận biên bản) + smoke + trình duyệt | `feat(handover-ui): ...` |
-
-Trước P2-A: đọc `BUSINESS_PROCESS_DESIGN.md` §5 (bảng `vehicle_handovers`, `handover_checklist_items`), `RepairOrderService::receive`, `ReceiveVehicleFlowTest`, `AdvisorAppointmentOverrideTest`, `ReceptionWorkflow.tsx`.
+Kế hoạch P4: P4-A migration `pickup_authorizations` + FK `vehicle_handovers.pickup_authorization_id`; P4-B API khách tạo/thu hồi ủy quyền; P4-C CHECK_OUT (HandoverService type CHECK_OUT, `compared_handover_id` = CHECK_IN CONFIRMED, person_relation OWNER/AUTHORIZED + đối chiếu 4 số cuối), `handOver`/`closeRepairOrder` bắt buộc CHECK_OUT CONFIRMED khi `requires_check_in`; P4-D frontend.
 
 ## Cần PO
 
-Không có blocker. Ghi chú: chính sách ủy quyền nhận xe (P4) dùng thiết kế N9 trong `BUSINESS_PROCESS_DESIGN.md`; nếu khi tới P4 có điểm mơ hồ sẽ dừng hỏi.
+Không chặn. Ghi nhận T-002 (không giảm giá phát sinh) trong DECISION_LOG.

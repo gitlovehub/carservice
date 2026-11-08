@@ -160,6 +160,22 @@ class SupplementalQuotationTest extends TestCase
         $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->order->id}/complete")->assertUnprocessable();
     }
 
+    public function test_customer_sees_diagnosis_and_supplement_but_not_internal_notes(): void
+    {
+        $this->inspection->items()->create(['item_name' => 'Bugi', 'condition_status' => 'FAILED', 'condition_description' => 'Mòn điện cực', 'note' => 'GHI CHÚ NỘI BỘ']);
+        $id = $this->supplement()->assertCreated()->json('id');
+        $this->actingAs($this->advisor)->postJson("/api/quotations/{$id}/send")->assertOk();
+
+        $response = $this->actingAs($this->customerAccount)->getJson("/api/me/repair-orders/{$this->order->id}")->assertOk()
+            ->assertJsonPath('inspections.0.diagnosis', 'Đến hạn thay dầu')
+            ->assertJsonPath('inspections.0.items.0.condition_description', 'Mòn điện cực')
+            ->assertJsonPath('inspections.0.recommendations.0.part.name', 'Bugi');
+        $this->assertStringNotContainsString('GHI CHÚ NỘI BỘ', $response->getContent());
+        $supplement = collect($response->json('quotations'))->firstWhere('id', $id);
+        $this->assertSame('SUPPLEMENT', $supplement['type']);
+        $this->assertNotEmpty($supplement['reason']);
+    }
+
     public function test_supplement_not_allowed_before_repair_starts(): void
     {
         $this->order->update(['status' => RepairOrder::WAITING_APPROVAL]);
