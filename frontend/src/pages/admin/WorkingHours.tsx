@@ -9,6 +9,7 @@ type WorkingHour = {
   close_time: string;
   max_slots: number;
   is_active: boolean | number;
+  daily_capacity_minutes?: number | null;
 };
 
 type RowForm = {
@@ -16,6 +17,8 @@ type RowForm = {
   close_time: string;
   max_slots: string;
   is_active: boolean;
+  /** P7: năng lực (phút / ngày) — chỉ dùng để cảnh báo quá tải. */
+  daily_capacity_minutes: string;
 };
 
 type RowState = {
@@ -51,6 +54,7 @@ function toForm(hour: WorkingHour): RowForm {
     close_time: toHHmm(hour.close_time),
     max_slots: String(hour.max_slots),
     is_active: Boolean(Number(hour.is_active)),
+    daily_capacity_minutes: hour.daily_capacity_minutes != null ? String(hour.daily_capacity_minutes) : "",
   };
 }
 
@@ -59,7 +63,8 @@ function isSame(a: RowForm, b: RowForm): boolean {
     a.open_time === b.open_time &&
     a.close_time === b.close_time &&
     a.max_slots === b.max_slots &&
-    a.is_active === b.is_active
+    a.is_active === b.is_active &&
+    a.daily_capacity_minutes === b.daily_capacity_minutes
   );
 }
 
@@ -191,6 +196,7 @@ function WorkingHours() {
             close_time: form.close_time,
             max_slots: Number(form.max_slots),
             is_active: form.is_active,
+            daily_capacity_minutes: form.daily_capacity_minutes === "" ? null : Math.max(0, Math.round(Number(form.daily_capacity_minutes))),
           }),
         },
       );
@@ -377,6 +383,7 @@ function WorkingHours() {
                           aria-label={`Giờ đóng cửa ${DAY_LABELS[hour.day_of_week]}`}
                         />
 
+                        <div>
                         <input
                           type="number"
                           min={0}
@@ -389,6 +396,18 @@ function WorkingHours() {
                           className={fieldClass}
                           aria-label={`Số lịch tối đa ${DAY_LABELS[hour.day_of_week]}`}
                         />
+                        <input
+                          type="number"
+                          min={0}
+                          value={form.daily_capacity_minutes}
+                          disabled={disabledFields}
+                          placeholder="Năng lực (phút/ngày)"
+                          title="Tổng phút làm việc gara xử lý được trong ngày — vượt mức chỉ cảnh báo, không chặn"
+                          onChange={(event) => updateForm(hour.id, { daily_capacity_minutes: event.target.value })}
+                          className={`mt-1 ${fieldClass}`}
+                          aria-label={`Năng lực phút mỗi ngày ${DAY_LABELS[hour.day_of_week]}`}
+                        />
+                        </div>
 
                         <div className="flex items-center justify-start gap-2 lg:justify-end">
                           {dirty && (
