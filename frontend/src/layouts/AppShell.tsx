@@ -95,7 +95,7 @@ function AccountMenu({ area }: { area: WorkArea }) {
 
 function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
-  return <IconButton icon={theme === "dark" ? "sun" : "moon"} label={theme === "dark" ? LABELS.theme.toLight : LABELS.theme.toDark} onClick={toggleTheme}/>;
+  return <IconButton icon={theme === "dark" ? "sun" : "moon"} label={theme === "dark" ? LABELS.theme.toLight : LABELS.theme.toDark} onClick={toggleTheme} className="cs-ws-theme-toggle"/>;
 }
 
 /** Bố cục chung Advisor/Admin: sidebar nhóm nghiệp vụ + topbar (breadcrumb, sáng/tối, tài khoản) + nội dung. */

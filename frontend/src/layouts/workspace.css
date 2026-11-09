@@ -143,6 +143,12 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
   color: var(--cs-text); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: default;
 }
 .cs-ws-clock svg { color: var(--cs-accent-text); flex-shrink: 0; }
+/* Nút sáng/tối hình tròn, cao bằng ô đồng hồ. */
+.cs-work-top .cs-ws-theme-toggle {
+  width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding: 0;
+  border-radius: 999px; border: 1px solid var(--cs-border); background: var(--cs-surface);
+}
+.cs-work-top .cs-ws-theme-toggle:hover { background: var(--cs-hover); }
 .cs-ws-account {
   display: inline-flex; align-items: center; gap: 9px; max-width: 240px;
   min-height: 40px; padding: 4px 8px 4px 4px; border-radius: var(--radius-control);
