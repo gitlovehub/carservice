@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Button, DataTable, Dropdown, Field, Input, Modal, Pagination, SearchInput, Select, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
+import { Button, DataTable, Dropdown, Field, Input, Modal, Pagination, SearchInput, Select, type Column } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { adminApi, errorMessage, fmtDateTime, type AccountRole, type AccountStatus, type AdminAccount } from "../../services/adminApi";
-import { AdminPage, FilterSelect, Person, Pill, Tabs, Toggle, Toolbar } from "./kit/AdminKit";
+import { AdminPage, ClearFilters, FilterSelect, Person, Pill, Tabs, Toggle, Toolbar } from "./kit/AdminKit";
 import type { Tone } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
@@ -31,8 +31,7 @@ export default function Accounts() {
   const [formError, setFormError] = useState("");
   const term = useDebounced(search.trim());
 
-  const tableSort = useTableSort(NEWEST_FIRST, () => setPage(1));
-  const params = { role: tab, status, search: term, page, ...tableSort.params };
+  const params = { role: tab, status, search: term, page };
   const list = useAdminQuery(`accounts:${JSON.stringify(params)}`, signal => adminApi.accounts(params, signal));
   const result = list.data ?? list.stale;
   const counts = result?.summary ?? {};
@@ -74,13 +73,13 @@ export default function Accounts() {
   };
 
   const columns: Column<AdminAccount>[] = [
-    { key: "email", sortKey: "email", header: "Tài khoản", primary: true, render: a => <Person name={a.name} sub={a.email}/> },
-    { key: "role", sortKey: "role", header: "Vai trò", render: a => <Pill tone={roleInfo[a.role].tone}>{roleInfo[a.role].label}</Pill> },
-    { key: "status", sortKey: "status", header: "Trạng thái", render: a => <StatusBadge domain="account" status={a.status}/> },
+    { key: "email", header: "Tài khoản", primary: true, render: a => <Person name={a.name} sub={a.email}/> },
+    { key: "role", header: "Vai trò", render: a => <Pill tone={roleInfo[a.role].tone}>{roleInfo[a.role].label}</Pill> },
+    { key: "status", header: "Trạng thái", render: a => <StatusBadge domain="account" status={a.status}/> },
     { key: "verified", header: "Email", hideOnMobile: true, render: a => a.verified
       ? <span className="inline-flex items-center gap-1 text-success-fg"><Icon name="check" size={15}/>Đã xác thực</span>
       : <span className="text-cs-muted">Chưa xác thực</span> },
-    { key: "login", sortKey: "login", header: "Đăng nhập gần nhất", hideOnMobile: true, render: a => <span className="tabular-nums text-cs-text-2">{a.last_login_at ? fmtDateTime(a.last_login_at) : "Chưa đăng nhập"}</span> },
+    { key: "login", header: "Đăng nhập gần nhất", hideOnMobile: true, render: a => <span className="tabular-nums text-cs-text-2">{a.last_login_at ? fmtDateTime(a.last_login_at) : "Chưa đăng nhập"}</span> },
   ];
 
   return <AdminPage title="Tài khoản" description="Quản lý đăng nhập và trạng thái tài khoản" demo={false}
@@ -96,8 +95,9 @@ export default function Accounts() {
         { value: "all", label: "Tất cả" }, { value: "ACTIVE", label: "Đang hoạt động" }, { value: "PENDING", label: "Chờ kích hoạt" },
         { value: "LOCKED", label: "Đã khoá" }, { value: "INACTIVE", label: "Ngừng hoạt động" },
       ]}/>
+      <ClearFilters active={search !== "" || status !== "all" || tab !== "all"} onClear={() => { setSearch(""); setStatus("all"); setTab("all"); setPage(1); }}/>
     </Toolbar>
-    <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Danh sách tài khoản" columns={columns} rows={result?.data ?? []} rowKey={a => a.id}
+    <DataTable caption="Danh sách tài khoản" columns={columns} rows={result?.data ?? []} rowKey={a => a.id}
       loading={list.loading} error={list.error || undefined} onRetry={list.reload}
       actions={a => <Dropdown label={`Thao tác cho ${a.email}`} items={[
         { label: "Gửi email đặt lại mật khẩu", icon: "key", onSelect: () => { void resetPassword(a); } },

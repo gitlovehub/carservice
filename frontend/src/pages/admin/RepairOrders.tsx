@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { DataTable, ErrorState, IconButton, LoadingState, Pagination, SearchInput, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
+import { DataTable, ErrorState, LoadingState, Pagination, SearchInput, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
 import { adminApi, fmtDate, fmtDateTime, fmtTime, type AdminOrder, type OrderGroup } from "../../services/adminApi";
 import { getStatus } from "../../config/status";
-import { AdminPage, FilterSelect, InfoList, PaneSection, SplitView, StatCard, Tabs, Toolbar } from "./kit/AdminKit";
+import { AdminPage, ClearFilters, FilterSelect, InfoList, PaneSection, SplitView, StatCard, Tabs, Toolbar } from "./kit/AdminKit";
 import { vnd } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
@@ -108,12 +108,12 @@ export default function RepairOrders() {
             { value: "all", label: "Tất cả" },
             ...(result?.technicians ?? []).map(t => ({ value: String(t.id), label: t.name ?? `KTV #${t.id}` })),
           ]}/>
+          <ClearFilters active={search !== "" || tech !== "all" || group !== "all" || !tableSort.isDefault}
+            onClear={() => { setSearch(""); setTech("all"); setGroup("all"); tableSort.reset(); setPage(1); }}/>
         </Toolbar>
         <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Danh sách phiếu sửa chữa" columns={columns} rows={rows} rowKey={o => o.id}
           loading={list.loading} error={list.error || undefined} onRetry={list.reload}
-          onRowClick={o => setSelectedId(o.id)} rowClassName={o => o.id === selectedId ? "bg-cs-soft/60" : ""}
-          actions={o => <IconButton icon="eye" label={`Xem phiếu ${o.code}`} size="sm" onClick={() => setSelectedId(o.id)}/>}
-          footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={list.loading} onChange={setPage}/>}/>
+          onRowClick={o => setSelectedId(o.id)} rowClassName={o => o.id === selectedId ? "bg-cs-soft/60" : ""}          footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={list.loading} onChange={setPage}/>}/>
         <p className="mt-3 flex items-center gap-2 text-caption text-cs-muted"><Icon name="info" size={14}/>Tiếp nhận, báo giá, phân công kỹ thuật viên do Cố vấn dịch vụ thực hiện; Admin theo dõi tại đây.</p>
       </>}/>
   </AdminPage>;

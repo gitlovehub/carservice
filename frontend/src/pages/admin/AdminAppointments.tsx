@@ -5,10 +5,10 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { getStatus } from "../../config/status";
 import { errorMessage } from "../../services/adminApi";
 import {
-  catalogAdminApi, dmy, hhmm, money, REQUEST_TYPES, weekRange,
-  type AppointmentRow, type AppointmentStatus, type RequestType,
+  catalogAdminApi, dmy, hhmm, money, weekRange,
+  type AppointmentRow, type AppointmentStatus,
 } from "../../services/catalogAdminApi";
-import { AdminPage, FilterSelect, PaneSection, SplitView, Tabs, Toolbar } from "./kit/AdminKit";
+import { AdminPage, ClearFilters, PaneSection, SplitView, Tabs, Toolbar } from "./kit/AdminKit";
 import type { Tone } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
@@ -28,7 +28,8 @@ const WEEKDAY = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 const PER_PAGE = 10;
 
 const vehicleName = (a: AppointmentRow) => [a.vehicle?.model?.brand?.name, a.vehicle?.model?.name].filter(Boolean).join(" ") || "Chưa rõ dòng xe";
-const timeRange = (a: AppointmentRow) => `${hhmm(a.appointment_time)}${a.end_time ? ` – ${a.end_time}` : ""}`;
+/** Giờ hẹn khách chọn (không hiện giờ kết thúc — đó chỉ là ước tính của hệ thống). */
+const timeOf = (a: AppointmentRow) => hhmm(a.appointment_time);
 const itemNames = (a: AppointmentRow) => [...a.packages.map(p => p.name), ...a.services.map(s => s.name)];
 const isPast = (a: AppointmentRow) => new Date(`${a.appointment_date.slice(0, 10)}T${hhmm(a.appointment_time)}:00`).getTime() <= Date.now();
 
@@ -40,12 +41,11 @@ function VehicleCell({ a }: { a: AppointmentRow }) {
   </span>;
 }
 
-/** Lịch hẹn — danh sách / lịch tuần, lọc theo trạng thái, tuần, loại yêu cầu; ngăn chi tiết để xác nhận, tiếp nhận, huỷ. */
+/** Lịch hẹn — danh sách / lịch tuần, lọc theo trạng thái và tuần; ngăn chi tiết để xác nhận, tiếp nhận, huỷ. */
 export default function AdminAppointments() {
   const { notify } = useAppFeedback();
   const [view, setView] = useState<View>("list");
   const [status, setStatus] = useState<StatusFilter>("ALL");
-  const [type, setType] = useState<"all" | RequestType>("all");
   const [search, setSearch] = useState("");
   const [anchor, setAnchor] = useState(() => new Date());
   const [page, setPage] = useState(1);
@@ -62,7 +62,7 @@ export default function AdminAppointments() {
   const tableSort = useTableSort(NEWEST_FIRST, () => { setPage(1); setChecked([]); });
   const filters = {
     date_from: week.from, date_to: week.to, search: term,
-    status: status === "ALL" ? undefined : status, request_type: type === "all" ? undefined : type,
+    status: status === "ALL" ? undefined : status,
     ...tableSort.params,
   };
   const listParams = view === "list" ? { ...filters, page, per_page: PER_PAGE } : { ...filters, sort: "time", dir: "asc", per_page: 500 };
@@ -121,9 +121,9 @@ export default function AdminAppointments() {
       const data = checked.length ? all.filter(a => checked.includes(a.id)) : all;
       const escape = (cell: string | number) => `"${String(cell).replace(/"/g, '""')}"`;
       const lines = [
-        ["Mã lịch", "Khách hàng", "Số điện thoại", "Xe", "Biển số", "Ngày hẹn", "Giờ hẹn", "Loại yêu cầu", "Dịch vụ", "Dự kiến (₫)", "Trạng thái"],
+        ["Mã lịch", "Khách hàng", "Số điện thoại", "Xe", "Biển số", "Ngày hẹn", "Giờ hẹn", "Dịch vụ", "Dự kiến (₫)", "Trạng thái"],
         ...data.map(a => [a.appointment_code, a.customer?.full_name ?? "", a.customer?.phone ?? "", vehicleName(a), a.vehicle?.license_plate ?? "",
-          dmy(a.appointment_date), timeRange(a), REQUEST_TYPES[a.request_type]?.label ?? a.request_type, itemNames(a).join("; "),
+          dmy(a.appointment_date), timeOf(a), itemNames(a).join("; "),
           Math.round(a.estimated_total ?? 0), getStatus("appointment", a.status, "staff").label]),
       ];
       const blob = new Blob(["﻿" + lines.map(r => r.map(escape).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
@@ -157,25 +157,24 @@ export default function AdminAppointments() {
         checked={checked.includes(a.id)} onClick={e => e.stopPropagation()}
         onChange={() => setChecked(c => c.includes(a.id) ? c.filter(id => id !== a.id) : [...c, a.id])}/>,
     },
-    { key: "code", sortKey: "code", header: "Mã lịch", primary: true, render: a => <b className="whitespace-nowrap text-cs-accent-text">{a.appointment_code}</b> },
-    { key: "customer", sortKey: "customer", header: "Khách hàng", render: a => <span className="block min-w-0">
+    { key: "customer", sortKey: "customer", header: "Khách hàng", primary: true, render: a => <span className="block min-w-0">
       <b className="block truncate text-cs-text">{a.customer?.full_name ?? "—"}</b>
       <span className="inline-flex items-center gap-1 whitespace-nowrap text-caption text-cs-muted"><Icon name="phone" size={12}/>{a.customer?.phone ?? "—"}</span>
     </span> },
     { key: "vehicle", header: "Xe / Biển số", render: a => <VehicleCell a={a}/> },
     { key: "time", sortKey: "time", header: "Ngày giờ hẹn", render: a => <span className="block whitespace-nowrap">
-      <span className="block font-medium tabular-nums text-cs-text">{dmy(a.appointment_date)}</span><span className="block text-caption tabular-nums text-cs-muted">{timeRange(a)}</span>
+      <span className="block font-medium tabular-nums text-cs-text">{dmy(a.appointment_date)}</span><span className="block text-caption tabular-nums text-cs-muted">{timeOf(a)}</span>
     </span> },
-    ...(paneOpen ? [] : [{ key: "type", sortKey: "type", header: "Loại yêu cầu", hideOnMobile: true, render: (a: AppointmentRow) => <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-cs-text-2">
-      <Icon name={REQUEST_TYPES[a.request_type]?.icon ?? "wrench"} size={16} className="shrink-0 text-cs-muted"/>{REQUEST_TYPES[a.request_type]?.short ?? a.request_type}
-    </span> },
-    { key: "services", header: "Dịch vụ", hideOnMobile: true, render: (a: AppointmentRow) => {
+    ...(paneOpen ? [] : [{ key: "services", header: "Dịch vụ khách chọn", hideOnMobile: true, render: (a: AppointmentRow) => {
       const names = itemNames(a);
       return names.length ? <span className="inline-flex max-w-[200px] items-center gap-1.5">
         <span className="truncate rounded-full border border-cs-border bg-cs-surface-2 px-2.5 py-0.5 text-caption text-cs-text-2" title={names.join(", ")}>{names[0]}</span>
         {names.length > 1 && <span className="shrink-0 text-caption text-cs-muted">+{names.length - 1}</span>}
       </span> : <span className="text-caption text-cs-muted">Chưa chọn</span>;
-    } }]),
+    } },
+    { key: "estimate", header: "Tạm tính", align: "right" as const, hideOnMobile: true, render: (a: AppointmentRow) => a.estimated_total
+      ? <span className="whitespace-nowrap font-semibold tabular-nums text-cs-text">{money(a.estimated_total)}</span>
+      : <span className="text-caption text-cs-muted">—</span> }]),
     { key: "status", sortKey: "status", header: "Trạng thái", render: a => <StatusBadge domain="appointment" status={a.status}/> },
   ];
 
@@ -191,7 +190,9 @@ export default function AdminAppointments() {
     <Button variant="danger-outline" icon="x" onClick={() => setCancelling(selected)}>Huỷ lịch</Button>
   </> : undefined;
 
-  const filtersActive = status !== "ALL" || type !== "all" || term !== "";
+  const filtersActive = status !== "ALL" || term !== "";
+  const thisWeek = weekRange(new Date());
+  const onThisWeek = week.from === thisWeek.from;
   const toolbar = <>
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
       <Tabs label="Chế độ xem" variant="segment" value={view} onChange={v => { setView(v); setChecked([]); }} items={[
@@ -204,6 +205,8 @@ export default function AdminAppointments() {
     </div>
     <Toolbar>
       <SearchInput value={search} onChange={v => { setSearch(v); resetPage(); }} placeholder="Tìm theo mã lịch, khách hàng, SĐT, biển số…"/>
+      <Button size="sm" variant={onThisWeek ? "primary" : "outline"} aria-pressed={onThisWeek}
+        onClick={() => { setAnchor(new Date()); resetPage(); }}>Tuần này</Button>
       <div className="inline-flex items-center gap-1 rounded-control border border-cs-border bg-cs-surface p-1" role="group" aria-label="Chọn tuần">
         <IconButton icon="chevron-left" size="sm" label="Tuần trước" onClick={() => shiftWeek(-1)}/>
         <span className="inline-flex items-center gap-2 px-2 text-small font-medium tabular-nums text-cs-text">
@@ -211,11 +214,8 @@ export default function AdminAppointments() {
         </span>
         <IconButton icon="chevron-right" size="sm" label="Tuần sau" onClick={() => shiftWeek(1)}/>
       </div>
-      <Button size="sm" variant="ghost" onClick={() => { setAnchor(new Date()); resetPage(); }}>Tuần này</Button>
-      <FilterSelect label="Loại yêu cầu" value={type} onChange={v => { setType(v); resetPage(); }} options={[
-        { value: "all", label: "Tất cả" }, ...(Object.keys(REQUEST_TYPES) as RequestType[]).map(k => ({ value: k, label: REQUEST_TYPES[k].label })),
-      ]}/>
-      {filtersActive && <IconButton icon="refresh" label="Xoá bộ lọc" onClick={() => { setStatus("ALL"); setType("all"); setSearch(""); resetPage(); }}/>}
+      <ClearFilters active={filtersActive || !onThisWeek || !tableSort.isDefault}
+        onClear={() => { setStatus("ALL"); setSearch(""); setAnchor(new Date()); tableSort.reset(); resetPage(); }}/>
     </Toolbar>
     {checked.length > 0 && view === "list" && <div className="mb-3 flex flex-wrap items-center gap-2 rounded-control border border-cs-border bg-cs-surface-2 px-3 py-2 text-small">
       <b>Đã chọn {checked.length} lịch</b>
@@ -278,7 +278,7 @@ function WeekBoard({ days, rows, loading, selectedId, onSelect }: {
               return <li key={a.id}>
                 <button type="button" onClick={() => onSelect(a.id)}
                   className={`w-full cursor-pointer rounded-control border p-2.5 text-left transition-colors ${a.id === selectedId ? "border-cs-accent bg-cs-soft" : "border-cs-border bg-cs-surface hover:border-cs-border-strong hover:bg-cs-hover"}`}>
-                  <span className="flex items-center gap-1.5 text-caption font-semibold tabular-nums text-cs-text"><span className={`size-2 shrink-0 rounded-full ${dot}`} aria-hidden="true"/>{timeRange(a)}</span>
+                  <span className="flex items-center gap-1.5 text-caption font-semibold tabular-nums text-cs-text"><span className={`size-2 shrink-0 rounded-full ${dot}`} aria-hidden="true"/>{timeOf(a)}</span>
                   <span className="mt-1 block truncate text-small font-semibold text-cs-text">{a.customer?.full_name ?? "—"}</span>
                   <span className="block truncate text-caption text-cs-muted">{a.vehicle?.license_plate ?? "—"} · {vehicleName(a)}</span>
                   <span className="sr-only">{getStatus("appointment", a.status, "staff").label}</span>
@@ -326,8 +326,7 @@ function AppointmentDetail({ a }: { a: AppointmentRow }) {
     </PaneSection>
     <PaneSection title="Thông tin lịch hẹn" icon="calendar">
       <dl className="text-small">
-        {row("Ngày giờ hẹn", <span className="tabular-nums">{dmy(a.appointment_date)}, {timeRange(a)}</span>)}
-        {row("Loại yêu cầu", REQUEST_TYPES[a.request_type]?.label ?? a.request_type)}
+        {row("Ngày giờ hẹn", <span className="tabular-nums">{dmy(a.appointment_date)}, {timeOf(a)}</span>)}
         {row("Trạng thái", <StatusBadge domain="appointment" status={a.status}/>)}
         {a.handled_by && row("Người xử lý", a.handled_by.employee?.full_name ?? a.handled_by.email ?? "—")}
         {a.status === "CANCELLED" && a.cancel_reason && row("Lý do huỷ", a.cancel_reason)}

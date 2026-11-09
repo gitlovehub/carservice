@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { DataTable, EmptyState, Pagination, SearchInput, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { adminApi, fmtDateTime, type AdminAuditLog, type AuditCategory } from "../../services/adminApi";
 import AdvisorActivity from "./AdvisorActivity";
-import { AdminPage, FilterSelect, Person, Pill, Tabs, Toolbar } from "./kit/AdminKit";
+import { AdminPage, ClearFilters, FilterSelect, Person, Pill, Tabs, Toolbar } from "./kit/AdminKit";
 import type { Tone } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
@@ -47,6 +47,8 @@ export default function AuditLogs() {
         <FilterSelect label="Hành động" value={category} onChange={value => { setCategory(value); setPage(1); }} options={[
           { value: "all", label: "Tất cả" }, ...(Object.keys(categoryInfo) as AuditCategory[]).map(a => ({ value: a, label: categoryInfo[a].label })),
         ]}/>
+        <ClearFilters active={search !== "" || category !== "all" || !tableSort.isDefault}
+          onClear={() => { setSearch(""); setCategory("all"); tableSort.reset(); setPage(1); }}/>
       </Toolbar>
       <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Nhật ký thao tác" columns={columns} rows={result?.data ?? []} rowKey={l => l.id}
         loading={list.loading} error={list.error || undefined} onRetry={list.reload}

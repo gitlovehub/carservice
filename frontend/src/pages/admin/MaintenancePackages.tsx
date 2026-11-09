@@ -81,8 +81,7 @@ export default function MaintenancePackages() {
             className={brand === "all" || brand === "general" ? "pointer-events-none opacity-60" : ""}/>
           <FilterSelect label="Trạng thái" value={status} onChange={v => { setStatus(v); setPage(1); setSelectedId(null); }} options={[
             { value: "", label: "Tất cả" }, { value: "ACTIVE", label: "Đang áp dụng" }, { value: "INACTIVE", label: "Tạm ngừng" },
-          ]}/>
-        </div>
+          ]}/>        </div>
 
         {list.error ? <div className="rounded-card border border-cs-border bg-cs-surface"><ErrorState description={list.error} onRetry={list.reload}/></div>
           : list.loading && !rows.length ? <div className="rounded-card border border-cs-border bg-cs-surface"><LoadingState/></div>

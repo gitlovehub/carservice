@@ -21,7 +21,10 @@ export function useTableSort(initial: SortState = NEWEST_FIRST, onChange?: () =>
       : { key, dir: TEXT_KEYS.has(key) ? "asc" : "desc" });
     onChange?.();
   };
-  return { sort, toggle, setSort, params: { sort: sort.key, dir: sort.dir } };
+  /** Đang ở cách sắp mặc định (dùng cho nút "Xoá bộ lọc"). */
+  const isDefault = sort.key === initial.key && sort.dir === initial.dir;
+  const reset = () => { if (!isDefault) { setSort(initial); onChange?.(); } };
+  return { sort, toggle, setSort, reset, isDefault, params: { sort: sort.key, dir: sort.dir } };
 }
 
 export const ariaSort = (sort: SortState | undefined, key?: string): "ascending" | "descending" | undefined =>

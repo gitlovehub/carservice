@@ -3,7 +3,7 @@ import { Button, Field, Icon, Input, Modal, SearchInput, Select, Textarea } from
 import { useAppFeedback } from "../../../components/ui/feedbackContext";
 import { adminApi, errorMessage, type BookingSlots } from "../../../services/adminApi";
 import {
-  catalogAdminApi, isoDate, money, REQUEST_TYPES, type AdminService, type AppointmentRow, type RequestType,
+  catalogAdminApi, isoDate, money, type AdminService, type AppointmentRow,
 } from "../../../services/catalogAdminApi";
 import { useDebounced } from "../kit/useDebounced";
 
@@ -24,7 +24,6 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
   const [date, setDate] = useState(() => isoDate(new Date(Date.now() + 86_400_000)));
   const [time, setTime] = useState("");
   const [slots, setSlots] = useState<BookingSlots>({ morning: [], afternoon: [] });
-  const [type, setType] = useState<RequestType>("MAINTENANCE");
   const [services, setServices] = useState<AdminService[]>([]);
   const [picked, setPicked] = useState<number[]>([]);
   const [symptom, setSymptom] = useState("");
@@ -60,7 +59,7 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
   const total = useMemo(() => services.filter(s => picked.includes(s.id)).reduce((sum, s) => sum + Number(s.base_price), 0), [services, picked]);
   const reset = () => {
     setSearch(""); setCustomers([]); setCustomer(null); setVehicles([]); setVehicleId(""); setTime("");
-    setType("MAINTENANCE"); setPicked([]); setSymptom(""); setError("");
+    setPicked([]); setSymptom(""); setError("");
   };
   const close = () => { if (!saving) { reset(); onClose(); } };
 
@@ -72,7 +71,9 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
     setError("");
     try {
       const res = await catalogAdminApi.createAppointment({
-        customer_id: customer.id, vehicle_id: Number(vehicleId), appointment_date: date, appointment_time: time, request_type: type,
+        customer_id: customer.id, vehicle_id: Number(vehicleId), appointment_date: date, appointment_time: time,
+        // Không hỏi admin: suy ra như khi khách tự đặt (có dịch vụ → Sửa chữa, không chọn gì → Kiểm tra).
+        request_type: picked.length ? "REPAIR" : "DIAGNOSIS",
         symptom_description: symptom.trim() || null, service_ids: picked, package_ids: [],
       });
       notify(`Đã tạo lịch hẹn ${res.data.appointment_code} cho ${customer.full_name} lúc ${time} ngày ${date.split("-").reverse().join("/")}.`, "success");
@@ -112,15 +113,10 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
         </>}
       </div>
 
-      <Field label="Xe" required>
+      <Field label="Xe" required className="md:col-span-2">
         <Select value={vehicleId} disabled={!customer} onChange={e => setVehicleId(e.target.value)}>
           <option value="">{customer ? (vehicles.length ? "Chọn xe" : "Khách chưa có xe") : "Chọn khách hàng trước"}</option>
           {vehicles.map(v => <option key={v.id} value={v.id}>{[v.model?.brand?.name, v.model?.name].filter(Boolean).join(" ")} · {v.license_plate ?? "Chưa có biển"}</option>)}
-        </Select>
-      </Field>
-      <Field label="Loại yêu cầu" required>
-        <Select value={type} onChange={e => setType(e.target.value as RequestType)}>
-          {(Object.keys(REQUEST_TYPES) as RequestType[]).map(k => <option key={k} value={k}>{REQUEST_TYPES[k].label}</option>)}
         </Select>
       </Field>
       <Field label="Ngày hẹn" required>

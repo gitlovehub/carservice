@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Button, DataTable, EmptyState, Field, IconButton, Input, Modal, Pagination, QuantityStepper, SearchInput, Select, Textarea, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
+import { Button, DataTable, EmptyState, Field, Input, Modal, Pagination, QuantityStepper, SearchInput, Select, Textarea, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { Badge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -8,7 +8,7 @@ import { SearchableSelect } from "../../components/vehicle/SearchableSelect";
 import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
 import { adminApi, errorMessage, fmtDateTime, type AdminPart, type PartPayload, type StockMove } from "../../services/adminApi";
 import { emptySelection, type VehicleSelection } from "../../services/vehicleCatalog";
-import { AdminPage, FilterSelect, Pill, Progress, SplitView, StatCard, Tabs, Toolbar } from "./kit/AdminKit";
+import { AdminPage, ClearFilters, FilterSelect, Pill, Progress, SplitView, StatCard, Tabs, Toolbar } from "./kit/AdminKit";
 import { num, vnd, type Tone } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
@@ -110,6 +110,10 @@ export default function Inventory() {
         ? [{ value: "all", label: "Tất cả" }, { value: "low", label: "Sắp hết" }, { value: "out", label: "Hết hàng" }]
         : [{ value: "all", label: "Tất cả" }, { value: "ACTIVE", label: "Đang áp dụng" }, { value: "INACTIVE", label: "Ngừng" }]}/>
     </>}
+    {tab === "moves"
+      ? <ClearFilters active={search !== "" || !moveSort.isDefault} onClear={() => { setSearch(""); moveSort.reset(); setMovePage(1); }}/>
+      : <ClearFilters active={search !== "" || category !== "all" || status !== "all" || !partSort.isDefault}
+        onClear={() => { setSearch(""); setCategory("all"); setStatus("all"); partSort.reset(); setPage(1); }}/>}
   </Toolbar>;
   const pager = result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={parts.loading} onChange={setPage}/>;
 
@@ -202,14 +206,13 @@ export default function Inventory() {
       list={<>{filters}<DataTable sort={partSort.sort} onSort={partSort.toggle} caption="Danh mục phụ tùng" columns={catalogColumns} rows={result?.data ?? []} rowKey={p => p.id}
         loading={parts.loading} error={parts.error || undefined} onRetry={parts.reload}
         onRowClick={startEdit} rowClassName={p => p.id === editing?.id ? "bg-cs-soft/60" : ""}
-        actions={p => <IconButton icon="edit" label={`Sửa ${p.name}`} size="sm" onClick={() => startEdit(p)}/>}
         footer={pager}/></>}/>}
 
     {tab === "stock" && <>{filters}<DataTable sort={partSort.sort} onSort={partSort.toggle} caption="Tồn kho" columns={stockColumns} rows={result?.data ?? []} rowKey={p => p.id}
       loading={parts.loading} error={parts.error || undefined} onRetry={parts.reload}
       empty={<EmptyState icon="box" title={status === "all" ? "Chưa có phụ tùng" : "Không có phụ tùng ở mức này"}/>}
       rowClassName={p => p.level === "out" ? "bg-danger-soft/40" : p.level === "low" ? "bg-warning-soft/40" : ""}
-      actions={p => <IconButton icon="plus" label={`Nhập thêm ${p.name}`} size="sm" onClick={() => openStock("IN", p)}/>}
+      onRowClick={p => openStock("IN", p)}
       footer={pager}/></>}
 
     {tab === "moves" && <>{filters}<DataTable sort={moveSort.sort} onSort={moveSort.toggle} caption="Lịch sử nhập xuất" columns={moveColumns} rows={moveResult?.data ?? []} rowKey={m => m.id}

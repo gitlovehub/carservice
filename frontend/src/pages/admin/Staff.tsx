@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Button, DataTable, Dropdown, Field, Input, Modal, Pagination, SearchInput, Select, buttonClass, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
+import { Button, DataTable, Dropdown, Field, Input, Modal, Pagination, SearchInput, Select, buttonClass, type Column } from "../../components/ui";
 import { Badge } from "../../components/ui/Badge";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { adminApi, errorMessage, fmtDate, type AdminStaff, type StaffRole } from "../../services/adminApi";
-import { AdminPage, FilterSelect, Person, Pill, StatCard, Toggle, Toolbar } from "./kit/AdminKit";
+import { AdminPage, ClearFilters, FilterSelect, Person, Pill, StatCard, Toggle, Toolbar } from "./kit/AdminKit";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
 import { usePaged } from "./kit/usePaged";
@@ -27,8 +27,7 @@ export default function Staff() {
   const [formError, setFormError] = useState("");
   const term = useDebounced(search.trim());
 
-  const tableSort = useTableSort(NEWEST_FIRST);
-  const params = { search: term, role, status, ...tableSort.params };
+  const params = { search: term, role, status };
   const list = useAdminQuery(`staff:${JSON.stringify(params)}`, signal => adminApi.staff(params, signal));
   const result = list.data ?? list.stale;
   const { pageRows, pagination } = usePaged(result?.data ?? [], 10);
@@ -78,12 +77,12 @@ export default function Staff() {
   };
 
   const columns: Column<AdminStaff>[] = [
-    { key: "name", sortKey: "name", header: "Nhân viên", primary: true, render: s => <Person name={s.name} sub={s.email ?? undefined}/> },
-    { key: "phone", sortKey: "phone", header: "Số điện thoại", render: s => <span className="whitespace-nowrap tabular-nums">{s.phone ?? "—"}</span> },
-    { key: "role", sortKey: "role", header: "Vai trò", render: s => <Pill tone={s.role === "ADVISOR" ? "info" : "violet"}>{roleLabel[s.role]}</Pill> },
+    { key: "name", header: "Nhân viên", primary: true, render: s => <Person name={s.name} sub={s.email ?? undefined}/> },
+    { key: "phone", header: "Số điện thoại", render: s => <span className="whitespace-nowrap tabular-nums">{s.phone ?? "—"}</span> },
+    { key: "role", header: "Vai trò", render: s => <Pill tone={s.role === "ADVISOR" ? "info" : "violet"}>{roleLabel[s.role]}</Pill> },
     { key: "specialty", header: "Chuyên môn", render: s => s.role === "TECHNICIAN" && s.specialty ? <span className="text-cs-text-2">{s.specialty}</span> : <span className="text-cs-muted">—</span> },
-    { key: "joined", sortKey: "joined", header: "Ngày vào", hideOnMobile: true, render: s => <span className="tabular-nums text-cs-text-2">{fmtDate(s.joined_at)}</span> },
-    { key: "status", sortKey: "status", header: "Trạng thái", render: s => <Badge tone={s.status === "ACTIVE" ? "success" : "neutral"}>{s.status === "ACTIVE" ? "Đang làm" : "Nghỉ việc"}</Badge> },
+    { key: "joined", header: "Ngày vào", hideOnMobile: true, render: s => <span className="tabular-nums text-cs-text-2">{fmtDate(s.joined_at)}</span> },
+    { key: "status", header: "Trạng thái", render: s => <Badge tone={s.status === "ACTIVE" ? "success" : "neutral"}>{s.status === "ACTIVE" ? "Đang làm" : "Nghỉ việc"}</Badge> },
   ];
   const specialtyOptions = draft && !SPECIALTIES.includes(draft.specialty) ? [...SPECIALTIES, draft.specialty] : SPECIALTIES;
 
@@ -102,8 +101,9 @@ export default function Staff() {
       <SearchInput value={search} onChange={setSearch} placeholder="Tìm theo tên, SĐT, email…"/>
       <FilterSelect label="Vai trò" value={role} onChange={setRole} options={[{ value: "all", label: "Tất cả" }, { value: "ADVISOR", label: "Cố vấn dịch vụ" }, { value: "TECHNICIAN", label: "Kỹ thuật viên" }]}/>
       <FilterSelect label="Trạng thái" value={status} onChange={setStatus} options={[{ value: "all", label: "Tất cả" }, { value: "ACTIVE", label: "Đang làm" }, { value: "INACTIVE", label: "Nghỉ việc" }]}/>
+      <ClearFilters active={search !== "" || role !== "all" || status !== "all"} onClear={() => { setSearch(""); setRole("all"); setStatus("all"); }}/>
     </Toolbar>
-    <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Danh sách nhân viên" columns={columns} rows={pageRows} rowKey={s => s.id}
+    <DataTable caption="Danh sách nhân viên" columns={columns} rows={pageRows} rowKey={s => s.id}
       loading={list.loading} error={list.error || undefined} onRetry={list.reload}
       actions={s => <>
         <Dropdown label={`Thao tác khác cho ${s.name}`} items={[

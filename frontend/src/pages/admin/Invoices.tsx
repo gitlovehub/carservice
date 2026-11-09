@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Button, DataTable, ErrorState, IconButton, LoadingState, Pagination, SearchInput, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
+import { Button, DataTable, ErrorState, LoadingState, Pagination, SearchInput, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
-import { adminApi, errorMessage, fmtDate, fmtDateTime, type AdminInvoice, type AdminPayment, type InvoiceStatus, type PaymentGroup } from "../../services/adminApi";
+import { adminApi, errorMessage, fmtDate, fmtDateTime, fmtTime, type AdminInvoice, type AdminPayment, type InvoiceStatus, type PaymentGroup } from "../../services/adminApi";
 import { getStatus } from "../../config/status";
-import { AdminPage, FilterSelect, InfoList, PaneSection, SplitView, StatCard, Tabs, Toolbar } from "./kit/AdminKit";
+import { AdminPage, ClearFilters, FilterSelect, InfoList, PaneSection, SplitView, StatCard, Tabs, Toolbar } from "./kit/AdminKit";
 import { vnd } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
@@ -71,8 +71,9 @@ export default function Invoices() {
   };
 
   const invoiceColumns: Column<AdminInvoice>[] = [
-    { key: "code", sortKey: "code", header: "Số hoá đơn", primary: true, render: i => <span className="whitespace-nowrap"><b className="text-cs-accent-text">{i.code}</b><span className="block text-caption text-cs-muted">{fmtDate(i.issued_at)}</span></span> },
-    { key: "customer", header: "Khách hàng", render: i => <span className="whitespace-nowrap"><b className="text-cs-text">{i.customer ?? "—"}</b><span className="block text-caption text-cs-muted">{i.plate ?? "—"} · {i.order_code ?? "—"}</span></span> },
+    { key: "code", sortKey: "code", header: "Số hoá đơn", primary: true, render: i => <b className="block truncate text-cs-accent-text">{i.code}</b> },
+    { key: "issued", sortKey: "created", header: "Ngày lập", render: i => <span className="block whitespace-nowrap tabular-nums"><span className="block text-cs-text">{fmtDate(i.issued_at)}</span><span className="block text-caption text-cs-muted">{fmtTime(i.issued_at)}</span></span> },
+    { key: "customer", header: "Khách hàng", render: i => <span className="block min-w-0"><b className="block truncate text-cs-text">{i.customer ?? "—"}</b><span className="block truncate text-caption text-cs-muted">{i.plate ?? "—"} · {i.order_code ?? "—"}</span></span> },
     { key: "total", sortKey: "total", header: "Tổng tiền", align: "right", render: i => <b className="tabular-nums">{vnd(i.total)}</b> },
     { key: "due", header: "Còn nợ", align: "right", render: i => i.status === "CANCELLED" || i.paid >= i.total ? <span className="text-cs-muted">—</span> : <b className="tabular-nums text-danger-fg">{vnd(i.total - i.paid)}</b> },
     { key: "status", sortKey: "status", header: "Trạng thái", render: i => <StatusBadge domain="invoice" status={i.status}/> },
@@ -81,7 +82,7 @@ export default function Invoices() {
     { key: "code", sortKey: "code", header: "Mã giao dịch", primary: true, render: p => <b>{p.code}</b> },
     { key: "invoice", header: "Hoá đơn", render: p => <span><span className="text-cs-accent-text">{p.invoice ?? "—"}</span><span className="block text-caption text-cs-muted">{p.customer ?? "—"}</span></span> },
     { key: "method", header: "Phương thức", render: p => <span className="inline-flex items-center gap-2"><Icon name={methodInfo[p.method].icon} size={16} className="text-cs-muted"/>{methodInfo[p.method].label}</span> },
-    { key: "at", sortKey: "created", header: "Thời gian", hideOnMobile: true, render: p => <span className="tabular-nums text-cs-text-2">{fmtDateTime(p.at)}</span> },
+    { key: "at", sortKey: "created", header: "Thời gian", hideOnMobile: true, render: p => <span className="block whitespace-nowrap tabular-nums"><span className="block text-cs-text">{fmtDate(p.at)}</span><span className="block text-caption text-cs-muted">{fmtTime(p.at)}</span></span> },
     { key: "amount", sortKey: "amount", header: "Số tiền", align: "right", render: p => <b className="tabular-nums">{vnd(p.amount)}</b> },
     { key: "status", sortKey: "status", header: "Trạng thái", render: p => <StatusBadge domain="payment" status={p.status}/> },
   ];
@@ -152,16 +153,18 @@ export default function Invoices() {
             { value: "all", label: "Tất cả" }, { value: "UNPAID", label: "Chưa thanh toán" }, { value: "PARTIALLY_PAID", label: "Thanh toán một phần" },
             { value: "PAID", label: "Đã thanh toán" }, { value: "CANCELLED", label: "Đã huỷ" },
           ]}/>
+          <ClearFilters active={search !== "" || status !== "all" || !invoiceSort.isDefault} onClear={() => { setSearch(""); setStatus("all"); invoiceSort.reset(); setPage(1); }}/>
         </Toolbar>
-        <DataTable sort={invoiceSort.sort} onSort={invoiceSort.toggle} caption="Danh sách hoá đơn" columns={invoiceColumns} rows={result?.data ?? []} rowKey={i => i.id}
+        <DataTable evenColumns sort={invoiceSort.sort} onSort={invoiceSort.toggle} caption="Danh sách hoá đơn" columns={invoiceColumns} rows={result?.data ?? []} rowKey={i => i.id}
           loading={invoices.loading} error={invoices.error || undefined} onRetry={invoices.reload}
-          onRowClick={i => setSelectedId(i.id)} rowClassName={i => i.id === selectedId ? "bg-cs-soft/60" : ""}
-          actions={i => <IconButton icon="eye" label={`Xem hoá đơn ${i.code}`} size="sm" onClick={() => setSelectedId(i.id)}/>}
-          footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={invoices.loading} onChange={setPage}/>}/>
+          onRowClick={i => setSelectedId(i.id)} rowClassName={i => i.id === selectedId ? "bg-cs-soft/60" : ""}          footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={invoices.loading} onChange={setPage}/>}/>
       </>}/>
       : <>
-        <Toolbar><SearchInput value={search} onChange={value => { setSearch(value); setPaymentPage(1); }} placeholder="Tìm mã giao dịch, số hoá đơn…"/></Toolbar>
-        <DataTable sort={paymentSort.sort} onSort={paymentSort.toggle} caption="Danh sách giao dịch" columns={paymentColumns} rows={paymentResult?.data ?? []} rowKey={p => p.id}
+        <Toolbar>
+          <SearchInput value={search} onChange={value => { setSearch(value); setPaymentPage(1); }} placeholder="Tìm mã giao dịch, số hoá đơn…"/>
+          <ClearFilters active={search !== "" || !paymentSort.isDefault} onClear={() => { setSearch(""); paymentSort.reset(); setPaymentPage(1); }}/>
+        </Toolbar>
+        <DataTable evenColumns sort={paymentSort.sort} onSort={paymentSort.toggle} caption="Danh sách giao dịch" columns={paymentColumns} rows={paymentResult?.data ?? []} rowKey={p => p.id}
           loading={payments.loading} error={payments.error || undefined} onRetry={payments.reload}
           footer={paymentResult && <Pagination page={paymentResult.meta.current_page} totalPages={paymentResult.meta.last_page} totalItems={paymentResult.meta.total} pageSize={paymentResult.meta.per_page} disabled={payments.loading} onChange={setPaymentPage}/>}/>
       </>}

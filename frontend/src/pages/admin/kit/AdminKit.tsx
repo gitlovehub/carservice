@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Drawer, IconButton, PageHeader, Switch } from "../../../components/ui";
+import { Button, Drawer, IconButton, PageHeader, Switch } from "../../../components/ui";
 import { Icon, type IconName } from "../../../components/ui/Icon";
 import { initials, num, toneSoft, type Tone } from "./format";
 
@@ -164,6 +164,12 @@ export function FilterSelect<T extends string>({ label, value, onChange, options
       {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
     </select>
   </div>;
+}
+
+/** Nút "Xoá bộ lọc" — chỉ hiện khi đang có bộ lọc / từ khoá / cách sắp khác mặc định; bấm để đưa bảng về mặc định. */
+export function ClearFilters({ active, onClear }: { active: boolean; onClear: () => void }) {
+  if (!active) return null;
+  return <Button variant="ghost" size="sm" icon="refresh" onClick={onClear}>Xoá bộ lọc</Button>;
 }
 
 export function Toolbar({ children }: { children: ReactNode }) {

@@ -1,9 +1,24 @@
 # SESSION HANDOFF
 
 > Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
-> Cập nhật: 09/11/2026 — triển khai đặc tả nút `docs/ui-button-redesign.md` (sau P7).
+> Cập nhật: 10/11/2026 — góp ý PO đợt 3 trang Admin (xong); chờ PO quyết B-05 "Chờ phụ tùng".
 
-## Mới nhất: góp ý PO đợt 2 — toast, báo cáo vận hành, đánh giá ga-ra, khung giờ đặt lịch (09/11/2026, nhánh v3)
+## Mới nhất: góp ý PO đợt 3 — tinh gọn bảng Admin (10/11/2026, nhánh v3) — PO chốt "tạm thời done trang admin"
+
+- **Bảng chung (`DataTable`)**: bỏ dòng "Sắp xếp: … (giảm dần)" (xoá `SortStatus`); bấm dòng = mở chi tiết (Tab + Enter/Space), bỏ cột Thao tác trùng ở Phiếu sửa chữa, Hoá đơn, Khách hàng, Phụ tùng & kho (tab Tồn kho: bấm dòng = Nhập kho); thêm `evenColumns` (chia đều cột) + `actionsWidth`. `useTableSort` thêm `reset` / `isDefault`.
+- **Bỏ sắp xếp** ở Tài khoản, Nhân sự, Khách hàng (luôn mới tạo nhất) và cột SĐT.
+- **Nút "Xoá bộ lọc"** (`ClearFilters` trong AdminKit, chỉ hiện khi khác mặc định, đưa cả sort về mặc định): Lịch hẹn, Khách hàng, Tài khoản, Nhân sự, Hoá đơn (2 tab), Phiếu sửa chữa, Phụ tùng & kho (3 tab), Dịch vụ, Đánh giá, Nhật ký. PO bỏ ở Gói bảo dưỡng, Hãng & dòng xe.
+- **Lịch hẹn**: bỏ cột Mã lịch; bỏ giờ "từ – đến" (giờ kết thúc chỉ là ước tính hệ thống) và "Loại yêu cầu" (hệ thống tự suy ra) ở bảng / lịch tuần / chi tiết / CSV / bộ lọc / form tạo lịch (form gửi `REPAIR` nếu chọn dịch vụ, ngược lại `DIAGNOSIS`); thêm cột "Tạm tính". Nút "Tuần này" đặt giữa ô tìm kiếm và chọn tuần, đỏ khi đang ở tuần hiện tại.
+- **Hoá đơn**: tách cột Ngày lập (ngày + giờ 2 dòng), Thời gian giao dịch 2 dòng, cột chia đều.
+- **Khách hàng**: bỏ cột Khu vực, địa chỉ (pane + form; địa chỉ cũ giữ nguyên khi sửa); khoá/mở khoá chuyển vào pane; form Thêm xe thay Biển số bằng ODO (km, không bắt buộc).
+- **Dịch vụ**: bỏ cột danh mục trái → nút "Xem danh mục dịch vụ" mở `CategoryDrawer` (trượt phải: xem/lọc/sửa/thêm/xoá danh mục; thay `CategoryManagerModal`); 3 thẻ thống kê (API `service-categories.meta` thêm `active`, `visible`); bỏ cột #, bỏ kéo thả/đổi thứ tự (thứ tự hiện có giữ nguyên — PO chưa yêu cầu làm lại), bỏ sort tên; Giá / Thời gian 2 cột; Trạng thái = nhãn + công tắc; nút sửa gộp vào menu ⋯. **Bỏ "Phổ biến"** toàn hệ thống (cột, menu, form, thống kê, sort; nhóm "Phổ biến" trên trang đặt lịch khách) — cột `services.is_popular` giữ trong DB, không dùng.
+- **Sửa lỗi**: sửa dịch vụ chỉ bật/tắt bị "The name has already been taken" do DB dev có tên trùng (Bảo dưỡng phanh 4 bánh ×3, Thay dầu động cơ ×2, Thay lọc gió điều hòa ×2). Form chỉ gửi `name` khi đổi; thông báo validate tiếng Việt. **Dữ liệu trùng chưa xử lý** — chờ PO cho phép đổi tên/gộp.
+- **Hãng & dòng xe**: 4 thẻ thống kê (API mới `GET /api/admin/vehicle-catalog/summary`); cột số + trạng thái căn giữa, thao tác sát phải, cột chia đều.
+- **Thông tin gara**: tạm đóng — trang hiện "đang nâng cấp, bảo trì" (`UNDER_MAINTENANCE = true` trong `GarageSettings.tsx`; form có chế độ Sửa → Lưu/Huỷ giữ nguyên bên dưới).
+- **Chờ PO**: B-05 nghiệp vụ "Chờ phụ tùng" (`BLOCKERS.md`).
+- **Kiểm thử**: build + ESLint file sửa đạt; backend test liên quan (BookingCatalog, AdminService, AdminCatalogRedesign) đạt. **Chưa kiểm trình duyệt** các thay đổi đợt này.
+
+## Trước đó: góp ý PO đợt 2 — toast, báo cáo vận hành, đánh giá ga-ra, khung giờ đặt lịch (09/11/2026, nhánh v3)
 
 Commit: `75de3cb` toast + hover nút icon · `2783927` nút duyệt xanh lá · `aec2557` Nhân sự bỏ cấp bậc + nút sửa trùng · `824c370` không xoá hãng/dòng xe · `3b8e4d3` Báo cáo (thu tiền + Vận hành) · `9763db6` Đánh giá ga-ra · `22fca58` khung giờ đặt lịch.
 

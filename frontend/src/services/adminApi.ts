@@ -168,7 +168,7 @@ export const adminApi = {
   lockCustomer: (id: number, locked: boolean) => send<Message<AdminCustomer>>(`/admin/customers/${id}/lock`, "PATCH", { locked }),
   createCustomer: (body: { full_name: string; phone: string; email: string | null; address: string | null }) => send<{ data: { id: number } }>("/customers", "POST", body),
   updateCustomer: (id: number, body: { full_name: string; phone: string; email: string | null; address: string | null }) => send<{ data: { id: number } }>(`/customers/${id}`, "PATCH", body),
-  addVehicle: (body: { customer_id: number; model_id: number; trim_id: number | null; license_plate: string; year: number | null }) => send<{ data: { id: number } }>("/vehicles", "POST", body),
+  addVehicle: (body: { customer_id: number; model_id: number; trim_id: number | null; license_plate?: string | null; mileage?: number | null; year: number | null }) => send<{ data: { id: number } }>("/vehicles", "POST", body),
 
   staff: (params: Params, signal?: AbortSignal) =>
     fetchApi<{ data: AdminStaff[]; summary: { total: number; active: number; advisors: number; technicians: number } }>(`/admin/staff${query(params)}`, { signal }),

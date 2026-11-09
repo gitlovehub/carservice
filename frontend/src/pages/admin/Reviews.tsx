@@ -3,7 +3,7 @@ import { Button, EmptyState, ErrorState, Field, LoadingState, Modal, Pagination,
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { adminApi, errorMessage, fmtDate, type AdminReview } from "../../services/adminApi";
-import { AdminPage, FilterSelect, Panel, Person, Pill, Progress, StatCard, Stars, Tabs, Toolbar } from "./kit/AdminKit";
+import { AdminPage, ClearFilters, FilterSelect, Panel, Person, Pill, Progress, StatCard, Stars, Tabs, Toolbar } from "./kit/AdminKit";
 import { num, type Tone } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
@@ -73,8 +73,8 @@ export default function Reviews() {
 
   return <AdminPage title="Đánh giá ga-ra" description="Khách chấm điểm CarService sau mỗi lần bảo dưỡng, sửa chữa xe" demo={false}>
     <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard icon="star" tone="warning" label="Điểm hài lòng trung bình" value={summary?.visible ? `${num(summary.average)} / 5` : "—"}/>
-      <StatCard icon="check" tone="success" label="Khách hài lòng (4–5★)" value={pct(summary?.positive_rate)}/>
+      <StatCard icon="star" tone="warning" label="Điểm đánh giá trung bình" value={summary?.visible ? `${num(summary.average)} / 5` : "—"}/>
+      <StatCard icon="check" tone="success" label="Khách hài lòng" value={pct(summary?.positive_rate)}/>
       <StatCard icon="alert" tone="danger" label="Đánh giá thấp chưa phản hồi" value={summary ? num(summary.low_unreplied) : "—"}/>
       <StatCard icon="reply" tone="info" label="Tỷ lệ đã phản hồi" value={pct(summary?.reply_rate)}/>
     </div>
@@ -124,6 +124,8 @@ export default function Reviews() {
             { value: "all", label: "Tất cả" }, { value: "5", label: "5 sao" }, { value: "4", label: "4 sao" }, { value: "3", label: "3 sao" },
             { value: "2", label: "2 sao" }, { value: "1", label: "1 sao" }, { value: "low", label: "Từ 3 sao trở xuống" },
           ]}/>
+          <ClearFilters active={search !== "" || rating !== "all" || status !== "all"}
+            onClear={() => { setSearch(""); setRating("all"); setStatus("all"); setPage(1); }}/>
         </Toolbar>
         {!result
           ? (list.error ? <ErrorState description={list.error} onRetry={list.reload}/> : <LoadingState/>)
