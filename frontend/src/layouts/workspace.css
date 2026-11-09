@@ -12,6 +12,8 @@
   --ws-sidebar: 256px;
   --ws-sidebar-collapsed: 76px;
   --ws-topbar: 64px;
+  /* Chiều cao chung: chân sidebar = footer nội dung, để hai đường viền trên thẳng hàng. */
+  --ws-footer: 64px;
   display: grid;
   grid-template-columns: var(--ws-sidebar) minmax(0, 1fr);
   min-height: 100vh;
@@ -91,7 +93,11 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
   font-size:11px; font-weight: 500;
 }
 
-.cs-ws-foot { padding: 12px; border-top: 1px solid var(--cs-sidebar-border); }
+.cs-ws-foot {
+  box-sizing: border-box; flex-shrink: 0; display: flex; align-items: center;
+  height: var(--ws-footer); padding: 0 12px; border-top: 1px solid var(--cs-sidebar-border);
+}
+.cs-ws-foot > .cs-ws-link { flex: 1; }
 /* Nút trong sidebar nền tối dùng màu chữ của sidebar. */
 .cs-work-sidebar .cs-btn-ghost {
   --btn-fg: var(--cs-sidebar-muted);
@@ -145,20 +151,25 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
 .cs-work-content { min-width: 0; padding-bottom: 45px; flex: 1 0 auto; }
 
 /* ---------- Chân trang (Admin): đẩy xuống đáy khi nội dung ngắn ---------- */
-.cs-work-footer { border-top: 1px solid var(--cs-border); background: var(--cs-surface); }
+.cs-work-footer { box-sizing: border-box; height: var(--ws-footer); border-top: 1px solid var(--cs-border); background: var(--cs-surface); }
 .cs-work-footer-inner {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px;
-  max-width: 95rem; margin-inline: auto; padding: 16px var(--cs-page-x);
+  display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 10px 24px;
+  height: 100%; max-width: 95rem; margin-inline: auto; padding: 0 var(--cs-page-x);
   font-size: 13px; color: var(--cs-muted);
 }
 .cs-work-footer-brand { display: flex; align-items: center; gap: 10px; margin: 0; min-width: 0; }
+.cs-work-footer-brand > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cs-work-footer-brand b { color: var(--cs-text); font-weight: 600; }
+.cs-work-footer-links { flex-shrink: 0; }
 .cs-work-footer-brand .cs-ws-brand-mark { width: 26px; height: 26px; font-size: 13px; border-radius: 8px; flex-shrink: 0; }
 .cs-work-footer-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; margin: 0; padding: 0; list-style: none; }
 .cs-work-footer-links a { display: inline-flex; align-items: center; gap: 6px; color: var(--cs-muted); min-height: 32px; }
 .cs-work-footer-links a:hover { color: var(--cs-text); text-decoration: underline; text-underline-offset: 3px; }
+/* Điện thoại: sidebar là ngăn kéo nên không cần thẳng hàng — footer cao theo nội dung (2 dòng). */
 @media (max-width: 640px) {
-  .cs-work-footer-inner { flex-direction: column; align-items: flex-start; }
+  .cs-work-footer { height: auto; }
+  .cs-work-footer-inner { flex-direction: column; flex-wrap: wrap; align-items: flex-start; justify-content: center; padding-block: 14px; }
+  .cs-work-footer-brand > span:last-child { white-space: normal; }
 }
 /* Trang cũ tự chừa lề 250px cho sidebar riêng; shell đã lo phần này. */
 @media (min-width: 1024px) {
