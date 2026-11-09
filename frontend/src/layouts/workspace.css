@@ -113,7 +113,7 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
 }
 
 /* ---------- Topbar ---------- */
-.cs-work-main { min-width: 0; background: var(--cs-bg); min-height: 100vh; }
+.cs-work-main { min-width: 0; background: var(--cs-bg); min-height: 100vh; display: flex; flex-direction: column; }
 .cs-work-top {
   position: sticky; top: 0; z-index: 45;
   display: flex; align-items: center; gap: 12px;
@@ -142,7 +142,24 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
 }
 .cs-ws-account-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 500; }
 
-.cs-work-content { min-width: 0; padding-bottom: 45px; }
+.cs-work-content { min-width: 0; padding-bottom: 45px; flex: 1 0 auto; }
+
+/* ---------- Chân trang (Admin): đẩy xuống đáy khi nội dung ngắn ---------- */
+.cs-work-footer { border-top: 1px solid var(--cs-border); background: var(--cs-surface); }
+.cs-work-footer-inner {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px;
+  max-width: 95rem; margin-inline: auto; padding: 16px var(--cs-page-x);
+  font-size: 13px; color: var(--cs-muted);
+}
+.cs-work-footer-brand { display: flex; align-items: center; gap: 10px; margin: 0; min-width: 0; }
+.cs-work-footer-brand b { color: var(--cs-text); font-weight: 600; }
+.cs-work-footer-brand .cs-ws-brand-mark { width: 26px; height: 26px; font-size: 13px; border-radius: 8px; flex-shrink: 0; }
+.cs-work-footer-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; margin: 0; padding: 0; list-style: none; }
+.cs-work-footer-links a { display: inline-flex; align-items: center; gap: 6px; color: var(--cs-muted); min-height: 32px; }
+.cs-work-footer-links a:hover { color: var(--cs-text); text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 640px) {
+  .cs-work-footer-inner { flex-direction: column; align-items: flex-start; }
+}
 /* Trang cũ tự chừa lề 250px cho sidebar riêng; shell đã lo phần này. */
 @media (min-width: 1024px) {
   .cs-work-content .lg\:ml-\[250px\] { margin-left: 0 !important; }
@@ -172,7 +189,7 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
   .cs-workspace, .cs-work-sidebar, .cs-work-sidebar[data-open="true"] { transition: none; }
 }
 @media print {
-  .cs-work-sidebar, .cs-work-top { display: none !important; }
+  .cs-work-sidebar, .cs-work-top, .cs-work-footer { display: none !important; }
   .cs-workspace { display: block; }
   .cs-work-main { background: white !important; }
 }

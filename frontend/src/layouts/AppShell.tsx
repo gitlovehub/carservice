@@ -7,6 +7,7 @@ import PageTransition from "../components/PageTransition";
 import { Dropdown, IconButton } from "../components/ui";
 import { Icon } from "../components/ui/Icon";
 import { LABELS } from "../config/labels";
+import { useGarageInfo } from "../services/garageService";
 import { areaInfo, crumbs, navGroups, shellNavigation } from "./navigation";
 import { ShellContext } from "./ShellContext";
 import "./shell.css";
@@ -170,9 +171,32 @@ function WorkLayout({ area }: { area: WorkArea }) {
           </div>
         </header>
         <div className="cs-work-content" id="main-content" tabIndex={-1}><PageTransition><Outlet/></PageTransition></div>
+        {area === "admin" && <WorkFooter/>}
       </div>
     </div>
   </ShellContext.Provider>;
+}
+
+/**
+ * Chân trang khu Admin: luôn nằm đáy màn hình (nội dung ngắn vẫn cân đối), cuộn theo nội dung khi trang dài.
+ * Liên hệ lấy từ Thông tin gara; chưa cấu hình thì không hiện.
+ */
+function WorkFooter() {
+  const garage = useGarageInfo();
+  const year = new Date().getFullYear();
+  return <footer className="cs-work-footer">
+    <div className="cs-work-footer-inner">
+      <p className="cs-work-footer-brand">
+        <span className="cs-ws-brand-mark" aria-hidden="true">C</span>
+        <span>© {year} <b>{garage?.name || "CarService"}</b> · Hệ thống quản lý gara</span>
+      </p>
+      <ul className="cs-work-footer-links" aria-label="Liên hệ gara">
+        {garage?.phone && <li><a href={`tel:${garage.phone.replace(/\s+/g, "")}`}><Icon name="phone" size={14}/>{garage.phone}</a></li>}
+        {garage?.email && <li><a href={`mailto:${garage.email}`}><Icon name="mail" size={14}/>{garage.email}</a></li>}
+        <li><Link to="/"><Icon name="arrow" size={14}/>Website công khai</Link></li>
+      </ul>
+    </div>
+  </footer>;
 }
 
 export function AdvisorLayout() { return <WorkLayout area="advisor"/>; }
