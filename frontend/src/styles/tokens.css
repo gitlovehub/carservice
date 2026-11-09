@@ -75,6 +75,11 @@
   /* Viền nút danger-outline (45% danger). */
   --cs-danger-border: color-mix(in srgb, var(--cs-danger) 45%, transparent);
 
+  /* ---- Công tắc bật/tắt: xanh lá kiểu iOS (mọi vai trò) ---- */
+  --cs-switch-on: #34c759;
+  --cs-switch-off: #e3e3e0;
+  --cs-switch-knob: #ffffff;
+
   /* ---- Vô hiệu ---- */
   --cs-disabled-bg: #ecece9;
   --cs-disabled-fg: #9a9da1;
@@ -130,6 +135,9 @@ html[data-theme="dark"] {
 
   --cs-disabled-bg: #26292d;
   --cs-disabled-fg: #6f747a;
+
+  --cs-switch-on: #30d158;
+  --cs-switch-off: #3a3d42;
 
   --cs-sidebar-bg: #151619;
   /* Đỏ thương hiệu làm màu chữ trên nền tối chỉ đạt 3.3:1 — dùng tông sáng hơn (≥ 5:1). */

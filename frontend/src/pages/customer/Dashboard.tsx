@@ -1,3 +1,4 @@
+import { KmInput } from "../../components/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Link, useNavigate } from "react-router-dom";
@@ -906,14 +907,7 @@ function CustomerDashboard() {
                 <label className="mb-1 block text-xs font-bold text-slate-700">
                   Số km hiện tại trên đồng hồ
                 </label>
-                <input
-                  type="number"
-                  min={0}
-                  value={odoValue}
-                  onChange={(e) => setOdoValue(e.target.value)}
-                  placeholder="Ví dụ: 41500"
-                  className="h-11 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-[#D6A85F]"
-                />
+                <KmInput label="Số km hiện tại trên đồng hồ" value={odoValue} onChange={setOdoValue} placeholder="Ví dụ: 41.500" className="w-full !h-11 !rounded-xl"/>
               </div>
 
               {odoError && (

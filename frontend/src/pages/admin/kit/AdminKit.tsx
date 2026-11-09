@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Drawer, IconButton, PageHeader } from "../../../components/ui";
+import { Drawer, IconButton, PageHeader, Switch } from "../../../components/ui";
 import { Icon, type IconName } from "../../../components/ui/Icon";
 import { initials, num, toneSoft, type Tone } from "./format";
 
@@ -204,12 +204,8 @@ export function Progress({ value, tone, label }: { value: number; tone?: Tone; l
   </span>;
 }
 
-export function Toggle({ checked, onChange, label, disabled }: { checked: boolean; onChange: (value: boolean) => void; label: string; disabled?: boolean }) {
-  return <button type="button" role="switch" aria-checked={checked} aria-label={label} title={label} disabled={disabled} onClick={() => onChange(!checked)}
-    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${checked ? "bg-cs-accent" : "bg-cs-border-strong"}`}>
-    <span className={`inline-block size-5 rounded-full bg-[var(--cs-on-solid)] shadow transition-transform ${checked ? "translate-x-[22px]" : "translate-x-0.5"}`}/>
-  </button>;
-}
+/** Công tắc bật/tắt — dùng chung `Switch` (xanh lá kiểu iOS). Giữ tên Toggle cho các trang Admin cũ. */
+export const Toggle = Switch;
 
 export function Stars({ value, size = 16 }: { value: number; size?: number }) {
   return <span className="inline-flex items-center gap-0.5 text-warning" aria-label={`${value} trên 5 sao`}>

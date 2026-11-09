@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8');
 
-const admin = read('src/pages/admin/Services.tsx');
+// Form dịch vụ + bước chuẩn nằm trong modal của trang Dịch vụ.
+const admin = read('src/pages/admin/services/ServiceModals.tsx');
 const steps = read('src/pages/admin/ServiceStepsEditor.tsx');
 const quick = read('src/pages/advisor/QuickServicePanel.tsx');
 const detail = read('src/pages/advisor/AdvisorRepairOrderDetail.tsx');

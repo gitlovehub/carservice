@@ -6,7 +6,9 @@ export type IconName = ShellNavItem["icon"] | "sun" | "moon" | "menu" | "close" 
   | "alert" | "info" | "eye" | "filter" | "user" | "refresh" | "sidebar" | "card" | "star" | "file"
   | "arrow-right" | "arrow-left" | "x" | "send" | "cash" | "printer" | "download" | "lock" | "key" | "grid"
   | "phone" | "mail" | "pin" | "trend-up" | "trend-down" | "coins" | "x-circle" | "upload" | "drag" | "list"
-  | "bank" | "qr" | "reply" | "eye-off";
+  | "bank" | "qr" | "reply" | "eye-off"
+  // Danh mục dịch vụ / loại yêu cầu.
+  | "minus" | "engine" | "snowflake" | "tire" | "bolt" | "disc" | "droplet" | "sparkle" | "battery" | "tools" | "gauge" | "ban";
 type Props = { name: IconName; size?: number; className?: string };
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-6h6v6"/></>,
@@ -77,6 +79,18 @@ const paths: Record<IconName, ReactNode> = {
   reply: <path d="M10 8 4 13l6 5M4 13h10a6 6 0 0 1 6 6"/>,
   "eye-off": <><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3 3.6M6.3 7.6C3.9 9.3 2.5 12 2.5 12S6 18 12 18c1.6 0 3-.4 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></>,
   grid: <><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></>,
+  minus: <path d="M5 12h14"/>,
+  engine: <><path d="M4 10v6M4 13h2M6 9h3l1-2h4l1 2h2l2 2h2v5h-2l-2 2H9l-3-3V9z"/><path d="M10 7V5h4v2"/></>,
+  snowflake: <><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7"/><path d="m9 4 3 2 3-2M9 20l3-2 3 2M4.5 10.5l3-.5-1-3M19.5 13.5l-3 .5 1 3M4.5 13.5l3 .5-1 3M19.5 10.5l-3-.5 1-3"/></>,
+  tire: <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v5M12 16v5M3 12h5M16 12h5"/></>,
+  bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7z"/>,
+  disc: <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/></>,
+  droplet: <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>,
+  sparkle: <><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/></>,
+  battery: <><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M7 7V5h3v2M14 7V5h3v2M7 13h3M15.5 11.5v3M14 13h3"/></>,
+  tools: <><path d="M14 5a4 4 0 0 0 5 5l-9 9a2 2 0 0 1-3-3z"/><path d="m4 4 3 1 4 4-2 2-4-4z"/></>,
+  gauge: <><path d="M4 18a8 8 0 1 1 16 0"/><path d="m12 14 4-5"/><circle cx="12" cy="14" r="1.2"/></>,
+  ban: <><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></>,
 };
 export function Icon({ name, size = 18, className }: Props) {
   return <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;

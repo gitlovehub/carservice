@@ -11,6 +11,7 @@ const ACTION_TEXT: Record<string, string> = {
   "appointment.checked_in": "Tiếp nhận xe",
   "appointment.rescheduled": "Đổi lịch",
   "appointment.cancelled": "Hủy lịch",
+  "appointment.no_show": "Khách không đến",
 };
 
 /**

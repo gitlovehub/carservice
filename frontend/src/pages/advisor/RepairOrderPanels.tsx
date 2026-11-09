@@ -8,6 +8,7 @@ import {
 import { card, input, Notice } from "./WorkflowUI";
 import { Button, IconButton } from "../../components/ui/Button";
 import { errorText } from "./workflowFormat";
+import { QuantityStepper } from "../../components/ui/QuantityStepper";
 import { StatusBadge } from "../../components/ui/Badge";
 import { getStatus } from "../../config/status";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
@@ -181,7 +182,7 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
             ? services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)
             : parts.filter(part => recommendedPartIds.has(part.id)).map(part => <option key={part.id} value={part.id}>{part.name} · tồn {part.inventory?.quantity ?? 0}</option>)}
         </select></label>
-        <label className="text-xs font-semibold text-cs-muted">SL<input className={input} type="number" min="1" step="1" required value={line.quantity} onChange={event => updateLine(line.key, { quantity: event.target.value })}/></label>
+        <div className="text-xs font-semibold text-cs-muted">SL<QuantityStepper label="Số lượng" max={9999} className="mt-1 w-[112px]" value={Number(line.quantity) || 1} onChange={v => updateLine(line.key, { quantity: String(v ?? 1) })}/></div>
         <label className="text-xs font-semibold text-cs-muted">Đơn giá (₫)<input className={input} type="number" min="0" step="any" required value={line.unit_price} onChange={event => updateLine(line.key, { unit_price: event.target.value })}/></label>
         <label className="text-xs font-semibold text-cs-muted">Mô tả (tùy chọn)<input className={input} value={line.description} onChange={event => updateLine(line.key, { description: event.target.value })} placeholder="Mặc định: tên hạng mục"/></label>
         <IconButton icon="trash" tone="danger" label="Xóa dòng báo giá" onClick={() => setLines(previous => previous.filter(item => item.key !== line.key))}/>
@@ -258,7 +259,7 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
         <option value="">— Chọn —</option>
         {approvedParts.map(item => <option key={item.id} value={item.part_id ?? ""}>{item.description} (duyệt {item.quantity})</option>)}
       </select></label>
-      <label className="text-xs font-semibold text-cs-muted">SL<input className={input} type="number" min="1" step="1" required value={quantity} onChange={event => setQuantity(event.target.value)}/></label>
+      <div className="text-xs font-semibold text-cs-muted">SL<QuantityStepper label="Số lượng xuất kho" max={9999} className="mt-1 w-[104px]" value={Number(quantity) || 1} onChange={v => setQuantity(String(v ?? 1))}/></div>
       <Button type="submit" variant="success" icon="box" disabled={working}>Xuất kho</Button>
     </form>}
 
@@ -455,7 +456,7 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
           ? services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)
           : parts.map(part => <option key={part.id} value={part.id}>{part.name} · tồn {part.inventory?.quantity ?? 0} {part.unit || ""}</option>)}
       </select></label>
-      <label className="text-xs font-semibold text-cs-muted">SL<input className={input} type="number" min="1" step="1" required value={row.quantity} onChange={event => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, quantity: event.target.value } : item))}/></label>
+      <div className="text-xs font-semibold text-cs-muted">SL<QuantityStepper label="Số lượng đề xuất" max={9999} className="mt-1 w-[112px]" value={Number(row.quantity) || 1} onChange={v => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, quantity: String(v ?? 1) } : item))}/></div>
       <label className="text-xs font-semibold text-cs-muted">Lý do (tùy chọn)<input className={input} value={row.note} onChange={event => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, note: event.target.value } : item))} placeholder="Ví dụ: má phanh còn 2mm"/></label>
       <IconButton icon="trash" tone="danger" label="Xóa đề xuất" onClick={() => setRecs(previous => previous.filter(item => item.key !== row.key))}/>
     </div>)}

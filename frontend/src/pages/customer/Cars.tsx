@@ -1,6 +1,6 @@
 import { Modal } from "../../components/ui";
 import { buttonClass } from "../../components/ui/buttonClass";
-import { Button, IconButton } from "../../components/ui";
+import { Button, IconButton, KmInput } from "../../components/ui";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -229,16 +229,7 @@ function Cars() {
                   <label htmlFor="mileage" className="mb-2 block text-xs font-bold text-[#20252B]">
                     Số Km hiện tại (ODO)
                   </label>
-                  <input
-                    id="mileage"
-                    type="number"
-                    min={0}
-                    value={newMileage}
-                    onChange={(e) => setNewMileage(e.target.value)}
-                    placeholder="Ví dụ: 35000"
-                    disabled={saving}
-                    className="h-11 w-full rounded-xl border border-[#DDE1E4] bg-cs-surface-2 px-3.5 text-xs outline-none focus:border-[#cf2935] focus:bg-white"
-                  />
+                  <KmInput id="mileage" label="Số km hiện tại (ODO)" value={newMileage} onChange={setNewMileage} disabled={saving} className="w-full !h-11 !rounded-xl"/>
                 </div>
 
                 <div>
@@ -343,14 +334,7 @@ function Cars() {
 
               <div>
                 <label className="mb-1 block font-bold text-slate-700">Số km trên đồng hồ (ODO)</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={editMileage}
-                  onChange={(e) => setEditMileage(e.target.value)}
-                  placeholder="Ví dụ: 45000"
-                  className="h-10 w-full rounded-xl border border-slate-200 px-3 outline-none focus:border-[#cf2935]"
-                />
+                <KmInput label="Số km trên đồng hồ (ODO)" value={editMileage} onChange={setEditMileage} placeholder="Ví dụ: 45.000" className="w-full !rounded-xl"/>
               </div>
 
               <div>

@@ -1,4 +1,4 @@
-import { Button, IconButton, PageHeader, Modal } from "../../components/ui";
+import { Button, IconButton, KmInput, PageHeader, Modal } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -583,19 +583,11 @@ function CustomerCars() {
                   />
                 </label>
 
-                <label className="block text-xs font-semibold">
+                <div className="block text-xs font-semibold">
                   Số km hiện tại
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.mileage}
-                    onChange={(event) =>
-                      setForm({ ...form, mileage: event.target.value })
-                    }
-                    className={`${inputClass} mt-2`}
-                    placeholder="15000"
-                  />
-                </label>
+                  <KmInput label="Số km hiện tại" value={form.mileage} onChange={(mileage) => setForm({ ...form, mileage })}
+                    placeholder="Ví dụ: 15.000" className="mt-2 w-full"/>
+                </div>
 
                 <label className="block text-xs font-semibold sm:col-span-2">
                   Số VIN

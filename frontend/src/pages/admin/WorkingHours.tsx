@@ -1,4 +1,4 @@
-import { Button, Icon, PageHeader } from "../../components/ui";
+import { Button, Icon, PageHeader, QuantityStepper, Switch } from "../../components/ui";
 import { useEffect, useState } from "react";
 import { fetchApi } from "../../services/api";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -438,22 +438,16 @@ function WorkingHours() {
                           </div>
                         </div>
 
-                        <label className="flex cursor-pointer items-center gap-3">
-                          <input
-                            type="checkbox"
-                            role="switch"
+                        <div className="flex items-center gap-3">
+                          <Switch
                             checked={form.is_active}
-                            onChange={(event) =>
-                              updateForm(hour.id, { is_active: event.target.checked })
-                            }
-                            className="peer sr-only"
-                            aria-label={`Bật/tắt ${DAY_LABELS[hour.day_of_week]}`}
+                            onChange={(value) => updateForm(hour.id, { is_active: value })}
+                            label={`Bật/tắt ${DAY_LABELS[hour.day_of_week]}`}
                           />
-                          <span className="relative h-6 w-11 rounded-full bg-[#CBD0D4] transition peer-checked:bg-[#397044] peer-focus-visible:ring-2 peer-focus-visible:ring-[#D6A85F]/40 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition peer-checked:after:translate-x-5" />
                           <span className="text-xs font-medium text-cs-muted">
                             {form.is_active ? "Hoạt động" : "Nghỉ"}
                           </span>
-                        </label>
+                        </div>
 
                         <input
                           type="time"
@@ -477,18 +471,9 @@ function WorkingHours() {
                           aria-label={`Giờ đóng cửa ${DAY_LABELS[hour.day_of_week]}`}
                         />
 
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={form.max_slots}
-                          disabled={disabledFields}
-                          onChange={(event) =>
-                            updateForm(hour.id, { max_slots: event.target.value })
-                          }
-                          className={fieldClass}
-                          aria-label={`Số lịch tối đa ${DAY_LABELS[hour.day_of_week]}`}
-                        />
+                        <QuantityStepper label={`Số lịch tối đa mỗi khung giờ ${DAY_LABELS[hour.day_of_week]}`} min={0} max={100} size="md" className="w-[132px]"
+                          disabled={disabledFields} value={form.max_slots === "" ? 0 : Number(form.max_slots)}
+                          onChange={(value) => updateForm(hour.id, { max_slots: String(value ?? 0) })}/>
 
                         <CapacityCell
                           day={DAY_LABELS[hour.day_of_week]}

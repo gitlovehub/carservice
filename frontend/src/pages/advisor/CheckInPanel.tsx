@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Button, IconButton } from "../../components/ui/Button";
+import { KmInput, QuantityStepper } from "../../components/ui/QuantityStepper";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
 import { handoverApi, VEHICLE_POSITIONS, type HandoverInput, type OtpSent } from "../../services/evidenceService";
 import type { HandoverChecklistItem, WorkflowHandover, WorkflowOrder } from "../../services/workflowService";
@@ -97,7 +98,7 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
 
     {editable ? <form className="mt-4 space-y-4" onSubmit={event => void save(event)}>
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="text-xs font-semibold text-cs-muted">Số km<input className={input} type="number" min="0" value={form.mileage ?? ""} onChange={e => setForm({ ...form, mileage: e.target.value === "" ? null : Number(e.target.value) })}/></label>
+        <div className="text-xs font-semibold text-cs-muted">Số km<KmInput label="Số km" className="mt-1 w-full" value={form.mileage ?? ""} onChange={v => setForm({ ...form, mileage: v === "" ? null : Number(v) })}/></div>
         <label className="text-xs font-semibold text-cs-muted">Nhiên liệu<select className={input} value={form.fuel_level ?? ""} onChange={e => setForm({ ...form, fuel_level: e.target.value })}>{Object.entries(FUEL_TEXT).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
         <label className="text-xs font-semibold text-cs-muted">{isOut ? "Người nhận xe là" : "Người giao xe là"}<select className={input} value={form.person_relation} onChange={e => setForm({ ...form, person_relation: e.target.value as HandoverInput["person_relation"], pickup_authorization_id: null })}>{Object.entries(RELATION_TEXT).filter(([value]) => !isOut || value !== "OTHER").map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
         {isOut && form.person_relation === "AUTHORIZED"
@@ -117,7 +118,7 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
           <td className="py-1.5 pr-2 text-xs text-cs-muted">{CATEGORY_TEXT[item.category]}</td>
           <td className="py-1.5 pr-2"><input className={`${input} mt-0`} aria-label="Hạng mục" required maxLength={150} value={item.label} onChange={e => setItem(index, { label: e.target.value })}/></td>
           <td className="py-1.5 pr-2"><select className={`${input} mt-0`} aria-label="Tình trạng" value={item.condition} onChange={e => setItem(index, { condition: e.target.value as HandoverChecklistItem["condition"] })}>{Object.entries(CONDITION_TEXT).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></td>
-          <td className="w-20 py-1.5 pr-2"><input className={`${input} mt-0`} aria-label="Số lượng" type="number" min="0" value={item.quantity ?? ""} onChange={e => setItem(index, { quantity: e.target.value === "" ? null : Number(e.target.value) })}/></td>
+          <td className="py-1.5 pr-2"><QuantityStepper label={`Số lượng ${item.label || "hạng mục"}`} min={0} allowEmpty value={item.quantity ?? null} onChange={v => setItem(index, { quantity: v })}/></td>
           <td className="py-1.5 pr-2"><input className={`${input} mt-0`} aria-label="Ghi chú" maxLength={500} value={item.note ?? ""} onChange={e => setItem(index, { note: e.target.value })}/></td>
           <td><IconButton size="sm" icon="trash" tone="danger" label="Xóa dòng" onClick={() => setForm({ ...form, items: form.items.filter((_, i) => i !== index) })}/></td>
         </tr>)}</tbody></table></div>

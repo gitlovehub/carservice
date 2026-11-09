@@ -1,3 +1,4 @@
+import { KmInput } from "../../../components/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buttonClass } from "../../../components/ui/buttonClass";
 import { createPortal } from "react-dom";
@@ -24,10 +25,6 @@ type ServicePickerProps = {
   error?: string;
 };
 
-/** "19500" → "19.500"; giá trị lưu trong state chỉ gồm chữ số. */
-function formatThousands(digits: string): string {
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
 
 function toggleSelection(keys: string[], item: CatalogItem, itemsByKey: Map<string, CatalogItem>): string[] {
   if (keys.includes(item.key)) {
@@ -135,17 +132,8 @@ export default function ServicePicker({
           <label htmlFor="vehicleMileage" className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-700">
             Số km hiện tại <span className="font-normal normal-case text-slate-400">(không bắt buộc)</span>
           </label>
-          <input
-            id="vehicleMileage"
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={11}
-            value={formatThousands(mileage)}
-            onChange={(event) => onMileageChange(event.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 9))}
-            placeholder="VD: 5.000"
-            className="w-full max-w-[220px] rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm"
-          />
+          <KmInput id="vehicleMileage" label="Số km hiện tại" value={mileage} onChange={onMileageChange} placeholder="VD: 5.000"
+            className="w-full max-w-[240px] !rounded-xl"/>
         </div>
         <p className="text-xs text-slate-500">Dùng để gợi ý gói bảo dưỡng phù hợp.</p>
       </div>

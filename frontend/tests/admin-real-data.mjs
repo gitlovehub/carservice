@@ -44,7 +44,8 @@ assert.match(kit, /<main className="page-container">/, 'AdminPage dùng page-con
 for (const page of ['Services.tsx', 'MaintenancePackages.tsx', 'WorkingHours.tsx', 'AdminAppointments.tsx']) {
   const source = read(`src/pages/admin/${page}`);
   assert.doesNotMatch(source, /lg:ml-\[250px\]|max-w-\[1200px\]/, `${page} không dùng khung riêng`);
-  assert.match(source, /page-container/, `${page} dùng page-container`);
+  // Trực tiếp, hoặc qua <AdminPage> (đã bọc page-container).
+  assert.match(source, /page-container|<AdminPage /, `${page} dùng page-container`);
 }
 // Tổng quan (điều hành hôm nay) khác Báo cáo (phân tích theo kỳ).
 const dashboard = read('src/pages/admin/AdminDashboard.tsx');

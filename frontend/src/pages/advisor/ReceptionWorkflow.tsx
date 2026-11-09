@@ -7,6 +7,7 @@ import {
 } from "../../services/workflowService";
 import { card, input, WorkflowTitle, Notice, Status } from "./WorkflowUI";
 import { Button } from "../../components/ui/Button";
+import { KmInput } from "../../components/ui/QuantityStepper";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Icon } from "../../components/ui/Icon";
 import { errorText, formatSlot } from "./workflowFormat";
@@ -196,7 +197,7 @@ export default function ReceptionWorkflow() {
                   {vehicles.map(vehicle => <option key={vehicle.id} value={vehicle.id}>{vehicle.license_plate}{vehicle.model?.name ? ` · ${vehicle.model.name}` : ""}{vehicle.id === bookedVehicleId ? " (xe đặt lịch)" : ""}</option>)}
                 </select></label>}
               {vehicleChanged && <label className="block text-sm font-semibold text-cs-text">Lý do đổi xe (bắt buộc, được ghi vết)<input className={input} required minLength={5} maxLength={500} value={changeReason} onChange={event => setChangeReason(event.target.value)} placeholder="Ví dụ: xe đặt lịch đang đi công tác, khách mang xe còn lại"/></label>}
-              <label className="block text-sm font-semibold text-cs-text">Số km khi tiếp nhận (không bắt buộc)<input className={input} type="number" min="0" step="1" inputMode="numeric" value={mileage} onChange={event => setMileage(event.target.value)} placeholder="Ví dụ 35000"/></label>
+              <div className="block text-sm font-semibold text-cs-text">Số km khi tiếp nhận (không bắt buộc)<KmInput label="Số km khi tiếp nhận" className="mt-1 w-full" value={mileage} onChange={setMileage}/></div>
               <label className="block text-sm font-semibold text-cs-text">Tình trạng xe ban đầu<textarea className={input} rows={3} value={condition} onChange={event => setCondition(event.target.value)} placeholder="Ghi nhận hư hỏng, ngoại thất, hiện trạng..."/></label>
               <label className="block text-sm font-semibold text-cs-text">Ghi chú tiếp nhận<textarea className={input} rows={3} value={note} onChange={event => setNote(event.target.value)} placeholder="Ghi chú bàn giao và yêu cầu của khách"/></label>
               <Button type="submit" variant="primary" iconRight="arrow-right" loading={working} loadingText="Đang lập phiếu...">Tạo phiếu sửa chữa</Button>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Button, DataTable, EmptyState, Field, IconButton, Input, Modal, Pagination, SearchInput, Select, Textarea, type Column } from "../../components/ui";
+import { Button, DataTable, EmptyState, Field, IconButton, Input, Modal, Pagination, QuantityStepper, SearchInput, Select, Textarea, type Column } from "../../components/ui";
 import { Badge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -153,7 +153,7 @@ export default function Inventory() {
       <Field label="Đơn vị" required><Select value={editing.unit} onChange={e => setEditing({ ...editing, unit: e.target.value })}>{(units.includes(editing.unit) ? units : [...units, editing.unit]).map(u => <option key={u}>{u}</option>)}</Select></Field>
       <Field label="Giá vốn (₫)" required><Input inputMode="numeric" value={num(editing.cost)} onChange={e => setEditing({ ...editing, cost: Number(e.target.value.replace(/\D/g, "")) || 0 })}/></Field>
       <Field label="Giá bán (₫)" required><Input inputMode="numeric" value={num(editing.price)} onChange={e => setEditing({ ...editing, price: Number(e.target.value.replace(/\D/g, "")) || 0 })}/></Field>
-      <Field label="Tồn tối thiểu"><Input inputMode="numeric" value={editing.min} onChange={e => setEditing({ ...editing, min: Number(e.target.value.replace(/\D/g, "")) || 0 })}/></Field>
+      <Field label="Tồn tối thiểu"><QuantityStepper label="Tồn tối thiểu" size="md" className="w-full" min={0} max={99999} unit={editing.unit} value={editing.min} onChange={v => setEditing({ ...editing, min: v ?? 0 })}/></Field>
       <Field label="Trạng thái"><Select value={editing.status} onChange={e => setEditing({ ...editing, status: e.target.value as Editing["status"] })}><option value="ACTIVE">Đang áp dụng</option><option value="INACTIVE">Ngừng</option></Select></Field>
     </div>
     {editing.id > 0 && <p className="rounded-control bg-cs-surface-2 px-3 py-2 text-small text-cs-text-2">Tồn hiện tại: <b className="tabular-nums text-cs-text">{num(editing.stock)} {editing.unit}</b> — nhập / xuất ở tab Tồn kho.</p>}
@@ -222,7 +222,7 @@ export default function Inventory() {
           options={(partOptions.data?.data ?? []).map(p => ({ value: p.id, label: `${p.sku} — ${p.name}`, hint: `tồn ${num(p.stock)}` }))}
           value={stockForm.partId} onChange={option => setStockForm({ ...stockForm, partId: option?.value ?? null })}/>
         <Field label="Số lượng" required hint={stockForm.type === "OUT" && selectedStockPart ? `Tối đa ${num(selectedStockPart.stock)}` : undefined}>
-          <Input inputMode="numeric" value={stockForm.qty} onChange={e => setStockForm({ ...stockForm, qty: Number(e.target.value.replace(/\D/g, "")) || 0 })}/>
+          <QuantityStepper label="Số lượng" size="md" className="w-full" min={1} max={stockForm.type === "OUT" && selectedStockPart ? Math.max(1, selectedStockPart.stock) : 99999} value={stockForm.qty || 1} onChange={v => setStockForm({ ...stockForm, qty: v ?? 1 })}/>
         </Field>
         <Field label={stockForm.type === "IN" ? "Nhà cung cấp / ghi chú" : "Lý do xuất"} optional className="sm:col-span-2"><Input value={stockForm.note} maxLength={255} onChange={e => setStockForm({ ...stockForm, note: e.target.value })}/></Field>
         {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
