@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AdminAdvisorActivityController;
 use App\Http\Controllers\Api\AdminInsightsController;
+use App\Http\Controllers\Api\AdminInventoryController;
 use App\Http\Controllers\Api\AdminMaintenancePackageController;
 use App\Http\Controllers\Api\AdminOperationsController;
 use App\Http\Controllers\Api\AdminPeopleController;
@@ -295,6 +296,15 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('reviews/{review}/reply', 'replyReview')->whereNumber('review');
             Route::patch('reviews/{review}', 'updateReview')->whereNumber('review');
             Route::get('audit-logs', 'auditLogs');
+        });
+
+        // Phụ tùng & kho.
+        Route::controller(AdminInventoryController::class)->prefix('admin')->group(function (): void {
+            Route::get('parts', 'parts');
+            Route::post('parts', 'storePart');
+            Route::patch('parts/{part}', 'updatePart')->whereNumber('part');
+            Route::post('parts/{part}/stock', 'adjustStock')->whereNumber('part');
+            Route::get('stock-moves', 'moves');
         });
 
         // Con người: khách hàng, nhân sự, tài khoản.
