@@ -140,8 +140,11 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
 .cs-ws-clock {
   display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px;
   border: 1px solid var(--cs-border); border-radius: 999px; background: var(--cs-surface);
-  color: var(--cs-text); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: default;
+  color: var(--cs-text); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer;
+  font-family: inherit; transition: background-color var(--cs-duration) ease;
 }
+.cs-ws-clock:hover { background: var(--cs-hover); }
+.cs-ws-clock:focus-visible { outline: 2px solid var(--cs-focus); outline-offset: 2px; }
 .cs-ws-clock svg { color: var(--cs-accent-text); flex-shrink: 0; }
 /* Nút sáng/tối hình tròn, cao bằng ô đồng hồ. */
 .cs-work-top .cs-ws-theme-toggle {
