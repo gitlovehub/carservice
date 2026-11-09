@@ -146,6 +146,7 @@ class AdminInsightsControllerTest extends TestCase
         $this->assertSame(['14:00', '08:00'], array_column($data['upcoming_appointments'], 'start'));
         $this->assertSame('Nguyễn Văn A', $data['upcoming_appointments'][0]['customer']);
         $this->assertSame(['LOW-1'], array_column($data['low_stock'], 'sku'));
+        $this->assertSame(['pending_appointments' => 1, 'low_reviews_unreplied' => 0], $data['attention']);
 
         $this->getJson('/api/admin/dashboard?range=30d')->assertJsonCount(30, 'data.revenue_series');
         $this->getJson('/api/admin/dashboard?range=year')->assertJsonValidationErrors('range');

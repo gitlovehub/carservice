@@ -92,6 +92,10 @@ class AdminInsightsController extends Controller
             'repair_status' => collect(self::OPEN_GROUPS)
                 ->map(fn (array $statuses) => (int) collect($statuses)->sum(fn (string $s) => $openCounts[$s] ?? 0))
                 ->all(),
+            'attention' => [
+                'pending_appointments' => Appointment::query()->where('status', 'PENDING')->whereDate('appointment_date', '>=', $today->toDateString())->count(),
+                'low_reviews_unreplied' => Review::query()->where('is_hidden', false)->whereNull('reply')->where('overall_rating', '<=', 3)->count(),
+            ],
             'upcoming_appointments' => $this->upcoming($now),
             'low_stock' => Inventory::query()
                 ->whereColumn('quantity', '<', 'min_quantity')
