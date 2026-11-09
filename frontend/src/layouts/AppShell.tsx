@@ -190,11 +190,10 @@ function WorkFooter() {
         <span className="cs-ws-brand-mark" aria-hidden="true">C</span>
         <span>© {year} <b>{garage?.name || "CarService"}</b> · Hệ thống quản lý gara</span>
       </p>
-      <ul className="cs-work-footer-links" aria-label="Liên hệ gara">
+      {(garage?.phone || garage?.email) && <ul className="cs-work-footer-links" aria-label="Liên hệ gara">
         {garage?.phone && <li><a href={`tel:${garage.phone.replace(/\s+/g, "")}`}><Icon name="phone" size={14}/>{garage.phone}</a></li>}
         {garage?.email && <li><a href={`mailto:${garage.email}`}><Icon name="mail" size={14}/>{garage.email}</a></li>}
-        <li><Link to="/"><Icon name="arrow" size={14}/>Website công khai</Link></li>
-      </ul>
+      </ul>}
     </div>
   </footer>;
 }
