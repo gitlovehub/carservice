@@ -36,7 +36,7 @@ export default function AdminCustomers() {
   const refresh = () => { list.reload(); detail.reload(); };
 
   const columns: Column<AdminCustomer>[] = [
-    { key: "name", header: "Khách hàng", primary: true, render: c => <span className="flex items-center gap-2"><Person name={c.name} sub={c.email ?? (c.has_account ? undefined : "Khách vãng lai")}/>{c.vip && <Icon name="star" size={14} className="shrink-0 text-warning"/>}{c.locked && <Icon name="lock" size={14} className="shrink-0 text-danger"/>}</span> },
+    { key: "name", header: "Khách hàng", primary: true, render: c => <span className="flex items-center gap-2"><Person name={c.name} sub={c.email ?? (c.has_account ? undefined : "Khách vãng lai")}/>{c.locked && <Icon name="lock" size={14} className="shrink-0 text-danger"/>}</span> },
     { key: "phone", header: "SĐT", render: c => <span className="whitespace-nowrap tabular-nums">{c.phone ?? "—"}</span> },
     { key: "cars", header: "Số xe", render: c => <span className="whitespace-nowrap">{c.vehicles_count} xe</span> },
     { key: "last", header: "Lần sửa gần nhất", hideOnMobile: true, render: c => <span className="tabular-nums">{fmtDate(c.last_visit)}</span> },
@@ -95,8 +95,8 @@ export default function AdminCustomers() {
     ? (detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact/>)
     : <>
       <div className="mb-4 flex items-center gap-3">
-        <Person name={selected.name} size={52} sub={selected.vip ? "Khách hàng thân thiết" : selected.has_account ? "Khách hàng có tài khoản" : "Khách vãng lai"}/>
-        <span className="ml-auto flex gap-1.5">{selected.locked && <Pill tone="danger" icon="lock">Đã khoá</Pill>}{selected.vip && <Pill tone="warning" icon="star">VIP</Pill>}</span>
+        <Person name={selected.name} size={52} sub={selected.has_account ? "Khách hàng có tài khoản" : "Khách vãng lai"}/>
+        <span className="ml-auto flex gap-1.5">{selected.locked && <Pill tone="danger" icon="lock">Đã khoá</Pill>}</span>
       </div>
       {(selected.has_account || selected.locked) && <div className="mb-4">
         {selected.locked

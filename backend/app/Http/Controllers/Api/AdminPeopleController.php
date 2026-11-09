@@ -32,9 +32,6 @@ class AdminPeopleController extends Controller
 {
     use AppliesSort;
 
-    /** Khách chi tiêu từ mức này được đánh dấu khách thân thiết. */
-    public const VIP_SPENT = 20_000_000;
-
     private const STAFF_ROLES = [Account::ROLE_ADVISOR, Account::ROLE_TECHNICIAN];
 
     private const LEVELS = ['JUNIOR', 'SENIOR', 'EXPERT'];
@@ -169,9 +166,7 @@ class AdminPeopleController extends Controller
             'vehicles_count' => (int) $c->vehicles_count,
             'visits' => (int) $c->repair_orders_count,
             'last_visit' => $c->last_visit ? Carbon::parse($c->last_visit)->toIso8601String() : null,
-            'total_spent' => $spent,
-            'vip' => $spent >= self::VIP_SPENT,
-            'has_account' => $c->account_id !== null,
+            'total_spent' => $spent,            'has_account' => $c->account_id !== null,
             'locked' => $c->account?->status === Account::STATUS_LOCKED,
         ];
     }

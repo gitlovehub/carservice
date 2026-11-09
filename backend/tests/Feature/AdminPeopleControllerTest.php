@@ -61,7 +61,7 @@ class AdminPeopleControllerTest extends TestCase
         $rows = $this->getJson('/api/admin/customers?sort=spent')->assertOk()->assertJsonPath('meta.total', 2)->json('data');
         $this->assertSame($rich->id, $rows[0]['id']);
         $this->assertEquals(25_000_000, $rows[0]['total_spent']);
-        $this->assertTrue($rows[0]['vip']);
+        $this->assertArrayNotHasKey('vip', $rows[0]); // bỏ VIP, làm lại cùng Khuyến mãi (PROMO-01)
         $this->assertSame('Hà Nội', $rows[0]['city']);
         $this->assertSame(1, $rows[0]['vehicles_count']);
         $this->assertNull($rows[1]['last_visit']);

@@ -97,7 +97,7 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 | ID | Mô tả | Khi nào | Trạng thái |
 |---|---|---|---|
 | CL-01 | Trang dịch vụ phía khách: bộ lọc / sắp xếp "Phổ biến" (theo số lần dùng thật) và "Mới nhất" (D-018) | Khi làm client | PENDING |
-| PROMO-01 | Trang **Khuyến mãi** (Admin): mã giảm giá / chương trình ưu đãi. Hiện chỉ có mục menu "Sắp có" + trang tạm `/admin/promotions`. Cần PO chốt nghiệp vụ (áp vào hoá đơn hay báo giá, ai được dùng, giới hạn) — liên quan tính tiền nên không tự quyết | Khi PO yêu cầu | PENDING |
+| PROMO-01 | Trang **Khuyến mãi** (Admin): mã giảm giá / chương trình ưu đãi. Hiện chỉ có mục menu "Sắp có" + trang tạm `/admin/promotions`. Cần PO chốt nghiệp vụ (áp vào hoá đơn hay báo giá, ai được dùng, giới hạn) — liên quan tính tiền nên không tự quyết. **Kèm khách VIP / thân thiết**: đã bỏ nhãn VIP cũ (AI tự đặt ngưỡng 20 triệu, không có quyền lợi) — làm lại tiêu chí + ưu đãi cùng lúc với khuyến mãi | Khi PO yêu cầu | PENDING |
 | ADV-01 | Nghiệp vụ "Chờ phụ tùng" — chốt ai đặt/nhận phụ tùng rồi làm theo đề xuất B-05 (`BLOCKERS.md`) | Sau client, khi làm cố vấn (D-017) | PENDING (chờ PO) |
 
 ## Chất lượng test

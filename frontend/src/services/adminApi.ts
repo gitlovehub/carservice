@@ -100,7 +100,7 @@ export type AdminAuditLog = { id: number; at: string | null; actor: string; role
 /* -------------------------------------------------------------- Khách hàng */
 export type AdminCustomer = {
   id: number; name: string; phone: string | null; email: string | null; city: string | null; vehicles_count: number; visits: number;
-  last_visit: string | null; total_spent: number; vip: boolean; has_account: boolean; locked: boolean;
+  last_visit: string | null; total_spent: number; has_account: boolean; locked: boolean;
 };
 export type AdminCustomerDetail = AdminCustomer & {
   address: string | null; created_at: string | null;
