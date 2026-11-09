@@ -24,6 +24,7 @@ export type DashboardData = {
   kpis: { revenue_month: Kpi; appointments_today: Kpi; in_shop: Kpi; unpaid_invoices: Kpi };
   revenue_series: Array<{ date: string; revenue: number; avg7: number }>;
   repair_status: Record<RepairGroupKey, number>;
+  attention: { pending_appointments: number; low_reviews_unreplied: number };
   upcoming_appointments: Array<{ id: number; date: string; start: string; end: string; customer: string | null; phone: string | null; vehicle: string; plate: string | null; services: string; status: string }>;
   low_stock: Array<{ part_id: number; sku: string | null; name: string | null; quantity: number; min_quantity: number }>;
 };

@@ -1,4 +1,5 @@
 import { Button, IconButton, Modal, PageHeader } from "../../components/ui";
+import { FilterSelect } from "./kit/AdminKit";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { useEffect, useState, type FormEvent } from "react";
 import { fetchApi } from "../../services/api";
@@ -343,12 +344,12 @@ function Services() {
   };
 
   return (
-    <div className="min-h-screen bg-cs-bg text-[#20252B]">
+    <div className="text-cs-text">
 
-      <div className="lg:ml-[250px]">
+      <div>
 
-        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-[1200px]">
+        <main className="page-container">
+          <div>
             <PageHeader title="Dịch vụ" description="Quản lý thông tin, giá và trạng thái dịch vụ sửa chữa."
               actions={<Button variant="primary" icon="plus" onClick={openCreateModal}>Thêm dịch vụ</Button>}/>
 
@@ -437,21 +438,9 @@ function Services() {
                   className={fieldClass}
                 />
 
-                <select
-                  value={filters.status}
-                  onChange={(event) => {
-                    setPage(1);
-                    setFilters((current) => ({
-                      ...current,
-                      status: event.target.value,
-                    }));
-                  }}
-                  className={fieldClass}
-                >
-                  <option value="">Tất cả trạng thái</option>
-                  <option value="ACTIVE">Đang hoạt động</option>
-                  <option value="INACTIVE">Ngừng hoạt động</option>
-                </select>
+                <FilterSelect label="Trạng thái" className="w-full" value={filters.status}
+                  onChange={(value) => { setPage(1); setFilters((current) => ({ ...current, status: value })); }}
+                  options={[{ value: "", label: "Tất cả" }, { value: "ACTIVE", label: "Đang hoạt động" }, { value: "INACTIVE", label: "Ngừng hoạt động" }]}/>
 
                 <div className="flex gap-2">
                   <Button type="submit" variant="outline" icon="search" className="flex-1">Tìm kiếm</Button>

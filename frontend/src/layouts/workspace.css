@@ -212,3 +212,6 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
 .cs-admin-utility:hover .cs-admin-utility-icon { background: var(--cs-soft-hover); }
 .cs-admin-utility:focus-visible { outline: 2px solid var(--cs-focus); outline-offset: 2px; }
 @media (max-width: 420px) { .cs-admin-utility-icon { width: 52px; height: 52px; } }
+
+/* Khu Admin: mọi trang dùng chung khung page-container (lề token), rộng hơn để chứa ngăn chi tiết bên phải. */
+[data-area="admin"] .page-container { max-width: 95rem; }

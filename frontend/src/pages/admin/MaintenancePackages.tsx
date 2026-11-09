@@ -1,4 +1,5 @@
 import { Button, IconButton, PageHeader, Modal } from "../../components/ui";
+import { FilterSelect } from "./kit/AdminKit";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import {
   useCallback,
@@ -611,12 +612,12 @@ function MaintenancePackages() {
   );
 
   return (
-    <div className="min-h-screen bg-cs-bg text-[#20252B]">
+    <div className="text-cs-text">
 
-      <div className="lg:ml-[250px]">
+      <div>
 
-        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-[1200px]">
+        <main className="page-container">
+          <div>
             <PageHeader title="Gói bảo dưỡng" description="Quản lý gói bảo dưỡng, dịch vụ và phụ tùng đi kèm."
               actions={<Button variant="primary" icon="plus" onClick={openCreateModal}>Thêm gói bảo dưỡng</Button>}/>
 
@@ -699,40 +700,13 @@ function MaintenancePackages() {
                   className={fieldClass}
                 />
 
-                <select
-                  value={filters.vehicle_model_id}
-                  onChange={(event) => {
-                    setPage(1);
-                    setFilters((current) => ({
-                      ...current,
-                      vehicle_model_id: event.target.value,
-                    }));
-                  }}
-                  className={fieldClass}
-                >
-                  <option value="">Tất cả dòng xe</option>
-                  {models.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {modelLabel(model)}
-                    </option>
-                  ))}
-                </select>
+                <FilterSelect label="Dòng xe" className="w-full" value={String(filters.vehicle_model_id)}
+                  onChange={(value) => { setPage(1); setFilters((current) => ({ ...current, vehicle_model_id: value })); }}
+                  options={[{ value: "", label: "Tất cả" }, ...models.map((model) => ({ value: String(model.id), label: modelLabel(model) }))]}/>
 
-                <select
-                  value={filters.status}
-                  onChange={(event) => {
-                    setPage(1);
-                    setFilters((current) => ({
-                      ...current,
-                      status: event.target.value,
-                    }));
-                  }}
-                  className={fieldClass}
-                >
-                  <option value="">Tất cả trạng thái</option>
-                  <option value="ACTIVE">Đang hoạt động</option>
-                  <option value="INACTIVE">Ngừng hoạt động</option>
-                </select>
+                <FilterSelect label="Trạng thái" className="w-full" value={filters.status}
+                  onChange={(value) => { setPage(1); setFilters((current) => ({ ...current, status: value })); }}
+                  options={[{ value: "", label: "Tất cả" }, { value: "ACTIVE", label: "Đang hoạt động" }, { value: "INACTIVE", label: "Ngừng hoạt động" }]}/>
 
                 <div className="flex gap-2">
                   <Button type="submit" variant="outline" icon="search" className="flex-1">Tìm kiếm</Button>

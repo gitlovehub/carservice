@@ -189,7 +189,7 @@ export default function VehicleCatalog() {
   const hasFilters = Boolean(filters.search || filters.status || filters.brandId || filters.modelId);
 
   return <main className="page-container" data-testid="admin-vehicle-catalog">
-    <PageHeader title="Danh mục xe" description="Hãng xe → Dòng xe → Phiên bản dùng cho bộ chọn xe khi khách đặt lịch và lưu hồ sơ xe. Dữ liệu khởi tạo từ CSV chưa chắc mọi phiên bản đều đang bán."
+    <PageHeader title="Hãng & dòng xe" description="Hãng xe → Dòng xe → Phiên bản dùng cho bộ chọn xe khi khách đặt lịch và lưu hồ sơ xe. Dữ liệu khởi tạo từ CSV chưa chắc mọi phiên bản đều đang bán."
       actions={<Button variant="primary" icon="plus" onClick={() => openForm()}>{LEVELS[level].add}</Button>}/>
 
     <div role="tablist" aria-label="Cấp danh mục" className="mb-4 inline-flex max-w-full gap-1 overflow-x-auto rounded-control border border-cs-border bg-cs-surface p-1">

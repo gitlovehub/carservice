@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Drawer, IconButton } from "../../../components/ui";
+import { Drawer, IconButton, PageHeader } from "../../../components/ui";
 import { Icon, type IconName } from "../../../components/ui/Icon";
 import { initials, num, toneSoft, type Tone } from "./format";
 
@@ -35,19 +35,12 @@ export function AdminPage({ title, description, actions, demo = false, children 
   /** Trang đang chạy dữ liệu mẫu (chưa nối API). */
   demo?: boolean; children: ReactNode;
 }) {
-  return <div className="mx-auto w-full max-w-[1520px] px-[var(--cs-page-x)] py-6 lg:py-7">
-    <header className="mb-5 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-      <div className="min-w-0 flex-1 basis-[320px]">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <h1 className="text-title text-cs-text">{title}</h1>
-          {demo && <DemoTag/>}
-        </div>
-        {description && <p className="mt-1 text-body text-cs-muted">{description}</p>}
-      </div>
-      {actions && <div className="cs-btn-row max-sm:w-full max-sm:[&>*]:flex-1">{actions}</div>}
-    </header>
+  // Khung + tiêu đề chung với mọi trang Admin (page-container, PageHeader) để lề và khoảng cách đều nhau.
+  return <main className="page-container">
+    <PageHeader title={demo ? <span className="inline-flex flex-wrap items-center gap-2.5">{title}<DemoTag/></span> : title}
+      description={description} actions={actions}/>
     {children}
-  </div>;
+  </main>;
 }
 
 export function DemoTag() {
@@ -152,14 +145,23 @@ export function Tabs<T extends string>({ items, value, onChange, variant = "unde
 export function FilterSelect<T extends string>({ label, value, onChange, options, className = "" }: {
   label: string; value: T; onChange: (value: T) => void; options: Array<{ value: T; label: string }>; className?: string;
 }) {
-  return <label className={`relative flex min-h-10 min-w-0 items-center rounded-control border border-cs-border bg-cs-surface text-small text-cs-text focus-within:border-cs-accent ${className}`}>
-    <span className="pointer-events-none shrink-0 pl-3 text-cs-muted">{label}:</span>
-    <select value={value} onChange={event => onChange(event.target.value as T)}
-      className="h-10 min-w-0 flex-1 cursor-pointer appearance-none bg-transparent pl-1.5 pr-9 font-medium text-cs-text outline-none">
+  const current = options.find(option => option.value === value) ?? options[0];
+  // Lựa chọn đầu tiên là mặc định ("Tất cả"); chọn khác → bộ lọc đang áp dụng, tô màu nhấn.
+  const active = options.length > 0 && value !== options[0].value;
+  return <div data-ui="filter" data-active={active || undefined}
+    className={`relative inline-flex min-h-10 min-w-0 max-w-full shrink-0 items-center gap-2 rounded-control border px-3 text-small transition-colors focus-within:border-cs-accent focus-within:ring-2 focus-within:ring-cs-accent/20 max-sm:min-h-11 ${active
+      ? "border-cs-accent/50 bg-cs-soft text-cs-accent-text"
+      : "border-cs-border bg-cs-surface text-cs-text hover:border-cs-border-strong hover:bg-cs-hover"} ${className}`}>
+    <Icon name="filter" size={14} className={`shrink-0 ${active ? "" : "text-cs-muted"}`}/>
+    <span className={`shrink-0 ${active ? "" : "text-cs-muted"}`}>{label}</span>
+    <span className="min-w-0 truncate font-semibold">{current?.label}</span>
+    <Icon name="chevron-down" size={15} className="ml-auto shrink-0 opacity-70"/>
+    {/* Select gốc phủ trong suốt: giữ bàn phím, trình đọc màn hình và danh sách chọn của hệ điều hành. */}
+    <select aria-label={label} value={value} onChange={event => onChange(event.target.value as T)}
+      className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0">
       {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
     </select>
-    <Icon name="chevron-down" size={16} className="pointer-events-none absolute right-3 text-cs-muted"/>
-  </label>;
+  </div>;
 }
 
 export function Toolbar({ children }: { children: ReactNode }) {

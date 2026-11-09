@@ -1,4 +1,5 @@
 import { Button, IconButton, PageHeader, buttonClass } from "../../components/ui";
+import { FilterSelect } from "./kit/AdminKit";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { StatusBadge } from "../../components/ui/Badge";
@@ -208,12 +209,12 @@ function AdminAppointments() {
   };
 
   return (
-    <div className="min-h-screen bg-cs-bg text-[#20252B]">
+    <div className="text-cs-text">
 
-      <div className="lg:ml-[250px]">
+      <div>
 
-        <main className="px-6 py-8 lg:px-8">
-          <div className="mx-auto max-w-[1200px]">
+        <main className="page-container">
+          <div>
             <PageHeader title="Lịch hẹn" description="Theo dõi và quản lý lịch hẹn của khách hàng trong toàn hệ thống."
               actions={<Button variant="outline" icon="refresh" loading={loading} loadingText="Đang tải..." onClick={() => void loadAppointments()}>Làm mới</Button>}/>
 
@@ -320,18 +321,8 @@ function AdminAppointments() {
                     className="w-full rounded-xl border border-[#E1E4E6] bg-cs-bg px-4 py-2.5 text-xs outline-none transition focus:border-[#D6A85F] sm:w-[270px]"
                   />
 
-                  <select
-                    value={status}
-                    onChange={(event) => setStatus(event.target.value)}
-                    className="cursor-pointer rounded-xl border border-[#E1E4E6] bg-cs-bg px-3 py-2.5 text-xs outline-none focus:border-[#D6A85F]"
-                  >
-                    <option value="Tất cả">Tất cả trạng thái</option>
-                    {statuses.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
+                  <FilterSelect label="Trạng thái" value={status} onChange={setStatus}
+                    options={[{ value: "Tất cả", label: "Tất cả" }, ...statuses.map((item) => ({ value: item, label: item }))]}/>
 
                   <Button variant="outline" icon="filter" onClick={() => {
                       setSearch("");

@@ -233,12 +233,12 @@ function WorkingHours() {
   };
 
   return (
-    <div className="min-h-screen bg-cs-bg text-[#20252B]">
+    <div className="text-cs-text">
 
-      <div className="lg:ml-[250px]">
+      <div>
 
-        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-[1200px]">
+        <main className="page-container">
+          <div>
             <PageHeader title="Giờ làm việc & ngày nghỉ" description="Khung giờ nhận lịch, số lịch tối đa mỗi khung giờ và ngày nghỉ của xưởng."
               actions={<Button variant="outline" icon="refresh" loading={isLoading} onClick={() => setReloadKey((current) => current + 1)}>Làm mới</Button>}/>
 
