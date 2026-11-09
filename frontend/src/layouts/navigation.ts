@@ -46,6 +46,8 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Đánh giá", path: "/admin/reviews", icon: "star", group: "Con người" },
     { label: "Dịch vụ", path: "/admin/services", icon: "wrench", group: "Danh mục" },
     { label: "Gói bảo dưỡng", path: "/admin/maintenance-packages", icon: "layers", group: "Danh mục" },
+    // Chưa làm (task PROMO-01) — trang tạm "đang phát triển".
+    { label: "Khuyến mãi", path: "/admin/promotions", icon: "tag", group: "Danh mục", soon: true },
     { label: "Phụ tùng & kho", path: "/admin/inventory", icon: "box", group: "Danh mục" },
     // Trang thật (API /api/admin/vehicle-brands…), thay cho bản demo dữ liệu giả.
     { label: "Hãng & dòng xe", path: "/admin/vehicle-brands", icon: "car", group: "Danh mục" },

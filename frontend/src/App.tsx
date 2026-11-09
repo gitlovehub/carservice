@@ -129,6 +129,7 @@ function App() {
       <Route path="parts" element={<Navigate to="/admin/inventory" replace/>}/>
       <Route path="reports" element={<AdminReports/>}/>
       <Route path="profile" element={<AdminProfile/>}/>
+      <Route path="promotions" element={<ModulePlaceholder area="Quản trị" title="Khuyến mãi" description="Mã giảm giá và chương trình ưu đãi cho khách hàng." owner="PROMO-01"/>}/>
       <Route path="staff" element={<AdminStaff/>}/>
       <Route path="repair-orders" element={<AdminRepairOrders/>}/>
       <Route path="invoices" element={<AdminInvoices/>}/>

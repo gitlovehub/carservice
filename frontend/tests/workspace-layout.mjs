@@ -34,9 +34,11 @@ assert.match(nav, /\{ label: "Tổng quan", path: "\/advisor"/);
 assert.match(nav, /\{ label: "Tổng quan", path: "\/admin"/);
 assert.doesNotMatch(nav, /Bàn điều hành|Trung tâm điều hành/);
 assert.match(nav, /path: "\/advisor\/create-booking"[^}]*soon: true/);
-// Admin: sidebar mới — mọi mục đều có trang (dữ liệu demo hoặc API), không còn mục "Sắp có".
+// Admin: sidebar mới — mọi mục đều có trang thật; "Sắp có" chỉ cho Khuyến mãi (PO yêu cầu 11/11/2026, task PROMO-01).
 for (const path of ['/admin/staff', '/admin/repair-orders', '/admin/invoices', '/admin/reviews', '/admin/vehicle-brands', '/admin/audit-logs']) assert.match(nav, new RegExp(`path: "${path}"`));
-assert.doesNotMatch(nav.slice(nav.indexOf('admin: [')), /soon: true/);
+const adminNav = nav.slice(nav.indexOf('admin: ['));
+assert.match(adminNav, /path: "\/admin\/promotions"[^}]*soon: true/);
+assert.equal((adminNav.match(/soon: true/g) ?? []).length, 1, 'Admin chỉ được có 1 mục "Sắp có" (Khuyến mãi)');
 
 // Không còn chữ trang trí tiếng Anh trong shell.
 assert.doesNotMatch(shell + css, /SERVICE WORKSPACE|BUSINESS CONTROL|WORKSPACE"/);
