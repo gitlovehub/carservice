@@ -56,6 +56,7 @@ import AdminMaintenancePackages from "./pages/admin/MaintenancePackages";
 import AdminInventory from "./pages/admin/Inventory";
 import AdminVehicleCatalog from "./pages/admin/VehicleCatalog";
 import AdminReports from "./pages/admin/Reports";
+import AdminProfile from "./pages/admin/Profile";
 
 function App() {
   return <BrowserRouter><ThemeProvider><AuthProvider><AppErrorBoundary><FeedbackProvider><Routes>
@@ -127,6 +128,7 @@ function App() {
       <Route path="inventory" element={<AdminInventory/>}/>
       <Route path="parts" element={<Navigate to="/admin/inventory" replace/>}/>
       <Route path="reports" element={<AdminReports/>}/>
+      <Route path="profile" element={<AdminProfile/>}/>
       <Route path="staff" element={<AdminStaff/>}/>
       <Route path="repair-orders" element={<AdminRepairOrders/>}/>
       <Route path="invoices" element={<AdminInvoices/>}/>

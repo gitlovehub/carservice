@@ -67,6 +67,11 @@ const detailPages: Array<{ area: ShellArea; pattern: RegExp; parent: string; lab
   { area: "advisor", pattern: /^\/advisor\/service-orders\/[^/]+$/, parent: "/advisor/service-orders", label: "Chi tiết phiếu" },
 ];
 
+/** Trang riêng không nằm trong menu (mở từ menu tài khoản): breadcrumb Khu vực › Trang. */
+const standalonePages: Array<{ area: ShellArea; path: string; label: string }> = [
+  { area: "admin", path: "/admin/profile", label: "Hồ sơ của bạn" },
+];
+
 export type Crumb = { label: string; to?: string };
 
 /** Breadcrumb theo URL hiện tại: Khu vực › (Nhóm) › Trang [› Chi tiết]. */
@@ -75,6 +80,8 @@ export function crumbs(area: ShellArea, pathname: string, search: string): Crumb
   const root: Crumb = { label: areaInfo[area].name, to: areaInfo[area].home };
   const detail = detailPages.find(d => d.area === area && d.pattern.test(pathname));
   const current = items.find(i => i.path === pathname + search) ?? items.find(i => i.path === (detail?.parent ?? pathname));
+  const standalone = standalonePages.find(p => p.area === area && p.path === pathname);
+  if (!current && standalone) return [root, { label: standalone.label }];
   if (!current) return [root];
   if (current.path === areaInfo[area].home) return [{ label: current.label }];
   if (detail) return [root, { label: current.label, to: current.path }, { label: detail.label }];

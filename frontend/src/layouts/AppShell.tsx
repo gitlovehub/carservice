@@ -81,12 +81,15 @@ function AccountMenu({ area }: { area: WorkArea }) {
       <p className="mt-1 text-caption text-cs-accent-text">{roleLabel[area]}</p>
     </div>}
     items={[
+      ...(area === "admin" ? [{ label: "Hồ sơ của bạn", icon: "user" as const, onSelect: () => navigate("/admin/profile") }] : []),
       { label: "Website công khai", icon: "arrow", onSelect: () => navigate("/") },
       { type: "separator" },
-      { label: LABELS.action.logout, icon: "logout", onSelect: () => { void logout(); } },
+      { label: LABELS.action.logout, icon: "logout", danger: true, onSelect: () => { void logout(); } },
     ]}
     trigger={props => <button type="button" className="cs-ws-account" aria-label={`Menu tài khoản: ${name}`} {...props}>
-      <span className="cs-ws-avatar" aria-hidden="true">{getUserInitials(account)}</span>
+      {account?.avatar
+        ? <img src={account.avatar} alt="" className="cs-ws-avatar object-cover" aria-hidden="true"/>
+        : <span className="cs-ws-avatar" aria-hidden="true">{getUserInitials(account)}</span>}
       <span className="cs-ws-account-name">{name}</span>
       <Icon name="chevron-down" size={14} className="text-cs-muted"/>
     </button>}
