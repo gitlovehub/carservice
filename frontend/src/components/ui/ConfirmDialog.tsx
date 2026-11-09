@@ -55,7 +55,7 @@ export function ConfirmDialog({ options, area, onClose }: { options: ConfirmOpti
   }, [onClose]);
 
   return <div data-area={area} className="cs-overlay cs-feedback-layer fixed inset-0 z-[400] flex items-center justify-center overflow-y-auto px-4 py-6">
-    <div className="cs-overlay-backdrop absolute inset-0 bg-cs-overlay backdrop-blur-[3px]" aria-hidden="true" onMouseDown={() => onClose(false)}/>
+    <div className="cs-overlay-backdrop absolute inset-0 bg-cs-overlay" aria-hidden="true" onMouseDown={() => onClose(false)}/>
     <section ref={panelRef} role="alertdialog" aria-modal="true" aria-labelledby="cs-confirm-title" aria-describedby="cs-confirm-desc" data-ui-dialog="confirm"
       className="cs-modal-panel relative w-full max-w-[480px] overflow-hidden rounded-panel border border-cs-border bg-cs-surface text-cs-text shadow-overlay">
       <header className="flex items-start gap-4 px-6 pb-2 pt-5">

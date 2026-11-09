@@ -1,5 +1,10 @@
 /* Hiệu ứng mở/đóng dùng chung cho Modal, Drawer, Dropdown (components/ui). */
 .cs-overlay-backdrop { animation: cs-fade-in var(--cs-duration) ease both; }
+/* Mọi lớp phủ sau modal / drawer / hộp xác nhận: làm mờ nền phía sau (độ blur chung --cs-overlay-blur). */
+.cs-overlay-backdrop, .cs-ws-scrim, .cs-service-drawer-scrim, .at-customer-modal-backdrop, .cs-modal-scrim {
+  -webkit-backdrop-filter: blur(var(--cs-overlay-blur));
+  backdrop-filter: blur(var(--cs-overlay-blur));
+}
 .cs-overlay[data-state="closing"] .cs-overlay-backdrop { animation: cs-fade-out var(--cs-duration) ease both; }
 
 .cs-modal-panel { animation: cs-modal-in 220ms var(--cs-ease) both; }

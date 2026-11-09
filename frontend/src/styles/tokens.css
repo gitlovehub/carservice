@@ -27,6 +27,7 @@
   --cs-surface-2: #f1f1ef;    /* nền phụ: ô nhập, khối thông tin */
   --cs-hover: #ebebe8;        /* nền khi rê chuột lên dòng / mục */
   --cs-overlay: rgb(10 11 13 / 0.6); /* nền mờ sau modal, drawer */
+  --cs-overlay-blur: 6px;             /* độ làm mờ nền phía sau mọi modal / drawer */
 
   /* ---- Chữ ---- */
   --cs-text: #191919;         /* chữ chính */

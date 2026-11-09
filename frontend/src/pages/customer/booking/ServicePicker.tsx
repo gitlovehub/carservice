@@ -226,7 +226,7 @@ export default function ServicePicker({
               tabIndex={-1}
               aria-label="Đóng"
               onClick={closeDrawer}
-              className="cs-service-drawer-scrim absolute inset-0 cursor-default bg-black/55 backdrop-blur-[2px]"
+              className="cs-service-drawer-scrim absolute inset-0 cursor-default bg-black/55"
             />
             <aside className="cs-service-drawer-panel absolute inset-y-0 right-0 flex h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-[var(--cs-surface)] text-[var(--cs-text)] shadow-2xl sm:rounded-l-2xl">
               <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--cs-border)] px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">

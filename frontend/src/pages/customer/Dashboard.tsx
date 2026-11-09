@@ -716,7 +716,7 @@ function CustomerDashboard() {
 
       {/* ===== MODAL CHI TIẾT PHIẾU ===== */}
       {selectedOrderId !== null && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+        <div className="cs-modal-scrim fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
@@ -870,7 +870,7 @@ function CustomerDashboard() {
 
       {/* ===== MODAL CẬP NHẬT ODO ===== */}
       {showOdoModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+        <div className="cs-modal-scrim fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-lg font-bold text-[#1F2933]">Cập nhật số ODO xe</h3>

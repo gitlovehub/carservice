@@ -34,7 +34,7 @@
 .at-history-detail strong{font-size:13px;overflow-wrap:anywhere;}
 .at-history-detail p{grid-column:1/-1;color:var(--cs-muted);font-size:13px;}
 .at-history-detail a{width:max-content;grid-column:1/-1;margin-top:0;}
-.at-customer-modal-backdrop {position:fixed;inset:0;z-index:110;display:flex;align-items:center;justify-content:center;padding:16px;background:#000a;backdrop-filter:blur(3px);}
+.at-customer-modal-backdrop {position:fixed;inset:0;z-index:110;display:flex;align-items:center;justify-content:center;padding:16px;background:#000a;}
 .at-customer-modal{width:min(760px,100%);max-height:90dvh;overflow-y:auto;background:var(--cs-surface);color:var(--cs-text);border:1px solid var(--cs-border);border-radius:19px;padding:27px;box-shadow:0 24px 80px #0006;}
 .at-modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:20px;border-bottom:1px solid var(--cs-border)}
 .at-modal-head h2{font-size:24px;font-weight:700;margin-bottom:8px;}
