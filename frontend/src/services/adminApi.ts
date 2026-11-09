@@ -78,6 +78,9 @@ export type AdminInvoiceDetail = AdminInvoice & {
 };
 export type InvoiceList = Paged<AdminInvoice, { total: number; open: number; debt: number; collected: number }>;
 
+/* ---------------------------------------------------------- Khung giờ đặt lịch */
+export type BookingSlots = { morning: string[]; afternoon: string[] };
+
 /* ------------------------------------------------------------------ Đánh giá */
 /** Khách đánh giá GA-RA sau một lần bảo dưỡng / sửa chữa (gắn với phiếu sửa chữa). */
 export type AdminReview = {
@@ -137,7 +140,7 @@ export type StockMove = { id: number; at: string | null; type: "IN" | "OUT"; sku
 export type HolidayRange = { ids: number[]; from: string; to: string; reason: string | null; days: number };
 
 type Message<T> = { message: string; data: T };
-const send = <T>(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown) =>
+const send = <T>(path: string, method: "POST" | "PUT" | "PATCH" | "DELETE", body?: unknown) =>
   fetchApi<T>(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
 export const adminApi = {
@@ -150,6 +153,9 @@ export const adminApi = {
   invoices: (params: Params, signal?: AbortSignal) => fetchApi<InvoiceList>(`/admin/invoices${query(params)}`, { signal }),
   invoice: (id: number, signal?: AbortSignal) => fetchApi<{ data: AdminInvoiceDetail }>(`/admin/invoices/${id}`, { signal }).then(r => r.data),
   payments: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminPayment>>(`/admin/payments${query(params)}`, { signal }),
+
+  bookingSlots: (signal?: AbortSignal) => fetchApi<{ data: BookingSlots }>("/booking-slots", { signal }).then(r => r.data),
+  saveBookingSlots: (body: BookingSlots) => send<Message<BookingSlots>>("/admin/booking-slots", "PUT", body),
 
   reviews: (params: Params, signal?: AbortSignal) => fetchApi<ReviewList>(`/admin/reviews${query(params)}`, { signal }),
   replyReview: (id: number, reply: string) => send<Message<AdminReview>>(`/admin/reviews/${id}/reply`, "POST", { reply }),

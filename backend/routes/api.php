@@ -82,6 +82,7 @@ Route::controller(VehicleCatalogController::class)
     });
 
 Route::get('/working-hours', [WorkingHoursController::class, 'index']);
+Route::get('/booking-slots', [WorkingHoursController::class, 'bookingSlots']);
 
 // Thông tin gara (Footer, trang Liên hệ).
 Route::get('garage-settings', [GarageSettingController::class, 'show']);
@@ -346,6 +347,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/admin/working-hours', [WorkingHoursController::class, 'index']);
 
         Route::put('/admin/working-hours/{id}', [WorkingHoursController::class, 'update']);
+        Route::put('/admin/booking-slots', [WorkingHoursController::class, 'updateBookingSlots']);
     });
 
     /*

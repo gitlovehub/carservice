@@ -1,6 +1,7 @@
 import { Button, PageHeader } from "../../components/ui";
 import { useEffect, useState } from "react";
 import { fetchApi } from "../../services/api";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { HolidaysPanel } from "./HolidaysPanel";
 
 type WorkingHour = {
@@ -96,6 +97,7 @@ function validateRow(form: RowForm): string {
 }
 
 function WorkingHours() {
+  const { notify } = useAppFeedback();
   const [hours, setHours] = useState<WorkingHour[]>([]);
   const [saved, setSaved] = useState<Record<number, RowForm>>({});
   const [forms, setForms] = useState<Record<number, RowForm>>({});
@@ -210,6 +212,7 @@ function WorkingHours() {
         ...current,
         [hour.id]: { saving: false, error: "", success: true },
       }));
+      notify(`Đã cập nhật giờ làm việc ${DAY_LABELS[hour.day_of_week]}: ${nextForm.is_active ? `${nextForm.open_time}–${nextForm.close_time}, tối đa ${nextForm.max_slots} lịch mỗi khung giờ` : "nghỉ, không nhận lịch"}.`, "success");
     } catch (requestError: unknown) {
       const data = (requestError as { data?: { errors?: Record<string, string[]> } })
         ?.data;
@@ -417,12 +420,6 @@ function WorkingHours() {
                           {state.error}
                         </p>
                       )}
-
-                      {state?.success && !dirty && (
-                        <p className="mt-3 rounded-lg bg-[#E7F3E8] px-3 py-2 text-xs text-[#397044]">
-                          Đã cập nhật giờ làm việc {DAY_LABELS[hour.day_of_week]}.
-                        </p>
-                      )}
                     </div>
                   );
                 })}
@@ -434,8 +431,11 @@ function WorkingHours() {
             </p>
 
             {(() => {
-              const firstActive = hours.find(hour => Boolean(hour.is_active));
-              return <HolidaysPanel open={firstActive ? firstActive.open_time.slice(0, 5) : undefined} close={firstActive ? firstActive.close_time.slice(0, 5) : undefined}/>;
+              // Khung giờ đặt lịch phải nằm trong giờ mở cửa sớm nhất – đóng cửa muộn nhất của các ngày hoạt động.
+              const active = hours.filter(hour => Boolean(Number(hour.is_active)));
+              const open = active.map(hour => toHHmm(hour.open_time)).sort()[0];
+              const close = active.map(hour => toHHmm(hour.close_time)).sort().at(-1);
+              return <HolidaysPanel open={open} close={close}/>;
             })()}
           </div>
         </main>

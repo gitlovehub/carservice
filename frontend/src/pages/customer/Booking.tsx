@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, buttonClass } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Link, useSearchParams } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { fetchApi } from "../../services/api";
@@ -92,6 +93,7 @@ function readStoredContact(): CustomerContact {
 }
 
 export default function Booking() {
+  const { notify } = useAppFeedback();
   const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState<number>(1);
 
@@ -122,6 +124,8 @@ export default function Booking() {
   // Bước 3: Ngày & Giờ
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
   const [selectedTime, setSelectedTime] = useState<string>("");
+  const [bookingSlots, setBookingSlots] = useState({ morning: MORNING_SLOTS, afternoon: AFTERNOON_SLOTS });
+  const [workingHours, setWorkingHours] = useState<Record<number, { open: string; close: string; active: boolean }> | null>(null);
 
   // Kết quả
   const [bookingCode, setBookingCode] = useState<string>("");
@@ -129,7 +133,6 @@ export default function Booking() {
   const [submissionError, setSubmissionError] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [savedVehicles, setSavedVehicles] = useState<SavedVehicle[]>([]);
   const [isLoggedIn] = useState(
@@ -206,6 +209,29 @@ export default function Booking() {
     return () => clearTimeout(timer);
   }, [mileage]);
 
+  // Khung giờ sáng / chiều do admin cấu hình (trang Giờ làm việc); lỗi mạng thì giữ khung giờ mặc định.
+  useEffect(() => {
+    let cancelled = false;
+    fetchApi("/working-hours")
+      .then((response: { data?: Array<{ day_of_week: number; open_time: string; close_time: string; is_active: boolean | number }> }) => {
+        if (cancelled || !Array.isArray(response?.data)) return;
+        setWorkingHours(Object.fromEntries(response.data.map((h) => [h.day_of_week, {
+          open: String(h.open_time).slice(0, 5), close: String(h.close_time).slice(0, 5), active: Boolean(Number(h.is_active)),
+        }])));
+      })
+      .catch(() => undefined);
+    fetchApi("/booking-slots")
+      .then((response: { data?: { morning?: string[]; afternoon?: string[] } }) => {
+        if (cancelled || !response?.data) return;
+        setBookingSlots({
+          morning: Array.isArray(response.data.morning) ? response.data.morning : MORNING_SLOTS,
+          afternoon: Array.isArray(response.data.afternoon) ? response.data.afternoon : AFTERNOON_SLOTS,
+        });
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
+
   // Danh mục phụ thuộc dòng xe và số km nên tải lại khi chúng đổi.
   const catalogRequestKey = `${selectedModelId ?? ""}|${vehicleBrand}|${effectiveModelName}|${debouncedMileage}`;
   const catalogNeeded = currentStep >= 2 && currentStep !== SUCCESS_STEP;
@@ -260,10 +286,7 @@ export default function Booking() {
     .filter((item): item is CatalogItem => Boolean(item));
   const hasSymptom = symptom.trim() !== "";
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+  const showToast = (msg: string) => notify(msg, "success");
 
   const clearError = (field: string) => {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -335,7 +358,11 @@ export default function Booking() {
     if (!selectedDate) return false;
 
     const slotDateTime = new Date(`${selectedDate.isoDate}T${timeStr}:00`);
-    return slotDateTime <= new Date() || (selectedDate.dayOfWeek === 0 && timeStr > "12:00");
+    if (slotDateTime <= new Date()) return true;
+    // Theo giờ làm việc admin cấu hình cho thứ đó; chưa tải được thì giữ quy tắc cũ (CN chỉ nhận buổi sáng).
+    const hours = workingHours?.[selectedDate.dayOfWeek];
+    if (hours) return !hours.active || timeStr < hours.open || timeStr >= hours.close;
+    return selectedDate.dayOfWeek === 0 && timeStr > "12:00";
   };
 
   const handleDateSelect = (index: number) => {
@@ -450,7 +477,7 @@ export default function Booking() {
   const timeLabel = selectedTime ? `${selectedTime}, ${selectedDateObj.fullLabel}` : undefined;
   const showSummary = currentStep >= 2 && currentStep <= BOOKING_STEPS.length;
 
-  const renderSlotGroup = (label: string, icon: string, slots: string[]) => (
+  const renderSlotGroup = (label: string, icon: string, slots: string[]) => slots.length > 0 && (
     <div>
       <span className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
         <i className={icon}></i> {label}
@@ -652,12 +679,15 @@ export default function Booking() {
 
                 <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-700">Giờ</p>
                 <div className="space-y-4">
-                  {renderSlotGroup("Sáng", "fa-regular fa-sun text-amber-500", MORNING_SLOTS)}
-                  {renderSlotGroup("Chiều", "fa-solid fa-cloud-sun text-orange-500", AFTERNOON_SLOTS)}
+                  {renderSlotGroup("Sáng", "fa-regular fa-sun text-amber-500", bookingSlots.morning)}
+                  {renderSlotGroup("Chiều", "fa-solid fa-cloud-sun text-orange-500", bookingSlots.afternoon)}
                 </div>
-                {upcomingDates[selectedDateIndex]?.dayOfWeek === 0 && (
-                  <p className="mt-3 text-xs text-amber-700">Chủ nhật chỉ nhận lịch đến 12:00.</p>
-                )}
+                {(() => {
+                  const day = upcomingDates[selectedDateIndex]?.dayOfWeek;
+                  const hours = day === undefined ? undefined : workingHours?.[day];
+                  if (hours) return <p className="mt-3 text-xs text-amber-700">{hours.active ? `Ngày này ga-ra nhận lịch từ ${hours.open} đến ${hours.close}.` : "Ga-ra nghỉ ngày này, vui lòng chọn ngày khác."}</p>;
+                  return day === 0 && <p className="mt-3 text-xs text-amber-700">Chủ nhật chỉ nhận lịch đến 12:00.</p>;
+                })()}
                 {errors.time && <p className="mt-2 text-[12px] text-red-500">{errors.time}</p>}
               </div>
             )}
@@ -775,13 +805,6 @@ export default function Booking() {
           )}
         </div>
       </main>
-
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-2xl">
-          <i className="fa-solid fa-circle-check text-emerald-400"></i>
-          <span>{toastMessage}</span>
-        </div>
-      )}
     </div>
   );
 }

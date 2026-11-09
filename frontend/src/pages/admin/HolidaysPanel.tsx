@@ -3,18 +3,18 @@ import { Button, ErrorState, Field, IconButton, Input, LoadingState, Modal, conf
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { adminApi, errorMessage, type HolidayRange } from "../../services/adminApi";
+import { BookingSlotsPanel } from "./BookingSlotsPanel";
 import { Panel } from "./kit/AdminKit";
 import { useAdminQuery } from "./kit/useAdminQuery";
 
 type Form = { replaceIds: number[]; from: string; to: string; reason: string };
 const WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 const fmt = (iso: string) => iso.split("-").reverse().join("/");
-const toMinutes = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
 const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 /**
  * Ngày nghỉ lễ (API thật /api/admin/holidays — đặt lịch tự chặn các ngày này)
- * + xem trước khung giờ khách thấy theo giờ mở/đóng của ngày làm việc đầu tiên.
+ * + khung giờ đặt lịch sáng / chiều (BookingSlotsPanel). `open`/`close`: giờ mở cửa sớm nhất / đóng cửa muộn nhất.
  */
 export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: string; close?: string }) {
   const { notify, confirm } = useAppFeedback();
@@ -40,15 +40,6 @@ export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: stri
     return [...Array(lead).fill(null), ...Array.from({ length: count }, (_, i) => i + 1)] as Array<number | null>;
   }, [month]);
   const iso = (day: number) => isoDay(new Date(month.getFullYear(), month.getMonth(), day));
-
-  const slots = useMemo(() => {
-    const list: string[] = [];
-    for (let m = Math.ceil(toMinutes(open) / 30) * 30; m + 30 <= toMinutes(close); m += 30) {
-      if (m >= 12 * 60 && m < 13 * 60) continue; // nghỉ trưa
-      list.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
-    }
-    return list;
-  }, [open, close]);
 
   const save = async () => {
     if (!form || !form.from || !form.reason.trim()) return setFormError("Chọn ngày và nhập lý do.");
@@ -107,11 +98,7 @@ export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: stri
           </ul>
         </div>}
     </Panel>
-    <Panel title="Xem trước khung giờ khách thấy" icon="clock" subtitle={`Ngày làm việc ${open}–${close}, bước 30 phút, nghỉ trưa 12:00–13:00.`}>
-      <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-        {slots.map(s => <li key={s} className="rounded-full border border-cs-border py-2 text-center text-small font-medium tabular-nums text-cs-text">{s}</li>)}
-      </ul>
-    </Panel>
+    <BookingSlotsPanel open={open} close={close}/>
 
     <Modal open={!!form} onClose={() => setForm(null)} dismissible={!saving} title={form?.replaceIds.length ? "Sửa ngày nghỉ" : "Thêm ngày nghỉ"} size="sm"
       footer={<><Button disabled={saving} onClick={() => setForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void save()}>Lưu</Button></>}>
