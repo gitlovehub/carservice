@@ -73,7 +73,7 @@ function formatPrice(price: string | number): string {
 }
 
 function Services() {
-  const { confirm } = useAppFeedback();
+  const { confirm, notify } = useAppFeedback();
   const [services, setServices] = useState<Service[]>([]);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
@@ -87,7 +87,7 @@ function Services() {
   const [reloadKey, setReloadKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const notifySuccess = (message: string) => notify(message, "success");
   const [modal, setModal] = useState<"form" | "detail" | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [form, setForm] = useState<ServiceForm>(emptyForm);
@@ -175,7 +175,6 @@ function Services() {
 
   const openDetailModal = async (service: Service) => {
     setError("");
-    setNotice("");
     setSelectedService(service);
     setModal("detail");
     setIsLoadingDetail(true);
@@ -203,7 +202,6 @@ function Services() {
       ...current,
       search: searchInput.trim(),
     }));
-    setNotice("");
   };
 
   const clearFilters = () => {
@@ -211,13 +209,11 @@ function Services() {
     setPage(1);
     setFilters({ search: "", category: "", status: "" });
     setError("");
-    setNotice("");
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError("");
-    setNotice("");
 
     const name = form.name.trim();
     const basePrice = Number(form.base_price);
@@ -282,7 +278,7 @@ function Services() {
       setPage(1);
       setSearchInput("");
       setFilters({ search: "", category: "", status: "" });
-      setNotice(
+      notifySuccess(
         selectedService
           ? "Cập nhật dịch vụ thành công."
           : "Thêm dịch vụ thành công.",
@@ -315,7 +311,6 @@ function Services() {
     if (!confirmed) return;
 
     setError("");
-    setNotice("");
     setIsDeleting(true);
     setDeletingId(service.id);
 
@@ -324,7 +319,7 @@ function Services() {
         method: "DELETE",
       });
 
-      setNotice(`Đã xử lý yêu cầu ẩn dịch vụ "${service.name}".`);
+      notifySuccess(`Đã xử lý yêu cầu ẩn dịch vụ "${service.name}".`);
 
       if (services.length === 1 && page > 1) {
         setPage((current) => current - 1);
@@ -449,13 +444,6 @@ function Services() {
                 </div>
               </form>
             </section>
-
-            {notice && (
-              <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-[#D8E8D9] bg-[#F0F7F0] px-4 py-3 text-sm text-[#35633B]">
-                <p>{notice}</p>
-                <IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setNotice("")}/>
-              </div>
-            )}
 
             <section className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
               <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:px-6">

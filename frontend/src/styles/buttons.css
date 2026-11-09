@@ -180,6 +180,23 @@
   --btn-hover-border: var(--cs-success-btn-border);
 }
 
+/* Nút icon (ghost): hover có viền + nền nhạt + icon theo màu vai trò — người dùng thấy rõ nút sắp bấm. */
+.cs-btn-icon.cs-btn-ghost {
+  --btn-hover-bg: var(--cs-soft);
+  --btn-hover-border: color-mix(in srgb, var(--cs-accent) 45%, transparent);
+  --btn-hover-fg: var(--cs-accent-text);
+}
+/* Sửa → vàng; Xem chi tiết → xanh dương. */
+.cs-btn-icon.cs-btn-ghost[data-icon="edit"] {
+  --btn-hover-bg: var(--cs-warning-soft);
+  --btn-hover-border: color-mix(in srgb, var(--cs-warning) 55%, transparent);
+  --btn-hover-fg: var(--cs-warning-fg);
+}
+.cs-btn-icon.cs-btn-ghost[data-icon="eye"] {
+  --btn-hover-bg: var(--cs-info-soft);
+  --btn-hover-border: color-mix(in srgb, var(--cs-info) 55%, transparent);
+  --btn-hover-fg: var(--cs-info-fg);
+}
 /* Nút icon chữ đỏ (Xóa trong dòng): ghost, hover nền danger-soft + viền danger. */
 .cs-btn.cs-btn-tone-danger {
   --btn-fg: var(--cs-danger);

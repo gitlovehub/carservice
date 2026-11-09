@@ -1,5 +1,5 @@
 import { Modal } from "../../components/ui";
-import { Button, IconButton, buttonClass } from "../../components/ui";
+import { Button, buttonClass } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
 import "../../styles/garage-customer-pages.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -18,6 +18,7 @@ import {
   type Pagination,
 } from "../../services/customerApi";
 import { StatusBadge } from "../../components/ui/Badge";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 const canCancel = (a: CustomerAppointment) => ["PENDING", "CONFIRMED"].includes(a.status);
 const canEdit = (a: CustomerAppointment) => a.status === "PENDING";
@@ -37,6 +38,7 @@ function servicesText(a: CustomerAppointment) {
 }
 
 function Appointments() {
+  const { notify } = useAppFeedback();
   const [items, setItems] = useState<CustomerAppointment[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     current_page: 1,
@@ -49,7 +51,6 @@ function Appointments() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
 
   const [selected, setSelected] = useState<CustomerAppointment | null>(null);
@@ -132,7 +133,7 @@ function Appointments() {
         appointment_date: editDate,
         appointment_time: editTime,
       });
-      setNotice("Đã cập nhật lịch hẹn thành công.");
+      notify(`Đã đổi lịch hẹn ${selected.appointment_code} sang ${editTime} ngày ${formatDate(editDate)}.`, "success");
       closeModal();
       setReloadKey((k) => k + 1);
     } catch (e) {
@@ -148,7 +149,7 @@ function Appointments() {
     setModalError("");
     try {
       await cancelAppointment(selected.id, cancelReason.trim() || "Khách hàng chủ động hủy");
-      setNotice("Đã hủy lịch hẹn.");
+      notify(`Đã hủy lịch hẹn ${selected.appointment_code}.`, "success");
       closeModal();
       setReloadKey((k) => k + 1);
     } catch (e) {
@@ -172,7 +173,6 @@ function Appointments() {
           <p>Theo dõi lịch đã gửi, xác nhận từ gara và thông tin tiếp nhận.</p></div>
           <Link className={buttonClass({ variant: "primary" })} to="/customer/booking"><Icon name="plus" size={16}/>Đặt lịch mới</Link>
         </div>
-        {notice && <div role="status" className="at-customer-notice">{notice}<IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setNotice("")}/></div>}
         <div className="at-customer-stats">
           <div className="at-customer-stat"><span>TỔNG LỊCH HẸN</span><strong>{loading ? "…" : pagination.total}</strong><small>Trong tài khoản của bạn</small></div>
           <div className="at-customer-stat"><span>CHỜ XÁC NHẬN</span><strong>{loading ? "…" : awaitingCount}</strong><small>Trên trang hiện tại · Cố vấn sẽ phản hồi</small></div>

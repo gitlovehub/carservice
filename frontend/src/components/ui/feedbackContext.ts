@@ -6,7 +6,7 @@ export type ConfirmOptions = {
   description: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: "warning" | "danger" | "info";
+  variant?: "warning" | "danger" | "info" | "success";
   checklist?: string[];
   reference?: string;
   phone?: string;
@@ -14,8 +14,8 @@ export type ConfirmOptions = {
   confirmIcon?: IconName;
 };
 
-export type ToastTone = "success" | "error" | "info";
-export type ToastItem = { id: number; message: string; tone: ToastTone };
+export type ToastTone = "success" | "error" | "warning" | "info";
+export type ToastItem = { id: number; message: string; tone: ToastTone; leaving?: boolean };
 type Feedback = {
   confirm: (options: ConfirmOptions) => Promise<boolean>;
   notify: (message: string, tone?: ToastTone) => void;

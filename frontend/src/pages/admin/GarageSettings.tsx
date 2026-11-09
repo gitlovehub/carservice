@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Button, PageHeader } from "../../components/ui";
 import { AddressAutocomplete } from "../../components/address/AddressAutocomplete";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { garageApi, type GarageInfo } from "../../services/garageService";
 
 type Form = GarageInfo & { place_provider?: string | null; place_id?: string | null };
@@ -10,7 +11,7 @@ const empty: Form = { name: "CarService", phone: "", email: "", address_line: ""
 export default function GarageSettings() {
   const [form, setForm] = useState<Form>(empty);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const { notify } = useAppFeedback();
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -21,10 +22,10 @@ export default function GarageSettings() {
 
   async function save(event: FormEvent) {
     event.preventDefault();
-    setSaving(true); setMessage(""); setError("");
+    setSaving(true); setError("");
     try {
       await garageApi.save({ ...form, phone: form.phone || null, email: form.email || null });
-      setMessage("Đã lưu thông tin gara. Khách thấy địa chỉ mới ở chân trang và trang Liên hệ.");
+      notify("Đã lưu thông tin gara. Khách thấy địa chỉ mới ở chân trang và trang Liên hệ.", "success");
     } catch (err) { setError(err instanceof Error ? err.message : "Không lưu được."); }
     finally { setSaving(false); }
   }
@@ -60,7 +61,6 @@ export default function GarageSettings() {
       <p className="text-xs text-cs-muted" data-testid="garage-coords">{hasCoords
         ? <>Vị trí: {form.latitude?.toFixed(6)}, {form.longitude?.toFixed(6)} · <a className="underline" target="_blank" rel="noreferrer" href={`https://www.openstreetmap.org/?mlat=${form.latitude}&mlon=${form.longitude}#map=18/${form.latitude}/${form.longitude}`}>Xem trên bản đồ</a></>
         : "Chưa có vị trí — chọn một địa chỉ từ gợi ý để lấy tọa độ."}</p>
-      {message && <p role="status" className="text-sm font-semibold text-cs-success">{message}</p>}
       {error && <p role="alert" className="text-sm font-semibold text-cs-danger">{error}</p>}
       <Button type="submit" variant="primary" loading={saving}>Lưu thông tin gara</Button>
     </form>

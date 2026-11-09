@@ -25,7 +25,6 @@ export default function ReceptionWorkflow() {
   const [busy, setBusy] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
   const [mileage, setMileage] = useState("");
   const [condition, setCondition] = useState("");
   const [note, setNote] = useState("");
@@ -63,7 +62,7 @@ export default function ReceptionWorkflow() {
       return;
     }
     let active = true;
-    queueMicrotask(() => { setBusy(true); setError(""); setOrder(null); setMessage(""); });
+    queueMicrotask(() => { setBusy(true); setError(""); setOrder(null); });
     advisorAppointment(selectedId).then(async appointment => {
       if (!active) return;
       setSelected(appointment);
@@ -92,14 +91,14 @@ export default function ReceptionWorkflow() {
     const approved = await confirm({
       title: "Xác minh lịch hẹn với khách", reference: selected.appointment_code, phone: selected.customer?.phone,
       description: `Hãy gọi ${selected.customer?.full_name || "khách hàng"} qua ${selected.customer?.phone || "số điện thoại trên hồ sơ"} để xác nhận thời gian ${formatSlot(selected.appointment_date, selected.appointment_time)}. Không xác nhận nếu chưa được khách đồng ý.${capacityWarning}`,
-      confirmText: "Khách đồng ý – Xác nhận", cancelText: "Chưa xác minh / Để sau",
+      confirmText: "Khách đồng ý – Xác nhận", variant: "success", cancelText: "Chưa xác minh / Để sau",
       checklist: ["Đã trao đổi trực tiếp với khách về xe, dịch vụ và giờ hẹn.", "Khách đồng ý lịch hẹn và gara có khả năng tiếp nhận."],
     });
     if (!approved) return;
-    setWorking(true); setError(""); setMessage("");
+    setWorking(true); setError("");
     try {
       const updated = await confirmPendingAppointment(selected.id);
-      setSelected(updated); notify("Đã xác nhận lịch với khách. Chờ xe đến gara.", "success"); setMessage("Đã xác nhận lịch. Có thể tiếp nhận xe khi khách đến gara.");
+      setSelected(updated); notify(`Đã xác nhận lịch hẹn ${updated.appointment_code} với khách. Có thể tiếp nhận xe khi khách đến gara.`, "success");
       await refresh();
     } catch (err) { setError(errorText(err)); }
     finally { setWorking(false); }
@@ -114,10 +113,10 @@ export default function ReceptionWorkflow() {
       checklist: ["Khách hàng và phương tiện đã đến gara.", "Đã đối chiếu biển số, thông tin khách hàng và tình trạng xe ban đầu."],
     });
     if (!approved) return;
-    setWorking(true); setError(""); setMessage("");
+    setWorking(true); setError("");
     try {
       const updated = await checkInConfirmedAppointment(selected.id);
-      setSelected(updated); notify("Đã xác nhận xe đến gara và tiếp nhận thành công.", "success"); setMessage("Đã nhận xe. Tiếp theo hãy ghi tình trạng xe để tạo một phiếu sửa chữa.");
+      setSelected(updated); notify("Đã tiếp nhận xe. Tiếp theo hãy ghi tình trạng xe để tạo phiếu sửa chữa.", "success");
       const existing = await findOrderForAppointment(selected.id);
       setOrder(existing);
       await refresh();
@@ -143,7 +142,7 @@ export default function ReceptionWorkflow() {
       checklist: ["Đã kiểm tra thông tin xe và tình trạng bàn giao trước khi lập phiếu."],
     });
     if (!approved) return;
-    setWorking(true); setError(""); setMessage("");
+    setWorking(true); setError("");
     try {
       const result = await receiveRepairOrder({
         appointment_id: selected.id, customer_id: customerId, vehicle_id: vehicleId,
@@ -161,7 +160,6 @@ export default function ReceptionWorkflow() {
   return <main className="page-container">
     <WorkflowTitle label="QUẦY DỊCH VỤ / TIẾP NHẬN" title="Tiếp nhận xe" sub="Lịch chờ → xác nhận → nhận xe → lập phiếu sửa chữa. Mỗi lịch hẹn chỉ có một phiếu."/>
     {error && <Notice tone="error">{error}</Notice>}
-    {message && <Notice tone="success">{message}</Notice>}
     <div className="grid gap-6 xl:grid-cols-[minmax(310px,0.8fr)_minmax(0,1.2fr)]">
       <section className={card}>
         <div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-lg font-bold text-cs-text">Lịch đang xử lý</h2><Button size="sm" variant="secondary" icon="refresh" disabled={busy || working} onClick={() => void refresh()}>Làm mới</Button></div>
@@ -187,7 +185,7 @@ export default function ReceptionWorkflow() {
             <div><dt className="text-xs text-cs-muted">Ngày / giờ</dt><dd className="mt-1 text-cs-text">{formatSlot(selected.appointment_date, selected.appointment_time)}</dd></div>
             <div className="sm:col-span-2"><dt className="mb-2 text-xs text-cs-muted">Khách yêu cầu</dt><dd><CustomerRequestSummary request={selected}/></dd></div>
           </dl>
-          <AppointmentHistoryPanel key={`history-${selected.id}-${selected.appointment_date}-${selected.appointment_time}-${selected.status}`} appointment={selected} onChanged={(updated, text) => { void advisorAppointment(updated.id).then(setSelected).catch(() => setSelected({ ...selected, ...updated })); setMessage(text); notify(text, "success"); void refresh(); }}/>
+          <AppointmentHistoryPanel key={`history-${selected.id}-${selected.appointment_date}-${selected.appointment_time}-${selected.status}`} appointment={selected} onChanged={(updated, text) => { void advisorAppointment(updated.id).then(setSelected).catch(() => setSelected({ ...selected, ...updated })); notify(text, "success"); void refresh(); }}/>
           <ol className="my-6 flex flex-wrap gap-2 text-xs font-semibold text-cs-muted"><li className="rounded-full bg-cs-soft px-3 py-2">1. Đặt lịch</li><li className="rounded-full bg-cs-soft px-3 py-2">2. Xác nhận</li><li className="rounded-full bg-cs-soft px-3 py-2">3. Check-in</li><li className="rounded-full bg-cs-soft px-3 py-2">4. Phiếu sửa chữa</li></ol>
           {selected.status === "PENDING" && <div><p className="mb-4 text-sm text-cs-muted">Cần xác nhận lịch trước khi tiếp nhận.</p><Button variant="primary" icon="check" loading={working} loadingText="Đang xử lý..." onClick={() => void handleConfirm()}>Xác nhận lịch hẹn</Button></div>}
           {selected.status === "CONFIRMED" && <div><p className="mb-4 text-sm text-cs-muted">Chỉ nhận xe sau khi xe thực sự đến gara.</p><Button variant="primary" icon="car" loading={working} loadingText="Đang tiếp nhận..." onClick={() => void handleCheckIn()}>Xác nhận xe đã đến</Button></div>}

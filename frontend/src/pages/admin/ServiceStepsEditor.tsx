@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button, IconButton } from "../../components/ui/Button";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { fetchApi } from "../../services/api";
 
 type Step = { name: string; standard_minutes: number; requires_photo?: boolean };
@@ -12,7 +13,7 @@ export function ServiceStepsEditor({ serviceId, onSaved }: { serviceId: number; 
   const [steps, setSteps] = useState<Step[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const { notify } = useAppFeedback();
 
   useEffect(() => {
     let active = true;
@@ -23,15 +24,16 @@ export function ServiceStepsEditor({ serviceId, onSaved }: { serviceId: number; 
   }, [serviceId]);
 
   async function save() {
-    setSaving(true); setMessage("");
+    setSaving(true);
     try {
       const response = await fetchApi<{ service: { estimated_minutes: number | null } }>(`/admin/services/${serviceId}/steps`, {
         method: "PUT", body: JSON.stringify({ steps: steps.filter(step => step.name.trim()) }),
       });
       onSaved?.(response.service.estimated_minutes);
-      setMessage("Đã lưu các bước.");
+      const saved = steps.filter(step => step.name.trim());
+      notify(`Đã lưu ${saved.length} bước chuẩn của dịch vụ (tổng ${saved.reduce((sum, step) => sum + Number(step.standard_minutes || 0), 0)} phút).`, "success");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Không lưu được.");
+      notify(error instanceof Error ? error.message : "Không lưu được các bước chuẩn.", "error");
     } finally { setSaving(false); }
   }
 
@@ -52,7 +54,6 @@ export function ServiceStepsEditor({ serviceId, onSaved }: { serviceId: number; 
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" variant="tonal" icon="plus" onClick={() => setSteps([...steps, { name: "", standard_minutes: 15 }])}>Thêm bước</Button>
         <Button size="sm" variant="primary" loading={saving} onClick={() => void save()}>Lưu quy trình</Button>
-        {message && <span className="text-xs text-cs-muted" role="status">{message}</span>}
       </div>
     </dd>}
   </div>;

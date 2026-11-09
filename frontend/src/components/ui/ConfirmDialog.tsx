@@ -12,6 +12,8 @@ const variantStyle = {
   danger: { icon: "alert", box: "bg-danger-soft text-danger" },
   warning: { icon: "alert", box: "bg-warning-soft text-warning" },
   info: { icon: "info", box: "bg-cs-soft text-cs-accent-text" },
+  /** Duyệt / đồng ý / xác nhận thao tác tích cực: nút xác nhận nền xanh lá. */
+  success: { icon: "check", box: "bg-success-soft text-success" },
 } as const;
 
 /**
@@ -80,7 +82,7 @@ export function ConfirmDialog({ options, area, onClose }: { options: ConfirmOpti
       </div>
       <footer className="cs-btn-row cs-btn-row-end border-t border-cs-border bg-cs-surface-2 px-6 py-3.5">
         <Button ref={cancelRef} variant="secondary" onClick={() => onClose(false)}>{options.cancelText || LABELS.action.back}</Button>
-        <Button variant={variant === "danger" ? "danger" : "primary"} icon={confirmIconFor(options, variant)} disabled={!canConfirm} onClick={() => onClose(true)}>{options.confirmText || LABELS.action.confirm}</Button>
+        <Button variant={variant === "danger" ? "danger" : variant === "success" ? "success" : "primary"} icon={confirmIconFor(options, variant) ?? (variant === "success" ? "check" : undefined)} disabled={!canConfirm} onClick={() => onClose(true)}>{options.confirmText || LABELS.action.confirm}</Button>
       </footer>
     </section>
   </div>;

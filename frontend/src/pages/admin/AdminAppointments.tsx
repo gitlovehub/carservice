@@ -1,4 +1,4 @@
-import { Button, IconButton, PageHeader, buttonClass } from "../../components/ui";
+import { Button, PageHeader, buttonClass } from "../../components/ui";
 import { FilterSelect } from "./kit/AdminKit";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -72,13 +72,12 @@ function mapAppointment(item: ApiAppointment): Appointment {
 }
 
 function AdminAppointments() {
-  const { confirm } = useAppFeedback();
+  const { confirm, notify } = useAppFeedback();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("Tất cả");
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
@@ -158,7 +157,6 @@ function AdminAppointments() {
 
     setUpdatingId(appointment.recordId);
     setError("");
-    setMessage("");
 
     const endpoint =
       newStatus === "Đã xác nhận"
@@ -181,13 +179,10 @@ function AdminAppointments() {
 
       const refreshed = await loadAppointments();
 
-      if (refreshed) {
-        setMessage(`Đã cập nhật lịch hẹn ${appointment.id}.`);
-      } else {
-        setMessage(
-          "Thao tác đã gửi thành công, nhưng chưa thể tải lại danh sách.",
-        );
-      }
+      const done = newStatus === "Đã xác nhận" ? "Đã xác nhận" : newStatus === "Đã tiếp nhận" ? "Đã tiếp nhận xe cho" : "Đã hủy";
+      notify(refreshed
+        ? `${done} lịch hẹn #${appointment.id}.`
+        : `${done} lịch hẹn #${appointment.id}, nhưng chưa tải lại được danh sách.`, refreshed ? "success" : "warning");
     } catch (requestError) {
       if ((requestError as { status?: number })?.status === 401) {
         localStorage.removeItem("isLoggedIn");
@@ -279,16 +274,6 @@ function AdminAppointments() {
                 </p>
               </div>
             </div>
-
-            {message && (
-              <div
-                role="status"
-                className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[#D9E8D8] bg-[#F0F7EF] px-4 py-3 text-xs text-[#315B35]"
-              >
-                <p>{message}</p>
-                <IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setMessage("")}/>
-              </div>
-            )}
 
             {error && (
               <div

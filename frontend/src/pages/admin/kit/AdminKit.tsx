@@ -128,7 +128,7 @@ export function Tabs<T extends string>({ items, value, onChange, variant = "unde
       </button>;
     })}
   </div>;
-  return <div role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto border-b border-cs-border">
+  return <div role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-cs-border">
     {items.map(item => {
       const active = item.id === value;
       return <button key={item.id} type="button" role="tab" aria-selected={active} onClick={() => onChange(item.id)}

@@ -214,7 +214,7 @@ function withPartQuantity(
 }
 
 function MaintenancePackages() {
-  const { confirm } = useAppFeedback();
+  const { confirm, notify } = useAppFeedback();
   const [packages, setPackages] = useState<MaintenancePackage[]>([]);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
@@ -228,7 +228,7 @@ function MaintenancePackages() {
   const [reloadKey, setReloadKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const notifySuccess = (message: string) => notify(message, "success");
   const [modal, setModal] = useState<"form" | "detail" | null>(null);
   const [selectedPackage, setSelectedPackage] =
     useState<MaintenancePackage | null>(null);
@@ -546,7 +546,7 @@ function MaintenancePackages() {
       );
 
       setModal(null);
-      setNotice(
+      notifySuccess(
         selectedPackage
           ? "Cập nhật gói bảo dưỡng thành công."
           : "Thêm gói bảo dưỡng thành công.",
@@ -571,14 +571,13 @@ function MaintenancePackages() {
     }
 
     setError("");
-    setNotice("");
 
     try {
       await fetchApi(`/admin/maintenance-packages/${pkg.id}`, {
         method: "DELETE",
       });
 
-      setNotice(`Đã xử lý yêu cầu ẩn gói "${pkg.name}".`);
+      notifySuccess(`Đã xử lý yêu cầu ẩn gói "${pkg.name}".`);
 
       if (packages.length === 1 && page > 1) {
         setPage((current) => current - 1);
@@ -620,16 +619,6 @@ function MaintenancePackages() {
           <div>
             <PageHeader title="Gói bảo dưỡng" description="Quản lý gói bảo dưỡng, dịch vụ và phụ tùng đi kèm."
               actions={<Button variant="primary" icon="plus" onClick={openCreateModal}>Thêm gói bảo dưỡng</Button>}/>
-
-            {notice && (
-              <div
-                role="status"
-                className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-[#D9E9DC] bg-[#EDF7EF] px-4 py-3 text-sm text-[#28643B]"
-              >
-                <span>{notice}</span>
-                <IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setNotice("")}/>
-              </div>
-            )}
 
             {catalogError && (
               <div className="mb-5 rounded-xl border border-[#E1E4E6] bg-white p-4">

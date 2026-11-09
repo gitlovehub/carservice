@@ -117,13 +117,13 @@ export function Dropdown({ items, label = LABELS.action.more, align = "end", tri
     {open && position && createPortal(
       <div ref={menuRef} id={menuId} role="menu" aria-label={label} data-area={area} onKeyDown={onMenuKey}
         style={{ top: position.top, left: position.left, right: position.right }}
-        className="cs-feedback-layer cs-menu-panel fixed z-[350] min-w-[200px] max-w-[min(320px,calc(100vw-16px))] overflow-hidden rounded-card border border-cs-border bg-cs-surface py-1.5 text-cs-text shadow-raised">
-        {header && <div className="border-b border-cs-border px-3.5 pb-2.5 pt-1.5">{header}</div>}
+        className="cs-feedback-layer cs-menu-panel fixed z-[350] min-w-[200px] max-w-[min(320px,calc(100vw-16px))] overflow-hidden rounded-card border border-cs-border bg-cs-surface text-cs-text shadow-raised">
+        {header && <div className="border-b border-cs-border px-3.5 py-2.5">{header}</div>}
         {items.map((item, index) => item.type === "separator"
-          ? <div key={index} role="separator" className="my-1.5 h-px bg-cs-border"/>
+          ? <div key={index} role="separator" className="h-px bg-cs-border"/>
           : <button key={index} type="button" role="menuitem" disabled={item.disabled} tabIndex={-1}
               onClick={() => { close(); item.onSelect(); }}
-              className={`flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2 text-left text-small outline-none disabled:cursor-not-allowed disabled:opacity-50
+              className={`flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2.5 text-left text-small outline-none disabled:cursor-not-allowed disabled:opacity-50
                 ${item.danger ? "text-danger hover:bg-danger-soft focus-visible:bg-danger-soft" : "text-cs-text hover:bg-cs-hover focus-visible:bg-cs-hover"}`}>
               {item.icon && <Icon name={item.icon} size={16} className={item.danger ? "" : "text-cs-muted"}/>}
               <span className="flex-1">{item.label}</span>
