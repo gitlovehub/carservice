@@ -92,6 +92,13 @@ Chi tiết kỹ thuật từng Phase: `BUSINESS_IMPLEMENTATION_ROADMAP.md`. P2�
 | UX-09 | Đo lại tương phản dark mode trên trình duyệt | PENDING |
 | UX-B1..B3 | API `model.brand` cho `/me/vehicles`; API Tổng quan; API doanh thu | BLOCKED (thay đổi API, cần PO) |
 
+## Việc để sau (theo thứ tự PO: client → cố vấn)
+
+| ID | Mô tả | Khi nào | Trạng thái |
+|---|---|---|---|
+| CL-01 | Trang dịch vụ phía khách: bộ lọc / sắp xếp "Phổ biến" (theo số lần dùng thật) và "Mới nhất" (D-018) | Khi làm client | PENDING |
+| ADV-01 | Nghiệp vụ "Chờ phụ tùng" — chốt ai đặt/nhận phụ tùng rồi làm theo đề xuất B-05 (`BLOCKERS.md`) | Sau client, khi làm cố vấn (D-017) | PENDING (chờ PO) |
+
 ## Chất lượng test
 
 | ID | Mô tả | Trạng thái |

@@ -1,7 +1,7 @@
 # SESSION HANDOFF
 
 > Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
-> Cập nhật: 10/11/2026 — góp ý PO đợt 3 trang Admin (xong); chờ PO quyết B-05 "Chờ phụ tùng".
+> Cập nhật: 10/11/2026 — góp ý PO đợt 3 trang Admin (xong). Tiếp theo: client → cố vấn (B-05 để lúc làm cố vấn).
 
 ## Mới nhất: góp ý PO đợt 3 — tinh gọn bảng Admin (10/11/2026, nhánh v3) — PO chốt "tạm thời done trang admin"
 
@@ -12,10 +12,11 @@
 - **Hoá đơn**: tách cột Ngày lập (ngày + giờ 2 dòng), Thời gian giao dịch 2 dòng, cột chia đều.
 - **Khách hàng**: bỏ cột Khu vực, địa chỉ (pane + form; địa chỉ cũ giữ nguyên khi sửa); khoá/mở khoá chuyển vào pane; form Thêm xe thay Biển số bằng ODO (km, không bắt buộc).
 - **Dịch vụ**: bỏ cột danh mục trái → nút "Xem danh mục dịch vụ" mở `CategoryDrawer` (trượt phải: xem/lọc/sửa/thêm/xoá danh mục; thay `CategoryManagerModal`); 3 thẻ thống kê (API `service-categories.meta` thêm `active`, `visible`); bỏ cột #, bỏ kéo thả/đổi thứ tự (thứ tự hiện có giữ nguyên — PO chưa yêu cầu làm lại), bỏ sort tên; Giá / Thời gian 2 cột; Trạng thái = nhãn + công tắc; nút sửa gộp vào menu ⋯. **Bỏ "Phổ biến"** toàn hệ thống (cột, menu, form, thống kê, sort; nhóm "Phổ biến" trên trang đặt lịch khách) — cột `services.is_popular` giữ trong DB, không dùng.
-- **Sửa lỗi**: sửa dịch vụ chỉ bật/tắt bị "The name has already been taken" do DB dev có tên trùng (Bảo dưỡng phanh 4 bánh ×3, Thay dầu động cơ ×2, Thay lọc gió điều hòa ×2). Form chỉ gửi `name` khi đổi; thông báo validate tiếng Việt. **Dữ liệu trùng chưa xử lý** — chờ PO cho phép đổi tên/gộp.
+- **Sửa lỗi**: sửa dịch vụ chỉ bật/tắt bị "The name has already been taken" do DB dev có tên trùng (Bảo dưỡng phanh 4 bánh ×3, Thay dầu động cơ ×2, Thay lọc gió điều hòa ×2). Form chỉ gửi `name` khi đổi; thông báo validate tiếng Việt. Dữ liệu trùng đã đổi tên (D-019).
 - **Hãng & dòng xe**: 4 thẻ thống kê (API mới `GET /api/admin/vehicle-catalog/summary`); cột số + trạng thái căn giữa, thao tác sát phải, cột chia đều.
 - **Thông tin gara**: tạm đóng — trang hiện "đang nâng cấp, bảo trì" (`UNDER_MAINTENANCE = true` trong `GarageSettings.tsx`; form có chế độ Sửa → Lưu/Huỷ giữ nguyên bên dưới).
-- **Chờ PO**: B-05 nghiệp vụ "Chờ phụ tùng" (`BLOCKERS.md`).
+- **Sau chốt (D-017..019)**: gỡ đổi thứ tự dịch vụ (route reorder, sort `order`), dịch vụ mới tạo lên đầu cả ở trang đặt lịch khách; đổi tên 4 dịch vụ trùng trên DB dev. B-05 làm sau client → cố vấn (ADV-01); bộ lọc Phổ biến/Mới nhất cho khách là CL-01.
+- **Hướng tiếp theo (PO)**: hoàn thiện **client** → rồi **cố vấn**.
 - **Kiểm thử**: build + ESLint file sửa đạt; backend test liên quan (BookingCatalog, AdminService, AdminCatalogRedesign) đạt. **Chưa kiểm trình duyệt** các thay đổi đợt này.
 
 ## Trước đó: góp ý PO đợt 2 — toast, báo cáo vận hành, đánh giá ga-ra, khung giờ đặt lịch (09/11/2026, nhánh v3)

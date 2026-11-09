@@ -18,6 +18,8 @@ UX-B1..B3 (`/me/vehicles` kèm hãng, API Tổng quan, API doanh thu) là thay �
 
 ## B-05 · Nghiệp vụ "Chờ phụ tùng" — PO quyết định khi làm tiếp (ghi 10/11/2026)
 
+> **Lịch (D-017):** không chặn hiện tại. Làm xong client → tới cố vấn → PO chốt logic ở đây (task ADV-01).
+
 **Vấn đề PO hỏi:** phiếu ở trạng thái "Chờ phụ tùng" thì làm sao biết đang thiếu cái gì để nhập?
 
 **Hiện trạng code:**
