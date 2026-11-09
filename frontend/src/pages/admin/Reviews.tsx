@@ -71,7 +71,7 @@ export default function Reviews() {
     }
   };
 
-  return <AdminPage title="Đánh giá ga-ra" description="Khách chấm điểm CarService sau mỗi lần bảo dưỡng, sửa chữa xe" demo={false}>
+  return <AdminPage title="Đánh giá của khách hàng" description="Khách chấm điểm CarService sau mỗi lần bảo dưỡng, sửa chữa xe" demo={false}>
     <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard icon="star" tone="warning" label="Điểm đánh giá trung bình" value={summary?.visible ? `${num(summary.average)} / 5` : "—"}/>
       <StatCard icon="check" tone="success" label="Khách hài lòng" value={pct(summary?.positive_rate)}/>
