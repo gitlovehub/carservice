@@ -16,7 +16,7 @@ for (const token of ['cs-bg','cs-surface','cs-text','cs-border','cs-accent','cs-
 for (const [name, code, utility] of [
   ['Garage', garage, 'max-[670px]:grid-cols-1'],
   ['Public services', services, 'text-cs-muted'],
-  ['Admin navigation', hub, 'hover:border-cs-accent'],
+  ['Admin navigation', hub, 'text-cs-accent-text'],
   ['Advisor/Admin dashboard', dash, 'grid-cols-4'],
   ['Common components', ui, 'bg-cs-surface'],
 ]) assert.ok(code.includes(utility), `${name} does not contain migrated Tailwind utilities`);

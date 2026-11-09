@@ -1,570 +1,179 @@
-import { Button, IconButton, PageHeader, Modal } from "../../components/ui";
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Button, DataTable, Field, IconButton, Input, Modal, Pagination, SearchInput, Select, Textarea, type Column } from "../../components/ui";
+import { Badge } from "../../components/ui/Badge";
+import { Icon } from "../../components/ui/Icon";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { demoBrands, demoParts, demoStockMoves, partCategories, partUnits, type DemoPart, type DemoStockMove, type PartCategory } from "../../mocks/admin/catalog";
+import { AdminPage, FilterSelect, Pill, Progress, SplitView, StatCard, Tabs, Toolbar } from "./kit/AdminKit";
+import { num, vnd, type Tone } from "./kit/format";
+import { usePaged } from "./kit/usePaged";
 
-type PartStatus = "Còn hàng" | "Sắp hết" | "Hết hàng";
+type Tab = "catalog" | "stock" | "moves";
+const categoryTone: Record<PartCategory, Tone> = { "Động cơ": "warning", "Phanh": "violet", "Điều hoà": "info", "Điện": "success", "Lốp – mâm": "neutral", "Gầm": "brand" };
+const stockLevel = (p: DemoPart) => p.stock === 0 ? "out" : p.stock < p.min ? "low" : "ok";
+const moveInfo: Record<DemoStockMove["type"], { label: string; tone: Tone }> = { IN: { label: "Nhập kho", tone: "success" }, OUT: { label: "Xuất kho", tone: "info" }, ADJUST: { label: "Điều chỉnh", tone: "warning" } };
+const allModels = demoBrands.flatMap(b => b.models.map(m => `${b.name} › ${m.name}`));
 
-type Part = {
-  id: string;
-  name: string;
-  category: string;
-  quantity: number;
-  unit: string;
-  price: number;
-  status: PartStatus;
-};
-
-const initialParts: Part[] = [
-  {
-    id: "PT-001",
-    name: "Dầu động cơ 5W-30",
-    category: "Dầu nhớt",
-    quantity: 24,
-    unit: "Chai",
-    price: 450000,
-    status: "Còn hàng",
-  },
-  {
-    id: "PT-002",
-    name: "Má phanh trước Toyota",
-    category: "Hệ thống phanh",
-    quantity: 8,
-    unit: "Bộ",
-    price: 1200000,
-    status: "Sắp hết",
-  },
-  {
-    id: "PT-003",
-    name: "Lọc dầu động cơ",
-    category: "Bộ lọc",
-    quantity: 32,
-    unit: "Cái",
-    price: 180000,
-    status: "Còn hàng",
-  },
-  {
-    id: "PT-004",
-    name: "Gas điều hòa R134a",
-    category: "Điều hòa",
-    quantity: 3,
-    unit: "Bình",
-    price: 650000,
-    status: "Sắp hết",
-  },
-];
-
-const categories = [
-  "Dầu nhớt",
-  "Hệ thống phanh",
-  "Bộ lọc",
-  "Điều hòa",
-];
-
-function getPartStatus(quantity: number): PartStatus {
-  if (quantity <= 0) return "Hết hàng";
-  if (quantity <= 10) return "Sắp hết";
-  return "Còn hàng";
+function Sku({ value }: { value: string }) {
+  return <span className="whitespace-nowrap rounded-md border border-cs-border bg-cs-surface-2 px-2 py-0.5 font-mono text-caption text-cs-text-2">{value}</span>;
+}
+function PartName({ part }: { part: DemoPart }) {
+  return <span className="flex min-w-0 items-center gap-3">
+    <span className="grid size-10 shrink-0 place-items-center rounded-control bg-cs-surface-2 text-cs-muted" aria-hidden="true"><Icon name="box" size={20}/></span>
+    <span className="min-w-0"><b className="block text-cs-text">{part.name}</b><span className="block truncate text-caption text-cs-muted">{part.description}</span></span>
+  </span>;
 }
 
-function formatPrice(price: number) {
-  return `${price.toLocaleString("vi-VN")} đ`;
-}
+/** Phụ tùng & kho — DEMO: dữ liệu từ src/mocks/admin/catalog.ts (parts, inventories, inventory_transactions, part_compatibilities). */
+export default function Inventory() {
+  const { notify } = useAppFeedback();
+  const [params, setParams] = useSearchParams();
+  const tab: Tab = (["catalog", "stock", "moves"] as Tab[]).find(t => t === params.get("tab")) ?? "catalog";
+  const [parts, setParts] = useState(demoParts);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<"all" | PartCategory>("all");
+  const [status, setStatus] = useState<"all" | "ACTIVE" | "INACTIVE" | "low" | "out">("all");
+  const [editing, setEditing] = useState<DemoPart | null>(null);
+  const [stockForm, setStockForm] = useState<{ type: "IN" | "OUT"; partId: number; qty: number; note: string } | null>(null);
+  const [addModel, setAddModel] = useState(allModels[0]);
 
-function Inventory() {
-  const [parts, setParts] = useState<Part[]>(initialParts);
-  const [keyword, setKeyword] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Tất cả danh mục");
-  const [selectedStatus, setSelectedStatus] = useState("Tất cả trạng thái");
-  const [message, setMessage] = useState("");
-  const [modal, setModal] = useState<"add" | "edit" | "detail" | null>(null);
-  const [selectedPart, setSelectedPart] = useState<Part | null>(null);
-  const [form, setForm] = useState({
-    name: "",
-    category: categories[0],
-    quantity: "0",
-    unit: "Cái",
-    price: "0",
-  });
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return parts.filter(p => (!q || p.sku.toLowerCase().includes(q) || p.name.toLowerCase().includes(q))
+      && (category === "all" || p.category === category)
+      && (status === "all" || (status === "low" ? stockLevel(p) === "low" : status === "out" ? stockLevel(p) === "out" : p.status === status)));
+  }, [parts, query, category, status]);
+  const { pageRows, pagination } = usePaged(rows, 8);
 
-  const filteredParts = useMemo(() => {
-    return parts.filter((part) => {
-      const matchesKeyword = `${part.id} ${part.name}`
-        .toLowerCase()
-        .includes(keyword.trim().toLowerCase());
+  const startEdit = (part: DemoPart | null) => setEditing(part ?? { id: 0, sku: "", name: "", description: "", category: "Động cơ", unit: "Cái", cost: 0, price: 0, stock: 0, min: 5, updatedAt: "—", status: "ACTIVE", compat: [] });
+  const saveEdit = () => {
+    if (!editing) return;
+    if (editing.id) setParts(list => list.map(p => p.id === editing.id ? editing : p));
+    else setParts(list => [{ ...editing, id: Math.max(...list.map(p => p.id)) + 1, updatedAt: "08/11/2026 —" }, ...list]);
+    setEditing(null);
+    notify("Đã lưu phụ tùng (demo).", "success");
+  };
+  const saveStock = () => {
+    if (!stockForm) return;
+    setParts(list => list.map(p => p.id === stockForm.partId ? { ...p, stock: Math.max(0, p.stock + (stockForm.type === "IN" ? stockForm.qty : -stockForm.qty)), updatedAt: "08/11/2026 —" } : p));
+    setStockForm(null);
+    notify(stockForm.type === "IN" ? "Đã nhập kho (demo)." : "Đã xuất kho (demo).", "success");
+  };
 
-      const matchesCategory =
-        selectedCategory === "Tất cả danh mục" ||
-        part.category === selectedCategory;
+  const filters = <Toolbar>
+    <SearchInput value={query} onChange={setQuery} placeholder="Tìm theo SKU, tên phụ tùng…"/>
+    <FilterSelect label="Danh mục" value={category} onChange={setCategory} options={[{ value: "all", label: "Tất cả" }, ...partCategories.map(c => ({ value: c, label: c }))]}/>
+    <FilterSelect label="Trạng thái" value={status} onChange={setStatus} options={tab === "stock"
+      ? [{ value: "all", label: "Tất cả" }, { value: "low", label: "Sắp hết" }, { value: "out", label: "Hết hàng" }]
+      : [{ value: "all", label: "Tất cả" }, { value: "ACTIVE", label: "Đang áp dụng" }, { value: "INACTIVE", label: "Ngừng" }]}/>
+  </Toolbar>;
 
-      const matchesStatus =
-        selectedStatus === "Tất cả trạng thái" ||
-        part.status === selectedStatus;
+  const catalogColumns: Column<DemoPart>[] = [
+    { key: "sku", header: "SKU", render: p => <Sku value={p.sku}/> },
+    { key: "name", header: "Tên phụ tùng", primary: true, render: p => <b className="text-cs-text">{p.name}</b> },
+    { key: "category", header: "Danh mục", render: p => <Pill tone={categoryTone[p.category]}>{p.category}</Pill> },
+    { key: "unit", header: "Đơn vị", hideOnMobile: true, render: p => p.unit },
+    { key: "cost", header: "Giá vốn", align: "right", hideOnMobile: true, render: p => <span className="tabular-nums">{vnd(p.cost)}</span> },
+    { key: "price", header: "Giá bán", align: "right", render: p => <span className="tabular-nums">{vnd(p.price)}</span> },
+    { key: "margin", header: "Lợi nhuận", align: "right", hideOnMobile: true, render: p => <b className="tabular-nums text-success-fg">{num(Math.round(((p.price - p.cost) / p.price) * 1000) / 10)}%</b> },
+    { key: "status", header: "Trạng thái", render: p => <Badge tone={p.status === "ACTIVE" ? "success" : "neutral"}>{p.status === "ACTIVE" ? "Đang áp dụng" : "Ngừng"}</Badge> },
+  ];
+  const stockColumns: Column<DemoPart>[] = [
+    { key: "sku", header: "SKU", render: p => <Sku value={p.sku}/> },
+    { key: "name", header: "Tên phụ tùng", primary: true, render: p => <PartName part={p}/> },
+    { key: "category", header: "Danh mục", hideOnMobile: true, render: p => <Pill tone={categoryTone[p.category]}>{p.category}</Pill> },
+    { key: "unit", header: "Đơn vị", hideOnMobile: true, render: p => p.unit },
+    { key: "stock", header: "Tồn hiện tại / Tối thiểu", render: p => {
+      const pct = (p.stock / Math.max(1, p.min * 1.3)) * 100;
+      return <span className="block min-w-36"><span className="mb-1 flex justify-between text-small"><b className="tabular-nums">{p.stock} / {p.min}</b>
+        {stockLevel(p) !== "ok" && <span className={`text-caption font-semibold ${p.stock === 0 ? "text-danger-fg" : "text-warning-fg"}`}>{p.stock === 0 ? "Hết hàng" : "Sắp hết"}</span>}</span>
+        <Progress value={pct} tone={p.stock === 0 || p.stock / p.min < 0.5 ? "danger" : p.stock < p.min ? "warning" : "success"} label={`Tồn kho ${p.name}`}/></span>;
+    } },
+    { key: "value", header: "Giá trị tồn", align: "right", hideOnMobile: true, render: p => <span className="tabular-nums">{vnd(p.stock * p.cost)}</span> },
+    { key: "updated", header: "Cập nhật lần cuối", hideOnMobile: true, render: p => <span className="whitespace-nowrap tabular-nums text-cs-text-2">{p.updatedAt}</span> },
+  ];
+  const moveColumns: Column<DemoStockMove>[] = [
+    { key: "at", header: "Thời gian", render: m => <span className="whitespace-nowrap tabular-nums text-cs-text-2">{m.at}</span> },
+    { key: "type", header: "Loại", render: m => <Pill tone={moveInfo[m.type].tone}>{moveInfo[m.type].label}</Pill> },
+    { key: "part", header: "Phụ tùng", primary: true, render: m => <span><b className="text-cs-text">{m.name}</b><span className="block text-caption text-cs-muted">{m.sku}</span></span> },
+    { key: "qty", header: "Số lượng", align: "right", render: m => <b className={`tabular-nums ${m.type === "IN" ? "text-success-fg" : m.qty < 0 || m.type === "OUT" ? "text-danger-fg" : ""}`}>{m.type === "IN" ? "+" : m.type === "OUT" ? "−" : ""}{Math.abs(m.qty)}</b> },
+    { key: "ref", header: "Chứng từ", render: m => <span><span className="font-medium">{m.ref}</span>{m.note && <span className="block text-caption text-cs-muted">{m.note}</span>}</span> },
+    { key: "by", header: "Người thực hiện", hideOnMobile: true, render: m => m.by },
+  ];
 
-      return matchesKeyword && matchesCategory && matchesStatus;
-    });
-  }, [parts, keyword, selectedCategory, selectedStatus]);
-
-  const lowStockCount = parts.filter(
-    (part) => part.status === "Sắp hết",
-  ).length;
-  const outOfStockCount = parts.filter(
-    (part) => part.status === "Hết hàng",
-  ).length;
-  const activeStockCount = parts.filter(
-    (part) => part.status === "Còn hàng",
-  ).length;
-
-  function openAddModal() {
-    setSelectedPart(null);
-    setForm({
-      name: "",
-      category: categories[0],
-      quantity: "0",
-      unit: "Cái",
-      price: "0",
-    });
-    setMessage("");
-    setModal("add");
-  }
-
-  function openEditModal(part: Part) {
-    setSelectedPart(part);
-    setForm({
-      name: part.name,
-      category: part.category,
-      quantity: String(part.quantity),
-      unit: part.unit,
-      price: String(part.price),
-    });
-    setMessage("");
-    setModal("edit");
-  }
-
-  function handleSave() {
-    const quantity = Number(form.quantity);
-    const price = Number(form.price);
-    const name = form.name.trim();
-    const unit = form.unit.trim();
-
-    if (
-      !name ||
-      !unit ||
-      form.quantity.trim() === "" ||
-      form.price.trim() === "" ||
-      !Number.isFinite(quantity) ||
-      !Number.isFinite(price) ||
-      quantity < 0 ||
-      price < 0
-    ) {
-      setMessage("Vui lòng nhập đầy đủ thông tin hợp lệ.");
-      return;
-    }
-
-    if (modal === "add") {
-      const nextNumber =
-        Math.max(
-          0,
-          ...parts.map((part) => Number(part.id.replace("PT-", "")) || 0),
-        ) + 1;
-
-      const newPart: Part = {
-        id: `PT-${String(nextNumber).padStart(3, "0")}`,
-        name,
-        category: form.category,
-        quantity,
-        unit,
-        price,
-        status: getPartStatus(quantity),
-      };
-
-      setParts((current) => [...current, newPart]);
-      setKeyword("");
-      setSelectedCategory("Tất cả danh mục");
-      setSelectedStatus("Tất cả trạng thái");
-      setMessage("Đã thêm phụ tùng mới.");
-    } else if (modal === "edit" && selectedPart) {
-      setParts((current) =>
-        current.map((part) =>
-          part.id === selectedPart.id
-            ? {
-                ...part,
-                name,
-                category: form.category,
-                quantity,
-                unit,
-                price,
-                status: getPartStatus(quantity),
-              }
-            : part,
-        ),
-      );
-      setMessage("Đã cập nhật thông tin phụ tùng.");
-    }
-
-    setModal(null);
-    setSelectedPart(null);
-  }
-
-  return (
-    <div className="min-h-screen bg-cs-bg text-[#20252B]">
-
-      <div className="lg:ml-[250px]">
-
-        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-[1200px]">
-            <PageHeader title="Kho phụ tùng" description="Quản lý phụ tùng, số lượng và tình trạng tồn kho của gara."
-              actions={<Button variant="primary" icon="plus" onClick={openAddModal}>Nhập phụ tùng</Button>}/>
-
-            {message && (
-              <div
-                role="status"
-                className="mb-5 rounded-xl border border-[#E1E4E6] bg-white px-4 py-3 text-sm text-[#20252B]"
-              >
-                {message}
-                <IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setMessage("")}/>
-              </div>
-            )}
-
-            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {[
-                {
-                  label: "Tổng phụ tùng",
-                  value: parts.length,
-                  description: "Mặt hàng trong kho",
-                },
-                {
-                  label: "Còn hàng",
-                  value: activeStockCount,
-                  description: "Mặt hàng đủ số lượng",
-                },
-                {
-                  label: "Sắp hết",
-                  value: lowStockCount,
-                  description: "Cần nhập thêm",
-                },
-                {
-                  label: "Hết hàng",
-                  value: outOfStockCount,
-                  description: "Cần bổ sung ngay",
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
-                >
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
-                    {item.label}
-                  </p>
-                  <p className="mt-4 text-2xl font-bold">{item.value}</p>
-                  <p className="mt-1 text-[11px] text-cs-muted">
-                    {item.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-
-            <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:p-6">
-              <div className="mb-5">
-                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                  GARA / PHỤ TÙNG & TỒN KHO
-                </p>
-                <h2 className="mt-1 text-base font-bold">
-                  Tìm kiếm phụ tùng
-                </h2>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <input
-                  type="text"
-                  value={keyword}
-                  onChange={(event) => setKeyword(event.target.value)}
-                  placeholder="Tên hoặc mã phụ tùng..."
-                  className="min-w-0 rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#D6A85F]"
-                />
-
-                <select
-                  value={selectedCategory}
-                  onChange={(event) => setSelectedCategory(event.target.value)}
-                  className="min-w-0 rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#D6A85F]"
-                >
-                  <option>Tất cả danh mục</option>
-                  {categories.map((category) => (
-                    <option key={category}>{category}</option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedStatus}
-                  onChange={(event) => setSelectedStatus(event.target.value)}
-                  className="min-w-0 rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#D6A85F]"
-                >
-                  <option>Tất cả trạng thái</option>
-                  <option>Còn hàng</option>
-                  <option>Sắp hết</option>
-                  <option>Hết hàng</option>
-                </select>
-
-                <Button variant="outline" icon="filter" onClick={() => {
-                    setKeyword("");
-                    setSelectedCategory("Tất cả danh mục");
-                    setSelectedStatus("Tất cả trạng thái");
-                  }}>Xóa bộ lọc</Button>
-              </div>
-            </section>
-
-            <section className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
-              <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                    TỒN KHO
-                  </p>
-                  <h2 className="mt-1 text-base font-bold">
-                    Danh sách phụ tùng
-                  </h2>
-                </div>
-                <p className="text-xs text-cs-muted">
-                  {filteredParts.length} / {parts.length} mặt hàng
-                </p>
-              </div>
-
-              {filteredParts.length === 0 ? (
-                <div className="px-6 py-14 text-center">
-                  <p className="text-sm font-semibold">
-                    Không tìm thấy phụ tùng
-                  </p>
-                  <p className="mt-2 text-xs text-cs-muted">
-                    Thử thay đổi từ khóa hoặc điều kiện lọc.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3 p-4 sm:p-5">
-                  {filteredParts.map((part, index) => (
-                    <article
-                      key={part.id}
-                      className="rounded-2xl border border-[#E5E8EA] bg-cs-surface-2 p-4 transition hover:border-[#D5D9DC] sm:p-5"
-                    >
-                      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                        <div className="flex min-w-0 items-start gap-4">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[11px] font-bold text-white">
-                            {String(index + 1).padStart(2, "0")}
-                          </div>
-
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-sm font-bold">{part.name}</p>
-                              <span
-                                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold ${
-                                  part.status === "Còn hàng"
-                                    ? "bg-[#E6F2E8] text-[#28643B]"
-                                    : part.status === "Sắp hết"
-                                      ? "bg-[#F8EBD3] text-[#8A5A13]"
-                                      : "bg-[#FBE5E5] text-[#A12B2B]"
-                                }`}
-                              >
-                                {part.status}
-                              </span>
-                            </div>
-                            <p className="mt-1 text-[11px] text-cs-muted">
-                              {part.id} · {part.category}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:min-w-[480px]">
-                          <div>
-                            <p className="text-[11px] text-cs-muted">
-                              SỐ LƯỢNG
-                            </p>
-                            <p className="mt-1 text-xs font-bold">
-                              {part.quantity} {part.unit}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[11px] text-cs-muted">
-                              ĐƠN GIÁ
-                            </p>
-                            <p className="mt-1 text-xs font-bold">
-                              {formatPrice(part.price)}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[11px] text-cs-muted">
-                              DANH MỤC
-                            </p>
-                            <p className="mt-1 text-xs font-semibold">
-                              {part.category}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[11px] text-cs-muted">
-                              MÃ PHỤ TÙNG
-                            </p>
-                            <p className="mt-1 text-xs font-semibold">
-                              {part.id}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2 xl:shrink-0">
-                          <IconButton icon="eye" label="Chi tiết" onClick={() => {
-                              setSelectedPart(part);
-                              setModal("detail");
-                            }}/>
-                          <IconButton icon="edit" label="Cập nhật" onClick={() => openEditModal(part)}/>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
-        </main>
-      </div>
-
-      {modal && (
-        <Modal bare open onClose={() => setModal(null)} title={modal === "add" ? "Nhập phụ tùng" : modal === "edit" ? "Cập nhật phụ tùng" : "Chi tiết phụ tùng"} className="my-auto w-full max-w-lg rounded-2xl bg-cs-surface p-5 shadow-overlay sm:p-7">
-            <div className="mb-6 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-                  QUẢN LÝ KHO
-                </p>
-                <h2
-                  id="inventory-modal-title"
-                  className="mt-2 text-xl font-bold"
-                >
-                  {modal === "add"
-                    ? "Nhập phụ tùng"
-                    : modal === "edit"
-                      ? "Cập nhật phụ tùng"
-                      : "Chi tiết phụ tùng"}
-                </h2>
-              </div>
-              <IconButton icon="close" label="Đóng" onClick={() => setModal(null)}/>
-            </div>
-
-            {modal === "detail" && selectedPart ? (
-              <div className="space-y-4">
-                {[
-                  ["Mã phụ tùng", selectedPart.id],
-                  ["Tên phụ tùng", selectedPart.name],
-                  ["Danh mục", selectedPart.category],
-                  ["Số lượng", `${selectedPart.quantity} ${selectedPart.unit}`],
-                  ["Đơn giá", formatPrice(selectedPart.price)],
-                  ["Trạng thái", selectedPart.status],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="flex items-start justify-between gap-4 border-b border-[#EEF0F2] pb-3"
-                  >
-                    <span className="text-xs text-cs-muted">{label}</span>
-                    <span className="text-right text-xs font-semibold">
-                      {value}
-                    </span>
-                  </div>
-                ))}
-                <Button variant="primary" icon="edit" block className="mt-3" onClick={() => openEditModal(selectedPart)}>Cập nhật phụ tùng</Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Tên phụ tùng
-                  </label>
-                  <input
-                    value={form.name}
-                    onChange={(event) =>
-                      setForm({ ...form, name: event.target.value })
-                    }
-                    placeholder="Nhập tên phụ tùng"
-                    className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-sm outline-none focus:border-[#D6A85F]"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Danh mục
-                  </label>
-                  <select
-                    value={form.category}
-                    onChange={(event) =>
-                      setForm({ ...form, category: event.target.value })
-                    }
-                    className="w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-sm outline-none focus:border-[#D6A85F]"
-                  >
-                    {categories.map((category) => (
-                      <option key={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-2 block text-xs font-semibold">
-                      Số lượng
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={form.quantity}
-                      onChange={(event) =>
-                        setForm({ ...form, quantity: event.target.value })
-                      }
-                      className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-sm outline-none focus:border-[#D6A85F]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-xs font-semibold">
-                      Đơn vị
-                    </label>
-                    <input
-                      value={form.unit}
-                      onChange={(event) =>
-                        setForm({ ...form, unit: event.target.value })
-                      }
-                      placeholder="Cái, Bộ..."
-                      className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-sm outline-none focus:border-[#D6A85F]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Đơn giá (VNĐ)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={form.price}
-                    onChange={(event) =>
-                      setForm({ ...form, price: event.target.value })
-                    }
-                    className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-sm outline-none focus:border-[#D6A85F]"
-                  />
-                </div>
-
-                {message && (
-                  <p role="alert" className="text-xs text-red-600">
-                    {message}
-                  </p>
-                )}
-
-                <div className="flex gap-3 pt-2">
-                  <Button variant="secondary" className="flex-1" onClick={() => setModal(null)}>Hủy</Button>
-                  <Button variant="primary" icon="check" className="flex-1" onClick={handleSave}>Lưu thông tin</Button>
-                </div>
-              </div>
-            )}
-          </Modal>
-      )}
+  const low = parts.filter(p => stockLevel(p) === "low").length;
+  const out = parts.filter(p => stockLevel(p) === "out").length;
+  const editPane = editing && <div className="flex flex-col gap-4">
+    <Field label="SKU" required><Input value={editing.sku} onChange={e => setEditing({ ...editing, sku: e.target.value })}/></Field>
+    <Field label="Tên phụ tùng" required><Input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })}/></Field>
+    <div className="grid grid-cols-2 gap-3">
+      <Field label="Danh mục" required><Select value={editing.category} onChange={e => setEditing({ ...editing, category: e.target.value as PartCategory })}>{partCategories.map(c => <option key={c}>{c}</option>)}</Select></Field>
+      <Field label="Đơn vị" required><Select value={editing.unit} onChange={e => setEditing({ ...editing, unit: e.target.value })}>{partUnits.map(u => <option key={u}>{u}</option>)}</Select></Field>
+      <Field label="Giá vốn (₫)" required><Input inputMode="numeric" value={num(editing.cost)} onChange={e => setEditing({ ...editing, cost: Number(e.target.value.replace(/\D/g, "")) || 0 })}/></Field>
+      <Field label="Giá bán (₫)" required><Input inputMode="numeric" value={num(editing.price)} onChange={e => setEditing({ ...editing, price: Number(e.target.value.replace(/\D/g, "")) || 0 })}/></Field>
+      <Field label="Tồn tối thiểu"><Input inputMode="numeric" value={editing.min} onChange={e => setEditing({ ...editing, min: Number(e.target.value.replace(/\D/g, "")) || 0 })}/></Field>
+      <Field label="Trạng thái"><Select value={editing.status} onChange={e => setEditing({ ...editing, status: e.target.value as DemoPart["status"] })}><option value="ACTIVE">Đang áp dụng</option><option value="INACTIVE">Ngừng</option></Select></Field>
     </div>
-  );
-}
+    <Field label="Mô tả" hint={`${editing.description.length}/500`}><Textarea maxLength={500} value={editing.description} onChange={e => setEditing({ ...editing, description: e.target.value })}/></Field>
+    <div>
+      <p className="mb-2 flex items-center gap-2 text-small font-semibold text-cs-text"><Icon name="car" size={17} className="text-cs-muted"/>Xe tương thích</p>
+      <div className="mb-2 flex flex-wrap gap-2">
+        {editing.compat.length ? editing.compat.map(c => <span key={c} className="inline-flex items-center gap-1 rounded-full border border-cs-border bg-cs-surface-2 py-0.5 pl-3 pr-1 text-caption text-cs-text">
+          {c}<button type="button" aria-label={`Bỏ ${c}`} onClick={() => setEditing({ ...editing, compat: editing.compat.filter(x => x !== c) })} className="grid size-5 cursor-pointer place-items-center rounded-full text-cs-muted hover:bg-cs-hover hover:text-cs-text"><Icon name="close" size={11}/></button>
+        </span>) : <span className="text-caption text-cs-muted">Dùng chung mọi dòng xe.</span>}
+      </div>
+      <div className="flex gap-2">
+        <Select aria-label="Chọn dòng xe" value={addModel} onChange={e => setAddModel(e.target.value)} className="flex-1">{allModels.filter(m => !editing.compat.includes(m)).map(m => <option key={m}>{m}</option>)}</Select>
+        <Button variant="outline" icon="plus" onClick={() => { if (addModel && !editing.compat.includes(addModel)) setEditing({ ...editing, compat: [...editing.compat, addModel] }); }}>Thêm</Button>
+      </div>
+    </div>
+  </div>;
 
-export default Inventory;
+  return <AdminPage title="Phụ tùng & kho" description="Danh mục phụ tùng, tồn kho, nhập/xuất và cảnh báo"
+    actions={<>
+      <Button variant="outline" icon="upload" onClick={() => setStockForm({ type: "OUT", partId: parts[0].id, qty: 1, note: "" })}>Xuất kho</Button>
+      {tab === "catalog"
+        ? <Button variant="primary" icon="plus" onClick={() => startEdit(null)}>Thêm phụ tùng</Button>
+        : <Button variant="primary" icon="plus" onClick={() => setStockForm({ type: "IN", partId: parts[0].id, qty: 1, note: "" })}>Nhập kho</Button>}
+    </>}>
+    <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard icon="box" tone="brand" label="Tổng mã phụ tùng" value={num(parts.length)}/>
+      <StatCard icon="coins" tone="neutral" label="Giá trị tồn kho" value={vnd(parts.reduce((s, p) => s + p.stock * p.cost, 0))}/>
+      <StatCard icon="alert" tone="warning" label="Sắp hết hàng" value={low}/>
+      <StatCard icon="x-circle" tone="danger" label="Hết hàng" value={out}/>
+    </div>
+    <div className="mb-4">
+      <Tabs label="Phụ tùng & kho" value={tab} onChange={id => { setParams(id === "catalog" ? {} : { tab: id }, { replace: true }); setStatus("all"); setEditing(null); }} items={[
+        { id: "catalog", label: "Danh mục phụ tùng", icon: "tag" }, { id: "stock", label: "Tồn kho", icon: "box" }, { id: "moves", label: "Lịch sử nhập xuất", icon: "history" },
+      ]}/>
+    </div>
+
+    {tab === "catalog" && <SplitView paneOpen={!!editing} onClose={() => setEditing(null)} paneWidth={420}
+      paneTitle={<span className="flex items-center gap-2 text-cs-accent-text"><Icon name="edit" size={18}/>{editing?.id ? "Chỉnh sửa phụ tùng" : "Thêm phụ tùng"}</span>}
+      paneFooter={<><Button onClick={() => setEditing(null)}>Huỷ</Button><Button variant="primary" onClick={saveEdit} disabled={!editing?.sku.trim() || !editing?.name.trim()}>Lưu thay đổi</Button></>}
+      pane={editPane}
+      list={<>{filters}<DataTable caption="Danh mục phụ tùng" columns={catalogColumns} rows={pageRows} rowKey={p => p.id}
+        onRowClick={startEdit} rowClassName={p => p.id === editing?.id ? "bg-cs-soft/60" : ""}
+        actions={p => <IconButton icon="edit" label={`Sửa ${p.name}`} size="sm" onClick={() => startEdit(p)}/>}
+        footer={<Pagination {...pagination}/>}/></>}/>}
+
+    {tab === "stock" && <>{filters}<DataTable caption="Tồn kho" columns={stockColumns} rows={pageRows} rowKey={p => p.id}
+      rowClassName={p => stockLevel(p) === "out" ? "bg-danger-soft/40" : stockLevel(p) === "low" ? "bg-warning-soft/40" : ""}
+      actions={p => <IconButton icon="plus" label={`Nhập thêm ${p.name}`} size="sm" onClick={() => setStockForm({ type: "IN", partId: p.id, qty: Math.max(1, p.min - p.stock), note: "" })}/>}
+      footer={<Pagination {...pagination}/>}/></>}
+
+    {tab === "moves" && <DataTable caption="Lịch sử nhập xuất" columns={moveColumns} rows={demoStockMoves} rowKey={m => m.id}/>}
+
+    <Modal open={!!stockForm} onClose={() => setStockForm(null)} title={stockForm?.type === "IN" ? "Nhập kho" : "Xuất kho"}
+      footer={<><Button onClick={() => setStockForm(null)}>Huỷ</Button><Button variant="primary" onClick={saveStock} disabled={!stockForm?.qty}>Xác nhận</Button></>}>
+      {stockForm && <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+        <Field label="Phụ tùng" required><Select value={stockForm.partId} onChange={e => setStockForm({ ...stockForm, partId: Number(e.target.value) })}>
+          {parts.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name} (tồn {p.stock})</option>)}
+        </Select></Field>
+        <Field label="Số lượng" required><Input inputMode="numeric" value={stockForm.qty} onChange={e => setStockForm({ ...stockForm, qty: Number(e.target.value.replace(/\D/g, "")) || 0 })}/></Field>
+        <Field label={stockForm.type === "IN" ? "Nhà cung cấp / ghi chú" : "Lý do xuất"} optional className="sm:col-span-2"><Input value={stockForm.note} onChange={e => setStockForm({ ...stockForm, note: e.target.value })}/></Field>
+      </div>}
+    </Modal>
+  </AdminPage>;
+}

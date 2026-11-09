@@ -61,9 +61,9 @@ const panels = read('../src/pages/advisor/RepairOrderPanels.tsx');
 for (const needle of ['icon="send"', 'iconRight="arrow-right"', 'variant="success" icon="cash"', 'disabled={invoice.status !== "PAID"}', 'variant="tonal" icon="plus"']) {
   assert(panels.includes(needle), `Phiếu sửa chữa thiếu ${needle}`);
 }
-const dashboard = read('../src/pages/shared/WorkspaceDashboard.tsx');
-assert(dashboard.includes('admin-shortcut-tiles') && dashboard.includes('admin-utilities') && dashboard.includes('"/admin/reports"'), 'Dashboard Admin: thẻ lối tắt + hàng Tiện ích');
+const adminDashboard = read('../src/pages/admin/AdminDashboard.tsx');
+assert(adminDashboard.includes('StatCard') && adminDashboard.includes('variant="segment"'), 'Dashboard Admin: thẻ số liệu + bộ chọn khoảng thời gian');
 const accounts = read('../src/pages/admin/Accounts.tsx');
-assert(accounts.includes('variant="tonal" icon="key"') && accounts.includes('variant="danger-outline" icon="lock"') && !accounts.includes('variant="success"'), 'Tài khoản: Phân quyền tonal, Khóa danger-outline, Mở khóa kiểu chung (không xanh)');
+assert(accounts.includes('icon: "key"') && accounts.includes('icon: "lock", danger: true') && accounts.includes('variant="primary" icon="plus"'), 'Tài khoản: Đặt lại mật khẩu, Khóa (danger), Tạo tài khoản primary');
 
-console.log('PASS button redesign: role tokens, tonal variant, admin red + theme-following sidebar, confirm-only solid danger, screen mappings, admin shortcuts.');
+console.log('PASS button redesign: role tokens, tonal variant, admin red + theme-following sidebar, confirm-only solid danger, screen mappings, admin dashboard.');

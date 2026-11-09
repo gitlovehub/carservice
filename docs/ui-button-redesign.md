@@ -105,10 +105,15 @@ trên nền nhạt (`Badge tone="success"`). Nút ở Admin không dùng biến 
   mục đang chọn nền đỏ đặc chữ trắng.
 - Toolbar bảng: `Lọc`, `Xuất file`, `Tìm kiếm` = outline; `Thêm …` = primary đỏ đặc (Thêm dịch vụ, Thêm gói, Tạo tài khoản, Nhập phụ tùng…).
 - Dòng bảng: Xem/Sửa = IconButton ghost; Xóa/Ẩn = IconButton chữ đỏ → ConfirmDialog (`Hủy` secondary, `Xóa vĩnh viễn` danger + trash).
-- Accounts / Khách hàng: `Khóa` = danger-outline + icon khóa; `Mở khóa` = secondary + icon check; `Phân quyền` = tonal.
+- Accounts / Khách hàng: thao tác trong `Dropdown` (⋯): `Khóa` = mục danger + icon khóa → ConfirmDialog; `Mở khóa`/`Kích hoạt` = mục thường.
 - Lịch hẹn: `Duyệt` = secondary + check; `Hủy` = danger-outline + X; `Tiếp nhận` = primary sm.
-- Dashboard admin: lưới **thẻ lối tắt** 2 cột (Dịch vụ & gói, Kho phụ tùng, Tài khoản, Báo cáo) dạng thẻ trung tính, icon đỏ
-  trên nền soft. Hàng "Tiện ích": nút icon tròn 60px (nền soft, icon đỏ) kèm nhãn dưới (Lịch hẹn, Nhập kho, Giờ làm việc, Gói bảo dưỡng).
+- Dashboard admin (`pages/admin/AdminDashboard.tsx`): 4 thẻ số liệu (`StatCard`), biểu đồ doanh thu 30 ngày + donut phiếu theo
+  trạng thái, bảng "Lịch hẹn sắp tới" và "Cảnh báo tồn kho thấp"; bộ chọn Hôm nay / 7 ngày / 30 ngày (`Tabs` segment).
+- Bộ khung dùng chung `pages/admin/kit/`: `AdminPage` (tiêu đề + nhãn "Dữ liệu demo"), `StatCard`, `Panel`, `Tabs`
+  (gạch chân / phân đoạn / chip đếm), `FilterSelect`, `Person`/`Avatar`, `Pill`, `Progress`, `Toggle`, `Stars`,
+  `SplitView` (danh sách + ngăn chi tiết; < 1280px mở Drawer), biểu đồ SVG `BarChart` / `AreaChart` / `DonutChart`.
+  Token riêng: `--cs-chart-1..6`, `--cs-tint-*`, `--cs-violet*`.
+- Trang chạy dữ liệu mẫu (`src/mocks/admin/*`) phải hiện nhãn "Dữ liệu demo"; khi nối API truyền `demo={false}` cho `AdminPage`.
 - Badge trạng thái: dùng `Badge` chung (chấm + chữ trên nền nhạt); xanh lá chỉ cho trạng thái thành công.
 
 ### Dùng chung

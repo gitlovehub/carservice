@@ -33,8 +33,11 @@ assert.match(selector, /disabledHint="Chọn hãng xe trước\."/, 'Model locke
 assert.match(selector, /sm:grid-cols-3/, 'Responsive: stacked on mobile, 3 columns from sm');
 
 // Admin CRUD.
-assert.match(app, /path="vehicle-catalog" element=\{<AdminVehicleCatalog\/>\}/, 'Admin route');
-assert.match(nav, /path: "\/admin\/vehicle-catalog"/, 'Admin navigation entry');
+// Menu "Hãng & dòng xe" (/admin/vehicle-brands) dùng trang thật, không dùng bản demo dữ liệu giả.
+assert.match(app, /path="vehicle-brands" element=\{<AdminVehicleCatalog\/>\}/, 'Admin route uses the real catalog page');
+assert.match(app, /path="vehicle-catalog" element=\{<Navigate to="\/admin\/vehicle-brands"/, 'Old path redirects');
+assert.doesNotMatch(app, /pages\/admin\/VehicleBrands/, 'Mock vehicle brands page is not routed');
+assert.match(nav, /label: "Hãng & dòng xe", path: "\/admin\/vehicle-brands"/, 'Admin navigation entry');
 for (const level of ['brands', 'models', 'trims']) assert.match(admin, new RegExp(`${level}: \\{ tab:`), `Admin tab for ${level}`);
 assert.match(admin, /<Pagination/, 'Pagination');
 assert.match(admin, /<SearchInput/, 'Search');

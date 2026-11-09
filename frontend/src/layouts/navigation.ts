@@ -3,7 +3,8 @@ export type ShellNavItem = {
   label: string;
   path: string;
   icon: "home" | "calendar" | "car" | "clipboard" | "users" | "wrench" |
-    "settings" | "box" | "chart" | "shield" | "receipt" | "clock";
+    "settings" | "box" | "chart" | "shield" | "receipt" | "clock" |
+    "dashboard" | "layers" | "star" | "id-card" | "history" | "store" | "invoice" | "tag";
   description?: string;
   /** Nhóm nghiệp vụ trên sidebar (Advisor/Admin). */
   group?: string;
@@ -34,20 +35,23 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Đặt lịch hộ", path: "/advisor/create-booking", icon: "calendar", group: "Khách hàng", soon: true },
   ],
   admin: [
-    { label: "Tổng quan", path: "/admin", icon: "chart", group: "Điều hành" },
+    { label: "Tổng quan", path: "/admin", icon: "dashboard", group: "Điều hành" },
     { label: "Lịch hẹn", path: "/admin/appointments", icon: "calendar", group: "Điều hành" },
-    { label: "Báo cáo", path: "/admin/reports", icon: "chart", group: "Điều hành", soon: true },
+    { label: "Phiếu sửa chữa", path: "/admin/repair-orders", icon: "clipboard", group: "Điều hành" },
+    { label: "Hoá đơn & thanh toán", path: "/admin/invoices", icon: "invoice", group: "Điều hành" },
+    { label: "Báo cáo", path: "/admin/reports", icon: "chart", group: "Điều hành" },
     { label: "Khách hàng", path: "/admin/customers", icon: "users", group: "Con người" },
+    { label: "Nhân sự", path: "/admin/staff", icon: "id-card", group: "Con người" },
     { label: "Tài khoản", path: "/admin/accounts", icon: "shield", group: "Con người" },
-    { label: "Hoạt động cố vấn", path: "/admin/advisor-activity", icon: "users", group: "Con người" },
-    { label: "Nhân sự", path: "/admin/staff", icon: "users", group: "Con người", soon: true },
-    { label: "Dịch vụ", path: "/admin/services", icon: "settings", group: "Danh mục" },
-    { label: "Gói bảo dưỡng", path: "/admin/maintenance-packages", icon: "clipboard", group: "Danh mục" },
-    { label: "Danh mục xe", path: "/admin/vehicle-catalog", icon: "car", group: "Danh mục" },
-    { label: "Kho phụ tùng", path: "/admin/inventory", icon: "box", group: "Danh mục" },
-    { label: "Danh mục phụ tùng", path: "/admin/parts", icon: "box", group: "Danh mục", soon: true },
-    { label: "Giờ làm việc", path: "/admin/working-hours", icon: "clock", group: "Hệ thống" },
-    { label: "Thông tin gara", path: "/admin/garage", icon: "settings", group: "Hệ thống" },
+    { label: "Đánh giá", path: "/admin/reviews", icon: "star", group: "Con người" },
+    { label: "Dịch vụ", path: "/admin/services", icon: "wrench", group: "Danh mục" },
+    { label: "Gói bảo dưỡng", path: "/admin/maintenance-packages", icon: "layers", group: "Danh mục" },
+    { label: "Phụ tùng & kho", path: "/admin/inventory", icon: "box", group: "Danh mục" },
+    // Trang thật (API /api/admin/vehicle-brands…), thay cho bản demo dữ liệu giả.
+    { label: "Hãng & dòng xe", path: "/admin/vehicle-brands", icon: "car", group: "Danh mục" },
+    { label: "Giờ làm việc & ngày nghỉ", path: "/admin/working-hours", icon: "clock", group: "Hệ thống" },
+    { label: "Thông tin gara", path: "/admin/garage", icon: "store", group: "Hệ thống" },
+    { label: "Nhật ký hệ thống", path: "/admin/audit-logs", icon: "history", group: "Hệ thống" },
   ],
 };
 

@@ -4,7 +4,9 @@ import type { ShellNavItem } from "../../layouts/navigation";
 export type IconName = ShellNavItem["icon"] | "sun" | "moon" | "menu" | "close" | "logout" | "arrow" | "plus"
   | "search" | "chevron-left" | "chevron-right" | "chevron-down" | "edit" | "trash" | "more" | "check"
   | "alert" | "info" | "eye" | "filter" | "user" | "refresh" | "sidebar" | "card" | "star" | "file"
-  | "arrow-right" | "arrow-left" | "x" | "send" | "cash" | "printer" | "download" | "lock" | "key" | "grid";
+  | "arrow-right" | "arrow-left" | "x" | "send" | "cash" | "printer" | "download" | "lock" | "key" | "grid"
+  | "phone" | "mail" | "pin" | "trend-up" | "trend-down" | "coins" | "x-circle" | "upload" | "drag" | "list"
+  | "bank" | "qr" | "reply" | "eye-off";
 type Props = { name: IconName; size?: number; className?: string };
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-6h6v6"/></>,
@@ -53,6 +55,27 @@ const paths: Record<IconName, ReactNode> = {
   download: <><path d="M12 4v11m-5-5 5 5 5-5"/><path d="M4 19h16"/></>,
   lock: <><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></>,
   key: <><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9m-3 3 3 3m-6 0 2 2"/></>,
+  dashboard: <><rect x="3" y="3" width="8" height="9" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/></>,
+  layers: <><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></>,
+  "id-card": <><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.5a3.4 3.4 0 0 1 6.4 0M14.5 10h4M14.5 13.5h3"/></>,
+  history: <><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4h4M12 8v4.5l3 1.8"/></>,
+  store: <><path d="M4 10v10h16V10"/><path d="M3 10 5 4h14l2 6c0 1.4-1.2 2.5-2.7 2.5S15.7 11.4 15.6 10c0 1.4-1.2 2.5-2.7 2.5h-1.8C9.6 12.5 8.4 11.4 8.4 10 8.3 11.4 7.2 12.5 5.7 12.5S3 11.4 3 10Z"/><path d="M10 20v-4h4v4"/></>,
+  invoice: <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></>,
+  tag: <><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></>,
+  phone: <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>,
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></>,
+  pin: <><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></>,
+  "trend-up": <path d="M4 17 10 11l4 4 6-7M15 8h5v5"/>,
+  "trend-down": <path d="M4 7l6 6 4-4 6 7M15 16h5v-5"/>,
+  coins: <><ellipse cx="9" cy="7" rx="6" ry="2.5"/><path d="M3 7v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V7"/><path d="M9 13.5v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4c0-1.4-2.7-2.5-6-2.5"/></>,
+  "x-circle": <><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></>,
+  upload: <><path d="M12 16V5m-5 5 5-5 5 5"/><path d="M4 19h16"/></>,
+  drag: <><circle cx="9" cy="6" r="1.1"/><circle cx="15" cy="6" r="1.1"/><circle cx="9" cy="12" r="1.1"/><circle cx="15" cy="12" r="1.1"/><circle cx="9" cy="18" r="1.1"/><circle cx="15" cy="18" r="1.1"/></>,
+  list: <path d="M9 6h11M9 12h11M9 18h11M4.5 6v.01M4.5 12v.01M4.5 18v.01"/>,
+  bank: <><path d="m3 9 9-5 9 5M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/></>,
+  qr: <><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></>,
+  reply: <path d="M10 8 4 13l6 5M4 13h10a6 6 0 0 1 6 6"/>,
+  "eye-off": <><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3 3.6M6.3 7.6C3.9 9.3 2.5 12 2.5 12S6 18 12 18c1.6 0 3-.4 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></>,
   grid: <><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></>,
 };
 export function Icon({ name, size = 18, className }: Props) {

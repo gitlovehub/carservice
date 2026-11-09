@@ -194,12 +194,36 @@ html[data-theme="dark"] [data-area="advisor"] {
   --cs-sidebar-bg: var(--cs-surface);
   --cs-sidebar-fg: var(--cs-text);
   --cs-sidebar-muted: var(--cs-text-2);
+  --cs-sidebar-label: var(--cs-muted);
   --cs-sidebar-hover: var(--cs-hover);
   --cs-sidebar-border: var(--cs-border);
   --cs-sidebar-accent: var(--cs-accent-text);
   --cs-sidebar-active-bg: #cf2935;
   --cs-sidebar-active-fg: #ffffff;
+
+  /* Bảng màu biểu đồ (pages/admin/kit/Charts.tsx). */
+  --cs-chart-1: #cf2935;
+  --cs-chart-2: #f4a3a9;
+  --cs-chart-3: #3b82f6;
+  --cs-chart-4: #f5c542;
+  --cs-chart-5: #8b7cf6;
+  --cs-chart-6: #4cb782;
+  --cs-chart-grid: var(--cs-border);
+  /* Nền nhạt của thẻ số liệu theo tông; tím cho chip "Kỹ thuật viên". */
+  --cs-tint-brand: #fff4f4;
+  --cs-tint-info: #f2f6ff;
+  --cs-tint-success: #f1faf4;
+  --cs-tint-warning: #fff8ec;
+  --cs-tint-violet: #f5f3ff;
+  --cs-violet: #6d4fd6; --cs-violet-soft: #efebff; --cs-violet-fg: #5b3fc4;
 }
 html[data-theme="dark"] [data-area="admin"] {
   --cs-accent-text: #ff7d85;
+  --cs-chart-2: #7a3a40;
+  --cs-tint-brand: #221a1c;
+  --cs-tint-info: #19202b;
+  --cs-tint-success: #18221c;
+  --cs-tint-warning: #241f17;
+  --cs-tint-violet: #1f1c2b;
+  --cs-violet: #a596ff; --cs-violet-soft: #2a2540; --cs-violet-fg: #c9bfff;
 }

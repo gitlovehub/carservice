@@ -11,7 +11,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 
 /** Admin: mỗi cố vấn đã tạo / xác nhận / tiếp nhận / đổi / hủy bao nhiêu lịch và lập bao nhiêu phiếu. */
-export default function AdvisorActivity() {
+export default function AdvisorActivity({ embedded = false }: { embedded?: boolean } = {}) {
   const [from, setFrom] = useState(daysAgo(30));
   const [to, setTo] = useState(today());
   const [rows, setRows] = useState<Row[]>([]);
@@ -28,8 +28,9 @@ export default function AdvisorActivity() {
   }, [from, to]);
 
   const cell = "px-4 py-3 text-right tabular-nums";
-  return <main className="page-container">
-    <PageHeader title="Hoạt động cố vấn" description="Ai tiếp nhận, xác nhận, đổi hay hủy lịch cho khách, và lập bao nhiêu phiếu sửa chữa."/>
+  const Wrapper = embedded ? "div" : "main";
+  return <Wrapper className={embedded ? "" : "page-container"}>
+    {!embedded && <PageHeader title="Hoạt động cố vấn" description="Ai tiếp nhận, xác nhận, đổi hay hủy lịch cho khách, và lập bao nhiêu phiếu sửa chữa."/>}
     <div className="mb-4 flex flex-wrap items-end gap-3 text-sm">
       <label className="text-xs font-semibold text-cs-muted">Từ ngày<input className="mt-1 block rounded-xl border border-cs-border bg-cs-surface px-3 py-2" type="date" value={from} max={to} onChange={e => { setLoading(true); setFrom(e.target.value); }}/></label>
       <label className="text-xs font-semibold text-cs-muted">Đến ngày<input className="mt-1 block rounded-xl border border-cs-border bg-cs-surface px-3 py-2" type="date" value={to} min={from} onChange={e => { setLoading(true); setTo(e.target.value); }}/></label>
@@ -53,5 +54,5 @@ export default function AdvisorActivity() {
         </tbody>
       </table>
     </div>
-  </main>;
+  </Wrapper>;
 }

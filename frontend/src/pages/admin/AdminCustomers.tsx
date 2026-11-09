@@ -1,318 +1,130 @@
-import { Button, IconButton, PageHeader } from "../../components/ui";
+import { useMemo, useState } from "react";
+import { Button, DataTable, Dropdown, Field, Input, Modal, Pagination, SearchInput, type Column } from "../../components/ui";
+import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { demoCustomers, type DemoCustomer } from "../../mocks/admin/people";
+import { AdminPage, FilterSelect, InfoList, PaneSection, Person, Pill, SplitView, Stars, Toolbar } from "./kit/AdminKit";
+import { vnd } from "./kit/format";
+import { usePaged } from "./kit/usePaged";
 
-import { useState } from "react";
+type CarFilter = "all" | "has" | "none";
+type Sort = "recent" | "spent" | "name";
+const carColor = { white: "text-cs-muted", red: "text-cs-accent", grey: "text-cs-text-2", black: "text-cs-text" } as const;
 
-type Customer = {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
-  cars: number;
-  status: "Hoạt động" | "Tạm khóa";
-};
+/** Khách hàng — DEMO: dữ liệu từ src/mocks/admin/people.ts. */
+export default function AdminCustomers() {
+  const { notify, confirm } = useAppFeedback();
+  const [locked, setLocked] = useState<number[]>([]);
+  const [customers, setCustomers] = useState(demoCustomers);
+  const [query, setQuery] = useState("");
+  const [cars, setCars] = useState<CarFilter>("all");
+  const [sort, setSort] = useState<Sort>("recent");
+  const [selectedId, setSelectedId] = useState<number | null>(demoCustomers[0].id);
+  const [formOpen, setFormOpen] = useState(false);
+  const [draft, setDraft] = useState({ name: "", phone: "", email: "", address: "" });
 
-const initialCustomers: Customer[] = [
-  {
-    id: "KH001",
-    name: "Nguyễn Văn An",
-    phone: "0901234567",
-    email: "nguyenan@gmail.com",
-    cars: 2,
-    status: "Hoạt động",
-  },
-  {
-    id: "KH002",
-    name: "Trần Thị Bình",
-    phone: "0912345678",
-    email: "tranbinh@gmail.com",
-    cars: 1,
-    status: "Hoạt động",
-  },
-  {
-    id: "KH003",
-    name: "Lê Minh Cường",
-    phone: "0987654321",
-    email: "lecuong@gmail.com",
-    cars: 3,
-    status: "Tạm khóa",
-  },
-  {
-    id: "KH004",
-    name: "Phạm Thu Hà",
-    phone: "0934567890",
-    email: "phamha@gmail.com",
-    cars: 1,
-    status: "Hoạt động",
-  },
-];
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = customers.filter(c => (!q || [c.name, c.phone, c.email].some(v => v.toLowerCase().includes(q)))
+      && (cars === "all" || (cars === "has" ? c.vehicles.length > 0 : c.vehicles.length === 0)));
+    const key = (d: string) => d.split("/").reverse().join("");
+    return [...list].sort((a, b) => sort === "spent" ? b.totalSpent - a.totalSpent : sort === "name" ? a.name.localeCompare(b.name, "vi") : key(b.lastVisit).localeCompare(key(a.lastVisit)));
+  }, [customers, query, cars, sort]);
+  const { pageRows, pagination } = usePaged(rows, 10);
+  const selected = customers.find(c => c.id === selectedId) ?? null;
 
-function AdminCustomers() {
-  const { confirm } = useAppFeedback();
-  const [customers, setCustomers] = useState(initialCustomers);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("Tất cả");
-  const [message, setMessage] = useState("");
+  const columns: Column<DemoCustomer>[] = [
+    { key: "name", header: "Khách hàng", primary: true, render: c => <span className="flex items-center gap-2"><Person name={c.name} sub={c.email}/>{c.vip && <Icon name="star" size={14} className="shrink-0 text-warning"/>}{locked.includes(c.id) && <Icon name="lock" size={14} className="shrink-0 text-danger"/>}</span> },
+    { key: "phone", header: "SĐT", render: c => <span className="whitespace-nowrap tabular-nums">{c.phone}</span> },
+    { key: "city", header: "Địa chỉ", hideOnMobile: true, render: c => <span className="whitespace-nowrap">{c.city}</span> },
+    { key: "cars", header: "Số xe", render: c => <span className="whitespace-nowrap">{c.vehicles.length} xe</span> },
+    { key: "last", header: "Lần sửa gần nhất", hideOnMobile: true, render: c => <span className="tabular-nums">{c.lastVisit}</span> },
+    { key: "spent", header: "Tổng chi tiêu", align: "right", render: c => <b className="whitespace-nowrap tabular-nums">{vnd(c.totalSpent)}</b> },
+  ];
 
-  const activeCustomers = customers.filter(
-    (customer) => customer.status === "Hoạt động",
-  ).length;
-
-  const lockedCustomers = customers.filter(
-    (customer) => customer.status === "Tạm khóa",
-  ).length;
-
-  const totalCars = customers.reduce(
-    (total, customer) => total + customer.cars,
-    0,
-  );
-
-  const filteredCustomers = customers.filter((customer) => {
-    const keyword = search.trim().toLowerCase();
-
-    const matchesSearch =
-      customer.id.toLowerCase().includes(keyword) ||
-      customer.name.toLowerCase().includes(keyword) ||
-      customer.phone.includes(keyword) ||
-      customer.email.toLowerCase().includes(keyword);
-
-    const matchesStatus =
-      statusFilter === "Tất cả" || customer.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const handleToggleStatus = async (customer: Customer) => {
-    const nextStatus =
-      customer.status === "Hoạt động" ? "Tạm khóa" : "Hoạt động";
-
-    const confirmed = await confirm({ title: nextStatus === "Tạm khóa" ? "Khóa khách hàng" : "Mở khóa khách hàng", description: `Xác nhận đổi trạng thái tài khoản khách hàng ${customer.name} sang “${nextStatus}”?`, variant: nextStatus === "Tạm khóa" ? "danger" : "info", confirmText: "Xác nhận thay đổi" });
-
-    if (!confirmed) return;
-
-    setCustomers((current) =>
-      current.map((item) =>
-        item.id === customer.id
-          ? { ...item, status: nextStatus }
-          : item,
-      ),
-    );
-
-    setMessage(
-      `${customer.name} đã được ${
-        nextStatus === "Tạm khóa" ? "tạm khóa" : "mở khóa"
-      }.`,
-    );
+  const toggleLock = async (customer: DemoCustomer) => {
+    const isLocked = locked.includes(customer.id);
+    if (!isLocked && !await confirm({ title: `Khóa khách hàng ${customer.name}?`, description: "Khách sẽ không đăng nhập và đặt lịch online được. Lịch sử sửa chữa vẫn được giữ nguyên.", confirmText: "Khóa khách hàng", variant: "danger", confirmIcon: "lock", phone: customer.phone })) return;
+    setLocked(list => isLocked ? list.filter(id => id !== customer.id) : [...list, customer.id]);
+    notify(isLocked ? "Đã mở khóa khách hàng (demo)." : "Đã khóa khách hàng (demo).", "success");
   };
 
-  const handleResetFilter = () => {
-    setSearch("");
-    setStatusFilter("Tất cả");
-    setMessage("");
+  const save = () => {
+    if (!draft.name.trim() || !draft.phone.trim()) return;
+    const id = Math.max(...customers.map(c => c.id)) + 1;
+    setCustomers([{ id, ...draft, city: draft.address.split(",").pop()?.trim() || "—", vehicles: [], lastVisit: "—", totalSpent: 0, history: [] }, ...customers]);
+    setSelectedId(id); setFormOpen(false); setDraft({ name: "", phone: "", email: "", address: "" });
+    notify("Đã thêm khách hàng (demo).", "success");
   };
 
-  return (
-    <div className="min-h-screen bg-cs-bg text-[#20252B]">
-
-      <div className="lg:ml-[250px]">
-
-        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-[1200px]">
-            <PageHeader title="Khách hàng" description="Theo dõi thông tin, số lượng xe và trạng thái khách hàng trong hệ thống."/>
-
-            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
-                  Tổng khách hàng
-                </p>
-                <p className="mt-4 text-2xl font-bold">
-                  {customers.length}
-                </p>
-                <p className="mt-2 text-[11px] text-cs-muted">
-                  Khách hàng trong danh sách
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
-                  Đang hoạt động
-                </p>
-                <p className="mt-4 text-2xl font-bold text-[#3F7047]">
-                  {activeCustomers}
-                </p>
-                <p className="mt-2 text-[11px] text-cs-muted">
-                  Khách hàng đang hoạt động
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
-                  Tạm khóa
-                </p>
-                <p className="mt-4 text-2xl font-bold text-[#A24A4A]">
-                  {lockedCustomers}
-                </p>
-                <p className="mt-2 text-[11px] text-cs-muted">
-                  Khách hàng đang bị khóa
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cs-muted">
-                  Tổng số xe
-                </p>
-                <p className="mt-4 text-2xl font-bold">{totalCars}</p>
-                <p className="mt-2 text-[11px] text-cs-muted">
-                  Xe đã đăng ký trong danh sách
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-4 sm:p-6">
-              <div className="mb-5">
-                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                  DANH SÁCH
-                </p>
-
-                <h2 className="mt-1 text-base font-bold">
-                  Khách hàng
-                </h2>
-
-                <p className="mt-1 text-xs text-cs-muted">
-                  Hiển thị {filteredCustomers.length} / {customers.length}{" "}
-                  khách hàng
-                </p>
-              </div>
-
-              <div className="mb-5 flex flex-col gap-3 lg:flex-row">
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setMessage("");
-                  }}
-                  placeholder="Tìm mã KH, tên, số điện thoại, email..."
-                  className="w-full rounded-xl border border-[#E1E4E6] bg-cs-bg px-4 py-3 text-xs outline-none transition focus:border-[#D6A85F] lg:flex-1"
-                />
-
-                <select
-                  value={statusFilter}
-                  onChange={(event) => {
-                    setStatusFilter(event.target.value);
-                    setMessage("");
-                  }}
-                  className="rounded-xl border border-[#E1E4E6] bg-white px-4 py-3 text-xs outline-none transition focus:border-[#D6A85F] lg:w-[190px]"
-                >
-                  <option value="Tất cả">Tất cả trạng thái</option>
-                  <option value="Hoạt động">Hoạt động</option>
-                  <option value="Tạm khóa">Tạm khóa</option>
-                </select>
-
-                <Button variant="outline" icon="filter" onClick={handleResetFilter}>Đặt lại</Button>
-              </div>
-
-              {message && (
-                <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[#DCEBDD] bg-[#EEF7EF] px-4 py-3">
-                  <p className="text-xs text-[#3F7047]">{message}</p>
-                  <IconButton size="sm" icon="close" label="Đóng thông báo" onClick={() => setMessage("")}/>
-                </div>
-              )}
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[850px]">
-                  <thead>
-                    <tr className="border-b border-[#E1E4E6] text-left">
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
-                        Mã KH
-                      </th>
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
-                        Khách hàng
-                      </th>
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
-                        Liên hệ
-                      </th>
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
-                        Số xe
-                      </th>
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
-                        Trạng thái
-                      </th>
-                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-cs-muted">
-                        Thao tác
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {filteredCustomers.map((customer) => (
-                      <tr
-                        key={customer.id}
-                        className="border-b border-[#F0F1EF] last:border-b-0 hover:bg-transparent cs-readable-row"
-                      >
-                        <td className="px-3 py-4 text-xs font-semibold">
-                          {customer.id}
-                        </td>
-
-                        <td className="px-3 py-4">
-                          <p className="text-xs font-semibold">
-                            {customer.name}
-                          </p>
-                        </td>
-
-                        <td className="px-3 py-4">
-                          <p className="text-xs text-cs-muted">
-                            {customer.phone}
-                          </p>
-                          <p className="mt-1 text-[11px] text-cs-muted">
-                            {customer.email}
-                          </p>
-                        </td>
-
-                        <td className="px-3 py-4 text-xs text-cs-muted">
-                          {customer.cars} xe
-                        </td>
-
-                        <td className="px-3 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${
-                              customer.status === "Hoạt động"
-                                ? "bg-[#EEF7EF] text-[#3F7047]"
-                                : "bg-[#FDEEEE] text-[#A24A4A]"
-                            }`}
-                          >
-                            {customer.status}
-                          </span>
-                        </td>
-
-                        <td className="px-3 py-4">
-                          {customer.status === "Hoạt động"
-                            ? <Button size="sm" variant="danger-outline" icon="lock" onClick={() => handleToggleStatus(customer)}>Khóa</Button>
-                            : <Button size="sm" variant="secondary" icon="check" onClick={() => handleToggleStatus(customer)}>Mở khóa</Button>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {filteredCustomers.length === 0 && (
-                  <div className="py-12 text-center">
-                    <p className="text-sm font-semibold text-cs-muted">
-                      Không tìm thấy khách hàng
-                    </p>
-                    <p className="mt-2 text-xs text-cs-muted">
-                      Hãy thử từ khóa khác hoặc thay đổi bộ lọc.
-                    </p>
-                    <Button variant="outline" icon="filter" className="mt-4" onClick={handleResetFilter}>Xóa bộ lọc</Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
+  const pane = selected && <>
+    <div className="mb-4 flex items-center gap-3">
+      <Person name={selected.name} size={52} sub={selected.vip ? "Khách hàng thân thiết" : "Khách hàng"}/>
+      {selected.vip && <span className="ml-auto"><Pill tone="warning" icon="star">VIP</Pill></span>}
     </div>
-  );
-}
+    <PaneSection title="Thông tin liên hệ" icon="user" action={<Button variant="ghost" size="sm" icon="edit">Chỉnh sửa</Button>}>
+      <InfoList items={[{ icon: "phone", value: selected.phone }, { icon: "mail", value: selected.email }, { icon: "pin", value: selected.address }]}/>
+    </PaneSection>
+    <PaneSection title={`Danh sách xe (${selected.vehicles.length})`} icon="car" action={<Button variant="ghost" size="sm" icon="plus">Thêm xe</Button>}>
+      {selected.vehicles.length ? <ul className="flex flex-col gap-2">
+        {selected.vehicles.map(v => <li key={v.id} className="flex items-center gap-3 rounded-control border border-cs-border p-3">
+          <span className={`grid size-11 shrink-0 place-items-center rounded-control bg-cs-surface-2 ${carColor[v.color]}`}><Icon name="car" size={24}/></span>
+          <span className="min-w-0 flex-1 text-small">
+            <b className="block text-cs-text">{v.brand} {v.model}</b>
+            <span className="text-cs-muted">Biển số: <span className="text-cs-text">{v.plate}</span> · Năm {v.year}</span>
+          </span>
+          <Icon name="chevron-right" size={16} className="text-cs-muted"/>
+        </li>)}
+      </ul> : <p className="text-small text-cs-muted">Khách chưa đăng ký xe.</p>}
+    </PaneSection>
+    <PaneSection title="Lịch sử dịch vụ" icon="history">
+      {selected.history.length ? <ol className="relative ml-1.5 border-l-2 border-cs-border pl-5">
+        {selected.history.map((h, i) => <li key={h.date + h.title} className="relative pb-3.5 last:pb-0">
+          <span className={`absolute -left-[27px] top-1 size-3 rounded-full border-2 ${i ? "border-cs-accent bg-cs-surface" : "border-cs-accent bg-cs-accent"}`}/>
+          <div className="flex items-start justify-between gap-3 text-small">
+            <div className="min-w-0"><p className="text-caption text-cs-muted">{h.date}</p><p className="font-semibold text-cs-text">{h.title}</p><p className="text-caption text-cs-muted">{h.vehicle}</p></div>
+            <b className="shrink-0 tabular-nums text-cs-text">{vnd(h.amount)}</b>
+          </div>
+        </li>)}
+      </ol> : <p className="text-small text-cs-muted">Chưa có lần sửa chữa nào.</p>}
+    </PaneSection>
+    {selected.lastReview && <PaneSection title="Đánh giá gần nhất" icon="star" action={<span className="text-caption text-cs-muted">{selected.lastReview.date}</span>}>
+      <div className="rounded-control bg-cs-surface-2 p-3.5">
+        <p className="mb-1.5 flex items-center gap-2"><Stars value={selected.lastReview.rating}/><b className="text-small">{selected.lastReview.rating.toFixed(1)}</b></p>
+        <p className="text-small italic text-cs-text-2">“{selected.lastReview.comment}”</p>
+      </div>
+    </PaneSection>}
+  </>;
 
-export default AdminCustomers;
+  return <AdminPage title="Khách hàng" description="Hồ sơ khách và xe đã đăng ký"
+    actions={<Button variant="primary" icon="plus" onClick={() => setFormOpen(true)}>Thêm khách hàng</Button>}>
+    <SplitView paneOpen={!!selected} onClose={() => setSelectedId(null)} paneTitle="Hồ sơ khách hàng" pane={pane}
+      list={<>
+        <Toolbar>
+          <SearchInput value={query} onChange={setQuery} placeholder="Tìm theo tên, số điện thoại, email…"/>
+          <FilterSelect label="Xe" value={cars} onChange={setCars} options={[{ value: "all", label: "Tất cả" }, { value: "has", label: "Có xe" }, { value: "none", label: "Chưa có xe" }]}/>
+          <FilterSelect label="Sắp xếp" value={sort} onChange={setSort} options={[{ value: "recent", label: "Mới nhất" }, { value: "spent", label: "Chi tiêu cao" }, { value: "name", label: "Tên A–Z" }]}/>
+        </Toolbar>
+        <DataTable caption="Danh sách khách hàng" columns={columns} rows={pageRows} rowKey={c => c.id}
+          onRowClick={c => setSelectedId(c.id)} rowClassName={c => c.id === selectedId ? "bg-cs-soft/60" : ""}
+          actions={c => <Dropdown label={`Thao tác cho ${c.name}`} items={[
+            { label: "Xem hồ sơ", icon: "eye", onSelect: () => setSelectedId(c.id) },
+            { type: "separator" },
+            locked.includes(c.id)
+              ? { label: "Mở khóa khách hàng", icon: "key", onSelect: () => { void toggleLock(c); } }
+              : { label: "Khóa khách hàng", icon: "lock", danger: true, onSelect: () => { void toggleLock(c); } },
+          ]}/>}
+          footer={<Pagination {...pagination}/>}/>
+      </>}/>
+
+    <Modal open={formOpen} onClose={() => setFormOpen(false)} title="Thêm khách hàng" description="Khách sẽ nhận email kích hoạt tài khoản (khi có API)."
+      footer={<><Button onClick={() => setFormOpen(false)}>Huỷ</Button><Button variant="primary" onClick={save} disabled={!draft.name.trim() || !draft.phone.trim()}>Lưu</Button></>}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Họ tên" required className="sm:col-span-2"><Input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}/></Field>
+        <Field label="Số điện thoại" required><Input inputMode="tel" value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })}/></Field>
+        <Field label="Email" optional><Input type="email" value={draft.email} onChange={e => setDraft({ ...draft, email: e.target.value })}/></Field>
+        <Field label="Địa chỉ" optional className="sm:col-span-2"><Input value={draft.address} onChange={e => setDraft({ ...draft, address: e.target.value })} placeholder="Quận/Huyện, Tỉnh/Thành"/></Field>
+      </div>
+    </Modal>
+  </AdminPage>;
+}

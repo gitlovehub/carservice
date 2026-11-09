@@ -346,10 +346,10 @@ function MaintenancePackages() {
       .then((response: PackageIndexResponse) => {
         if (!active) return;
 
-        setPackages(response.data.data);
-        setPage(response.data.current_page);
-        setLastPage(Math.max(1, response.data.last_page));
-        setTotal(response.data.total);
+        setPackages(response.data?.data ?? []);
+        setPage(response.data?.current_page ?? 1);
+        setLastPage(Math.max(1, response.data?.last_page ?? 1));
+        setTotal(response.data?.total ?? 0);
       })
       .catch((requestError: unknown) => {
         if (!active) return;

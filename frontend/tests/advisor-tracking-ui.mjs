@@ -12,5 +12,7 @@ assert.match(history, /\/advisor\/appointments\/\$\{appointment\.id\}\/reschedul
 assert.match(history, /minLength=\{5\}/, 'Reschedule reason is required');
 assert.match(reception, /<AppointmentHistoryPanel /, 'Reception shows history + reschedule');
 assert.match(admin, /\/admin\/advisor-activity/, 'Admin activity page reads the API');
-assert.match(nav, /\/admin\/advisor-activity/, 'Admin menu links the activity page');
+// Trang hoạt động cố vấn nằm trong Nhật ký hệ thống (tab "Hoạt động cố vấn"), menu trỏ tới /admin/audit-logs.
+assert.match(nav, /\/admin\/audit-logs/, 'Admin menu links the audit log page');
+assert.match(read('src/pages/admin/AuditLogs.tsx'), /<AdvisorActivity embedded\/>/, 'Audit log page embeds the activity tab');
 console.log('PASS advisor tracking UI.');

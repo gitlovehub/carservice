@@ -30,6 +30,8 @@ type Props<T> = {
   /** Lối tắt bằng chuột; vẫn phải có nút "Xem chi tiết" trong actions để dùng được bằng bàn phím. */
   onRowClick?: (row: T) => void;
   footer?: ReactNode;
+  /** Class thêm cho từng dòng (ví dụ làm nổi dòng đang chọn). */
+  rowClassName?: (row: T) => string;
 };
 
 const alignClass = { left: "text-left", right: "text-right", center: "text-center" } as const;
@@ -38,7 +40,7 @@ const alignClass = { left: "text-left", right: "text-right", center: "text-cente
  * Bảng dữ liệu chuẩn. ≥ md: bảng có thể cuộn ngang; < md: danh sách thẻ.
  * Xử lý sẵn Loading / Error / Empty — trang chỉ truyền trạng thái, không tự vẽ lại.
  */
-export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, onRetry, empty, actions, onRowClick, footer }: Props<T>) {
+export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, onRetry, empty, actions, onRowClick, footer, rowClassName }: Props<T>) {
   const frame = "overflow-hidden rounded-card border border-cs-border bg-cs-surface shadow-card";
   if (loading && !rows.length) return <div className={frame}><LoadingState/></div>;
   if (error) return <div className={frame}><ErrorState description={error} onRetry={onRetry}/></div>;
@@ -55,7 +57,7 @@ export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, o
     {/* Desktop / tablet */}
     <div className={`${frame} max-md:hidden`}>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-small">
+        <table data-ui="table" className="w-full border-collapse text-small">
           <caption className="sr-only">{caption}</caption>
           <thead className="bg-cs-surface-2">
             <tr>
@@ -67,7 +69,7 @@ export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, o
           <tbody>
             {rows.map(row => {
               const { className, ...handlers } = rowProps(row);
-              return <tr key={rowKey(row)} {...handlers} className={`border-b border-cs-border transition-colors last:border-b-0 ${className}`}>
+              return <tr key={rowKey(row)} {...handlers} className={`border-b border-cs-border transition-colors last:border-b-0 ${className} ${rowClassName?.(row) ?? ""}`}>
                 {columns.map(col => <td key={col.key} className={`px-4 py-3 align-middle text-cs-text ${alignClass[col.align ?? "left"]}`}>{col.render(row)}</td>)}
                 {actions && <td className="px-4 py-2 text-right" onClick={event => event.stopPropagation()}><div className="inline-flex items-center justify-end gap-1">{actions(row)}</div></td>}
               </tr>;

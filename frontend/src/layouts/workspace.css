@@ -177,16 +177,18 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
   .cs-work-main { background: white !important; }
 }
 
-/* ---------- Khu Admin: đỏ thương hiệu, theo theme sáng/tối (docs/ui-button-redesign.md §1) ---------- */
-/* Sidebar sáng/tối theo theme: nền surface, viền phải, chữ text-2; mục đang chọn nền đỏ đặc chữ trắng. */
-[data-area="admin"] .cs-work-sidebar { border-right: 1px solid var(--cs-border); }
-[data-area="admin"] .cs-ws-group-label { color: var(--cs-muted); }
-[data-area="admin"] .cs-ws-link { border-radius: 10px; }
+/* ---------- Khu Admin: sidebar theo theme, mục đang chọn nền đỏ đặc ---------- */
+[data-area="admin"] .cs-work-sidebar { border-right: 1px solid var(--cs-sidebar-border); }
+[data-area="admin"] .cs-ws-group-label { color: var(--cs-sidebar-label); }
+[data-area="admin"] .cs-ws-link { color: var(--cs-sidebar-muted); font-size: 14px; border-radius: 10px; }
+[data-area="admin"] .cs-ws-link:hover { color: var(--cs-sidebar-fg); }
 [data-area="admin"] .cs-ws-link.is-active,
-[data-area="admin"] .cs-ws-link.is-active:hover {
-  background: var(--cs-sidebar-active-bg); color: var(--cs-sidebar-active-fg);
-}
+[data-area="admin"] .cs-ws-link.is-active:hover { background: var(--cs-sidebar-active-bg); color: var(--cs-sidebar-active-fg); box-shadow: 0 6px 16px -10px var(--cs-sidebar-active-bg); }
 [data-area="admin"] .cs-ws-link.is-active::before { display: none; }
+[data-area="admin"] .cs-ws-link:focus-visible { outline-color: var(--cs-focus); }
+/* Bảng dữ liệu Admin: tiêu đề cột không viết hoa, đệm ngang gọn để vừa khi mở ngăn chi tiết. */
+[data-area="admin"] [data-ui="table"] :is(th, td) { padding-inline: 12px; }
+[data-area="admin"] [data-ui="table"] th { text-transform: none; font-weight: 600; color: var(--cs-text-2); font-size: 13.5px; }
 
 /* Dashboard Admin: thẻ lối tắt (thẻ trung tính, icon đỏ trên nền soft) + hàng "Tiện ích" (nút tròn 60px). */
 .cs-admin-tile {

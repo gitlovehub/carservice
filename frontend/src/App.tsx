@@ -46,7 +46,11 @@ import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminServices from "./pages/admin/Services";
 import AdminWorkingHours from "./pages/admin/WorkingHours";
-import AdminAdvisorActivity from "./pages/admin/AdvisorActivity";
+import AdminStaff from "./pages/admin/Staff";
+import AdminRepairOrders from "./pages/admin/RepairOrders";
+import AdminInvoices from "./pages/admin/Invoices";
+import AdminReviews from "./pages/admin/Reviews";
+import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminGarageSettings from "./pages/admin/GarageSettings";
 import AdminMaintenancePackages from "./pages/admin/MaintenancePackages";
 import AdminInventory from "./pages/admin/Inventory";
@@ -112,18 +116,24 @@ function App() {
     <Route path="/admin" element={<ProtectedRoute allowedRoles={["ADMIN"]}><AdminLayout/></ProtectedRoute>}>
       <Route index element={<AdminDashboard/>}/>
       <Route path="accounts" element={<AdminAccounts/>}/>
-      <Route path="advisor-activity" element={<AdminAdvisorActivity/>}/>
+      <Route path="advisor-activity" element={<Navigate to="/admin/audit-logs?tab=advisors" replace/>}/>
       <Route path="customers" element={<AdminCustomers/>}/>
       <Route path="appointments" element={<AdminAppointments/>}/>
       <Route path="services" element={<AdminServices/>}/>
       <Route path="maintenance-packages" element={<AdminMaintenancePackages/>}/>
-      <Route path="vehicle-catalog" element={<AdminVehicleCatalog/>}/>
+      <Route path="vehicle-catalog" element={<Navigate to="/admin/vehicle-brands" replace/>}/>
       <Route path="working-hours" element={<AdminWorkingHours/>}/>
       <Route path="garage" element={<AdminGarageSettings/>}/>
       <Route path="inventory" element={<AdminInventory/>}/>
-      <Route path="parts" element={<ModulePlaceholder area="Quản trị" title="Danh mục phụ tùng" description="Quản lý mã, tên, đơn vị và giá bán của phụ tùng." owner="Nhóm module phụ tùng"/>}/>
+      <Route path="parts" element={<Navigate to="/admin/inventory" replace/>}/>
       <Route path="reports" element={<AdminReports/>}/>
-      <Route path="staff" element={<ModulePlaceholder area="Quản trị" title="Nhân sự" description="Quản lý hồ sơ cố vấn dịch vụ và kỹ thuật viên." owner="Frontend module Admin"/>}/>
+      <Route path="staff" element={<AdminStaff/>}/>
+      <Route path="repair-orders" element={<AdminRepairOrders/>}/>
+      <Route path="invoices" element={<AdminInvoices/>}/>
+      <Route path="reviews" element={<AdminReviews/>}/>
+      {/* Hãng & dòng xe: trang thật dùng API /api/admin/vehicle-{brands,models,trims} (không dùng mock). */}
+      <Route path="vehicle-brands" element={<AdminVehicleCatalog/>}/>
+      <Route path="audit-logs" element={<AdminAuditLogs/>}/>
     </Route>
 
   </Routes><ChatWidget/></FeedbackProvider></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;

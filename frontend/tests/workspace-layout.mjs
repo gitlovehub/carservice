@@ -33,7 +33,10 @@ for (const group of ['Điều hành', 'Sửa chữa', 'Khách hàng', 'Con ngư�
 assert.match(nav, /\{ label: "Tổng quan", path: "\/advisor"/);
 assert.match(nav, /\{ label: "Tổng quan", path: "\/admin"/);
 assert.doesNotMatch(nav, /Bàn điều hành|Trung tâm điều hành/);
-for (const path of ['/advisor/create-booking', '/admin/staff', '/admin/parts']) assert.match(nav, new RegExp(`path: "${path}"[^}]*soon: true`));
+assert.match(nav, /path: "\/advisor\/create-booking"[^}]*soon: true/);
+// Admin: sidebar mới — mọi mục đều có trang (dữ liệu demo hoặc API), không còn mục "Sắp có".
+for (const path of ['/admin/staff', '/admin/repair-orders', '/admin/invoices', '/admin/reviews', '/admin/vehicle-brands', '/admin/audit-logs']) assert.match(nav, new RegExp(`path: "${path}"`));
+assert.doesNotMatch(nav.slice(nav.indexOf('admin: [')), /soon: true/);
 
 // Không còn chữ trang trí tiếng Anh trong shell.
 assert.doesNotMatch(shell + css, /SERVICE WORKSPACE|BUSINESS CONTROL|WORKSPACE"/);

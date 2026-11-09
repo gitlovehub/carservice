@@ -1,6 +1,7 @@
 import { Button, PageHeader } from "../../components/ui";
 import { useEffect, useState } from "react";
 import { fetchApi } from "../../services/api";
+import { HolidaysPanel } from "./HolidaysPanel";
 
 type WorkingHour = {
   id: number;
@@ -238,7 +239,7 @@ function WorkingHours() {
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1200px]">
-            <PageHeader title="Giờ làm việc" description="Thiết lập giờ tiếp nhận và số lịch tối đa mỗi khung giờ cho từng ngày trong tuần."
+            <PageHeader title="Giờ làm việc & ngày nghỉ" description="Khung giờ nhận lịch, số lịch tối đa mỗi khung giờ và ngày nghỉ của xưởng."
               actions={<Button variant="outline" icon="refresh" loading={isLoading} onClick={() => setReloadKey((current) => current + 1)}>Làm mới</Button>}/>
 
             <div className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -431,6 +432,11 @@ function WorkingHours() {
               Khách hàng chỉ có thể đặt lịch trong các ngày hoạt động, trong khoảng giờ đã
               cấu hình và không vượt quá số lịch tối đa của mỗi khung giờ.
             </p>
+
+            {(() => {
+              const firstActive = hours.find(hour => Boolean(hour.is_active));
+              return <HolidaysPanel open={firstActive ? firstActive.open_time.slice(0, 5) : undefined} close={firstActive ? firstActive.close_time.slice(0, 5) : undefined}/>;
+            })()}
           </div>
         </main>
       </div>

@@ -3,7 +3,20 @@
 > Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
 > Cập nhật: 09/11/2026 — triển khai đặc tả nút `docs/ui-button-redesign.md` (sau P7).
 
-## Mới nhất: Danh mục xe 3 cấp từ CSV (09/11/2026, nhánh v3)
+## Mới nhất: giao diện Admin mới — bản demo theo mockup (09/11/2026, gộp vào v3 dạng 1 commit, không kéo lịch sử fix/apt cũ)
+
+- **Sidebar mới** (`layouts/navigation.ts`): ĐIỀU HÀNH Tổng quan · Lịch hẹn · Phiếu sửa chữa · Hoá đơn & thanh toán · Báo cáo /
+  CON NGƯỜI Khách hàng · Nhân sự · Tài khoản · Đánh giá / DANH MỤC Dịch vụ · Gói bảo dưỡng · Phụ tùng & kho · Hãng & dòng xe /
+  HỆ THỐNG Giờ làm việc & ngày nghỉ · Thông tin gara · Nhật ký hệ thống. `/admin/parts` → `/admin/inventory`;
+  `/admin/advisor-activity` → tab "Hoạt động cố vấn" trong `/admin/audit-logs`.
+- **Bộ khung** `pages/admin/kit/` (AdminKit, Charts SVG, format, usePaged). `DataTable` thêm `rowClassName`, `data-ui="table"`.
+- **Dữ liệu demo** `src/mocks/admin/{people,operations,catalog}.ts` — kiểu bám bảng DB; trang demo có nhãn "Dữ liệu demo".
+- **Trang demo (chưa API)**: Tổng quan, Báo cáo, Khách hàng, Nhân sự, Tài khoản, Phiếu sửa chữa, Hoá đơn, Đánh giá,
+  Phụ tùng & kho, Nhật ký thao tác, Ngày nghỉ lễ (`HolidaysPanel`).
+- **Giữ API thật**: Lịch hẹn, Dịch vụ, Gói bảo dưỡng, Giờ làm việc, Thông tin gara, Hoạt động cố vấn, **Hãng & dòng xe** (`/admin/vehicle-brands` → trang `VehicleCatalog` của v3, API `/api/admin/vehicle-{brands,models,trims}`; bản demo `VehicleBrands.tsx` không dùng; `/admin/vehicle-catalog` chuyển hướng về đây).
+- **Tiếp theo**: viết API admin cho các trang demo, thay import `mocks/admin` bằng service.
+
+## Trước đó: Danh mục xe 3 cấp từ CSV (09/11/2026, nhánh v3)
 
 Commit: `00a4279` schema · `60a0cc1` seeder CSV · `2f2c1f3` API công khai + admin · `ff8c932` lưu model/trim vào hồ sơ xe + đặt lịch · `3134ed2` trang Admin + bộ chọn · `714d3ad` sửa 2 lỗi UI phát hiện khi kiểm trình duyệt · `5c8c52e` tích hợp Xe của tôi + Đặt lịch.
 
@@ -11,7 +24,7 @@ Commit: `00a4279` schema · `60a0cc1` seeder CSV · `2f2c1f3` API công khai + a
 - **Seeder** `VietnamVehicleCsvSeeder` đọc `backend/database/data/vietnam_vehicles.csv` (471 dòng, 0 trùng, 0 lỗi): chỉ THÊM, không sửa/xóa → giữ dữ liệu/trạng thái admin; so khớp không phân biệt hoa/thường; dùng lại hãng/dòng có sẵn. Đã gọi trong `DatabaseSeeder`.
 - **API**: công khai `GET /api/vehicle-catalog/brands`, `/brands/{id}/models`, `/models/{id}/trims`, `/search?q=` (chỉ ACTIVE, throttle 120/phút). Admin `/api/admin/vehicle-{brands,models,trims}` (role ADMIN): danh sách có đếm, lọc, phân trang; tạo/sửa/ẩn; **xóa bị chặn (422)** khi còn cấp con hoặc đang dùng ở hồ sơ xe (kể cả xe xóa mềm → lịch hẹn), gói bảo dưỡng, phụ tùng tương thích. Không cho đổi cấp cha.
 - **Hồ sơ xe + đặt lịch**: nhận `model_id` + `trim_id` (`App\Support\VehicleCatalogSelection`): phiên bản phải thuộc dòng xe; khách chỉ chọn mới bản ghi ACTIVE, giữ được lựa chọn cũ đã bị ẩn; nhân viên được chọn dòng đã ẩn (xe đời cũ). Đường gửi tên cũ (`brand`/`model`, `model_name`) vẫn chạy.
-- **Frontend**: `components/vehicle/SearchableSelect` (combobox tìm không dấu, bàn phím, loading/empty/lỗi + thử lại) + `VehicleSelector` (đổi hãng reset dòng+phiên bản, đổi dòng reset phiên bản). Dùng ở "Xe của tôi" (thêm + sửa) và bước 1 "Đặt lịch" (bỏ `BRAND_MODELS` viết cứng, bỏ danh sách 8 dòng Toyota). Trang Admin `/admin/vehicle-catalog` (menu Danh mục → Danh mục xe). Dùng Icon có sẵn, không dùng Font Awesome (dự án đang gỡ dần — UX M7).
+- **Frontend**: `components/vehicle/SearchableSelect` (combobox tìm không dấu, bàn phím, loading/empty/lỗi + thử lại) + `VehicleSelector` (đổi hãng reset dòng+phiên bản, đổi dòng reset phiên bản). Dùng ở "Xe của tôi" (thêm + sửa) và bước 1 "Đặt lịch" (bỏ `BRAND_MODELS` viết cứng, bỏ danh sách 8 dòng Toyota). Trang Admin nay ở `/admin/vehicle-brands` (menu Danh mục → Hãng & dòng xe). Dùng Icon có sẵn, không dùng Font Awesome (dự án đang gỡ dần — UX M7).
 - **Kiểm thử**: backend 246/246; smoke 26/26 (mới `test:vehicle-catalog`; sửa 1 assertion cũ trong `ui-contrast-regression` vốn khóa danh sách Toyota); tsc + build đạt; ESLint file sửa sạch (Cars.tsx còn 1 lỗi cũ `set-state-in-effect`). Trình duyệt (Chrome headless, chỉ đọc, 0 request ghi): 65/65 — Xe của tôi + Đặt lịch sáng/tối, Đặt lịch 390px tối, Admin sáng/tối/390px. Frontend dự án chạy ở **cổng 5174** (5173 là project khác).
 - **Còn lại / chờ PO**: (1) Dòng xe cũ và CSV khác tên nên tồn tại song song, ví dụ "Mazda 2"/"Mazda2", "5 Series"/"Series 5", "Seltos"/"New Seltos" — không tự gộp (cấm suy đoán); admin có thể ẩn bản không dùng. (2) Trang cố vấn "Xe khách hàng" vẫn nhập `model_id` dạng số — chưa gắn bộ chọn. (3) Bộ lọc hãng/dòng trong Admin tải tối đa 100 mục mỗi cấp. (4) Tìm kiếm LIKE trên MySQL không phân biệt dấu (gõ "cho" ra cả "chỗ") — có ích, chấp nhận.
 
