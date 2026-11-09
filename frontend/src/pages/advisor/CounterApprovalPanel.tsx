@@ -51,7 +51,7 @@ export function CounterApprovalPanel({ quotation, onDone }: { quotation: Workflo
       {items.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-sm">
         <span className="text-cs-text">{item.description || `Hạng mục #${item.id}`} <span className="text-cs-muted">· {formatVnd(item.amount)}</span></span>
         <span className="inline-flex gap-1" role="group" aria-label={`Lựa chọn cho ${item.description ?? item.id}`}>
-          <Button size="sm" variant={decisions[item.id] ? "success" : "secondary"} icon="check" aria-pressed={decisions[item.id] === true} disabled={working} onClick={() => toggle(item.id, true)}>Đồng ý</Button>
+          <Button size="sm" variant="success" className={decisions[item.id] ? "ring-2 ring-success/40 ring-offset-1" : "opacity-90"} icon="check" aria-pressed={decisions[item.id] === true} disabled={working} onClick={() => toggle(item.id, true)}>Đồng ý</Button>
           <Button size="sm" variant={decisions[item.id] ? "secondary" : "danger-outline"} icon="x" aria-pressed={decisions[item.id] === false} disabled={working} onClick={() => toggle(item.id, false)}>Từ chối</Button>
         </span>
       </li>)}
@@ -66,7 +66,7 @@ export function CounterApprovalPanel({ quotation, onDone }: { quotation: Workflo
         </label>
         <div className="flex gap-2">
           <Button variant="secondary" disabled={working} onClick={() => void sendCode()}>Gửi lại mã</Button>
-          <Button type="submit" variant="primary" loading={working} disabled={code.length !== 6}>Xác nhận</Button>
+          <Button type="submit" variant="success" icon="check" loading={working} disabled={code.length !== 6}>Xác nhận duyệt</Button>
         </div>
       </form>}
   </div>;

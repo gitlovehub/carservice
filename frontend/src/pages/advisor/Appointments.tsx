@@ -256,6 +256,7 @@ function Appointments() {
       phone: appointment.customer?.phone,
       description: `Hãy liên hệ ${getAppointmentCustomer(appointment)} qua số ${getAppointmentPhone(appointment)} để kiểm tra nhu cầu dịch vụ và khung giờ ${formatDate(appointment.appointment_date)} lúc ${appointment.appointment_time}. Chỉ xác nhận khi khách đồng ý. Nếu không liên hệ được, hãy quay lại và giữ lịch ở trạng thái chờ.`,
       confirmText: "Khách đã đồng ý – Xác nhận lịch",
+      variant: "success",
       cancelText: "Chưa liên hệ được / Để sau",
       checklist: [
         "Tôi đã liên hệ trực tiếp với khách hàng và xác minh đúng xe, dịch vụ, ngày giờ.",
@@ -624,7 +625,7 @@ function Appointments() {
 
                                 {appointment.status === "PENDING" && (
                                   <>
-                                    <Button size="sm" variant="primary" icon="check" loading={isConfirming} loadingText="Đang xử lý..." onClick={() => handleConfirm(appointment)}>Xác nhận</Button>
+                                    <Button size="sm" variant="success" icon="check" loading={isConfirming} loadingText="Đang xử lý..." onClick={() => handleConfirm(appointment)}>Xác nhận</Button>
 
                                     <Button size="sm" variant="danger-outline" icon="x" onClick={() => {
                                         setCancelAppointment(appointment);
