@@ -255,6 +255,20 @@
   --btn-border: var(--cs-border);
 }
 
+/*
+ * Admin: hover KHÔNG dùng viền đỏ (màu vai trò) cho nút viền (outline) và nút icon thường —
+ * viền chỉ xám đậm lên như các nút khác. Giữ màu ngữ nghĩa: Sửa vàng, Xem xanh dương, Xoá / danger đỏ.
+ */
+[data-area="admin"] {
+  --cs-btn-hover-border-neutral: color-mix(in srgb, var(--cs-border-strong) 62%, var(--cs-text));
+}
+[data-area="admin"] .cs-btn-outline {
+  --btn-hover-border: var(--cs-btn-hover-border-neutral);
+}
+[data-area="admin"] .cs-btn-icon.cs-btn-ghost:not([data-icon="edit"]):not([data-icon="eye"]):not(.cs-btn-tone-danger) {
+  --btn-hover-border: var(--cs-btn-hover-border-neutral);
+}
+
 /* Nút icon chữ đỏ (Xóa trong dòng): ghost, hover nền danger-soft + viền danger. */
 .cs-btn.cs-btn-tone-danger {
   --btn-fg: var(--cs-danger);
