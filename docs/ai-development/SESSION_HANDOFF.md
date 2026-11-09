@@ -3,7 +3,20 @@
 > Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
 > Cập nhật: 09/11/2026 — triển khai đặc tả nút `docs/ui-button-redesign.md` (sau P7).
 
-## Mới nhất: Admin dùng dữ liệu thật (09/11/2026, nhánh v3)
+## Mới nhất: góp ý PO đợt 2 — toast, báo cáo vận hành, đánh giá ga-ra, khung giờ đặt lịch (09/11/2026, nhánh v3)
+
+Commit: `75de3cb` toast + hover nút icon · `2783927` nút duyệt xanh lá · `aec2557` Nhân sự bỏ cấp bậc + nút sửa trùng · `824c370` không xoá hãng/dòng xe · `3b8e4d3` Báo cáo (thu tiền + Vận hành) · `9763db6` Đánh giá ga-ra · `22fca58` khung giờ đặt lịch.
+
+- **Toast duy nhất** (`FeedbackProvider`): trượt từ góc phải trên, tự tắt 3 giây, nút ✕, thanh tiến trình, không viền màu. `<Toast>` cũ chỉ còn là lớp chuyển tiếp sang `notify()`. Đã bỏ thông báo inline ở Dịch vụ, Gói, Thông tin gara, Bước chuẩn, Lịch hẹn admin/khách, Tiếp nhận, Giờ làm việc, Đặt lịch; nội dung toast nêu đúng thao tác (mã lịch, giờ, số khung giờ…).
+- **Nút icon**: hover có viền + màu — sửa vàng, xem xanh dương, xoá đỏ, còn lại màu accent (`IconButton` gắn `data-icon`). Dropdown hover tô kín cả dòng. Tabs gạch chân hết thanh cuộn dọc thừa. ConfirmDialog có `variant: "success"`; mọi nút Duyệt/Xác nhận duyệt màu xanh lá.
+- **Hãng/dòng xe không xoá được** (gỡ route DELETE; chỉ ẩn INACTIVE); phiên bản chưa dùng vẫn xoá được. Bỏ cột Nguồn.
+- **Báo cáo**: thay `payment_methods` bằng `collection` (số hoá đơn, giá trị TB, đã thu/phát hành, còn phải thu) và `technicians` bằng `operations` (xe nhận/bàn giao/trong xưởng, thời gian xử lý TB, tỷ lệ đến đúng hẹn, khách quay lại, báo giá được duyệt, mức hài lòng). Tab mới "Vận hành".
+- **Đánh giá = khách chấm ga-ra sau mỗi lần làm xe**: API bỏ tên KTV + điểm cố vấn/KTV, thêm thông tin lần làm (xe, biển số, phiếu, ngày, dịch vụ), lọc `status=unreplied|replied|hidden`, lọc từng mức sao, summary thêm TB 30 ngày / % hài lòng / % đã phản hồi. Form khách chỉ còn điểm chung + nhận xét. Cột `advisor_rating`, `technician_rating` vẫn giữ trong DB (nullable, không dùng).
+- **Khung giờ đặt lịch sáng/chiều**: migration `2026_11_09_100000` thêm `garage_settings.booking_slots` (DB dev đã migrate). `GET /api/booking-slots` (công khai), `PUT /api/admin/booking-slots`. Trang Giờ làm việc có panel + nút "Chỉnh sửa khung giờ" (thay bản xem trước tự sinh). Đặt lịch của khách đọc khung giờ này và khoá giờ ngoài giờ làm việc của từng thứ (ngày nghỉ khoá hết).
+- **Kiểm thử**: backend 272/272; smoke 27/27; tsc + build đạt; ESLint file sửa không thêm lỗi (còn nợ cũ `set-state-in-effect`). Trình duyệt 32/32 (16 trang Admin × sáng/tối) + chụp tab Vận hành, modal khung giờ, Nhân sự; hover sửa/xem/xoá đo bằng computed style.
+- **Lưu ý dữ liệu dev**: giờ làm việc dev 08:00–16:00 nên khung mặc định 16:45 bị đánh dấu "ngoài giờ" trên panel — admin cần bỏ khung này (khách vốn đã không đặt được giờ đó). Khung giờ chưa được kiểm ở backend khi tạo lịch (cố vấn vẫn có thể đặt giờ tự do).
+
+## Trước đó: Admin dùng dữ liệu thật (09/11/2026, nhánh v3)
 
 Commit: `e5b5831` seeder vận hành · `e298ec0` API tổng quan + báo cáo · `ef717b9` factory tiếng Việt + chuẩn hoá dữ liệu mẫu · `7d3c70a` API phiếu/hoá đơn/thanh toán/đánh giá/nhật ký · `688a1c4` API khách hàng/nhân sự/tài khoản · `8f5c4c4` API kho · `1226ba6` API ngày nghỉ · FE: `cbbff5d` `1a773d1` `d4d0ed8` `147778e` (gỡ `src/mocks/admin`) · test `3854f3f`.
 
