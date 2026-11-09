@@ -5,7 +5,7 @@
 
 ## Mới nhất: Admin dùng dữ liệu thật (09/11/2026, nhánh v3)
 
-Commit: `e5b5831` seeder vận hành · `e298ec0` API tổng quan + báo cáo · `ef717b9` factory tiếng Việt + chuẩn hoá dữ liệu mẫu · `7d3c70a` API phiếu/hoá đơn/thanh toán/đánh giá/nhật ký · `688a1c4` API khách hàng/nhân sự/tài khoản · `8f5c4c4` API kho · `36ec4cd`… API ngày nghỉ · FE: `cbbff5d` `1a773d1` `d4d0ed8` + commit nối kho/ngày nghỉ, gỡ `src/mocks/admin`.
+Commit: `e5b5831` seeder vận hành · `e298ec0` API tổng quan + báo cáo · `ef717b9` factory tiếng Việt + chuẩn hoá dữ liệu mẫu · `7d3c70a` API phiếu/hoá đơn/thanh toán/đánh giá/nhật ký · `688a1c4` API khách hàng/nhân sự/tài khoản · `8f5c4c4` API kho · `1226ba6` API ngày nghỉ · FE: `cbbff5d` `1a773d1` `d4d0ed8` `147778e` (gỡ `src/mocks/admin`) · test `3854f3f`.
 
 - **Dữ liệu**: `DemoOperationsSeeder` (chạy riêng: `php artisan db:seed --class=DemoOperationsSeeder`) — ~60 ngày lịch hẹn → phiếu (lịch sử trạng thái hợp lệ) → báo giá → công việc + xuất kho → hoá đơn → thanh toán → đánh giá + nhật ký; mã có `-DM`; chạy lại không trùng. `NormalizeSampleDataSeeder` (chạy riêng) đổi dữ liệu faker en_US cũ (email `@example.*`, dòng xe Latin, biển số `?`) sang tiếng Việt, cập nhật tại chỗ. Factory Customer/Vehicle/Employee/Account dùng `Database\Factories\Support\VietnameseData`. DB dev đã chạy cả hai: 221 lịch, 176 phiếu, 164 hoá đơn, 85 đánh giá, 399 nhật ký.
 - **Migration mới**: `reviews.is_hidden`, `inventory_transactions.created_by_account_id` (DB dev đã migrate).
