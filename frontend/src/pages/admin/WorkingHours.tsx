@@ -371,11 +371,11 @@ function WorkingHours() {
 
             <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
               <div className={`hidden ${ROW_GRID} gap-4 border-b border-[#E1E4E6] bg-cs-surface-2 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-cs-muted lg:grid`}>
-                <span>Ngày</span>
+                <span>Thứ</span>
                 <span>Trạng thái</span>
                 <span>Giờ mở cửa</span>
                 <span>Giờ đóng cửa</span>
-                <span>Lịch tối đa / khung giờ</span>
+                <span>Lịch tối đa / giờ</span>
                 <span className="inline-flex items-center gap-1" title="Tổng giờ làm việc của thợ trong ngày. Dùng để cảnh báo cố vấn khi lịch hẹn vượt sức làm của gara.">
                   Công suất / ngày <Icon name="info" size={13}/>
                 </span>
