@@ -1,113 +1,118 @@
-import { useMemo, useState } from "react";
-import { DataTable, IconButton, Pagination, SearchInput, type Column } from "../../components/ui";
+import { useState } from "react";
+import { DataTable, ErrorState, IconButton, LoadingState, Pagination, SearchInput, type Column } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
-import { demoRepairOrders, type DemoRepairOrder, type RepairStatus } from "../../mocks/admin/operations";
-import { demoStaff } from "../../mocks/admin/people";
+import { adminApi, fmtDate, fmtDateTime, fmtTime, type AdminOrder, type OrderGroup } from "../../services/adminApi";
+import { getStatus } from "../../config/status";
 import { AdminPage, FilterSelect, InfoList, PaneSection, SplitView, StatCard, Tabs, Toolbar } from "./kit/AdminKit";
 import { vnd } from "./kit/format";
-import { usePaged } from "./kit/usePaged";
+import { useAdminQuery } from "./kit/useAdminQuery";
+import { useDebounced } from "./kit/useDebounced";
 
-type Group = "all" | "intake" | "quote" | "parts" | "repair" | "done";
-const groups: Record<Exclude<Group, "all">, { label: string; statuses: RepairStatus[] }> = {
-  intake: { label: "Tiếp nhận & kiểm tra", statuses: ["RECEIVED", "INSPECTING"] },
-  quote: { label: "Báo giá", statuses: ["QUOTING", "WAITING_APPROVAL"] },
-  parts: { label: "Chờ phụ tùng", statuses: ["WAITING_FOR_PARTS"] },
-  repair: { label: "Đang sửa", statuses: ["IN_PROGRESS"] },
-  done: { label: "Hoàn tất", statuses: ["COMPLETED", "HANDED_OVER"] },
+type Group = "all" | OrderGroup;
+const groupLabels: Record<OrderGroup, string> = {
+  intake: "Tiếp nhận & kiểm tra", quote: "Báo giá", parts: "Chờ phụ tùng", repair: "Đang sửa", done: "Hoàn tất", closed: "Đã đóng",
 };
-const workItemLabel = { PENDING: "Chờ làm", IN_PROGRESS: "Đang làm", COMPLETED: "Hoàn thành" } as const;
+const workItemLabel = { PENDING: "Chờ làm", IN_PROGRESS: "Đang làm", COMPLETED: "Hoàn thành", CANCELLED: "Đã huỷ" } as const;
 
-/** Phiếu sửa chữa (Admin xem toàn xưởng) — DEMO: dữ liệu từ src/mocks/admin/operations.ts. Thao tác nghiệp vụ vẫn do Cố vấn thực hiện. */
+/** Phiếu sửa chữa (Admin xem toàn xưởng) — dữ liệu thật từ /api/admin/repair-orders. Thao tác nghiệp vụ vẫn do Cố vấn thực hiện. */
 export default function RepairOrders() {
   const [group, setGroup] = useState<Group>("all");
-  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
   const [tech, setTech] = useState("all");
-  const [selectedId, setSelectedId] = useState<number | null>(demoRepairOrders[0].id);
+  const [page, setPage] = useState(1);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const term = useDebounced(search.trim());
 
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return demoRepairOrders.filter(o => (group === "all" || groups[group].statuses.includes(o.status))
-      && (tech === "all" || o.technician === tech)
-      && (!q || [o.code, o.customer, o.plate, o.vehicle].some(v => v.toLowerCase().includes(q))));
-  }, [group, query, tech]);
-  const { pageRows, pagination } = usePaged(rows, 10);
-  const selected = demoRepairOrders.find(o => o.id === selectedId) ?? null;
-  const inShop = demoRepairOrders.filter(o => o.status !== "HANDED_OVER").length;
+  const params = { group, technician_id: tech, search: term, page };
+  const list = useAdminQuery(`orders:${JSON.stringify(params)}`, signal => adminApi.repairOrders(params, signal));
+  const detail = useAdminQuery(selectedId === null ? null : `order:${selectedId}`, signal => adminApi.repairOrder(selectedId as number, signal));
+  const result = list.data ?? list.stale;
+  const rows = result?.data ?? [];
+  const summary = result?.summary;
+  const selected = detail.data;
 
-  const columns: Column<DemoRepairOrder>[] = [
+  const resetPage = <T,>(set: (value: T) => void) => (value: T) => { set(value); setPage(1); };
+
+  const columns: Column<AdminOrder>[] = [
     { key: "code", header: "Mã phiếu", primary: true, render: o => <span className="whitespace-nowrap font-semibold text-cs-accent-text">{o.code}</span> },
-    { key: "vehicle", header: "Xe / Khách", render: o => <span className="block min-w-36"><b className="block whitespace-nowrap text-cs-text">{o.vehicle}</b><span className="block whitespace-nowrap text-caption text-cs-muted">{o.plate} · {o.customer}</span></span> },
-    { key: "promised", header: "Hẹn trả", render: o => <span className="whitespace-nowrap tabular-nums">{o.promisedAt.slice(11)}<span className="block text-caption text-cs-muted">{o.promisedAt.slice(0, 10)}</span></span> },
+    { key: "vehicle", header: "Xe / Khách", render: o => <span className="block min-w-36"><b className="block whitespace-nowrap text-cs-text">{o.vehicle || "—"}</b><span className="block whitespace-nowrap text-caption text-cs-muted">{o.plate ?? "Chưa có biển"} · {o.customer ?? "—"}</span></span> },
+    { key: "promised", header: "Hẹn trả", render: o => o.estimated_ready_at ? <span className="whitespace-nowrap tabular-nums">{fmtTime(o.estimated_ready_at)}<span className="block text-caption text-cs-muted">{fmtDate(o.estimated_ready_at)}</span></span> : <span className="text-cs-muted">—</span> },
     { key: "tech", header: "Kỹ thuật viên", hideOnMobile: true, render: o => <span className="whitespace-nowrap">{o.technician ?? <span className="text-cs-muted">Chưa phân công</span>}</span> },
     { key: "estimate", header: "Dự kiến", align: "right", render: o => o.estimate ? <b className="tabular-nums">{vnd(o.estimate)}</b> : <span className="text-cs-muted">—</span> },
     { key: "status", header: "Trạng thái", render: o => <StatusBadge domain="repair" status={o.status}/> },
   ];
 
-  const pane = selected && <>
-    <div className="mb-4 flex flex-wrap items-center gap-2">
-      <span className="text-subheading font-bold text-cs-accent-text">{selected.code}</span>
-      <StatusBadge domain="repair" status={selected.status}/>
-    </div>
-    <PaneSection title="Xe & khách hàng" icon="car">
-      <InfoList items={[
-        { label: "Xe", value: <b>{selected.vehicle} · {selected.plate}</b> },
-        { label: "Khách hàng", value: selected.customer },
-        { label: "Điện thoại", value: selected.phone },
-        { label: "Cố vấn", value: selected.advisor },
-        { label: "Kỹ thuật viên", value: selected.technician ?? "Chưa phân công" },
-        { label: "Hẹn trả xe", value: selected.promisedAt },
-      ]}/>
-    </PaneSection>
-    <PaneSection title="Hạng mục công việc" icon="wrench">
-      <ul className="flex flex-col gap-2 text-small">
-        {selected.items.map(item => <li key={item.name} className="flex items-center gap-3">
-          <Icon name={item.status === "COMPLETED" ? "check" : item.status === "IN_PROGRESS" ? "refresh" : "clock"} size={16}
-            className={item.status === "COMPLETED" ? "text-success" : item.status === "IN_PROGRESS" ? "text-cs-accent-text" : "text-cs-muted"}/>
-          <span className="min-w-0 flex-1 text-cs-text">{item.name}<span className="block text-caption text-cs-muted">{workItemLabel[item.status]}</span></span>
-          <span className="tabular-nums text-cs-text-2">{vnd(item.price)}</span>
-        </li>)}
-      </ul>
-    </PaneSection>
-    <PaneSection title="Tiến trình" icon="history">
-      <ol className="relative ml-1.5 border-l-2 border-cs-border pl-5">
-        {selected.timeline.map((t, i) => <li key={t.label} className="relative pb-3 last:pb-0 text-small">
-          <span className={`absolute -left-[27px] top-1 size-3 rounded-full border-2 border-cs-accent ${i === selected.timeline.length - 1 ? "bg-cs-accent" : "bg-cs-surface"}`}/>
-          <p className="font-semibold text-cs-text">{t.label}</p>
-          <p className="text-caption text-cs-muted">{t.at} · {t.by}</p>
-        </li>)}
-      </ol>
-    </PaneSection>
-  </>;
+  const pane = selectedId === null ? null : !selected
+    ? (detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact/>)
+    : <>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-subheading font-bold text-cs-accent-text">{selected.code}</span>
+        <StatusBadge domain="repair" status={selected.status}/>
+      </div>
+      <PaneSection title="Xe & khách hàng" icon="car">
+        <InfoList items={[
+          { label: "Xe", value: <b>{selected.vehicle || "—"} · {selected.plate ?? "Chưa có biển"}</b> },
+          { label: "Khách hàng", value: selected.customer ?? "—" },
+          { label: "Điện thoại", value: selected.phone ?? "—" },
+          { label: "Cố vấn", value: selected.advisor ?? "—" },
+          { label: "Kỹ thuật viên", value: selected.technician ?? "Chưa phân công" },
+          { label: "Tiếp nhận", value: fmtDateTime(selected.received_at) },
+          { label: "Hẹn trả xe", value: fmtDateTime(selected.estimated_ready_at) },
+        ]}/>
+      </PaneSection>
+      <PaneSection title="Hạng mục công việc" icon="wrench">
+        {selected.items.length === 0
+          ? <p className="text-small text-cs-muted">{selected.quotation_items.length ? "Báo giá chưa được duyệt, chưa tạo công việc." : "Chưa có báo giá."}</p>
+          : <ul className="flex flex-col gap-2 text-small">
+            {selected.items.map((item, i) => <li key={`${item.name}-${i}`} className="flex items-center gap-3">
+              <Icon name={item.status === "COMPLETED" ? "check" : item.status === "IN_PROGRESS" ? "refresh" : "clock"} size={16}
+                className={item.status === "COMPLETED" ? "text-success" : item.status === "IN_PROGRESS" ? "text-cs-accent-text" : "text-cs-muted"}/>
+              <span className="min-w-0 flex-1 text-cs-text">{item.name}<span className="block text-caption text-cs-muted">{workItemLabel[item.status]}{item.technician ? ` · ${item.technician}` : ""}</span></span>
+              {item.price > 0 && <span className="tabular-nums text-cs-text-2">{vnd(item.price)}</span>}
+            </li>)}
+          </ul>}
+        {selected.estimate > 0 && <p className="mt-3 flex justify-between border-t border-cs-border pt-2 text-small font-semibold text-cs-text">Tổng báo giá<span className="tabular-nums">{vnd(selected.estimate)}</span></p>}
+      </PaneSection>
+      <PaneSection title="Tiến trình" icon="history">
+        <ol className="relative ml-1.5 border-l-2 border-cs-border pl-5">
+          {selected.timeline.map((t, i) => <li key={`${t.status}-${i}`} className="relative pb-3 last:pb-0 text-small">
+            <span className={`absolute -left-[27px] top-1 size-3 rounded-full border-2 border-cs-accent ${i === selected.timeline.length - 1 ? "bg-cs-accent" : "bg-cs-surface"}`}/>
+            <p className="font-semibold text-cs-text">{getStatus("repair", t.status, "staff").label}</p>
+            <p className="text-caption text-cs-muted">{fmtDateTime(t.at)} · {t.by}</p>
+            {t.note && <p className="text-caption text-cs-text-2">{t.note}</p>}
+          </li>)}
+        </ol>
+      </PaneSection>
+    </>;
 
-  return <AdminPage title="Phiếu sửa chữa" description="Theo dõi toàn bộ xe trong xưởng: đang ở bước nào, ai phụ trách">
+  return <AdminPage title="Phiếu sửa chữa" description="Theo dõi toàn bộ xe trong xưởng: đang ở bước nào, ai phụ trách" demo={false}>
     <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard icon="car" tone="brand" label="Xe trong xưởng" value={inShop}/>
-      <StatCard icon="receipt" tone="warning" label="Chờ khách duyệt báo giá" value={demoRepairOrders.filter(o => o.status === "WAITING_APPROVAL").length}/>
-      <StatCard icon="box" tone="violet" label="Chờ phụ tùng" value={demoRepairOrders.filter(o => o.status === "WAITING_FOR_PARTS").length}/>
-      <StatCard icon="check" tone="success" label="Hoàn tất hôm nay" value={demoRepairOrders.filter(o => o.status === "COMPLETED").length}/>
+      <StatCard icon="car" tone="brand" label="Xe trong xưởng" value={summary?.in_shop ?? "—"}/>
+      <StatCard icon="receipt" tone="warning" label="Báo giá / chờ duyệt" value={summary?.groups.quote ?? "—"}/>
+      <StatCard icon="box" tone="violet" label="Chờ phụ tùng" value={summary?.groups.parts ?? "—"}/>
+      <StatCard icon="check" tone="success" label="Đã hoàn tất" value={summary?.groups.done ?? "—"}/>
     </div>
-    <SplitView paneOpen={!!selected} onClose={() => setSelectedId(null)} paneTitle="Chi tiết phiếu" pane={pane}
+    <SplitView paneOpen={selectedId !== null} onClose={() => setSelectedId(null)} paneTitle="Chi tiết phiếu" pane={pane}
       list={<>
         <div className="mb-4">
-          <Tabs label="Lọc theo giai đoạn" variant="chips" value={group} onChange={setGroup} items={[
-            { id: "all", label: "Tất cả", count: demoRepairOrders.length },
-            ...(Object.entries(groups) as Array<[Exclude<Group, "all">, { label: string; statuses: RepairStatus[] }]>).map(([id, g]) => ({
-              id, label: g.label, count: demoRepairOrders.filter(o => g.statuses.includes(o.status)).length,
-            })),
+          <Tabs label="Lọc theo giai đoạn" variant="chips" value={group} onChange={resetPage(setGroup)} items={[
+            { id: "all", label: "Tất cả", count: summary?.total },
+            ...(Object.keys(groupLabels) as OrderGroup[]).map(id => ({ id, label: groupLabels[id], count: summary?.groups[id] })),
           ]}/>
         </div>
         <Toolbar>
-          <SearchInput value={query} onChange={setQuery} placeholder="Tìm mã phiếu, khách, biển số…"/>
-          <FilterSelect label="Kỹ thuật viên" value={tech} onChange={setTech} options={[
+          <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm mã phiếu, khách, SĐT, biển số…"/>
+          <FilterSelect label="Kỹ thuật viên" value={tech} onChange={resetPage(setTech)} options={[
             { value: "all", label: "Tất cả" },
-            ...demoStaff.filter(s => s.role === "TECHNICIAN").map(s => ({ value: s.name, label: s.name })),
+            ...(result?.technicians ?? []).map(t => ({ value: String(t.id), label: t.name ?? `KTV #${t.id}` })),
           ]}/>
         </Toolbar>
-        <DataTable caption="Danh sách phiếu sửa chữa" columns={columns} rows={pageRows} rowKey={o => o.id}
+        <DataTable caption="Danh sách phiếu sửa chữa" columns={columns} rows={rows} rowKey={o => o.id}
+          loading={list.loading} error={list.error || undefined} onRetry={list.reload}
           onRowClick={o => setSelectedId(o.id)} rowClassName={o => o.id === selectedId ? "bg-cs-soft/60" : ""}
           actions={o => <IconButton icon="eye" label={`Xem phiếu ${o.code}`} size="sm" onClick={() => setSelectedId(o.id)}/>}
-          footer={<Pagination {...pagination}/>}/>
+          footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={list.loading} onChange={setPage}/>}/>
         <p className="mt-3 flex items-center gap-2 text-caption text-cs-muted"><Icon name="info" size={14}/>Tiếp nhận, báo giá, phân công kỹ thuật viên do Cố vấn dịch vụ thực hiện; Admin theo dõi tại đây.</p>
       </>}/>
   </AdminPage>;
