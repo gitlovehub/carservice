@@ -15,7 +15,6 @@ const LEVELS: Record<AdminLevel, { tab: string; noun: string; add: string }> = {
   trims: { tab: "Phiên bản", noun: "phiên bản", add: "Thêm phiên bản" },
 };
 const BODY_TYPES: Record<string, string> = { SEDAN: "Sedan", SUV: "SUV", HATCHBACK: "Hatchback", MPV: "MPV", PICKUP: "Bán tải", OTHER: "Khác" };
-const SOURCE_TEXT: Record<string, string> = { CSV: "CSV khởi tạo", ADMIN: "Admin thêm" };
 const PER_PAGE = 15;
 const emptyFilters: Filters = { search: "", status: "", brandId: null, modelId: null, page: 1 };
 const errorText = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
@@ -145,7 +144,7 @@ export default function VehicleCatalog() {
 
   async function remove(row: Row) {
     const ok = await confirm(confirmDelete(`${LEVELS[level].noun} “${row.name}”`,
-      "Chỉ xóa được khi không còn cấp con và chưa được dùng trong hồ sơ xe, lịch hẹn, gói bảo dưỡng hay phụ tùng. Nếu đang được dùng, hãy chuyển sang Ẩn."));
+      "Chỉ xóa được khi phiên bản chưa gắn với hồ sơ xe nào. Nếu đang được dùng, hãy chuyển sang Ẩn."));
     if (!ok) return;
     setBusyId(row.id);
     try {
@@ -163,13 +162,11 @@ export default function VehicleCatalog() {
   const statusBadge = (row: Row) => row.status === "INACTIVE"
     ? <Badge tone="neutral">Đã ẩn</Badge>
     : <Badge tone="success">Đang hiển thị</Badge>;
-  const sourceText = (row: Row) => SOURCE_TEXT[row.source ?? ""] ?? "Có sẵn";
 
   const columns: Column<Row>[] = level === "brands" ? [
     { key: "name", header: "Hãng xe", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
     { key: "models", header: "Dòng xe", align: "right", render: row => (row as CatalogBrand).models_count ?? 0 },
     { key: "trims", header: "Phiên bản", align: "right", render: row => (row as CatalogBrand).trims_count ?? 0 },
-    { key: "source", header: "Nguồn", hideOnMobile: true, render: sourceText },
     { key: "status", header: "Trạng thái", render: statusBadge },
   ] : level === "models" ? [
     { key: "name", header: "Dòng xe", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
@@ -182,7 +179,6 @@ export default function VehicleCatalog() {
     { key: "name", header: "Phiên bản", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
     { key: "model", header: "Dòng xe", render: row => { const model = (row as CatalogTrim).model; return model ? `${model.brand?.name ?? ""} ${model.name}`.trim() : "—"; } },
     { key: "vehicles", header: "Xe khách", align: "right", render: row => (row as CatalogTrim).vehicles_count ?? 0 },
-    { key: "source", header: "Nguồn", hideOnMobile: true, render: sourceText },
     { key: "status", header: "Trạng thái", render: statusBadge },
   ];
 
@@ -238,7 +234,7 @@ export default function VehicleCatalog() {
         <IconButton icon={row.status === "INACTIVE" ? "eye" : "lock"} label={row.status === "INACTIVE" ? "Hiển thị lại" : "Ẩn khỏi bộ chọn xe"}
           loading={busyId === row.id} disabled={busyId !== null} onClick={() => void toggle(row)}/>
         <IconButton icon="edit" label="Chỉnh sửa" disabled={busyId !== null} onClick={() => openForm(row)}/>
-        <IconButton icon="trash" tone="danger" label="Xóa" disabled={busyId !== null} onClick={() => void remove(row)}/>
+        {level === "trims" && <IconButton icon="trash" tone="danger" label="Xóa phiên bản" disabled={busyId !== null} onClick={() => void remove(row)}/>}
       </>}
       footer={page && <Pagination page={page.current_page} totalPages={page.last_page} totalItems={page.total} pageSize={page.per_page}
         disabled={list.loading} onChange={next => setFilters(current => ({ ...current, page: next }))}/>}

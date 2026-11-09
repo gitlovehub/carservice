@@ -332,12 +332,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('vehicle-brands', 'brandIndex');
             Route::post('vehicle-brands', 'brandStore');
             Route::patch('vehicle-brands/{brand}', 'brandUpdate')->whereNumber('brand');
-            Route::delete('vehicle-brands/{brand}', 'brandDestroy')->whereNumber('brand');
 
             Route::get('vehicle-models', 'modelIndex');
             Route::post('vehicle-models', 'modelStore');
             Route::patch('vehicle-models/{model}', 'modelUpdate')->whereNumber('model');
-            Route::delete('vehicle-models/{model}', 'modelDestroy')->whereNumber('model');
 
             Route::get('vehicle-trims', 'trimIndex');
             Route::post('vehicle-trims', 'trimStore');

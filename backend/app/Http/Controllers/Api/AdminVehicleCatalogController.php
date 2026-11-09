@@ -11,16 +11,14 @@ use App\Support\VehicleName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
  * Quản trị danh mục xe 3 cấp (chỉ ADMIN).
  *
- * Xóa là xóa thật nên bị chặn khi bản ghi còn cấp con hoặc đang được dùng
- * (hồ sơ xe — kể cả xe đã xóa mềm và lịch hẹn của chúng, gói bảo dưỡng, phụ tùng tương thích).
- * Muốn ngừng hiển thị thì chuyển status sang INACTIVE.
+ * Hãng xe và dòng xe KHÔNG xoá được (chỉ ẩn bằng status INACTIVE) vì là gốc của hồ sơ xe, lịch hẹn, gói bảo dưỡng.
+ * Phiên bản xoá được khi chưa gắn với hồ sơ xe nào (kể cả xe đã xoá mềm).
  */
 class AdminVehicleCatalogController extends Controller
 {
@@ -70,19 +68,6 @@ class AdminVehicleCatalogController extends Controller
         return $this->ok('Cập nhật hãng xe thành công.', $brand->fresh()->loadCount(['models', 'trims']));
     }
 
-    /** DELETE /api/admin/vehicle-brands/{brand} */
-    public function brandDestroy(VehicleBrand $brand): JsonResponse
-    {
-        $models = $brand->models()->count();
-        if ($models > 0) {
-            return $this->blocked("Hãng {$brand->name} còn {$models} dòng xe. Hãy xóa các dòng xe trước hoặc chuyển hãng sang Ẩn.");
-        }
-
-        $brand->delete();
-
-        return $this->ok('Đã xóa hãng xe.');
-    }
-
     /* ----------------------------------------------------------------- Dòng xe */
 
     /** GET /api/admin/vehicle-models?brand_id=&search=&status=&per_page= */
@@ -129,25 +114,6 @@ class AdminVehicleCatalogController extends Controller
         $model->update($data);
 
         return $this->ok('Cập nhật dòng xe thành công.', $this->modelPayload($model->fresh()));
-    }
-
-    /** DELETE /api/admin/vehicle-models/{model} */
-    public function modelDestroy(VehicleModel $model): JsonResponse
-    {
-        $usage = array_filter([
-            'phiên bản' => $model->trims()->count(),
-            'hồ sơ xe' => Vehicle::withTrashed()->where('model_id', $model->id)->count(),
-            'gói bảo dưỡng' => $model->maintenancePackages()->count(),
-            'phụ tùng tương thích' => DB::table('part_compatibilities')->where('vehicle_model_id', $model->id)->count(),
-        ]);
-
-        if ($usage !== []) {
-            return $this->blocked("Không thể xóa dòng xe {$model->name} vì còn ".$this->describe($usage).'. Hãy chuyển sang Ẩn nếu không muốn hiển thị.');
-        }
-
-        $model->delete();
-
-        return $this->ok('Đã xóa dòng xe.');
     }
 
     /* -------------------------------------------------------------- Phiên bản */
@@ -298,14 +264,6 @@ class AdminVehicleCatalogController extends Controller
     {
         return $trim->load(['model:id,brand_id,name,status', 'model.brand:id,name,status'])
             ->loadCount(['vehicles' => fn (Builder $query) => $query->withTrashed()]);
-    }
-
-    /**
-     * @param  array<string, int>  $usage
-     */
-    private function describe(array $usage): string
-    {
-        return implode(', ', array_map(fn (string $label, int $count) => "{$count} {$label}", array_keys($usage), $usage));
     }
 
     private function blocked(string $message): JsonResponse

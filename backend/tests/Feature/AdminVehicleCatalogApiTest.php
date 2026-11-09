@@ -123,29 +123,32 @@ class AdminVehicleCatalogApiTest extends TestCase
         $vehicle->delete(); // xe đã xóa mềm vẫn giữ lịch sử
 
         $this->deleteJson("/api/admin/vehicle-trims/{$trim->id}")->assertUnprocessable()->assertJsonPath('success', false);
-        $this->deleteJson("/api/admin/vehicle-models/{$model->id}")->assertUnprocessable();
-        $this->deleteJson("/api/admin/vehicle-brands/{$brand->id}")->assertUnprocessable();
         $this->assertModelExists($trim);
-
-        $packageModel = VehicleModel::factory()->create(['brand_id' => $brand->id]);
-        MaintenancePackage::factory()->create(['vehicle_model_id' => $packageModel->id]);
-        $this->deleteJson("/api/admin/vehicle-models/{$packageModel->id}")
-            ->assertUnprocessable()
-            ->assertJsonFragment(['success' => false]);
     }
 
-    public function test_unused_records_can_be_deleted_bottom_up(): void
+    public function test_brands_and_models_cannot_be_deleted_only_hidden(): void
     {
         $this->actingAsAdmin();
         $brand = VehicleBrand::factory()->create();
         $model = VehicleModel::factory()->create(['brand_id' => $brand->id]);
-        $trim = VehicleTrim::factory()->create(['model_id' => $model->id]);
+        MaintenancePackage::factory()->create(['vehicle_model_id' => $model->id]);
 
-        $this->deleteJson("/api/admin/vehicle-models/{$model->id}")->assertUnprocessable(); // còn phiên bản
+        $this->deleteJson("/api/admin/vehicle-models/{$model->id}")->assertStatus(405);
+        $this->deleteJson("/api/admin/vehicle-brands/{$brand->id}")->assertStatus(405);
+        $this->assertModelExists($model);
+        $this->assertModelExists($brand);
+
+        $this->patchJson("/api/admin/vehicle-models/{$model->id}", ['status' => 'INACTIVE'])->assertOk()->assertJsonPath('data.status', 'INACTIVE');
+        $this->patchJson("/api/admin/vehicle-brands/{$brand->id}", ['status' => 'INACTIVE'])->assertOk()->assertJsonPath('data.status', 'INACTIVE');
+    }
+
+    public function test_unused_trim_can_be_deleted(): void
+    {
+        $this->actingAsAdmin();
+        $trim = VehicleTrim::factory()->create();
+
         $this->deleteJson("/api/admin/vehicle-trims/{$trim->id}")->assertOk();
-        $this->deleteJson("/api/admin/vehicle-models/{$model->id}")->assertOk();
-        $this->deleteJson("/api/admin/vehicle-brands/{$brand->id}")->assertOk();
 
-        $this->assertModelMissing($brand);
+        $this->assertModelMissing($trim);
     }
 }
