@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminAdvisorActivityController;
+use App\Http\Controllers\Api\AdminInsightsController;
 use App\Http\Controllers\Api\AdminMaintenancePackageController;
 use App\Http\Controllers\Api\AdminServiceController;
 use App\Http\Controllers\Api\AdminVehicleCatalogController;
@@ -276,6 +277,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::apiResource('admin/maintenance-packages', AdminMaintenancePackageController::class)
             ->parameters(['maintenance-packages' => 'maintenancePackage'])
             ->names('admin.maintenance-packages');
+
+        // Số liệu thật cho Tổng quan và Báo cáo.
+        Route::get('admin/dashboard', [AdminInsightsController::class, 'dashboard']);
+        Route::get('admin/reports', [AdminInsightsController::class, 'reports']);
 
         // Quản trị danh mục xe: hãng, dòng xe, phiên bản (xóa bị chặn khi đang được dùng).
         Route::controller(AdminVehicleCatalogController::class)->prefix('admin')->group(function (): void {
