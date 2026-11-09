@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AdminInventoryController;
 use App\Http\Controllers\Api\AdminMaintenancePackageController;
 use App\Http\Controllers\Api\AdminOperationsController;
 use App\Http\Controllers\Api\AdminPeopleController;
+use App\Http\Controllers\Api\AdminServiceCategoryController;
 use App\Http\Controllers\Api\AdminServiceController;
 use App\Http\Controllers\Api\AdminVehicleCatalogController;
 use App\Http\Controllers\Api\AdvisorAppointmentController;
@@ -207,6 +208,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('/{id}/confirm', [AdvisorAppointmentController::class, 'confirm']);
             Route::post('/{id}/check-in', [AdvisorAppointmentController::class, 'checkIn']);
             Route::post('/{id}/cancel', [AdvisorAppointmentController::class, 'cancel']);
+            Route::post('/{id}/no-show', [AdvisorAppointmentController::class, 'noShow']);
             // Đổi lịch giúp khách: bắt buộc lý do, ghi ai đổi, báo khách (web + email).
             Route::post('/{id}/reschedule', [AdvisorAppointmentController::class, 'reschedule'])->middleware('throttle:20,1');
         });
@@ -261,6 +263,15 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // P5: bước chuẩn + phút chuẩn của dịch vụ.
         Route::get('admin/services/{service}/steps', [AdminServiceController::class, 'steps']);
         Route::put('admin/services/{service}/steps', [AdminServiceController::class, 'syncSteps']);
+
+        // Kéo thả thứ tự hiển thị — khai báo trước apiResource để không khớp nhầm admin/services/{service}.
+        Route::put('admin/services/reorder', [AdminServiceController::class, 'reorder']);
+
+        // Danh mục dịch vụ (tên + icon); chỉ xoá được danh mục rỗng.
+        Route::apiResource('admin/service-categories', AdminServiceCategoryController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->parameters(['service-categories' => 'category'])
+            ->names('admin.service-categories');
 
         // Quản trị danh mục dịch vụ (DELETE = xóa mềm, status = INACTIVE)
         Route::apiResource('admin/services', AdminServiceController::class)

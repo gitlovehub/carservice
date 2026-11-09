@@ -49,6 +49,7 @@ class AdminOperationsController extends Controller
         'appointment.confirmed' => ['STATUS', 'Xác nhận lịch hẹn'],
         'appointment.checked_in' => ['STATUS', 'Tiếp nhận xe theo lịch hẹn'],
         'appointment.cancelled' => ['DELETE', 'Huỷ lịch hẹn'],
+        'appointment.no_show' => ['STATUS', 'Đánh dấu khách không đến'],
         'appointment.rescheduled' => ['UPDATE', 'Đổi lịch hẹn'],
         'repair_order.vehicle_changed' => ['UPDATE', 'Đổi xe trên phiếu sửa chữa'],
         'PICKUP_AUTHORIZATION_CREATED' => ['CREATE', 'Khách uỷ quyền nhận xe'],

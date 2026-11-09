@@ -41,7 +41,7 @@ class StoreAppointmentRequest extends FormRequest
             'symptom_description' => ['nullable', 'string', 'max:5000'],
             'note' => ['nullable', 'string', 'max:5000'],
             'service_ids' => ['sometimes', 'array'],
-            'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('status', 'ACTIVE')],
+            'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('status', 'ACTIVE')->where('is_visible', true)],
             'package_ids' => ['sometimes', 'array', 'max:1'],
             'package_ids.*' => ['integer', 'distinct', Rule::exists('maintenance_packages', 'id')->where('status', 'ACTIVE')],
         ];

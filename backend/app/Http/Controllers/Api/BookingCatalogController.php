@@ -109,6 +109,7 @@ class BookingCatalogController extends Controller
     {
         $services = Service::query()
             ->where('status', 'ACTIVE')
+            ->where('is_visible', true)
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();

@@ -29,6 +29,8 @@ class AppointmentActivityService
 
     public const RESCHEDULED = 'appointment.rescheduled';
 
+    public const NO_SHOW = 'appointment.no_show';
+
     public function __construct(private readonly AppointmentSlotService $slots) {}
 
     public function record(Appointment $appointment, string $action, Account $actor, array $old = [], array $new = [], ?string $reason = null): void

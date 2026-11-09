@@ -14,28 +14,34 @@ use Illuminate\Validation\Rule;
  */
 class AdminMaintenancePackageController extends Controller
 {
-    private const WITH = ['vehicleModel', 'services', 'parts'];
+    private const WITH = ['vehicleModel.brand:id,name', 'services', 'parts'];
 
     /**
-     * GET /api/admin/maintenance-packages
+     * GET /api/admin/maintenance-packages?brand_id=|general&vehicle_model_id=&status=&search=&per_page=
+     * brand_id=general: gói dùng chung mọi dòng xe.
      */
     public function index(Request $request): JsonResponse
     {
-        $query = MaintenancePackage::query()->with(self::WITH);
+        $filters = $request->validate([
+            'status' => ['nullable', Rule::in(['ACTIVE', 'INACTIVE'])],
+            'brand_id' => ['nullable', 'string', 'max:20'],
+            'vehicle_model_id' => ['nullable', 'integer'],
+            'search' => ['nullable', 'string', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:3', 'max:100'],
+        ]);
+        $brand = $filters['brand_id'] ?? null;
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
+        $query = MaintenancePackage::query()->with(self::WITH)
+            ->when($filters['status'] ?? null, fn ($q, string $s) => $q->where('status', $s))
+            ->when($brand === 'general', fn ($q) => $q->whereNull('vehicle_model_id'))
+            ->when($brand !== null && $brand !== 'general', fn ($q) => $q->whereHas('vehicleModel', fn ($m) => $m->where('brand_id', (int) $brand)))
+            ->when($filters['vehicle_model_id'] ?? null, fn ($q, int $id) => $q->where('vehicle_model_id', $id))
+            ->when($filters['search'] ?? null, fn ($q, string $s) => $q->where('name', 'like', "%{$s}%"));
 
-        if ($request->filled('vehicle_model_id')) {
-            $query->where('vehicle_model_id', $request->input('vehicle_model_id'));
-        }
-
-        if ($request->filled('search')) {
-            $query->where('name', 'like', '%'.$request->input('search').'%');
-        }
-
-        $packages = $query->latest('id')->paginate(10);
+        // Đang áp dụng lên trước, sau đó theo mốc km tăng dần.
+        $packages = $query->orderByRaw("status = 'ACTIVE' desc")
+            ->orderByRaw('mileage_milestone is null')->orderBy('mileage_milestone')->orderBy('id')
+            ->paginate($filters['per_page'] ?? 10);
         $packages->getCollection()->each->withComputedFields();
 
         return $this->ok('Lấy danh sách gói bảo dưỡng thành công.', $packages);

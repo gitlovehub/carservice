@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Vehicle;
 use App\Services\AppointmentActivityService;
+use App\Services\CapacityService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -117,10 +118,11 @@ class AdvisorAppointmentController extends Controller
         try {
             $query = Appointment::with([
                 'customer:id,full_name,phone,email',
-                'vehicle:id,license_plate,model_id,variant,year',
+                'vehicle:id,license_plate,model_id,variant,year,mileage',
                 'vehicle.model.brand:id,name',
-                'services:id,name,base_price',
+                'services:id,name,base_price,estimated_minutes',
                 'packages:id,name,mileage_milestone',
+                'packages.services:id,estimated_minutes',
                 // Nhân viên xử lý gần nhất.
                 'handledBy:id,email,role', 'handledBy.employee:id,account_id,full_name',
             ]);
@@ -135,9 +137,17 @@ class AdvisorAppointmentController extends Controller
                 $query->whereDate('appointment_date', $request->query('date'));
             }
 
-            // Lọc theo trạng thái (PENDING, CONFIRMED, CHECKED_IN, CANCELLED)
-            if ($request->filled('status')) {
-                $query->where('status', $request->query('status'));
+            // Lọc theo khoảng ngày (YYYY-MM-DD), dùng cho danh sách theo tuần của Admin.
+            if ($request->filled('date_from')) {
+                $query->whereDate('appointment_date', '>=', $request->query('date_from'));
+            }
+            if ($request->filled('date_to')) {
+                $query->whereDate('appointment_date', '<=', $request->query('date_to'));
+            }
+
+            // Loại yêu cầu (MAINTENANCE, REPAIR, DIAGNOSIS, REPLACEMENT).
+            if ($request->filled('request_type')) {
+                $query->where('request_type', $request->query('request_type'));
             }
 
             // Tìm kiếm theo biển số xe hoặc tên/SĐT khách hàng
@@ -155,13 +165,25 @@ class AdvisorAppointmentController extends Controller
                 });
             }
 
+            // Số lịch theo trạng thái với cùng bộ lọc (trừ trạng thái) — cho các chip lọc nhanh.
+            $counts = (clone $query)->setEagerLoads([])->reorder()
+                ->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status')
+                ->map(fn ($n) => (int) $n);
+
+            // Lọc theo trạng thái (PENDING, CONFIRMED, CHECKED_IN, CANCELLED, NO_SHOW)
+            if ($request->filled('status')) {
+                $query->where('status', $request->query('status'));
+            }
+
             // Mặc định sắp xếp ngày gần nhất lên trước
             $appointments = $query->orderBy('appointment_date', 'asc')
                 ->orderBy('appointment_time', 'asc')
-                ->paginate($request->query('per_page', 15));
+                ->paginate(min(500, max(1, (int) $request->query('per_page', 15))));
+            $appointments->getCollection()->each(fn (Appointment $a) => $this->withEstimates($a));
 
             return response()->json([
                 'success' => true,
+                'counts' => ['ALL' => $counts->sum(), ...$counts->all()],
                 'data' => $appointments->items(),
                 'pagination' => [
                     'current_page' => $appointments->currentPage(),
@@ -189,7 +211,7 @@ class AdvisorAppointmentController extends Controller
             'vehicle.model.brand',
             'services:id,name,category,base_price,estimated_minutes',
             'packages:id,name,description,mileage_milestone',
-            'packages.services:id,name',
+            'packages.services:id,name,estimated_minutes',
             'packages.parts:id,name,unit',
             'handledBy:id,email,role', 'handledBy.employee:id,account_id,full_name',
             'createdBy:id,email,role', 'createdBy.employee:id,account_id,full_name',
@@ -207,8 +229,59 @@ class AdvisorAppointmentController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $appointment,
+            'data' => $this->withEstimates($appointment),
         ], Response::HTTP_OK);
+    }
+
+    /**
+     * Khách không đến (CONFIRMED/PENDING → NO_SHOW): chỉ khi đã qua giờ hẹn. Giải phóng chỗ trong khung giờ.
+     */
+    public function noShow(Request $request, int $id): JsonResponse
+    {
+        $appointment = Appointment::query()->findOrFail($id);
+
+        if (! in_array($appointment->status, ['PENDING', 'CONFIRMED'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chỉ đánh dấu "Không đến" cho lịch đang chờ hoặc đã xác nhận.',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $when = Carbon::parse(Carbon::parse($appointment->appointment_date)->toDateString().' '.substr((string) $appointment->appointment_time, 0, 8));
+        if ($when->isFuture()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chưa tới giờ hẹn '.$when->format('H:i d/m/Y').', chưa thể đánh dấu khách không đến.',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $oldStatus = $appointment->status;
+        $appointment->update(['status' => 'NO_SHOW']);
+        $this->activity->record($appointment, AppointmentActivityService::NO_SHOW, $request->user(), ['status' => $oldStatus], ['status' => 'NO_SHOW']);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã đánh dấu khách không đến lịch {$appointment->appointment_code}.",
+            'data' => $appointment->fresh(),
+        ], Response::HTTP_OK);
+    }
+
+    /**
+     * Thêm số liệu dự kiến cho lịch: thời lượng (theo phút chuẩn dịch vụ, mặc định 60′), giờ kết thúc, tổng tiền dự kiến
+     * (giá chốt lúc đặt; dịch vụ cũ chưa có giá chốt thì lấy giá niêm yết).
+     */
+    private function withEstimates(Appointment $appointment): Appointment
+    {
+        $minutes = app(CapacityService::class)->appointmentMinutes($appointment);
+        $start = Carbon::createFromFormat('H:i:s', substr((string) $appointment->appointment_time, 0, 8));
+        $total = $appointment->services->sum(fn ($s) => (float) ($s->pivot->estimated_price ?? $s->base_price))
+            + $appointment->packages->sum(fn ($p) => (float) ($p->pivot->estimated_price ?? 0));
+
+        $appointment->setAttribute('estimated_minutes', $minutes);
+        $appointment->setAttribute('end_time', $start->copy()->addMinutes($minutes)->format('H:i'));
+        $appointment->setAttribute('estimated_total', round($total, 2));
+
+        return $appointment;
     }
 
     /**

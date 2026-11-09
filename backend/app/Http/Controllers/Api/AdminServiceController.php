@@ -20,27 +20,58 @@ class AdminServiceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Service::query()->withCount([
-            'packages as active_packages_count' => fn ($query) => $query->where('maintenance_packages.status', 'ACTIVE'),
+        $filters = $request->validate([
+            'status' => ['nullable', Rule::in(['ACTIVE', 'INACTIVE'])],
+            'category' => ['nullable', 'string', 'max:100'],
+            'category_id' => ['nullable', 'integer'],
+            'uncategorized' => ['nullable', 'boolean'],
+            'search' => ['nullable', 'string', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
         ]);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
-        if ($request->filled('category')) {
-            $query->where('category', $request->input('category'));
-        }
-
-        if ($request->filled('search')) {
-            $query->where('name', 'like', '%'.$request->input('search').'%');
-        }
+        $query = Service::query()
+            ->with('serviceCategory:id,name,icon')
+            ->withCount([
+                'packages as active_packages_count' => fn ($query) => $query->where('maintenance_packages.status', 'ACTIVE'),
+            ])
+            ->when($filters['status'] ?? null, fn ($q, string $status) => $q->where('status', $status))
+            ->when($filters['category'] ?? null, fn ($q, string $category) => $q->where('category', $category))
+            ->when($filters['category_id'] ?? null, fn ($q, int $id) => $q->where('category_id', $id))
+            ->when($filters['uncategorized'] ?? false, fn ($q) => $q->whereNull('category_id'))
+            ->when($filters['search'] ?? null, fn ($q, string $s) => $q->where(fn ($q) => $q->where('name', 'like', "%{$s}%")->orWhere('description', 'like', "%{$s}%")));
 
         return response()->json([
             'success' => true,
             'message' => 'Lấy danh sách dịch vụ thành công.',
-            'data' => $query->latest('id')->paginate(10),
+            // Theo thứ tự hiển thị admin đã kéo thả (cũng là thứ tự khách thấy khi đặt lịch).
+            'data' => $query->orderBy('sort_order')->orderBy('id')->paginate($filters['per_page'] ?? 10),
         ]);
+    }
+
+    /**
+     * PUT /api/admin/services/reorder — kéo thả đổi thứ tự. Nhận id theo thứ tự mới của các dòng đang hiển thị;
+     * các dòng này giữ đúng những vị trí chúng đang chiếm trong toàn danh sách, dịch vụ khác không bị xê dịch.
+     */
+    public function reorder(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:100'],
+            'ids.*' => ['integer', 'distinct', 'exists:services,id'],
+        ]);
+
+        DB::transaction(function () use ($data): void {
+            $all = Service::query()->orderBy('sort_order')->orderBy('id')->lockForUpdate()->pluck('id')->all();
+            $moved = array_map('intval', $data['ids']);
+            $slots = array_keys(array_intersect($all, $moved)); // vị trí đang chiếm, tăng dần
+            foreach ($slots as $i => $slot) {
+                $all[$slot] = $moved[$i];
+            }
+            foreach ($all as $position => $id) {
+                Service::query()->whereKey($id)->update(['sort_order' => $position + 1]);
+            }
+        });
+
+        return response()->json(['success' => true, 'message' => 'Đã lưu thứ tự hiển thị dịch vụ.']);
     }
 
     /**
@@ -63,10 +94,12 @@ class AdminServiceController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150', Rule::unique('services', 'name')],
             'category' => ['nullable', 'string', 'max:100'],
+            'category_id' => ['nullable', 'integer', 'exists:service_categories,id'],
             'description' => ['nullable', 'string'],
             'base_price' => ['required', 'numeric', 'min:0'],
             'estimated_minutes' => ['nullable', 'integer', 'min:1'],
             'status' => ['sometimes', 'required', Rule::in(['ACTIVE', 'INACTIVE'])],
+            'is_visible' => ['sometimes', 'boolean'],
             'is_popular' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'service_level' => ['sometimes', Rule::in(Service::LEVELS)],
@@ -79,7 +112,7 @@ class AdminServiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Thêm dịch vụ thành công.',
-            'data' => $service,
+            'data' => $service->load('serviceCategory:id,name,icon'),
         ], 201);
     }
 
@@ -97,10 +130,12 @@ class AdminServiceController extends Controller
                 Rule::unique('services', 'name')->ignore($service->id),
             ],
             'category' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'category_id' => ['sometimes', 'nullable', 'integer', 'exists:service_categories,id'],
             'description' => ['sometimes', 'nullable', 'string'],
             'base_price' => ['sometimes', 'required', 'numeric', 'min:0'],
             'estimated_minutes' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'status' => ['sometimes', 'required', Rule::in(['ACTIVE', 'INACTIVE'])],
+            'is_visible' => ['sometimes', 'boolean'],
             'is_popular' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'service_level' => ['sometimes', Rule::in(Service::LEVELS)],
@@ -112,7 +147,7 @@ class AdminServiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật dịch vụ thành công.',
-            'data' => $service->fresh(),
+            'data' => $service->fresh('serviceCategory:id,name,icon'),
         ]);
     }
 

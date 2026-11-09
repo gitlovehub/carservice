@@ -22,7 +22,7 @@ class UpdateAppointmentRequest extends FormRequest
             'symptom_description' => ['nullable', 'string', 'max:1000'],
             'note' => ['nullable', 'string', 'max:500'],
             'service_ids' => ['nullable', 'array'],
-            'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('status', 'ACTIVE')],
+            'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('status', 'ACTIVE')->where('is_visible', true)],
             'package_ids' => ['nullable', 'array', 'max:1'],
             'package_ids.*' => ['integer', 'distinct', Rule::exists('maintenance_packages', 'id')->where('status', 'ACTIVE')],
         ];
