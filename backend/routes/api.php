@@ -344,7 +344,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::delete('vehicle-trims/{trim}', 'trimDestroy')->whereNumber('trim');
         });
 
-        Route::get('/admin/working-hours', [WorkingHoursController::class, 'index']);
+        Route::get('/admin/working-hours', [WorkingHoursController::class, 'adminIndex']);
 
         Route::put('/admin/working-hours/{id}', [WorkingHoursController::class, 'update']);
         Route::put('/admin/booking-slots', [WorkingHoursController::class, 'updateBookingSlots']);

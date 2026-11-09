@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Account;
 use App\Models\Appointment;
 use App\Models\RepairOrder;
 use App\Models\WorkingHour;
@@ -10,7 +11,8 @@ use Carbon\CarbonImmutable;
 
 /**
  * P7 — Công suất gara theo phút / ngày (Q6: chỉ cảnh báo, không chặn).
- * Năng lực = daily_capacity_minutes, hoặc (giờ mở cửa × số cầu nâng) nếu chỉ khai báo bay_count; chưa cấu hình → null.
+ * Năng lực = daily_capacity_minutes (admin tự đặt), hoặc (giờ mở cửa × số cầu nâng) nếu khai báo bay_count,
+ * hoặc mặc định (giờ mở cửa × số KTV đang hoạt động); không có KTV → null.
  * Tải = Σ phút dự kiến của lịch CONFIRMED / CHECKED_IN trong ngày (+ hôm nay: phút còn lại của phiếu đang mở).
  */
 class CapacityService
@@ -91,7 +93,24 @@ class CapacityService
 
             return (int) $open->diffInMinutes($close) * (int) $hours->bay_count;
         }
+        // Mặc định: số kỹ thuật viên đang hoạt động × số phút mở cửa trong ngày.
+        $technicians = self::activeTechnicians();
+        if ($technicians > 0) {
+            $open = CarbonImmutable::parse($hours->open_time);
+            $close = CarbonImmutable::parse($hours->close_time);
+
+            return (int) $open->diffInMinutes($close) * $technicians;
+        }
 
         return null;
+    }
+
+    /** Số kỹ thuật viên có tài khoản đang hoạt động — cơ sở tính công suất tự động. */
+    public static function activeTechnicians(): int
+    {
+        return Account::query()
+            ->where('role', Account::ROLE_TECHNICIAN)
+            ->where('status', Account::STATUS_ACTIVE)
+            ->count();
     }
 }

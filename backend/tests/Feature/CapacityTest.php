@@ -114,6 +114,23 @@ class CapacityTest extends TestCase
         $this->capacity()->assertOk()->assertJsonPath('capacity_minutes', 0);
     }
 
+    public function test_capacity_defaults_to_active_technicians_times_open_hours(): void
+    {
+        $this->hours();
+        Account::factory()->count(3)->create(['role' => Account::ROLE_TECHNICIAN, 'status' => Account::STATUS_ACTIVE]);
+        Account::factory()->create(['role' => Account::ROLE_TECHNICIAN, 'status' => Account::STATUS_LOCKED]);
+
+        // 3 KTV đang hoạt động × 9 giờ (08:00–17:00) = 1620 phút; KTV bị khoá không tính.
+        $this->capacity()->assertOk()->assertJsonPath('capacity_minutes', 1620);
+
+        // Giá trị admin tự đặt vẫn được ưu tiên.
+        $this->hours(['daily_capacity_minutes' => 500]);
+        $this->capacity()->assertOk()->assertJsonPath('capacity_minutes', 500);
+
+        $admin = Account::factory()->create(['role' => Account::ROLE_ADMIN]);
+        $this->actingAs($admin)->getJson('/api/admin/working-hours')->assertOk()->assertJsonPath('meta.technicians', 3);
+    }
+
     public function test_admin_sets_capacity_and_customers_cannot_read_it(): void
     {
         $this->hours();

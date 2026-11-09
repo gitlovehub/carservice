@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\GarageSetting;
+use App\Services\CapacityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,18 @@ class WorkingHoursController extends Controller
                 ->whereBetween('day_of_week', [0, 6])
                 ->orderBy('day_of_week')
                 ->get(),
+        ]);
+    }
+
+    /** GET /admin/working-hours — như index, kèm số KTV để admin xem công suất tự động. */
+    public function adminIndex(): JsonResponse
+    {
+        return response()->json([
+            'data' => DB::table('working_hours')
+                ->whereBetween('day_of_week', [0, 6])
+                ->orderBy('day_of_week')
+                ->get(),
+            'meta' => ['technicians' => CapacityService::activeTechnicians()],
         ]);
     }
 

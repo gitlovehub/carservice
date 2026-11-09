@@ -1,4 +1,4 @@
-import { Button, PageHeader } from "../../components/ui";
+import { Button, Icon, PageHeader } from "../../components/ui";
 import { useEffect, useState } from "react";
 import { fetchApi } from "../../services/api";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -19,8 +19,8 @@ type RowForm = {
   close_time: string;
   max_slots: string;
   is_active: boolean;
-  /** P7: năng lực (phút / ngày) — chỉ dùng để cảnh báo quá tải. */
-  daily_capacity_minutes: string;
+  /** Công suất tự đặt (giờ công / ngày); "" = tự động (số KTV × giờ mở cửa). Chỉ dùng để cảnh báo quá tải. */
+  capacity_hours: string;
 };
 
 type RowState = {
@@ -56,8 +56,25 @@ function toForm(hour: WorkingHour): RowForm {
     close_time: toHHmm(hour.close_time),
     max_slots: String(hour.max_slots),
     is_active: Boolean(Number(hour.is_active)),
-    daily_capacity_minutes: hour.daily_capacity_minutes != null ? String(hour.daily_capacity_minutes) : "",
+    capacity_hours: hour.daily_capacity_minutes != null ? formatHours(hour.daily_capacity_minutes / 60) : "",
   };
+}
+
+/** 7.5 → "7,5"; 8 → "8". */
+function formatHours(hours: number): string {
+  return String(Math.round(hours * 10) / 10).replace(".", ",");
+}
+
+function parseHours(value: string): number {
+  return Number(value.replace(",", "."));
+}
+
+/** Số phút mở cửa giữa hai mốc HH:mm (0 nếu không hợp lệ). */
+function openMinutes(open: string, close: string): number {
+  const [oh, om] = open.split(":").map(Number);
+  const [ch, cm] = close.split(":").map(Number);
+  const minutes = ch * 60 + cm - (oh * 60 + om);
+  return Number.isFinite(minutes) && minutes > 0 ? minutes : 0;
 }
 
 function isSame(a: RowForm, b: RowForm): boolean {
@@ -66,7 +83,7 @@ function isSame(a: RowForm, b: RowForm): boolean {
     a.close_time === b.close_time &&
     a.max_slots === b.max_slots &&
     a.is_active === b.is_active &&
-    a.daily_capacity_minutes === b.daily_capacity_minutes
+    a.capacity_hours === b.capacity_hours
   );
 }
 
@@ -93,7 +110,80 @@ function validateRow(form: RowForm): string {
     return "Ngày hoạt động phải có ít nhất 1 lịch mỗi khung giờ.";
   }
 
+  if (form.capacity_hours !== "") {
+    const hours = parseHours(form.capacity_hours);
+    if (!Number.isFinite(hours) || hours <= 0 || hours > 1000) {
+      return "Công suất tự đặt phải là số giờ công lớn hơn 0 (ví dụ 32). Bấm \"Dùng tự động\" nếu không muốn tự đặt.";
+    }
+  }
+
   return "";
+}
+
+const ROW_GRID = "lg:grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr_0.9fr_1.35fr_1.2fr]";
+
+/** Cột "Công suất / ngày": mặc định hiển thị số tính tự động; admin có thể tự đặt số giờ công. */
+function CapacityCell({ day, form, technicians, onChange }: {
+  day: string;
+  form: RowForm;
+  technicians: number;
+  onChange: (capacityHours: string) => void;
+}) {
+  if (!form.is_active) {
+    return <p className="text-sm text-cs-muted">Nghỉ</p>;
+  }
+
+  const openHours = openMinutes(form.open_time, form.close_time) / 60;
+  const linkClass = "text-[12px] font-medium text-cs-accent-text hover:underline underline-offset-2";
+
+  if (form.capacity_hours === "") {
+    const auto = technicians * openHours;
+    return (
+      <div className="min-w-0">
+        {technicians > 0 ? (
+          <>
+            <p className="text-sm font-semibold">{formatHours(auto)} giờ công</p>
+            <p className="text-[12px] text-cs-muted">Tự động · {technicians} KTV × {formatHours(openHours)} giờ</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-semibold text-cs-muted">Chưa tính được</p>
+            <p className="text-[12px] text-cs-muted">Chưa có kỹ thuật viên hoạt động</p>
+          </>
+        )}
+        <button
+          type="button"
+          className={linkClass}
+          onClick={() => onChange(formatHours(technicians > 0 ? auto : 8))}
+          aria-label={`Tự đặt công suất ${day}`}
+        >
+          Tự đặt
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-w-0">
+      <div className="relative">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={form.capacity_hours}
+          onChange={(event) => onChange(event.target.value.replace(/[^\d.,]/g, ""))}
+          className={`${fieldClass} pr-[4.5rem]`}
+          aria-label={`Công suất tự đặt (giờ công) ${day}`}
+        />
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-cs-muted">giờ công</span>
+      </div>
+      <p className="mt-1 text-[12px] text-cs-muted">
+        Tự đặt ·{" "}
+        <button type="button" className={linkClass} onClick={() => onChange("")} aria-label={`Dùng công suất tự động ${day}`}>
+          Dùng tự động
+        </button>
+      </p>
+    </div>
+  );
 }
 
 function WorkingHours() {
@@ -105,6 +195,7 @@ function WorkingHours() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [technicians, setTechnicians] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -113,8 +204,9 @@ function WorkingHours() {
     setError("");
 
     fetchApi("/admin/working-hours")
-      .then((response: { data: WorkingHour[] }) => {
+      .then((response: { data: WorkingHour[]; meta?: { technicians?: number } }) => {
         if (!active) return;
+        setTechnicians(Number(response?.meta?.technicians ?? 0));
 
         const list = Array.isArray(response?.data) ? response.data : [];
         const nextForms: Record<number, RowForm> = {};
@@ -199,7 +291,7 @@ function WorkingHours() {
             close_time: form.close_time,
             max_slots: Number(form.max_slots),
             is_active: form.is_active,
-            daily_capacity_minutes: form.daily_capacity_minutes === "" ? null : Math.max(0, Math.round(Number(form.daily_capacity_minutes))),
+            daily_capacity_minutes: form.capacity_hours === "" ? null : Math.round(parseHours(form.capacity_hours) * 60),
           }),
         },
       );
@@ -277,12 +369,15 @@ function WorkingHours() {
             )}
 
             <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
-              <div className="hidden grid-cols-[1.1fr_0.9fr_1fr_1fr_1fr_1.4fr] gap-4 border-b border-[#E1E4E6] bg-cs-surface-2 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-cs-muted lg:grid">
+              <div className={`hidden ${ROW_GRID} gap-4 border-b border-[#E1E4E6] bg-cs-surface-2 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-cs-muted lg:grid`}>
                 <span>Ngày</span>
                 <span>Trạng thái</span>
                 <span>Giờ mở cửa</span>
                 <span>Giờ đóng cửa</span>
                 <span>Lịch tối đa / khung giờ</span>
+                <span className="inline-flex items-center gap-1" title="Tổng giờ làm việc của thợ trong ngày. Dùng để cảnh báo cố vấn khi lịch hẹn vượt sức làm của gara.">
+                  Công suất / ngày <Icon name="info" size={13}/>
+                </span>
                 <span className="text-right">Thao tác</span>
               </div>
 
@@ -319,7 +414,7 @@ function WorkingHours() {
                       key={hour.id}
                       className="border-b border-[#EDEFF0] px-6 py-4 last:border-b-0"
                     >
-                      <div className="grid items-center gap-4 lg:grid-cols-[1.1fr_0.9fr_1fr_1fr_1fr_1.4fr]">
+                      <div className={`grid items-center gap-4 ${ROW_GRID}`}>
                         <div className="flex items-center gap-3">
                           <span
                             className={`flex h-9 w-9 items-center justify-center rounded-xl text-[12px] font-bold ${
@@ -381,7 +476,6 @@ function WorkingHours() {
                           aria-label={`Giờ đóng cửa ${DAY_LABELS[hour.day_of_week]}`}
                         />
 
-                        <div>
                         <input
                           type="number"
                           min={0}
@@ -394,18 +488,13 @@ function WorkingHours() {
                           className={fieldClass}
                           aria-label={`Số lịch tối đa ${DAY_LABELS[hour.day_of_week]}`}
                         />
-                        <input
-                          type="number"
-                          min={0}
-                          value={form.daily_capacity_minutes}
-                          disabled={disabledFields}
-                          placeholder="Năng lực (phút/ngày)"
-                          title="Tổng phút làm việc gara xử lý được trong ngày — vượt mức chỉ cảnh báo, không chặn"
-                          onChange={(event) => updateForm(hour.id, { daily_capacity_minutes: event.target.value })}
-                          className={`mt-1 ${fieldClass}`}
-                          aria-label={`Năng lực phút mỗi ngày ${DAY_LABELS[hour.day_of_week]}`}
+
+                        <CapacityCell
+                          day={DAY_LABELS[hour.day_of_week]}
+                          form={form}
+                          technicians={technicians}
+                          onChange={(capacity_hours) => updateForm(hour.id, { capacity_hours })}
                         />
-                        </div>
 
                         <div className="flex items-center justify-start gap-2 lg:justify-end">
                           {dirty && (
@@ -428,6 +517,11 @@ function WorkingHours() {
             <p className="mt-4 text-[12px] text-cs-muted">
               Khách hàng chỉ có thể đặt lịch trong các ngày hoạt động, trong khoảng giờ đã
               cấu hình và không vượt quá số lịch tối đa của mỗi khung giờ.
+            </p>
+            <p className="mt-1 text-[12px] text-cs-muted">
+              <strong className="font-semibold text-cs-text">Công suất / ngày</strong> là tổng giờ làm việc của thợ trong ngày,
+              mặc định tính tự động = số kỹ thuật viên đang hoạt động ({technicians}) × số giờ mở cửa. Khi lịch hẹn đã xác nhận
+              vượt mức này, cố vấn sẽ thấy cảnh báo quá tải (không chặn đặt lịch). Chỉ bấm "Tự đặt" nếu thực tế khác, ví dụ có thợ nghỉ cố định ngày đó.
             </p>
 
             {(() => {
