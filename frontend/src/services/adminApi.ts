@@ -73,7 +73,7 @@ export type AdminReview = {
   id: number; customer: string | null; vehicle: string; order_code: string | null; rating: number; advisor_rating: number | null; technician_rating: number | null;
   comment: string; date: string | null; technician: string | null; reply: string | null; replied_at: string | null; hidden: boolean;
 };
-export type ReviewList = Paged<AdminReview, { average: number; visible: number; hidden: number; unreplied: number; distribution: Record<string, number> }>;
+export type ReviewList = Paged<AdminReview, { average: number; visible: number; hidden: number; unreplied: number; low_unreplied: number; distribution: Record<string, number> }>;
 
 /* ------------------------------------------------------------------- Nhật ký */
 export type AuditCategory = "CREATE" | "UPDATE" | "DELETE" | "STATUS";

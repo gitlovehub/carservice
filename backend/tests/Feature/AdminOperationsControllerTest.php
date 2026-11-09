@@ -143,7 +143,8 @@ class AdminOperationsControllerTest extends TestCase
             ->assertJsonPath('summary.visible', 3)
             ->assertJsonPath('summary.hidden', 1)
             ->assertJsonPath('summary.average', 3.67)
-            ->assertJsonPath('summary.distribution.5', 1);
+            ->assertJsonPath('summary.distribution.5', 1)
+            ->assertJsonPath('summary.low_unreplied', 1);
         $this->getJson('/api/admin/reviews?rating=low')->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $low->id);
         $this->getJson('/api/admin/reviews?rating=hidden')->assertJsonPath('meta.total', 1);
         $this->getJson('/api/admin/reviews?search=chờ')->assertJsonPath('meta.total', 1);

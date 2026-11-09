@@ -286,6 +286,7 @@ class AdminOperationsController extends Controller
                 'visible' => (clone $visible)->count(),
                 'hidden' => Review::query()->where('is_hidden', true)->count(),
                 'unreplied' => (clone $visible)->whereNull('reply')->count(),
+                'low_unreplied' => (clone $visible)->whereNull('reply')->where('overall_rating', '<=', 3)->count(),
                 'distribution' => collect([5, 4, 3, 2, 1])->mapWithKeys(fn (int $s) => [$s => (clone $visible)->where('overall_rating', $s)->count()]),
             ],
         ]);

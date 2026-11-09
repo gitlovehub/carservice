@@ -1,130 +1,189 @@
-import { useMemo, useState } from "react";
-import { Button, DataTable, Dropdown, Field, Input, Modal, Pagination, SearchInput, type Column } from "../../components/ui";
+import { useState } from "react";
+import { Button, DataTable, Dropdown, ErrorState, Field, Input, LoadingState, Modal, Pagination, SearchInput, type Column } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
-import { demoCustomers, type DemoCustomer } from "../../mocks/admin/people";
+import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
+import { adminApi, errorMessage, fmtDate, type AdminCustomer } from "../../services/adminApi";
+import { emptySelection, type VehicleSelection } from "../../services/vehicleCatalog";
+import { getStatus } from "../../config/status";
 import { AdminPage, FilterSelect, InfoList, PaneSection, Person, Pill, SplitView, Stars, Toolbar } from "./kit/AdminKit";
 import { vnd } from "./kit/format";
-import { usePaged } from "./kit/usePaged";
+import { useAdminQuery } from "./kit/useAdminQuery";
+import { useDebounced } from "./kit/useDebounced";
 
 type CarFilter = "all" | "has" | "none";
 type Sort = "recent" | "spent" | "name";
-const carColor = { white: "text-cs-muted", red: "text-cs-accent", grey: "text-cs-text-2", black: "text-cs-text" } as const;
+type Draft = { name: string; phone: string; email: string; address: string };
+const emptyDraft: Draft = { name: "", phone: "", email: "", address: "" };
+const PLATE = /^\d{2}[A-Z]{1,2}-\d{3}\.\d{2}$|^\d{2}[A-Z]{1,2}-\d{4,5}$/;
 
-/** Khách hàng — DEMO: dữ liệu từ src/mocks/admin/people.ts. */
+/** Khách hàng — dữ liệu thật: /api/admin/customers (danh sách, hồ sơ, khoá), /api/customers và /api/vehicles (thêm/sửa). */
 export default function AdminCustomers() {
   const { notify, confirm } = useAppFeedback();
-  const [locked, setLocked] = useState<number[]>([]);
-  const [customers, setCustomers] = useState(demoCustomers);
-  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
   const [cars, setCars] = useState<CarFilter>("all");
   const [sort, setSort] = useState<Sort>("recent");
-  const [selectedId, setSelectedId] = useState<number | null>(demoCustomers[0].id);
-  const [formOpen, setFormOpen] = useState(false);
-  const [draft, setDraft] = useState({ name: "", phone: "", email: "", address: "" });
+  const [page, setPage] = useState(1);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [form, setForm] = useState<{ id: number | null; draft: Draft } | null>(null);
+  const [vehicleForm, setVehicleForm] = useState<{ selection: VehicleSelection; plate: string; year: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+  const term = useDebounced(search.trim());
 
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const list = customers.filter(c => (!q || [c.name, c.phone, c.email].some(v => v.toLowerCase().includes(q)))
-      && (cars === "all" || (cars === "has" ? c.vehicles.length > 0 : c.vehicles.length === 0)));
-    const key = (d: string) => d.split("/").reverse().join("");
-    return [...list].sort((a, b) => sort === "spent" ? b.totalSpent - a.totalSpent : sort === "name" ? a.name.localeCompare(b.name, "vi") : key(b.lastVisit).localeCompare(key(a.lastVisit)));
-  }, [customers, query, cars, sort]);
-  const { pageRows, pagination } = usePaged(rows, 10);
-  const selected = customers.find(c => c.id === selectedId) ?? null;
+  const params = { search: term, cars, sort, page };
+  const list = useAdminQuery(`customers:${JSON.stringify(params)}`, signal => adminApi.customers(params, signal));
+  const detail = useAdminQuery(selectedId === null ? null : `customer:${selectedId}`, signal => adminApi.customer(selectedId as number, signal));
+  const result = list.data ?? list.stale;
+  const selected = detail.data;
+  const refresh = () => { list.reload(); detail.reload(); };
 
-  const columns: Column<DemoCustomer>[] = [
-    { key: "name", header: "Khách hàng", primary: true, render: c => <span className="flex items-center gap-2"><Person name={c.name} sub={c.email}/>{c.vip && <Icon name="star" size={14} className="shrink-0 text-warning"/>}{locked.includes(c.id) && <Icon name="lock" size={14} className="shrink-0 text-danger"/>}</span> },
-    { key: "phone", header: "SĐT", render: c => <span className="whitespace-nowrap tabular-nums">{c.phone}</span> },
-    { key: "city", header: "Địa chỉ", hideOnMobile: true, render: c => <span className="whitespace-nowrap">{c.city}</span> },
-    { key: "cars", header: "Số xe", render: c => <span className="whitespace-nowrap">{c.vehicles.length} xe</span> },
-    { key: "last", header: "Lần sửa gần nhất", hideOnMobile: true, render: c => <span className="tabular-nums">{c.lastVisit}</span> },
-    { key: "spent", header: "Tổng chi tiêu", align: "right", render: c => <b className="whitespace-nowrap tabular-nums">{vnd(c.totalSpent)}</b> },
+  const columns: Column<AdminCustomer>[] = [
+    { key: "name", header: "Khách hàng", primary: true, render: c => <span className="flex items-center gap-2"><Person name={c.name} sub={c.email ?? (c.has_account ? undefined : "Khách vãng lai")}/>{c.vip && <Icon name="star" size={14} className="shrink-0 text-warning"/>}{c.locked && <Icon name="lock" size={14} className="shrink-0 text-danger"/>}</span> },
+    { key: "phone", header: "SĐT", render: c => <span className="whitespace-nowrap tabular-nums">{c.phone ?? "—"}</span> },
+    { key: "city", header: "Khu vực", hideOnMobile: true, render: c => <span className="whitespace-nowrap">{c.city ?? "—"}</span> },
+    { key: "cars", header: "Số xe", render: c => <span className="whitespace-nowrap">{c.vehicles_count} xe</span> },
+    { key: "last", header: "Lần sửa gần nhất", hideOnMobile: true, render: c => <span className="tabular-nums">{fmtDate(c.last_visit)}</span> },
+    { key: "spent", header: "Tổng chi tiêu", align: "right", render: c => <b className="whitespace-nowrap tabular-nums">{vnd(c.total_spent)}</b> },
   ];
 
-  const toggleLock = async (customer: DemoCustomer) => {
-    const isLocked = locked.includes(customer.id);
-    if (!isLocked && !await confirm({ title: `Khóa khách hàng ${customer.name}?`, description: "Khách sẽ không đăng nhập và đặt lịch online được. Lịch sử sửa chữa vẫn được giữ nguyên.", confirmText: "Khóa khách hàng", variant: "danger", confirmIcon: "lock", phone: customer.phone })) return;
-    setLocked(list => isLocked ? list.filter(id => id !== customer.id) : [...list, customer.id]);
-    notify(isLocked ? "Đã mở khóa khách hàng (demo)." : "Đã khóa khách hàng (demo).", "success");
+  const toggleLock = async (customer: AdminCustomer) => {
+    if (!customer.locked && !await confirm({ title: `Khóa khách hàng ${customer.name}?`, description: "Khách sẽ không đăng nhập và đặt lịch online được, mọi phiên đăng nhập bị thu hồi. Lịch sử sửa chữa vẫn được giữ nguyên.", confirmText: "Khóa khách hàng", variant: "danger", confirmIcon: "lock", phone: customer.phone ?? undefined })) return;
+    try {
+      const response = await adminApi.lockCustomer(customer.id, !customer.locked);
+      notify(response.message, "success");
+      refresh();
+    } catch (error) {
+      notify(errorMessage(error), "error");
+    }
   };
 
-  const save = () => {
-    if (!draft.name.trim() || !draft.phone.trim()) return;
-    const id = Math.max(...customers.map(c => c.id)) + 1;
-    setCustomers([{ id, ...draft, city: draft.address.split(",").pop()?.trim() || "—", vehicles: [], lastVisit: "—", totalSpent: 0, history: [] }, ...customers]);
-    setSelectedId(id); setFormOpen(false); setDraft({ name: "", phone: "", email: "", address: "" });
-    notify("Đã thêm khách hàng (demo).", "success");
+  const saveCustomer = async () => {
+    if (!form) return;
+    const { draft } = form;
+    if (!draft.name.trim() || !/^0\d{9,10}$/.test(draft.phone.trim())) return setFormError("Nhập họ tên và số điện thoại hợp lệ (10–11 số, bắt đầu bằng 0).");
+    setSaving(true); setFormError("");
+    const body = { full_name: draft.name.trim(), phone: draft.phone.trim(), email: draft.email.trim() || null, address: draft.address.trim() || null };
+    try {
+      const response = form.id === null ? await adminApi.createCustomer(body) : await adminApi.updateCustomer(form.id, body);
+      notify(form.id === null ? "Đã thêm khách hàng." : "Đã cập nhật khách hàng.", "success");
+      setForm(null);
+      setSelectedId(response.data.id);
+      refresh();
+    } catch (error) {
+      setFormError(errorMessage(error, "Không lưu được khách hàng."));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const pane = selected && <>
-    <div className="mb-4 flex items-center gap-3">
-      <Person name={selected.name} size={52} sub={selected.vip ? "Khách hàng thân thiết" : "Khách hàng"}/>
-      {selected.vip && <span className="ml-auto"><Pill tone="warning" icon="star">VIP</Pill></span>}
-    </div>
-    <PaneSection title="Thông tin liên hệ" icon="user" action={<Button variant="ghost" size="sm" icon="edit">Chỉnh sửa</Button>}>
-      <InfoList items={[{ icon: "phone", value: selected.phone }, { icon: "mail", value: selected.email }, { icon: "pin", value: selected.address }]}/>
-    </PaneSection>
-    <PaneSection title={`Danh sách xe (${selected.vehicles.length})`} icon="car" action={<Button variant="ghost" size="sm" icon="plus">Thêm xe</Button>}>
-      {selected.vehicles.length ? <ul className="flex flex-col gap-2">
-        {selected.vehicles.map(v => <li key={v.id} className="flex items-center gap-3 rounded-control border border-cs-border p-3">
-          <span className={`grid size-11 shrink-0 place-items-center rounded-control bg-cs-surface-2 ${carColor[v.color]}`}><Icon name="car" size={24}/></span>
-          <span className="min-w-0 flex-1 text-small">
-            <b className="block text-cs-text">{v.brand} {v.model}</b>
-            <span className="text-cs-muted">Biển số: <span className="text-cs-text">{v.plate}</span> · Năm {v.year}</span>
-          </span>
-          <Icon name="chevron-right" size={16} className="text-cs-muted"/>
-        </li>)}
-      </ul> : <p className="text-small text-cs-muted">Khách chưa đăng ký xe.</p>}
-    </PaneSection>
-    <PaneSection title="Lịch sử dịch vụ" icon="history">
-      {selected.history.length ? <ol className="relative ml-1.5 border-l-2 border-cs-border pl-5">
-        {selected.history.map((h, i) => <li key={h.date + h.title} className="relative pb-3.5 last:pb-0">
-          <span className={`absolute -left-[27px] top-1 size-3 rounded-full border-2 ${i ? "border-cs-accent bg-cs-surface" : "border-cs-accent bg-cs-accent"}`}/>
-          <div className="flex items-start justify-between gap-3 text-small">
-            <div className="min-w-0"><p className="text-caption text-cs-muted">{h.date}</p><p className="font-semibold text-cs-text">{h.title}</p><p className="text-caption text-cs-muted">{h.vehicle}</p></div>
-            <b className="shrink-0 tabular-nums text-cs-text">{vnd(h.amount)}</b>
-          </div>
-        </li>)}
-      </ol> : <p className="text-small text-cs-muted">Chưa có lần sửa chữa nào.</p>}
-    </PaneSection>
-    {selected.lastReview && <PaneSection title="Đánh giá gần nhất" icon="star" action={<span className="text-caption text-cs-muted">{selected.lastReview.date}</span>}>
-      <div className="rounded-control bg-cs-surface-2 p-3.5">
-        <p className="mb-1.5 flex items-center gap-2"><Stars value={selected.lastReview.rating}/><b className="text-small">{selected.lastReview.rating.toFixed(1)}</b></p>
-        <p className="text-small italic text-cs-text-2">“{selected.lastReview.comment}”</p>
+  const saveVehicle = async () => {
+    if (!vehicleForm || selectedId === null) return;
+    const plate = vehicleForm.plate.trim().toUpperCase();
+    if (vehicleForm.selection.modelId === null) return setFormError("Chọn hãng và dòng xe.");
+    if (!PLATE.test(plate)) return setFormError("Biển số chưa đúng định dạng (VD: 30A-123.45).");
+    setSaving(true); setFormError("");
+    try {
+      await adminApi.addVehicle({ customer_id: selectedId, model_id: vehicleForm.selection.modelId, trim_id: vehicleForm.selection.trimId, license_plate: plate, year: vehicleForm.year ? Number(vehicleForm.year) : null });
+      notify("Đã thêm xe cho khách hàng.", "success");
+      setVehicleForm(null);
+      refresh();
+    } catch (error) {
+      setFormError(errorMessage(error, "Không thêm được xe."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const pane = selectedId === null ? null : !selected
+    ? (detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact/>)
+    : <>
+      <div className="mb-4 flex items-center gap-3">
+        <Person name={selected.name} size={52} sub={selected.vip ? "Khách hàng thân thiết" : selected.has_account ? "Khách hàng có tài khoản" : "Khách vãng lai"}/>
+        <span className="ml-auto flex gap-1.5">{selected.locked && <Pill tone="danger" icon="lock">Đã khoá</Pill>}{selected.vip && <Pill tone="warning" icon="star">VIP</Pill>}</span>
       </div>
-    </PaneSection>}
-  </>;
+      <PaneSection title="Thông tin liên hệ" icon="user" action={<Button variant="ghost" size="sm" icon="edit"
+        onClick={() => { setFormError(""); setForm({ id: selected.id, draft: { name: selected.name, phone: selected.phone ?? "", email: selected.email ?? "", address: selected.address ?? "" } }); }}>Chỉnh sửa</Button>}>
+        <InfoList items={[{ icon: "phone", value: selected.phone ?? "—" }, { icon: "mail", value: selected.email ?? "—" }, { icon: "pin", value: selected.address ?? "—" },
+          { label: "Khách từ", value: fmtDate(selected.created_at) }, { label: "Số lần sửa", value: `${selected.visits} lần · ${vnd(selected.total_spent)}` }]}/>
+      </PaneSection>
+      <PaneSection title={`Danh sách xe (${selected.vehicles.length})`} icon="car" action={<Button variant="ghost" size="sm" icon="plus"
+        onClick={() => { setFormError(""); setVehicleForm({ selection: emptySelection, plate: "", year: "" }); }}>Thêm xe</Button>}>
+        {selected.vehicles.length ? <ul className="flex flex-col gap-2">
+          {selected.vehicles.map(v => <li key={v.id} className="flex items-center gap-3 rounded-control border border-cs-border p-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-control bg-cs-surface-2 text-cs-accent-text"><Icon name="car" size={24}/></span>
+            <span className="min-w-0 flex-1 text-small">
+              <b className="block text-cs-text">{[v.brand, v.model, v.trim].filter(Boolean).join(" ") || "Xe chưa rõ dòng"}</b>
+              <span className="text-cs-muted">Biển số: <span className="text-cs-text">{v.plate ?? "—"}</span>{v.year ? ` · Năm ${v.year}` : ""}{v.mileage ? ` · ${v.mileage.toLocaleString("vi-VN")} km` : ""}</span>
+            </span>
+          </li>)}
+        </ul> : <p className="text-small text-cs-muted">Khách chưa đăng ký xe.</p>}
+      </PaneSection>
+      <PaneSection title="Lịch sử dịch vụ" icon="history">
+        {selected.history.length ? <ol className="relative ml-1.5 border-l-2 border-cs-border pl-5">
+          {selected.history.map((h, i) => <li key={h.id} className="relative pb-3.5 last:pb-0">
+            <span className={`absolute -left-[27px] top-1 size-3 rounded-full border-2 ${i ? "border-cs-accent bg-cs-surface" : "border-cs-accent bg-cs-accent"}`}/>
+            <div className="flex items-start justify-between gap-3 text-small">
+              <div className="min-w-0"><p className="text-caption text-cs-muted">{fmtDate(h.date)} · {h.code} · {getStatus("repair", h.status, "staff").label}</p><p className="font-semibold text-cs-text">{h.title}</p><p className="text-caption text-cs-muted">{h.vehicle}</p></div>
+              <b className="shrink-0 tabular-nums text-cs-text">{h.amount ? vnd(h.amount) : "—"}</b>
+            </div>
+          </li>)}
+        </ol> : <p className="text-small text-cs-muted">Chưa có lần sửa chữa nào.</p>}
+      </PaneSection>
+      {selected.last_review && <PaneSection title="Đánh giá gần nhất" icon="star" action={<span className="text-caption text-cs-muted">{fmtDate(selected.last_review.date)}</span>}>
+        <div className="rounded-control bg-cs-surface-2 p-3.5">
+          <p className="mb-1.5 flex items-center gap-2"><Stars value={selected.last_review.rating}/><b className="text-small">{selected.last_review.rating.toFixed(1)}</b></p>
+          {selected.last_review.comment && <p className="text-small italic text-cs-text-2">“{selected.last_review.comment}”</p>}
+        </div>
+      </PaneSection>}
+    </>;
 
-  return <AdminPage title="Khách hàng" description="Hồ sơ khách và xe đã đăng ký"
-    actions={<Button variant="primary" icon="plus" onClick={() => setFormOpen(true)}>Thêm khách hàng</Button>}>
-    <SplitView paneOpen={!!selected} onClose={() => setSelectedId(null)} paneTitle="Hồ sơ khách hàng" pane={pane}
+  const setDraft = (patch: Partial<Draft>) => setForm(current => current && { ...current, draft: { ...current.draft, ...patch } });
+
+  return <AdminPage title="Khách hàng" description="Hồ sơ khách và xe đã đăng ký" demo={false}
+    actions={<Button variant="primary" icon="plus" onClick={() => { setFormError(""); setForm({ id: null, draft: emptyDraft }); }}>Thêm khách hàng</Button>}>
+    <SplitView paneOpen={selectedId !== null} onClose={() => setSelectedId(null)} paneTitle="Hồ sơ khách hàng" pane={pane}
       list={<>
         <Toolbar>
-          <SearchInput value={query} onChange={setQuery} placeholder="Tìm theo tên, số điện thoại, email…"/>
-          <FilterSelect label="Xe" value={cars} onChange={setCars} options={[{ value: "all", label: "Tất cả" }, { value: "has", label: "Có xe" }, { value: "none", label: "Chưa có xe" }]}/>
-          <FilterSelect label="Sắp xếp" value={sort} onChange={setSort} options={[{ value: "recent", label: "Mới nhất" }, { value: "spent", label: "Chi tiêu cao" }, { value: "name", label: "Tên A–Z" }]}/>
+          <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm theo tên, SĐT, email, biển số…"/>
+          <FilterSelect label="Xe" value={cars} onChange={value => { setCars(value); setPage(1); }} options={[{ value: "all", label: "Tất cả" }, { value: "has", label: "Có xe" }, { value: "none", label: "Chưa có xe" }]}/>
+          <FilterSelect label="Sắp xếp" value={sort} onChange={value => { setSort(value); setPage(1); }} options={[{ value: "recent", label: "Sửa gần nhất" }, { value: "spent", label: "Chi tiêu cao" }, { value: "name", label: "Tên A–Z" }]}/>
         </Toolbar>
-        <DataTable caption="Danh sách khách hàng" columns={columns} rows={pageRows} rowKey={c => c.id}
+        <DataTable caption="Danh sách khách hàng" columns={columns} rows={result?.data ?? []} rowKey={c => c.id}
+          loading={list.loading} error={list.error || undefined} onRetry={list.reload}
           onRowClick={c => setSelectedId(c.id)} rowClassName={c => c.id === selectedId ? "bg-cs-soft/60" : ""}
           actions={c => <Dropdown label={`Thao tác cho ${c.name}`} items={[
             { label: "Xem hồ sơ", icon: "eye", onSelect: () => setSelectedId(c.id) },
             { type: "separator" },
-            locked.includes(c.id)
+            c.locked
               ? { label: "Mở khóa khách hàng", icon: "key", onSelect: () => { void toggleLock(c); } }
-              : { label: "Khóa khách hàng", icon: "lock", danger: true, onSelect: () => { void toggleLock(c); } },
+              : { label: "Khóa khách hàng", icon: "lock", danger: true, disabled: !c.has_account, onSelect: () => { void toggleLock(c); } },
           ]}/>}
-          footer={<Pagination {...pagination}/>}/>
+          footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={list.loading} onChange={setPage}/>}/>
       </>}/>
 
-    <Modal open={formOpen} onClose={() => setFormOpen(false)} title="Thêm khách hàng" description="Khách sẽ nhận email kích hoạt tài khoản (khi có API)."
-      footer={<><Button onClick={() => setFormOpen(false)}>Huỷ</Button><Button variant="primary" onClick={save} disabled={!draft.name.trim() || !draft.phone.trim()}>Lưu</Button></>}>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Họ tên" required className="sm:col-span-2"><Input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}/></Field>
-        <Field label="Số điện thoại" required><Input inputMode="tel" value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })}/></Field>
-        <Field label="Email" optional><Input type="email" value={draft.email} onChange={e => setDraft({ ...draft, email: e.target.value })}/></Field>
-        <Field label="Địa chỉ" optional className="sm:col-span-2"><Input value={draft.address} onChange={e => setDraft({ ...draft, address: e.target.value })} placeholder="Quận/Huyện, Tỉnh/Thành"/></Field>
-      </div>
+    <Modal open={form !== null} onClose={() => setForm(null)} dismissible={!saving} title={form?.id ? "Sửa thông tin khách hàng" : "Thêm khách hàng"}
+      description={form?.id ? undefined : "Hồ sơ khách tại quầy (khách tự tạo tài khoản khi đăng ký online)."}
+      footer={<><Button disabled={saving} onClick={() => setForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void saveCustomer()}>Lưu</Button></>}>
+      {form && <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Họ tên" required className="sm:col-span-2"><Input value={form.draft.name} maxLength={100} onChange={e => setDraft({ name: e.target.value })}/></Field>
+        <Field label="Số điện thoại" required><Input inputMode="tel" value={form.draft.phone} maxLength={11} onChange={e => setDraft({ phone: e.target.value })}/></Field>
+        <Field label="Email" optional><Input type="email" value={form.draft.email} onChange={e => setDraft({ email: e.target.value })}/></Field>
+        <Field label="Địa chỉ" optional className="sm:col-span-2"><Input value={form.draft.address} maxLength={255} onChange={e => setDraft({ address: e.target.value })} placeholder="Số nhà, đường, quận/huyện, tỉnh/thành"/></Field>
+        {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
+      </div>}
+    </Modal>
+
+    <Modal open={vehicleForm !== null} onClose={() => setVehicleForm(null)} dismissible={!saving} title="Thêm xe cho khách" description={selected?.name}
+      footer={<><Button disabled={saving} onClick={() => setVehicleForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void saveVehicle()}>Lưu xe</Button></>}>
+      {vehicleForm && <div className="flex flex-col gap-4">
+        <VehicleSelector columns={1} value={vehicleForm.selection} disabled={saving} onChange={selection => setVehicleForm(current => current && { ...current, selection })}/>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Biển số" required><Input value={vehicleForm.plate} placeholder="30A-123.45" className="uppercase" onChange={e => setVehicleForm(current => current && { ...current, plate: e.target.value })}/></Field>
+          <Field label="Năm sản xuất" optional><Input type="number" min={1990} max={new Date().getFullYear() + 1} value={vehicleForm.year} onChange={e => setVehicleForm(current => current && { ...current, year: e.target.value })}/></Field>
+        </div>
+        {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg">{formError}</p>}
+      </div>}
     </Modal>
   </AdminPage>;
 }
