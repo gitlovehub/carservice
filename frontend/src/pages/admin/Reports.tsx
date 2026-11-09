@@ -121,7 +121,7 @@ function ReportBody({ data, tab, setTab }: { data: ReportData; tab: Tab; setTab:
       </Panel>
     </div>
     <div className="mt-5 grid gap-5 xl:grid-cols-2">
-      <Panel title="Top 5 dịch vụ" icon="star" action={<button type="button" onClick={() => setTab("services")} className="inline-flex shrink-0 cursor-pointer items-center gap-1 text-small font-medium text-cs-accent-text hover:underline">Xem chi tiết<Icon name="arrow-right" size={14}/></button>}>
+      <Panel title="Top 5 dịch vụ" icon="star" action={<PanelLink onClick={() => setTab("services")}>Xem chi tiết</PanelLink>}>
         <RankTable head={["#", "Tên dịch vụ", "Số lượt", "Doanh thu", "Tỷ trọng"]} rows={serviceRows.slice(0, 5)} empty="Chưa có doanh thu dịch vụ trong kỳ"/>
       </Panel>
       <Panel title="Hiệu quả thu tiền" icon="receipt" subtitle="Hoá đơn phát hành trong kỳ" action={<PanelLink to="/admin/invoices">Hoá đơn</PanelLink>}>

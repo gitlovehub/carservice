@@ -197,6 +197,36 @@
   --btn-hover-border: color-mix(in srgb, var(--cs-info) 55%, transparent);
   --btn-hover-fg: var(--cs-info-fg);
 }
+/*
+ * Liên kết điều hướng dạng chữ + mũi tên phải ("Xem chi tiết →", "Hoá đơn →"…): một cỡ, một font
+ * cho cả <a> lẫn <button>; hover gạch chân. Không nằm trong @layer nên thắng `.cs-shell a { text-decoration: none }`.
+ */
+.cs-link-arrow {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-small);
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: var(--cs-accent-text);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.cs-link-arrow:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.cs-link-arrow svg { transition: transform 0.15s ease; }
+.cs-link-arrow:hover svg { transform: translateX(2px); }
+@media (prefers-reduced-motion: reduce) { .cs-link-arrow svg { transition: none; } }
+
 /* Nút icon chữ đỏ (Xóa trong dòng): ghost, hover nền danger-soft + viền danger. */
 .cs-btn.cs-btn-tone-danger {
   --btn-fg: var(--cs-danger);

@@ -91,10 +91,12 @@ export function Panel({ title, icon, action, children, className = "", bodyClass
   </section>;
 }
 
-export function PanelLink({ to, children }: { to: string; children: ReactNode }) {
-  return <Link to={to} className="inline-flex shrink-0 items-center gap-1 text-small font-medium text-cs-accent-text hover:underline">
-    {children}<Icon name="arrow-right" size={14}/>
-  </Link>;
+/** Liên kết điều hướng chữ + mũi tên phải: cùng cỡ/font, hover gạch chân (`.cs-link-arrow`). Truyền `to` để chuyển trang hoặc `onClick` để đổi tab. */
+export function PanelLink({ to, onClick, children }: { to?: string; onClick?: () => void; children: ReactNode }) {
+  const content = <>{children}<Icon name="arrow-right" size={14}/></>;
+  return to
+    ? <Link to={to} className="cs-link-arrow">{content}</Link>
+    : <button type="button" className="cs-link-arrow" onClick={onClick}>{content}</button>;
 }
 
 /* ---------- Tab ---------- */
