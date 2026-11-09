@@ -39,8 +39,17 @@ export type ReportData = {
   monthly: Array<{ month: string; service: number; parts: number; orders: number }>;
   top_services: Array<{ name: string; count: number; revenue: number }>;
   top_parts: Array<{ name: string; sku: string | null; quantity: number; revenue: number }>;
-  payment_methods: Array<{ method: PaymentGroup; count: number; revenue: number }>;
-  technicians: Array<{ id: number; name: string | null; specialty: string | null; orders: number; hours: number; rating: number | null }>;
+  collection: {
+    invoices: Kpi; average_invoice: Kpi; billed: number; collected: number; outstanding: number;
+    unpaid_invoices: number; collection_rate: number | null;
+  };
+  operations: {
+    received: Kpi; delivered: number; in_shop: number; turnaround_hours: Kpi | null;
+    appointments: { total: number; arrived: number; cancelled: number; no_show: number; upcoming: number; show_rate: number | null };
+    customers: { total: number; returning: number; new: number; return_rate: number | null };
+    quotations: { decided: number; approved: number; approval_rate: number | null };
+    satisfaction: { count: number; average: Kpi | null; positive_rate: number | null; distribution: Record<number, number> };
+  };
 };
 
 /* ----------------------------------------------------------- Phiếu sửa chữa */

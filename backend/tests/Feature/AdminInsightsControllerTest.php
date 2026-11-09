@@ -13,9 +13,7 @@ use App\Models\Payment;
 use App\Models\RepairOrder;
 use App\Models\Review;
 use App\Models\Service;
-use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
-use App\Models\WorkItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -152,7 +150,7 @@ class AdminInsightsControllerTest extends TestCase
         $this->getJson('/api/admin/dashboard?range=year')->assertJsonValidationErrors('range');
     }
 
-    public function test_reports_split_revenue_rank_items_and_technicians(): void
+    public function test_reports_split_revenue_rank_items_collection_and_operations(): void
     {
         $oil = Service::factory()->create(['name' => 'Thay dầu']);
         $brake = Service::factory()->create(['name' => 'Sửa phanh']);
@@ -172,10 +170,7 @@ class AdminInsightsControllerTest extends TestCase
         $c = $this->order(RepairOrder::CLOSED, '2026-11-08 09:00');
         $this->invoice($c, '2026-11-08 15:00', [['item_type' => 'SERVICE', 'amount' => 9_000_000]], 0, Invoice::CANCELLED);
 
-        $tech = TechnicianProfile::factory()->create(['specialty' => 'Phanh']);
-        WorkItem::query()->create(['repair_order_id' => $a->id, 'technician_id' => $tech->id, 'description' => 'Sửa phanh', 'status' => WorkItem::COMPLETED,
-            'started_at' => '2026-11-05 10:00', 'completed_at' => '2026-11-05 12:00', 'standard_minutes' => 90]);
-        Review::query()->create(['repair_order_id' => $a->id, 'customer_id' => $this->customer->id, 'overall_rating' => 5, 'technician_rating' => 4]);
+        Review::query()->create(['repair_order_id' => $a->id, 'customer_id' => $this->customer->id, 'overall_rating' => 5, 'created_at' => '2026-11-06 09:00']);
 
         $data = $this->getJson('/api/admin/reports?period=2026-11')->assertOk()->json('data');
 
@@ -190,16 +185,27 @@ class AdminInsightsControllerTest extends TestCase
         $this->assertEquals(2_700_000, $data['top_services'][0]['revenue']);
         $this->assertSame('CS-5W30', $data['top_parts'][0]['sku']);
 
-        $methods = collect($data['payment_methods'])->keyBy('method');
-        $this->assertSame(1, $methods['BANK_TRANSFER']['count']);
-        $this->assertEquals(4_500_000, $methods['BANK_TRANSFER']['revenue']);
-        $this->assertSame(0, $methods['CASH']['count']);
+        // Thu tiền: 1 hoá đơn hợp lệ trong kỳ 4,5tr, đã thu đủ.
+        $this->assertSame(1, $data['collection']['invoices']['value']);
+        $this->assertEquals(4_500_000, $data['collection']['average_invoice']['value']);
+        $this->assertEquals(4_500_000, $data['collection']['collected']);
+        $this->assertEquals(0, $data['collection']['outstanding']);
+        $this->assertEquals(100.0, $data['collection']['collection_rate']);
 
         $this->assertCount(8, $data['monthly']);
         $this->assertSame('2026-11', end($data['monthly'])['month']);
         $this->assertSame(2, end($data['monthly'])['orders']);
 
-        $this->assertEquals([['id' => $tech->id, 'name' => $tech->employee->full_name, 'specialty' => 'Phanh', 'orders' => 1, 'hours' => 1.5, 'rating' => 4.0]], $data['technicians']);
+        // Vận hành: 2 phiếu nhận tháng 11, khách đã có phiếu tháng 10 → khách quay lại.
+        $ops = $data['operations'];
+        $this->assertSame(2, $ops['received']['value']);
+        $this->assertSame(1, $ops['received']['previous']);
+        $this->assertEquals(['total' => 1, 'returning' => 1, 'new' => 0, 'return_rate' => 100], $ops['customers']);
+        $this->assertSame(1, $ops['satisfaction']['count']);
+        $this->assertEquals(5.0, $ops['satisfaction']['average']['value']);
+        $this->assertEquals(100.0, $ops['satisfaction']['positive_rate']);
+        $this->assertSame(1, $ops['satisfaction']['distribution'][5]);
+        $this->assertNull($ops['quotations']['approval_rate']);
 
         $this->assertSame('Quý 4/2026', $this->getJson('/api/admin/reports?period=2026-Q4')->json('data.label'));
         $this->assertEquals(5_600_000, $this->getJson('/api/admin/reports?period=2026')->json('data.revenue.service.value'));

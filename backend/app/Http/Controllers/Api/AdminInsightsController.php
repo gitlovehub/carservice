@@ -8,10 +8,9 @@ use App\Models\Inventory;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
+use App\Models\Quotation;
 use App\Models\RepairOrder;
 use App\Models\Review;
-use App\Models\TechnicianProfile;
-use App\Models\WorkItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,12 +33,6 @@ class AdminInsightsController extends Controller
         'waiting_parts' => [RepairOrder::WAITING_FOR_PARTS],
         'in_progress' => [RepairOrder::IN_PROGRESS],
         'waiting_payment' => [RepairOrder::COMPLETED],
-    ];
-
-    private const METHOD_GROUPS = [
-        Payment::DIRECT => 'CASH',
-        Payment::QR => 'BANK_TRANSFER',
-        Payment::VNPAY => 'VNPAY',
     ];
 
     /** GET /api/admin/dashboard?range=today|7d|30d */
@@ -144,8 +137,6 @@ class AdminInsightsController extends Controller
 
         $items = $this->periodItems($start, $end);
 
-        $payments = Payment::query()->where('status', Payment::SUCCESS)->whereBetween('paid_at', [$start, $end])->get(['payment_method', 'amount']);
-
         return response()->json(['data' => [
             'period' => $period,
             'label' => $label,
@@ -164,13 +155,8 @@ class AdminInsightsController extends Controller
                 ->groupBy(fn ($row) => $row->part_id ?? $row->description)
                 ->map(fn (Collection $rows) => ['name' => $rows->first()->description, 'sku' => $rows->first()->part?->sku, 'quantity' => (int) $rows->sum('quantity'), 'revenue' => round($rows->sum('net'), 2)])
                 ->sortByDesc('revenue')->take(10)->values(),
-            'payment_methods' => collect(self::METHOD_GROUPS)->unique()->values()
-                ->map(fn (string $group) => [
-                    'method' => $group,
-                    'count' => $payments->filter(fn (Payment $p) => (self::METHOD_GROUPS[$p->payment_method] ?? 'CASH') === $group)->count(),
-                    'revenue' => round((float) $payments->filter(fn (Payment $p) => (self::METHOD_GROUPS[$p->payment_method] ?? 'CASH') === $group)->sum('amount'), 2),
-                ])->values(),
-            'technicians' => $this->technicianPerformance($start, $end),
+            'collection' => $this->collection($start, $end, $prevStart, $prevEnd),
+            'operations' => $this->operations($start, $end, $prevStart, $prevEnd),
         ]]);
     }
 
@@ -326,34 +312,117 @@ class AdminInsightsController extends Controller
         return $periods;
     }
 
-    /** @return list<array<string, mixed>> */
-    private function technicianPerformance(CarbonImmutable $from, CarbonImmutable $to): array
+    /**
+     * Hiệu quả thu tiền của hoá đơn phát hành trong kỳ (tiền thu tính tới hiện tại).
+     *
+     * @return array<string, mixed>
+     */
+    private function collection(CarbonImmutable $from, CarbonImmutable $to, CarbonImmutable $prevFrom, CarbonImmutable $prevTo): array
     {
-        $items = WorkItem::query()
-            ->where('status', WorkItem::COMPLETED)
-            ->whereNotNull('technician_id')
-            ->whereBetween('completed_at', [$from, $to])
-            ->get(['repair_order_id', 'technician_id', 'started_at', 'completed_at', 'standard_minutes']);
+        $stats = function (CarbonImmutable $a, CarbonImmutable $b): array {
+            $invoices = Invoice::query()
+                ->where('status', '!=', Invoice::CANCELLED)
+                ->whereBetween('created_at', [$a, $b])
+                ->withSum(['payments as paid' => fn ($q) => $q->where('status', Payment::SUCCESS)], 'amount')
+                ->get(['id', 'total_amount']);
+            $billed = round((float) $invoices->sum('total_amount'), 2);
+            $collected = round((float) $invoices->sum(fn (Invoice $inv) => min((float) $inv->paid, (float) $inv->total_amount)), 2);
 
-        return TechnicianProfile::query()
-            ->with('employee:id,full_name')
-            ->whereIn('id', $items->pluck('technician_id')->unique())
-            ->get()
-            ->map(function (TechnicianProfile $tech) use ($items) {
-                $mine = $items->where('technician_id', $tech->id);
-                $orderIds = $mine->pluck('repair_order_id')->unique();
-                $minutes = $mine->sum(fn (WorkItem $w) => (int) ($w->standard_minutes ?: ($w->started_at && $w->completed_at ? $w->started_at->diffInMinutes($w->completed_at) : 0)));
-                $rating = Review::query()->whereIn('repair_order_id', $orderIds)->whereNotNull('technician_rating')->avg('technician_rating');
+            return [
+                'count' => $invoices->count(),
+                'billed' => $billed,
+                'collected' => $collected,
+                'avg' => $invoices->count() > 0 ? round($billed / $invoices->count(), 2) : 0.0,
+                'unpaid_count' => $invoices->filter(fn (Invoice $inv) => (float) $inv->paid < (float) $inv->total_amount - 0.01)->count(),
+            ];
+        };
+        $now = $stats($from, $to);
+        $prev = $stats($prevFrom, $prevTo);
 
-                return [
-                    'id' => $tech->id,
-                    'name' => $tech->employee?->full_name,
-                    'specialty' => $tech->specialty,
-                    'orders' => $orderIds->count(),
-                    'hours' => round($minutes / 60, 1),
-                    'rating' => $rating === null ? null : round((float) $rating, 1),
-                ];
-            })
-            ->sortByDesc('orders')->values()->all();
+        return [
+            'invoices' => $this->kpi($now['count'], $prev['count']),
+            'average_invoice' => $this->kpi($now['avg'], $prev['avg']),
+            'billed' => $now['billed'],
+            'collected' => $now['collected'],
+            'outstanding' => round($now['billed'] - $now['collected'], 2),
+            'unpaid_invoices' => $now['unpaid_count'],
+            'collection_rate' => $now['billed'] > 0 ? round($now['collected'] / $now['billed'] * 100, 1) : null,
+        ];
+    }
+
+    /**
+     * Tình hình vận hành của ga-ra trong kỳ: lượt xe, tốc độ xử lý, lịch hẹn, khách quay lại, báo giá, mức hài lòng.
+     *
+     * @return array<string, mixed>
+     */
+    private function operations(CarbonImmutable $from, CarbonImmutable $to, CarbonImmutable $prevFrom, CarbonImmutable $prevTo): array
+    {
+        $received = fn (CarbonImmutable $a, CarbonImmutable $b) => RepairOrder::query()->whereBetween('received_at', [$a, $b])->count();
+        $turnaround = function (CarbonImmutable $a, CarbonImmutable $b): ?float {
+            $hours = RepairOrder::query()->whereNotNull('received_at')->whereBetween('handed_over_at', [$a, $b])->get(['received_at', 'handed_over_at'])
+                ->map(fn (RepairOrder $o) => $o->received_at->diffInMinutes($o->handed_over_at) / 60);
+
+            return $hours->isEmpty() ? null : round((float) $hours->avg(), 1);
+        };
+        $rating = fn (CarbonImmutable $a, CarbonImmutable $b) => Review::query()->whereBetween('created_at', [$a, $b])->avg('overall_rating');
+
+        // Lịch hẹn trong kỳ theo kết quả.
+        $appointments = Appointment::query()
+            ->whereBetween('appointment_date', [$from->toDateString(), $to->toDateString()])
+            ->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $arrived = (int) ($appointments['CHECKED_IN'] ?? 0) + (int) ($appointments['COMPLETED'] ?? 0);
+        $cancelled = (int) ($appointments['CANCELLED'] ?? 0);
+        $noShow = (int) ($appointments['NO_SHOW'] ?? 0);
+        $closed = $arrived + $cancelled + $noShow;
+
+        // Khách đến xưởng trong kỳ: khách quay lại = đã từng có phiếu trước kỳ.
+        $customerIds = RepairOrder::query()->whereBetween('received_at', [$from, $to])->distinct()->pluck('customer_id');
+        $returning = $customerIds->isEmpty() ? 0 : RepairOrder::query()
+            ->whereIn('customer_id', $customerIds)->where('received_at', '<', $from)->distinct()->count('customer_id');
+
+        // Báo giá khách đã phản hồi trong kỳ.
+        $quotes = Quotation::query()
+            ->whereIn('status', [Quotation::APPROVED, Quotation::PARTIALLY_APPROVED, Quotation::REJECTED])
+            ->whereBetween('created_at', [$from, $to])
+            ->get(['status']);
+        $approved = $quotes->where('status', '!=', Quotation::REJECTED)->count();
+
+        $reviews = Review::query()->whereBetween('created_at', [$from, $to])->pluck('overall_rating');
+        $avgNow = $rating($from, $to);
+        $avgPrev = $rating($prevFrom, $prevTo);
+        $tatNow = $turnaround($from, $to);
+        $tatPrev = $turnaround($prevFrom, $prevTo);
+
+        return [
+            'received' => $this->kpi($received($from, $to), $received($prevFrom, $prevTo)),
+            'delivered' => RepairOrder::query()->whereBetween('handed_over_at', [$from, $to])->count(),
+            'in_shop' => $this->inShopAt($to),
+            'turnaround_hours' => $tatNow === null ? null : $this->kpi($tatNow, $tatPrev ?? 0),
+            'appointments' => [
+                'total' => (int) $appointments->sum(),
+                'arrived' => $arrived,
+                'cancelled' => $cancelled,
+                'no_show' => $noShow,
+                'upcoming' => (int) ($appointments['PENDING'] ?? 0) + (int) ($appointments['CONFIRMED'] ?? 0),
+                'show_rate' => $closed > 0 ? round($arrived / $closed * 100, 1) : null,
+            ],
+            'customers' => [
+                'total' => $customerIds->count(),
+                'returning' => $returning,
+                'new' => $customerIds->count() - $returning,
+                'return_rate' => $customerIds->isEmpty() ? null : round($returning / $customerIds->count() * 100, 1),
+            ],
+            'quotations' => [
+                'decided' => $quotes->count(),
+                'approved' => $approved,
+                'approval_rate' => $quotes->isEmpty() ? null : round($approved / $quotes->count() * 100, 1),
+            ],
+            'satisfaction' => [
+                'count' => $reviews->count(),
+                'average' => $avgNow === null ? null : $this->kpi(round((float) $avgNow, 1), $avgPrev === null ? 0 : round((float) $avgPrev, 1)),
+                'positive_rate' => $reviews->isEmpty() ? null : round($reviews->filter(fn ($r) => (int) $r >= 4)->count() / $reviews->count() * 100, 1),
+                'distribution' => collect([5, 4, 3, 2, 1])->mapWithKeys(fn (int $star) => [$star => $reviews->filter(fn ($r) => (int) $r === $star)->count()])->all(),
+            ],
+        ];
     }
 }
