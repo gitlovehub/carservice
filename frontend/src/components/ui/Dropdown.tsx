@@ -56,7 +56,9 @@ export function Dropdown({ items, label = LABELS.action.more, align = "end", tri
     if (!rect) return;
     const top = rect.bottom + 6;
     focusFirst.current = focus;
-    setPosition(align === "end" ? { top, right: Math.max(8, window.innerWidth - rect.right) } : { top, left: Math.max(8, rect.left) });
+    // clientWidth (không tính thanh cuộn dọc) — dùng innerWidth thì menu căn phải bị lệch trái đúng bằng bề rộng thanh cuộn.
+    const viewport = document.documentElement.clientWidth || window.innerWidth;
+    setPosition(align === "end" ? { top, right: Math.max(8, viewport - rect.right) } : { top, left: Math.max(8, rect.left) });
     setOpen(true);
   };
 
