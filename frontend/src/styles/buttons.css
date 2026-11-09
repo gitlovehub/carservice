@@ -256,17 +256,21 @@
 }
 
 /*
- * Admin: hover KHÔNG dùng viền đỏ (màu vai trò) cho nút viền (outline) và nút icon thường —
- * viền chỉ xám đậm lên như các nút khác. Giữ màu ngữ nghĩa: Sửa vàng, Xem xanh dương, Xoá / danger đỏ.
+ * Admin — theo CarService Admin Button Kit v3 (hover chỉ đổi màu, không dịch chuyển):
+ * - Nút viền trung tính (§02 "Bộ lọc", §06 "Xuất Excel"): hover nền xám rất nhạt, viền xám vừa
+ *   (không đỏ) — màu cụ thể ở tokens.css (--cs-btn-outline-*). Tối: viền giữ nguyên, nền sáng lên một bậc.
+ * - Nút icon trong bảng / thanh công cụ (§05): hover viền đỏ thương hiệu + nền đỏ nhạt + icon đỏ.
+ *   Giữ màu ngữ nghĩa: Sửa vàng, Xem xanh dương, Xoá đỏ (đã khai báo ở trên).
  */
-[data-area="admin"] {
-  --cs-btn-hover-border-neutral: color-mix(in srgb, var(--cs-border-strong) 62%, var(--cs-text));
-}
 [data-area="admin"] .cs-btn-outline {
-  --btn-hover-border: var(--cs-btn-hover-border-neutral);
+  --btn-border: var(--cs-btn-outline-border);
+  --btn-hover-bg: var(--cs-btn-outline-hover-bg);
+  --btn-hover-border: var(--cs-btn-outline-hover-border);
 }
 [data-area="admin"] .cs-btn-icon.cs-btn-ghost:not([data-icon="edit"]):not([data-icon="eye"]):not(.cs-btn-tone-danger) {
-  --btn-hover-border: var(--cs-btn-hover-border-neutral);
+  --btn-hover-bg: var(--cs-btn-icon-hover-bg);
+  --btn-hover-border: var(--cs-btn-icon-hover-border);
+  --btn-hover-fg: var(--cs-btn-icon-hover-fg);
 }
 
 /* Nút icon chữ đỏ (Xóa trong dòng): ghost, hover nền danger-soft + viền danger. */

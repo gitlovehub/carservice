@@ -151,7 +151,12 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
   width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding: 0;
   border-radius: 999px; border: 1px solid var(--cs-border); background: var(--cs-surface);
 }
-.cs-work-top .cs-ws-theme-toggle:hover { background: var(--cs-hover); }
+/* Như nút sáng/tối trong Admin Button Kit: hover trung tính (không đỏ như nút icon trong bảng). */
+.cs-work-top .cs-ws-theme-toggle {
+  --btn-hover-bg: var(--cs-hover) !important;
+  --btn-hover-border: var(--cs-border-strong) !important;
+  --btn-hover-fg: var(--cs-text) !important;
+}
 .cs-ws-account {
   display: inline-flex; align-items: center; gap: 9px; max-width: 240px;
   min-height: 40px; padding: 4px 8px 4px 4px; border-radius: var(--radius-control);

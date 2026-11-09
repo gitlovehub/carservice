@@ -234,8 +234,22 @@ html[data-theme="dark"] [data-area="advisor"] {
   --cs-tint-warning: #fff8ec;
   --cs-tint-violet: #f5f3ff;
   --cs-violet: #6d4fd6; --cs-violet-soft: #efebff; --cs-violet-fg: #5b3fc4;
+
+  /* Admin Button Kit v3: nút viền trung tính (§02/§06) và nút icon trong bảng (§05). */
+  --cs-btn-outline-border: #d8dadd;
+  --cs-btn-outline-hover-bg: #f5f5f4;
+  --cs-btn-outline-hover-border: #9ca3af;
+  --cs-btn-icon-hover-bg: #fff1f1;
+  --cs-btn-icon-hover-border: #cf2935;
+  --cs-btn-icon-hover-fg: #cf2935;
 }
 html[data-theme="dark"] [data-area="admin"] {
+  --cs-btn-outline-border: #4b525b;
+  --cs-btn-outline-hover-bg: #383e46;
+  --cs-btn-outline-hover-border: #4b525b;
+  --cs-btn-icon-hover-bg: #431f28;
+  --cs-btn-icon-hover-border: #fb7185;
+  --cs-btn-icon-hover-fg: #ff96a3;
   --cs-accent-text: #ff7d85;
   --cs-chart-2: #7a3a40;
   --cs-tint-brand: #221a1c;
