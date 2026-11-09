@@ -13,13 +13,12 @@ class BookingCatalogControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_groups_packages_first_then_popular_then_categories_with_active_services_only(): void
+    public function test_groups_packages_first_then_categories_with_active_services_only(): void
     {
         $oilChange = Service::factory()->create([
             'name' => 'Thay dầu',
             'category' => 'Bảo dưỡng',
             'base_price' => 350000,
-            'is_popular' => true,
         ]);
         Service::factory()->create(['name' => 'Kiểm tra phanh', 'category' => 'Phanh', 'base_price' => 0]);
         Service::factory()->create(['name' => 'Dịch vụ đã ẩn', 'category' => 'Phanh', 'status' => 'INACTIVE']);
@@ -32,7 +31,7 @@ class BookingCatalogControllerTest extends TestCase
         $response = $this->getJson('/api/booking-catalog')->assertOk();
 
         $this->assertSame(
-            ['packages', 'popular', 'category:Bảo dưỡng', 'category:Phanh'],
+            ['packages', 'category:Bảo dưỡng', 'category:Phanh'],
             array_column($response->json('groups'), 'key')
         );
         $response
@@ -41,9 +40,9 @@ class BookingCatalogControllerTest extends TestCase
             ->assertJsonPath('groups.0.items.0.includes', 'Thay dầu')
             ->assertJsonPath('groups.0.items.0.included_service_ids', [$oilChange->id])
             ->assertJsonPath('groups.1.items.0.key', "service:{$oilChange->id}")
-            ->assertJsonPath('groups.3.items.0.name', 'Kiểm tra phanh')
-            ->assertJsonPath('groups.3.items.0.price', null)
-            ->assertJsonCount(1, 'groups.3.items');
+            ->assertJsonPath('groups.2.items.0.name', 'Kiểm tra phanh')
+            ->assertJsonPath('groups.2.items.0.price', null)
+            ->assertJsonCount(1, 'groups.2.items');
     }
 
     public function test_filters_packages_by_vehicle_model_name_and_recommends_next_mileage_milestone(): void

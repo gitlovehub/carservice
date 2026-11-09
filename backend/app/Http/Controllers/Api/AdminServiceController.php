@@ -18,6 +18,17 @@ class AdminServiceController extends Controller
 {
     use AppliesSort;
 
+    /** Thông báo lỗi tiếng Việt cho form thêm / sửa dịch vụ. */
+    private const MESSAGES = [
+        'name.required' => 'Nhập tên dịch vụ.',
+        'name.unique' => 'Đã có dịch vụ khác cùng tên. Hãy đặt tên khác.',
+        'name.max' => 'Tên dịch vụ tối đa 150 ký tự.',
+        'base_price.required' => 'Nhập giá cơ bản.',
+        'base_price.min' => 'Giá cơ bản không được âm.',
+        'estimated_minutes.min' => 'Thời gian ước tính phải lớn hơn 0 phút.',
+        'category_id.exists' => 'Danh mục không tồn tại.',
+    ];
+
     /**
      * GET /api/admin/services
      */
@@ -43,10 +54,10 @@ class AdminServiceController extends Controller
             ->when($filters['uncategorized'] ?? false, fn ($q) => $q->whereNull('category_id'))
             ->when($filters['search'] ?? null, fn ($q, string $s) => $q->where(fn ($q) => $q->where('name', 'like', "%{$s}%")->orWhere('description', 'like', "%{$s}%")));
 
-        // Mặc định mới tạo lên đầu; `sort=order` = thứ tự hiển thị admin kéo thả (thứ tự khách thấy khi đặt lịch).
+        // Mặc định mới tạo lên đầu; `sort=order` = thứ tự hiển thị admin đặt (thứ tự khách thấy khi đặt lịch).
         $this->applySort($query, $request, [
             'created' => 'created_at', 'order' => 'sort_order', 'name' => 'name', 'category' => 'category',
-            'price' => 'base_price', 'minutes' => 'estimated_minutes', 'popular' => 'is_popular',
+            'price' => 'base_price', 'minutes' => 'estimated_minutes',
             'status' => 'status', 'visible' => 'is_visible',
         ]);
 
@@ -113,7 +124,7 @@ class AdminServiceController extends Controller
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'service_level' => ['sometimes', Rule::in(Service::LEVELS)],
             'requires_vehicle_stay' => ['sometimes', 'boolean'],
-        ]);
+        ], self::MESSAGES);
 
         $validated['status'] ??= 'ACTIVE';
         $service = Service::query()->create($validated);
@@ -149,7 +160,7 @@ class AdminServiceController extends Controller
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'service_level' => ['sometimes', Rule::in(Service::LEVELS)],
             'requires_vehicle_stay' => ['sometimes', 'boolean'],
-        ]);
+        ], self::MESSAGES);
 
         $service->update($validated);
 

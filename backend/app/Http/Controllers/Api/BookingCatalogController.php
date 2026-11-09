@@ -101,7 +101,7 @@ class BookingCatalogController extends Controller
     }
 
     /**
-     * Nhóm "Phổ biến" đứng đầu, sau đó mỗi danh mục một nhóm.
+     * Mỗi danh mục một nhóm (đã bỏ nhóm "Phổ biến" do admin tự đánh dấu — số liệu dùng thật xem ở Báo cáo).
      *
      * @return Collection<int, array{key: string, name: string, items: array<int, array<string, mixed>>}>
      */
@@ -114,13 +114,7 @@ class BookingCatalogController extends Controller
             ->orderBy('name')
             ->get();
 
-        $popular = [
-            'key' => 'popular',
-            'name' => 'Phổ biến',
-            'items' => $services->where('is_popular', true)->map(fn (Service $service) => $this->serviceItem($service))->values()->all(),
-        ];
-
-        $byCategory = $services
+        return $services
             ->groupBy(fn (Service $service) => $service->category ?: 'Khác')
             ->sortKeys()
             ->map(fn (Collection $items, string $category) => [
@@ -129,8 +123,6 @@ class BookingCatalogController extends Controller
                 'items' => $items->map(fn (Service $service) => $this->serviceItem($service))->values()->all(),
             ])
             ->values();
-
-        return collect([$popular])->merge($byCategory);
     }
 
     /**

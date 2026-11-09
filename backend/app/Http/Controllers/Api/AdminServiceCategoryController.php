@@ -30,6 +30,8 @@ class AdminServiceCategoryController extends Controller
             'meta' => [
                 'total' => Service::query()->count(),
                 'uncategorized' => Service::query()->whereNull('category_id')->count(),
+                'active' => Service::query()->where('status', 'ACTIVE')->count(),
+                'visible' => Service::query()->where('status', 'ACTIVE')->where('is_visible', true)->count(),
                 'icons' => ServiceCategory::ICONS,
             ],
         ]);
