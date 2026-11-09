@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Badge, Button, DataTable, EmptyState, Field, IconButton, Input, Modal, PageHeader, Pagination, SearchInput, Select, confirmDelete, useAppFeedback, type Column } from "../../components/ui";
+import { Badge, Button, DataTable, EmptyState, Field, IconButton, Input, Modal, NEWEST_FIRST, PageHeader, Pagination, SearchInput, Select, confirmDelete, useAppFeedback, useTableSort, type Column, type SortState } from "../../components/ui";
 import { SearchableSelect, type SelectOption } from "../../components/vehicle/SearchableSelect";
 import {
   adminVehicleCatalogApi, type AdminLevel, type CatalogBrand, type CatalogModel, type CatalogStatus, type CatalogTrim, type Paginated,
@@ -20,12 +20,13 @@ const emptyFilters: Filters = { search: "", status: "", brandId: null, modelId: 
 const errorText = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
 /** Tải danh sách theo khóa yêu cầu; "đang tải" = khóa hiện tại chưa có kết quả. */
-function useAdminList(level: AdminLevel, filters: Filters, reload: number) {
+function useAdminList(level: AdminLevel, filters: Filters, reload: number, sort: SortState) {
   const params = useMemo(() => ({
     page: filters.page, per_page: PER_PAGE, search: filters.search, status: filters.status,
     brand_id: level !== "brands" ? filters.brandId ?? undefined : undefined,
     model_id: level === "trims" ? filters.modelId ?? undefined : undefined,
-  }), [level, filters]);
+    sort: sort.key, dir: sort.dir,
+  }), [level, filters, sort]);
   const key = `${level}|${JSON.stringify(params)}|${reload}`;
   const [state, setState] = useState<{ key: string; page: Paginated<Row> | null; error: string }>({ key: "", page: null, error: "" });
 
@@ -51,7 +52,7 @@ function useParentOptions(level: "brands" | "models", brandId: number | null, en
   useEffect(() => {
     if (key === null) return;
     const controller = new AbortController();
-    adminVehicleCatalogApi.list(level, { per_page: 100, brand_id: level === "models" ? brandId ?? undefined : undefined }, controller.signal)
+    adminVehicleCatalogApi.list(level, { per_page: 100, sort: "name", dir: "asc", brand_id: level === "models" ? brandId ?? undefined : undefined }, controller.signal)
       .then(page => setState({ key, options: page.data.map(row => ({ value: row.id, label: row.name, hint: row.status === "INACTIVE" ? "Đã ẩn" : undefined })) }))
       .catch(() => { if (!controller.signal.aborted) setState({ key, options: [] }); });
     return () => controller.abort();
@@ -71,7 +72,9 @@ export default function VehicleCatalog() {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
 
-  const list = useAdminList(level, filters, reload);
+  // Mặc định mới tạo lên đầu; đổi cột sắp xếp thì về trang 1.
+  const tableSort = useTableSort(NEWEST_FIRST, () => setFilters(current => ({ ...current, page: 1 })));
+  const list = useAdminList(level, filters, reload, tableSort.sort);
   const brandOptions = useParentOptions("brands", null, level !== "brands" || form !== null, reload);
   const modelFilterOptions = useParentOptions("models", filters.brandId, level === "trims", reload);
   const formModelOptions = useParentOptions("models", form?.brandId ?? null, form !== null && level === "trims" && form.id === null, reload);
@@ -88,6 +91,7 @@ export default function VehicleCatalog() {
     setLevel(next);
     setSearchText("");
     setFilters({ ...emptyFilters, ...preset });
+    tableSort.setSort(NEWEST_FIRST);
   };
 
   const openForm = (row?: Row) => {
@@ -164,22 +168,22 @@ export default function VehicleCatalog() {
     : <Badge tone="success">Đang hiển thị</Badge>;
 
   const columns: Column<Row>[] = level === "brands" ? [
-    { key: "name", header: "Hãng xe", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
-    { key: "models", header: "Dòng xe", align: "right", render: row => (row as CatalogBrand).models_count ?? 0 },
-    { key: "trims", header: "Phiên bản", align: "right", render: row => (row as CatalogBrand).trims_count ?? 0 },
-    { key: "status", header: "Trạng thái", render: statusBadge },
+    { key: "name", sortKey: "name", header: "Hãng xe", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
+    { key: "models", sortKey: "models", header: "Dòng xe", align: "right", render: row => (row as CatalogBrand).models_count ?? 0 },
+    { key: "trims", sortKey: "trims", header: "Phiên bản", align: "right", render: row => (row as CatalogBrand).trims_count ?? 0 },
+    { key: "status", sortKey: "status", header: "Trạng thái", render: statusBadge },
   ] : level === "models" ? [
-    { key: "name", header: "Dòng xe", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
-    { key: "brand", header: "Hãng", render: row => (row as CatalogModel).brand?.name ?? "—" },
-    { key: "body", header: "Kiểu dáng", hideOnMobile: true, render: row => BODY_TYPES[(row as CatalogModel).body_type ?? ""] ?? "—" },
-    { key: "trims", header: "Phiên bản", align: "right", render: row => (row as CatalogModel).trims_count ?? 0 },
-    { key: "vehicles", header: "Xe khách", align: "right", render: row => (row as CatalogModel).vehicles_count ?? 0 },
-    { key: "status", header: "Trạng thái", render: statusBadge },
+    { key: "name", sortKey: "name", header: "Dòng xe", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
+    { key: "brand", sortKey: "brand", header: "Hãng", render: row => (row as CatalogModel).brand?.name ?? "—" },
+    { key: "body", sortKey: "body", header: "Kiểu dáng", hideOnMobile: true, render: row => BODY_TYPES[(row as CatalogModel).body_type ?? ""] ?? "—" },
+    { key: "trims", sortKey: "trims", header: "Phiên bản", align: "right", render: row => (row as CatalogModel).trims_count ?? 0 },
+    { key: "vehicles", sortKey: "vehicles", header: "Xe khách", align: "right", render: row => (row as CatalogModel).vehicles_count ?? 0 },
+    { key: "status", sortKey: "status", header: "Trạng thái", render: statusBadge },
   ] : [
-    { key: "name", header: "Phiên bản", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
-    { key: "model", header: "Dòng xe", render: row => { const model = (row as CatalogTrim).model; return model ? `${model.brand?.name ?? ""} ${model.name}`.trim() : "—"; } },
-    { key: "vehicles", header: "Xe khách", align: "right", render: row => (row as CatalogTrim).vehicles_count ?? 0 },
-    { key: "status", header: "Trạng thái", render: statusBadge },
+    { key: "name", sortKey: "name", header: "Phiên bản", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
+    { key: "model", sortKey: "model", header: "Dòng xe", render: row => { const model = (row as CatalogTrim).model; return model ? `${model.brand?.name ?? ""} ${model.name}`.trim() : "—"; } },
+    { key: "vehicles", sortKey: "vehicles", header: "Xe khách", align: "right", render: row => (row as CatalogTrim).vehicles_count ?? 0 },
+    { key: "status", sortKey: "status", header: "Trạng thái", render: statusBadge },
   ];
 
   const hasFilters = Boolean(filters.search || filters.status || filters.brandId || filters.modelId);
@@ -216,6 +220,7 @@ export default function VehicleCatalog() {
     </section>
 
     <DataTable<Row>
+      sort={tableSort.sort} onSort={tableSort.toggle}
       caption={`Danh sách ${LEVELS[level].noun}`}
       columns={columns}
       rows={rows}

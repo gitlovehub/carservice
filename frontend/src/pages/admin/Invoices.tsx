@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, DataTable, ErrorState, IconButton, LoadingState, Pagination, SearchInput, type Column } from "../../components/ui";
+import { Button, DataTable, ErrorState, IconButton, LoadingState, Pagination, SearchInput, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -37,9 +37,11 @@ export default function Invoices() {
   const [exporting, setExporting] = useState(false);
   const term = useDebounced(search.trim());
 
-  const params = { status, search: term, page };
+  const invoiceSort = useTableSort(NEWEST_FIRST, () => setPage(1));
+  const paymentSort = useTableSort(NEWEST_FIRST, () => setPaymentPage(1));
+  const params = { status, search: term, page, ...invoiceSort.params };
   const invoices = useAdminQuery(view === "invoices" ? `invoices:${JSON.stringify(params)}` : null, signal => adminApi.invoices(params, signal));
-  const payments = useAdminQuery(view === "payments" ? `payments:${term}:${paymentPage}` : null, signal => adminApi.payments({ search: term, page: paymentPage }, signal));
+  const payments = useAdminQuery(view === "payments" ? `payments:${term}:${paymentPage}:${paymentSort.sort.key}:${paymentSort.sort.dir}` : null, signal => adminApi.payments({ search: term, page: paymentPage, ...paymentSort.params }, signal));
   const detail = useAdminQuery(selectedId === null ? null : `invoice:${selectedId}`, signal => adminApi.invoice(selectedId as number, signal));
   const result = invoices.data ?? invoices.stale;
   const paymentResult = payments.data ?? payments.stale;
@@ -69,19 +71,19 @@ export default function Invoices() {
   };
 
   const invoiceColumns: Column<AdminInvoice>[] = [
-    { key: "code", header: "Số hoá đơn", primary: true, render: i => <span className="whitespace-nowrap"><b className="text-cs-accent-text">{i.code}</b><span className="block text-caption text-cs-muted">{fmtDate(i.issued_at)}</span></span> },
+    { key: "code", sortKey: "code", header: "Số hoá đơn", primary: true, render: i => <span className="whitespace-nowrap"><b className="text-cs-accent-text">{i.code}</b><span className="block text-caption text-cs-muted">{fmtDate(i.issued_at)}</span></span> },
     { key: "customer", header: "Khách hàng", render: i => <span className="whitespace-nowrap"><b className="text-cs-text">{i.customer ?? "—"}</b><span className="block text-caption text-cs-muted">{i.plate ?? "—"} · {i.order_code ?? "—"}</span></span> },
-    { key: "total", header: "Tổng tiền", align: "right", render: i => <b className="tabular-nums">{vnd(i.total)}</b> },
+    { key: "total", sortKey: "total", header: "Tổng tiền", align: "right", render: i => <b className="tabular-nums">{vnd(i.total)}</b> },
     { key: "due", header: "Còn nợ", align: "right", render: i => i.status === "CANCELLED" || i.paid >= i.total ? <span className="text-cs-muted">—</span> : <b className="tabular-nums text-danger-fg">{vnd(i.total - i.paid)}</b> },
-    { key: "status", header: "Trạng thái", render: i => <StatusBadge domain="invoice" status={i.status}/> },
+    { key: "status", sortKey: "status", header: "Trạng thái", render: i => <StatusBadge domain="invoice" status={i.status}/> },
   ];
   const paymentColumns: Column<AdminPayment>[] = [
-    { key: "code", header: "Mã giao dịch", primary: true, render: p => <b>{p.code}</b> },
+    { key: "code", sortKey: "code", header: "Mã giao dịch", primary: true, render: p => <b>{p.code}</b> },
     { key: "invoice", header: "Hoá đơn", render: p => <span><span className="text-cs-accent-text">{p.invoice ?? "—"}</span><span className="block text-caption text-cs-muted">{p.customer ?? "—"}</span></span> },
     { key: "method", header: "Phương thức", render: p => <span className="inline-flex items-center gap-2"><Icon name={methodInfo[p.method].icon} size={16} className="text-cs-muted"/>{methodInfo[p.method].label}</span> },
-    { key: "at", header: "Thời gian", hideOnMobile: true, render: p => <span className="tabular-nums text-cs-text-2">{fmtDateTime(p.at)}</span> },
-    { key: "amount", header: "Số tiền", align: "right", render: p => <b className="tabular-nums">{vnd(p.amount)}</b> },
-    { key: "status", header: "Trạng thái", render: p => <StatusBadge domain="payment" status={p.status}/> },
+    { key: "at", sortKey: "created", header: "Thời gian", hideOnMobile: true, render: p => <span className="tabular-nums text-cs-text-2">{fmtDateTime(p.at)}</span> },
+    { key: "amount", sortKey: "amount", header: "Số tiền", align: "right", render: p => <b className="tabular-nums">{vnd(p.amount)}</b> },
+    { key: "status", sortKey: "status", header: "Trạng thái", render: p => <StatusBadge domain="payment" status={p.status}/> },
   ];
 
   const pane = selectedId === null ? null : !selected
@@ -151,7 +153,7 @@ export default function Invoices() {
             { value: "PAID", label: "Đã thanh toán" }, { value: "CANCELLED", label: "Đã huỷ" },
           ]}/>
         </Toolbar>
-        <DataTable caption="Danh sách hoá đơn" columns={invoiceColumns} rows={result?.data ?? []} rowKey={i => i.id}
+        <DataTable sort={invoiceSort.sort} onSort={invoiceSort.toggle} caption="Danh sách hoá đơn" columns={invoiceColumns} rows={result?.data ?? []} rowKey={i => i.id}
           loading={invoices.loading} error={invoices.error || undefined} onRetry={invoices.reload}
           onRowClick={i => setSelectedId(i.id)} rowClassName={i => i.id === selectedId ? "bg-cs-soft/60" : ""}
           actions={i => <IconButton icon="eye" label={`Xem hoá đơn ${i.code}`} size="sm" onClick={() => setSelectedId(i.id)}/>}
@@ -159,7 +161,7 @@ export default function Invoices() {
       </>}/>
       : <>
         <Toolbar><SearchInput value={search} onChange={value => { setSearch(value); setPaymentPage(1); }} placeholder="Tìm mã giao dịch, số hoá đơn…"/></Toolbar>
-        <DataTable caption="Danh sách giao dịch" columns={paymentColumns} rows={paymentResult?.data ?? []} rowKey={p => p.id}
+        <DataTable sort={paymentSort.sort} onSort={paymentSort.toggle} caption="Danh sách giao dịch" columns={paymentColumns} rows={paymentResult?.data ?? []} rowKey={p => p.id}
           loading={payments.loading} error={payments.error || undefined} onRetry={payments.reload}
           footer={paymentResult && <Pagination page={paymentResult.meta.current_page} totalPages={paymentResult.meta.last_page} totalItems={paymentResult.meta.total} pageSize={paymentResult.meta.per_page} disabled={payments.loading} onChange={setPaymentPage}/>}/>
       </>}

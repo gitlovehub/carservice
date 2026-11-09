@@ -8,7 +8,7 @@ export type IconName = ShellNavItem["icon"] | "sun" | "moon" | "menu" | "close" 
   | "phone" | "mail" | "pin" | "trend-up" | "trend-down" | "coins" | "x-circle" | "upload" | "drag" | "list"
   | "bank" | "qr" | "reply" | "eye-off"
   // Danh mục dịch vụ / loại yêu cầu.
-  | "minus" | "engine" | "snowflake" | "tire" | "bolt" | "disc" | "droplet" | "sparkle" | "battery" | "tools" | "gauge" | "ban";
+  | "minus" | "sort" | "sort-asc" | "sort-desc" | "engine" | "snowflake" | "tire" | "bolt" | "disc" | "droplet" | "sparkle" | "battery" | "tools" | "gauge" | "ban";
 type Props = { name: IconName; size?: number; className?: string };
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-6h6v6"/></>,
@@ -80,6 +80,9 @@ const paths: Record<IconName, ReactNode> = {
   "eye-off": <><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3 3.6M6.3 7.6C3.9 9.3 2.5 12 2.5 12S6 18 12 18c1.6 0 3-.4 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></>,
   grid: <><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></>,
   minus: <path d="M5 12h14"/>,
+  sort: <path d="m8 9 4-4 4 4M8 15l4 4 4-4"/>,
+  "sort-asc": <><path d="m8 9 4-4 4 4"/><path d="m8 15 4 4 4-4" opacity=".3"/></>,
+  "sort-desc": <><path d="m8 9 4-4 4 4" opacity=".3"/><path d="m8 15 4 4 4-4"/></>,
   engine: <><path d="M4 10v6M4 13h2M6 9h3l1-2h4l1 2h2l2 2h2v5h-2l-2 2H9l-3-3V9z"/><path d="M10 7V5h4v2"/></>,
   snowflake: <><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7"/><path d="m9 4 3 2 3-2M9 20l3-2 3 2M4.5 10.5l3-.5-1-3M19.5 13.5l-3 .5 1 3M4.5 13.5l3 .5-1 3M19.5 10.5l-3-.5 1-3"/></>,
   tire: <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v5M12 16v5M3 12h5M16 12h5"/></>,

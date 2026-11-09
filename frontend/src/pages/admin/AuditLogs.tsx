@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { DataTable, EmptyState, Pagination, SearchInput, type Column } from "../../components/ui";
+import { DataTable, EmptyState, Pagination, SearchInput, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { adminApi, fmtDateTime, type AdminAuditLog, type AuditCategory } from "../../services/adminApi";
 import AdvisorActivity from "./AdvisorActivity";
 import { AdminPage, FilterSelect, Person, Pill, Tabs, Toolbar } from "./kit/AdminKit";
@@ -23,12 +23,13 @@ export default function AuditLogs() {
   const [page, setPage] = useState(1);
   const term = useDebounced(search.trim());
 
-  const query = { category, search: term, page };
+  const tableSort = useTableSort(NEWEST_FIRST, () => setPage(1));
+  const query = { category, search: term, page, ...tableSort.params };
   const list = useAdminQuery(tab === "logs" ? `audit:${JSON.stringify(query)}` : null, signal => adminApi.auditLogs(query, signal));
   const result = list.data ?? list.stale;
 
   const columns: Column<AdminAuditLog>[] = [
-    { key: "at", header: "Thời gian", render: l => <span className="whitespace-nowrap tabular-nums text-cs-text-2">{fmtDateTime(l.at)}</span> },
+    { key: "at", sortKey: "created", header: "Thời gian", render: l => <span className="whitespace-nowrap tabular-nums text-cs-text-2">{fmtDateTime(l.at)}</span> },
     { key: "actor", header: "Người thực hiện", primary: true, render: l => <Person name={l.actor} sub={l.role} size={32}/> },
     { key: "action", header: "Hành động", render: l => <Pill tone={categoryInfo[l.category].tone}>{categoryInfo[l.category].label}</Pill> },
     { key: "target", header: "Đối tượng", render: l => <span><b className="text-cs-text">{l.target}</b><span className="block text-caption text-cs-muted">{l.detail || l.label}</span></span> },
@@ -47,7 +48,7 @@ export default function AuditLogs() {
           { value: "all", label: "Tất cả" }, ...(Object.keys(categoryInfo) as AuditCategory[]).map(a => ({ value: a, label: categoryInfo[a].label })),
         ]}/>
       </Toolbar>
-      <DataTable caption="Nhật ký thao tác" columns={columns} rows={result?.data ?? []} rowKey={l => l.id}
+      <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Nhật ký thao tác" columns={columns} rows={result?.data ?? []} rowKey={l => l.id}
         loading={list.loading} error={list.error || undefined} onRetry={list.reload}
         empty={<EmptyState icon="history" title="Chưa có thao tác nào phù hợp"/>}
         footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={list.loading} onChange={setPage}/>}/>

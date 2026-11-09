@@ -1,6 +1,8 @@
 import type { Key, ReactNode } from "react";
 import { LABELS } from "../../config/labels";
 import { EmptyState, ErrorState, LoadingState } from "./States";
+import { SortHeader, SortStatus } from "./SortHeader";
+import { ariaSort, type SortDir, type SortState } from "./tableSort";
 
 export type Column<T> = {
   key: string;
@@ -13,6 +15,8 @@ export type Column<T> = {
   primary?: boolean;
   /** Ẩn trên điện thoại khi thông tin không cần thiết. */
   hideOnMobile?: boolean;
+  /** Khoá sắp xếp gửi lên API (`?sort=`). Có khoá → tiêu đề cột bấm được, kèm biểu tượng sort. */
+  sortKey?: string;
 };
 
 type Props<T> = {
@@ -32,6 +36,10 @@ type Props<T> = {
   footer?: ReactNode;
   /** Class thêm cho từng dòng (ví dụ làm nổi dòng đang chọn). */
   rowClassName?: (row: T) => string;
+  /** Sắp xếp hiện tại + hàm đổi (từ useTableSort). Không truyền → tiêu đề cột không bấm được. */
+  sort?: SortState;
+  /** Bấm tiêu đề: (key) → đảo chiều / chiều mặc định; ô chọn trên điện thoại: (key, dir) → đặt đúng chiều. */
+  onSort?: (key: string, dir?: SortDir) => void;
 };
 
 const alignClass = { left: "text-left", right: "text-right", center: "text-center" } as const;
@@ -40,12 +48,13 @@ const alignClass = { left: "text-left", right: "text-right", center: "text-cente
  * Bảng dữ liệu chuẩn. ≥ md: bảng có thể cuộn ngang; < md: danh sách thẻ.
  * Xử lý sẵn Loading / Error / Empty — trang chỉ truyền trạng thái, không tự vẽ lại.
  */
-export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, onRetry, empty, actions, onRowClick, footer, rowClassName }: Props<T>) {
+export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, onRetry, empty, actions, onRowClick, footer, rowClassName, sort, onSort }: Props<T>) {
   const frame = "overflow-hidden rounded-card border border-cs-border bg-cs-surface shadow-card";
   if (loading && !rows.length) return <div className={frame}><LoadingState/></div>;
   if (error) return <div className={frame}><ErrorState description={error} onRetry={onRetry}/></div>;
   if (!rows.length) return <div className={frame}>{empty ?? <EmptyState/>}</div>;
 
+  const sortable = columns.filter(c => c.sortKey);
   const primary = columns.find(c => c.primary) ?? columns[0];
   const rest = columns.filter(c => c !== primary && !c.hideOnMobile);
   const rowProps = (row: T) => onRowClick ? {
@@ -53,7 +62,10 @@ export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, o
     className: "cursor-pointer hover:bg-cs-hover",
   } : { className: "" };
 
+  const sortLabel = sort ? (sort.key === "created" ? (sort.dir === "desc" ? "Mới tạo nhất" : "Cũ nhất") : columns.find(c => c.sortKey === sort.key)?.header ?? sort.key) : null;
+
   return <div aria-busy={loading || undefined}>
+    {sort && onSort && sortable.length > 0 && <SortStatus className="mb-2 max-md:hidden" sort={sort} label={sortLabel} onReset={() => onSort("created", "desc")}/>}
     {/* Desktop / tablet */}
     <div className={`${frame} max-md:hidden`}>
       <div className="overflow-x-auto">
@@ -61,8 +73,12 @@ export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, o
           <caption className="sr-only">{caption}</caption>
           <thead className="bg-cs-surface-2">
             <tr>
-              {columns.map(col => <th key={col.key} scope="col" style={col.width ? { width: col.width } : undefined}
-                className={`whitespace-nowrap border-b border-cs-border px-4 py-3 text-label uppercase text-cs-muted ${alignClass[col.align ?? "left"]}`}>{col.header}</th>)}
+              {columns.map(col => <th key={col.key} scope="col" style={col.width ? { width: col.width } : undefined} aria-sort={ariaSort(sort, col.sortKey)}
+                className={`whitespace-nowrap border-b border-cs-border px-4 py-3 text-label uppercase text-cs-muted ${alignClass[col.align ?? "left"]}`}>
+                {col.sortKey && sort && onSort
+                  ? <SortHeader label={col.header} sortKey={col.sortKey} sort={sort} onSort={onSort} align={col.align}/>
+                  : col.header}
+              </th>)}
               {actions && <th scope="col" className="w-px whitespace-nowrap border-b border-cs-border px-4 py-3 text-right text-label uppercase text-cs-muted">{LABELS.table.actions}</th>}
             </tr>
           </thead>
@@ -80,7 +96,21 @@ export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, o
       {footer && <div className="border-t border-cs-border px-4 pb-3">{footer}</div>}
     </div>
 
-    {/* Điện thoại */}
+    {/* Điện thoại: không có tiêu đề cột → chọn cách sắp xếp bằng ô chọn. */}
+    {sort && onSort && sortable.length > 0 && <label className="mb-3 flex items-center gap-2 text-small text-cs-muted md:hidden">
+      <span className="shrink-0">Sắp xếp</span>
+      <select className="min-h-11 flex-1 cursor-pointer rounded-control border border-cs-border bg-cs-surface px-3 text-cs-text"
+        value={`${sort.key}:${sort.dir}`} onChange={event => {
+          const [key, dir] = event.target.value.split(":");
+          onSort(key, dir as SortDir);
+        }}>
+        {!sortable.some(c => c.sortKey === "created") && <option value="created:desc">Mới tạo nhất</option>}
+        {sortable.flatMap(c => {
+          const name = typeof c.header === "string" ? c.header : c.key;
+          return [<option key={`${c.sortKey}:asc`} value={`${c.sortKey}:asc`}>{name} ↑</option>, <option key={`${c.sortKey}:desc`} value={`${c.sortKey}:desc`}>{name} ↓</option>];
+        })}
+      </select>
+    </label>}
     <ul className="flex flex-col gap-3 md:hidden" aria-label={caption}>
       {rows.map(row => {
         const { className, ...handlers } = rowProps(row);

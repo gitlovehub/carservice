@@ -28,3 +28,5 @@ export { useAppFeedback } from "./feedbackContext";
 export { Icon, type IconName } from "./Icon";
 export { Switch } from "./Switch";
 export { KmInput, QuantityStepper } from "./QuantityStepper";
+export { SortHeader, SortStatus } from "./SortHeader";
+export { NEWEST_FIRST, ariaSort, useTableSort, type SortDir, type SortState } from "./tableSort";

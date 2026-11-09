@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Button, DataTable, EmptyState, Field, IconButton, Input, Modal, Pagination, QuantityStepper, SearchInput, Select, Textarea, type Column } from "../../components/ui";
+import { Button, DataTable, EmptyState, Field, IconButton, Input, Modal, Pagination, QuantityStepper, SearchInput, Select, Textarea, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { Badge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -51,10 +51,12 @@ export default function Inventory() {
   const [formError, setFormError] = useState("");
   const term = useDebounced(search.trim());
 
-  const partParams = { search: term, category, status, page };
+  const partSort = useTableSort(NEWEST_FIRST, () => setPage(1));
+  const moveSort = useTableSort(NEWEST_FIRST, () => setMovePage(1));
+  const partParams = { search: term, category, status, page, ...partSort.params };
   const parts = useAdminQuery(tab !== "moves" ? `parts:${JSON.stringify(partParams)}` : null, signal => adminApi.parts(partParams, signal));
-  const moves = useAdminQuery(tab === "moves" ? `moves:${term}:${movePage}` : null, signal => adminApi.stockMoves({ search: term, page: movePage }, signal));
-  const partOptions = useAdminQuery(stockForm ? "parts:all" : null, signal => adminApi.parts({ per_page: 100 }, signal));
+  const moves = useAdminQuery(tab === "moves" ? `moves:${term}:${movePage}:${moveSort.sort.key}:${moveSort.sort.dir}` : null, signal => adminApi.stockMoves({ search: term, page: movePage, ...moveSort.params }, signal));
+  const partOptions = useAdminQuery(stockForm ? "parts:all" : null, signal => adminApi.parts({ per_page: 100, sort: "name", dir: "asc" }, signal));
   const result = parts.data ?? parts.stale;
   const moveResult = moves.data ?? moves.stale;
   const summary = result?.summary;
@@ -112,34 +114,34 @@ export default function Inventory() {
   const pager = result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={parts.loading} onChange={setPage}/>;
 
   const catalogColumns: Column<AdminPart>[] = [
-    { key: "sku", header: "SKU", render: p => <Sku value={p.sku}/> },
-    { key: "name", header: "Tên phụ tùng", primary: true, render: p => <b className="text-cs-text">{p.name}</b> },
-    { key: "category", header: "Danh mục", render: p => p.category ? <Pill tone={categoryTone(p.category)}>{p.category}</Pill> : <span className="text-cs-muted">—</span> },
-    { key: "unit", header: "Đơn vị", hideOnMobile: true, render: p => p.unit },
-    { key: "cost", header: "Giá vốn", align: "right", hideOnMobile: true, render: p => <span className="tabular-nums">{vnd(p.cost)}</span> },
-    { key: "price", header: "Giá bán", align: "right", render: p => <span className="tabular-nums">{vnd(p.price)}</span> },
-    { key: "margin", header: "Lợi nhuận", align: "right", hideOnMobile: true, render: p => p.price > 0 ? <b className="tabular-nums text-success-fg">{num(Math.round(((p.price - p.cost) / p.price) * 1000) / 10)}%</b> : <span className="text-cs-muted">—</span> },
-    { key: "status", header: "Trạng thái", render: p => <Badge tone={p.status === "ACTIVE" ? "success" : "neutral"}>{p.status === "ACTIVE" ? "Đang áp dụng" : "Ngừng"}</Badge> },
+    { key: "sku", sortKey: "sku", header: "SKU", render: p => <Sku value={p.sku}/> },
+    { key: "name", sortKey: "name", header: "Tên phụ tùng", primary: true, render: p => <b className="text-cs-text">{p.name}</b> },
+    { key: "category", sortKey: "category", header: "Danh mục", render: p => p.category ? <Pill tone={categoryTone(p.category)}>{p.category}</Pill> : <span className="text-cs-muted">—</span> },
+    { key: "unit", sortKey: "unit", header: "Đơn vị", hideOnMobile: true, render: p => p.unit },
+    { key: "cost", sortKey: "cost", header: "Giá vốn", align: "right", hideOnMobile: true, render: p => <span className="tabular-nums">{vnd(p.cost)}</span> },
+    { key: "price", sortKey: "price", header: "Giá bán", align: "right", render: p => <span className="tabular-nums">{vnd(p.price)}</span> },
+    { key: "margin", sortKey: "margin", header: "Lợi nhuận", align: "right", hideOnMobile: true, render: p => p.price > 0 ? <b className="tabular-nums text-success-fg">{num(Math.round(((p.price - p.cost) / p.price) * 1000) / 10)}%</b> : <span className="text-cs-muted">—</span> },
+    { key: "status", sortKey: "status", header: "Trạng thái", render: p => <Badge tone={p.status === "ACTIVE" ? "success" : "neutral"}>{p.status === "ACTIVE" ? "Đang áp dụng" : "Ngừng"}</Badge> },
   ];
   const stockColumns: Column<AdminPart>[] = [
-    { key: "sku", header: "SKU", render: p => <Sku value={p.sku}/> },
-    { key: "name", header: "Tên phụ tùng", primary: true, render: p => <PartName part={p}/> },
-    { key: "category", header: "Danh mục", hideOnMobile: true, render: p => p.category ? <Pill tone={categoryTone(p.category)}>{p.category}</Pill> : <span className="text-cs-muted">—</span> },
-    { key: "unit", header: "Đơn vị", hideOnMobile: true, render: p => p.unit },
-    { key: "stock", header: "Tồn hiện tại / Tối thiểu", render: p => {
+    { key: "sku", sortKey: "sku", header: "SKU", render: p => <Sku value={p.sku}/> },
+    { key: "name", sortKey: "name", header: "Tên phụ tùng", primary: true, render: p => <PartName part={p}/> },
+    { key: "category", sortKey: "category", header: "Danh mục", hideOnMobile: true, render: p => p.category ? <Pill tone={categoryTone(p.category)}>{p.category}</Pill> : <span className="text-cs-muted">—</span> },
+    { key: "unit", sortKey: "unit", header: "Đơn vị", hideOnMobile: true, render: p => p.unit },
+    { key: "stock", sortKey: "stock", header: "Tồn hiện tại / Tối thiểu", render: p => {
       const pct = (p.stock / Math.max(1, p.min * 1.3)) * 100;
       return <span className="block min-w-36"><span className="mb-1 flex justify-between text-small"><b className="tabular-nums">{num(p.stock)} / {num(p.min)}</b>
         {p.level !== "ok" && <span className={`text-caption font-semibold ${p.level === "out" ? "text-danger-fg" : "text-warning-fg"}`}>{p.level === "out" ? "Hết hàng" : "Sắp hết"}</span>}</span>
         <Progress value={pct} tone={p.level === "out" || p.stock / Math.max(1, p.min) < 0.5 ? "danger" : p.level === "low" ? "warning" : "success"} label={`Tồn kho ${p.name}`}/></span>;
     } },
-    { key: "value", header: "Giá trị tồn", align: "right", hideOnMobile: true, render: p => <span className="tabular-nums">{vnd(Math.max(0, p.stock) * p.cost)}</span> },
-    { key: "updated", header: "Cập nhật lần cuối", hideOnMobile: true, render: p => <span className="whitespace-nowrap tabular-nums text-cs-text-2">{fmtDateTime(p.updated_at)}</span> },
+    { key: "value", sortKey: "value", header: "Giá trị tồn", align: "right", hideOnMobile: true, render: p => <span className="tabular-nums">{vnd(Math.max(0, p.stock) * p.cost)}</span> },
+    { key: "updated", sortKey: "updated", header: "Cập nhật lần cuối", hideOnMobile: true, render: p => <span className="whitespace-nowrap tabular-nums text-cs-text-2">{fmtDateTime(p.updated_at)}</span> },
   ];
   const moveColumns: Column<StockMove>[] = [
-    { key: "at", header: "Thời gian", render: m => <span className="whitespace-nowrap tabular-nums text-cs-text-2">{fmtDateTime(m.at)}</span> },
-    { key: "type", header: "Loại", render: m => <Pill tone={moveInfo[m.type].tone}>{moveInfo[m.type].label}</Pill> },
+    { key: "at", sortKey: "created", header: "Thời gian", render: m => <span className="whitespace-nowrap tabular-nums text-cs-text-2">{fmtDateTime(m.at)}</span> },
+    { key: "type", sortKey: "type", header: "Loại", render: m => <Pill tone={moveInfo[m.type].tone}>{moveInfo[m.type].label}</Pill> },
     { key: "part", header: "Phụ tùng", primary: true, render: m => <span><b className="text-cs-text">{m.name ?? "—"}</b><span className="block text-caption text-cs-muted">{m.sku}</span></span> },
-    { key: "qty", header: "Số lượng", align: "right", render: m => <b className={`tabular-nums ${m.type === "IN" ? "text-success-fg" : "text-danger-fg"}`}>{m.type === "IN" ? "+" : "−"}{num(m.quantity)}{m.unit ? ` ${m.unit}` : ""}</b> },
+    { key: "qty", sortKey: "qty", header: "Số lượng", align: "right", render: m => <b className={`tabular-nums ${m.type === "IN" ? "text-success-fg" : "text-danger-fg"}`}>{m.type === "IN" ? "+" : "−"}{num(m.quantity)}{m.unit ? ` ${m.unit}` : ""}</b> },
     { key: "ref", header: "Chứng từ", render: m => <span><span className="font-medium">{m.ref}</span>{m.note && <span className="block text-caption text-cs-muted">{m.note}</span>}</span> },
     { key: "by", header: "Người thực hiện", hideOnMobile: true, render: m => m.by },
   ];
@@ -197,20 +199,20 @@ export default function Inventory() {
       paneTitle={<span className="flex items-center gap-2 text-cs-accent-text"><Icon name="edit" size={18}/>{editing?.id ? "Chỉnh sửa phụ tùng" : "Thêm phụ tùng"}</span>}
       paneFooter={<><Button disabled={saving} onClick={() => setEditing(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void saveEdit()}>Lưu thay đổi</Button></>}
       pane={editPane}
-      list={<>{filters}<DataTable caption="Danh mục phụ tùng" columns={catalogColumns} rows={result?.data ?? []} rowKey={p => p.id}
+      list={<>{filters}<DataTable sort={partSort.sort} onSort={partSort.toggle} caption="Danh mục phụ tùng" columns={catalogColumns} rows={result?.data ?? []} rowKey={p => p.id}
         loading={parts.loading} error={parts.error || undefined} onRetry={parts.reload}
         onRowClick={startEdit} rowClassName={p => p.id === editing?.id ? "bg-cs-soft/60" : ""}
         actions={p => <IconButton icon="edit" label={`Sửa ${p.name}`} size="sm" onClick={() => startEdit(p)}/>}
         footer={pager}/></>}/>}
 
-    {tab === "stock" && <>{filters}<DataTable caption="Tồn kho" columns={stockColumns} rows={result?.data ?? []} rowKey={p => p.id}
+    {tab === "stock" && <>{filters}<DataTable sort={partSort.sort} onSort={partSort.toggle} caption="Tồn kho" columns={stockColumns} rows={result?.data ?? []} rowKey={p => p.id}
       loading={parts.loading} error={parts.error || undefined} onRetry={parts.reload}
       empty={<EmptyState icon="box" title={status === "all" ? "Chưa có phụ tùng" : "Không có phụ tùng ở mức này"}/>}
       rowClassName={p => p.level === "out" ? "bg-danger-soft/40" : p.level === "low" ? "bg-warning-soft/40" : ""}
       actions={p => <IconButton icon="plus" label={`Nhập thêm ${p.name}`} size="sm" onClick={() => openStock("IN", p)}/>}
       footer={pager}/></>}
 
-    {tab === "moves" && <>{filters}<DataTable caption="Lịch sử nhập xuất" columns={moveColumns} rows={moveResult?.data ?? []} rowKey={m => m.id}
+    {tab === "moves" && <>{filters}<DataTable sort={moveSort.sort} onSort={moveSort.toggle} caption="Lịch sử nhập xuất" columns={moveColumns} rows={moveResult?.data ?? []} rowKey={m => m.id}
       loading={moves.loading} error={moves.error || undefined} onRetry={moves.reload}
       empty={<EmptyState icon="history" title="Chưa có giao dịch nhập xuất"/>}
       footer={moveResult && <Pagination page={moveResult.meta.current_page} totalPages={moveResult.meta.last_page} totalItems={moveResult.meta.total} pageSize={moveResult.meta.per_page} disabled={moves.loading} onChange={setMovePage}/>}/></>}

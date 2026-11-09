@@ -36,7 +36,7 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
     const controller = new AbortController();
     Promise.all([
       adminApi.bookingSlots(controller.signal),
-      catalogAdminApi.services({ status: "ACTIVE", per_page: 100 }, controller.signal),
+      catalogAdminApi.services({ status: "ACTIVE", per_page: 100, sort: "name", dir: "asc" }, controller.signal),
     ]).then(([s, list]) => { setSlots(s); setServices(list.data); }).catch(() => undefined);
     return () => controller.abort();
   }, [open]);

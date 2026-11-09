@@ -34,7 +34,7 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
 
   useEffect(() => {
     const controller = new AbortController();
-    catalogAdminApi.services({ status: "ACTIVE", per_page: 100 }, controller.signal).then(r => setServices(r.data)).catch(() => undefined);
+    catalogAdminApi.services({ status: "ACTIVE", per_page: 100, sort: "name", dir: "asc" }, controller.signal).then(r => setServices(r.data)).catch(() => undefined);
     return () => controller.abort();
   }, []);
   useEffect(() => {
@@ -46,7 +46,7 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
   useEffect(() => {
     if (partTerm.length < 2) return;
     const controller = new AbortController();
-    adminApi.parts({ search: partTerm, status: "ACTIVE", per_page: 8 }, controller.signal).then(r => setPartResults(r.data)).catch(() => undefined);
+    adminApi.parts({ search: partTerm, status: "ACTIVE", per_page: 8, sort: "name", dir: "asc" }, controller.signal).then(r => setPartResults(r.data)).catch(() => undefined);
     return () => controller.abort();
   }, [partTerm]);
 

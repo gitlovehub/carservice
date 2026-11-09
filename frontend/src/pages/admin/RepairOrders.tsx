@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DataTable, ErrorState, IconButton, LoadingState, Pagination, SearchInput, type Column } from "../../components/ui";
+import { DataTable, ErrorState, IconButton, LoadingState, Pagination, SearchInput, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
 import { adminApi, fmtDate, fmtDateTime, fmtTime, type AdminOrder, type OrderGroup } from "../../services/adminApi";
@@ -24,7 +24,8 @@ export default function RepairOrders() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const term = useDebounced(search.trim());
 
-  const params = { group, technician_id: tech, search: term, page };
+  const tableSort = useTableSort(NEWEST_FIRST, () => setPage(1));
+  const params = { group, technician_id: tech, search: term, page, ...tableSort.params };
   const list = useAdminQuery(`orders:${JSON.stringify(params)}`, signal => adminApi.repairOrders(params, signal));
   const detail = useAdminQuery(selectedId === null ? null : `order:${selectedId}`, signal => adminApi.repairOrder(selectedId as number, signal));
   const result = list.data ?? list.stale;
@@ -35,12 +36,12 @@ export default function RepairOrders() {
   const resetPage = <T,>(set: (value: T) => void) => (value: T) => { set(value); setPage(1); };
 
   const columns: Column<AdminOrder>[] = [
-    { key: "code", header: "Mã phiếu", primary: true, render: o => <span className="whitespace-nowrap font-semibold text-cs-accent-text">{o.code}</span> },
+    { key: "code", sortKey: "code", header: "Mã phiếu", primary: true, render: o => <span className="whitespace-nowrap font-semibold text-cs-accent-text">{o.code}</span> },
     { key: "vehicle", header: "Xe / Khách", render: o => <span className="block min-w-36"><b className="block whitespace-nowrap text-cs-text">{o.vehicle || "—"}</b><span className="block whitespace-nowrap text-caption text-cs-muted">{o.plate ?? "Chưa có biển"} · {o.customer ?? "—"}</span></span> },
-    { key: "promised", header: "Hẹn trả", render: o => o.estimated_ready_at ? <span className="whitespace-nowrap tabular-nums">{fmtTime(o.estimated_ready_at)}<span className="block text-caption text-cs-muted">{fmtDate(o.estimated_ready_at)}</span></span> : <span className="text-cs-muted">—</span> },
+    { key: "promised", sortKey: "promised", header: "Hẹn trả", render: o => o.estimated_ready_at ? <span className="whitespace-nowrap tabular-nums">{fmtTime(o.estimated_ready_at)}<span className="block text-caption text-cs-muted">{fmtDate(o.estimated_ready_at)}</span></span> : <span className="text-cs-muted">—</span> },
     { key: "tech", header: "Kỹ thuật viên", hideOnMobile: true, render: o => <span className="whitespace-nowrap">{o.technician ?? <span className="text-cs-muted">Chưa phân công</span>}</span> },
     { key: "estimate", header: "Dự kiến", align: "right", render: o => o.estimate ? <b className="tabular-nums">{vnd(o.estimate)}</b> : <span className="text-cs-muted">—</span> },
-    { key: "status", header: "Trạng thái", render: o => <StatusBadge domain="repair" status={o.status}/> },
+    { key: "status", sortKey: "status", header: "Trạng thái", render: o => <StatusBadge domain="repair" status={o.status}/> },
   ];
 
   const pane = selectedId === null ? null : !selected
@@ -108,7 +109,7 @@ export default function RepairOrders() {
             ...(result?.technicians ?? []).map(t => ({ value: String(t.id), label: t.name ?? `KTV #${t.id}` })),
           ]}/>
         </Toolbar>
-        <DataTable caption="Danh sách phiếu sửa chữa" columns={columns} rows={rows} rowKey={o => o.id}
+        <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Danh sách phiếu sửa chữa" columns={columns} rows={rows} rowKey={o => o.id}
           loading={list.loading} error={list.error || undefined} onRetry={list.reload}
           onRowClick={o => setSelectedId(o.id)} rowClassName={o => o.id === selectedId ? "bg-cs-soft/60" : ""}
           actions={o => <IconButton icon="eye" label={`Xem phiếu ${o.code}`} size="sm" onClick={() => setSelectedId(o.id)}/>}

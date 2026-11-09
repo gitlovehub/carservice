@@ -1,5 +1,5 @@
 import { useState, type DragEvent, type KeyboardEvent } from "react";
-import { Button, Dropdown, EmptyState, ErrorState, Icon, IconButton, LoadingState, Pagination, SearchInput, Switch, type IconName } from "../../components/ui";
+import { Button, Dropdown, EmptyState, ErrorState, Icon, IconButton, LoadingState, NEWEST_FIRST, Pagination, SearchInput, SortHeader, SortStatus, Switch, ariaSort, useTableSort, type IconName } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { errorMessage } from "../../services/adminApi";
 import { CATEGORY_TONE, catalogAdminApi, money, type AdminService } from "../../services/catalogAdminApi";
@@ -30,11 +30,16 @@ export default function Services() {
   const [dragId, setDragId] = useState<number | null>(null);
   const [overId, setOverId] = useState<number | null>(null);
   const term = useDebounced(search.trim());
+  // Mặc định mới tạo lên đầu. Kéo thả chỉ dùng được khi xếp theo "Thứ tự hiển thị" (thứ tự khách thấy khi đặt lịch).
+  const tableSort = useTableSort(NEWEST_FIRST, () => { setPage(1); setOrder(null); });
+  const { sort } = tableSort;
+  const canDrag = sort.key === "order" && sort.dir === "asc";
 
   const params = {
     page, per_page: PER_PAGE, search: term, status: status || undefined,
     category_id: typeof category === "number" ? category : undefined,
     uncategorized: category === "none" ? 1 : undefined,
+    ...tableSort.params,
   };
   const cats = useAdminQuery("service-categories", signal => catalogAdminApi.categories(signal));
   const list = useAdminQuery(`services:${JSON.stringify(params)}`, signal => catalogAdminApi.services(params, signal));
@@ -132,23 +137,33 @@ export default function Services() {
             { value: "", label: "Tất cả trạng thái" }, { value: "ACTIVE", label: "Đang áp dụng" }, { value: "INACTIVE", label: "Ngừng" },
           ]}/>
         </div>
+        <SortStatus className="px-4 pt-3" sort={sort} onReset={() => tableSort.toggle("created", "desc")} label={({
+          created: sort.dir === "desc" ? "Mới tạo nhất" : "Cũ nhất", order: "Thứ tự hiển thị (kéo thả được)", name: "Tên dịch vụ", category: "Danh mục",
+          price: "Giá cơ bản", minutes: "Thời gian", popular: "Phổ biến", status: "Trạng thái", visible: "Hiển thị",
+        } as Record<string, string>)[sort.key] ?? sort.key}/>
 
         {list.error ? <ErrorState description={list.error} onRetry={list.reload}/>
           : list.loading && !visibleRows.length ? <LoadingState/>
           : !visibleRows.length ? <EmptyState title="Không có dịch vụ" description={term || status ? "Thử đổi từ khoá hoặc bộ lọc." : "Bấm “Thêm dịch vụ” để tạo dịch vụ đầu tiên của danh mục này."}/>
           : <div className="overflow-x-auto" aria-busy={list.loading || undefined}>
             <table data-ui="table" className="w-full min-w-[860px] border-collapse text-small">
-              <caption className="sr-only">Danh sách dịch vụ — kéo biểu tượng ⋮⋮ hoặc dùng phím mũi tên lên/xuống để đổi thứ tự</caption>
+              <caption className="sr-only">Danh sách dịch vụ — bấm tiêu đề cột để sắp xếp; khi xếp theo thứ tự hiển thị, kéo biểu tượng ⋮⋮ hoặc dùng phím mũi tên lên/xuống để đổi thứ tự</caption>
               <thead>
                 <tr className="bg-cs-surface-2 text-left text-cs-text-2">
-                  <th scope="col" className="w-8 px-1 py-3"><span className="sr-only">Thứ tự</span></th>
-                  <th scope="col" className="px-2.5 py-3 font-semibold">Tên dịch vụ</th>
-                  <th scope="col" className="px-2.5 py-3 font-semibold">Danh mục</th>
-                  <th scope="col" className="px-2.5 py-3 text-right font-semibold">Giá cơ bản</th>
-                  <th scope="col" className="px-2.5 py-3 font-semibold">Thời gian</th>
-                  <th scope="col" className="px-2.5 py-3 font-semibold">Phổ biến</th>
-                  <th scope="col" className="px-2.5 py-3 font-semibold">Trạng thái</th>
-                  <th scope="col" className="px-2.5 py-3 text-center font-semibold">Hiển thị</th>
+                  <th scope="col" className="w-8 px-1 py-3 text-center" aria-sort={ariaSort(sort, "order")}>
+                    <button type="button" onClick={() => tableSort.toggle("order", "asc")} aria-label="Xếp theo thứ tự hiển thị (để kéo thả)"
+                      title={canDrag ? "Đang xếp theo thứ tự hiển thị — kéo ⋮⋮ để đổi" : "Xếp theo thứ tự hiển thị để kéo thả"}
+                      className={`grid size-7 cursor-pointer place-items-center rounded-md transition-colors hover:bg-cs-hover ${canDrag ? "text-cs-accent-text" : "text-cs-muted"}`}>
+                      <Icon name="drag" size={15}/>
+                    </button>
+                  </th>
+                  {([
+                    ["name", "Tên dịch vụ", "left"], ["category", "Danh mục", "left"], ["price", "Giá cơ bản", "right"], ["minutes", "Thời gian", "left"],
+                    ["popular", "Phổ biến", "left"], ["status", "Trạng thái", "left"], ["visible", "Hiển thị", "center"],
+                  ] as const).map(([key, label, align]) => <th key={key} scope="col" aria-sort={ariaSort(sort, key)}
+                    className={`px-2.5 py-3 font-semibold ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""}`}>
+                    <SortHeader label={label} sortKey={key} sort={sort} onSort={tableSort.toggle} align={align}/>
+                  </th>)}
                   <th scope="col" className="w-14 px-2.5 py-3 text-center font-semibold">Thao tác</th>
                 </tr>
               </thead>
@@ -162,10 +177,12 @@ export default function Services() {
                     onDrop={e => onDrop(e, s.id)} onDragEnd={() => { setDragId(null); setOverId(null); }}
                     className={`border-t border-cs-border transition-colors ${overId === s.id && dragId !== s.id ? "bg-cs-soft" : "hover:bg-cs-hover/60"} ${dragId === s.id ? "opacity-50" : ""} ${active ? "" : "text-cs-muted"}`}>
                     <td className="px-1 py-3 text-center">
-                      <button type="button" aria-label={`Đổi thứ tự “${s.name}” (vị trí ${index + 1}) — kéo thả hoặc phím mũi tên`}
-                        title="Kéo để đổi thứ tự" onMouseDown={() => setDragId(s.id)} onMouseUp={() => setDragId(null)}
-                        onKeyDown={e => onHandleKey(e, index)}
-                        className="grid size-8 cursor-grab place-items-center rounded-md text-cs-muted hover:bg-cs-hover hover:text-cs-text active:cursor-grabbing">
+                      <button type="button" disabled={!canDrag}
+                        aria-label={canDrag ? `Đổi thứ tự “${s.name}” (vị trí ${index + 1}) — kéo thả hoặc phím mũi tên` : "Xếp theo thứ tự hiển thị để kéo thả"}
+                        title={canDrag ? "Kéo để đổi thứ tự" : "Bấm biểu tượng ⋮⋮ trên tiêu đề để xếp theo thứ tự hiển thị rồi kéo thả"}
+                        onMouseDown={() => { if (canDrag) setDragId(s.id); }} onMouseUp={() => setDragId(null)}
+                        onKeyDown={e => { if (canDrag) onHandleKey(e, index); }}
+                        className="grid size-8 cursor-grab place-items-center rounded-md text-cs-muted hover:bg-cs-hover hover:text-cs-text active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent">
                         <Icon name="drag" size={16}/>
                       </button>
                     </td>
@@ -212,7 +229,7 @@ export default function Services() {
           <Pagination page={result.current_page} totalPages={result.last_page} totalItems={result.total} pageSize={result.per_page}
             disabled={list.loading} onChange={p => { setPage(p); setOrder(null); }}/>
         </div>}
-        {result && result.last_page <= 1 && visibleRows.length > 0 && <p className="border-t border-cs-border px-4 py-3 text-caption text-cs-muted">Hiển thị {visibleRows.length} dịch vụ · kéo ⋮⋮ để đổi thứ tự khách thấy khi đặt lịch</p>}
+        {result && result.last_page <= 1 && visibleRows.length > 0 && <p className="border-t border-cs-border px-4 py-3 text-caption text-cs-muted">Hiển thị {visibleRows.length} dịch vụ · {canDrag ? "kéo ⋮⋮ để đổi thứ tự khách thấy khi đặt lịch" : "bấm ⋮⋮ trên tiêu đề để xếp theo thứ tự hiển thị và kéo thả"}</p>}
       </section>
     </div>
 

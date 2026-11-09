@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Button, DataTable, Dropdown, ErrorState, Icon, IconButton, LoadingState, Pagination, SearchInput, type Column, type DropdownItem } from "../../components/ui";
+import { Button, DataTable, Dropdown, ErrorState, Icon, IconButton, LoadingState, NEWEST_FIRST, Pagination, SearchInput, useTableSort, type Column, type DropdownItem } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { getStatus } from "../../config/status";
@@ -58,11 +58,14 @@ export default function AdminAppointments() {
   const term = useDebounced(search.trim());
   const week = useMemo(() => weekRange(anchor), [anchor]);
 
+  // Bảng: mặc định lịch mới tạo lên đầu. Lịch tuần luôn xếp theo giờ hẹn trong từng ngày.
+  const tableSort = useTableSort(NEWEST_FIRST, () => { setPage(1); setChecked([]); });
   const filters = {
     date_from: week.from, date_to: week.to, search: term,
     status: status === "ALL" ? undefined : status, request_type: type === "all" ? undefined : type,
+    ...tableSort.params,
   };
-  const listParams = view === "list" ? { ...filters, page, per_page: PER_PAGE } : { ...filters, per_page: 500 };
+  const listParams = view === "list" ? { ...filters, page, per_page: PER_PAGE } : { ...filters, sort: "time", dir: "asc", per_page: 500 };
   const list = useAdminQuery(`appointments:${view}:${JSON.stringify(listParams)}`, signal => catalogAdminApi.appointments(listParams, signal));
   const detail = useAdminQuery(selectedId === null ? null : `appointment:${selectedId}`, signal => catalogAdminApi.appointment(selectedId as number, signal));
   const result = list.data ?? list.stale;
@@ -154,16 +157,16 @@ export default function AdminAppointments() {
         checked={checked.includes(a.id)} onClick={e => e.stopPropagation()}
         onChange={() => setChecked(c => c.includes(a.id) ? c.filter(id => id !== a.id) : [...c, a.id])}/>,
     },
-    { key: "code", header: "Mã lịch", primary: true, render: a => <b className="whitespace-nowrap text-cs-accent-text">{a.appointment_code}</b> },
-    { key: "customer", header: "Khách hàng", render: a => <span className="block min-w-0">
+    { key: "code", sortKey: "code", header: "Mã lịch", primary: true, render: a => <b className="whitespace-nowrap text-cs-accent-text">{a.appointment_code}</b> },
+    { key: "customer", sortKey: "customer", header: "Khách hàng", render: a => <span className="block min-w-0">
       <b className="block truncate text-cs-text">{a.customer?.full_name ?? "—"}</b>
       <span className="inline-flex items-center gap-1 whitespace-nowrap text-caption text-cs-muted"><Icon name="phone" size={12}/>{a.customer?.phone ?? "—"}</span>
     </span> },
     { key: "vehicle", header: "Xe / Biển số", render: a => <VehicleCell a={a}/> },
-    { key: "time", header: "Ngày giờ hẹn", render: a => <span className="block whitespace-nowrap">
+    { key: "time", sortKey: "time", header: "Ngày giờ hẹn", render: a => <span className="block whitespace-nowrap">
       <span className="block font-medium tabular-nums text-cs-text">{dmy(a.appointment_date)}</span><span className="block text-caption tabular-nums text-cs-muted">{timeRange(a)}</span>
     </span> },
-    ...(paneOpen ? [] : [{ key: "type", header: "Loại yêu cầu", hideOnMobile: true, render: (a: AppointmentRow) => <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-cs-text-2">
+    ...(paneOpen ? [] : [{ key: "type", sortKey: "type", header: "Loại yêu cầu", hideOnMobile: true, render: (a: AppointmentRow) => <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-cs-text-2">
       <Icon name={REQUEST_TYPES[a.request_type]?.icon ?? "wrench"} size={16} className="shrink-0 text-cs-muted"/>{REQUEST_TYPES[a.request_type]?.short ?? a.request_type}
     </span> },
     { key: "services", header: "Dịch vụ", hideOnMobile: true, render: (a: AppointmentRow) => {
@@ -173,7 +176,7 @@ export default function AdminAppointments() {
         {names.length > 1 && <span className="shrink-0 text-caption text-cs-muted">+{names.length - 1}</span>}
       </span> : <span className="text-caption text-cs-muted">Chưa chọn</span>;
     } }]),
-    { key: "status", header: "Trạng thái", render: a => <StatusBadge domain="appointment" status={a.status}/> },
+    { key: "status", sortKey: "status", header: "Trạng thái", render: a => <StatusBadge domain="appointment" status={a.status}/> },
   ];
 
   const pane: ReactNode = selectedId === null ? null : !selected
@@ -223,7 +226,7 @@ export default function AdminAppointments() {
     </div>}
   </>;
 
-  const listView = <DataTable caption="Danh sách lịch hẹn" columns={columns} rows={rows} rowKey={a => a.id}
+  const listView = <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Danh sách lịch hẹn" columns={columns} rows={rows} rowKey={a => a.id}
     loading={list.loading} error={list.error || undefined} onRetry={list.reload}
     onRowClick={a => setSelectedId(a.id)} rowClassName={a => a.id === selectedId ? "bg-cs-soft/70" : ""}
     actions={a => <Dropdown label={`Thao tác lịch ${a.appointment_code}`} items={menu(a)}/>}

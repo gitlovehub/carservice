@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, DataTable, Dropdown, ErrorState, Field, Input, LoadingState, Modal, Pagination, SearchInput, type Column } from "../../components/ui";
+import { Button, DataTable, Dropdown, ErrorState, Field, Input, LoadingState, Modal, NEWEST_FIRST, Pagination, SearchInput, useTableSort, type Column } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
@@ -12,7 +12,6 @@ import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
 
 type CarFilter = "all" | "has" | "none";
-type Sort = "recent" | "spent" | "name";
 type Draft = { name: string; phone: string; email: string; address: string };
 const emptyDraft: Draft = { name: "", phone: "", email: "", address: "" };
 const PLATE = /^\d{2}[A-Z]{1,2}-\d{3}\.\d{2}$|^\d{2}[A-Z]{1,2}-\d{4,5}$/;
@@ -22,8 +21,9 @@ export default function AdminCustomers() {
   const { notify, confirm } = useAppFeedback();
   const [search, setSearch] = useState("");
   const [cars, setCars] = useState<CarFilter>("all");
-  const [sort, setSort] = useState<Sort>("recent");
   const [page, setPage] = useState(1);
+  // Mặc định khách mới tạo lên đầu; bấm tiêu đề cột để sắp theo tên, số xe, lần sửa, chi tiêu.
+  const tableSort = useTableSort(NEWEST_FIRST, () => setPage(1));
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [form, setForm] = useState<{ id: number | null; draft: Draft } | null>(null);
   const [vehicleForm, setVehicleForm] = useState<{ selection: VehicleSelection; plate: string; year: string } | null>(null);
@@ -31,7 +31,7 @@ export default function AdminCustomers() {
   const [formError, setFormError] = useState("");
   const term = useDebounced(search.trim());
 
-  const params = { search: term, cars, sort, page };
+  const params = { search: term, cars, page, ...tableSort.params };
   const list = useAdminQuery(`customers:${JSON.stringify(params)}`, signal => adminApi.customers(params, signal));
   const detail = useAdminQuery(selectedId === null ? null : `customer:${selectedId}`, signal => adminApi.customer(selectedId as number, signal));
   const result = list.data ?? list.stale;
@@ -39,12 +39,12 @@ export default function AdminCustomers() {
   const refresh = () => { list.reload(); detail.reload(); };
 
   const columns: Column<AdminCustomer>[] = [
-    { key: "name", header: "Khách hàng", primary: true, render: c => <span className="flex items-center gap-2"><Person name={c.name} sub={c.email ?? (c.has_account ? undefined : "Khách vãng lai")}/>{c.vip && <Icon name="star" size={14} className="shrink-0 text-warning"/>}{c.locked && <Icon name="lock" size={14} className="shrink-0 text-danger"/>}</span> },
+    { key: "name", sortKey: "name", header: "Khách hàng", primary: true, render: c => <span className="flex items-center gap-2"><Person name={c.name} sub={c.email ?? (c.has_account ? undefined : "Khách vãng lai")}/>{c.vip && <Icon name="star" size={14} className="shrink-0 text-warning"/>}{c.locked && <Icon name="lock" size={14} className="shrink-0 text-danger"/>}</span> },
     { key: "phone", header: "SĐT", render: c => <span className="whitespace-nowrap tabular-nums">{c.phone ?? "—"}</span> },
     { key: "city", header: "Khu vực", hideOnMobile: true, render: c => <span className="whitespace-nowrap">{c.city ?? "—"}</span> },
-    { key: "cars", header: "Số xe", render: c => <span className="whitespace-nowrap">{c.vehicles_count} xe</span> },
-    { key: "last", header: "Lần sửa gần nhất", hideOnMobile: true, render: c => <span className="tabular-nums">{fmtDate(c.last_visit)}</span> },
-    { key: "spent", header: "Tổng chi tiêu", align: "right", render: c => <b className="whitespace-nowrap tabular-nums">{vnd(c.total_spent)}</b> },
+    { key: "cars", sortKey: "cars", header: "Số xe", render: c => <span className="whitespace-nowrap">{c.vehicles_count} xe</span> },
+    { key: "last", sortKey: "last", header: "Lần sửa gần nhất", hideOnMobile: true, render: c => <span className="tabular-nums">{fmtDate(c.last_visit)}</span> },
+    { key: "spent", sortKey: "spent", header: "Tổng chi tiêu", align: "right", render: c => <b className="whitespace-nowrap tabular-nums">{vnd(c.total_spent)}</b> },
   ];
 
   const toggleLock = async (customer: AdminCustomer) => {
@@ -146,10 +146,8 @@ export default function AdminCustomers() {
       list={<>
         <Toolbar>
           <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm theo tên, SĐT, email, biển số…"/>
-          <FilterSelect label="Xe" value={cars} onChange={value => { setCars(value); setPage(1); }} options={[{ value: "all", label: "Tất cả" }, { value: "has", label: "Có xe" }, { value: "none", label: "Chưa có xe" }]}/>
-          <FilterSelect label="Sắp xếp" value={sort} onChange={value => { setSort(value); setPage(1); }} options={[{ value: "recent", label: "Sửa gần nhất" }, { value: "spent", label: "Chi tiêu cao" }, { value: "name", label: "Tên A–Z" }]}/>
-        </Toolbar>
-        <DataTable caption="Danh sách khách hàng" columns={columns} rows={result?.data ?? []} rowKey={c => c.id}
+          <FilterSelect label="Xe" value={cars} onChange={value => { setCars(value); setPage(1); }} options={[{ value: "all", label: "Tất cả" }, { value: "has", label: "Có xe" }, { value: "none", label: "Chưa có xe" }]}/>        </Toolbar>
+        <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Danh sách khách hàng" columns={columns} rows={result?.data ?? []} rowKey={c => c.id}
           loading={list.loading} error={list.error || undefined} onRetry={list.reload}
           onRowClick={c => setSelectedId(c.id)} rowClassName={c => c.id === selectedId ? "bg-cs-soft/60" : ""}
           actions={c => <Dropdown label={`Thao tác cho ${c.name}`} items={[
