@@ -134,7 +134,8 @@ function CapacityCell({ day, form, technicians, onChange }: {
   }
 
   const openHours = openMinutes(form.open_time, form.close_time) / 60;
-  const linkClass = "text-[12px] font-medium text-cs-accent-text hover:underline underline-offset-2";
+  // `!`: CSS nền cho <button> (không nằm trong @layer) ghi đè cỡ chữ utility.
+  const linkClass = "cursor-pointer !text-[12px] !font-medium !leading-5 text-cs-accent-text hover:underline underline-offset-2";
 
   if (form.capacity_hours === "") {
     const auto = technicians * openHours;
