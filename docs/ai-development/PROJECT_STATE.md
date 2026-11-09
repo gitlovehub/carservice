@@ -7,7 +7,7 @@
 
 | | |
 |---|---|
-| Nhánh | `fix/apt` (chưa push; remote vẫn ở `d864927`) |
+| Nhánh | **`v3`** (từ 09/11/2026; đã viết lại lịch sử bỏ 25 commit tác giả Claude ngày 02/11 + xóa `backend/.claude`, `backend/CLAUDE.md`; force push `origin/v3` = `f83c641`). Chỉ merge `v3` vào `main`; `fix/apt`/`hotfix`/`demo_vnpay` còn lịch sử cũ. |
 | Commit | `ea1b85e` P0: quotation approval is customer-only ← `2bec3e0` Phase 5: UI/UX refinement ← `d864927` |
 | Thay đổi chưa commit | Không (sau commit P1A) |
 | Commit/push | Mỗi lần commit phải hỏi PO (D-014 chỉ cho checkpoint này). Push: chưa được phép |
@@ -39,6 +39,10 @@ Không có.
 - P1A-01 → P1A-02: migration chạy được trên SQLite test (`migrate:fresh` trong test), rollback được, toàn bộ test cũ vẫn đạt, không đổi bảng cũ.
 - Rời P1 khi P1D-03 VERIFIED và PO nghiệm thu P1.
 
+
+## Cập nhật 09/11/2026 (v3)
+
+Danh mục xe 3 cấp (Hãng → Dòng xe → Phiên bản) từ CSV đã triển khai và commit trên `v3` (chưa push), xem SESSION_HANDOFF.md. DB dev migrate tới `2026_11_09_100000` và đã seed CSV. Còn: UX-01..09, FINAL-01, gắn bộ chọn xe cho trang cố vấn.
 
 ## Cập nhật 08/11/2026 (sau P7)
 

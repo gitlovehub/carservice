@@ -3,7 +3,19 @@
 > Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
 > Cập nhật: 09/11/2026 — triển khai đặc tả nút `docs/ui-button-redesign.md` (sau P7).
 
-## Mới nhất: Admin bỏ navy + lime, dùng đỏ thương hiệu theo theme (09/11/2026)
+## Mới nhất: Danh mục xe 3 cấp từ CSV (09/11/2026, nhánh v3)
+
+Commit: `00a4279` schema · `60a0cc1` seeder CSV · `2f2c1f3` API công khai + admin · `ff8c932` lưu model/trim vào hồ sơ xe + đặt lịch · `3134ed2` trang Admin + bộ chọn · `714d3ad` sửa 2 lỗi UI phát hiện khi kiểm trình duyệt · `5c8c52e` tích hợp Xe của tôi + Đặt lịch.
+
+- **Không tạo bảng trùng**: dùng lại `vehicle_brands`, `vehicle_models` (đã có, được `vehicles.model_id`, gói bảo dưỡng, phụ tùng dùng); thêm `vehicle_trims` + `vehicles.trim_id` (nullable, `variant` cũ giữ nguyên) + cột `source` (CSV/ADMIN/NULL = có sẵn) + unique (brand_id, name) cho dòng xe (chỉ thêm khi dữ liệu chưa trùng). DB dev đã migrate + seed: 44 hãng, 265 dòng, 471 phiên bản; 31 xe cũ nguyên vẹn.
+- **Seeder** `VietnamVehicleCsvSeeder` đọc `backend/database/data/vietnam_vehicles.csv` (471 dòng, 0 trùng, 0 lỗi): chỉ THÊM, không sửa/xóa → giữ dữ liệu/trạng thái admin; so khớp không phân biệt hoa/thường; dùng lại hãng/dòng có sẵn. Đã gọi trong `DatabaseSeeder`.
+- **API**: công khai `GET /api/vehicle-catalog/brands`, `/brands/{id}/models`, `/models/{id}/trims`, `/search?q=` (chỉ ACTIVE, throttle 120/phút). Admin `/api/admin/vehicle-{brands,models,trims}` (role ADMIN): danh sách có đếm, lọc, phân trang; tạo/sửa/ẩn; **xóa bị chặn (422)** khi còn cấp con hoặc đang dùng ở hồ sơ xe (kể cả xe xóa mềm → lịch hẹn), gói bảo dưỡng, phụ tùng tương thích. Không cho đổi cấp cha.
+- **Hồ sơ xe + đặt lịch**: nhận `model_id` + `trim_id` (`App\Support\VehicleCatalogSelection`): phiên bản phải thuộc dòng xe; khách chỉ chọn mới bản ghi ACTIVE, giữ được lựa chọn cũ đã bị ẩn; nhân viên được chọn dòng đã ẩn (xe đời cũ). Đường gửi tên cũ (`brand`/`model`, `model_name`) vẫn chạy.
+- **Frontend**: `components/vehicle/SearchableSelect` (combobox tìm không dấu, bàn phím, loading/empty/lỗi + thử lại) + `VehicleSelector` (đổi hãng reset dòng+phiên bản, đổi dòng reset phiên bản). Dùng ở "Xe của tôi" (thêm + sửa) và bước 1 "Đặt lịch" (bỏ `BRAND_MODELS` viết cứng, bỏ danh sách 8 dòng Toyota). Trang Admin `/admin/vehicle-catalog` (menu Danh mục → Danh mục xe). Dùng Icon có sẵn, không dùng Font Awesome (dự án đang gỡ dần — UX M7).
+- **Kiểm thử**: backend 246/246; smoke 26/26 (mới `test:vehicle-catalog`; sửa 1 assertion cũ trong `ui-contrast-regression` vốn khóa danh sách Toyota); tsc + build đạt; ESLint file sửa sạch (Cars.tsx còn 1 lỗi cũ `set-state-in-effect`). Trình duyệt (Chrome headless, chỉ đọc, 0 request ghi): 65/65 — Xe của tôi + Đặt lịch sáng/tối, Đặt lịch 390px tối, Admin sáng/tối/390px. Frontend dự án chạy ở **cổng 5174** (5173 là project khác).
+- **Còn lại / chờ PO**: (1) Dòng xe cũ và CSV khác tên nên tồn tại song song, ví dụ "Mazda 2"/"Mazda2", "5 Series"/"Series 5", "Seltos"/"New Seltos" — không tự gộp (cấm suy đoán); admin có thể ẩn bản không dùng. (2) Trang cố vấn "Xe khách hàng" vẫn nhập `model_id` dạng số — chưa gắn bộ chọn. (3) Bộ lọc hãng/dòng trong Admin tải tối đa 100 mục mỗi cấp. (4) Tìm kiếm LIKE trên MySQL không phân biệt dấu (gõ "cho" ra cả "chỗ") — có ích, chấp nhận.
+
+## Trước đó: Admin bỏ navy + lime, dùng đỏ thương hiệu theo theme (09/11/2026)
 
 PO đổi quyết định: khu Admin **không còn luôn tối**. `tokens.css` khối `[data-area="admin"]` chỉ đổi accent (= `--cs-brand`, chữ trắng, nút primary đỏ đặc, không gradient) và sidebar (`--cs-sidebar-bg: var(--cs-surface)`, mục đang chọn `--cs-sidebar-active-bg #cf2935` / chữ trắng, bo 10px); nền/chữ/viền/trạng thái/bo góc dùng token chung theo `html[data-theme]`. `workspace.css`: bỏ mục chọn lime, ô tìm kiếm lime, badge lime, thẻ navy/tím; thẻ lối tắt + hàng Tiện ích thành thẻ trung tính, icon đỏ trên nền soft. `shell.css`: gỡ phần nhân bản ánh xạ dark cho Admin (giờ chỉ áp khi theme tối). `buttons.css`: bỏ nút icon tròn riêng Admin. Nút Admin không dùng success (Mở khóa, Duyệt → secondary + check); xanh lá chỉ còn ở badge trạng thái thành công. Đã cập nhật `docs/ui-button-redesign.md` (§1, §2, §3 Admin, §4), `tests/button-redesign.mjs`, `tests/workspace-theme-smoke.mjs` (kiểm tra sidebar Admin nền surface, mục chọn đỏ, không còn mã navy/lime). `grep -i "c8f53c|080c1a|0b1022|141a2e|lime|navy" frontend/src` → không còn. 24/24 `test:*`, tsc, build đạt; ESLint giữ nguyên nợ cũ (22 + 2). Trình duyệt: `/admin/maintenance-packages` và `/admin` ở theme sáng (sidebar trắng) và tối (sidebar `#191b1e`), mục chọn đỏ đặc chữ trắng, nút primary đỏ, không tràn ngang, không lỗi console, 0 request ghi.
 
@@ -20,7 +32,11 @@ Commit: `afdc38c` token + biến thể · `cf7abcd` component dùng chung · `8a
 - **Test**: thêm `tests/button-redesign.mjs` (`npm run test:buttons`); sửa `workspace-theme-smoke.mjs` (sidebar Admin `#080c1a` thay màu cũ). 24/24 script `test:*` đạt, `tsc -b` + build đạt; ESLint giữ nguyên nợ cũ (22 `set-state-in-effect` + 2 `exhaustive-deps`), không lỗi mới.
 - **Trình duyệt** (CDP, chỉ đọc, 0 request ghi): Customer `/customer/cars`, `/quotation`, `/customer/appointments`, `/customer/booking`; Advisor `/advisor`, `/advisor/appointments`, `/advisor/customer-cars`; Admin `/admin`, `/admin/accounts`, `/admin/services` — màu/bo góc đúng đặc tả, không tràn ngang, không lỗi console. Đã phát hiện và sửa: trang Admin cũ còn thẻ trắng do ánh xạ màu sáng chỉ áp ở dark theme → mở rộng cho khu Admin. BROWSER_NOT_VERIFIED: các panel phiếu sửa chữa (Bước 2–5), modal báo giá khách, trang thanh toán (cần dữ liệu phù hợp).
 
-## Commit (fix/apt, chưa push)
+## Nhánh làm việc: `v3` (09/11/2026)
+
+PO chuyển sang làm trên `v3`. Lịch sử `v3` đã viết lại (bỏ 25 commit tác giả Claude ngày 02/11, code giữ nguyên) và force push; `origin/v3` = `f83c641` (xóa `backend/.claude`, `backend/CLAUDE.md`). Hash commit liệt kê bên dưới là hash cũ trên `fix/apt`, trên `v3` đã đổi. Không ghi `Co-Authored-By`/link claude.ai vào commit hay file. Backup cục bộ: nhánh `v3-backup-truoc-xoa-claude` (chưa push).
+
+## Commit (fix/apt, hash cũ)
 
 P1: `a67819e` `b533524` `26389df` `7452c1a` · P2: `b9e40cb` `6fe0f37` `9f51b4c` · QA-01: `b237658` · P3: `2d64bd2` `0967552` `8fb42fa` · P4: `1b37879` `2468b81` · P5: `47eef0d` `09a3a0c` `da44e68` · P6: `31f7214` `bf5f429` · P7: `d734ffa` `2f58501` · docs: `51beadc`.
 
