@@ -12,9 +12,10 @@
  *   ghost     — thao tác nhẹ trong danh sách / thanh công cụ.
  *   danger    — nền đặc: CHỈ trong hộp thoại xác nhận (Xóa vĩnh viễn, Hủy lịch hẹn, Đóng phiếu).
  *   danger-outline — Từ chối, Bỏ, Khóa tài khoản: đặt cạnh nút chính; ngoài danh sách dùng thay cho danger.
- *   success   — tiền & hoàn tất (nền xanh đặc, chữ trắng — mọi vai trò).
+ *   success   — tiền, duyệt & hoàn tất (nền xanh đặc, chữ trắng — mọi vai trò).
+ *   warning   — chờ duyệt / cần chú ý (nền cam đậm, chữ trắng).
  *   .cs-btn-tone-danger — nút icon ghost chữ đỏ (Xóa trong dòng).
- * Bo góc: var(--cs-btn-radius) (mặc định 11px cho mọi vai trò).
+ * Bo góc: var(--cs-btn-radius) (11px; Admin 10px theo Admin Button Kit).
  *
  * Kích thước: sm 32px · md 40px (44px trên điện thoại) · lg 48px. Icon: 14 / 16 / 18px.
  *
@@ -23,20 +24,19 @@
  *   .cs-unified-secondary = .cs-btn-secondary, .cs-unified-danger = .cs-btn-danger.
  */
 
+/*
+ * QUY TẮC HOVER (Admin Button Kit): nút GIỮ NGUYÊN vị trí và kích thước khi hover / nhấn.
+ * Chỉ đổi màu nền, màu chữ, màu viền (180ms). Không translate, scale, đổi bóng, đổi padding hay độ dày viền.
+ */
+
 /* ---------- 1. Lớp nền cho mọi nút (kể cả nút cũ chưa đổi class) ---------- */
 :where(button, [role="button"], a.cs-btn, input[type="submit"], input[type="button"]) {
   cursor: pointer;
   transition:
     background-color var(--cs-duration, 180ms) ease,
     border-color var(--cs-duration, 180ms) ease,
-    color var(--cs-duration, 180ms) ease,
-    box-shadow var(--cs-duration, 180ms) ease,
-    transform 0.12s ease;
+    color var(--cs-duration, 180ms) ease;
   -webkit-tap-highlight-color: transparent;
-}
-
-:where(button, [role="button"], input[type="submit"], input[type="button"]):not(:disabled):active {
-  transform: scale(0.98);
 }
 
 :where(button, [role="button"], a.cs-btn, input[type="submit"], input[type="button"]):focus-visible {
@@ -97,8 +97,13 @@
   color: var(--btn-hover-fg);
 }
 
-.cs-btn:active:not(:disabled),
-.cs-unified-btn:active:not(:disabled) { transform: scale(0.98); }
+/* Nhấn: đậm màu hơn hover một bậc — không lún, không co. */
+.cs-btn:active:not(:disabled):not([aria-disabled="true"]),
+.cs-unified-btn:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--btn-active-bg, var(--btn-hover-bg));
+  border-color: var(--btn-active-border, var(--btn-hover-border));
+  color: var(--btn-hover-fg);
+}
 
 .cs-btn:focus-visible,
 .cs-unified-btn:focus-visible {
@@ -114,6 +119,7 @@
   --btn-border: transparent;
   --btn-hover-bg: var(--cs-accent-fill-hover, var(--cs-accent-hover));
   --btn-hover-border: transparent;
+  --btn-active-bg: var(--cs-accent-active, var(--cs-accent-hover));
 }
 
 /* Quan trọng thứ hai: nền soft, chữ on-soft, viền trong suốt. */
@@ -131,6 +137,7 @@
   --btn-bg: var(--cs-surface-2);
   --btn-fg: var(--cs-text);
   --btn-border: var(--cs-btn-border, var(--cs-border));
+  --btn-active-bg: var(--cs-border);
 }
 
 /* Ít ưu tiên: nền trong suốt, viền rõ. */
@@ -160,6 +167,8 @@
   --btn-border: var(--cs-danger-solid);
   --btn-hover-bg: var(--cs-danger-solid-hover);
   --btn-hover-border: var(--cs-danger-solid-hover);
+  --btn-active-bg: var(--cs-danger-solid-active);
+  --btn-active-border: var(--cs-danger-solid-active);
 }
 
 .cs-btn-danger-outline {
@@ -178,6 +187,19 @@
   --btn-border: var(--cs-success-btn-border);
   --btn-hover-bg: var(--cs-success-btn-hover);
   --btn-hover-border: var(--cs-success-btn-border);
+  --btn-active-bg: var(--cs-success-solid-active);
+  --btn-active-border: var(--cs-success-solid-active);
+}
+
+/* Chờ duyệt / cần chú ý: nền cam đậm, chữ trắng. */
+.cs-btn-warning {
+  --btn-bg: var(--cs-warning-solid);
+  --btn-fg: var(--cs-on-solid);
+  --btn-border: var(--cs-warning-solid);
+  --btn-hover-bg: var(--cs-warning-solid-hover);
+  --btn-hover-border: var(--cs-warning-solid-hover);
+  --btn-active-bg: var(--cs-warning-solid-active);
+  --btn-active-border: var(--cs-warning-solid-active);
 }
 
 /* Nút icon (ghost): hover có viền + nền nhạt + icon theo màu vai trò — người dùng thấy rõ nút sắp bấm. */
@@ -223,9 +245,15 @@
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
-.cs-link-arrow svg { transition: transform 0.15s ease; }
-.cs-link-arrow:hover svg { transform: translateX(2px); }
-@media (prefers-reduced-motion: reduce) { .cs-link-arrow svg { transition: none; } }
+
+/*
+ * Admin Button Kit — nút icon trong bảng / thanh công cụ luôn có viền và nền surface;
+ * hover chỉ đổi màu (đỏ thương hiệu; Sửa vàng, Xem xanh dương, Xoá đỏ). Nút Đóng (×) giữ dạng ghost.
+ */
+[data-area="admin"] .cs-btn-icon.cs-btn-ghost:not([data-icon="close"]):not([data-icon="x"]) {
+  --btn-bg: var(--cs-surface);
+  --btn-border: var(--cs-border);
+}
 
 /* Nút icon chữ đỏ (Xóa trong dòng): ghost, hover nền danger-soft + viền danger. */
 .cs-btn.cs-btn-tone-danger {
@@ -287,5 +315,4 @@
 
 @media (prefers-reduced-motion: reduce) {
   .cs-btn, .cs-unified-btn, :where(button, [role="button"]) { transition: none; }
-  .cs-btn:active:not(:disabled) { transform: none; }
 }

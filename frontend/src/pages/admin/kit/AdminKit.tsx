@@ -111,8 +111,8 @@ export function Tabs<T extends string>({ items, value, onChange, variant = "unde
       const active = item.id === value;
       return <button key={item.id} type="button" role="tab" aria-selected={active} onClick={() => onChange(item.id)}
         className={`inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-full border px-3.5 text-small font-medium transition-colors ${active
-          ? "border-cs-accent bg-cs-accent text-cs-accent-contrast"
-          : "border-cs-border bg-cs-surface text-cs-text-2 hover:bg-cs-hover"}`}>
+          ? "border-cs-accent bg-cs-accent text-cs-accent-contrast hover:border-cs-accent-hover hover:bg-cs-accent-hover"
+          : "border-cs-border bg-cs-surface text-cs-text-2 hover:border-transparent hover:bg-cs-soft-hover hover:text-cs-on-soft"}`}>
         {item.icon && <Icon name={item.icon} size={15}/>}
         {item.label}
         {item.count !== undefined && <span className={`rounded-full px-1.5 py-px text-caption font-semibold tabular-nums ${active ? "bg-white/20" : toneSoft[item.tone ?? "neutral"]}`}>{num(item.count)}</span>}
@@ -124,7 +124,7 @@ export function Tabs<T extends string>({ items, value, onChange, variant = "unde
       const active = item.id === value;
       return <button key={item.id} type="button" role="tab" aria-selected={active} onClick={() => onChange(item.id)}
         className={`inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-[9px] px-4 text-small font-medium transition-colors ${active
-          ? "bg-cs-surface text-cs-accent-text shadow-card" : "text-cs-text-2 hover:text-cs-text"}`}>
+          ? "bg-cs-surface text-cs-accent-text shadow-card hover:bg-cs-soft" : "text-cs-text-2 hover:bg-cs-soft-hover hover:text-cs-on-soft"}`}>
         {item.icon && <Icon name={item.icon} size={16}/>}{item.label}
         {item.count !== undefined && <span className="text-caption text-cs-muted">({item.count})</span>}
       </button>;

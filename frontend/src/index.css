@@ -88,6 +88,8 @@
   --color-cs-accent-hover: var(--cs-accent-hover);
   --color-cs-accent-text: var(--cs-accent-text);
   --color-cs-soft: var(--cs-soft);
+  --color-cs-soft-hover: var(--cs-soft-hover);
+  --color-cs-on-soft: var(--cs-on-soft);
   --color-cs-accent-contrast: var(--cs-accent-contrast);
   --color-cs-overlay: var(--cs-overlay);
   --color-cs-disabled: var(--cs-disabled-bg);

@@ -191,7 +191,7 @@ export default function VehicleCatalog() {
     <div role="tablist" aria-label="Cấp danh mục" className="mb-4 inline-flex max-w-full gap-1 overflow-x-auto rounded-control border border-cs-border bg-cs-surface p-1">
       {(Object.keys(LEVELS) as AdminLevel[]).map(key => <button key={key} type="button" role="tab" aria-selected={level === key}
         onClick={() => switchLevel(key)}
-        className={`cursor-pointer whitespace-nowrap rounded-control px-4 py-2 text-small font-semibold transition-colors max-sm:min-h-11 ${level === key ? "bg-cs-accent text-cs-accent-contrast" : "text-cs-muted hover:bg-cs-hover hover:text-cs-text"}`}>
+        className={`cursor-pointer whitespace-nowrap rounded-control px-4 py-2 text-small font-semibold transition-colors max-sm:min-h-11 ${level === key ? "bg-cs-accent text-cs-accent-contrast hover:bg-cs-accent-hover" : "text-cs-muted hover:bg-cs-soft-hover hover:text-cs-on-soft"}`}>
         {LEVELS[key].tab}
       </button>)}
     </div>

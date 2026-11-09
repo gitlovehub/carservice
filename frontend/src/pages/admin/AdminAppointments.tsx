@@ -1,6 +1,5 @@
-import { Button, PageHeader, buttonClass } from "../../components/ui";
+import { Button, PageHeader } from "../../components/ui";
 import { FilterSelect } from "./kit/AdminKit";
-import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { StatusBadge } from "../../components/ui/Badge";
 
@@ -394,50 +393,39 @@ function AdminAppointments() {
                           <td className="px-3 py-4">
                             {appointment.status === "Chờ xác nhận" && (
                               <div className="flex gap-2">
-                                <button
-                                  type="button"
+                                <Button
+                                  variant="success"
+                                  size="sm"
+                                  icon="check"
                                   disabled={updatingId !== null}
-                                  onClick={() =>
-                                    void handleStatusChange(
-                                      appointment,
-                                      "Đã xác nhận",
-                                    )
-                                  }
-                                  className={buttonClass({ variant: "secondary", size: "sm" })}
+                                  onClick={() => void handleStatusChange(appointment, "Đã xác nhận")}
                                 >
-                                  <Icon name="check" size={14}/>{isUpdating ? "Đang xử lý..." : "Duyệt"}
-                                </button>
+                                  {isUpdating ? "Đang xử lý..." : "Duyệt"}
+                                </Button>
 
-                                <button
-                                  type="button"
+                                <Button
+                                  variant="danger-outline"
+                                  size="sm"
+                                  icon="x"
                                   disabled={updatingId !== null}
-                                  onClick={() =>
-                                    void handleStatusChange(
-                                      appointment,
-                                      "Đã hủy",
-                                    )
-                                  }
-                                  className={buttonClass({ variant: "danger-outline", size: "sm" })}
+                                  onClick={() => void handleStatusChange(appointment, "Đã hủy")}
                                 >
-                                  <Icon name="x" size={14}/>Hủy
-                                </button>
+                                  Hủy
+                                </Button>
                               </div>
                             )}
 
                             {appointment.status === "Đã xác nhận" && (
-                              <button
-                                type="button"
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                icon="car"
+                                className="whitespace-nowrap"
                                 disabled={updatingId !== null}
-                                onClick={() =>
-                                  void handleStatusChange(
-                                    appointment,
-                                    "Đã tiếp nhận",
-                                  )
-                                }
-                                className={buttonClass({ variant: "primary", size: "sm", className: "whitespace-nowrap" })}
+                                onClick={() => void handleStatusChange(appointment, "Đã tiếp nhận")}
                               >
-                                <Icon name="car" size={14}/>{isUpdating ? "Đang xử lý..." : "Tiếp nhận"}
-                              </button>
+                                {isUpdating ? "Đang xử lý..." : "Tiếp nhận"}
+                              </Button>
                             )}
 
                             {appointment.status === "Đã tiếp nhận" && (

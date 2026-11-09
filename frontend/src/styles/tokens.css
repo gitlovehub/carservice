@@ -61,9 +61,14 @@
   --cs-neutral: #686c71;  --cs-neutral-soft: #f1f1ef;  --cs-neutral-fg: #3d4146;
 
   /* Nền đặc cho nút Danger / Success (chữ trắng đạt AA ở cả sáng lẫn tối). */
-  --cs-danger-solid: #b91c1c;   --cs-danger-solid-hover: #991b1b;
-  --cs-success-solid: #15803d;  --cs-success-solid-hover: #166534;
+  --cs-danger-solid: #b91c1c;   --cs-danger-solid-hover: #991b1b;   --cs-danger-solid-active: #7f1d1d;
+  --cs-success-solid: #15803d;  --cs-success-solid-hover: #166534;  --cs-success-solid-active: #14532d;
+  /* Nút Warning: #b45309 thay vì #d97706 để chữ trắng đạt AA (≈5:1). */
+  --cs-warning-solid: #b45309;  --cs-warning-solid-hover: #92400e;  --cs-warning-solid-active: #78350f;
   --cs-on-solid: #ffffff;
+  /* Màu khi nhấn (active) của nút chính — đậm hơn hover một bậc. */
+  --cs-brand-active: #991c27;
+  --cs-accent-active: var(--cs-brand-active);
   /* Nút Success: nền xanh đặc chữ trắng cho mọi vai trò. */
   --cs-success-btn-bg: var(--cs-success-solid);  --cs-success-btn-hover: var(--cs-success-solid-hover);
   --cs-success-btn-fg: var(--cs-on-solid);       --cs-success-btn-border: var(--cs-success-solid);
@@ -121,7 +126,7 @@ html[data-theme="dark"] {
   --cs-info:    #93c5fd;  --cs-info-soft:    #1d3049;  --cs-info-fg:    #b9d7ff;
   --cs-neutral: #a3a7ae;  --cs-neutral-soft: #2a2d32;  --cs-neutral-fg: #d3d5d9;
 
-  --cs-danger-solid: #c42b2b;   --cs-danger-solid-hover: #d63a3a;
+  --cs-danger-solid: #c42b2b;   --cs-danger-solid-hover: #d63a3a;   --cs-danger-solid-active: #a82424;
 
   --cs-disabled-bg: #26292d;
   --cs-disabled-fg: #6f747a;
@@ -138,6 +143,7 @@ html[data-theme="dark"] {
   --cs-accent-text: var(--cs-accent);
   --cs-accent-fill: var(--cs-accent);
   --cs-accent-fill-hover: var(--cs-accent-hover);
+  --cs-accent-active: var(--cs-accent-hover); /* vai trò không khai báo màu nhấn khi bấm: dùng màu hover */
 }
 html[data-theme="dark"] [data-area="customer"] {
   --cs-accent-text: #ff7d85;
@@ -147,6 +153,7 @@ html[data-theme="dark"] [data-area="customer"] {
 [data-area="customer"] {
   --cs-accent: #cf2935;
   --cs-accent-hover: #b3222d;
+  --cs-accent-active: #991c27;
   --cs-accent-contrast: #ffffff;
   --cs-soft: #fff1f1;
   --cs-soft-hover: #ffe1e3;
@@ -188,8 +195,10 @@ html[data-theme="dark"] [data-area="advisor"] {
 [data-area="admin"] {
   --cs-accent: var(--cs-brand);
   --cs-accent-hover: var(--cs-brand-hover);
+  --cs-accent-active: var(--cs-brand-active);
   --cs-accent-contrast: #ffffff;
   --cs-soft: var(--cs-brand-soft);
+  --cs-btn-radius: 10px;  /* Admin Button Kit: bo góc 10px */
 
   --cs-sidebar-bg: var(--cs-surface);
   --cs-sidebar-fg: var(--cs-text);

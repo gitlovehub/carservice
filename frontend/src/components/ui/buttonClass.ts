@@ -1,5 +1,5 @@
 /** Class chuẩn cho nút (styles/buttons.css). Dùng trực tiếp khi cần <Link> trông như nút. */
-export type ButtonVariant = "primary" | "tonal" | "secondary" | "outline" | "ghost" | "success" | "danger-outline" | "danger";
+export type ButtonVariant = "primary" | "tonal" | "secondary" | "outline" | "ghost" | "success" | "warning" | "danger-outline" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 /** "danger": chữ đỏ, hover nền danger-soft — cho nút icon Xóa trong dòng (đi kèm variant ghost). */
 export type ButtonTone = "danger";

@@ -72,7 +72,7 @@ function DashboardBody({ data, range, setRange }: { data: DashboardData; range: 
                 <span className="block truncate text-caption text-cs-muted">{task.hint}</span>
               </span>
               <b className={`min-w-9 rounded-full px-2.5 py-1 text-center text-small tabular-nums ${task.count ? toneSoft[task.tone] : "text-cs-muted"}`}>{num(task.count)}</b>
-              <Icon name="chevron-right" size={16} className="shrink-0 text-cs-muted transition-transform group-hover:translate-x-0.5"/>
+              <Icon name="chevron-right" size={16} className="shrink-0 text-cs-muted transition-colors group-hover:text-cs-accent-text"/>
             </Link>
           </li>)}
         </ul>

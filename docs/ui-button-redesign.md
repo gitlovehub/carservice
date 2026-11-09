@@ -31,7 +31,8 @@ Thêm vào mỗi vai trò các token: `--cs-accent`, `--cs-accent-hover`, `--cs-
 | soft-hover | `#ffe1e3` | `#f3e3bd` | mặc định chung (`#ffe1e3`; tối `#4a2a2f`) |
 | on-soft (chữ Tonal) | `#a51f29` | `#6e4e1a` | mặc định chung (`#a51f29`; tối `#ffb3ba`) |
 | focus | `#cf2935` | `#8f6624` | `#cf2935` |
-| btn-radius | `11px` | `11px` | `11px` (mặc định chung) |
+| btn-radius | `11px` | `11px` | `10px` (Admin Button Kit) |
+| accent-active (nhấn) | `#991c27` | = accent-hover | `var(--cs-brand-active)` = `#991c27` |
 
 Giữ nguyên các giá trị dark-mode hiện có của Customer và Advisor; thêm `--cs-soft-hover` và `--cs-on-soft` tương ứng
 cho dark mode (gợi ý: Customer `#4a2a2f` / `#ffb3ba`, Advisor `#3b301d` / `#f0d08f`).
@@ -54,11 +55,21 @@ và tự đổi theo `html[data-theme]` (không ép `color-scheme`, không gradi
 | Thẻ lối tắt dashboard | thẻ trung tính `--cs-surface` + viền `--cs-border`, icon màu nhấn trên nền `--cs-soft` |
 
 Xanh lá ở khu Admin **chỉ** dùng cho badge trạng thái thành công ("Đang áp dụng", "Đã thanh toán"…) dạng chấm + chữ
-trên nền nhạt (`Badge tone="success"`). Nút ở Admin không dùng biến thể success (Mở khóa, Duyệt = secondary + icon check).
+trên nền nhạt (`Badge tone="success"`). Ngoại lệ (góp ý PO 09/11/2026): mọi nút **Duyệt / Xác nhận duyệt** dùng `success`.
+
+### Admin Button Kit (09/11/2026)
+
+- **Hover / nhấn chỉ đổi màu** nền, chữ, viền (180ms). Cấm translate, scale, đổi box-shadow, đổi padding/độ dày viền.
+  Nhấn (`:active`) dùng `--btn-active-bg` (đậm hơn hover một bậc), không lún.
+- Nút icon (`IconButton` ghost) trong Admin: luôn có viền `--cs-border` + nền surface; hover đỏ thương hiệu
+  (Sửa vàng, Xem xanh dương, Xoá đỏ). Nút Đóng (×) giữ dạng ghost không viền.
+- Tab chip / segment: hover nền `--cs-soft-hover`, chữ `--cs-on-soft`; tab đang chọn hover `accent-hover`.
+- Icon dùng bộ SVG nội bộ (`components/ui/Icon.tsx`), không thêm Font Awesome.
+- Test khoá quy tắc: `frontend/tests/button-redesign.mjs`.
 
 ## 2. Hệ thống nút (`src/styles/buttons.css` + `components/ui/buttonClass.ts` + `Button.tsx`)
 
-`ButtonVariant` mới: `"primary" | "tonal" | "secondary" | "outline" | "ghost" | "success" | "danger-outline" | "danger"`.
+`ButtonVariant` mới: `"primary" | "tonal" | "secondary" | "outline" | "ghost" | "success" | "warning" | "danger-outline" | "danger"`.
 
 | Variant | Mặc định | Hover | Khi dùng |
 |---|---|---|---|
@@ -67,11 +78,12 @@ trên nền nhạt (`Badge tone="success"`). Nút ở Admin không dùng biến 
 | secondary | surface-2, viền border | hover, viền border-strong | Quay lại, Làm mới, Hủy trong hộp thoại. |
 | outline | trong suốt, viền border-strong | nền surface-2, **viền đổi sang focus (màu vai trò)** | Xem chi tiết, In, Lọc, Xuất file. |
 | ghost | trong suốt, chữ text-2 | nền hover, chữ text | Thao tác trong dòng bảng / toolbar. |
-| success | nền `#15803d` chữ trắng (kiểu chung) | đậm hơn | Customer/Advisor: Đồng ý báo giá, Đã nhận tiền mặt, Bàn giao xe, Xuất kho. Admin không dùng. |
+| success | nền `#15803d` chữ trắng (kiểu chung) | đậm hơn | Đồng ý báo giá, Đã nhận tiền mặt, Bàn giao xe, Xuất kho; mọi nút Duyệt (cả Admin). |
+| warning (mới) | nền `#b45309` chữ trắng | `#92400e` | Chờ duyệt / cần chú ý. |
 | danger-outline | trong suốt, chữ danger, viền danger 45% | nền danger-soft | Từ chối, Bỏ, Khóa tài khoản: đặt cạnh nút chính. |
 | danger | nền danger-solid chữ trắng | danger-solid-hover | Xóa vĩnh viễn, Hủy lịch hẹn, Đóng phiếu: **chỉ trong ConfirmDialog**. |
 
-- `border-radius: var(--cs-btn-radius)` cho mọi `.cs-btn` (11px cho cả ba vai trò).
+- `border-radius: var(--cs-btn-radius)` cho mọi `.cs-btn` (11px; Admin 10px).
 - Icon xóa trong dòng: chữ `--cs-danger`; khi hover thì nền `--cs-danger-soft` và viền danger.
 - Kích thước giữ nguyên: sm 32 / md 40 (44 trên điện thoại) / lg 48. Icon 14 / 16 / 18.
 - Focus: `outline: 2px solid var(--cs-focus); outline-offset: 2px`.

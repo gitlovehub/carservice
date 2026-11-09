@@ -22,17 +22,28 @@ const admin = tokens.slice(adminStart, tokens.indexOf('}', adminStart));
 for (const needle of ['--cs-accent: var(--cs-brand)', '--cs-accent-hover: var(--cs-brand-hover)', '--cs-accent-contrast: #ffffff', '--cs-soft: var(--cs-brand-soft)', '--cs-sidebar-bg: var(--cs-surface)', '--cs-sidebar-active-bg: #cf2935']) {
   assert(admin.includes(needle), `Admin token thiếu: ${needle}`);
 }
-for (const banned of ['color-scheme', 'gradient', '--cs-bg:', '--cs-surface:', '--cs-text:', '--cs-btn-radius', '--cs-card-radius', '--cs-success', '--cs-search-', '--cs-tile-']) {
+for (const banned of ['color-scheme', 'gradient', '--cs-bg:', '--cs-surface:', '--cs-text:', '--cs-card-radius', '--cs-success', '--cs-search-', '--cs-tile-']) {
   assert(!admin.includes(banned), `Admin không được ghi đè ${banned}`);
 }
+// Admin Button Kit: bo góc nút 10px.
+assert(admin.includes('--cs-btn-radius: 10px'), 'Admin: bo góc nút 10px theo Admin Button Kit');
 for (const old of ['c8f53c', '080c1a', '0b1022', '141a2e', 'lime']) assert(!tokens.toLowerCase().includes(old), `tokens.css còn ${old}`);
 const workspace = read('../src/layouts/workspace.css');
 assert(!/lime|--cs-search-|--cs-tile-|is-violet/.test(workspace), 'workspace.css còn style lime / navy riêng của Admin');
 
 // 2. Hệ thống nút.
-assert(/"primary" \| "tonal" \| "secondary" \| "outline" \| "ghost" \| "success" \| "danger-outline" \| "danger"/.test(buttonClass), 'ButtonVariant phải theo đặc tả');
-for (const needle of ['.cs-btn-tonal', 'var(--cs-soft-hover)', 'border-radius: var(--cs-btn-radius', 'var(--cs-accent-fill', 'var(--cs-disabled-bg)', '.cs-btn-tone-danger', '.cs-unified-primary']) {
+assert(/"primary" \| "tonal" \| "secondary" \| "outline" \| "ghost" \| "success" \| "warning" \| "danger-outline" \| "danger"/.test(buttonClass), 'ButtonVariant phải theo đặc tả');
+for (const needle of ['.cs-btn-tonal', '.cs-btn-warning', 'var(--btn-active-bg', 'var(--cs-soft-hover)', 'border-radius: var(--cs-btn-radius', 'var(--cs-accent-fill', 'var(--cs-disabled-bg)', '.cs-btn-tone-danger', '.cs-unified-primary']) {
   assert(buttons.includes(needle), `buttons.css thiếu ${needle}`);
+}
+// Hover / nhấn chỉ đổi màu: không scale, translate hay chuyển động transform/box-shadow trên nút.
+const buttonRules = buttons.replace(/@keyframes[^{]+\{[^}]*\{[^}]*\}[^}]*\}/g, '');
+assert(!/scale\(|translate[XY]?\(/.test(buttonRules), 'buttons.css: nút không được scale/translate khi hover/nhấn');
+assert(!/transition:[^;]*(transform|box-shadow)/.test(buttons), 'buttons.css: transition chỉ gồm màu nền / chữ / viền');
+const adminDir = new URL('../src/pages/admin', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+const walkAdmin = dir => readdirSync(dir).flatMap(name => { const p = join(dir, name); return statSync(p).isDirectory() ? walkAdmin(p) : p.endsWith('.tsx') ? [p] : []; });
+for (const file of walkAdmin(adminDir)) {
+  assert(!/(hover|active|group-hover):(-?translate|scale|shadow)/.test(readFileSync(file, 'utf8')), `${file}: hover/active chỉ được đổi màu`);
 }
 
 // 3. Dùng chung.
