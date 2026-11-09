@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminAdvisorActivityController;
+use App\Http\Controllers\Api\AdminHolidayController;
 use App\Http\Controllers\Api\AdminInsightsController;
 use App\Http\Controllers\Api\AdminInventoryController;
 use App\Http\Controllers\Api\AdminMaintenancePackageController;
@@ -297,6 +298,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::patch('reviews/{review}', 'updateReview')->whereNumber('review');
             Route::get('audit-logs', 'auditLogs');
         });
+
+        // Ngày nghỉ lễ (theo khoảng ngày).
+        Route::get('admin/holidays', [AdminHolidayController::class, 'index']);
+        Route::post('admin/holidays', [AdminHolidayController::class, 'store']);
+        Route::delete('admin/holidays', [AdminHolidayController::class, 'destroy']);
 
         // Phụ tùng & kho.
         Route::controller(AdminInventoryController::class)->prefix('admin')->group(function (): void {
