@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AdminAdvisorActivityController;
 use App\Http\Controllers\Api\AdminInsightsController;
+use App\Http\Controllers\Api\AdminOperationsController;
 use App\Http\Controllers\Api\AdminMaintenancePackageController;
 use App\Http\Controllers\Api\AdminServiceController;
 use App\Http\Controllers\Api\AdminVehicleCatalogController;
@@ -281,6 +282,19 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Số liệu thật cho Tổng quan và Báo cáo.
         Route::get('admin/dashboard', [AdminInsightsController::class, 'dashboard']);
         Route::get('admin/reports', [AdminInsightsController::class, 'reports']);
+
+        // Vận hành toàn xưởng: phiếu, hoá đơn, thanh toán, đánh giá, nhật ký.
+        Route::controller(AdminOperationsController::class)->prefix('admin')->group(function (): void {
+            Route::get('repair-orders', 'repairOrders');
+            Route::get('repair-orders/{repairOrder}', 'repairOrder')->whereNumber('repairOrder');
+            Route::get('invoices', 'invoices');
+            Route::get('invoices/{invoice}', 'invoice')->whereNumber('invoice');
+            Route::get('payments', 'payments');
+            Route::get('reviews', 'reviews');
+            Route::post('reviews/{review}/reply', 'replyReview')->whereNumber('review');
+            Route::patch('reviews/{review}', 'updateReview')->whereNumber('review');
+            Route::get('audit-logs', 'auditLogs');
+        });
 
         // Quản trị danh mục xe: hãng, dòng xe, phiên bản (xóa bị chặn khi đang được dùng).
         Route::controller(AdminVehicleCatalogController::class)->prefix('admin')->group(function (): void {

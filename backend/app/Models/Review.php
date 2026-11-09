@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'comment',
     'reply',
     'replied_at',
+    'is_hidden',
 ])]
 class Review extends Model
 {
@@ -25,6 +26,7 @@ class Review extends Model
             'advisor_rating' => 'integer',
             'technician_rating' => 'integer',
             'replied_at' => 'datetime',
+            'is_hidden' => 'boolean',
         ];
     }
 
