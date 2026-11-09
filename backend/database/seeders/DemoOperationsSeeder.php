@@ -585,6 +585,10 @@ class DemoOperationsSeeder extends Seeder
      */
     private function audit(int $accountId, string $action, Appointment $appointment, array $old, array $new, CarbonImmutable $at): void
     {
+        // Nhật ký không ở tương lai và không sớm hơn lúc lịch hẹn được tạo.
+        $createdAt = CarbonImmutable::parse($appointment->created_at);
+        $at = $this->cap($at->lessThan($createdAt) ? $createdAt->addMinutes(30) : $at);
+
         AuditLog::query()->create([
             'account_id' => $accountId,
             'action' => $action,

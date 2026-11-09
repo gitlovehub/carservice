@@ -88,6 +88,9 @@ class DemoOperationsSeederTest extends TestCase
         $this->assertGreaterThan(0, InventoryTransaction::query()->where('transaction_type', 'OUT')->count());
 
         $this->assertGreaterThan(0, DB::table('audit_logs')->where('action', 'appointment.checked_in')->count());
+        $this->assertSame(0, DB::table('audit_logs')->where('created_at', '>', now())->count(), 'Không có nhật ký ở tương lai');
+        $this->assertSame(0, Review::query()->where('created_at', '>', now())->count());
+        $this->assertSame(0, Payment::query()->where('paid_at', '>', now())->count());
     }
 
     public function test_running_twice_adds_nothing(): void

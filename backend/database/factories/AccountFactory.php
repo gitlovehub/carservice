@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Account;
+use Database\Factories\Support\VietnameseData;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 
@@ -13,7 +14,7 @@ class AccountFactory extends Factory
     public function definition(): array
     {
         return [
-            'email' => fake()->unique()->safeEmail(),
+            'email' => VietnameseData::email(VietnameseData::fullName()),
             'password_hash' => Hash::make('password123'),
             'role' => 'CUSTOMER',
             'status' => 'ACTIVE',
