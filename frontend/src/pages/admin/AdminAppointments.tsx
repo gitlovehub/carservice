@@ -32,14 +32,11 @@ const timeRange = (a: AppointmentRow) => `${hhmm(a.appointment_time)}${a.end_tim
 const itemNames = (a: AppointmentRow) => [...a.packages.map(p => p.name), ...a.services.map(s => s.name)];
 const isPast = (a: AppointmentRow) => new Date(`${a.appointment_date.slice(0, 10)}T${hhmm(a.appointment_time)}:00`).getTime() <= Date.now();
 
-/** Ô xe: icon xe trên nền nhạt (chưa có ảnh xe trong dữ liệu) + dòng xe + biển số. */
+/** Ô xe: dòng xe + biển số (chỉ chữ, không icon). */
 function VehicleCell({ a }: { a: AppointmentRow }) {
-  return <span className="flex min-w-0 items-center gap-2.5">
-    <span className="grid size-10 shrink-0 place-items-center rounded-control bg-cs-surface-2 text-cs-muted"><Icon name="car" size={20}/></span>
-    <span className="min-w-0">
-      <span className="block truncate font-semibold text-cs-text">{vehicleName(a)}</span>
-      <span className="block whitespace-nowrap text-caption font-medium tabular-nums text-cs-text-2">{a.vehicle?.license_plate ?? "Chưa có biển"}</span>
-    </span>
+  return <span className="block min-w-0">
+    <span className="block truncate font-semibold text-cs-text">{vehicleName(a)}</span>
+    <span className="block whitespace-nowrap text-caption font-medium tabular-nums text-cs-text-2">{a.vehicle?.license_plate ?? "Chưa có biển"}</span>
   </span>;
 }
 
@@ -163,9 +160,8 @@ export default function AdminAppointments() {
       <span className="inline-flex items-center gap-1 whitespace-nowrap text-caption text-cs-muted"><Icon name="phone" size={12}/>{a.customer?.phone ?? "—"}</span>
     </span> },
     { key: "vehicle", header: "Xe / Biển số", render: a => <VehicleCell a={a}/> },
-    { key: "time", header: "Ngày giờ hẹn", render: a => <span className="flex items-center gap-2 whitespace-nowrap">
-      <Icon name="calendar" size={16} className="shrink-0 text-cs-accent-text"/>
-      <span><span className="block font-medium tabular-nums text-cs-text">{dmy(a.appointment_date)}</span><span className="block text-caption tabular-nums text-cs-muted">{timeRange(a)}</span></span>
+    { key: "time", header: "Ngày giờ hẹn", render: a => <span className="block whitespace-nowrap">
+      <span className="block font-medium tabular-nums text-cs-text">{dmy(a.appointment_date)}</span><span className="block text-caption tabular-nums text-cs-muted">{timeRange(a)}</span>
     </span> },
     ...(paneOpen ? [] : [{ key: "type", header: "Loại yêu cầu", hideOnMobile: true, render: (a: AppointmentRow) => <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-cs-text-2">
       <Icon name={REQUEST_TYPES[a.request_type]?.icon ?? "wrench"} size={16} className="shrink-0 text-cs-muted"/>{REQUEST_TYPES[a.request_type]?.short ?? a.request_type}
