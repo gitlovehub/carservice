@@ -91,10 +91,16 @@ export function SearchableSelect({
         placeholder={loading ? "Đang tải…" : selectedLabel || placeholder}
         value={open ? query : selectedLabel}
         className={`${controlClass} pl-9 ${value !== null && !isDisabled ? "pr-16" : "pr-9"}`}
-        onFocus={() => { setQuery(""); setActive(0); setOpen(true); }}
+        onFocus={event => { setQuery(""); setActive(0); setOpen(true); event.currentTarget.select(); }}
         onClick={() => setOpen(true)}
         onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-        onChange={event => { setQuery(event.target.value); setActive(0); setOpen(true); }}
+        onChange={event => {
+          // Danh sách đang đóng (vừa chọn xong) mà gõ tiếp: chỉ lấy phần mới gõ làm từ khóa,
+          // không nối vào tên đang chọn ("Honda" + "ford").
+          const raw = event.target.value;
+          const typed = !open && selectedLabel && raw.startsWith(selectedLabel) ? raw.slice(selectedLabel.length) : raw;
+          setQuery(typed); setActive(0); setOpen(true);
+        }}
         onKeyDown={event => {
           if (event.key === "ArrowDown") { event.preventDefault(); setOpen(true); setActive(Math.min(activeIndex + 1, Math.max(filtered.length - 1, 0))); }
           else if (event.key === "ArrowUp") { event.preventDefault(); setActive(Math.max(activeIndex - 1, 0)); }

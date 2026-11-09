@@ -39,7 +39,9 @@ function useAdminList(level: AdminLevel, filters: Filters, reload: number) {
   }, [key, level, params]);
 
   const ready = state.key === key;
-  return { page: ready ? state.page : null, loading: !ready, error: ready ? state.error : "", stale: state.page };
+  // Giữ dữ liệu cũ khi đổi trang/bộ lọc trong CÙNG cấp; đổi tab thì không hiện dữ liệu cấp khác.
+  const sameLevel = state.key.startsWith(`${level}|`);
+  return { page: ready ? state.page : null, loading: !ready, error: ready ? state.error : "", stale: sameLevel ? state.page : null };
 }
 
 /** Danh sách hãng / dòng xe để lọc và chọn cấp cha (tối đa 100 mục mỗi cấp). */
