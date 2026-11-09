@@ -9,11 +9,11 @@ import { ServiceStepsEditor } from "../ServiceStepsEditor";
 
 const LEVEL_TEXT: Record<ServiceLevel, string> = { QUICK: "Nhanh (không cần chẩn đoán)", STANDARD: "Tiêu chuẩn", MAJOR: "Sửa lớn" };
 
-type Form = { name: string; category_id: string; description: string; base_price: string; estimated_minutes: string; status: boolean; is_visible: boolean; is_popular: boolean; service_level: ServiceLevel };
+type Form = { name: string; category_id: string; description: string; base_price: string; estimated_minutes: string; status: boolean; is_visible: boolean; service_level: ServiceLevel };
 const toForm = (s: AdminService | null, categoryId: number | null): Form => ({
   name: s?.name ?? "", category_id: String(s?.category_id ?? categoryId ?? ""), description: s?.description ?? "",
   base_price: s ? String(Math.round(Number(s.base_price))) : "", estimated_minutes: s?.estimated_minutes ? String(s.estimated_minutes) : "",
-  status: (s?.status ?? "ACTIVE") === "ACTIVE", is_visible: s?.is_visible ?? true, is_popular: s?.is_popular ?? false, service_level: s?.service_level ?? "STANDARD",
+  status: (s?.status ?? "ACTIVE") === "ACTIVE", is_visible: s?.is_visible ?? true, service_level: s?.service_level ?? "STANDARD",
 });
 
 /** Thêm / sửa dịch vụ. `service = null` → thêm mới (mặc định vào danh mục đang chọn). */
@@ -36,11 +36,15 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
     const payload: ServicePayload = {
       name: form.name.trim(), category_id: form.category_id ? Number(form.category_id) : null, description: form.description.trim() || null,
       base_price: price, estimated_minutes: minutes, status: form.status ? "ACTIVE" : "INACTIVE", is_visible: form.is_visible,
-      is_popular: form.is_popular, service_level: form.service_level,
+      service_level: form.service_level,
     };
     setSaving(true);
     try {
-      const res = service ? await catalogAdminApi.updateService(service.id, payload) : await catalogAdminApi.createService(payload);
+      // Sửa: chỉ gửi tên khi thật sự đổi — tránh lỗi "tên đã tồn tại" khi chỉ bật/tắt trạng thái, đổi giá…
+      const { name, ...rest } = payload;
+      const res = service
+        ? await catalogAdminApi.updateService(service.id, name === service.name ? rest : payload)
+        : await catalogAdminApi.createService(payload);
       notify(service ? `Đã cập nhật dịch vụ “${payload.name}” (${money(price)}).` : `Đã thêm dịch vụ “${payload.name}” (${money(price)}).`, "success");
       onSaved(res.data);
     } catch (e) {
@@ -74,9 +78,7 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
       <div className="flex flex-col divide-y divide-cs-border rounded-control border border-cs-border sm:col-span-2">
         {([
           ["status", "Đang áp dụng", "Tắt = ngừng dịch vụ: không dùng được khi đặt lịch và báo giá."],
-          ["is_visible", "Hiển thị cho khách khi đặt lịch", "Tắt = chỉ nhân viên thấy (báo giá, phát sinh)."],
-          ["is_popular", "Phổ biến", "Hiện trong nhóm “Phổ biến” ở đầu trang đặt lịch."],
-        ] as const).map(([key, label, hint]) => <div key={key} className="flex items-center gap-3 px-3 py-2.5">
+          ["is_visible", "Hiển thị cho khách khi đặt lịch", "Tắt = chỉ nhân viên thấy (báo giá, phát sinh)."],        ] as const).map(([key, label, hint]) => <div key={key} className="flex items-center gap-3 px-3 py-2.5">
           <span className="min-w-0 flex-1"><span className="block text-small font-medium text-cs-text">{label}</span><span className="block text-caption text-cs-muted">{hint}</span></span>
           <Switch checked={form[key]} onChange={v => set({ [key]: v } as Partial<Form>)} label={label}/>
         </div>)}

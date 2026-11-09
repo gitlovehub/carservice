@@ -61,7 +61,7 @@ export type AdminService = {
 };
 export type ServicePayload = {
   name: string; category_id: number | null; description: string | null; base_price: number; estimated_minutes: number | null;
-  status: ServiceStatus; is_visible: boolean; is_popular: boolean; service_level: ServiceLevel;
+  status: ServiceStatus; is_visible: boolean; service_level: ServiceLevel;
 };
 type LaravelPage<T> = { data: T[]; current_page: number; last_page: number; per_page: number; total: number };
 
@@ -107,7 +107,7 @@ export const catalogAdminApi = {
   updateService: (id: number, body: Partial<ServicePayload>) => send<Message<AdminService>>(`/admin/services/${id}`, "PATCH", body),
   reorderServices: (ids: number[]) => send<{ message: string }>("/admin/services/reorder", "PUT", { ids }),
   categories: (signal?: AbortSignal) =>
-    fetchApi<{ data: ServiceCategory[]; meta: { total: number; uncategorized: number; icons: string[] } }>("/admin/service-categories", { signal }),
+    fetchApi<{ data: ServiceCategory[]; meta: { total: number; uncategorized: number; active?: number; visible?: number; icons: string[] } }>("/admin/service-categories", { signal }),
   createCategory: (body: { name: string; icon: string }) => send<Message<ServiceCategory>>("/admin/service-categories", "POST", body),
   updateCategory: (id: number, body: { name: string; icon: string }) => send<Message<ServiceCategory>>(`/admin/service-categories/${id}`, "PATCH", body),
   deleteCategory: (id: number) => send<{ message: string }>(`/admin/service-categories/${id}`, "DELETE"),
