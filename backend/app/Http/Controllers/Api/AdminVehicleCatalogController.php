@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Controllers\Controller;
 use App\Models\Vehicle;
 use App\Models\VehicleBrand;
@@ -22,6 +23,8 @@ use Illuminate\Validation\ValidationException;
  */
 class AdminVehicleCatalogController extends Controller
 {
+    use AppliesSort;
+
     private const STATUSES = ['ACTIVE', 'INACTIVE'];
 
     private const BODY_TYPES = ['SEDAN', 'SUV', 'HATCHBACK', 'MPV', 'PICKUP', 'OTHER'];
@@ -38,7 +41,9 @@ class AdminVehicleCatalogController extends Controller
         $brands = VehicleBrand::query()
             ->withCount(['models', 'trims'])
             ->tap(fn (Builder $query) => $this->applyFilters($query, $filters))
-            ->orderBy('name')
+            ->tap(fn (Builder $q) => $this->applySort($q, $request, [
+                'created' => 'created_at', 'name' => 'name', 'models' => 'models_count', 'trims' => 'trims_count', 'status' => 'status',
+            ]))
             ->paginate($filters['per_page']);
 
         return $this->ok('Lấy danh sách hãng xe thành công.', $brands);
@@ -80,7 +85,11 @@ class AdminVehicleCatalogController extends Controller
             ->withCount(['trims', 'vehicles' => fn (Builder $query) => $query->withTrashed()])
             ->when($filters['brand_id'] ?? null, fn (Builder $query, $brandId) => $query->where('brand_id', $brandId))
             ->tap(fn (Builder $query) => $this->applyFilters($query, $filters))
-            ->orderBy('name')
+            ->tap(fn (Builder $q) => $this->applySort($q, $request, [
+                'created' => 'vehicle_models.created_at', 'name' => 'vehicle_models.name', 'body' => 'body_type',
+                'trims' => 'trims_count', 'vehicles' => 'vehicles_count', 'status' => 'vehicle_models.status',
+                'brand' => fn (Builder $q, string $dir) => $q->orderBy(VehicleBrand::query()->select('name')->whereColumn('vehicle_brands.id', 'vehicle_models.brand_id'), $dir),
+            ], tieBreaker: 'vehicle_models.id'))
             ->paginate($filters['per_page']);
 
         return $this->ok('Lấy danh sách dòng xe thành công.', $models);
@@ -132,7 +141,10 @@ class AdminVehicleCatalogController extends Controller
             ->when($filters['model_id'] ?? null, fn (Builder $query, $modelId) => $query->where('model_id', $modelId))
             ->when($filters['brand_id'] ?? null, fn (Builder $query, $brandId) => $query->whereHas('model', fn (Builder $q) => $q->where('brand_id', $brandId)))
             ->tap(fn (Builder $query) => $this->applyFilters($query, $filters))
-            ->orderBy('name')
+            ->tap(fn (Builder $q) => $this->applySort($q, $request, [
+                'created' => 'vehicle_trims.created_at', 'name' => 'vehicle_trims.name', 'vehicles' => 'vehicles_count', 'status' => 'vehicle_trims.status',
+                'model' => fn (Builder $q, string $dir) => $q->orderBy(VehicleModel::query()->select('name')->whereColumn('vehicle_models.id', 'vehicle_trims.model_id'), $dir),
+            ], tieBreaker: 'vehicle_trims.id'))
             ->paginate($filters['per_page']);
 
         return $this->ok('Lấy danh sách phiên bản thành công.', $trims);

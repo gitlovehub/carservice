@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Appointment;
@@ -26,6 +27,8 @@ use Illuminate\Validation\Rule;
  */
 class AdminOperationsController extends Controller
 {
+    use AppliesSort;
+
     public const ORDER_GROUPS = [
         'intake' => [RepairOrder::RECEIVED, RepairOrder::INSPECTING],
         'quote' => [RepairOrder::QUOTING, RepairOrder::WAITING_APPROVAL],
@@ -76,8 +79,11 @@ class AdminOperationsController extends Controller
             ->when($this->term($filters), fn (Builder $q, string $like) => $q->where(fn (Builder $q) => $q
                 ->where('repair_order_code', 'like', $like)
                 ->orWhereHas('customer', fn (Builder $c) => $c->where('full_name', 'like', $like)->orWhere('phone', 'like', $like))
-                ->orWhereHas('vehicle', fn (Builder $v) => $v->where('license_plate', 'like', $like))))
-            ->orderByDesc('received_at')->orderByDesc('id');
+                ->orWhereHas('vehicle', fn (Builder $v) => $v->where('license_plate', 'like', $like))));
+        $this->applySort($query, $request, [
+            'created' => 'created_at', 'code' => 'repair_order_code', 'received' => 'received_at',
+            'promised' => 'estimated_ready_at', 'status' => 'status',
+        ]);
 
         $page = $query->paginate($filters['per_page'] ?? 10);
         $counts = RepairOrder::query()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
@@ -162,7 +168,9 @@ class AdminOperationsController extends Controller
                 ->orWhereHas('repairOrder', fn (Builder $r) => $r->where('repair_order_code', 'like', $like)
                     ->orWhereHas('customer', fn (Builder $c) => $c->where('full_name', 'like', $like))
                     ->orWhereHas('vehicle', fn (Builder $v) => $v->where('license_plate', 'like', $like)))))
-            ->orderByDesc('created_at')->orderByDesc('id')
+            ->tap(fn (Builder $q) => $this->applySort($q, $request, [
+                'created' => 'created_at', 'code' => 'invoice_code', 'total' => 'total_amount', 'status' => 'status',
+            ]))
             ->paginate($filters['per_page'] ?? 10);
 
         $all = Invoice::query()->where('status', '!=', Invoice::CANCELLED)
@@ -202,7 +210,7 @@ class AdminOperationsController extends Controller
             ->when($this->term($filters), fn (Builder $q, string $like) => $q->where(fn (Builder $q) => $q
                 ->where('transaction_code', 'like', $like)
                 ->orWhereHas('invoice', fn (Builder $i) => $i->where('invoice_code', 'like', $like))))
-            ->orderByDesc('created_at')->orderByDesc('id')
+            ->tap(fn (Builder $q) => $this->applySort($q, $request, ['created' => 'created_at', 'code' => 'transaction_code', 'amount' => 'amount', 'status' => 'status']))
             ->paginate($filters['per_page'] ?? 10);
 
         return response()->json([
@@ -391,7 +399,7 @@ class AdminOperationsController extends Controller
                 ->where('action', 'like', $like)->orWhere('reason', 'like', $like)
                 ->orWhereHas('account', fn (Builder $a) => $a->where('email', 'like', $like)
                     ->orWhereHas('employee', fn (Builder $e) => $e->where('full_name', 'like', $like)))))
-            ->orderByDesc('created_at')->orderByDesc('id')
+            ->tap(fn (Builder $q) => $this->applySort($q, $request, ['created' => 'created_at']))
             ->paginate($filters['per_page'] ?? 15);
 
         $appointments = Appointment::query()

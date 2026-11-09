@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Customer;
@@ -29,6 +30,8 @@ use Illuminate\Validation\ValidationException;
  */
 class AdminPeopleController extends Controller
 {
+    use AppliesSort;
+
     /** Khách chi tiêu từ mức này được đánh dấu khách thân thiết. */
     public const VIP_SPENT = 20_000_000;
 
@@ -46,7 +49,8 @@ class AdminPeopleController extends Controller
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'cars' => ['nullable', Rule::in(['all', 'has', 'none'])],
-            'sort' => ['nullable', Rule::in(['recent', 'spent', 'name'])],
+            'sort' => ['nullable', Rule::in(['created', 'name', 'cars', 'last', 'spent', 'recent'])],
+            'dir' => ['nullable', Rule::in(['asc', 'desc'])],
             'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
         ]);
 
@@ -57,11 +61,18 @@ class AdminPeopleController extends Controller
                 ->where('full_name', 'like', $like)->orWhere('phone', 'like', $like)->orWhere('email', 'like', $like)
                 ->orWhereHas('vehicles', fn (Builder $v) => $v->where('license_plate', 'like', $like))));
 
-        match ($filters['sort'] ?? 'recent') {
-            'spent' => $query->orderByDesc('total_spent'),
-            'name' => $query->orderBy('full_name'),
-            default => $query->orderByRaw('last_visit IS NULL')->orderByDesc('last_visit')->orderByDesc('customers.id'),
-        };
+        // Mặc định: khách mới tạo lên đầu. "recent" (tham số cũ) = lần sửa gần nhất.
+        if (($filters['sort'] ?? null) === 'recent') {
+            $request->merge(['sort' => 'last', 'dir' => 'desc']);
+        }
+        $this->applySort($query, $request, [
+            'created' => 'customers.created_at',
+            'name' => 'full_name',
+            'cars' => 'vehicles_count',
+            // Khách chưa từng sửa luôn nằm cuối, dù sắp tăng hay giảm.
+            'last' => fn (Builder $q, string $dir) => $q->orderByRaw('last_visit IS NULL')->orderBy('last_visit', $dir),
+            'spent' => 'total_spent',
+        ], tieBreaker: 'customers.id');
 
         $page = $query->paginate($filters['per_page'] ?? 10);
 
@@ -183,7 +194,11 @@ class AdminPeopleController extends Controller
             ->when($this->term($filters), fn (Builder $q, string $like) => $q->where(fn (Builder $q) => $q
                 ->where('full_name', 'like', $like)->orWhere('phone', 'like', $like)
                 ->orWhereHas('account', fn (Builder $a) => $a->where('email', 'like', $like))))
-            ->orderBy('full_name')
+            ->tap(fn (Builder $q) => $this->applySort($q, $request, [
+                'created' => 'created_at', 'name' => 'full_name', 'phone' => 'phone', 'status' => 'status',
+                'joined' => 'created_at',
+                'role' => fn (Builder $q, string $dir) => $q->orderBy(Account::query()->select('role')->whereColumn('accounts.id', 'employees.account_id'), $dir),
+            ], tieBreaker: 'employees.id'))
             ->get();
 
         $all = Employee::query()->whereHas('account', fn (Builder $a) => $a->whereIn('role', self::STAFF_ROLES))->with('account:id,role')->get(['id', 'account_id', 'status']);
@@ -323,7 +338,10 @@ class AdminPeopleController extends Controller
                 ->where('email', 'like', $like)
                 ->orWhereHas('employee', fn (Builder $e) => $e->where('full_name', 'like', $like))
                 ->orWhereHas('customer', fn (Builder $c) => $c->where('full_name', 'like', $like))))
-            ->orderByDesc('accounts.created_at')->orderByDesc('accounts.id')
+            ->tap(fn (Builder $q) => $this->applySort($q, $request, [
+                'created' => 'accounts.created_at', 'email' => 'accounts.email', 'role' => 'accounts.role',
+                'status' => 'accounts.status', 'login' => 'last_login_at',
+            ], tieBreaker: 'accounts.id'))
             ->paginate($filters['per_page'] ?? 10);
 
         return response()->json([

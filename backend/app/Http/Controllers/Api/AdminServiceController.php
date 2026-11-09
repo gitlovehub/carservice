@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,8 @@ use Illuminate\Validation\Rule;
  */
 class AdminServiceController extends Controller
 {
+    use AppliesSort;
+
     /**
      * GET /api/admin/services
      */
@@ -40,11 +43,17 @@ class AdminServiceController extends Controller
             ->when($filters['uncategorized'] ?? false, fn ($q) => $q->whereNull('category_id'))
             ->when($filters['search'] ?? null, fn ($q, string $s) => $q->where(fn ($q) => $q->where('name', 'like', "%{$s}%")->orWhere('description', 'like', "%{$s}%")));
 
+        // Mặc định mới tạo lên đầu; `sort=order` = thứ tự hiển thị admin kéo thả (thứ tự khách thấy khi đặt lịch).
+        $this->applySort($query, $request, [
+            'created' => 'created_at', 'order' => 'sort_order', 'name' => 'name', 'category' => 'category',
+            'price' => 'base_price', 'minutes' => 'estimated_minutes', 'popular' => 'is_popular',
+            'status' => 'status', 'visible' => 'is_visible',
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Lấy danh sách dịch vụ thành công.',
-            // Theo thứ tự hiển thị admin đã kéo thả (cũng là thứ tự khách thấy khi đặt lịch).
-            'data' => $query->orderBy('sort_order')->orderBy('id')->paginate($filters['per_page'] ?? 10),
+            'data' => $query->paginate($filters['per_page'] ?? 10),
         ]);
     }
 

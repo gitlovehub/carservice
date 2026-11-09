@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Controllers\Controller;
 use App\Models\Inventory;
 use App\Models\InventoryTransaction;
@@ -21,6 +22,8 @@ use Illuminate\Validation\ValidationException;
  */
 class AdminInventoryController extends Controller
 {
+    use AppliesSort;
+
     /** GET /api/admin/parts?search=&category=&status=all|ACTIVE|INACTIVE|low|out&page= */
     public function parts(Request $request): JsonResponse
     {
@@ -38,7 +41,17 @@ class AdminInventoryController extends Controller
             ->when($status === 'low', fn (Builder $q) => $q->whereHas('inventory', fn (Builder $i) => $i->where('quantity', '>', 0)->whereColumn('quantity', '<', 'min_quantity')))
             ->when($status === 'out', fn (Builder $q) => $q->where(fn (Builder $q) => $q->doesntHave('inventory')->orWhereHas('inventory', fn (Builder $i) => $i->where('quantity', '<=', 0))))
             ->when($this->term($filters), fn (Builder $q, string $like) => $q->where(fn (Builder $q) => $q->where('name', 'like', $like)->orWhere('sku', 'like', $like)))
-            ->orderBy('name')
+            ->tap(fn (Builder $q) => $this->applySort($q, $request, [
+                'created' => 'parts.created_at', 'sku' => 'sku', 'name' => 'name', 'category' => 'category', 'unit' => 'unit',
+                'cost' => 'cost_price', 'price' => 'sell_price', 'status' => 'status',
+                'margin' => fn (Builder $q, string $dir) => $q->orderByRaw('(sell_price - cost_price) '.$dir),
+                'stock' => fn (Builder $q, string $dir) => $q->orderBy(Inventory::query()->select('quantity')->whereColumn('inventories.part_id', 'parts.id')->limit(1), $dir),
+                // Giá trị tồn = max(tồn, 0) × giá vốn (CASE chạy được cả MySQL lẫn SQLite).
+                'value' => fn (Builder $q, string $dir) => $q->orderBy(Inventory::query()
+                    ->selectRaw('CASE WHEN inventories.quantity > 0 THEN inventories.quantity ELSE 0 END * parts.cost_price')
+                    ->whereColumn('inventories.part_id', 'parts.id')->limit(1), $dir),
+                'updated' => 'parts.updated_at',
+            ], tieBreaker: 'parts.id'))
             ->paginate($filters['per_page'] ?? 10);
 
         $stock = Inventory::query()->join('parts', 'parts.id', '=', 'inventories.part_id')
@@ -137,7 +150,7 @@ class AdminInventoryController extends Controller
                 ->where('note', 'like', $like)
                 ->orWhereHas('inventory.part', fn (Builder $p) => $p->where('name', 'like', $like)->orWhere('sku', 'like', $like))
                 ->orWhereHas('repairOrder', fn (Builder $r) => $r->where('repair_order_code', 'like', $like))))
-            ->orderByDesc('created_at')->orderByDesc('id')
+            ->tap(fn (Builder $q) => $this->applySort($q, $request, ['created' => 'created_at', 'qty' => 'quantity', 'type' => 'transaction_type']))
             ->paginate($filters['per_page'] ?? 15);
 
         return response()->json([

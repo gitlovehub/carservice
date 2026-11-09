@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInternalAppointmentRequest;
 use App\Models\Appointment;
@@ -20,6 +21,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AdvisorAppointmentController extends Controller
 {
+    use AppliesSort;
+
     public function __construct(private readonly AppointmentActivityService $activity) {}
 
     public function store(StoreInternalAppointmentRequest $request): JsonResponse
@@ -175,9 +178,18 @@ class AdvisorAppointmentController extends Controller
                 $query->where('status', $request->query('status'));
             }
 
-            // Mặc định sắp xếp ngày gần nhất lên trước
-            $appointments = $query->orderBy('appointment_date', 'asc')
-                ->orderBy('appointment_time', 'asc')
+            // Có ?sort= (bảng Admin): sắp theo cột được chọn, mặc định mới tạo lên đầu.
+            // Không có (màn hình Cố vấn): giữ thứ tự theo ngày giờ hẹn tăng dần.
+            if ($request->filled('sort')) {
+                $this->applySort($query, $request, [
+                    'created' => 'created_at', 'code' => 'appointment_code', 'status' => 'status', 'type' => 'request_type',
+                    'time' => fn ($q, string $dir) => $q->orderBy('appointment_date', $dir)->orderBy('appointment_time', $dir),
+                    'customer' => fn ($q, string $dir) => $q->orderBy(Customer::query()->select('full_name')->whereColumn('customers.id', 'appointments.customer_id'), $dir),
+                ], tieBreaker: 'appointments.id');
+            } else {
+                $query->orderBy('appointment_date', 'asc')->orderBy('appointment_time', 'asc');
+            }
+            $appointments = $query
                 ->paginate(min(500, max(1, (int) $request->query('per_page', 15))));
             $appointments->getCollection()->each(fn (Appointment $a) => $this->withEstimates($a));
 
