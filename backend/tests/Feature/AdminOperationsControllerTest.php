@@ -144,14 +144,22 @@ class AdminOperationsControllerTest extends TestCase
             ->assertJsonPath('summary.hidden', 1)
             ->assertJsonPath('summary.average', 3.67)
             ->assertJsonPath('summary.distribution.5', 1)
-            ->assertJsonPath('summary.low_unreplied', 1);
+            ->assertJsonPath('summary.low_unreplied', 1)
+            ->assertJsonPath('summary.reply_rate', 0)
+            ->assertJsonMissingPath('data.0.technician')
+            ->assertJsonMissingPath('data.0.technician_rating');
+        $this->assertEqualsWithDelta(66.7, $this->getJson('/api/admin/reviews')->json('summary.positive_rate'), 0.01);
         $this->getJson('/api/admin/reviews?rating=low')->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $low->id);
+        $this->getJson('/api/admin/reviews?rating=2')->assertJsonPath('meta.total', 1);
+        $this->getJson('/api/admin/reviews?status=hidden')->assertJsonPath('meta.total', 1);
         $this->getJson('/api/admin/reviews?rating=hidden')->assertJsonPath('meta.total', 1);
         $this->getJson('/api/admin/reviews?search=chờ')->assertJsonPath('meta.total', 1);
 
         $this->postJson("/api/admin/reviews/{$low->id}/reply", ['reply' => '   '])->assertUnprocessable();
         $this->postJson("/api/admin/reviews/{$low->id}/reply", ['reply' => 'Xin lỗi anh/chị.'])->assertOk()->assertJsonPath('data.reply', 'Xin lỗi anh/chị.');
         $this->assertNotNull($low->fresh()->replied_at);
+        $this->getJson('/api/admin/reviews?status=replied')->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $low->id);
+        $this->getJson('/api/admin/reviews?status=unreplied')->assertJsonPath('meta.total', 2);
 
         $this->patchJson("/api/admin/reviews/{$five->id}", ['is_hidden' => true])->assertOk()->assertJsonPath('data.hidden', true);
         $this->getJson('/api/admin/reviews')->assertJsonPath('summary.visible', 2);

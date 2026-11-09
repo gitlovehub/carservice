@@ -22,8 +22,6 @@ function Reviews() {
   // Form gửi đánh giá
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [rating, setRating] = useState(5);
-  const [advisorRating, setAdvisorRating] = useState<number>(5);
-  const [technicianRating, setTechnicianRating] = useState<number>(5);
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -82,8 +80,6 @@ function Reviews() {
       await submitReview({
         repair_order_id: Number(selectedOrderId),
         overall_rating: rating,
-        advisor_rating: advisorRating,
-        technician_rating: technicianRating,
         comment: content.trim(),
       });
       setToast({ message: "Cảm ơn bạn đã gửi đánh giá dịch vụ!", type: "success" });
@@ -129,7 +125,7 @@ function Reviews() {
                 GỬI PHẢN HỒI
               </p>
               <h2 className="mt-1 text-[17px] font-bold text-[#20252B]">
-                Đánh giá lần làm dịch vụ
+                Đánh giá ga-ra sau lần bảo dưỡng
               </h2>
 
               <div className="mt-5 space-y-4 text-xs">
@@ -161,7 +157,7 @@ function Reviews() {
 
                 <div>
                   <label className="mb-2 block font-bold text-[#20252B]">
-                    Mức độ hài lòng chung *
+                    Bạn hài lòng với ga-ra ở lần này? *
                   </label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((item) => (
@@ -188,37 +184,6 @@ function Reviews() {
                           ? "Bình thường (3/5 sao)"
                           : `${rating}/5 sao`}
                   </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div>
-                    <label className="mb-1 block font-bold text-slate-600">Cố vấn dịch vụ</label>
-                    <select
-                      value={advisorRating}
-                      onChange={(e) => setAdvisorRating(Number(e.target.value))}
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-2"
-                    >
-                      <option value={5}>5 sao - Tận tình</option>
-                      <option value={4}>4 sao - Tốt</option>
-                      <option value={3}>3 sao - Khá</option>
-                      <option value={2}>2 sao</option>
-                      <option value={1}>1 sao</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1 block font-bold text-slate-600">Kỹ thuật viên</label>
-                    <select
-                      value={technicianRating}
-                      onChange={(e) => setTechnicianRating(Number(e.target.value))}
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-2"
-                    >
-                      <option value={5}>5 sao - Tay nghề cao</option>
-                      <option value={4}>4 sao - Tốt</option>
-                      <option value={3}>3 sao - Khá</option>
-                      <option value={2}>2 sao</option>
-                      <option value={1}>1 sao</option>
-                    </select>
-                  </div>
                 </div>
 
                 <div>

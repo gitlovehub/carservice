@@ -506,8 +506,6 @@ class DemoOperationsSeeder extends Seeder
             'repair_order_id' => $order->id,
             'customer_id' => $order->customer_id,
             'overall_rating' => $rating,
-            'advisor_rating' => min(5, $rating + mt_rand(0, 1)),
-            'technician_rating' => max(1, $rating - mt_rand(0, 1)),
             'comment' => self::REVIEW_COMMENTS[$rating][array_rand(self::REVIEW_COMMENTS[$rating])],
             'reply' => $replied ? self::REPLIES[$rating <= 3 ? 2 : mt_rand(0, 1)] : null,
             'replied_at' => $replied ? $this->cap($at->addHours(mt_rand(1, 20))) : null,

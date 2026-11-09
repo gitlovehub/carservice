@@ -252,23 +252,29 @@ class AdminOperationsController extends Controller
 
     /* ------------------------------------------------------------- Đánh giá */
 
-    /** GET /api/admin/reviews?rating=all|5|4|low|hidden&search=&page= */
+    /**
+     * GET /api/admin/reviews?rating=all|1..5|low&status=all|unreplied|replied|hidden&search=&page=
+     *
+     * Đánh giá là khách chấm điểm GA-RA sau mỗi lần bảo dưỡng / sửa chữa (theo phiếu sửa chữa).
+     */
     public function reviews(Request $request): JsonResponse
     {
         $filters = $request->validate([
-            'rating' => ['nullable', Rule::in(['all', '5', '4', 'low', 'hidden'])],
+            'rating' => ['nullable', Rule::in(['all', '5', '4', '3', '2', '1', 'low', 'hidden'])],
+            'status' => ['nullable', Rule::in(['all', 'unreplied', 'replied', 'hidden'])],
             'search' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
         ]);
         $rating = $filters['rating'] ?? 'all';
+        $status = $rating === 'hidden' ? 'hidden' : ($filters['status'] ?? 'all');
 
         $page = Review::query()
-            ->with(['customer:id,full_name', 'repairOrder:id,repair_order_code,vehicle_id', 'repairOrder.vehicle:id,model_id,license_plate',
-                'repairOrder.vehicle.model:id,brand_id,name', 'repairOrder.vehicle.model.brand:id,name',
-                'repairOrder.workItems:id,repair_order_id,technician_id', 'repairOrder.workItems.technician.employee:id,full_name'])
-            ->where('is_hidden', $rating === 'hidden')
+            ->with($this->reviewRelations())
+            ->where('is_hidden', $status === 'hidden')
+            ->when($status === 'unreplied', fn (Builder $q) => $q->whereNull('reply'))
+            ->when($status === 'replied', fn (Builder $q) => $q->whereNotNull('reply'))
             ->when($rating === 'low', fn (Builder $q) => $q->where('overall_rating', '<=', 3))
-            ->when(in_array($rating, ['5', '4'], true), fn (Builder $q) => $q->where('overall_rating', (int) $rating))
+            ->when(in_array($rating, ['5', '4', '3', '2', '1'], true), fn (Builder $q) => $q->where('overall_rating', (int) $rating))
             ->when($this->term($filters), fn (Builder $q, string $like) => $q->where(fn (Builder $q) => $q
                 ->where('comment', 'like', $like)
                 ->orWhereHas('customer', fn (Builder $c) => $c->where('full_name', 'like', $like))
@@ -277,13 +283,18 @@ class AdminOperationsController extends Controller
             ->paginate($filters['per_page'] ?? 10);
 
         $visible = Review::query()->where('is_hidden', false);
+        $visibleCount = (clone $visible)->count();
+        $recent = (clone $visible)->where('created_at', '>=', now()->subDays(30))->avg('overall_rating');
 
         return response()->json([
             'data' => $page->getCollection()->map(fn (Review $r) => $this->reviewRow($r))->values(),
             'meta' => $this->meta($page),
             'summary' => [
                 'average' => round((float) (clone $visible)->avg('overall_rating'), 2),
-                'visible' => (clone $visible)->count(),
+                'recent_average' => $recent === null ? null : round((float) $recent, 2),
+                'positive_rate' => $visibleCount ? round((clone $visible)->where('overall_rating', '>=', 4)->count() / $visibleCount * 100, 1) : null,
+                'reply_rate' => $visibleCount ? round((clone $visible)->whereNotNull('reply')->count() / $visibleCount * 100, 1) : null,
+                'visible' => $visibleCount,
                 'hidden' => Review::query()->where('is_hidden', true)->count(),
                 'unreplied' => (clone $visible)->whereNull('reply')->count(),
                 'low_unreplied' => (clone $visible)->whereNull('reply')->where('overall_rating', '<=', 3)->count(),
@@ -319,25 +330,38 @@ class AdminOperationsController extends Controller
     /** @return list<string> */
     private function reviewRelations(): array
     {
-        return ['customer:id,full_name', 'repairOrder.vehicle.model.brand', 'repairOrder.workItems.technician.employee'];
+        return [
+            'customer:id,full_name,phone',
+            'repairOrder:id,repair_order_code,vehicle_id,received_at,handed_over_at,completed_at',
+            'repairOrder.vehicle:id,model_id,license_plate',
+            'repairOrder.vehicle.model:id,brand_id,name', 'repairOrder.vehicle.model.brand:id,name',
+            'repairOrder.workItems:id,repair_order_id,service_id,description', 'repairOrder.workItems.service:id,name',
+        ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Một lượt đánh giá ga-ra gắn với một lần khách mang xe đến (phiếu sửa chữa): xe, ngày làm, dịch vụ đã làm.
+     *
+     * @return array<string, mixed>
+     */
     private function reviewRow(Review $r): array
     {
         $order = $r->repairOrder;
+        $visit = $order?->handed_over_at ?? $order?->completed_at ?? $order?->received_at;
 
         return [
             'id' => $r->id,
             'customer' => $r->customer?->full_name,
-            'vehicle' => trim($this->vehicleName($order?->vehicle).' '.($order?->vehicle?->license_plate ?? '')),
+            'phone' => $r->customer?->phone,
+            'vehicle' => $this->vehicleName($order?->vehicle),
+            'plate' => $order?->vehicle?->license_plate,
+            'order_id' => $order?->id,
             'order_code' => $order?->repair_order_code,
+            'visit_date' => $visit?->toIso8601String(),
+            'services' => $order?->workItems->map(fn ($w) => $w->service?->name ?? $w->description)->filter()->unique()->values()->all() ?? [],
             'rating' => (int) $r->overall_rating,
-            'advisor_rating' => $r->advisor_rating,
-            'technician_rating' => $r->technician_rating,
             'comment' => (string) $r->comment,
             'date' => $r->created_at?->toIso8601String(),
-            'technician' => $order?->workItems->map(fn ($w) => $w->technician?->employee?->full_name)->filter()->unique()->implode(', ') ?: null,
             'reply' => $r->reply,
             'replied_at' => $r->replied_at?->toIso8601String(),
             'hidden' => (bool) $r->is_hidden,

@@ -79,11 +79,16 @@ export type AdminInvoiceDetail = AdminInvoice & {
 export type InvoiceList = Paged<AdminInvoice, { total: number; open: number; debt: number; collected: number }>;
 
 /* ------------------------------------------------------------------ Đánh giá */
+/** Khách đánh giá GA-RA sau một lần bảo dưỡng / sửa chữa (gắn với phiếu sửa chữa). */
 export type AdminReview = {
-  id: number; customer: string | null; vehicle: string; order_code: string | null; rating: number; advisor_rating: number | null; technician_rating: number | null;
-  comment: string; date: string | null; technician: string | null; reply: string | null; replied_at: string | null; hidden: boolean;
+  id: number; customer: string | null; phone: string | null; vehicle: string; plate: string | null;
+  order_id: number | null; order_code: string | null; visit_date: string | null; services: string[];
+  rating: number; comment: string; date: string | null; reply: string | null; replied_at: string | null; hidden: boolean;
 };
-export type ReviewList = Paged<AdminReview, { average: number; visible: number; hidden: number; unreplied: number; low_unreplied: number; distribution: Record<string, number> }>;
+export type ReviewList = Paged<AdminReview, {
+  average: number; recent_average: number | null; positive_rate: number | null; reply_rate: number | null;
+  visible: number; hidden: number; unreplied: number; low_unreplied: number; distribution: Record<string, number>;
+}>;
 
 /* ------------------------------------------------------------------- Nhật ký */
 export type AuditCategory = "CREATE" | "UPDATE" | "DELETE" | "STATUS";
