@@ -6,12 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Mail\EmailVerificationOtpMail;
-use App\Mail\PasswordResetOtpMail;
 use App\Models\Account;
 use App\Models\Customer;
 use App\Models\EmailVerificationOtp;
 use App\Models\Employee;
 use App\Models\PasswordResetOtp;
+use App\Services\PasswordResetService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -472,28 +472,7 @@ class AuthController extends Controller
             ]);
         }
 
-        // Hủy các OTP cũ chưa sử dụng
-        PasswordResetOtp::where('account_id', $account->id)
-            ->whereNull('used_at')
-            ->delete();
-
-        // Tạo OTP 6 số
-        $otp = (string) random_int(100000, 999999);
-
-        // Lưu OTP dưới dạng hash
-        PasswordResetOtp::create([
-            'account_id' => $account->id,
-            'otp_hash' => Hash::make($otp),
-            'expires_at' => now()->addMinutes(5),
-        ]);
-
-        Log::info("[OTP QUÊN MẬT KHẨU] Email: {$account->email} | Mã OTP: {$otp}");
-
-        try {
-            Mail::to($account->email)->send(new PasswordResetOtpMail($otp));
-        } catch (\Throwable $e) {
-            Log::error('[OTP EMAIL ERROR] '.$e->getMessage());
-        }
+        app(PasswordResetService::class)->sendOtp($account);
 
         return response()->json([
             'message' => 'Nếu email tồn tại trong hệ thống, mã OTP sẽ được gửi đến email.',

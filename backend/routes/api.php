@@ -2,8 +2,9 @@
 
 use App\Http\Controllers\Api\AdminAdvisorActivityController;
 use App\Http\Controllers\Api\AdminInsightsController;
-use App\Http\Controllers\Api\AdminOperationsController;
 use App\Http\Controllers\Api\AdminMaintenancePackageController;
+use App\Http\Controllers\Api\AdminOperationsController;
+use App\Http\Controllers\Api\AdminPeopleController;
 use App\Http\Controllers\Api\AdminServiceController;
 use App\Http\Controllers\Api\AdminVehicleCatalogController;
 use App\Http\Controllers\Api\AdvisorAppointmentController;
@@ -294,6 +295,20 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('reviews/{review}/reply', 'replyReview')->whereNumber('review');
             Route::patch('reviews/{review}', 'updateReview')->whereNumber('review');
             Route::get('audit-logs', 'auditLogs');
+        });
+
+        // Con người: khách hàng, nhân sự, tài khoản.
+        Route::controller(AdminPeopleController::class)->prefix('admin')->group(function (): void {
+            Route::get('customers', 'customers');
+            Route::get('customers/{customer}', 'customer')->whereNumber('customer');
+            Route::patch('customers/{customer}/lock', 'lockCustomer')->whereNumber('customer');
+            Route::get('staff', 'staff');
+            Route::post('staff', 'storeStaff');
+            Route::patch('staff/{employee}', 'updateStaff')->whereNumber('employee');
+            Route::get('accounts', 'accounts');
+            Route::post('accounts', 'storeAccount');
+            Route::patch('accounts/{account}/status', 'accountStatus')->whereNumber('account');
+            Route::post('accounts/{account}/reset-password', 'resetPassword')->whereNumber('account')->middleware('throttle:10,1');
         });
 
         // Quản trị danh mục xe: hãng, dòng xe, phiên bản (xóa bị chặn khi đang được dùng).
