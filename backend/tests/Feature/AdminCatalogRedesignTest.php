@@ -58,20 +58,23 @@ class AdminCatalogRedesignTest extends TestCase
         $this->assertDatabaseMissing('service_categories', ['id' => $id]);
     }
 
-    public function test_admin_services_filter_by_category_and_reorder_keeps_other_positions(): void
+    public function test_admin_services_filter_by_category_newest_first_and_reorder_is_gone(): void
     {
         $category = ServiceCategory::query()->create(['name' => 'Phanh', 'icon' => 'disc']);
-        [$a, $b, $c, $d] = collect(['A', 'B', 'C', 'D'])->map(fn ($n, $i) => Service::factory()->create([
-            'name' => "DV {$n}", 'sort_order' => $i + 1, 'category_id' => in_array($n, ['B', 'D'], true) ? $category->id : null,
-        ]))->all();
+        foreach (['A', 'B', 'C', 'D'] as $i => $n) {
+            Service::factory()->create([
+                'name' => "DV {$n}", 'category_id' => in_array($n, ['B', 'D'], true) ? $category->id : null,
+                'created_at' => now()->subMinutes(10 - $i),
+            ]);
+        }
 
+        // D-018: mặc định dịch vụ mới tạo lên đầu, không còn đổi thứ tự thủ công.
         $this->actingAs($this->admin)->getJson("/api/admin/services?category_id={$category->id}&per_page=8")->assertOk()
-            ->assertJsonPath('data.total', 2)->assertJsonPath('data.data.0.service_category.icon', 'disc');
+            ->assertJsonPath('data.total', 2)->assertJsonPath('data.data.0.name', 'DV D')
+            ->assertJsonPath('data.data.0.service_category.icon', 'disc');
 
-        // Kéo D lên trước B trong danh mục Phanh: B, D chiếm vị trí 2 và 4 → D ở 2, B ở 4; A, C giữ nguyên.
-        $this->putJson('/api/admin/services/reorder', ['ids' => [$d->id, $b->id]])->assertOk();
-        $order = Service::query()->orderBy('sort_order')->pluck('name')->all();
-        $this->assertSame(['DV A', 'DV D', 'DV C', 'DV B'], $order);
+        // Route reorder đã gỡ: URL cũ rơi vào admin/services/{service} với "reorder" không phải id → 404.
+        $this->putJson('/api/admin/services/reorder', ['ids' => [1]])->assertNotFound();
     }
 
     public function test_hidden_service_is_not_offered_to_customers_but_staff_still_see_it(): void

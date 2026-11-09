@@ -104,9 +104,7 @@ export const catalogAdminApi = {
   services: (params: Params, signal?: AbortSignal) => fetchApi<{ data: LaravelPage<AdminService> }>(`/admin/services${query(params)}`, { signal }).then(r => r.data),
   service: (id: number, signal?: AbortSignal) => fetchApi<{ data: AdminService }>(`/admin/services/${id}`, { signal }).then(r => r.data),
   createService: (body: ServicePayload) => send<Message<AdminService>>("/admin/services", "POST", body),
-  updateService: (id: number, body: Partial<ServicePayload>) => send<Message<AdminService>>(`/admin/services/${id}`, "PATCH", body),
-  reorderServices: (ids: number[]) => send<{ message: string }>("/admin/services/reorder", "PUT", { ids }),
-  categories: (signal?: AbortSignal) =>
+  updateService: (id: number, body: Partial<ServicePayload>) => send<Message<AdminService>>(`/admin/services/${id}`, "PATCH", body),  categories: (signal?: AbortSignal) =>
     fetchApi<{ data: ServiceCategory[]; meta: { total: number; uncategorized: number; active?: number; visible?: number; icons: string[] } }>("/admin/service-categories", { signal }),
   createCategory: (body: { name: string; icon: string }) => send<Message<ServiceCategory>>("/admin/service-categories", "POST", body),
   updateCategory: (id: number, body: { name: string; icon: string }) => send<Message<ServiceCategory>>(`/admin/service-categories/${id}`, "PATCH", body),

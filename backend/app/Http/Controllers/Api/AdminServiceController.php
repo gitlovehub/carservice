@@ -54,9 +54,9 @@ class AdminServiceController extends Controller
             ->when($filters['uncategorized'] ?? false, fn ($q) => $q->whereNull('category_id'))
             ->when($filters['search'] ?? null, fn ($q, string $s) => $q->where(fn ($q) => $q->where('name', 'like', "%{$s}%")->orWhere('description', 'like', "%{$s}%")));
 
-        // Mặc định mới tạo lên đầu; `sort=order` = thứ tự hiển thị admin đặt (thứ tự khách thấy khi đặt lịch).
+        // Mặc định mới tạo lên đầu (D-018: không còn đổi thứ tự thủ công).
         $this->applySort($query, $request, [
-            'created' => 'created_at', 'order' => 'sort_order', 'name' => 'name', 'category' => 'category',
+            'created' => 'created_at', 'name' => 'name', 'category' => 'category',
             'price' => 'base_price', 'minutes' => 'estimated_minutes',
             'status' => 'status', 'visible' => 'is_visible',
         ]);
@@ -66,32 +66,6 @@ class AdminServiceController extends Controller
             'message' => 'Lấy danh sách dịch vụ thành công.',
             'data' => $query->paginate($filters['per_page'] ?? 10),
         ]);
-    }
-
-    /**
-     * PUT /api/admin/services/reorder — kéo thả đổi thứ tự. Nhận id theo thứ tự mới của các dòng đang hiển thị;
-     * các dòng này giữ đúng những vị trí chúng đang chiếm trong toàn danh sách, dịch vụ khác không bị xê dịch.
-     */
-    public function reorder(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'ids' => ['required', 'array', 'min:1', 'max:100'],
-            'ids.*' => ['integer', 'distinct', 'exists:services,id'],
-        ]);
-
-        DB::transaction(function () use ($data): void {
-            $all = Service::query()->orderBy('sort_order')->orderBy('id')->lockForUpdate()->pluck('id')->all();
-            $moved = array_map('intval', $data['ids']);
-            $slots = array_keys(array_intersect($all, $moved)); // vị trí đang chiếm, tăng dần
-            foreach ($slots as $i => $slot) {
-                $all[$slot] = $moved[$i];
-            }
-            foreach ($all as $position => $id) {
-                Service::query()->whereKey($id)->update(['sort_order' => $position + 1]);
-            }
-        });
-
-        return response()->json(['success' => true, 'message' => 'Đã lưu thứ tự hiển thị dịch vụ.']);
     }
 
     /**

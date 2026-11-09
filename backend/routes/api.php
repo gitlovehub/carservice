@@ -264,9 +264,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('admin/services/{service}/steps', [AdminServiceController::class, 'steps']);
         Route::put('admin/services/{service}/steps', [AdminServiceController::class, 'syncSteps']);
 
-        // Kéo thả thứ tự hiển thị — khai báo trước apiResource để không khớp nhầm admin/services/{service}.
-        Route::put('admin/services/reorder', [AdminServiceController::class, 'reorder']);
-
         // Danh mục dịch vụ (tên + icon); chỉ xoá được danh mục rỗng.
         Route::apiResource('admin/service-categories', AdminServiceCategoryController::class)
             ->only(['index', 'store', 'update', 'destroy'])

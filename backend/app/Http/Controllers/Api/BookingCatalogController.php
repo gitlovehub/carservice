@@ -68,7 +68,7 @@ class BookingCatalogController extends Controller
         $packages = MaintenancePackage::query()
             ->availableFor($vehicleModelId)
             ->with([
-                'services' => fn ($query) => $query->where('status', 'ACTIVE')->orderBy('sort_order')->orderBy('name'),
+                'services' => fn ($query) => $query->where('status', 'ACTIVE')->orderByDesc('services.created_at')->orderByDesc('services.id'),
                 'parts',
             ])
             ->orderBy('mileage_milestone')
@@ -110,8 +110,9 @@ class BookingCatalogController extends Controller
         $services = Service::query()
             ->where('status', 'ACTIVE')
             ->where('is_visible', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
+            // D-018: dịch vụ mới tạo lên đầu trong từng danh mục (bộ lọc Phổ biến / Mới nhất cho khách làm sau).
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get();
 
         return $services
