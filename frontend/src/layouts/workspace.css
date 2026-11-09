@@ -151,12 +151,21 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
   width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding: 0;
   border-radius: 999px; border: 1px solid var(--cs-border); background: var(--cs-surface);
 }
-/* Như nút sáng/tối trong Admin Button Kit: hover trung tính (không đỏ như nút icon trong bảng). */
-.cs-work-top .cs-ws-theme-toggle {
-  --btn-hover-bg: var(--cs-hover) !important;
-  --btn-hover-border: var(--cs-border-strong) !important;
-  --btn-hover-fg: var(--cs-text) !important;
+/*
+ * Admin: đồng hồ, nút sáng/tối (đã theo luật nút icon trong buttons.css) và nút tài khoản
+ * hover giống nút thu gọn thanh điều hướng — viền đỏ, nền đỏ nhạt, chữ/icon đỏ (token --cs-btn-icon-hover-*).
+ */
+[data-area="admin"] .cs-ws-clock:hover,
+[data-area="admin"] .cs-ws-account:hover,
+[data-area="admin"] .cs-ws-account[aria-expanded="true"] {
+  background: var(--cs-btn-icon-hover-bg);
+  border-color: var(--cs-btn-icon-hover-border);
+  color: var(--cs-btn-icon-hover-fg);
 }
+[data-area="admin"] .cs-ws-clock svg { transition: color var(--cs-duration) ease; }
+[data-area="admin"] .cs-ws-account { transition: background-color var(--cs-duration) ease, border-color var(--cs-duration) ease, color var(--cs-duration) ease; }
+[data-area="admin"] .cs-ws-account:hover > svg,
+[data-area="admin"] .cs-ws-account[aria-expanded="true"] > svg { color: currentColor; }
 .cs-ws-account {
   display: inline-flex; align-items: center; gap: 9px; max-width: 240px;
   min-height: 40px; padding: 4px 8px 4px 4px; border-radius: var(--radius-control);
