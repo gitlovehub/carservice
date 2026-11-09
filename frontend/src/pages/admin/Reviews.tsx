@@ -9,7 +9,7 @@ import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
 
 type StatusFilter = "all" | "unreplied" | "replied" | "hidden";
-type RatingFilter = "all" | "5" | "4" | "3" | "2" | "1" | "low";
+type RatingFilter = "all" | "5" | "4" | "3" | "2" | "1";
 
 const sentiment: Record<number, { label: string; tone: Tone }> = {
   5: { label: "Rất hài lòng", tone: "success" }, 4: { label: "Hài lòng", tone: "success" }, 3: { label: "Bình thường", tone: "warning" },
@@ -122,7 +122,7 @@ export default function Reviews() {
           <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm theo khách, nội dung, mã phiếu…"/>
           <FilterSelect label="Số sao" value={rating} onChange={changeRating} options={[
             { value: "all", label: "Tất cả" }, { value: "5", label: "5 sao" }, { value: "4", label: "4 sao" }, { value: "3", label: "3 sao" },
-            { value: "2", label: "2 sao" }, { value: "1", label: "1 sao" }, { value: "low", label: "Từ 3 sao trở xuống" },
+            { value: "2", label: "2 sao" }, { value: "1", label: "1 sao" },
           ]}/>
           <ClearFilters active={search !== "" || rating !== "all" || status !== "all"}
             onClear={() => { setSearch(""); setRating("all"); setStatus("all"); setPage(1); }}/>
