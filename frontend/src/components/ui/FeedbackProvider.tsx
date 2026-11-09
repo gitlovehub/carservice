@@ -11,11 +11,16 @@ type ConfirmState = { options: ConfirmOptions; resolve: (result: boolean) => voi
 const TOAST_DURATION = 3000;
 const EXIT_MS = 220;
 
-const toastStyle: Record<ToastTone, { icon: "check" | "alert" | "info"; title: string; box: string; bar: string }> = {
-  success: { icon: "check", title: "Thành công", box: "bg-success-soft text-success", bar: "bg-success" },
-  error: { icon: "alert", title: "Có lỗi", box: "bg-danger-soft text-danger", bar: "bg-danger" },
-  warning: { icon: "alert", title: "Lưu ý", box: "bg-warning-soft text-warning", bar: "bg-warning" },
-  info: { icon: "info", title: "Thông tin", box: "bg-info-soft text-info", bar: "bg-info" },
+/**
+ * Nền toast theo trạng thái (xanh lá thành công, đỏ lỗi, vàng lưu ý, xanh dương thông tin) — token *-soft
+ * nên đúng ở cả theme sáng / tối. Không viền màu (giữ quyết định trước); tiêu đề dùng màu chữ đậm của trạng thái.
+ */
+const toastStyle: Record<ToastTone, { icon: "check" | "alert" | "info"; title: string; bg: string; box: string; heading: string; bar: string }> = {
+  // Ô icon: màu đặc pha 20% trắng — nổi trên nền nhạt nhưng không quá nặng.
+  success: { icon: "check", title: "Thành công", bg: "bg-success-soft", box: "bg-[color-mix(in_srgb,var(--cs-success-solid)_80%,white)]", heading: "text-success-fg", bar: "bg-success" },
+  error: { icon: "alert", title: "Có lỗi", bg: "bg-danger-soft", box: "bg-[color-mix(in_srgb,var(--cs-danger-solid)_80%,white)]", heading: "text-danger-fg", bar: "bg-danger" },
+  warning: { icon: "alert", title: "Lưu ý", bg: "bg-warning-soft", box: "bg-[color-mix(in_srgb,var(--cs-warning-solid)_80%,white)]", heading: "text-warning-fg", bar: "bg-warning" },
+  info: { icon: "info", title: "Thông tin", bg: "bg-info-soft", box: "bg-[color-mix(in_srgb,var(--cs-info-solid)_80%,white)]", heading: "text-info-fg", bar: "bg-info" },
 };
 
 /** Cơ chế xác nhận + thông báo DUY NHẤT của hệ thống: useAppFeedback().confirm / notify. */
@@ -64,13 +69,14 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         const style = toastStyle[toast.tone];
         return <div key={toast.id} role={toast.tone === "error" ? "alert" : undefined} data-tone={toast.tone} data-leaving={toast.leaving || undefined}
           style={{ ["--cs-toast-duration" as string]: `${TOAST_DURATION}ms` }}
-          className="cs-toast pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-card border border-cs-border bg-cs-surface py-3 pl-4 pr-3 text-cs-text shadow-raised">
-          <span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${style.box}`} aria-hidden="true"><Icon name={style.icon} size={16}/></span>
+          className={`cs-toast pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-card border border-transparent py-3 pl-4 pr-3 text-cs-text shadow-raised ${style.bg}`}>
+          {/* Ô icon: nền đặc đậm theo trạng thái + icon trắng, nổi trên nền nhạt của toast. */}
+          <span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full text-on-solid shadow-sm ${style.box}`} aria-hidden="true"><Icon name={style.icon} size={16} className="[stroke-width:2]"/></span>
           <div className="min-w-0 flex-1">
-            <p className="text-small font-semibold text-cs-text">{style.title}</p>
-            <p className="mt-0.5 break-words text-small text-cs-text-2">{toast.message}</p>
+            <p className={`text-small font-semibold ${style.heading}`}>{style.title}</p>
+            <p className="mt-0.5 break-words text-small text-cs-text">{toast.message}</p>
           </div>
-          <button type="button" className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md border border-transparent text-cs-muted transition-colors hover:border-cs-border hover:bg-cs-hover hover:text-cs-text" aria-label={`${LABELS.action.close} thông báo`} onClick={() => dismissToast(toast.id)}>
+          <button type="button" className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md border border-transparent text-cs-text-2 transition-colors hover:bg-cs-surface/70 hover:text-cs-text" aria-label={`${LABELS.action.close} thông báo`} onClick={() => dismissToast(toast.id)}>
             <Icon name="close" size={14}/>
           </button>
           <span className={`cs-toast-progress absolute inset-x-0 bottom-0 h-0.5 opacity-60 ${style.bar}`} aria-hidden="true"/>

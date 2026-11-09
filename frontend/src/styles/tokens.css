@@ -66,6 +66,8 @@
   --cs-success-solid: #15803d;  --cs-success-solid-hover: #166534;  --cs-success-solid-active: #14532d;
   /* Nút Warning: #b45309 thay vì #d97706 để chữ trắng đạt AA (≈5:1). */
   --cs-warning-solid: #b45309;  --cs-warning-solid-hover: #92400e;  --cs-warning-solid-active: #78350f;
+  /* Nền đặc xanh dương (ô icon toast "Thông tin"); chữ trắng đạt AA ở cả hai theme. */
+  --cs-info-solid: #1d4ed8;
   --cs-on-solid: #ffffff;
   /* Màu khi nhấn (active) của nút chính — đậm hơn hover một bậc. */
   --cs-brand-active: #991c27;
