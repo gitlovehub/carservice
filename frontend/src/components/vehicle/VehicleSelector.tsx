@@ -44,6 +44,8 @@ type Props = {
   disabled?: boolean;
   /** Phiên bản không bắt buộc (khách có thể chưa biết). */
   trimRequired?: boolean;
+  /** 3: ba cột từ màn hình sm; 1: xếp dọc (dùng trong modal hẹp). */
+  columns?: 1 | 3;
   className?: string;
 };
 
@@ -51,7 +53,7 @@ type Props = {
  * Bộ chọn xe 3 bước: Hãng xe → Dòng xe → Phiên bản. Dữ liệu lấy từ /api/vehicle-catalog.
  * Đổi hãng thì bỏ chọn dòng xe + phiên bản; đổi dòng xe thì bỏ chọn phiên bản.
  */
-export function VehicleSelector({ value, onChange, errors = {}, disabled, trimRequired = false, className = "" }: Props) {
+export function VehicleSelector({ value, onChange, errors = {}, disabled, trimRequired = false, columns = 3, className = "" }: Props) {
   const brands = useCatalogLevel("brands", signal => vehicleCatalogApi.brands(undefined, signal)
     .then(list => list.map(brand => ({ value: brand.id, label: brand.name, hint: brand.models_count ? `${brand.models_count} dòng` : undefined }))));
 
@@ -61,7 +63,7 @@ export function VehicleSelector({ value, onChange, errors = {}, disabled, trimRe
   const trims = useCatalogLevel(value.modelId === null ? null : `trims-${value.modelId}`, signal => vehicleCatalogApi.trims(value.modelId as number, undefined, signal)
     .then(list => list.map(trim => ({ value: trim.id, label: trim.name }))));
 
-  return <div className={`grid gap-4 sm:grid-cols-3 ${className}`} data-testid="vehicle-selector">
+  return <div className={`grid gap-4 ${columns === 3 ? "sm:grid-cols-3" : ""} ${className}`} data-testid="vehicle-selector">
     <SearchableSelect
       testId="vehicle-brand"
       label="Hãng xe" placeholder="Tìm hãng xe…" required

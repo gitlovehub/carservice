@@ -54,6 +54,19 @@ export const adminVehicleCatalogApi = {
   },
 };
 
+/** Lựa chọn ban đầu của bộ chọn từ một xe đã lưu (để sửa xe). */
+export function selectionFromVehicle(vehicle: {
+  model_id?: number; trim_id?: number | null;
+  model?: { id?: number; name?: string; brand?: { id?: number; name?: string } | null } | null;
+  trim?: { id: number; name: string } | null;
+}): VehicleSelection {
+  return {
+    brandId: vehicle.model?.brand?.id ?? null, brandName: vehicle.model?.brand?.name ?? "",
+    modelId: vehicle.model?.id ?? vehicle.model_id ?? null, modelName: vehicle.model?.name ?? "",
+    trimId: vehicle.trim?.id ?? vehicle.trim_id ?? null, trimName: vehicle.trim?.name ?? "",
+  };
+}
+
 /** Bỏ dấu + chữ thường để gõ "cho" vẫn tìm thấy "chỗ", "toyota" thấy "Toyota". */
 export function foldText(text: string): string {
   return text.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase().trim();

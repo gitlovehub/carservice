@@ -44,4 +44,18 @@ assert.match(admin, /models_count[\s\S]*trims_count/, 'Brand shows model and tri
 assert.match(admin, /status: next/, 'Toggle visibility');
 assert.match(admin, /window\.setTimeout\([\s\S]*?300\)/, 'Search is debounced');
 
-console.log('PASS vehicle catalog selector + admin CRUD UI.');
+// Lưu xe vào hồ sơ + đặt lịch dùng bộ chọn, gửi model_id / trim_id.
+const cars = read('src/pages/customer/Cars.tsx');
+const booking = read('src/pages/customer/Booking.tsx');
+const bookingCatalog = read('src/services/bookingCatalog.ts');
+assert.match(cars, /<VehicleSelector[\s\S]*?value=\{newSelection\}/, 'Add-vehicle form uses the selector');
+assert.match(cars, /<VehicleSelector[\s\S]*?value=\{editSelection\}/, 'Edit-vehicle modal uses the selector');
+assert.match(cars, /model_id: newSelection\.modelId[\s\S]*?trim_id: newSelection\.trimId/, 'Saved vehicle stores model and trim ids');
+assert.doesNotMatch(cars, /supportedVehicleModels|model_name: newModel/, 'No hardcoded Toyota-only list');
+assert.match(booking, /<VehicleSelector[\s\S]*?onChange=\{handleSelectionChange\}/, 'Booking step 1 uses the selector');
+assert.match(booking, /new_vehicle: \{\s*model_id: vehicleSelection\.modelId,\s*trim_id: vehicleSelection\.trimId/, 'Booking sends catalog ids');
+assert.doesNotMatch(booking, /BRAND_MODELS|getBrandForModel/, 'Booking has no hardcoded brand/model list');
+assert.match(booking, /selectionFromVehicle\(v\)/, 'Picking a saved vehicle fills the selector');
+assert.match(bookingCatalog, /params\.set\("model_id"/, 'Service catalog is filtered by the chosen model id');
+
+console.log('PASS vehicle catalog selector + admin CRUD UI + saved vehicle/booking integration.');

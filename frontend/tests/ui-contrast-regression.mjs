@@ -32,5 +32,8 @@ assert.match(theme,/--color-cs-surface/,'Theme must expose palette to Tailwind v
 assert.match(read('components/ui/Icon.tsx'),/plus: <path/,'Add vehicle icon must exist');
 const vehicleController = readFileSync(path.join(here,'../../backend/app/Http/Controllers/Api/VehicleController.php'),'utf8');
 assert.match(vehicleController,/Rule::in\(\$modelNames\)/,'Backend currently restricts accepted model names');
-assert.match(garage,/const supportedVehicleModels = \[/,'UI must only offer accepted models');
+// Từ 09/11/2026: dòng xe chọn từ danh mục API (Hãng → Dòng xe → Phiên bản) và gửi model_id;
+// đường model_name cũ vẫn được backend chấp nhận để tương thích.
+assert.match(garage,/<VehicleSelector/,'UI offers models from the vehicle catalog API');
+assert.match(garage,/model_id: newSelection\.modelId/,'New vehicle is saved by catalog model id');
 console.log('PASS: dark hover and admin tile contrast; API-backed GARAGE customer garage with responsive cards.');

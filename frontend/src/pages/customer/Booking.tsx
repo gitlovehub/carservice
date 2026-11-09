@@ -10,6 +10,8 @@ import {
   type CatalogGroup,
   type CatalogItem,
 } from "../../services/bookingCatalog";
+import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
+import { emptySelection, selectionFromVehicle, type VehicleSelection } from "../../services/vehicleCatalog";
 import BookingSummary from "./booking/BookingSummary";
 import ServicePicker from "./booking/ServicePicker";
 
@@ -18,7 +20,10 @@ type SavedVehicle = {
   license_plate: string | null;
   variant: string | null;
   year: number | null;
-  model?: { name: string; brand?: { name: string } } | null;
+  model_id?: number;
+  trim_id?: number | null;
+  model?: { id?: number; name: string; brand?: { id?: number; name: string } } | null;
+  trim?: { id: number; name: string } | null;
 };
 
 const GARAGE_BRANCHES = [
@@ -33,124 +38,6 @@ const GARAGE_BRANCHES = [
 
 const MORNING_SLOTS = ["08:00", "09:00", "09:30", "10:30", "11:15"];
 const AFTERNOON_SLOTS = ["13:30", "14:15", "15:00", "16:00", "16:45"];
-
-// Danh mục dòng xe chuẩn theo từng hãng xe ô tô
-const BRAND_MODELS: Record<string, string[]> = {
-  Toyota: [
-    "Vios",
-    "Camry",
-    "Corolla Altis",
-    "Corolla Cross",
-    "Raize",
-    "Fortuner",
-    "Innova",
-    "Innova Cross",
-    "Hilux",
-    "Yaris Cross",
-    "Veloz Cross",
-    "Avanza Premio",
-    "Land Cruiser Prado",
-    "Land Cruiser",
-    "Wigo",
-  ],
-  Honda: [
-    "City",
-    "Civic",
-    "CR-V",
-    "HR-V",
-    "BR-V",
-    "Accord",
-    "Brio",
-  ],
-  Hyundai: [
-    "Accent",
-    "Grand i10",
-    "Elantra",
-    "Creta",
-    "Tucson",
-    "Santa Fe",
-    "Custin",
-    "Palisade",
-    "Stargazer",
-    "Venue",
-  ],
-  Kia: [
-    "Morning",
-    "Soluto",
-    "K3",
-    "K5",
-    "Sonet",
-    "Seltos",
-    "Carens",
-    "Sportage",
-    "Sorento",
-    "Carnival",
-  ],
-  Mazda: [
-    "Mazda 2",
-    "Mazda 3",
-    "Mazda 6",
-    "CX-3",
-    "CX-30",
-    "CX-5",
-    "CX-8",
-    "BT-50",
-  ],
-  Ford: [
-    "Ranger",
-    "Everest",
-    "Territory",
-    "Explorer",
-    "Ranger Raptor",
-    "Transit",
-  ],
-  VinFast: [
-    "Fadil",
-    "Lux A2.0",
-    "Lux SA2.0",
-    "President",
-    "VF 3",
-    "VF 5",
-    "VF 6",
-    "VF 7",
-    "VF 8",
-    "VF 9",
-    "VF e34",
-  ],
-  Mitsubishi: [
-    "Xpander",
-    "Xforce",
-    "Outlander",
-    "Pajero Sport",
-    "Triton",
-    "Attrage",
-  ],
-  "Mercedes-Benz": [
-    "C-Class (C200, C300)",
-    "E-Class (E200, E300)",
-    "S-Class (S450)",
-    "GLC (GLC 200, GLC 300)",
-    "GLE",
-    "GLS",
-    "Maybach",
-  ],
-  BMW: [
-    "3 Series (320i, 330i)",
-    "5 Series (520i, 530i)",
-    "7 Series",
-    "X1",
-    "X3",
-    "X5",
-    "X7",
-  ],
-  "Hãng khác": ["Dòng xe khác"],
-};
-
-function getBrandForModel(model: string): string | undefined {
-  return Object.entries(BRAND_MODELS).find(
-    ([brand, models]) => brand !== "Hãng khác" && models.includes(model),
-  )?.[0];
-}
 
 // Tự động format biển số xe theo chuẩn VN (VD: 30A-123.45 hoặc 51K-888.88 hoặc 29A-1234)
 function formatLicensePlate(input: string): string {
@@ -185,11 +72,6 @@ function isValidLicensePlate(plate: string): boolean {
   return regex5.test(clean) || regex4.test(clean);
 }
 
-/** Xe đã lưu có thể có hãng/dòng ngoài danh sách cố định; thêm vào để select vẫn hiển thị đúng. */
-function withCurrentOption(options: string[], current: string): string[] {
-  return current && !options.includes(current) ? [...options, current] : options;
-}
-
 const BOOKING_STEPS = ["Xe", "Dịch vụ", "Ngày giờ", "Xác nhận"];
 const SUCCESS_STEP = BOOKING_STEPS.length + 1;
 
@@ -219,9 +101,9 @@ export default function Booking() {
 
   // Bước 1: Xe
   // Mặc định khai báo xe mới với form trống; chỉ đổ dữ liệu khi khách chọn xe đã lưu.
-  const [vehicleBrand, setVehicleBrand] = useState("");
-  const [vehicleModel, setVehicleModel] = useState("");
-  const [customModel, setCustomModel] = useState("");
+  // Hãng → Dòng xe → Phiên bản chọn từ danh mục (API), không còn danh sách cố định trong code.
+  const [vehicleSelection, setVehicleSelection] = useState<VehicleSelection>(emptySelection);
+  const vehicleBrand = vehicleSelection.brandName;
   const [vehiclePlate, setVehiclePlate] = useState("");
   const [selectedSavedVehicleId, setSelectedSavedVehicleId] = useState<number | null>(null);
 
@@ -316,7 +198,8 @@ export default function Booking() {
       });
   }, [isLoggedIn, searchParams]);
 
-  const effectiveModelName = vehicleModel === "Khác" ? customModel.trim() : vehicleModel;
+  const effectiveModelName = vehicleSelection.modelName;
+  const selectedModelId = vehicleSelection.modelId;
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedMileage(mileage), 400);
@@ -324,7 +207,7 @@ export default function Booking() {
   }, [mileage]);
 
   // Danh mục phụ thuộc dòng xe và số km nên tải lại khi chúng đổi.
-  const catalogRequestKey = `${vehicleBrand}|${effectiveModelName}|${debouncedMileage}`;
+  const catalogRequestKey = `${selectedModelId ?? ""}|${vehicleBrand}|${effectiveModelName}|${debouncedMileage}`;
   const catalogNeeded = currentStep >= 2 && currentStep !== SUCCESS_STEP;
   const catalogLoading = catalogNeeded && catalog.requestKey !== catalogRequestKey;
 
@@ -334,6 +217,7 @@ export default function Booking() {
     let cancelled = false;
 
     getBookingCatalog({
+      modelId: selectedModelId,
       brand: vehicleBrand,
       model: effectiveModelName,
       mileage: debouncedMileage ? Number(debouncedMileage) : null,
@@ -367,7 +251,7 @@ export default function Booking() {
     return () => {
       cancelled = true;
     };
-  }, [catalogNeeded, catalogRequestKey, vehicleBrand, effectiveModelName, debouncedMileage, searchParams]);
+  }, [catalogNeeded, catalogRequestKey, selectedModelId, vehicleBrand, effectiveModelName, debouncedMileage, searchParams]);
 
   const catalogGroups = catalog.groups;
   const itemsByKey = useMemo(() => indexCatalogItems(catalogGroups), [catalogGroups]);
@@ -385,27 +269,16 @@ export default function Booking() {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
-  const handleBrandChange = (newBrand: string) => {
+  // Đổi xe trong bộ chọn = khai báo xe mới (bỏ chọn xe đã lưu).
+  const handleSelectionChange = (next: VehicleSelection) => {
     setSelectedSavedVehicleId(null);
-    setVehicleBrand(newBrand);
-    setVehicleModel("");
-    setCustomModel("");
-    clearError("brand");
-    clearError("model");
-  };
-
-  const handleModelChange = (newModel: string) => {
-    setSelectedSavedVehicleId(null);
-    setVehicleModel(newModel);
-    clearError("model");
+    setVehicleSelection(next);
+    setErrors((prev) => ({ ...prev, brand: "", model: "" }));
   };
 
   function fillFromSavedVehicle(v: SavedVehicle) {
     setSelectedSavedVehicleId(v.id);
-    const modelName = v.model?.name ?? "";
-    setVehicleBrand(v.model?.brand?.name || (modelName ? getBrandForModel(modelName) ?? "" : ""));
-    setVehicleModel(modelName);
-    setCustomModel("");
+    setVehicleSelection(selectionFromVehicle(v));
     setVehiclePlate(v.license_plate ? formatLicensePlate(v.license_plate) : "");
     setErrors({});
   }
@@ -418,9 +291,7 @@ export default function Booking() {
     }
     // Quay lại khai báo xe mới: xóa trắng form.
     setSelectedSavedVehicleId(null);
-    setVehicleBrand("");
-    setVehicleModel("");
-    setCustomModel("");
+    setVehicleSelection(emptySelection);
     setVehiclePlate("");
     setErrors({});
   };
@@ -434,15 +305,10 @@ export default function Booking() {
       return true;
     }
 
-    if (!vehicleBrand) {
+    if (vehicleSelection.brandId === null) {
       newErrors.brand = "Vui lòng chọn hãng xe.";
-    } else if (!effectiveModelName) {
-      newErrors.model = `Vui lòng chọn hoặc nhập dòng xe cho hãng ${vehicleBrand}.`;
-    } else if (vehicleBrand !== "Hãng khác" && vehicleModel !== "Khác") {
-      const validModels = BRAND_MODELS[vehicleBrand] || [];
-      if (!validModels.includes(vehicleModel)) {
-        newErrors.model = `Dòng xe "${vehicleModel}" không thuộc hãng ${vehicleBrand}.`;
-      }
+    } else if (vehicleSelection.modelId === null) {
+      newErrors.model = `Vui lòng chọn dòng xe của hãng ${vehicleBrand}.`;
     }
 
     if (!vehiclePlate.trim()) {
@@ -531,8 +397,8 @@ export default function Booking() {
             ? { vehicle_id: selectedSavedVehicleId }
             : {
                 new_vehicle: {
-                  brand: vehicleBrand,
-                  model: effectiveModelName,
+                  model_id: vehicleSelection.modelId,
+                  trim_id: vehicleSelection.trimId,
                   license_plate: vehiclePlate.trim().toUpperCase(),
                 },
               }),
@@ -579,7 +445,7 @@ export default function Booking() {
   };
 
   const selectedDateObj = upcomingDates[selectedDateIndex] || upcomingDates[0];
-  const finalModelDisplayName = effectiveModelName || "Xe riêng";
+  const finalModelDisplayName = [effectiveModelName || "Xe riêng", vehicleSelection.trimName].filter(Boolean).join(" ");
   const vehicleLabel = `${vehicleBrand} ${finalModelDisplayName}${vehiclePlate ? ` (${vehiclePlate})` : ""}`;
   const timeLabel = selectedTime ? `${selectedTime}, ${selectedDateObj.fullLabel}` : undefined;
   const showSummary = currentStep >= 2 && currentStep <= BOOKING_STEPS.length;
@@ -690,66 +556,21 @@ export default function Booking() {
                       <option value="">+ Khai báo xe mới</option>
                       {savedVehicles.map((v) => (
                         <option key={v.id} value={v.id}>
-                          {v.model?.brand?.name} {v.model?.name} ({v.license_plate || "Chưa có biển"})
+                          {[v.model?.brand?.name, v.model?.name, v.trim?.name].filter(Boolean).join(" ")} ({v.license_plate || "Chưa có biển"})
                         </option>
                       ))}
                     </select>
                   )}
                 </div>
 
+                <VehicleSelector
+                  className="mb-4"
+                  value={vehicleSelection}
+                  errors={{ brand: errors.brand || undefined, model: errors.model || undefined }}
+                  onChange={handleSelectionChange}
+                />
+
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <div>
-                    <label htmlFor="vehicleBrand" className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-700">
-                      Hãng xe <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="vehicleBrand"
-                      value={vehicleBrand}
-                      onChange={(e) => handleBrandChange(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm"
-                    >
-                      <option value="">-- Chọn hãng xe --</option>
-                      {withCurrentOption(Object.keys(BRAND_MODELS), vehicleBrand).map((b) => (
-                        <option key={b} value={b}>{b}</option>
-                      ))}
-                    </select>
-                    {errors.brand && <p className="mt-1 text-[12px] text-red-500">{errors.brand}</p>}
-                  </div>
-
-                  <div>
-                    <label htmlFor="vehicleModel" className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-700">
-                      Dòng xe <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="vehicleModel"
-                      value={vehicleModel}
-                      onChange={(e) => handleModelChange(e.target.value)}
-                      disabled={!vehicleBrand}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm"
-                    >
-                      <option value="">-- Chọn dòng xe --</option>
-                      {withCurrentOption(BRAND_MODELS[vehicleBrand] || [], vehicleModel === "Khác" ? "" : vehicleModel).map((m) => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                      {vehicleBrand && <option value="Khác">Dòng khác...</option>}
-                    </select>
-                    {vehicleModel === "Khác" && (
-                      <input
-                        type="text"
-                        aria-label="Tên dòng xe"
-                        placeholder={`Tên dòng xe ${vehicleBrand}`}
-                        value={customModel}
-                        onChange={(e) => {
-                          setSelectedSavedVehicleId(null);
-                          setCustomModel(e.target.value);
-                          clearError("model");
-                        }}
-                        className="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm"
-                      />
-                    )}
-                    {errors.model && <p className="mt-1 text-[12px] text-red-500">{errors.model}</p>}
-                  </div>
-
                   <div>
                     <label htmlFor="vehiclePlate" className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-700">
                       Biển số <span className="text-red-500">*</span>

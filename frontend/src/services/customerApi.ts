@@ -11,7 +11,10 @@ export type CustomerVehicle = {
   variant?: string | null;
   year?: number | null;
   mileage?: number | null;
+  model_id?: number;
+  trim_id?: number | null;
   model?: { id?: number; name?: string; brand?: VehicleBrand } | null;
+  trim?: { id: number; name: string; status?: string } | null;
 };
 
 export type AppointmentStatus =
@@ -141,6 +144,7 @@ export async function getMyVehicles(): Promise<CustomerVehicle[]> {
 
 export async function addMyVehicle(data: {
   model_id?: number;
+  trim_id?: number | null;
   model_name?: string;
   license_plate: string;
   mileage?: number;
@@ -155,6 +159,8 @@ export async function addMyVehicle(data: {
 export async function updateMyVehicle(
   id: number,
   data: {
+    model_id?: number;
+    trim_id?: number | null;
     license_plate?: string;
     mileage?: number;
     year?: number;
@@ -297,7 +303,7 @@ export const FINISHED_REPAIR_STATUSES = ["COMPLETED", "HANDED_OVER", "CLOSED"];
 export function getVehicleName(vehicle?: CustomerVehicle | null): string {
   if (!vehicle) return "Xe chưa xác định";
   return (
-    [vehicle.model?.brand?.name, vehicle.model?.name, vehicle.variant]
+    [vehicle.model?.brand?.name, vehicle.model?.name, vehicle.trim?.name || vehicle.variant]
       .filter(Boolean)
       .join(" ") || "Xe của bạn"
   );

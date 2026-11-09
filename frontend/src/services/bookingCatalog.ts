@@ -21,6 +21,8 @@ export type CatalogGroup = {
 };
 
 export type CatalogQuery = {
+  /** Dòng xe chọn từ danh mục; có thì backend dùng luôn, không cần dò theo tên. */
+  modelId?: number | null;
   brand?: string;
   model?: string;
   mileage?: number | null;
@@ -28,6 +30,7 @@ export type CatalogQuery = {
 
 export async function getBookingCatalog(query: CatalogQuery): Promise<CatalogGroup[]> {
   const params = new URLSearchParams();
+  if (query.modelId) params.set("model_id", String(query.modelId));
   if (query.brand) params.set("brand", query.brand);
   if (query.model) params.set("model", query.model);
   if (query.mileage) params.set("mileage", String(query.mileage));

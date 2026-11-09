@@ -96,7 +96,7 @@ export function SearchableSelect({
         onBlur={() => window.setTimeout(() => setOpen(false), 120)}
         onChange={event => {
           // Danh sách đang đóng (vừa chọn xong) mà gõ tiếp: chỉ lấy phần mới gõ làm từ khóa,
-          // không nối vào tên đang chọn ("Honda" + "ford").
+          // không nối vào tên đang chọn (tránh "Hãng A" + "hãng b" thành một từ khóa).
           const raw = event.target.value;
           const typed = !open && selectedLabel && raw.startsWith(selectedLabel) ? raw.slice(selectedLabel.length) : raw;
           setQuery(typed); setActive(0); setOpen(true);
