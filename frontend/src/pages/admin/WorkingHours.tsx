@@ -335,7 +335,7 @@ function WorkingHours() {
 
         <main className="page-container">
           <div>
-            <PageHeader title="Giờ làm việc & ngày nghỉ" description="Khung giờ nhận lịch, số lịch tối đa mỗi khung giờ và ngày nghỉ của xưởng."
+            <PageHeader title="Lịch làm việc" description="Khung giờ nhận lịch, số lịch tối đa mỗi khung giờ và ngày nghỉ của xưởng."
               actions={<Button variant="outline" icon="refresh" loading={isLoading} onClick={() => setReloadKey((current) => current + 1)}>Làm mới</Button>}/>
 
             <div className="mb-6 grid gap-4 sm:grid-cols-3">

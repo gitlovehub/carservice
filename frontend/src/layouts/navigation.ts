@@ -49,7 +49,7 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Phụ tùng & kho", path: "/admin/inventory", icon: "box", group: "Danh mục" },
     // Trang thật (API /api/admin/vehicle-brands…), thay cho bản demo dữ liệu giả.
     { label: "Hãng & dòng xe", path: "/admin/vehicle-brands", icon: "car", group: "Danh mục" },
-    { label: "Giờ làm việc & ngày nghỉ", path: "/admin/working-hours", icon: "clock", group: "Hệ thống" },
+    { label: "Lịch làm việc", path: "/admin/working-hours", icon: "clock", group: "Hệ thống" },
     { label: "Thông tin gara", path: "/admin/garage", icon: "store", group: "Hệ thống" },
     { label: "Nhật ký hệ thống", path: "/admin/audit-logs", icon: "history", group: "Hệ thống" },
   ],
