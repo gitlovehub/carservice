@@ -1,20 +1,19 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Button, DataTable, Dropdown, Field, IconButton, Input, Modal, Pagination, SearchInput, Select, buttonClass, type Column } from "../../components/ui";
+import { Button, DataTable, Dropdown, Field, Input, Modal, Pagination, SearchInput, Select, buttonClass, type Column } from "../../components/ui";
 import { Badge } from "../../components/ui/Badge";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
-import { adminApi, errorMessage, fmtDate, type AdminStaff, type StaffLevel, type StaffRole } from "../../services/adminApi";
+import { adminApi, errorMessage, fmtDate, type AdminStaff, type StaffRole } from "../../services/adminApi";
 import { AdminPage, FilterSelect, Person, Pill, StatCard, Toggle, Toolbar } from "./kit/AdminKit";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
 import { usePaged } from "./kit/usePaged";
 
 const roleLabel: Record<StaffRole, string> = { ADVISOR: "Cố vấn dịch vụ", TECHNICIAN: "Kỹ thuật viên" };
-const levelLabel: Record<StaffLevel, string> = { JUNIOR: "Thợ phụ", SENIOR: "Thợ chính", EXPERT: "Chuyên gia" };
 const SPECIALTIES = ["Bảo dưỡng tổng quát", "Động cơ", "Gầm - Phanh - Lốp", "Điện - Điều hòa", "Hộp số", "Đồng sơn"];
 
-type Draft = { name: string; email: string; phone: string; role: StaffRole; specialty: string; level: StaffLevel; status: "ACTIVE" | "INACTIVE"; sendInvite: boolean };
-const emptyDraft: Draft = { name: "", email: "", phone: "", role: "TECHNICIAN", specialty: SPECIALTIES[0], level: "JUNIOR", status: "ACTIVE", sendInvite: true };
+type Draft = { name: string; email: string; phone: string; role: StaffRole; specialty: string; status: "ACTIVE" | "INACTIVE"; sendInvite: boolean };
+const emptyDraft: Draft = { name: "", email: "", phone: "", role: "TECHNICIAN", specialty: SPECIALTIES[0], status: "ACTIVE", sendInvite: true };
 
 /** Nhân sự — dữ liệu thật từ /api/admin/staff (employees + accounts + technician_profiles). */
 export default function Staff() {
@@ -38,13 +37,13 @@ export default function Staff() {
     setFormError("");
     setDraft(person ? {
       name: person.name, email: person.email ?? "", phone: person.phone ?? "", role: person.role,
-      specialty: person.specialty ?? SPECIALTIES[0], level: person.level ?? "JUNIOR", status: person.status, sendInvite: false,
+      specialty: person.specialty ?? SPECIALTIES[0], status: person.status, sendInvite: false,
     } : emptyDraft);
   };
 
   const payload = (d: Draft) => ({
     name: d.name.trim(), email: d.email.trim(), phone: d.phone.trim(), role: d.role, status: d.status,
-    specialty: d.role === "TECHNICIAN" ? d.specialty : null, level: d.role === "TECHNICIAN" ? d.level : null,
+    specialty: d.role === "TECHNICIAN" ? d.specialty : null,
   });
 
   const save = async () => {
@@ -69,7 +68,7 @@ export default function Staff() {
     const leaving = person.status === "ACTIVE";
     if (leaving && !await confirm({ title: `Chuyển ${person.name} sang Nghỉ việc?`, description: "Nhân viên sẽ không được phân công phiếu mới; tài khoản đăng nhập bị tạm ngừng và các phiên đăng nhập bị thu hồi. Có thể cho đi làm lại bất cứ lúc nào.", confirmText: "Chuyển sang nghỉ việc", variant: "warning" })) return;
     try {
-      const response = await adminApi.updateStaff(person.id, { ...payload({ ...emptyDraft, name: person.name, email: person.email ?? "", phone: person.phone ?? "", role: person.role, specialty: person.specialty ?? SPECIALTIES[0], level: person.level ?? "JUNIOR", status: person.status }), status: leaving ? "INACTIVE" : "ACTIVE" });
+      const response = await adminApi.updateStaff(person.id, { ...payload({ ...emptyDraft, name: person.name, email: person.email ?? "", phone: person.phone ?? "", role: person.role, specialty: person.specialty ?? SPECIALTIES[0], status: person.status }), status: leaving ? "INACTIVE" : "ACTIVE" });
       notify(response.message, "success");
       list.reload();
     } catch (error) {
@@ -81,7 +80,7 @@ export default function Staff() {
     { key: "name", header: "Nhân viên", primary: true, render: s => <Person name={s.name} sub={s.email ?? undefined}/> },
     { key: "phone", header: "Số điện thoại", render: s => <span className="whitespace-nowrap tabular-nums">{s.phone ?? "—"}</span> },
     { key: "role", header: "Vai trò", render: s => <Pill tone={s.role === "ADVISOR" ? "info" : "violet"}>{roleLabel[s.role]}</Pill> },
-    { key: "specialty", header: "Chuyên môn", render: s => s.role === "TECHNICIAN" && s.specialty ? <span className="text-cs-text-2">{s.specialty}{s.level && <span className="ml-1.5 text-caption text-cs-muted">· {levelLabel[s.level]}</span>}</span> : <span className="text-cs-muted">—</span> },
+    { key: "specialty", header: "Chuyên môn", render: s => s.role === "TECHNICIAN" && s.specialty ? <span className="text-cs-text-2">{s.specialty}</span> : <span className="text-cs-muted">—</span> },
     { key: "joined", header: "Ngày vào", hideOnMobile: true, render: s => <span className="tabular-nums text-cs-text-2">{fmtDate(s.joined_at)}</span> },
     { key: "status", header: "Trạng thái", render: s => <Badge tone={s.status === "ACTIVE" ? "success" : "neutral"}>{s.status === "ACTIVE" ? "Đang làm" : "Nghỉ việc"}</Badge> },
   ];
@@ -106,7 +105,6 @@ export default function Staff() {
     <DataTable caption="Danh sách nhân viên" columns={columns} rows={pageRows} rowKey={s => s.id}
       loading={list.loading} error={list.error || undefined} onRetry={list.reload}
       actions={s => <>
-        <IconButton icon="edit" label={`Sửa ${s.name}`} size="sm" onClick={() => open(s)}/>
         <Dropdown label={`Thao tác khác cho ${s.name}`} items={[
           { label: "Chỉnh sửa", icon: "edit", onSelect: () => open(s) },
           { label: s.status === "ACTIVE" ? "Chuyển sang nghỉ việc" : "Cho đi làm lại", icon: s.status === "ACTIVE" ? "lock" : "refresh", onSelect: () => { void toggleStatus(s); } },
@@ -125,9 +123,6 @@ export default function Staff() {
         </Select></Field>
         {draft.role === "TECHNICIAN" && <Field label="Chuyên môn"><Select value={draft.specialty} onChange={e => setDraft({ ...draft, specialty: e.target.value })}>
           {specialtyOptions.map(s => <option key={s}>{s}</option>)}
-        </Select></Field>}
-        {draft.role === "TECHNICIAN" && <Field label="Cấp bậc"><Select value={draft.level} onChange={e => setDraft({ ...draft, level: e.target.value as StaffLevel })}>
-          {(Object.keys(levelLabel) as StaffLevel[]).map(l => <option key={l} value={l}>{levelLabel[l]}</option>)}
         </Select></Field>}
         <div className="flex items-center gap-3 sm:col-span-2">
           <Toggle checked={draft.status === "ACTIVE"} onChange={v => setDraft({ ...draft, status: v ? "ACTIVE" : "INACTIVE" })} label="Đang làm"/>
