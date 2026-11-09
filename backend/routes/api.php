@@ -341,6 +341,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // Quản trị danh mục xe: hãng, dòng xe, phiên bản (xóa bị chặn khi đang được dùng).
         Route::controller(AdminVehicleCatalogController::class)->prefix('admin')->group(function (): void {
+            Route::get('vehicle-catalog/summary', 'summary');
             Route::get('vehicle-brands', 'brandIndex');
             Route::post('vehicle-brands', 'brandStore');
             Route::patch('vehicle-brands/{brand}', 'brandUpdate')->whereNumber('brand');

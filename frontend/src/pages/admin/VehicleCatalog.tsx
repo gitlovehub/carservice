@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Badge, Button, DataTable, EmptyState, Field, IconButton, Input, Modal, NEWEST_FIRST, PageHeader, Pagination, SearchInput, Select, confirmDelete, useAppFeedback, useTableSort, type Column, type SortState } from "../../components/ui";
 import { SearchableSelect, type SelectOption } from "../../components/vehicle/SearchableSelect";
-import {
+import { Icon } from "../../components/ui/Icon";
+import { useAdminQuery } from "./kit/useAdminQuery";import {
   adminVehicleCatalogApi, type AdminLevel, type CatalogBrand, type CatalogModel, type CatalogStatus, type CatalogTrim, type Paginated,
 } from "../../services/vehicleCatalog";
 
@@ -78,6 +79,8 @@ export default function VehicleCatalog() {
   const brandOptions = useParentOptions("brands", null, level !== "brands" || form !== null, reload);
   const modelFilterOptions = useParentOptions("models", filters.brandId, level === "trims", reload);
   const formModelOptions = useParentOptions("models", form?.brandId ?? null, form !== null && level === "trims" && form.id === null, reload);
+  const summaryQuery = useAdminQuery(`vehicle-catalog-summary:${reload}`, signal => adminVehicleCatalogApi.summary(signal));
+  const summary = summaryQuery.data ?? summaryQuery.stale;
   const rows = (list.page ?? list.stale)?.data ?? [];
   const page = list.page ?? list.stale;
 
@@ -154,7 +157,7 @@ export default function VehicleCatalog() {
     try {
       const response = await adminVehicleCatalogApi.remove(level, row.id);
       notify(response.message, "success");
-      if (rows.length === 1 && filters.page > 1) setFilters(current => ({ ...current, page: current.page - 1 }));
+      if (rows.length === 1 && filters.page > 1) { setFilters(current => ({ ...current, page: current.page - 1 })); summaryQuery.reload(); }
       else setReload(n => n + 1);
     } catch (error) {
       notify(errorText(error, "Không xóa được."), "error");
@@ -169,21 +172,21 @@ export default function VehicleCatalog() {
 
   const columns: Column<Row>[] = level === "brands" ? [
     { key: "name", sortKey: "name", header: "Hãng xe", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
-    { key: "models", sortKey: "models", header: "Dòng xe", align: "right", render: row => (row as CatalogBrand).models_count ?? 0 },
-    { key: "trims", sortKey: "trims", header: "Phiên bản", align: "right", render: row => (row as CatalogBrand).trims_count ?? 0 },
-    { key: "status", sortKey: "status", header: "Trạng thái", render: statusBadge },
+    { key: "models", sortKey: "models", header: "Dòng xe", align: "center", render: row => <span className="tabular-nums">{(row as CatalogBrand).models_count ?? 0}</span> },
+    { key: "trims", sortKey: "trims", header: "Phiên bản", align: "center", render: row => <span className="tabular-nums">{(row as CatalogBrand).trims_count ?? 0}</span> },
+    { key: "status", sortKey: "status", header: "Trạng thái", align: "center", render: statusBadge },
   ] : level === "models" ? [
     { key: "name", sortKey: "name", header: "Dòng xe", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
     { key: "brand", sortKey: "brand", header: "Hãng", render: row => (row as CatalogModel).brand?.name ?? "—" },
     { key: "body", sortKey: "body", header: "Kiểu dáng", hideOnMobile: true, render: row => BODY_TYPES[(row as CatalogModel).body_type ?? ""] ?? "—" },
-    { key: "trims", sortKey: "trims", header: "Phiên bản", align: "right", render: row => (row as CatalogModel).trims_count ?? 0 },
-    { key: "vehicles", sortKey: "vehicles", header: "Xe khách", align: "right", render: row => (row as CatalogModel).vehicles_count ?? 0 },
-    { key: "status", sortKey: "status", header: "Trạng thái", render: statusBadge },
+    { key: "trims", sortKey: "trims", header: "Phiên bản", align: "center", render: row => <span className="tabular-nums">{(row as CatalogModel).trims_count ?? 0}</span> },
+    { key: "vehicles", sortKey: "vehicles", header: "Xe khách", align: "center", render: row => <span className="tabular-nums">{(row as CatalogModel).vehicles_count ?? 0}</span> },
+    { key: "status", sortKey: "status", header: "Trạng thái", align: "center", render: statusBadge },
   ] : [
     { key: "name", sortKey: "name", header: "Phiên bản", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
     { key: "model", sortKey: "model", header: "Dòng xe", render: row => { const model = (row as CatalogTrim).model; return model ? `${model.brand?.name ?? ""} ${model.name}`.trim() : "—"; } },
-    { key: "vehicles", sortKey: "vehicles", header: "Xe khách", align: "right", render: row => (row as CatalogTrim).vehicles_count ?? 0 },
-    { key: "status", sortKey: "status", header: "Trạng thái", render: statusBadge },
+    { key: "vehicles", sortKey: "vehicles", header: "Xe khách", align: "center", render: row => <span className="tabular-nums">{(row as CatalogTrim).vehicles_count ?? 0}</span> },
+    { key: "status", sortKey: "status", header: "Trạng thái", align: "center", render: statusBadge },
   ];
 
   const hasFilters = Boolean(filters.search || filters.status || filters.brandId || filters.modelId);
@@ -191,6 +194,24 @@ export default function VehicleCatalog() {
   return <main className="page-container" data-testid="admin-vehicle-catalog">
     <PageHeader title="Hãng & dòng xe" description="Hãng xe → Dòng xe → Phiên bản dùng cho bộ chọn xe khi khách đặt lịch và lưu hồ sơ xe. Dữ liệu khởi tạo từ CSV chưa chắc mọi phiên bản đều đang bán."
       actions={<Button variant="primary" icon="plus" onClick={() => openForm()}>{LEVELS[level].add}</Button>}/>
+
+    <dl className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {([
+        ["Hãng xe", "tag", summary?.brands.total, summary?.brands.hidden],
+        ["Dòng xe", "car", summary?.models.total, summary?.models.hidden],
+        ["Phiên bản", "list", summary?.trims.total, summary?.trims.hidden],
+        ["Xe khách đã đăng ký", "users", summary?.vehicles, undefined],
+      ] as const).map(([label, icon, value, hidden]) => <div key={label} className="flex items-center gap-3 rounded-card border border-cs-border bg-cs-surface px-4 py-3 shadow-card">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-cs-soft text-cs-accent-text" aria-hidden="true"><Icon name={icon} size={18}/></span>
+        <span className="min-w-0">
+          <dt className="truncate text-caption text-cs-muted">{label}</dt>
+          <dd className="flex flex-wrap items-baseline gap-x-2">
+            <span className="text-subheading font-bold tabular-nums text-cs-text">{value === undefined ? "—" : value.toLocaleString("vi-VN")}</span>
+            {hidden ? <span className="text-caption text-cs-muted">{hidden.toLocaleString("vi-VN")} đang ẩn</span> : null}
+          </dd>
+        </span>
+      </div>)}
+    </dl>
 
     <div role="tablist" aria-label="Cấp danh mục" className="mb-4 inline-flex max-w-full gap-1 overflow-x-auto rounded-control border border-cs-border bg-cs-surface p-1">
       {(Object.keys(LEVELS) as AdminLevel[]).map(key => <button key={key} type="button" role="tab" aria-selected={level === key}
@@ -216,10 +237,10 @@ export default function VehicleCatalog() {
         value={filters.brandId} onChange={option => setFilters(current => ({ ...current, brandId: option?.value ?? null, modelId: null, page: 1 }))}/>}
       {level === "trims" && <SearchableSelect label="Dòng xe" placeholder="Tất cả dòng xe" options={modelFilterOptions.options} loading={modelFilterOptions.loading}
         value={filters.modelId} disabled={filters.brandId === null} disabledHint="Chọn hãng để lọc theo dòng xe."
-        onChange={option => setFilters(current => ({ ...current, modelId: option?.value ?? null, page: 1 }))}/>}
-    </section>
+        onChange={option => setFilters(current => ({ ...current, modelId: option?.value ?? null, page: 1 }))}/>}    </section>
 
     <DataTable<Row>
+      evenColumns actionsWidth="176px"
       sort={tableSort.sort} onSort={tableSort.toggle}
       caption={`Danh sách ${LEVELS[level].noun}`}
       columns={columns}

@@ -37,7 +37,11 @@ export type AdminLevel = "brands" | "models" | "trims";
 const adminPath: Record<AdminLevel, string> = { brands: "/admin/vehicle-brands", models: "/admin/vehicle-models", trims: "/admin/vehicle-trims" };
 type AdminRow = { brands: CatalogBrand; models: CatalogModel; trims: CatalogTrim };
 
+type LevelCount = { total: number; hidden: number };
+export type CatalogSummary = { brands: LevelCount; models: LevelCount; trims: LevelCount; vehicles: number };
+
 export const adminVehicleCatalogApi = {
+  summary: (signal?: AbortSignal) => fetchApi<{ data: CatalogSummary }>("/admin/vehicle-catalog/summary", { signal }).then(r => r.data),
   list<L extends AdminLevel>(level: L, params: Record<string, string | number | undefined>, signal?: AbortSignal) {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => { if (value !== undefined && value !== "") query.set(key, String(value)); });

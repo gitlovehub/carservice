@@ -31,6 +31,24 @@ class AdminVehicleCatalogController extends Controller
 
     private const SOURCE = 'ADMIN';
 
+    /** GET /api/admin/vehicle-catalog/summary — số liệu nhỏ đầu trang: tổng / đang ẩn từng cấp, xe khách đã đăng ký. */
+    public function summary(): JsonResponse
+    {
+        $count = fn (string $model): array => [
+            'total' => $model::query()->count(),
+            'hidden' => $model::query()->where('status', 'INACTIVE')->count(),
+        ];
+
+        return response()->json([
+            'data' => [
+                'brands' => $count(VehicleBrand::class),
+                'models' => $count(VehicleModel::class),
+                'trims' => $count(VehicleTrim::class),
+                'vehicles' => Vehicle::query()->count(),
+            ],
+        ]);
+    }
+
     /* ----------------------------------------------------------------- Hãng xe */
 
     /** GET /api/admin/vehicle-brands?search=&status=&per_page= */
