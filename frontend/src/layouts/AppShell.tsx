@@ -8,6 +8,7 @@ import { Dropdown, IconButton } from "../components/ui";
 import { Icon } from "../components/ui/Icon";
 import { LABELS } from "../config/labels";
 import { useGarageInfo } from "../services/garageService";
+import { LiveClock } from "./LiveClock";
 import { areaInfo, crumbs, navGroups, shellNavigation } from "./navigation";
 import { ShellContext } from "./ShellContext";
 import "./shell.css";
@@ -166,6 +167,7 @@ function WorkLayout({ area }: { area: WorkArea }) {
           </span>
           <Breadcrumbs area={area}/>
           <div className="cs-ws-actions">
+            {area === "admin" && <LiveClock/>}
             <ThemeToggle/>
             <AccountMenu area={area}/>
           </div>
