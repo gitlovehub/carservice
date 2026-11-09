@@ -30,7 +30,7 @@ const toneBar: Record<Tone, string> = {
 };
 
 /* ---------- Trang ---------- */
-export function AdminPage({ title, description, actions, demo = true, children }: {
+export function AdminPage({ title, description, actions, demo = false, children }: {
   title: ReactNode; description?: ReactNode; actions?: ReactNode;
   /** Trang đang chạy dữ liệu mẫu (chưa nối API). */
   demo?: boolean; children: ReactNode;

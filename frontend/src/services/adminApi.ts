@@ -119,7 +119,7 @@ export type PartList = Paged<AdminPart, { total: number; active: number; low: nu
 export type StockMove = { id: number; at: string | null; type: "IN" | "OUT"; sku: string | null; name: string | null; unit: string | null; quantity: number; ref: string; note: string | null; by: string };
 
 /* -------------------------------------------------------------- Ngày nghỉ */
-export type Holiday = { id: number; date: string; reason: string | null };
+export type HolidayRange = { ids: number[]; from: string; to: string; reason: string | null; days: number };
 
 type Message<T> = { message: string; data: T };
 const send = <T>(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown) =>
@@ -165,10 +165,10 @@ export const adminApi = {
   adjustStock: (id: number, body: { type: "IN" | "OUT"; quantity: number; note: string | null }) => send<Message<AdminPart>>(`/admin/parts/${id}/stock`, "POST", body),
   stockMoves: (params: Params, signal?: AbortSignal) => fetchApi<Paged<StockMove>>(`/admin/stock-moves${query(params)}`, { signal }),
 
-  holidays: (signal?: AbortSignal) => fetchApi<{ data: Holiday[] }>("/admin/holidays", { signal }).then(r => r.data),
-  createHoliday: (body: { date: string; reason: string | null }) => send<Message<Holiday>>("/admin/holidays", "POST", body),
-  updateHoliday: (id: number, body: { date: string; reason: string | null }) => send<Message<Holiday>>(`/admin/holidays/${id}`, "PATCH", body),
-  deleteHoliday: (id: number) => send<{ message: string }>(`/admin/holidays/${id}`, "DELETE"),
+  holidays: (signal?: AbortSignal) => fetchApi<{ data: HolidayRange[] }>("/admin/holidays", { signal }).then(r => r.data),
+  saveHoliday: (body: { from: string; to: string | null; reason: string; replace_ids?: number[] }) => send<Message<HolidayRange> & { affected_appointments: number }>("/admin/holidays", "POST", body),
+
+  deleteHoliday: (ids: number[]) => send<{ message: string }>("/admin/holidays", "DELETE", { ids }),
 };
 
 /* ------------------------------------------------------------ Định dạng ngày */
