@@ -1,0 +1,304 @@
+/* CarService V3 — UX / typography polish (Customer + Admin + Advisor).
+ * Loaded after existing styles. Presentation only; no change to business data / API. */
+:root {
+  --cs-ui-font: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+}
+html, body, button, input, select, textarea { font-family: var(--cs-ui-font); }
+body { font-size: 14px; line-height: 1.6; font-weight: 400; }
+button, input, select, textarea { letter-spacing: 0; }
+h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
+
+/* Sidebar / topbar chữ rõ hơn nhưng không tăng chiều rộng workspace quá mức. */
+.cs-workspace .cs-ws-link { font-size: 13px; font-weight: 600; letter-spacing: 0; }
+.cs-workspace .cs-ws-group-label { font-size: 10px; letter-spacing: .09em; font-weight: 750; }
+.cs-workspace .cs-ws-crumbs { font-weight: 550; }
+.cs-workspace :is(input,select,textarea) { line-height: 1.5; }
+.cs-workspace :is(button,a) { transition: background-color .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.cs-workspace .cs-ws-link:focus-visible { border-radius: 9px; }
+
+/* Navigation: fixed visual anchor across showcase and customer business pages. */
+.v3ref-header { height: 76px; background: #fff; box-shadow: 0 2px 12px rgb(20 29 45 / 5%); }
+.v3ref-nav-wrap { max-width: 1360px; gap: 18px; }
+.v3ref-logo { gap: 11px; }
+.v3ref-logo>span { width: 38px; height: 38px; font-size: 24px; border-radius: 10px; background: #cf1028; }
+.v3ref-logo strong { font-size: 20px; letter-spacing: -.035em; font-weight: 800; }
+.v3ref-logo small { font-size: 9.5px; letter-spacing: -.01em; font-weight: 500; color: #555d69; margin-top: 3px; }
+.v3ref-menu { gap: clamp(9px, 1.25vw, 20px); }
+.v3ref-menu a {
+  font-size: 13px; font-weight: 650; letter-spacing: -.005em;
+  border-bottom-width: 2px; transition: color .16s ease, border-color .16s ease;
+}
+.v3ref-menu a:hover, .v3ref-menu a.active, .v3ref-menu a[aria-current="page"] { color: #bd142b; border-bottom-color: #ce1730; }
+.v3ref-nav-right { gap: 10px; }
+.v3ref-reviews-link {
+  color: #5b3340; font-size: 12px; font-weight: 650; display: inline-flex;
+  align-items: center; gap: 5px; border-radius: 9px; padding: 7px 9px;
+  transition: color .15s ease, background-color .15s ease;
+}
+.v3ref-reviews-link:hover { background: #fff0f3; color: #c1122a; }
+.v3ref-account { position: relative; }
+.v3ref-account-trigger {
+  display: inline-flex; align-items: center; gap: 7px; border: 1px solid transparent;
+  border-radius: 99px; padding: 3px 6px 3px 3px; background: transparent;
+  color: #384150; cursor: pointer; transition: border-color .15s, background .15s;
+}
+.v3ref-account-trigger:hover, .v3ref-account-trigger[aria-expanded="true"] { background: #fff2f4; border-color: #f1d1d8; }
+.v3ref-theme-toggle {
+  display: grid; place-items: center; width: 38px; height: 38px;
+  border: 1px solid #e6e9ed; border-radius: 10px; background: #fff;
+  color: #374151; cursor: pointer; transition: background-color .15s, border-color .15s, color .15s;
+}
+.v3ref-theme-toggle:hover { background: #fff0f3; border-color: #f1d1d8; color: #b70e26; }
+.v3ref-avatar { width: 36px; height: 36px; font-weight: 750; font-size: 13px; }
+.v3ref-account-chevron { font-size: 17px; line-height: 1; padding-right: 2px; }
+.v3ref-account-popover {
+  position: absolute; right: 0; top: calc(100% + 12px); min-width: 216px;
+  padding: 7px; background: #fff; color: #18212d; border: 1px solid #e8eaf0;
+  border-radius: 13px; box-shadow: 0 18px 48px rgb(17 24 39 / 16%); z-index: 75;
+}
+.v3ref-account-popover a, .v3ref-account-popover button {
+  display: block; width: 100%; padding: 10px 12px; border: 0; border-radius: 8px;
+  background: transparent; text-align: left; font: 600 12.5px/1.5 var(--cs-ui-font);
+  color: #2b3441; cursor: pointer; white-space: nowrap;
+}
+.v3ref-account-popover a:hover, .v3ref-account-popover button:hover,
+.v3ref-account-popover :focus-visible { background: #fff0f3; color: #bd1129; }
+.v3ref-account-popover .v3ref-logout-action { color: #ba2436; border-top: 1px solid #edf0f4; border-radius: 0 0 8px 8px; margin-top: 4px; }
+.v3ref-management-link { display: flex; gap: 8px; align-items: center; font-size: 12px; font-weight: 700; color: #b6192d; }
+.v3ref-login { font-weight: 700; font-size: 13px; padding: 9px 14px; border-radius: 9px; background: var(--cs-brand-soft); color: var(--cs-on-soft); }
+.v3ref-login:hover, .v3ref-login[aria-current="page"] { background: var(--cs-soft-hover); color: var(--cs-on-soft); }
+.v3ref-hamburger { width: 42px; height: 42px; font-size: 22px; align-items: center; justify-content: center; border-radius: 10px; }
+.v3ref-hamburger:hover { background: #f9eef1; }
+
+/* Customer — replace tiny and over-condensed/overbold text with an intentional hierarchy. */
+.v3ref-shell, .v3ref, .v3ref-header, .v3ref-footer, .v3ref-banner {
+  font-family: var(--cs-ui-font);
+}
+.v3ref { font-size: 14px; line-height: 1.62; }
+.v3ref :is(h1,h2,h3,h4), .v3ref-banner :is(h1,h2) { font-family: var(--cs-ui-font); }
+.v3ref :is(h1,h2,h3), .v3ref-banner h1 { font-weight: 800; letter-spacing: -.035em; }
+.v3ref-hero h1 { font-size: clamp(36px,4.15vw,56px); font-weight: 800; font-style: normal; letter-spacing: -.045em; line-height: 1.13; }
+.v3ref-hero h1 em { font-style: normal; }
+.v3ref-mini { font-size: 11px; letter-spacing: .17em; font-weight: 700; }
+.v3ref-hero-copy>p:not(.v3ref-mini) { font-size: 14px; line-height: 1.75; }
+.v3ref-hero-button { font-size: 13px; font-weight: 700; padding: 11px 20px; border-radius: 10px; }
+.v3ref-banner h1 { font-size: clamp(27px,3.5vw,40px); line-height: 1.2; }
+.v3ref-banner p { font-size: 13px; line-height: 1.7; }
+.v3ref-section-head h2 { font-size: 20px; font-weight: 800; }
+.v3ref-section-head a { font-size: 12px; font-weight: 700; }
+.v3ref-small-service strong { font-size: 12.5px; font-weight: 700; min-height: 55px; }
+.v3ref-promo h2 { font-style: normal; font-weight: 800; line-height: 1.2; }
+.v3ref-promo h2 i { font-style: normal; }
+.v3ref-step strong { font-size: 11.5px; font-weight: 650; }
+.v3ref-benefits strong { font-size: 12px; font-weight: 700; }
+.v3ref-trust h3 { font-weight: 750; }
+.v3ref-strip h3 { font-weight: 800; }
+.v3ref-strip p { font-size: 13px; }
+.v3ref-featurebar p { font-size: 12px; }
+.v3ref-featurebar small { font-size: 11px; line-height: 1.5; }
+.v3ref-filter-sidebar h3 { font-size: 13.5px; font-weight: 750; }
+.v3ref-filter-sidebar button { font-size: 12.5px; font-weight: 600; }
+.v3ref-card-body h3 { font-size: 16px; font-weight: 750; line-height: 1.43; }
+.v3ref-card-body p { font-size: 12.5px; line-height: 1.7; }
+.v3ref-card-bottom strong { font-size: 13px; font-weight: 800; }
+.v3ref-card-bottom a { font-size: 12px; font-weight: 700; }
+.v3ref-primary { font-size: 12.5px; font-weight: 750; letter-spacing: 0; transition: background .15s, box-shadow .15s, transform .15s; }
+.v3ref-outline-btn { font-size: 12px; font-weight: 700; }
+.v3ref-tabs button { font-size: 12.5px; font-weight: 700; }
+.v3ref-searchbar :is(input, select), .v3ref-list-head input, .v3ref-lookup input[type=search], .v3ref-lookup select { font-size: 12.5px; }
+.v3ref-appt-summary h3 { font-size: 13.5px; font-weight: 750; line-height: 1.45; }
+.v3ref-appt-summary p { font-size: 12px; }
+.v3ref-appt-summary small, .v3ref-appt-date small { font-size: 11px; }
+.v3ref-appt-time { font-size: 12px; font-weight: 700; }
+.v3ref-pill { font-size: 10.5px; font-weight: 700; }
+.v3ref-list-count { font-size: 11.5px; }
+.v3ref-side-card h3 { font-size: 15px; font-weight: 800; }
+.v3ref-side-card>p { font-size: 12.5px; }
+.v3ref-stats span { font-size: 11px; }
+.v3ref-car-info h3 { font-size: 18px; font-weight: 750; }
+.v3ref-car-info dl, .v3ref-modal dl { font-size: 12.5px; }
+.v3ref-car-info dd { font-weight: 700; }
+.v3ref-car-actions a { font-size: 12px; }
+.v3ref-table-scroll table,.v3ref-track-details table { font-size: 12px; }
+.v3ref-lookup-label { font-size: 13px; font-weight: 750; }
+.v3ref-lookup label { font-size: 12px; font-weight: 650; }
+.v3ref-track-vehicle p, .v3ref-track-vehicle strong { font-size: 12.5px; }
+.v3ref-progress-step strong { font-size: 11px; font-weight: 650; }
+.v3ref-current-note { font-size: 12.5px; font-weight: 650; }
+.v3ref-footer p,.v3ref-footer-inner>div>a:not(.v3ref-footer-brand):not(.v3ref-footer-cta) { font-size: 12px; }
+.v3ref-footer h4 { font-size: 13px; font-weight: 750; }
+.v3ref-footer-brand { font-weight: 750; }
+
+/* Better affordances, focus states and smooth-but-subtle hover feedback. */
+.v3ref :is(a,button,select,input):focus-visible, .v3ref-header :is(a,button):focus-visible,
+.v3ref-footer a:focus-visible { outline: 3px solid #e42b47; outline-offset: 3px; }
+.v3ref :is(.v3ref-small-service,.v3ref-service-card,.v3ref-car-row,.v3ref-appt-row) { transition: box-shadow .17s ease, border-color .17s ease, transform .17s ease; }
+.v3ref :is(.v3ref-small-service,.v3ref-service-card):hover { border-color: #edbfca; }
+.v3ref .v3ref-appt-row:hover, .v3ref .v3ref-car-row:hover { border-color: #e7b2bd; box-shadow: 0 8px 22px rgb(42 27 35 / 8%); }
+.v3ref :is(button,a) { -webkit-tap-highlight-color: transparent; }
+.v3ref-header a { text-decoration: none; }
+.v3ref-tabs button { transition: color .16s, border-color .16s, background .16s; }
+.v3ref :is(.v3ref-primary,.v3ref-outline-btn) { min-height: 40px; }
+.v3ref .v3ref-outline-btn:hover { transform: translateY(-1px); }
+.v3ref .v3ref-hero-prev, .v3ref .v3ref-hero-next { width: 42px; height: 42px; box-shadow: 0 4px 18px #0002; }
+.v3ref .v3ref-dots button { height: 8px; min-width: 13px; }
+.v3ref :is(.v3ref-banner,.v3ref-hero) { scroll-margin-top: 76px; }
+
+@media (max-width:1160px) {
+  .v3ref-nav-wrap { width: calc(100% - 28px); position: relative; }
+  .v3ref-hamburger { display: flex; }
+  .v3ref-menu { display: none; position: absolute; z-index: 70; top: calc(100% + 12px); left: 0; right: 0;
+    height: auto; max-height: calc(100dvh - 95px); overflow-y: auto; padding: 12px;
+    background: white; border: 1px solid #ecdee2; border-radius: 14px;
+    box-shadow: 0 18px 48px #1d202333; flex-direction: column; align-items: stretch; gap: 1px; }
+  .v3ref-menu.open { display: flex; }
+  .v3ref-menu a { height: auto; min-height: 42px; padding: 11px 13px; border-bottom: 0;
+    border-radius: 9px; font-size: 13px; }
+  .v3ref-menu a:hover, .v3ref-menu a.active { background: #fff0f3; color: #b70e26; border-left: 3px solid #cf122a; padding-left: 10px; }
+}
+@media (max-width:650px) {
+  .v3ref-header { height: 66px; }
+  .v3ref-logo strong { font-size: 18px; }
+  .v3ref-logo small { font-size: 8px; }
+  .v3ref-logo>span { width: 34px; height: 34px; font-size: 21px; }
+  .v3ref-nav-right { gap: 5px; }
+  .v3ref-reviews-link span, .v3ref-management-link>span:last-child { display: none; }
+  .v3ref-reviews-link { font-size: 19px; }
+  .v3ref-account-popover { right: -45px; }
+  .v3ref-hero h1 { font-size: 35px; line-height: 1.18; }
+  .v3ref-section-head h2 { font-size: 18px; }
+  .v3ref-card-body h3 { font-size: 15px; }
+  .v3ref-small-service strong { font-size: 11.5px; }
+  .v3ref-car-actions a { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v3ref :is(a,button), .v3ref-header :is(a,button), .cs-workspace :is(a,button) { transition: none !important; transform: none !important; }
+}
+
+/* The customer showcase has its own visual system, so map its fixed light surfaces to theme tokens. */
+html[data-theme="dark"] .v3ref-shell,
+html[data-theme="dark"] .v3ref-shell .v3ref {
+  color-scheme: dark;
+  background: var(--cs-bg);
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-shell .cs-customer-layout,
+html[data-theme="dark"] .v3ref-shell .cs-customer-main {
+  background: var(--cs-bg) !important;
+  color: var(--cs-text) !important;
+}
+html[data-theme="dark"] .v3ref-header {
+  background: var(--cs-surface);
+  border-color: var(--cs-border);
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-logo,
+html[data-theme="dark"] .v3ref-menu a,
+html[data-theme="dark"] .v3ref-account-trigger,
+html[data-theme="dark"] .v3ref-logout,
+html[data-theme="dark"] .v3ref-hamburger {
+  color: var(--cs-text) !important;
+}
+html[data-theme="dark"] .v3ref-logo small { color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-menu,
+html[data-theme="dark"] .v3ref-account-popover {
+  background: var(--cs-surface);
+  border-color: var(--cs-border);
+}
+html[data-theme="dark"] .v3ref-account-popover a,
+html[data-theme="dark"] .v3ref-account-popover button { color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-account-popover a:hover,
+html[data-theme="dark"] .v3ref-account-popover button:hover,
+html[data-theme="dark"] .v3ref-account-popover :focus-visible {
+  background: var(--cs-soft);
+  color: var(--cs-accent-text) !important;
+}
+html[data-theme="dark"] .v3ref-menu a:hover,
+html[data-theme="dark"] .v3ref-menu a.active,
+html[data-theme="dark"] .v3ref-menu a[aria-current="page"] {
+  background: transparent !important;
+  color: var(--cs-text) !important;
+  border-bottom-color: var(--cs-accent) !important;
+}
+html[data-theme="dark"] .v3ref-theme-toggle {
+  background: var(--cs-surface-2);
+  border-color: var(--cs-border);
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-theme-toggle:hover { background: var(--cs-hover); }
+html[data-theme="dark"] .v3ref-shell .v3ref-small-service,
+html[data-theme="dark"] .v3ref-shell .v3ref-benefits,
+html[data-theme="dark"] .v3ref-shell .v3ref-trust,
+html[data-theme="dark"] .v3ref-shell .v3ref-brands,
+html[data-theme="dark"] .v3ref-shell .v3ref-strip,
+html[data-theme="dark"] .v3ref-shell .v3ref-filter-sidebar,
+html[data-theme="dark"] .v3ref-shell .v3ref-service-card,
+html[data-theme="dark"] .v3ref-shell .v3ref-appt-row,
+html[data-theme="dark"] .v3ref-shell .v3ref-side-card,
+html[data-theme="dark"] .v3ref-shell .v3ref-stats > div,
+html[data-theme="dark"] .v3ref-shell .v3ref-car-row,
+html[data-theme="dark"] .v3ref-shell .v3ref-car-history,
+html[data-theme="dark"] .v3ref-shell .v3ref-lookup,
+html[data-theme="dark"] .v3ref-shell .v3ref-tracking-main,
+html[data-theme="dark"] .v3ref-shell .v3ref-total,
+html[data-theme="dark"] .v3ref-shell .v3ref-empty,
+html[data-theme="dark"] .v3ref-shell .v3ref-modal {
+  background: var(--cs-surface);
+  border-color: var(--cs-border);
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-shell .v3ref-strip { background: var(--cs-surface-2); }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-small-service,.v3ref-outline-btn,.v3ref-filter-sidebar button,.v3ref-tabs button) {
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-section-head h2,.v3ref-trust h3,.v3ref-trust p,.v3ref-benefits strong,
+  .v3ref-brands span,.v3ref-strip h3,.v3ref-strip p,.v3ref-card-body h3,.v3ref-card-body p,
+  .v3ref-appt-date small,.v3ref-appt-summary h3,.v3ref-appt-summary p,.v3ref-appt-time,
+  .v3ref-side-card h3,.v3ref-side-card > p,.v3ref-stats span,.v3ref-car-info h3,
+  .v3ref-car-info dt,.v3ref-car-info dd,.v3ref-table-scroll th,.v3ref-table-scroll td,
+  .v3ref-track-details th,.v3ref-track-details td,.v3ref-track-details p,.v3ref-progress-step strong) {
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-smallnote,.v3ref-list-count,.v3ref-featurebar small,
+  .v3ref-car-info dt,.v3ref-modal dt,.v3ref-total > small) { color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-shell :is(input,select) {
+  background: var(--cs-surface-2);
+  border-color: var(--cs-border);
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-shell :is(input,select)::placeholder { color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-shell .v3ref-appt-date,
+html[data-theme="dark"] .v3ref-shell .v3ref-stats > div,
+html[data-theme="dark"] .v3ref-shell .v3ref-table-scroll th {
+  background: var(--cs-surface-2);
+  border-color: var(--cs-border);
+}
+html[data-theme="dark"] .v3ref-shell .v3ref-filter-sidebar button.active,
+html[data-theme="dark"] .v3ref-shell .v3ref-filter-sidebar button:hover,
+html[data-theme="dark"] .v3ref-shell .v3ref-tabs button.active,
+html[data-theme="dark"] .v3ref-shell .v3ref-tabs button:hover {
+  background: var(--cs-soft);
+  color: var(--cs-accent-text);
+}
+html[data-theme="dark"] .v3ref-shell .v3ref-outline-btn {
+  background: var(--cs-surface-2);
+  border-color: var(--cs-border);
+  color: var(--cs-text) !important;
+}
+html[data-theme="dark"] .v3ref-shell .v3ref-outline-btn:hover { background: var(--cs-hover); }
+html[data-theme="dark"] .v3ref-shell .v3ref-current-note { background: var(--cs-soft); color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-progress-step > span { background: var(--cs-surface-2); border-color: var(--cs-border); color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-shell .v3ref-progress-step.done > span { background: var(--cs-success); border-color: var(--cs-success); color: #fff; }
+html[data-theme="dark"] .v3ref-shell .v3ref-modal-close { color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-modal h2 { color: var(--cs-accent-text); }
+@media (max-width:1160px) {
+  html[data-theme="dark"] .v3ref-menu a:hover,
+  html[data-theme="dark"] .v3ref-menu a.active,
+  html[data-theme="dark"] .v3ref-menu a[aria-current="page"] {
+    background: transparent !important;
+    color: var(--cs-text) !important;
+    border-left: 0 !important;
+    border-bottom: 2px solid var(--cs-accent) !important;
+    padding-left: 13px;
+  }
+}
