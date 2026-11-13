@@ -14,7 +14,7 @@ export const CUSTOMER_ACCOUNT_LINKS: CustomerAccountLink[] = [
   { group: "Tài khoản", label: "Hồ sơ của tôi", to: "/customer/account", icon: "user", match: ["/customer/account", "/account"] },
   { group: "Tài khoản", label: "Xe của tôi", to: "/customer/cars", icon: "car", match: ["/customer/cars", "/cars"] },
   { group: "Dịch vụ", label: "Lịch hẹn", to: "/customer/appointments", icon: "calendar", match: ["/customer/appointments", "/appointments"] },
-  { group: "Dịch vụ", label: "Tiến độ xe", to: "/repair-status", icon: "wrench", match: ["/repair-status"] },
+  { group: "Dịch vụ", label: "Tiến độ xe", to: "/repair-status", icon: "wrench", match: ["/repair-status", "/customer/repair-status/manage"] },
   { group: "Dịch vụ", label: "Lịch sử bảo dưỡng", to: "/customer/service-history", icon: "clock", match: ["/customer/service-history"] },
   { group: "Dịch vụ", label: "Đánh giá", to: "/reviews", icon: "star", match: ["/reviews"] },
   { group: "Chi phí", label: "Báo giá", to: "/quotation", icon: "file", match: ["/quotation"] },
@@ -22,4 +22,6 @@ export const CUSTOMER_ACCOUNT_LINKS: CustomerAccountLink[] = [
   { group: "Chi phí", label: "Thanh toán", to: "/payment", icon: "card", match: ["/payment", "/payment/vnpay-return"] },
 ];
 
-export const isAccountLinkActive = (link: CustomerAccountLink, pathname: string) => link.match.includes(pathname);
+// Các route /manage vẫn thuộc mục cha: giữ menu active khi đi từ 5 trang mới vào trang nghiệp vụ đầy đủ.
+export const isAccountLinkActive = (link: CustomerAccountLink, pathname: string) =>
+  link.match.some(match => pathname === match || pathname.startsWith(`${match}/`));
