@@ -76,12 +76,31 @@ const standalonePages: Array<{ area: ShellArea; path: string; label: string }> =
 
 export type Crumb = { label: string; to?: string };
 
+/** So khớp menu theo bộ lọc nghiệp vụ, không dựa vào thứ tự hoặc tham số URL phụ. */
+export function isNavigationCurrent(area: ShellArea, path: string, pathname: string, search: string) {
+  const [targetPath, targetQuery] = path.split('?');
+  const currentStatus = new URLSearchParams(search).get('status');
+  if (targetQuery) {
+    return pathname === targetPath && currentStatus === new URLSearchParams(targetQuery).get('status');
+  }
+  if (path === areaInfo[area].home) return pathname === path;
+  // Danh sách phiếu cần nhường trạng thái sáng cho các menu có bộ lọc riêng.
+  if (area === 'advisor' && path === '/advisor/service-orders' && pathname === path) {
+    const filteredStatuses = shellNavigation.advisor.filter(x => x.path.startsWith(`${path}?`))
+      .map(x => new URLSearchParams(x.path.split('?')[1]).get('status'));
+    return !currentStatus || !filteredStatuses.includes(currentStatus);
+  }
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
+
 /** Breadcrumb theo URL hiện tại: Khu vực › (Nhóm) › Trang [› Chi tiết]. */
 export function crumbs(area: ShellArea, pathname: string, search: string): Crumb[] {
   const items = shellNavigation[area];
   const root: Crumb = { label: areaInfo[area].name, to: areaInfo[area].home };
   const detail = detailPages.find(d => d.area === area && d.pattern.test(pathname));
-  const current = items.find(i => i.path === pathname + search) ?? items.find(i => i.path === (detail?.parent ?? pathname));
+  const current = items.find(i => i.path.includes('?') && isNavigationCurrent(area,i.path,pathname,search))
+    ?? items.find(i => i.path === (detail?.parent ?? pathname))
+    ?? items.find(i => isNavigationCurrent(area,i.path,pathname,search));
   const standalone = standalonePages.find(p => p.area === area && p.path === pathname);
   if (!current && standalone) return [root, { label: standalone.label }];
   if (!current) return [root];

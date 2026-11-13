@@ -9,14 +9,17 @@ import PublicLayout from "./layouts/PublicLayout";
 import CustomerAccountLayout from "./layouts/CustomerAccountLayout";
 import { AdminLayout, AdvisorLayout, CustomerLayout } from "./layouts/AppShell";
 import ModulePlaceholder from "./pages/shared/ModulePlaceholder";
-import Home from "./pages/Home";
+import Home from "./pages/showcase/ReferenceHome";
+import Services from "./pages/showcase/ReferenceServices";
+import ReferenceAppointments from "./pages/showcase/ReferenceAppointments";
+import ReferenceCars from "./pages/showcase/ReferenceCars";
+import ReferenceTracking from "./pages/showcase/ReferenceTracking";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Contact from "./pages/customer/Contact";
 import CustomerDashboard from "./pages/customer/Dashboard";
-import Services from "./pages/customer/Services";
 import Booking from "./pages/customer/Booking";
 import Appointments from "./pages/customer/Appointments";
 import Cars from "./pages/customer/Cars";
@@ -79,12 +82,15 @@ function App() {
       {/* Khu "Hồ sơ của tôi": các trang tài khoản dùng chung sidebar (CustomerAccountLayout). */}
       <Route element={<CustomerAccountLayout/>}>
         <Route path="/customer/account" element={<Account/>}/>
-        <Route path="/appointments" element={<Appointments/>}/>
-        <Route path="/customer/appointments" element={<Appointments/>}/>
-        <Route path="/cars" element={<Cars/>}/>
-        <Route path="/customer/cars" element={<Cars/>}/>
-        <Route path="/repair-status" element={<RepairStatus/>}/>
+        <Route path="/appointments" element={<ReferenceAppointments/>}/>
+        <Route path="/customer/appointments" element={<ReferenceAppointments/>}/>
+        <Route path="/cars" element={<ReferenceCars/>}/>
+        <Route path="/customer/cars" element={<ReferenceCars/>}/>
+        <Route path="/repair-status" element={<ReferenceTracking/>}/>
         <Route path="/quotation" element={<Quotation/>}/>
+        <Route path="/customer/appointments/manage" element={<Appointments/>}/>
+        <Route path="/customer/cars/manage" element={<Cars/>}/>
+        <Route path="/customer/repair-status/manage" element={<RepairStatus/>}/>
         <Route path="/customer/service-history" element={<ServiceHistory/>}/>
         <Route path="/reviews" element={<Reviews/>}/>
         <Route path="/invoices" element={<Invoices/>}/>

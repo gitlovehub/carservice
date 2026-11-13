@@ -9,7 +9,7 @@ import { Icon } from "../components/ui/Icon";
 import { LABELS } from "../config/labels";
 import { useGarageInfo } from "../services/garageService";
 import { LiveClock } from "./LiveClock";
-import { areaInfo, crumbs, navGroups, shellNavigation } from "./navigation";
+import { areaInfo, crumbs, isNavigationCurrent, navGroups } from "./navigation";
 import { ShellContext } from "./ShellContext";
 import "./shell.css";
 import "./workspace.css";
@@ -26,13 +26,7 @@ function readCollapsed() {
 /** Menu nhóm theo nghiệp vụ. Mục trỏ tới danh sách đã lọc (?status=...) chỉ sáng khi đúng bộ lọc đó. */
 function SidebarNav({ area, onNavigate }: { area: WorkArea; onNavigate: () => void }) {
   const { pathname, search } = useLocation();
-  const filteredPaths = shellNavigation[area].filter(item => item.path.includes("?")).map(item => item.path);
-  const home = areaInfo[area].home;
-  const isCurrent = (path: string) => {
-    if (path.includes("?")) return pathname + search === path;
-    if (filteredPaths.includes(pathname + search)) return false;
-    return path === home ? pathname === home : pathname === path || pathname.startsWith(`${path}/`);
-  };
+  const isCurrent = (path: string) => isNavigationCurrent(area, path, pathname, search);
   return <nav className="cs-ws-nav" aria-label={`Điều hướng ${roleLabel[area]}`}>
     {navGroups(area).map(group => <div key={group.label} className="cs-ws-group" role="group" aria-label={group.label}>
       {group.label && <p className="cs-ws-group-label" aria-hidden="true">{group.label}</p>}

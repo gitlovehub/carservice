@@ -6,7 +6,7 @@ export type IconName = ShellNavItem["icon"] | "sun" | "moon" | "menu" | "close" 
   | "alert" | "info" | "eye" | "filter" | "user" | "refresh" | "sidebar" | "card" | "star" | "file"
   | "arrow-right" | "arrow-left" | "x" | "send" | "cash" | "printer" | "download" | "lock" | "key" | "grid"
   | "phone" | "mail" | "pin" | "trend-up" | "trend-down" | "coins" | "x-circle" | "upload" | "drag" | "list"
-  | "bank" | "qr" | "reply" | "eye-off"
+  | "bank" | "qr" | "reply" | "eye-off" | "bell"
   // Danh mục dịch vụ / loại yêu cầu.
   | "minus" | "sort" | "sort-asc" | "sort-desc" | "engine" | "snowflake" | "tire" | "bolt" | "disc" | "droplet" | "sparkle" | "battery" | "tools" | "gauge" | "ban";
 type Props = { name: IconName; size?: number; className?: string };
@@ -46,6 +46,7 @@ const paths: Record<IconName, ReactNode> = {
   refresh: <><path d="M20 11a8 8 0 0 0-14.6-4.5M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5M20 20v-4h-4"/></>,
   sidebar: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></>,
   card: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></>,
+  bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 9h18c0-1-3-2-3-9"/><path d="M10 21h4"/></>,
   star: <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>,
   file: <><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></>,
   "arrow-right": <path d="M5 12h14m-6-6 6 6-6 6"/>,

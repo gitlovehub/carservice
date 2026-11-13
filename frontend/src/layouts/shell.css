@@ -1,4 +1,4 @@
-/* Font Roboto Condensed được tải một lần ở index.html; dùng qua var(--font-sans). */
+/* Font giao diện dùng chung được tải một lần ở index.html và lấy qua var(--font-sans). */
 /* Màu, theme sáng/tối và màu nhấn theo vai trò lấy từ src/styles/tokens.css (data-area trên .cs-shell). */
 .cs-shell {
   color: var(--cs-text); background: var(--cs-bg); min-height: 100vh;
