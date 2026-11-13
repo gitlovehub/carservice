@@ -19,7 +19,7 @@ assert.doesNotMatch(header, /href: "\/#services"/);
 assert.match(header, /session\.account\.role === "ADMIN" \? "\/admin\/appointments"/);
 assert.match(header, /session\.account\.role === "ADVISOR" \? "\/advisor\/appointments"/);
 assert.match(app, /<Route path="\/booking" element={<Booking\/>}\/>/);
-assert.match(app, /<Route path="\/appointments" element={<Appointments\/>}\/>/);
+assert.match(app, /<Route path="\/appointments" element={<ReferenceAppointments\/>}\/>/);
 const protectedGroup=app.indexOf('allowedRoles={["CUSTOMER"]}><CustomerLayout/>');
 assert.ok(protectedGroup>0 && app.indexOf('path="/booking"')>protectedGroup, 'Booking must be inside customer-only shell');
 assert.match(app, /path="\/advisor" element={<ProtectedRoute allowedRoles={\["ADVISOR"\]}/);
