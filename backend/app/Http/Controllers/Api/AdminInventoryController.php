@@ -13,6 +13,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -100,6 +102,57 @@ class AdminInventoryController extends Controller
         });
 
         return response()->json(['message' => 'Đã cập nhật phụ tùng.', 'data' => $this->partRow($this->partQuery()->findOrFail($part->id))]);
+    }
+
+    /**
+     * Admin upload image for a part. The file is validated by Laravel (MIME, size),
+     * receives a server-generated name, and is stored on the public disk.
+     */
+    public function uploadImage(Request $request, Part $part): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ], [
+            'image.mimes' => 'Chỉ nhận ảnh JPG, PNG hoặc WebP.',
+            'image.max' => 'Ảnh không được vượt quá 4 MB.',
+        ]);
+        $previous = $part->image_path;
+        $path = $request->file('image')->store('part-images', 'public');
+        try {
+            $part->update(['image_path' => $path]);
+        } catch (\Throwable $error) {
+            Storage::disk('public')->delete($path);
+            throw $error;
+        }
+        if ($previous && str_starts_with($previous, 'part-images/')) {
+            Storage::disk('public')->delete($previous);
+        }
+
+        return response()->json(['message' => 'Đã lưu ảnh phụ tùng.', 'data' => $this->partRow($this->partQuery()->findOrFail($part->id))]);
+    }
+
+    /** Admin can remove an image without deleting the part. */
+    public function deleteImage(Part $part): JsonResponse
+    {
+        $old = $part->image_path;
+        $part->update(['image_path' => null]);
+        if ($old && str_starts_with($old, 'part-images/')) {
+            Storage::disk('public')->delete($old);
+        }
+        return response()->json(['message' => 'Đã xóa ảnh phụ tùng.', 'data' => $this->partRow($this->partQuery()->findOrFail($part->id))]);
+    }
+
+    /** Public catalog image: controller streaming works without storage:link. */
+    public function showImage(Part $part): StreamedResponse
+    {
+        abort_unless($part->image_path && str_starts_with($part->image_path, 'part-images/'), 404);
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($part->image_path), 404);
+        return $disk->response($part->image_path, null, [
+            'Content-Type' => $disk->mimeType($part->image_path) ?: 'image/jpeg',
+            'Cache-Control' => 'public, max-age=86400',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /** POST /api/admin/parts/{part}/stock {type: IN|OUT, quantity, note} — nhập / xuất tay. */
@@ -225,6 +278,7 @@ class AdminInventoryController extends Controller
             'sku' => $p->sku,
             'name' => $p->name,
             'description' => $p->description,
+            'image_url' => $p->image_path ? '/api/part-images/'.$p->id.'?v='.($p->updated_at?->timestamp ?? 0) : null,
             'category' => $p->category,
             'unit' => $p->unit,
             'cost' => (float) $p->cost_price,

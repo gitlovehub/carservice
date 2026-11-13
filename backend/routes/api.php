@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\CustomerHandoverController;
 use App\Http\Controllers\Api\CustomerPickupAuthorizationController;
 use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\CustomerReviewController;
+use App\Http\Controllers\Api\CustomerNotificationController;
 use App\Http\Controllers\Api\GarageSettingController;
 use App\Http\Controllers\Api\HandoverController;
 use App\Http\Controllers\Api\InspectionController;
@@ -42,6 +43,9 @@ use App\Http\Controllers\Api\WorkingHoursController;
 use App\Http\Controllers\Api\WorkItemController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
+
+// Public part catalog images are streamed via Laravel: no symlink required.
+Route::get('part-images/{part}', [AdminInventoryController::class, 'showImage'])->whereNumber('part');
 
 /*
 |--------------------------------------------------------------------------
@@ -156,6 +160,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // Thanh toán hóa đơn qua VNPay
         Route::post('me/invoices/{invoice}/vnpay', [VnpayController::class, 'create'])->middleware(['throttle:10,1', 'idempotency']);
+
+        // Thông báo của khách (đổi lịch, phụ tùng về): chỉ đọc/sửa bản ghi thuộc tài khoản đang đăng nhập.
+        Route::get('me/notifications', [CustomerNotificationController::class, 'index']);
+        Route::patch('me/notifications/{notification}/read', [CustomerNotificationController::class, 'markRead'])->whereNumber('notification');
 
         // Đánh giá dịch vụ
         Route::controller(CustomerReviewController::class)->prefix('me/reviews')->group(function (): void {
@@ -318,6 +326,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('parts', 'parts');
             Route::post('parts', 'storePart');
             Route::patch('parts/{part}', 'updatePart')->whereNumber('part');
+            Route::post('parts/{part}/image', 'uploadImage')->whereNumber('part');
+            Route::delete('parts/{part}/image', 'deleteImage')->whereNumber('part');
             Route::post('parts/{part}/stock', 'adjustStock')->whereNumber('part');
             Route::get('stock-moves', 'moves');
         });

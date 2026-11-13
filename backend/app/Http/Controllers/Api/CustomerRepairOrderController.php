@@ -24,7 +24,7 @@ class CustomerRepairOrderController extends Controller
 
         $query = RepairOrder::query()
             ->where('customer_id', $customerId)
-            ->with(['vehicle.model.brand'])
+            ->with(['vehicle.model.brand', 'invoice'])
             ->latest('received_at');
 
         if ($status = $request->query('status')) {
