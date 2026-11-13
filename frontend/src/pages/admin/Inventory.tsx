@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button, DataTable, EmptyState, Field, Input, Modal, Pagination, QuantityStepper, SearchInput, Select, Textarea, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { Badge } from "../../components/ui/Badge";
@@ -22,14 +22,15 @@ const TONES: Tone[] = ["warning", "violet", "info", "success", "brand", "neutral
 const categoryTone = (category: string | null): Tone => category ? TONES[[...category].reduce((s, c) => s + c.charCodeAt(0), 0) % TONES.length] : "neutral";
 const DEFAULT_UNITS = ["Cái", "Bộ", "Can", "Chai", "Lít", "Bình", "Cặp"];
 const moveInfo: Record<StockMove["type"], { label: string; tone: Tone }> = { IN: { label: "Nhập kho", tone: "success" }, OUT: { label: "Xuất kho", tone: "info" } };
-const blankPart: Editing = { id: 0, sku: "", name: "", description: "", category: null, unit: "Cái", cost: 0, price: 0, stock: 0, min: 5, status: "ACTIVE", compat: [] };
+const blankPart: Editing = { image_url: null, id: 0, sku: "", name: "", description: "", category: null, unit: "Cái", cost: 0, price: 0, stock: 0, min: 5, status: "ACTIVE", compat: [] };
 
 function Sku({ value }: { value: string | null }) {
   return <span className="whitespace-nowrap rounded-md border border-cs-border bg-cs-surface-2 px-2 py-0.5 font-mono text-caption text-cs-text-2">{value ?? "—"}</span>;
 }
 function PartName({ part }: { part: AdminPart }) {
   return <span className="flex min-w-0 items-center gap-3">
-    <span className="grid size-10 shrink-0 place-items-center rounded-control bg-cs-surface-2 text-cs-muted" aria-hidden="true"><Icon name="box" size={20}/></span>
+    {part.image_url ? <img className="size-12 shrink-0 rounded-control border border-cs-border object-cover" src={part.image_url} alt={`Ảnh ${part.name}`}/>
+      : <span className="grid size-12 shrink-0 place-items-center rounded-control bg-cs-surface-2 text-cs-muted" aria-hidden="true"><Icon name="box" size={20}/></span>}
     <span className="min-w-0"><b className="block text-cs-text">{part.name}</b>{part.description && <span className="block truncate text-caption text-cs-muted">{part.description}</span>}</span>
   </span>;
 }
@@ -49,6 +50,8 @@ export default function Inventory() {
   const [stockForm, setStockForm] = useState<StockForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const term = useDebounced(search.trim());
 
   const partSort = useTableSort(NEWEST_FIRST, () => setPage(1));
@@ -63,7 +66,27 @@ export default function Inventory() {
   const units = [...new Set([...(result?.units ?? []), ...DEFAULT_UNITS])];
 
   const switchTab = (id: Tab) => { setParams(id === "catalog" ? {} : { tab: id }, { replace: true }); setStatus("all"); setPage(1); setEditing(null); };
-  const startEdit = (part: AdminPart | null) => { setFormError(""); setCompatPick(emptySelection); setEditing(part ? { ...part, description: part.description ?? "" } : blankPart); };
+  const startEdit = (part: AdminPart | null) => {
+    setFormError(""); setCompatPick(emptySelection); setImageFile(null); setImagePreview(null);
+    setEditing(part ? { ...part, description: part.description ?? "" } : { ...blankPart });
+  };
+  // Revoke browser object URLs to avoid leaking memory while the editor stays open.
+  useEffect(() => {
+    if (!imageFile) { setImagePreview(null); return; }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+  const removeSavedImage = async () => {
+    if (!editing?.id || !editing.image_url) return;
+    setSaving(true); setFormError("");
+    try {
+      const response = await adminApi.deletePartImage(editing.id);
+      setEditing(prev => prev ? { ...prev, image_url: response.data.image_url } : prev);
+      setImageFile(null); notify(response.message, "success"); parts.reload();
+    } catch (error) { setFormError(errorMessage(error, "Không thể xóa ảnh phụ tùng.")); }
+    finally { setSaving(false); }
+  };
 
   const saveEdit = async () => {
     if (!editing) return;
@@ -76,8 +99,18 @@ export default function Inventory() {
     setSaving(true); setFormError("");
     try {
       const response = editing.id ? await adminApi.updatePart(editing.id, body) : await adminApi.createPart(body);
-      notify(response.message, "success");
-      setEditing(null);
+      if (imageFile) {
+        // Save metadata before upload. If upload fails, keep this item open for retry.
+        setEditing({ ...editing, id: response.data.id, image_url: response.data.image_url });
+        try {
+          await adminApi.uploadPartImage(response.data.id, imageFile);
+        } catch (error) {
+          parts.reload();
+          throw new Error(`Đã lưu thông tin phụ tùng nhưng ảnh chưa được tải lên: ${errorMessage(error)}. Bấm Lưu thay đổi để thử lại.`);
+        }
+      }
+      notify(imageFile ? "Đã lưu phụ tùng và ảnh." : response.message, "success");
+      setImageFile(null); setImagePreview(null); setEditing(null);
       parts.reload();
     } catch (error) {
       setFormError(errorMessage(error, "Không lưu được phụ tùng."));
@@ -119,7 +152,7 @@ export default function Inventory() {
 
   const catalogColumns: Column<AdminPart>[] = [
     { key: "sku", sortKey: "sku", header: "SKU", render: p => <Sku value={p.sku}/> },
-    { key: "name", sortKey: "name", header: "Tên phụ tùng", primary: true, render: p => <b className="text-cs-text">{p.name}</b> },
+    { key: "name", sortKey: "name", header: "Tên phụ tùng", primary: true, render: p => <PartName part={p}/> },
     { key: "category", sortKey: "category", header: "Danh mục", render: p => p.category ? <Pill tone={categoryTone(p.category)}>{p.category}</Pill> : <span className="text-cs-muted">—</span> },
     { key: "unit", sortKey: "unit", header: "Đơn vị", hideOnMobile: true, render: p => p.unit },
     { key: "cost", sortKey: "cost", header: "Giá vốn", align: "right", hideOnMobile: true, render: p => <span className="tabular-nums">{vnd(p.cost)}</span> },
@@ -153,6 +186,24 @@ export default function Inventory() {
   const editPane = editing && <div className="flex flex-col gap-4">
     <Field label="SKU" required hint="Chữ, số, dấu chấm, gạch ngang."><Input value={editing.sku} maxLength={50} className="uppercase" onChange={e => setEditing({ ...editing, sku: e.target.value })}/></Field>
     <Field label="Tên phụ tùng" required><Input value={editing.name} maxLength={150} onChange={e => setEditing({ ...editing, name: e.target.value })}/></Field>
+    <div className="rounded-xl border border-cs-border bg-cs-surface-2 p-3">
+      <div className="mb-3 flex items-start gap-3">
+        {imagePreview || editing.image_url ? <img src={imagePreview ?? editing.image_url ?? undefined} alt="Xem trước ảnh phụ tùng" className="h-28 w-32 rounded-lg border border-cs-border bg-cs-surface object-cover"/>
+          : <div className="grid h-28 w-32 place-items-center rounded-lg border border-dashed border-cs-border bg-cs-surface text-cs-muted"><Icon name="box" size={36}/></div>}
+        <div className="min-w-0 flex-1">
+          <p className="text-small font-semibold text-cs-text">Ảnh phụ tùng</p>
+          <p className="mt-1 text-caption text-cs-muted">JPG, PNG, WebP · tối đa 4 MB. Chọn ảnh rồi bấm Lưu thay đổi.</p>
+          {editing.image_url && !imageFile && <button type="button" className="mt-2 text-caption font-semibold text-danger-fg underline" disabled={saving} onClick={() => void removeSavedImage()}>Xóa ảnh hiện tại</button>}
+        </div>
+      </div>
+      <input aria-label="Chọn ảnh phụ tùng" type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} className="block w-full cursor-pointer text-small text-cs-text file:mr-3 file:rounded-lg file:border-0 file:bg-cs-soft file:px-3 file:py-2 file:font-semibold file:text-cs-accent-text" onChange={event => {
+        const file = event.currentTarget.files?.[0];
+        if (!file) return;
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { setFormError("Chỉ nhận ảnh JPG, PNG hoặc WebP."); event.currentTarget.value = ""; return; }
+        if (file.size > 4 * 1024 * 1024) { setFormError("Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn."); event.currentTarget.value = ""; return; }
+        setFormError(""); setImageFile(file);
+      }}/>
+    </div>
     <div className="grid grid-cols-2 gap-3">
       <Field label="Danh mục"><Input list="part-categories" value={editing.category ?? ""} maxLength={100} placeholder="VD: Phanh" onChange={e => setEditing({ ...editing, category: e.target.value })}/></Field>
       <datalist id="part-categories">{(result?.categories ?? []).map(c => <option key={c} value={c}/>)}</datalist>
