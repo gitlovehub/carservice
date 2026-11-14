@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { Icon } from "../components/ui/Icon";
+import Breadcrumb from "../components/Breadcrumb";
 import { useAuthSession } from "../contexts/authSession";
 import { getUserDisplayName } from "../pages/auth/auth";
 import { CUSTOMER_ACCOUNT_GROUPS, CUSTOMER_ACCOUNT_LINKS, isAccountLinkActive } from "./customerAccountNav";
@@ -40,6 +41,7 @@ export default function CustomerAccountLayout() {
   const account = session.status === "authenticated" && session.account.role === "CUSTOMER" ? session.account : cached;
   if (!account || referenceFullWidth) return <Outlet/>;
 
+  const currentLink = CUSTOMER_ACCOUNT_LINKS.find(link => isAccountLinkActive(link, location.pathname));
   const name = getUserDisplayName(account) || "Khách hàng";
   // Chữ đầu của từ đầu + từ cuối (giống trang Hồ sơ): "Khách hàng TÈO" → "KT".
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -72,6 +74,10 @@ export default function CustomerAccountLayout() {
     </aside>
     {/* cs-account-content: chuẩn hóa tiêu đề trang (h1) cho mọi trang trong khu tài khoản — xem garage-customer-pages.css. */}
     <div className="cs-account-content min-w-0 [&>*]:min-h-0">
+      {/* Breadcrumb đồng nhất toàn khu khách: Trang chủ › Hồ sơ của tôi › <trang hiện tại>. */}
+      <Breadcrumb tone="light" items={currentLink && currentLink.to !== "/customer/account"
+        ? [{ label: "Hồ sơ của tôi", to: "/customer/account" }, { label: currentLink.label }]
+        : [{ label: "Hồ sơ của tôi" }]}/>
       <Outlet/>
     </div>
   </div>;

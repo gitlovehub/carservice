@@ -18,7 +18,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
-import Contact from "./pages/customer/Contact";
+import Contact from "./pages/showcase/ReferenceContact";
 import CustomerDashboard from "./pages/customer/Dashboard";
 import Booking from "./pages/customer/Booking";
 import Appointments from "./pages/customer/Appointments";
@@ -54,6 +54,7 @@ import AdminRepairOrders from "./pages/admin/RepairOrders";
 import AdminInvoices from "./pages/admin/Invoices";
 import AdminReviews from "./pages/admin/Reviews";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
+import AdminContactMessages from "./pages/admin/ContactMessages";
 import AdminGarageSettings from "./pages/admin/GarageSettings";
 import AdminMaintenancePackages from "./pages/admin/MaintenancePackages";
 import AdminInventory from "./pages/admin/Inventory";
@@ -71,6 +72,8 @@ function App() {
     <Route path="/forgot-password" element={<ForgotPassword/>}/>
     <Route path="/role-selector" element={<Navigate to="/login" replace/>}/>
     <Route path="/services" element={<Services/>}/>
+    {/* Liên hệ: công khai, không cần đăng nhập. */}
+    <Route path="/contact" element={<Contact/>}/>
     <Route path="*" element={<NotFound/>}/>
 
     {/* Customer shell: all legacy business pages retained, not rewritten. */}
@@ -97,7 +100,6 @@ function App() {
         <Route path="/payment" element={<Payment/>}/>
         <Route path="/payment/vnpay-return" element={<VnpayReturn/>}/>
       </Route>
-      <Route path="/contact" element={<Contact/>}/>
     </Route>
     </Route>
     {/* Shared account alias for older links and other existing roles. */}
@@ -143,6 +145,7 @@ function App() {
       {/* Hãng & dòng xe: trang thật dùng API /api/admin/vehicle-{brands,models,trims} (không dùng mock). */}
       <Route path="vehicle-brands" element={<AdminVehicleCatalog/>}/>
       <Route path="audit-logs" element={<AdminAuditLogs/>}/>
+      <Route path="contact-messages" element={<AdminContactMessages/>}/>
     </Route>
 
   </Routes><ChatWidget/></FeedbackProvider></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;

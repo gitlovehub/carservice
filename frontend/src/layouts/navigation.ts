@@ -44,6 +44,7 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Nhân sự", path: "/admin/staff", icon: "id-card", group: "Con người" },
     { label: "Tài khoản", path: "/admin/accounts", icon: "shield", group: "Con người" },
     { label: "Đánh giá", path: "/admin/reviews", icon: "star", group: "Con người" },
+    { label: "Tin nhắn liên hệ", path: "/admin/contact-messages", icon: "clipboard", group: "Con người" },
     { label: "Dịch vụ", path: "/admin/services", icon: "wrench", group: "Danh mục" },
     { label: "Gói bảo dưỡng", path: "/admin/maintenance-packages", icon: "layers", group: "Danh mục" },
     // Chưa làm (task PROMO-01) — trang tạm "đang phát triển".

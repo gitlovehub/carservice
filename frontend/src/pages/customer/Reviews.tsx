@@ -4,6 +4,7 @@ import { Toast, type ToastType } from "../../components/auth/Toast";
 import { useAuthSession } from "../../contexts/authSession";
 import { getUserDisplayName, getUserInitials } from "../auth/auth";
 import { Icon } from "../../components/ui/Icon";
+import Breadcrumb from "../../components/Breadcrumb";
 import {
   formatDate,
   getMyRepairOrders,
@@ -172,11 +173,7 @@ export default function Reviews() {
         style={{ backgroundImage: "linear-gradient(90deg, rgba(17,22,29,.94) 0%, rgba(17,22,29,.88) 42%, rgba(17,22,29,.22) 100%), url('/showcase/mechanic-banner.webp')", backgroundSize: "cover", backgroundPosition: "center" }}
       >
         <div className="mx-auto w-full max-w-[1220px] px-5 sm:px-8">
-          <div className="mb-5 flex items-center gap-2 text-[12px] text-white/75">
-            <Link to="/" className="font-medium text-white/80 no-underline transition hover:text-white">Trang chủ</Link>
-            <Icon name="chevron-right" size={14}/>
-            <span className="text-white">Đánh giá dịch vụ</span>
-          </div>
+          <Breadcrumb items={[{ label: "Hồ sơ của tôi", to: "/customer/account" }, { label: "Đánh giá dịch vụ" }]}/>
           <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/90">
             CarService · Tiếng nói khách hàng
           </span>

@@ -14,6 +14,7 @@ import {
 import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
 import { emptySelection, selectionFromVehicle, type VehicleSelection } from "../../services/vehicleCatalog";
 import BookingSummary from "./booking/BookingSummary";
+import Breadcrumb from "../../components/Breadcrumb";
 import ServicePicker from "./booking/ServicePicker";
 
 type SavedVehicle = {
@@ -517,10 +518,7 @@ export default function Booking() {
     <div className="min-h-screen bg-[var(--cs-bg,#f7f7f6)] [&_button:not(:disabled)]:cursor-pointer [&_a]:cursor-pointer text-[var(--cs-text,#191919)] [&_.bg-white]:bg-[var(--cs-surface,#fff)] [&_.bg-slate-50]:bg-[var(--cs-bg,#f7f7f6)] [&_.bg-slate-100]:bg-[var(--cs-surface-2,#f1f1ef)] [&_.text-slate-900]:text-[var(--cs-text,#191919)] [&_.text-slate-800]:text-[var(--cs-text,#191919)] [&_.text-slate-700]:text-[var(--cs-text,#191919)] [&_.text-slate-600]:text-[var(--cs-muted,#757575)] [&_.text-slate-500]:text-[var(--cs-muted,#757575)] [&_.border-slate-200]:border-[var(--cs-border,#e9e9e6)] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-50 [&_input]:accent-[#cf2935] [&_input]:focus-visible:outline-[#cf2935] [&_select]:focus-visible:outline-[#cf2935] [&_textarea]:focus-visible:outline-[#cf2935] antialiased font-sans flex flex-col justify-between selection:bg-[#1F2933] selection:text-white">
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 w-full flex-grow">
         <div className="mb-6 flex items-center justify-between">
-          <Link to="/" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#B68A43] transition">
-            <i className="fa-solid fa-arrow-left text-xs"></i>
-            <span>Trang chủ</span>
-          </Link>
+          <Breadcrumb tone="light" className="!mb-0" items={[{ label: "Đặt lịch" }]}/>
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <i className="fa-solid fa-headset text-[#B68A43]"></i>
             <span>Hỗ trợ: <strong className="text-slate-800">033 240 5972</strong></span>

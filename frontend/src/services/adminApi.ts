@@ -140,6 +140,11 @@ export type StockMove = { id: number; at: string | null; type: "IN" | "OUT"; sku
 export type HolidayRange = { ids: number[]; from: string; to: string; reason: string | null; days: number };
 
 type Message<T> = { message: string; data: T };
+
+/* ---------------------------------------------------------- Tin nhắn liên hệ */
+/** Tin khách gửi từ form trang Liên hệ (công khai). */
+export type ContactMessageStatus = "NEW" | "HANDLED";
+export type AdminContactMessage = { id: number; name: string; phone: string; email: string | null; message: string; status: ContactMessageStatus; handled_at: string | null; created_at: string };
 const send = <T>(path: string, method: "POST" | "PUT" | "PATCH" | "DELETE", body?: unknown) =>
   fetchApi<T>(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
@@ -161,6 +166,8 @@ export const adminApi = {
   replyReview: (id: number, reply: string) => send<Message<AdminReview>>(`/admin/reviews/${id}/reply`, "POST", { reply }),
   hideReview: (id: number, hidden: boolean) => send<Message<AdminReview>>(`/admin/reviews/${id}`, "PATCH", { is_hidden: hidden }),
 
+  contactMessages: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminContactMessage, { new: number }>>(`/admin/contact-messages${query(params)}`, { signal }),
+  setContactMessageStatus: (id: number, status: ContactMessageStatus) => send<Message<AdminContactMessage>>(`/admin/contact-messages/${id}`, "PATCH", { status }),
   auditLogs: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminAuditLog>>(`/admin/audit-logs${query(params)}`, { signal }),
 
   customers: (params: Params, signal?: AbortSignal) => fetchApi<CustomerList>(`/admin/customers${query(params)}`, { signal }),

@@ -6,6 +6,7 @@ import { useTheme } from '../../contexts/theme';
 import { Icon } from '../../components/ui/Icon';
 import { logout } from '../auth/auth';
 import CustomerNotificationBell from './CustomerNotificationBell';
+import Breadcrumb from '../../components/Breadcrumb';
 import '../../styles/v3-reference.css';
 
 const menu = [
@@ -16,10 +17,11 @@ const menu = [
   { to:'/cars', label:'Xe của tôi' },
   { to:'/repair-status', label:'Tra cứu tiến độ' },
   { to:'/quotation', label:'Báo giá' },
+  { to:'/contact', label:'Liên hệ' },
 ];
 // Năm trang mẫu dùng layout full-width. Những trang nghiệp vụ khác giữ nguyên CSS và API,
 // nhưng cùng header/footer, không chuyển qua header cũ khi bấm menu.
-export const referenceRoutes = new Set(['/', '/services', '/appointments', '/customer/appointments', '/cars', '/customer/cars', '/repair-status']);
+export const referenceRoutes = new Set(['/', '/services', '/contact', '/appointments', '/customer/appointments', '/cars', '/customer/cars', '/repair-status']);
 
 function activeMenu(to: string, pathname: string) {
   if (to === '/') return pathname === '/';
@@ -73,7 +75,7 @@ export function ReferenceHeader() {
   const customer = logged && session.account.role === 'CUSTOMER';
   const initial = logged ? (session.account.full_name?.[0] || session.account.email?.[0] || 'K').toUpperCase() : 'K';
   const management = logged && session.account.role === 'ADMIN' ? '/admin' : '/advisor';
-  const paths = customer ? menu : logged ? menu.filter(x => ['/', '/services'].includes(x.to)) : menu.filter(x => !['/appointments','/cars','/repair-status','/quotation'].includes(x.to));
+  const paths = customer ? menu : logged ? menu.filter(x => ['/', '/services', '/contact'].includes(x.to)) : menu.filter(x => !['/appointments','/cars','/repair-status','/quotation'].includes(x.to));
 
   useEffect(() => { setMobileOpen(false); setAccountOpen(false); }, [location.pathname]);
   useEffect(() => {
@@ -131,7 +133,7 @@ export function ReferenceFooter(){return <footer className="v3ref-footer"><div c
 </div><div className="v3ref-footer-bottom">© {new Date().getFullYear()} CarService · WD_004</div></footer>}
 
 export function ReferenceBanner({title,subtitle,image='mechanic-banner.webp'}:{title:string;subtitle:string;image?:string}){
-  return <div className="v3ref-banner" style={{backgroundImage:`linear-gradient(90deg,rgba(10,14,19,.96) 0%,rgba(10,14,19,.88) 42%,rgba(10,14,19,.15) 100%),url('/showcase/${image}')`}}><div className="v3ref-container"><p className="v3ref-crumb"><Link to="/">⌂ &nbsp; Trang chủ</Link> &nbsp; › &nbsp; {title}</p><h1>{title}</h1><p>{subtitle}</p></div></div>;
+  return <div className="v3ref-banner" style={{backgroundImage:`linear-gradient(90deg,rgba(10,14,19,.96) 0%,rgba(10,14,19,.88) 42%,rgba(10,14,19,.15) 100%),url('/showcase/${image}')`}}><div className="v3ref-container"><Breadcrumb items={[{label:title}]}/><h1>{title}</h1><p>{subtitle}</p></div></div>;
 }
 // Mạng xã hội ở footer. TẠM THỜI trỏ về trang chủ của từng mạng — thay bằng trang chính thức của gara khi có.
 // Để trống `href` thì chỉ hiện logo, không bấm được.

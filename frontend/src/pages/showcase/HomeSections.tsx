@@ -16,7 +16,7 @@ function useApi<T>(path: string) {
 }
 
 type GarageSettings = { name: string; phone: string | null; email: string | null; address_line: string | null; ward: string | null; district: string | null; province: string | null; latitude: number | null; longitude: number | null };
-const useGarage = () => useApi<{ data: GarageSettings | null }>('/garage-settings')?.data ?? null;
+export const useGarage = () => useApi<{ data: GarageSettings | null }>('/garage-settings')?.data ?? null;
 
 const Section = ({ id, title, action, children }: { id?: string; title: string; action?: ReactNode; children: ReactNode }) =>
   <section className="v3ref-home-block" id={id}><div className="v3ref-section-head"><h2>{title}</h2>{action}</div>{children}</section>;
