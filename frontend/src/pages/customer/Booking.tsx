@@ -116,7 +116,8 @@ export default function Booking() {
     error: "",
   });
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
-  const [symptom, setSymptom] = useState("");
+  // ?symptom=... (từ mục "Xe bạn có dấu hiệu này?" ở trang chủ) điền sẵn mô tả triệu chứng.
+  const [symptom, setSymptom] = useState(() => (searchParams.get("symptom") ?? "").slice(0, 500));
   const [mileage, setMileage] = useState("");
   const [debouncedMileage, setDebouncedMileage] = useState("");
   const deepLinkApplied = useRef(false);

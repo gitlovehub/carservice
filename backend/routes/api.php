@@ -21,6 +21,8 @@ use App\Http\Controllers\Api\CustomerHandoverController;
 use App\Http\Controllers\Api\CustomerPickupAuthorizationController;
 use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\CustomerReviewController;
+use App\Http\Controllers\Api\PublicReviewController;
+use App\Http\Controllers\Api\HomeStatsController;
 use App\Http\Controllers\Api\CustomerNotificationController;
 use App\Http\Controllers\Api\GarageSettingController;
 use App\Http\Controllers\Api\HandoverController;
@@ -73,6 +75,8 @@ Route::get('services/{service}', [ServiceController::class, 'show']);
 Route::get('maintenance-packages', [MaintenancePackageController::class, 'index']);
 Route::get('maintenance-packages/{maintenancePackage}', [MaintenancePackageController::class, 'show']);
 Route::get('booking-catalog', [BookingCatalogController::class, 'index']);
+Route::get('reviews/featured', [PublicReviewController::class, 'featured']);
+Route::get('home-stats', [HomeStatsController::class, 'index']);
 
 // Danh mục xe công khai: Hãng → Dòng xe → Phiên bản (chỉ bản ghi đang hiển thị).
 Route::controller(VehicleCatalogController::class)
