@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['sku', 'name', 'category', 'description', 'unit', 'cost_price', 'sell_price', 'status'])]
+#[Fillable(['sku', 'name', 'category', 'description', 'image_path', 'unit', 'cost_price', 'sell_price', 'status'])]
 class Part extends Model
 {
     protected function casts(): array

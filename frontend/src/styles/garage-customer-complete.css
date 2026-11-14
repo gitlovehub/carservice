@@ -115,3 +115,9 @@ html[data-theme="dark"] .at-danger-outline{color:#fca5a5;border-color:color-mix(
 .at-customer-account main>section:nth-child(2) .shadow-xs{box-shadow:0 16px 56px #0a0c1409!important}
 .at-customer-account main>section:nth-child(2) :is(.rounded-2xl,.rounded-xl){border-radius:17px}
 .at-customer-account main>section:nth-child(2) :is(button,a){transition:color .16s,border-color .16s,background .16s}
+html[data-theme="dark"] .cs-customer-layout .at-customer-reviews main :is(h2,h3,strong,legend,label){color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-customer-layout .at-customer-reviews main :is(p,time,small):not([role="alert"]){color:var(--cs-muted)!important}
+html[data-theme="dark"] .cs-customer-layout .at-customer-reviews main p.font-extrabold{color:var(--cs-text)!important}
+html[data-theme="dark"] .cs-customer-layout .at-customer-reviews main :is(section,article){border-color:var(--cs-border)}
+html[data-theme="dark"] .cs-customer-layout .at-customer-reviews main .bg-gradient-to-r{background:var(--cs-surface-2)!important}
+html[data-theme="dark"] .cs-customer-layout .at-customer-reviews main :is(.bg-\[\#faf9f7\],.bg-\[\#f9f9f8\],.bg-\[\#f7f7f7\]){background:var(--cs-surface-2)!important}

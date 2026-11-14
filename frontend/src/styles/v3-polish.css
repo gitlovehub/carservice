@@ -1,0 +1,700 @@
+/* CarService V3 — UX / typography polish (Customer + Admin + Advisor).
+ * Loaded after existing styles. Presentation only; no change to business data / API. */
+:root {
+  --cs-ui-font: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+}
+html, body, button, input, select, textarea { font-family: var(--cs-ui-font); }
+body { font-size: 14px; line-height: 1.6; font-weight: 400; }
+button, input, select, textarea { letter-spacing: 0; }
+h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
+
+/* Sidebar / topbar chữ rõ hơn nhưng không tăng chiều rộng workspace quá mức. */
+.cs-workspace .cs-ws-link { font-size: 13px; font-weight: 600; letter-spacing: 0; }
+.cs-workspace .cs-ws-group-label { font-size: 10px; letter-spacing: .09em; font-weight: 750; }
+.cs-workspace .cs-ws-crumbs { font-weight: 550; }
+.cs-workspace :is(input,select,textarea) { line-height: 1.5; }
+.cs-workspace :is(button,a) { transition: background-color .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.cs-workspace .cs-ws-link:focus-visible { border-radius: 9px; }
+
+/* Navigation: fixed visual anchor across showcase and customer business pages. */
+.v3ref-header { height: 76px; background: #fff; box-shadow: 0 2px 12px rgb(20 29 45 / 5%); }
+.v3ref-nav-wrap { max-width: 1360px; gap: 18px; }
+.v3ref-logo { gap: 11px; }
+.v3ref-logo>span { width: 38px; height: 38px; font-size: 24px; border-radius: 10px; background: #cf1028; }
+.v3ref-logo strong { font-size: 20px; letter-spacing: -.035em; font-weight: 800; }
+.v3ref-logo small { font-size: 9.5px; letter-spacing: -.01em; font-weight: 500; color: #555d69; margin-top: 3px; }
+.v3ref-menu { gap: clamp(9px, 1.25vw, 20px); }
+.v3ref-menu a {
+  font-size: 13px; font-weight: 650; letter-spacing: -.005em;
+  border-bottom-width: 2px; transition: color .16s ease, border-color .16s ease;
+}
+.v3ref-menu a:hover, .v3ref-menu a.active, .v3ref-menu a[aria-current="page"] { color: #bd142b; border-bottom-color: #ce1730; }
+.v3ref-nav-right { gap: 10px; }
+.v3ref-reviews-link {
+  color: #5b3340; font-size: 12px; font-weight: 650; display: inline-flex;
+  align-items: center; gap: 5px; border-radius: 9px; padding: 7px 9px;
+  transition: color .15s ease, background-color .15s ease;
+}
+.v3ref-reviews-link:hover { background: #fff0f3; color: #c1122a; }
+.v3ref-account { position: relative; }
+.v3ref-account-trigger {
+  display: inline-flex; align-items: center; gap: 7px; border: 1px solid transparent;
+  border-radius: 99px; padding: 3px 6px 3px 3px; background: transparent;
+  color: #384150; cursor: pointer; transition: border-color .15s, background .15s;
+}
+.v3ref-account-trigger:hover, .v3ref-account-trigger[aria-expanded="true"] { background: #fff2f4; border-color: #f1d1d8; }
+.v3ref-theme-toggle {
+  display: grid; place-items: center; width: 38px; height: 38px;
+  border: 1px solid #e6e9ed; border-radius: 10px; background: #fff;
+  color: #374151; cursor: pointer; transition: background-color .15s, border-color .15s, color .15s;
+}
+.v3ref-theme-toggle:hover { background: #fff0f3; border-color: #f1d1d8; color: #b70e26; }
+.v3ref-avatar { width: 36px; height: 36px; font-weight: 750; font-size: 13px; }
+.v3ref-account-chevron { font-size: 17px; line-height: 1; padding-right: 2px; }
+.v3ref-account-popover {
+  position: absolute; right: 0; top: calc(100% + 12px); min-width: 216px;
+  padding: 7px; background: #fff; color: #18212d; border: 1px solid #e8eaf0;
+  border-radius: 13px; box-shadow: 0 18px 48px rgb(17 24 39 / 16%); z-index: 75;
+}
+.v3ref-account-popover a, .v3ref-account-popover button {
+  display: block; width: 100%; padding: 10px 12px; border: 0; border-radius: 8px;
+  background: transparent; text-align: left; font: 600 12.5px/1.5 var(--cs-ui-font);
+  color: #2b3441; cursor: pointer; white-space: nowrap;
+}
+.v3ref-account-popover a:hover, .v3ref-account-popover button:hover,
+.v3ref-account-popover :focus-visible { background: #fff0f3; color: #bd1129; }
+.v3ref-account-popover .v3ref-logout-action { color: #ba2436; border-top: 1px solid #edf0f4; border-radius: 0 0 8px 8px; margin-top: 4px; }
+.v3ref-management-link { display: flex; gap: 8px; align-items: center; font-size: 12px; font-weight: 700; color: #b6192d; }
+.v3ref-login { font-weight: 700; font-size: 13px; padding: 9px 14px; border-radius: 9px; background: var(--cs-brand-soft); color: var(--cs-on-soft); }
+.v3ref-login:hover, .v3ref-login[aria-current="page"] { background: var(--cs-soft-hover); color: var(--cs-on-soft); }
+.v3ref-hamburger { width: 42px; height: 42px; font-size: 22px; align-items: center; justify-content: center; border-radius: 10px; }
+.v3ref-hamburger:hover { background: #f9eef1; }
+
+/* Customer — replace tiny and over-condensed/overbold text with an intentional hierarchy. */
+.v3ref-shell, .v3ref, .v3ref-header, .v3ref-footer, .v3ref-banner {
+  font-family: var(--cs-ui-font);
+}
+.v3ref { font-size: 14px; line-height: 1.62; }
+.v3ref :is(h1,h2,h3,h4), .v3ref-banner :is(h1,h2) { font-family: var(--cs-ui-font); }
+.v3ref :is(h1,h2,h3), .v3ref-banner h1 { font-weight: 800; letter-spacing: -.035em; }
+.v3ref-hero h1 { font-size: clamp(36px,4.15vw,56px); font-weight: 800; font-style: normal; letter-spacing: -.045em; line-height: 1.13; }
+.v3ref-hero h1 em { font-style: normal; }
+.v3ref-mini { font-size: 11px; letter-spacing: .17em; font-weight: 700; }
+.v3ref-hero-copy>p:not(.v3ref-mini) { font-size: 14px; line-height: 1.75; text-wrap: balance; }
+@media (min-width:651px) { .v3ref-hero-copy>p:not(.v3ref-mini) { max-width: none; white-space: nowrap; } }
+.v3ref-hero-button { font-size: 13px; font-weight: 700; padding: 11px 20px; border-radius: 10px; }
+.v3ref-banner h1 { font-size: clamp(27px,3.5vw,40px); line-height: 1.2; }
+.v3ref-banner p { font-size: 13px; line-height: 1.7; }
+/* Breadcrumb dùng chung (components/Breadcrumb.tsx) — viên thuốc; tone tối (mặc định, trên banner ảnh) / sáng (.is-light). */
+.v3ref-crumb { display: inline-flex; max-width: 100%; margin-bottom: 14px; padding: 6px 8px; border-radius: 40px; font-size: 13px; line-height: 1.3;
+  background: #ffffff14; border: 1px solid #ffffff2b; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 6px 18px #0003; }
+.v3ref-crumb ol { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.v3ref-crumb li { display: flex; align-items: center; min-width: 0; }
+.v3ref-crumb a { display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px; border-radius: 30px; color: #e8edf2 !important; font-weight: 600; text-decoration: none; transition: background .15s, color .15s; }
+.v3ref-crumb a:hover { background: #ffffff1f; color: #fff !important; }
+.v3ref-crumb-sep { color: #ffffff80; }
+.v3ref-crumb [aria-current="page"], .v3ref-crumb li>span { display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 12px; border-radius: 30px; color: #fff; font-weight: 800; }
+.v3ref-crumb [aria-current="page"] { background: #ffffff1f; }
+.v3ref-crumb [aria-current="page"]::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: #ff3b4f; box-shadow: 0 0 0 3px #ff3b4f40; }
+/* Tone sáng: trên nền trang (Đặt lịch, khu Hồ sơ của tôi). */
+.v3ref-crumb.is-light { background: var(--cs-surface, #fff); border-color: var(--cs-border, #e5e5e2); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 4px 14px #1a1c260d; }
+.v3ref-crumb.is-light a { color: var(--cs-muted, #686c71) !important; }
+.v3ref-crumb.is-light a:hover { background: var(--cs-hover, #ebebe8); color: var(--cs-text, #191919) !important; }
+.v3ref-crumb.is-light .v3ref-crumb-sep { color: var(--cs-muted, #686c71); opacity: .6; }
+.v3ref-crumb.is-light li>span { color: var(--cs-text, #191919); }
+.v3ref-crumb.is-light [aria-current="page"] { background: var(--cs-soft, #fff1f1); color: var(--cs-accent-text, #cf2935); }
+.v3ref-section-head h2 { font-size: 20px; font-weight: 800; }
+.v3ref-home .v3ref-section-head h2 { font-size: 27px; letter-spacing: -.035em; }
+.v3ref-section-head a { font-size: 12px; font-weight: 700; }
+.v3ref-small-service strong { font-size: 12.5px; font-weight: 700; min-height: 55px; }
+.v3ref-promo h2 { font-style: normal; font-weight: 800; line-height: 1.2; }
+.v3ref-promo h2 i { font-style: normal; }
+.v3ref-promo h2 i { color: #ffd95f; }
+.v3ref-promo-slider { padding: 25px 70px 34px; }
+.v3ref-promo-copy { position: relative; z-index: 2; animation: v3refPromoIn .45s ease both; }
+.v3ref-promo.v3ref-promo-slider { justify-content: flex-start; background: #b50719; }
+.v3ref-promo.v3ref-promo-slider img { display: block; position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; object-position: right center; border-radius: 0; mix-blend-mode: normal; opacity: 1; animation: v3refPromoFade .6s ease both; }
+.v3ref-promo-slider::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(90deg, #b50719 0%, #b50719 30%, rgb(181 7 25 / 85%) 45%, rgb(181 7 25 / 35%) 68%, rgb(181 7 25 / 0%) 88%); }
+/* Trang chủ — quy trình 7 bước. */
+.v3ref-home .v3ref-steps { grid-template-columns: repeat(7, minmax(0,1fr)); gap: 14px; align-items: start; }
+.v3ref-home .v3ref-step strong { line-height: 1.35; }
+@media (max-width:1100px) { .v3ref-home .v3ref-steps { grid-template-columns: repeat(4, minmax(0,1fr)); row-gap: 22px; } .v3ref-home .v3ref-step:nth-child(4):after { display: none; } }
+@media (max-width:650px) { .v3ref-home .v3ref-steps { grid-template-columns: repeat(2, minmax(0,1fr)); } .v3ref-home .v3ref-step:after { display: none; } }
+
+/* Trang chủ — đoạn dẫn dưới tiêu đề section. */
+.v3ref-section-lead { margin: -6px 0 18px; max-width: 680px; font-size: 14px; line-height: 1.65; color: #5c656e; }
+
+/* Gói bảo dưỡng theo mốc km. */
+.v3ref-pkg-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 18px; padding-top: 10px; }
+.v3ref-pkg { position: relative; display: flex; flex-direction: column; padding: 24px 22px 22px; border: 1px solid #ebedf0; border-radius: 16px; background: #fff; box-shadow: 0 4px 14px #1a1c2610; transition: transform .2s, box-shadow .2s; }
+.v3ref-pkg:hover { transform: translateY(-3px); box-shadow: 0 14px 30px #2029341c; }
+.v3ref-pkg.is-featured { border: 2px solid #d71327; box-shadow: 0 14px 34px #c9152626; }
+.v3ref-pkg-flag { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); padding: 4px 14px; border-radius: 30px; background: #d71327; color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
+.v3ref-pkg-km { font-size: 14px; font-weight: 700; color: #c91526; }
+.v3ref-pkg-km strong { font-size: 32px; font-weight: 800; letter-spacing: -.04em; color: #1f232a; }
+.v3ref-pkg-month { font-size: 12px; color: #7a8189; }
+.v3ref-pkg h3 { margin: 12px 0 10px; padding-bottom: 12px; border-bottom: 1px solid #eef0f2; font-size: 15px; font-weight: 750; line-height: 1.4; color: #2b3038; }
+.v3ref-pkg ul { flex: 1; list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 7px; align-content: start; }
+.v3ref-pkg li { position: relative; padding-left: 22px; font-size: 13px; line-height: 1.45; color: #4a5058; }
+.v3ref-pkg li::before { content: "✓"; position: absolute; left: 0; color: #c91526; font-weight: 900; }
+.v3ref-pkg li.v3ref-pkg-more { color: #7a8189; font-style: italic; }
+.v3ref-pkg li.v3ref-pkg-more::before { content: "+"; }
+.v3ref-pkg-price { margin-bottom: 12px; font-size: 18px; font-weight: 800; color: #c10d22; }
+.v3ref-pkg-book { display: flex; justify-content: center; align-items: center; min-height: 42px; border-radius: 30px; border: 2px solid #c91526; color: #c91526 !important; font-size: 13.5px; font-weight: 800; transition: background .15s, color .15s; }
+.v3ref-pkg-book:hover, .v3ref-pkg.is-featured .v3ref-pkg-book { background: #c91526; color: #fff !important; }
+.v3ref-pkg.is-featured .v3ref-pkg-book:hover { background: #a80f1f; }
+@media (max-width:1100px) { .v3ref-pkg-grid { grid-template-columns: repeat(2, minmax(0,1fr)); row-gap: 26px; } }
+@media (max-width:560px) { .v3ref-pkg-grid { grid-template-columns: 1fr; } }
+
+/* Dấu hiệu xe cần kiểm tra. */
+.v3ref-symptom-grid { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 14px; }
+.v3ref-symptom { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 22px 12px 18px; border: 1px solid #ebedf0; border-radius: 14px; background: #fff; color: #1f232a !important; transition: transform .2s, border-color .2s, box-shadow .2s; }
+.v3ref-symptom:hover { transform: translateY(-3px); border-color: #f0b8c0; box-shadow: 0 12px 26px #c915261a; }
+.v3ref-symptom-icon { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(145deg, #fdecee, #fbd5da); color: #c91526; font-size: 24px; transition: background .2s, color .2s; }
+.v3ref-symptom:hover .v3ref-symptom-icon { background: #c91526; color: #fff; }
+.v3ref-symptom strong { font-size: 13.5px; font-weight: 750; line-height: 1.35; }
+.v3ref-symptom small { margin-top: auto; font-size: 11.5px; font-weight: 700; color: #c91526; }
+@media (max-width:1100px) { .v3ref-symptom-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+@media (max-width:560px) { .v3ref-symptom-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; } }
+
+/* Banner cam kết — dải đỏ, 5 ý có icon, nút đặt lịch trắng, ảnh xe mờ góc phải. */
+.v3ref-trustband { position: relative; display: flex; align-items: center; gap: 20px; margin: 34px 0 10px; padding: 30px 30px 34px 24px; overflow: hidden; color: #fff;
+  border-radius: 22px; border: 2px solid #ffffffb3;
+  background: radial-gradient(ellipse at 18% 0%, #e0283c 0%, transparent 55%), linear-gradient(100deg, #b80f22 0%, #9c0a1a 45%, #7a0812 100%);
+  box-shadow: 0 18px 40px #c9152640, 0 0 0 1px #f3c5cb; }
+.v3ref-trustband-car { position: absolute; top: 0; right: 0; width: 34%; height: 100%; object-fit: cover; object-position: 30% 55%; opacity: .5; mix-blend-mode: luminosity;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 60%); mask-image: linear-gradient(90deg, transparent, #000 60%); }
+.v3ref-trustband::after { content: ""; position: absolute; inset: 0 0 0 auto; width: 34%; background: linear-gradient(90deg, transparent, #b80f2299); pointer-events: none; }
+.v3ref-trustband-swoosh { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 60px; pointer-events: none; }
+.v3ref-trustband ul { position: relative; z-index: 1; flex: 1; display: grid; grid-template-columns: repeat(var(--tb-cols, 4), minmax(0,1fr)); margin: 0; padding: 0; list-style: none; }
+.v3ref-trustband li { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 14px; text-align: center; }
+.v3ref-trustband li + li { border-left: 1px solid #ffffff40; }
+.v3ref-trustband-icon { height: 52px; margin-bottom: 6px; display: grid; place-items: center; filter: drop-shadow(0 3px 6px #0004); }
+.v3ref-trustband-icon svg { width: 46px; height: 46px; }.v3ref-trustband-value { font-size: 38px; font-weight: 800; line-height: 1.05; letter-spacing: -.04em; font-variant-numeric: tabular-nums; text-shadow: 0 2px 8px #0003; }
+.v3ref-trustband-label { font-size: 15px; font-weight: 700; line-height: 1.35; }
+.v3ref-trustband-desc { font-size: 12.5px; line-height: 1.45; color: #ffd9de; }
+.v3ref-trustband-cta { position: relative; z-index: 1; flex: none; display: inline-flex; align-items: center; gap: 12px; padding: 14px 24px; border-radius: 40px; background: #fff;
+  color: #c10d22 !important; font-size: 18px; font-weight: 800; box-shadow: 0 10px 26px #4a000a55; border-left: 1px solid #ffffff40; transition: transform .2s, box-shadow .2s; }
+.v3ref-trustband-cta:hover { transform: translateY(-2px); box-shadow: 0 14px 30px #4a000a66; }
+.v3ref-trustband-cta span { font-size: 26px; line-height: 1; transition: transform .2s; }
+.v3ref-trustband-cta:hover span { transform: translateX(3px); }
+@media (max-width:1150px) {
+  .v3ref-trustband { flex-direction: column; padding: 28px 20px; }
+  .v3ref-trustband ul { width: 100%; }
+  .v3ref-trustband-car, .v3ref-trustband::after { width: 60%; opacity: .25; }
+}
+@media (max-width:760px) {
+  .v3ref-trustband ul { grid-template-columns: repeat(2, minmax(0,1fr)); row-gap: 26px; }
+  .v3ref-trustband li:nth-child(odd) { border-left: 0; }
+  .v3ref-trustband-value { font-size: 30px; }
+  .v3ref-trustband-cta { width: 100%; justify-content: center; font-size: 16px; }
+}
+
+/* FAQ. */
+.v3ref-faq { display: grid; gap: 10px; max-width: 900px; }
+.v3ref-faq details { border: 1px solid #ebedf0; border-radius: 12px; background: #fff; transition: border-color .2s, box-shadow .2s; }
+.v3ref-faq details[open] { border-color: #f0c2c9; box-shadow: 0 8px 22px #c9152612; }
+.v3ref-faq summary { position: relative; padding: 16px 52px 16px 20px; font-size: 14.5px; font-weight: 750; color: #1f232a; cursor: pointer; list-style: none; }
+.v3ref-faq summary::-webkit-details-marker { display: none; }
+/* Dấu + vẽ bằng 2 thanh gradient đặt đúng tâm (ký tự "+" của font bị lệch); mở ra thì xoay 45° thành ×. */
+.v3ref-faq summary::after { content: ""; position: absolute; right: 18px; top: 50%; width: 28px; height: 28px; border-radius: 50%; color: #c91526;
+  background-color: #fdecee;
+  background-image: linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor);
+  background-size: 12px 2.5px, 2.5px 12px; background-position: center; background-repeat: no-repeat;
+  transform: translateY(-50%); transition: transform .2s, background-color .2s, color .2s; }
+.v3ref-faq details[open] summary::after { transform: translateY(-50%) rotate(45deg); background-color: #c91526; color: #fff; }
+.v3ref-faq-answer { padding: 0 20px 18px; font-size: 13.5px; line-height: 1.75; color: #4a5058; }
+.v3ref-faq-answer a { color: #b71022; font-weight: 700; text-decoration: underline; }
+
+/* Thông tin gara + bản đồ. */
+.v3ref-contact { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); overflow: hidden; border: 1px solid #ebedf0; border-radius: 18px; background: #fff; box-shadow: 0 6px 20px #1a1c2612; }
+.v3ref-contact-info { display: flex; flex-direction: column; gap: 10px; padding: 28px 28px 26px; }
+.v3ref-contact-info h3 { margin: 0 0 4px; font-size: 22px; font-weight: 800; color: #1f232a; }
+.v3ref-contact-info>p { display: flex; gap: 10px; margin: 0; font-size: 13.5px; line-height: 1.55; color: #3a4048; }
+.v3ref-contact-info>p span { flex: none; width: 22px; color: #c91526; text-align: center; }
+.v3ref-contact-info>p a { color: inherit; font-weight: 700; }
+.v3ref-hours { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 13px; }
+.v3ref-hours caption { text-align: left; padding-bottom: 6px; font-size: 13px; font-weight: 800; color: #1f232a; }
+.v3ref-hours th, .v3ref-hours td { padding: 6px 10px; border-top: 1px solid #f0f1f3; text-align: left; font-weight: 500; color: #4a5058; }
+.v3ref-hours td { text-align: right; font-variant-numeric: tabular-nums; }
+.v3ref-hours tr.is-today th, .v3ref-hours tr.is-today td { background: #fff1f3; color: #b71022; font-weight: 800; }
+.v3ref-contact-actions { display: flex; gap: 10px; margin-top: auto; padding-top: 12px; }
+.v3ref-contact-primary, .v3ref-contact-ghost { flex: 1; display: flex; justify-content: center; align-items: center; min-height: 44px; border-radius: 30px; font-size: 13.5px; font-weight: 800; }
+.v3ref-contact-primary { background: #c91526; color: #fff !important; }
+.v3ref-contact-primary:hover { background: #a80f1f; }
+.v3ref-contact-ghost { border: 2px solid #c91526; color: #c91526 !important; }
+.v3ref-contact-ghost:hover { background: #fff1f3; }
+.v3ref-contact-map { width: 100%; height: 100%; min-height: 380px; border: 0; display: block; background: #eef0f2; }
+@media (max-width:900px) { .v3ref-contact { grid-template-columns: 1fr; } .v3ref-contact-map { min-height: 280px; } }
+
+/* Trang chủ — dải thương hiệu chạy ngang (marquee), dừng khi rê chuột. */
+.v3ref-marquee { position: relative; overflow: hidden; padding: 18px 0; border: 1px solid #eee; border-radius: 12px; background: #fff;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.v3ref-marquee-track { display: flex; width: max-content; animation: v3refMarquee 32s linear infinite; }
+.v3ref-marquee:hover .v3ref-marquee-track { animation-play-state: paused; }
+.v3ref-marquee-row { display: flex; align-items: center; gap: 18px; margin: 0; padding: 0 9px; list-style: none; }
+.v3ref-marquee-item { display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 150px; height: 56px; padding: 0 20px;
+  border: 1px solid #eef0f2; border-radius: 10px; background: #fafbfc; color: #4a5562; cursor: default; }
+.v3ref-marquee-item img { height: 30px; width: auto; max-width: 120px; object-fit: contain; }
+.v3ref-marquee-item span { font-size: 17px; font-weight: 900; font-style: italic; letter-spacing: .02em; white-space: nowrap; }
+@keyframes v3refMarquee { to { transform: translateX(-50%); } }
+@media (max-width:650px) { .v3ref-marquee-item { min-width: 120px; height: 48px; padding: 0 14px; } .v3ref-marquee-item span { font-size: 14px; } .v3ref-marquee-track { animation-duration: 24s; } }
+@media (prefers-reduced-motion: reduce) {
+  .v3ref-marquee { -webkit-mask-image: none; mask-image: none; }
+  .v3ref-marquee-track { animation: none; width: auto; }
+  .v3ref-marquee-row { flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .v3ref-marquee-row[aria-hidden] { display: none; }
+}
+
+/* Trang chủ — đánh giá của khách: tiêu đề + thẻ tổng điểm, carousel 3 thẻ, nút ‹ › và chấm. */
+.v3ref-rv-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 26px; }
+.v3ref-rv-eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px; border-radius: 30px; background: #fde8eb; color: #c10d22; font-size: 13px; font-weight: 800; }
+.v3ref-rv-head h2 { margin: 12px 0 6px; font-size: clamp(26px, 3vw, 36px); font-weight: 800; letter-spacing: -.035em; line-height: 1.15; color: #1f232a; }
+.v3ref-rv-head h2 em { font-style: normal; color: #c91526; }
+.v3ref-rv-head p { margin: 0; font-size: 14.5px; color: #5c656e; }
+.v3ref-rv-score { flex: none; display: flex; align-items: center; gap: 26px; padding: 18px 30px; border-radius: 22px;
+  background: linear-gradient(135deg, #fff5f6, #fde6e9); box-shadow: 0 10px 28px #c915261a, inset 0 0 0 1px #fbd9de; }
+.v3ref-rv-score-avg { display: grid; gap: 4px; }
+.v3ref-rv-score-avg strong { font-size: 44px; font-weight: 800; line-height: 1; letter-spacing: -.04em; color: #1f232a; }
+.v3ref-rv-score-avg strong span { font-size: 22px; font-weight: 600; color: #5c656e; }
+.v3ref-rv-score-sep { width: 1px; align-self: stretch; background: #f0c3c9; }
+.v3ref-rv-score-count { display: flex; align-items: center; gap: 12px; color: #c91526; }
+.v3ref-rv-score-count strong { display: block; font-size: 30px; font-weight: 800; line-height: 1.05; }
+.v3ref-rv-score-count small { font-size: 13px; color: #4a5058; }
+/* Sao (hỗ trợ sao lẻ: lớp sao vàng phủ theo % lên lớp sao xám). */
+.v3ref-rv-stars { position: relative; display: inline-block; font-size: 22px; letter-spacing: 3px; line-height: 1; color: #d9dce0; white-space: nowrap; }
+.v3ref-rv-stars>span { position: absolute; inset: 0 auto 0 0; overflow: hidden; color: #f5a623; }
+.v3ref-rv-stars.is-sm { font-size: 18px; letter-spacing: 2px; }
+/* Carousel trượt ngang: viewport cắt phần thừa, track chứa mọi thẻ trên 1 hàng và dịch theo trang. */
+.v3ref-rv-viewport { --rv-gap: 26px; overflow: hidden; margin: -14px -14px -24px; padding: 14px 14px 24px; touch-action: pan-y; }
+.v3ref-rv-track { display: flex; gap: var(--rv-gap); align-items: stretch;
+  transform: translateX(calc(var(--rv-page, 0) * -1 * (100% + var(--rv-gap))));
+  transition: transform .55s cubic-bezier(.22,.8,.24,1); }
+.v3ref-rv-track>.v3ref-rv-card { flex: 0 0 calc((100% - (var(--rv-per, 3) - 1) * var(--rv-gap)) / var(--rv-per, 3)); min-width: 0; }
+@media (prefers-reduced-motion: reduce) { .v3ref-rv-track { transition: none; } }
+.v3ref-rv-card { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 24px 26px 20px; border-radius: 20px; background: #fff;
+  border: 2px solid transparent; box-shadow: 0 10px 30px #c915261a; transition: border-color .2s, box-shadow .2s, transform .2s; animation: v3refPromoFade .4s ease both; }
+.v3ref-rv-card-top { display: flex; justify-content: space-between; align-items: center; }
+.v3ref-rv-quote { font-size: 56px; font-weight: 900; line-height: .6; height: 26px; color: #f0727f; font-family: Georgia, serif; }
+.v3ref-rv-title { align-self: flex-start; margin: 0; padding: 6px 16px; border-radius: 12px; background: #fde8eb; color: #c10d22; font-size: 19px; font-weight: 800; letter-spacing: -.02em; }
+.v3ref-rv-card blockquote { flex: 1; margin: 0; font-size: 14.5px; line-height: 1.7; color: #2b3038; }
+.v3ref-rv-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.v3ref-rv-chips li { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 30px; background: #fdf0f2; font-size: 13px; color: #2b3038; }
+.v3ref-rv-chips svg { flex: none; color: #c91526; }
+.v3ref-rv-card figcaption { display: flex; align-items: center; gap: 12px; padding-top: 14px; border-top: 1px solid #f3e3e6; }
+.v3ref-rv-avatar { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: #fde3e7; color: #c10d22; font-size: 18px; font-weight: 800; }
+.v3ref-rv-who { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.v3ref-rv-who strong { font-size: 14.5px; color: #1f232a; }
+.v3ref-rv-who small { font-size: 13px; color: #6b727a; }
+.v3ref-rv-date { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #5c656e; white-space: nowrap; }
+.v3ref-rv-nav { display: flex; justify-content: center; align-items: center; gap: 30px; margin-top: 24px; }
+.v3ref-rv-arrow { width: 46px; height: 46px; border-radius: 50%; border: 1px solid #e3e5e8; background: #fff; color: #1f232a; display: grid; place-items: center; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px #1a1c2612; transition: border-color .15s, color .15s; }
+.v3ref-rv-arrow:hover { border-color: #d71327; color: #d71327; }
+.v3ref-rv-dots { display: flex; gap: 10px; }
+.v3ref-rv-dots button { width: 12px; height: 12px; padding: 0; border: 0; border-radius: 50%; background: #dfe1e4; cursor: pointer; transition: background .2s, transform .2s; }
+.v3ref-rv-dots button.active { background: #d71327; transform: scale(1.15); }
+@media (max-width:1000px) { .v3ref-rv-head { flex-direction: column; align-items: flex-start; } }
+@media (max-width:600px) { .v3ref-rv-score { width: 100%; padding: 16px 18px; gap: 16px; } .v3ref-rv-score-avg strong { font-size: 36px; } .v3ref-rv-score-count strong { font-size: 24px; } .v3ref-rv-card { padding: 20px 18px 18px; } .v3ref-rv-date { display: none; } }
+
+/* Trang chủ — 3 card dịch vụ chủ lực, ảnh tròn nhô lên khỏi mép trên. */
+.v3ref-feature3-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 28px; padding-top: 70px; }
+.v3ref-feature3-card { position: relative; display: flex; flex-direction: column; padding: 92px 30px 28px; border: 1px solid #ebedf0; border-radius: 14px; background: #fff; box-shadow: 0 6px 20px #1a1c2614; transition: transform .2s, box-shadow .2s; }
+.v3ref-feature3-card:hover { transform: translateY(-4px); box-shadow: 0 16px 34px #2029341f; }
+.v3ref-feature3-img { position: absolute; top: -66px; left: 26px; width: 138px; height: 138px; border-radius: 50%; object-fit: cover; border: 5px solid #fff; box-shadow: 0 10px 26px #1a1c2633; transition: transform .3s ease; }
+.v3ref-feature3-card:hover .v3ref-feature3-img { transform: scale(1.04) rotate(-2deg); }
+.v3ref-feature3-card h3 { margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -.03em; color: #1f232a; }
+.v3ref-feature3-tagline { margin: 6px 0 0; padding-bottom: 16px; border-bottom: 1px solid #e3e5e8; font-size: 14px; font-weight: 600; color: #3a4048; }
+.v3ref-feature3-card ul { flex: 1; list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; align-content: start; }
+.v3ref-feature3-card li { position: relative; padding-left: 28px; font-size: 13.5px; line-height: 1.5; color: #3a4048; }
+.v3ref-feature3-card li::before { content: "✓"; position: absolute; left: 0; top: 1px; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #c91526; color: #c91526; font-size: 10px; font-weight: 900; display: grid; place-items: center; }
+.v3ref-feature3-meta { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 20px 0 14px; min-height: 22px; }
+.v3ref-feature3-meta strong { color: #c10d22; font-size: 15px; font-weight: 800; }
+.v3ref-feature3-meta a { margin-left: auto; color: #b71022; font-size: 13px; font-weight: 700; }
+.v3ref-feature3-meta a:hover { text-decoration: underline; }
+.v3ref-feature3-book { display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 46px; border-radius: 30px; background: #c91526; color: #fff !important; font-size: 14px; font-weight: 800; transition: background .15s, box-shadow .15s; }
+.v3ref-feature3-book:hover { background: #a80f1f; box-shadow: 0 8px 20px #c9152640; }
+.v3ref-feature3-book span { transition: transform .2s; }
+.v3ref-feature3-book:hover span { transform: translateX(4px); }
+@media (max-width:1000px) { .v3ref-feature3-grid { grid-template-columns: 1fr; max-width: 520px; margin: 0 auto; row-gap: 90px; } }
+@media (max-width:650px) { .v3ref-feature3-card { padding: 80px 20px 22px; } .v3ref-feature3-img { width: 118px; height: 118px; top: -56px; left: 20px; } .v3ref-feature3-card h3 { font-size: 21px; } }
+@keyframes v3refPromoFade { from { opacity: 0; } to { opacity: 1; } }
+.v3ref-promo-prev, .v3ref-promo-next { position: absolute; z-index: 5; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border: 0; border-radius: 50%; background: #fff3; color: #fff; font-size: 24px; line-height: 1; display: grid; place-items: center; cursor: pointer; transition: background .15s; }
+.v3ref-promo-prev:hover, .v3ref-promo-next:hover { background: #fff5; }
+.v3ref-promo-prev { left: 14px; } .v3ref-promo-next { right: 14px; }
+.v3ref-promo>.v3ref-promo-dots { position: absolute; z-index: 5; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 5px 9px; border-radius: 30px; background: #0003; }
+.v3ref-promo-dots button { display: block; flex: none; height: 9px; width: 9px; min-height: 0; border: 0; border-radius: 30px; background: #fff8; cursor: pointer; padding: 0; transition: width .25s, background .25s; }
+.v3ref-promo-dots button:hover { background: #fffc; }
+.v3ref-promo-dots button.active { width: 26px; background: #fff; }
+@keyframes v3refPromoIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+.v3ref-step strong { font-size: 11.5px; font-weight: 650; }
+.v3ref-benefits strong { font-size: 12px; font-weight: 700; }
+.v3ref-trust h3 { font-weight: 750; }
+.v3ref-strip h3 { font-weight: 800; }
+/* ===================== Trang Liên hệ (ReferenceContact.tsx) ===================== */
+/* Banner: ảnh xe đỏ bên phải, chữ trắng bên trái; chừa khoảng dưới cho 3 thẻ đè lên. */
+.v3ref-ct-hero { position: relative; padding: 34px 0 56px; color: #fff; background-size: cover; background-position: 70% 60%;
+  background-image: linear-gradient(90deg, #0b0f14f2 0%, #0b0f14d9 40%, #0b0f1440 75%, #0b0f1400 100%), url('/showcase/hero-red-suv.webp'); }
+.v3ref-ct-hero h1 { margin: 6px 0 12px; font-size: clamp(32px, 4.2vw, 52px); font-weight: 800; letter-spacing: -.04em; line-height: 1.12; color: #fff; }
+.v3ref-ct-hero h1 em { font-style: normal; color: #ff2a3d; }
+.v3ref-ct-hero p { max-width: 560px; margin: 0; font-size: 16px; line-height: 1.6; color: #e6e9ec; }
+/* Một cột: form, rồi thông tin gara. */
+.v3ref-ct-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; margin-top: 44px; }
+.v3ref-ct-head { margin-bottom: 4px; }
+.v3ref-ct-lead { margin: 0 0 16px; font-size: 14px; color: #5c656e; }
+.v3ref-ct-form { display: grid; gap: 16px; padding: 24px; border-radius: 20px; background: #fff; border: 1px solid #f1e3e5; box-shadow: 0 10px 30px #c9152614; }
+.v3ref-ct-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.v3ref-ct-field { display: grid; gap: 7px; }
+.v3ref-ct-label { font-size: 14px; font-weight: 700; color: #1f232a; }
+.v3ref-ct-label b { color: #d71327; }
+.v3ref-ct-label small { font-size: 13px; font-weight: 500; color: #5c656e; }
+.v3ref-ct-input { position: relative; display: flex; }
+.v3ref-ct-input>svg { position: absolute; left: 14px; top: 13px; color: #6b727a; pointer-events: none; }
+.v3ref-ct-input :is(input, textarea) { width: 100%; padding: 11px 14px 11px 42px; border: 1px solid #dcdfe3; border-radius: 12px; background: #fff; font: inherit; font-size: 14px; color: #1f232a; outline: none; transition: border-color .15s, box-shadow .15s; }
+.v3ref-ct-input textarea { min-height: 96px; resize: vertical; }
+.v3ref-ct-input :is(input, textarea):focus { border-color: #d71327; box-shadow: 0 0 0 3px #d713271f; }
+.v3ref-ct-field.has-error .v3ref-ct-input :is(input, textarea) { border-color: #d71327; background: #fff7f8; }
+.v3ref-ct-alert { display: flex; align-items: center; gap: 8px; margin: 0; padding: 11px 14px; border-radius: 12px; font-size: 13.5px; font-weight: 600; }
+.v3ref-ct-alert.is-success { background: #e9f8ef; color: #17733f; }
+.v3ref-ct-alert.is-error { background: #fdecee; color: #b10f22; }
+.v3ref-ct-submit { display: flex; justify-content: center; align-items: center; gap: 10px; min-height: 52px; border: 0; border-radius: 12px; background: #d71327; color: #fff; font: inherit; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 22px #d7132740; transition: background .15s, transform .15s; }
+.v3ref-ct-submit:hover:not(:disabled) { background: #b50f20; transform: translateY(-1px); }
+.v3ref-ct-submit:disabled { opacity: .7; cursor: wait; }
+/* Thông tin gara + bản đồ. */
+.v3ref-ct-info { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; padding: 24px; border-radius: 20px; background: #fff; border: 1px solid #f1e3e5; box-shadow: 0 10px 30px #c9152614; }
+.v3ref-ct-info-list { display: grid; gap: 22px; align-content: start; margin: 0; padding: 0; list-style: none; }
+.v3ref-ct-info-list>li { display: flex; gap: 14px; }
+.v3ref-ct-info-icon { flex: none; width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; background: #fdecee; color: #d71327; }
+.v3ref-ct-info-list h3 { margin: 2px 0 4px; font-size: 15.5px; font-weight: 800; color: #1f232a; }
+.v3ref-ct-info-list p { margin: 0; font-size: 13.5px; line-height: 1.65; color: #3a4048; }
+.v3ref-ct-checks { display: grid; gap: 7px; margin: 4px 0 0; padding: 0; list-style: none; }
+.v3ref-ct-checks li { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #3a4048; }
+.v3ref-ct-checks svg { flex: none; color: #d71327; }
+.v3ref-ct-map { display: flex; flex-direction: column; gap: 14px; }
+.v3ref-ct-map iframe, .v3ref-ct-map-empty { flex: 1; width: 100%; min-height: 260px; border: 0; border-radius: 16px; background: #eef0f2; box-shadow: 0 6px 18px #1a1c2614; }
+.v3ref-ct-map-empty { display: grid; place-content: center; justify-items: center; gap: 8px; color: #7a8189; font-size: 13px; }
+.v3ref-ct-maps-btn { display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 46px; border-radius: 14px; background: #fdecee; color: #c10d22 !important; font-size: 14px; font-weight: 800; transition: background .15s, color .15s; }
+.v3ref-ct-maps-btn:hover { background: #d71327; color: #fff !important; }
+/* Dải cam kết cuối trang. */
+.v3ref-ct-band { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); margin: 40px 0 46px; padding: 26px 18px; list-style: none; border-radius: 22px; background: #fdf0f2; }
+.v3ref-ct-band li { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 12px; }
+.v3ref-ct-band li + li { border-left: 1px solid #f0c9cf; }
+.v3ref-ct-band li>span { color: #d71327; }
+.v3ref-ct-band li>div { display: grid; gap: 2px; }
+.v3ref-ct-band strong { font-size: 15px; font-weight: 800; color: #1f232a; }
+.v3ref-ct-band small { font-size: 13px; color: #5c656e; }
+@media (max-width:1100px) {
+  .v3ref-ct-band { grid-template-columns: repeat(2, minmax(0,1fr)); row-gap: 22px; }
+  .v3ref-ct-band li:nth-child(3) { border-left: 0; }
+}
+@media (max-width:640px) {
+  .v3ref-ct-row, .v3ref-ct-info { grid-template-columns: 1fr; }
+  .v3ref-ct-band { grid-template-columns: 1fr; }
+  .v3ref-ct-band li { justify-content: flex-start; border-left: 0 !important; }
+}
+/* Dark mode. */
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-ct-form,.v3ref-ct-info) { background: var(--cs-surface); border-color: var(--cs-border); box-shadow: 0 12px 30px #0007; }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-ct-label,.v3ref-ct-info-list h3,.v3ref-ct-band strong) { color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-ct-lead,.v3ref-ct-label small,.v3ref-ct-info-list p,.v3ref-ct-checks li,.v3ref-ct-band small) { color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-ct-info-icon,.v3ref-ct-maps-btn) { background: var(--cs-soft); color: var(--cs-accent-text) !important; }
+html[data-theme="dark"] .v3ref-shell .v3ref-ct-input :is(input, textarea) { background: var(--cs-surface-2); border-color: var(--cs-border); color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-ct-input>svg { color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-shell .v3ref-ct-band { background: var(--cs-surface-2); }
+html[data-theme="dark"] .v3ref-shell .v3ref-ct-band li + li { border-color: var(--cs-border); }
+html[data-theme="dark"] .v3ref-shell .v3ref-ct-band li>span { color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-ct-map iframe { filter: brightness(.85) contrast(1.05); }
+/* Màn chào lần đầu vào web. */
+.v3ref-intro { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; cursor: pointer;
+  background: radial-gradient(circle at 50% 40%, #e0283c 0%, #b50719 45%, #6e0812 100%); color: #fff; animation: v3refIntroIn .35s ease both; }
+.v3ref-intro.is-leaving { animation: v3refIntroOut .5s ease forwards; }
+.v3ref-intro-mark { width: 92px; height: 92px; border-radius: 22px; display: grid; place-items: center; background: #fff; color: #d71327; font-size: 62px; font-weight: 900;
+  box-shadow: 0 20px 50px #0005; animation: v3refIntroPop .7s cubic-bezier(.2,1.4,.4,1) .1s both; }
+.v3ref-intro-text { display: grid; justify-items: center; gap: 4px; animation: v3refIntroRise .6s ease .45s both; }
+.v3ref-intro-text strong { font-size: 34px; font-weight: 900; letter-spacing: -.03em; }
+.v3ref-intro-text small { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
+.v3ref-intro-bar { width: 140px; height: 3px; border-radius: 3px; background: #ffffff33; overflow: hidden; position: relative; animation: v3refIntroRise .4s ease .6s both; }
+.v3ref-intro-bar::after { content: ""; position: absolute; inset: 0; background: #fff; transform-origin: left; animation: v3refIntroLoad 1s ease .65s both; }
+@keyframes v3refIntroIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes v3refIntroOut { to { opacity: 0; transform: scale(1.04); visibility: hidden; } }
+@keyframes v3refIntroPop { from { opacity: 0; transform: scale(.4) rotate(-12deg); } to { opacity: 1; transform: none; } }
+@keyframes v3refIntroRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes v3refIntroLoad { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Footer — logo mạng xã hội: nút tròn trắng, logo màu thương hiệu. */
+.v3ref-footer .v3ref-social { display: flex; gap: 10px; margin: 14px 0 0; padding: 0; list-style: none; font-size: 0; }
+.v3ref-social :is(a, span) { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: var(--social); box-shadow: 0 4px 12px #0003; transition: transform .2s, box-shadow .2s, background .2s, color .2s; }
+/* Hover: nền đỏ thương hiệu, logo trắng. */
+.v3ref-social a:hover, .v3ref-social a:focus-visible { transform: translateY(-3px); background: #d71327; color: #fff; box-shadow: 0 8px 18px #d7132755; }
+.v3ref-social span { cursor: default; }
+
+/* Ảnh thật thay cho icon ký tự ở dải kêu gọi đặt lịch; cắt khung vào chiếc xe. */
+.v3ref-strip-photo { flex: none; width: 150px; height: 92px; border-radius: 12px; object-fit: cover; object-position: 72% 58%; box-shadow: 0 8px 20px #c9152626; border: 3px solid #fff; }
+@media (max-width:650px) { .v3ref-strip-photo { width: 100%; height: 130px; } }
+.v3ref-strip p { font-size: 13px; }
+.v3ref-featurebar p { font-size: 12px; }
+.v3ref-featurebar small { font-size: 11px; line-height: 1.5; }
+.v3ref-filter-sidebar h3 { font-size: 13.5px; font-weight: 750; }
+.v3ref-filter-sidebar button { font-size: 12.5px; font-weight: 600; }
+.v3ref-card-body h3 { font-size: 16px; font-weight: 750; line-height: 1.43; }
+.v3ref-card-body p { font-size: 12.5px; line-height: 1.7; }
+.v3ref-card-bottom strong { font-size: 13px; font-weight: 800; }
+.v3ref-card-bottom a { font-size: 12px; font-weight: 700; }
+.v3ref-primary { font-size: 12.5px; font-weight: 750; letter-spacing: 0; transition: background .15s, box-shadow .15s, transform .15s; }
+.v3ref-outline-btn { font-size: 12px; font-weight: 700; }
+.v3ref-tabs button { font-size: 12.5px; font-weight: 700; }
+.v3ref-searchbar :is(input, select), .v3ref-list-head input, .v3ref-lookup input[type=search], .v3ref-lookup select { font-size: 12.5px; }
+.v3ref-appt-summary h3 { font-size: 13.5px; font-weight: 750; line-height: 1.45; }
+.v3ref-appt-summary p { font-size: 12px; }
+.v3ref-appt-summary small, .v3ref-appt-date small { font-size: 11px; }
+.v3ref-appt-time { font-size: 12px; font-weight: 700; }
+.v3ref-pill { font-size: 10.5px; font-weight: 700; }
+.v3ref-list-count { font-size: 11.5px; }
+.v3ref-side-card h3 { font-size: 15px; font-weight: 800; }
+.v3ref-side-card>p { font-size: 12.5px; }
+.v3ref-stats span { font-size: 11px; }
+.v3ref-car-info h3 { font-size: 18px; font-weight: 750; }
+.v3ref-car-info dl, .v3ref-modal dl { font-size: 12.5px; }
+.v3ref-car-info dd { font-weight: 700; }
+.v3ref-car-actions a { font-size: 12px; }
+.v3ref-table-scroll table,.v3ref-track-details table { font-size: 12px; }
+.v3ref-lookup-label { font-size: 13px; font-weight: 750; }
+.v3ref-lookup label { font-size: 12px; font-weight: 650; }
+.v3ref-track-vehicle p, .v3ref-track-vehicle strong { font-size: 12.5px; }
+.v3ref-progress-step strong { font-size: 11px; font-weight: 650; }
+.v3ref-current-note { font-size: 12.5px; font-weight: 650; }
+.v3ref-footer p,.v3ref-footer-inner>div>a:not(.v3ref-footer-brand):not(.v3ref-footer-cta) { font-size: 12px; }
+.v3ref-footer h4 { font-size: 13px; font-weight: 750; }
+.v3ref-footer-brand { font-weight: 750; }
+
+/* Better affordances, focus states and smooth-but-subtle hover feedback. */
+.v3ref :is(a,button,select,input):focus-visible, .v3ref-header :is(a,button):focus-visible,
+.v3ref-footer a:focus-visible { outline: 3px solid #e42b47; outline-offset: 3px; }
+.v3ref :is(.v3ref-small-service,.v3ref-service-card,.v3ref-car-row,.v3ref-appt-row) { transition: box-shadow .17s ease, border-color .17s ease, transform .17s ease; }
+.v3ref :is(.v3ref-small-service,.v3ref-service-card):hover { border-color: #edbfca; }
+.v3ref .v3ref-appt-row:hover, .v3ref .v3ref-car-row:hover { border-color: #e7b2bd; box-shadow: 0 8px 22px rgb(42 27 35 / 8%); }
+.v3ref :is(button,a) { -webkit-tap-highlight-color: transparent; }
+.v3ref-header a { text-decoration: none; }
+.v3ref-tabs button { transition: color .16s, border-color .16s, background .16s; }
+.v3ref :is(.v3ref-primary,.v3ref-outline-btn) { min-height: 40px; }
+.v3ref .v3ref-outline-btn:hover { transform: translateY(-1px); }
+.v3ref .v3ref-hero-prev, .v3ref .v3ref-hero-next { width: 42px; height: 42px; box-shadow: 0 4px 18px #0002; }
+.v3ref .v3ref-dots button { height: 8px; min-width: 13px; }
+.v3ref :is(.v3ref-banner,.v3ref-hero) { scroll-margin-top: 76px; }
+
+@media (max-width:1160px) {
+  .v3ref-nav-wrap { width: calc(100% - 28px); position: relative; }
+  .v3ref-hamburger { display: flex; }
+  .v3ref-menu { display: none; position: absolute; z-index: 70; top: calc(100% + 12px); left: 0; right: 0;
+    height: auto; max-height: calc(100dvh - 95px); overflow-y: auto; padding: 12px;
+    background: white; border: 1px solid #ecdee2; border-radius: 14px;
+    box-shadow: 0 18px 48px #1d202333; flex-direction: column; align-items: stretch; gap: 1px; }
+  .v3ref-menu.open { display: flex; }
+  .v3ref-menu a { height: auto; min-height: 42px; padding: 11px 13px; border-bottom: 0;
+    border-radius: 9px; font-size: 13px; }
+  .v3ref-menu a:hover, .v3ref-menu a.active { background: #fff0f3; color: #b70e26; border-left: 3px solid #cf122a; padding-left: 10px; }
+}
+@media (max-width:650px) {
+  .v3ref-header { height: 66px; }
+  .v3ref-logo strong { font-size: 18px; }
+  .v3ref-logo small { font-size: 8px; }
+  .v3ref-logo>span { width: 34px; height: 34px; font-size: 21px; }
+  .v3ref-nav-right { gap: 5px; }
+  .v3ref-reviews-link span, .v3ref-management-link>span:last-child { display: none; }
+  .v3ref-reviews-link { font-size: 19px; }
+  .v3ref-account-popover { right: -45px; }
+  .v3ref-hero h1 { font-size: 35px; line-height: 1.18; }
+  .v3ref-section-head h2 { font-size: 18px; }
+  .v3ref-home .v3ref-section-head h2 { font-size: 22px; }
+  .v3ref-card-body h3 { font-size: 15px; }
+  .v3ref-small-service strong { font-size: 11.5px; }
+  .v3ref-car-actions a { font-size: 11px; }
+  .v3ref-promo-slider { padding: 20px 18px 36px; }
+  .v3ref-promo-prev, .v3ref-promo-next { display: none; }
+  .v3ref-promo-slider::after { background: linear-gradient(90deg, rgb(181 7 25 / 95%) 0%, rgb(181 7 25 / 80%) 60%, rgb(181 7 25 / 45%) 100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v3ref-promo-copy, .v3ref-promo.v3ref-promo-slider img { animation: none; }
+  .v3ref :is(a,button), .v3ref-header :is(a,button), .cs-workspace :is(a,button) { transition: none !important; transform: none !important; }
+}
+
+/* The customer showcase has its own visual system, so map its fixed light surfaces to theme tokens. */
+html[data-theme="dark"] .v3ref-shell,
+html[data-theme="dark"] .v3ref-shell .v3ref {
+  color-scheme: dark;
+  background: var(--cs-bg);
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-shell .cs-customer-layout,
+html[data-theme="dark"] .v3ref-shell .cs-customer-main {
+  background: var(--cs-bg) !important;
+  color: var(--cs-text) !important;
+}
+html[data-theme="dark"] .v3ref-header {
+  background: var(--cs-surface);
+  border-color: var(--cs-border);
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-logo,
+html[data-theme="dark"] .v3ref-menu a,
+html[data-theme="dark"] .v3ref-account-trigger,
+html[data-theme="dark"] .v3ref-logout,
+html[data-theme="dark"] .v3ref-hamburger {
+  color: var(--cs-text) !important;
+}
+html[data-theme="dark"] .v3ref-logo small { color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-menu,
+html[data-theme="dark"] .v3ref-account-popover {
+  background: var(--cs-surface);
+  border-color: var(--cs-border);
+}
+html[data-theme="dark"] .v3ref-account-popover a,
+html[data-theme="dark"] .v3ref-account-popover button { color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-account-popover a:hover,
+html[data-theme="dark"] .v3ref-account-popover button:hover,
+html[data-theme="dark"] .v3ref-account-popover :focus-visible {
+  background: var(--cs-soft);
+  color: var(--cs-accent-text) !important;
+}
+html[data-theme="dark"] .v3ref-menu a:hover,
+html[data-theme="dark"] .v3ref-menu a.active,
+html[data-theme="dark"] .v3ref-menu a[aria-current="page"] {
+  background: transparent !important;
+  color: var(--cs-text) !important;
+  border-bottom-color: var(--cs-accent) !important;
+}
+html[data-theme="dark"] .v3ref-theme-toggle {
+  background: var(--cs-surface-2);
+  border-color: var(--cs-border);
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-theme-toggle:hover { background: var(--cs-hover); }
+html[data-theme="dark"] .v3ref-shell .v3ref-small-service,
+html[data-theme="dark"] .v3ref-shell .v3ref-benefits,
+html[data-theme="dark"] .v3ref-shell .v3ref-trust,
+html[data-theme="dark"] .v3ref-shell .v3ref-brands,
+html[data-theme="dark"] .v3ref-shell .v3ref-strip,
+html[data-theme="dark"] .v3ref-shell .v3ref-filter-sidebar,
+html[data-theme="dark"] .v3ref-shell .v3ref-service-card,
+html[data-theme="dark"] .v3ref-shell .v3ref-appt-row,
+html[data-theme="dark"] .v3ref-shell .v3ref-side-card,
+html[data-theme="dark"] .v3ref-shell .v3ref-stats > div,
+html[data-theme="dark"] .v3ref-shell .v3ref-car-row,
+html[data-theme="dark"] .v3ref-shell .v3ref-car-history,
+html[data-theme="dark"] .v3ref-shell .v3ref-lookup,
+html[data-theme="dark"] .v3ref-shell .v3ref-tracking-main,
+html[data-theme="dark"] .v3ref-shell .v3ref-total,
+html[data-theme="dark"] .v3ref-shell .v3ref-empty,
+html[data-theme="dark"] .v3ref-shell .v3ref-modal {
+  background: var(--cs-surface);
+  border-color: var(--cs-border);
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-shell .v3ref-strip { background: var(--cs-surface-2); }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-small-service,.v3ref-outline-btn,.v3ref-filter-sidebar button,.v3ref-tabs button) {
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-section-head h2,.v3ref-trust h3,.v3ref-trust p,.v3ref-benefits strong,
+  .v3ref-brands span,.v3ref-strip h3,.v3ref-strip p,.v3ref-card-body h3,.v3ref-card-body p,
+  .v3ref-appt-date small,.v3ref-appt-summary h3,.v3ref-appt-summary p,.v3ref-appt-time,
+  .v3ref-side-card h3,.v3ref-side-card > p,.v3ref-stats span,.v3ref-car-info h3,
+  .v3ref-car-info dt,.v3ref-car-info dd,.v3ref-table-scroll th,.v3ref-table-scroll td,
+  .v3ref-track-details th,.v3ref-track-details td,.v3ref-track-details p,.v3ref-progress-step strong) {
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-smallnote,.v3ref-list-count,.v3ref-featurebar small,
+  .v3ref-car-info dt,.v3ref-modal dt,.v3ref-total > small) { color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-shell :is(input,select) {
+  background: var(--cs-surface-2);
+  border-color: var(--cs-border);
+  color: var(--cs-text);
+}
+html[data-theme="dark"] .v3ref-shell :is(input,select)::placeholder { color: var(--cs-muted); }
+
+/* ---- Dark mode cho các section mới của trang chủ ---- */
+/* Thẻ nền trắng → surface. */
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-feature3-card,.v3ref-pkg,.v3ref-symptom,.v3ref-rv-card,.v3ref-faq details,.v3ref-contact,.v3ref-marquee,.v3ref-rv-arrow) {
+  background: var(--cs-surface); border-color: var(--cs-border); color: var(--cs-text); box-shadow: 0 8px 24px #0006;
+}
+html[data-theme="dark"] .v3ref-shell .v3ref-pkg.is-featured { border-color: var(--cs-accent); }
+html[data-theme="dark"] .v3ref-shell .v3ref-marquee-item { background: var(--cs-surface-2); border-color: var(--cs-border); color: var(--cs-text); }
+/* Logo thương hiệu màu tối (Bosch, Denso…) khó thấy trên nền tối → đặt trên ô sáng. */
+html[data-theme="dark"] .v3ref-shell .v3ref-marquee-item:has(img) { background: #f4f4f2; }
+/* Chữ chính. */
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-feature3-card h3,.v3ref-pkg-km strong,.v3ref-pkg h3,.v3ref-symptom strong,
+  .v3ref-rv-head h2,.v3ref-rv-score-avg strong,.v3ref-rv-card blockquote,.v3ref-rv-who strong,.v3ref-rv-chips li,
+  .v3ref-faq summary,.v3ref-contact-info h3,.v3ref-hours caption) { color: var(--cs-text); }
+/* Chữ phụ. */
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-feature3-tagline,.v3ref-feature3-card li,.v3ref-pkg li,.v3ref-pkg-month,.v3ref-section-lead,
+  .v3ref-rv-head p,.v3ref-rv-score-avg strong span,.v3ref-rv-score-count small,.v3ref-rv-who small,.v3ref-rv-date,
+  .v3ref-faq-answer,.v3ref-contact-info>p,.v3ref-hours th,.v3ref-hours td) { color: var(--cs-muted); }
+/* Chữ màu nhấn đỏ → bản sáng hơn cho đủ tương phản trên nền tối. */
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-feature3-meta strong,.v3ref-feature3-meta a,.v3ref-pkg-km,.v3ref-pkg-price,.v3ref-symptom small,
+  .v3ref-rv-head h2 em,.v3ref-rv-score-count,.v3ref-faq-answer a,.v3ref-contact-info>p span,.v3ref-review-services) { color: var(--cs-accent-text); }
+/* Đường kẻ. */
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-feature3-tagline,.v3ref-pkg h3,.v3ref-rv-card figcaption,.v3ref-hours th,.v3ref-hours td) { border-color: var(--cs-border); }
+/* Nền hồng nhạt (pill, chip, icon tròn) → soft của theme tối. */
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-rv-eyebrow,.v3ref-rv-title,.v3ref-rv-chips li,.v3ref-rv-avatar,.v3ref-symptom-icon) {
+  background: var(--cs-soft); color: var(--cs-accent-text);
+}
+html[data-theme="dark"] .v3ref-shell .v3ref-rv-chips li { color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-symptom:hover .v3ref-symptom-icon { background: var(--cs-accent); color: #fff; }
+html[data-theme="dark"] .v3ref-shell .v3ref-rv-score { background: linear-gradient(135deg, var(--cs-surface), var(--cs-surface-2)); box-shadow: 0 10px 28px #0006, inset 0 0 0 1px var(--cs-border); }
+html[data-theme="dark"] .v3ref-shell .v3ref-rv-score-sep { background: var(--cs-border); }
+html[data-theme="dark"] .v3ref-shell .v3ref-rv-stars { color: #4a4e55; }
+html[data-theme="dark"] .v3ref-shell .v3ref-rv-dots button:not(.active) { background: #4a4e55; }
+html[data-theme="dark"] .v3ref-shell .v3ref-rv-arrow { color: var(--cs-text); }
+/* FAQ: nút + / ×. */
+html[data-theme="dark"] .v3ref-shell .v3ref-faq details:not([open]) summary::after { background-color: var(--cs-soft); color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-faq details[open] { border-color: var(--cs-accent); }
+/* Gói bảo dưỡng: nút viền. */
+html[data-theme="dark"] .v3ref-shell .v3ref-pkg-book { border-color: var(--cs-accent-text); color: var(--cs-accent-text) !important; }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-pkg-book:hover,.v3ref-pkg.is-featured .v3ref-pkg-book) { background: var(--cs-accent); border-color: var(--cs-accent); color: #fff !important; }
+/* Liên hệ: hàng hôm nay + nút viền. */
+html[data-theme="dark"] .v3ref-shell .v3ref-hours tr.is-today :is(th,td) { background: var(--cs-soft); color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-contact-ghost { border-color: var(--cs-accent-text); color: var(--cs-accent-text) !important; }
+html[data-theme="dark"] .v3ref-shell .v3ref-contact-ghost:hover { background: var(--cs-soft); }
+html[data-theme="dark"] .v3ref-shell .v3ref-contact-map { filter: brightness(.85) contrast(1.05); }
+/* Card dịch vụ chủ lực: viền ảnh tròn theo nền thẻ. */
+html[data-theme="dark"] .v3ref-shell .v3ref-feature3-img { border-color: var(--cs-surface); }
+html[data-theme="dark"] .v3ref-shell .v3ref-feature3-card li::before { border-color: var(--cs-accent-text); color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-strip-photo { border-color: var(--cs-surface); }
+/* Quy trình: tên bước + ô số thứ tự. */
+html[data-theme="dark"] .v3ref-shell .v3ref-step strong { color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-step-num { background: var(--cs-surface); color: var(--cs-accent-text); border-color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-step-icon { border-color: var(--cs-soft); }
+html[data-theme="dark"] .v3ref-shell .v3ref-step:not(:last-child)::after { color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-appt-date,
+html[data-theme="dark"] .v3ref-shell .v3ref-stats > div,
+html[data-theme="dark"] .v3ref-shell .v3ref-table-scroll th {
+  background: var(--cs-surface-2);
+  border-color: var(--cs-border);
+}
+html[data-theme="dark"] .v3ref-shell .v3ref-filter-sidebar button.active,
+html[data-theme="dark"] .v3ref-shell .v3ref-filter-sidebar button:hover,
+html[data-theme="dark"] .v3ref-shell .v3ref-tabs button.active,
+html[data-theme="dark"] .v3ref-shell .v3ref-tabs button:hover {
+  background: var(--cs-soft);
+  color: var(--cs-accent-text);
+}
+html[data-theme="dark"] .v3ref-shell .v3ref-outline-btn {
+  background: var(--cs-surface-2);
+  border-color: var(--cs-border);
+  color: var(--cs-text) !important;
+}
+html[data-theme="dark"] .v3ref-shell .v3ref-outline-btn:hover { background: var(--cs-hover); }
+html[data-theme="dark"] .v3ref-shell .v3ref-current-note { background: var(--cs-soft); color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-progress-step > span { background: var(--cs-surface-2); border-color: var(--cs-border); color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-shell .v3ref-progress-step.done > span { background: var(--cs-success); border-color: var(--cs-success); color: #fff; }
+html[data-theme="dark"] .v3ref-shell .v3ref-modal-close { color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-modal h2 { color: var(--cs-accent-text); }
+@media (max-width:1160px) {
+  html[data-theme="dark"] .v3ref-menu a:hover,
+  html[data-theme="dark"] .v3ref-menu a.active,
+  html[data-theme="dark"] .v3ref-menu a[aria-current="page"] {
+    background: transparent !important;
+    color: var(--cs-text) !important;
+    border-left: 0 !important;
+    border-bottom: 2px solid var(--cs-accent) !important;
+    padding-left: 13px;
+  }
+}

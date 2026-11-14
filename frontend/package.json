@@ -33,7 +33,9 @@
     "test:account-area": "node tests/customer-account-area.mjs",
     "test:buttons": "node tests/button-redesign.mjs",
     "test:vehicle-catalog": "node tests/vehicle-catalog-ui.mjs",
-    "test:admin-real-data": "node tests/admin-real-data.mjs"
+    "test:admin-real-data": "node tests/admin-real-data.mjs",
+    "test:v3-images": "node tests/v3-image-upload-regression.mjs",
+    "test:v3-ux": "node tests/v3-ux-navigation-typography.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -1,4 +1,4 @@
-import { fetchApi } from "./api";
+import { apiClient, fetchApi } from "./api";
 
 /** API thật của khu Admin (backend/app/Http/Controllers/Api/Admin*Controller.php). */
 
@@ -127,7 +127,7 @@ export type AdminAccount = { id: number; email: string; name: string; role: Acco
 /* ------------------------------------------------------------ Phụ tùng & kho */
 export type AdminPart = {
   id: number; sku: string; name: string; description: string | null; category: string | null; unit: string; cost: number; price: number;
-  stock: number; min: number; level: "ok" | "low" | "out"; status: "ACTIVE" | "INACTIVE"; updated_at: string | null; compat: Array<{ id: number; name: string }>;
+  image_url: string | null; stock: number; min: number; level: "ok" | "low" | "out"; status: "ACTIVE" | "INACTIVE"; updated_at: string | null; compat: Array<{ id: number; name: string }>;
 };
 export type PartPayload = {
   sku: string; name: string; category: string | null; unit: string; cost_price: number; sell_price: number; description: string | null;
@@ -140,6 +140,11 @@ export type StockMove = { id: number; at: string | null; type: "IN" | "OUT"; sku
 export type HolidayRange = { ids: number[]; from: string; to: string; reason: string | null; days: number };
 
 type Message<T> = { message: string; data: T };
+
+/* ---------------------------------------------------------- Tin nhắn liên hệ */
+/** Tin khách gửi từ form trang Liên hệ (công khai). */
+export type ContactMessageStatus = "NEW" | "HANDLED";
+export type AdminContactMessage = { id: number; name: string; phone: string; email: string | null; message: string; status: ContactMessageStatus; handled_at: string | null; created_at: string };
 const send = <T>(path: string, method: "POST" | "PUT" | "PATCH" | "DELETE", body?: unknown) =>
   fetchApi<T>(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
@@ -161,6 +166,8 @@ export const adminApi = {
   replyReview: (id: number, reply: string) => send<Message<AdminReview>>(`/admin/reviews/${id}/reply`, "POST", { reply }),
   hideReview: (id: number, hidden: boolean) => send<Message<AdminReview>>(`/admin/reviews/${id}`, "PATCH", { is_hidden: hidden }),
 
+  contactMessages: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminContactMessage, { new: number }>>(`/admin/contact-messages${query(params)}`, { signal }),
+  setContactMessageStatus: (id: number, status: ContactMessageStatus) => send<Message<AdminContactMessage>>(`/admin/contact-messages/${id}`, "PATCH", { status }),
   auditLogs: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminAuditLog>>(`/admin/audit-logs${query(params)}`, { signal }),
 
   customers: (params: Params, signal?: AbortSignal) => fetchApi<CustomerList>(`/admin/customers${query(params)}`, { signal }),
@@ -183,6 +190,16 @@ export const adminApi = {
   parts: (params: Params, signal?: AbortSignal) => fetchApi<PartList>(`/admin/parts${query(params)}`, { signal }),
   createPart: (body: PartPayload) => send<Message<AdminPart>>("/admin/parts", "POST", body),
   updatePart: (id: number, body: PartPayload) => send<Message<AdminPart>>(`/admin/parts/${id}`, "PATCH", body),
+  uploadPartImage: async (id: number, image: File): Promise<Message<AdminPart>> => {
+    const form = new FormData();
+    form.append('image', image);
+    const response = await apiClient.post<Message<AdminPart>>(`/admin/parts/${id}/image`, form);
+    return response.data;
+  },
+  deletePartImage: async (id: number): Promise<Message<AdminPart>> => {
+    const response = await apiClient.delete<Message<AdminPart>>(`/admin/parts/${id}/image`);
+    return response.data;
+  },
   adjustStock: (id: number, body: { type: "IN" | "OUT"; quantity: number; note: string | null }) => send<Message<AdminPart>>(`/admin/parts/${id}/stock`, "POST", body),
   stockMoves: (params: Params, signal?: AbortSignal) => fetchApi<Paged<StockMove>>(`/admin/stock-moves${query(params)}`, { signal }),
 

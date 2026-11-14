@@ -16,13 +16,16 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingCatalogController;
 use App\Http\Controllers\Api\CapacityController;
 use App\Http\Controllers\Api\ChatbotController;
+use App\Http\Controllers\Api\ContactMessageController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerHandoverController;
+use App\Http\Controllers\Api\CustomerNotificationController;
 use App\Http\Controllers\Api\CustomerPickupAuthorizationController;
 use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\CustomerReviewController;
 use App\Http\Controllers\Api\GarageSettingController;
 use App\Http\Controllers\Api\HandoverController;
+use App\Http\Controllers\Api\HomeStatsController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\MaintenancePackageController;
@@ -30,6 +33,7 @@ use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\PartController;
 use App\Http\Controllers\Api\PartRequestController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PublicReviewController;
 use App\Http\Controllers\Api\QuotationConfirmationController;
 use App\Http\Controllers\Api\QuotationController;
 use App\Http\Controllers\Api\RepairOrderController;
@@ -42,6 +46,9 @@ use App\Http\Controllers\Api\WorkingHoursController;
 use App\Http\Controllers\Api\WorkItemController;
 use App\Models\Account;
 use Illuminate\Support\Facades\Route;
+
+// Public part catalog images are streamed via Laravel: no symlink required.
+Route::get('part-images/{part}', [AdminInventoryController::class, 'showImage'])->whereNumber('part');
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +76,10 @@ Route::get('services/{service}', [ServiceController::class, 'show']);
 Route::get('maintenance-packages', [MaintenancePackageController::class, 'index']);
 Route::get('maintenance-packages/{maintenancePackage}', [MaintenancePackageController::class, 'show']);
 Route::get('booking-catalog', [BookingCatalogController::class, 'index']);
+Route::get('reviews/featured', [PublicReviewController::class, 'featured']);
+Route::get('home-stats', [HomeStatsController::class, 'index']);
+// Form trang Liên hệ (công khai) — tối đa 3 lần/phút mỗi IP để chống spam.
+Route::post('contact-messages', [ContactMessageController::class, 'store'])->middleware('throttle:3,1');
 
 // Danh mục xe công khai: Hãng → Dòng xe → Phiên bản (chỉ bản ghi đang hiển thị).
 Route::controller(VehicleCatalogController::class)
@@ -156,6 +167,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // Thanh toán hóa đơn qua VNPay
         Route::post('me/invoices/{invoice}/vnpay', [VnpayController::class, 'create'])->middleware(['throttle:10,1', 'idempotency']);
+
+        // Thông báo của khách (đổi lịch, phụ tùng về): chỉ đọc/sửa bản ghi thuộc tài khoản đang đăng nhập.
+        Route::get('me/notifications', [CustomerNotificationController::class, 'index']);
+        Route::patch('me/notifications/{notification}/read', [CustomerNotificationController::class, 'markRead'])->whereNumber('notification');
 
         // Đánh giá dịch vụ
         Route::controller(CustomerReviewController::class)->prefix('me/reviews')->group(function (): void {
@@ -308,6 +323,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('audit-logs', 'auditLogs');
         });
 
+        // Tin nhắn từ form trang Liên hệ.
+        Route::get('admin/contact-messages', [ContactMessageController::class, 'index']);
+        Route::patch('admin/contact-messages/{contactMessage}', [ContactMessageController::class, 'update'])->whereNumber('contactMessage');
+
         // Ngày nghỉ lễ (theo khoảng ngày).
         Route::get('admin/holidays', [AdminHolidayController::class, 'index']);
         Route::post('admin/holidays', [AdminHolidayController::class, 'store']);
@@ -318,6 +337,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('parts', 'parts');
             Route::post('parts', 'storePart');
             Route::patch('parts/{part}', 'updatePart')->whereNumber('part');
+            Route::post('parts/{part}/image', 'uploadImage')->whereNumber('part');
+            Route::delete('parts/{part}/image', 'deleteImage')->whereNumber('part');
             Route::post('parts/{part}/stock', 'adjustStock')->whereNumber('part');
             Route::get('stock-moves', 'moves');
         });

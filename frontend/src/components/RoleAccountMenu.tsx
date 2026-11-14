@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTheme } from "../contexts/theme";
+import { LABELS } from "../config/labels";
+import { Icon } from "./ui/Icon";
 import {
   getRoleManagementPage,
   getUserDisplayName,
@@ -16,6 +19,7 @@ const getInitials = (name?: string) => {
 function RoleAccountMenu() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
   
   const [user, setUser] = useState(() => {
     try {
@@ -251,6 +255,24 @@ function RoleAccountMenu() {
           </div>
 
           <div className="border-t border-[#E1E4E6] p-2">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? LABELS.theme.toLight : LABELS.theme.toDark}
+              className="mb-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-cs-bg"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cs-surface-2 text-[#3A3020]">
+                <Icon name={theme === "dark" ? "sun" : "moon"} size={16}/>
+              </span>
+              <div>
+                <p className="text-[13px] font-semibold text-[#20252B]">
+                  {theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}
+                </p>
+                <p className="mt-0.5 text-[11px] text-cs-muted">
+                  Chuyển chế độ hiển thị
+                </p>
+              </div>
+            </button>
             <button
               type="button"
               onClick={handleLogout}

@@ -269,6 +269,8 @@ export async function getMyReviews(): Promise<CustomerReview[]> {
 export async function submitReview(data: {
   repair_order_id: number;
   overall_rating: number;
+  advisor_rating?: number;
+  technician_rating?: number;
   comment?: string;
 }) {
   return fetchApi("/me/reviews", {

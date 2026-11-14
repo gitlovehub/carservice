@@ -1,5 +1,7 @@
+import { useEffect, useRef } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { Icon } from "../components/ui/Icon";
+import Breadcrumb from "../components/Breadcrumb";
 import { useAuthSession } from "../contexts/authSession";
 import { getUserDisplayName } from "../pages/auth/auth";
 import { CUSTOMER_ACCOUNT_GROUPS, CUSTOMER_ACCOUNT_LINKS, isAccountLinkActive } from "./customerAccountNav";
@@ -21,12 +23,25 @@ function readCachedCustomer(): { avatar?: string | null; email?: string | null; 
 export default function CustomerAccountLayout() {
   const session = useAuthSession();
   const location = useLocation();
+  const accountNavRef = useRef<HTMLElement>(null);
+  // Chỉ cuộn ngang tab ở màn hình nhỏ, tránh scrollIntoView() làm cả trang nhảy xuống khi chuyển route.
+  useEffect(() => {
+    if (typeof window === "undefined" || window.matchMedia("(min-width: 1024px)").matches) return;
+    const nav = accountNavRef.current;
+    const selected = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!nav || !selected) return;
+    const left = selected.offsetLeft - nav.offsetLeft - (nav.clientWidth - selected.clientWidth) / 2;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    nav.scrollTo({ left: Math.max(0, left), behavior: reducedMotion ? "auto" : "smooth" });
+  }, [location.pathname]);
+  const referenceFullWidth = ["/appointments", "/customer/appointments", "/cars", "/customer/cars", "/repair-status", "/reviews"].includes(location.pathname);
   // Lúc đang kiểm tra phiên (tải trang lần đầu), dùng hồ sơ đã lưu để hiện khung ngay — chỉ để hiển thị,
   // không dùng để phân quyền (các trang và API vẫn tự kiểm tra).
   const cached = session.status === "checking" ? readCachedCustomer() : null;
   const account = session.status === "authenticated" && session.account.role === "CUSTOMER" ? session.account : cached;
-  if (!account) return <Outlet/>;
+  if (!account || referenceFullWidth) return <Outlet/>;
 
+  const currentLink = CUSTOMER_ACCOUNT_LINKS.find(link => isAccountLinkActive(link, location.pathname));
   const name = getUserDisplayName(account) || "Khách hàng";
   // Chữ đầu của từ đầu + từ cuối (giống trang Hồ sơ): "Khách hàng TÈO" → "KT".
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -44,13 +59,12 @@ export default function CustomerAccountLayout() {
         </span>
       </Link>
       {/* Desktop: nhóm có tiêu đề; điện thoại: một hàng tab cuộn ngang (tự cuộn tới mục đang mở). */}
-      <nav className="flex gap-1 overflow-x-auto [scrollbar-width:none] lg:mt-3 lg:flex-col lg:gap-0 lg:overflow-visible lg:border-t lg:border-cs-border lg:pt-1" aria-label="Menu tài khoản">
+      <nav ref={accountNavRef} className="flex gap-1 overflow-x-auto [scrollbar-width:none] lg:mt-3 lg:flex-col lg:gap-0 lg:overflow-visible lg:border-t lg:border-cs-border lg:pt-1" aria-label="Menu tài khoản">
         {CUSTOMER_ACCOUNT_GROUPS.map(group => <div key={group} className="contents lg:block lg:pt-3">
           <p className="hidden px-3 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-cs-muted lg:block">{group}</p>
           {CUSTOMER_ACCOUNT_LINKS.filter(link => link.group === group).map(link => {
             const active = isAccountLinkActive(link, location.pathname);
             return <Link key={link.to} to={link.to} aria-current={active ? "page" : undefined}
-              ref={active ? el => el?.scrollIntoView({ block: "nearest", inline: "center" }) : undefined}
               className={`flex min-h-10 shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold no-underline transition ${active ? "bg-cs-soft text-cs-accent-text lg:shadow-[inset_3px_0_0_var(--cs-accent)]" : "text-cs-text hover:bg-cs-hover"}`}>
               <Icon name={link.icon} size={18}/>{link.label}
             </Link>;
@@ -60,6 +74,10 @@ export default function CustomerAccountLayout() {
     </aside>
     {/* cs-account-content: chuẩn hóa tiêu đề trang (h1) cho mọi trang trong khu tài khoản — xem garage-customer-pages.css. */}
     <div className="cs-account-content min-w-0 [&>*]:min-h-0">
+      {/* Breadcrumb đồng nhất toàn khu khách: Trang chủ › Hồ sơ của tôi › <trang hiện tại>. */}
+      <Breadcrumb tone="light" items={currentLink && currentLink.to !== "/customer/account"
+        ? [{ label: "Hồ sơ của tôi", to: "/customer/account" }, { label: currentLink.label }]
+        : [{ label: "Hồ sơ của tôi" }]}/>
       <Outlet/>
     </div>
   </div>;

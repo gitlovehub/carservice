@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Button, IconButton } from "../../components/ui/Button";
 import { KmInput, QuantityStepper } from "../../components/ui/QuantityStepper";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
+import { VehicleConditionMap, type ExteriorPosition } from "../../components/evidence/VehicleConditionMap";
 import { handoverApi, VEHICLE_POSITIONS, type HandoverInput, type OtpSent } from "../../services/evidenceService";
 import type { HandoverChecklistItem, WorkflowHandover, WorkflowOrder } from "../../services/workflowService";
 import { card, input, Notice } from "./WorkflowUI";
@@ -55,6 +56,8 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
   const checkedIn = (order.handovers ?? []).some(h => h.type === "CHECK_IN" && h.status === "CONFIRMED");
   const activeAuthorizations = (order.pickup_authorizations ?? []).filter(a => a.status === "ACTIVE");
   const [form, setForm] = useState<HandoverInput>(() => toInput(order, handover, type));
+  const [selectedExterior, setSelectedExterior] = useState<ExteriorPosition>("FRONT");
+  const [selectedPhotoPosition, setSelectedPhotoPosition] = useState<string>("FRONT");
   const [openEarly, setOpenEarly] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -113,6 +116,32 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
       </div>
       <label className="block text-xs font-semibold text-cs-muted">Tình trạng chung<textarea className={input} rows={2} maxLength={2000} value={form.general_condition ?? ""} onChange={e => setForm({ ...form, general_condition: e.target.value })}/></label>
       <label className="block text-xs font-semibold text-cs-muted">Đồ có giá trị trong xe<input className={input} maxLength={1000} value={form.valuables_note ?? ""} onChange={e => setForm({ ...form, valuables_note: e.target.value })}/></label>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <VehicleConditionMap value={selectedExterior} onChange={next => { setSelectedExterior(next); setSelectedPhotoPosition(next); }} items={form.items}/>
+        <div className="rounded-2xl border border-cs-border bg-cs-surface-2 p-4 sm:p-5">
+          <h3 className="text-sm font-bold text-cs-text">Tình trạng tại vị trí đã chọn</h3>
+          <p className="mt-1 text-xs text-cs-muted">Đánh dấu trầy, móp, hư hỏng có sẵn và mô tả chi tiết trước khi gửi khách xác nhận.</p>
+          {(() => {
+            const index = form.items.findIndex(item => item.category === "EXTERIOR" && item.position_code === selectedExterior);
+            const item = index < 0 ? null : form.items[index];
+            const update = (patch: Partial<HandoverChecklistItem>) => {
+              if (index >= 0) setItem(index, patch);
+              else setForm(previous => ({ ...previous, items: [...previous.items, { category: "EXTERIOR", position_code: selectedExterior, label: VEHICLE_POSITIONS[selectedExterior], condition: "OK", ...patch }] }));
+            };
+            return <div className="mt-4 space-y-3">
+              <label className="block text-xs font-semibold text-cs-muted">Đánh giá hiện trạng
+                <select className={input} value={item?.condition ?? "OK"} onChange={event => update({ condition: event.target.value as HandoverChecklistItem["condition"] })}>
+                  {Object.entries(CONDITION_TEXT).filter(([code]) => code !== "PRESENT").map(([code, text]) => <option key={code} value={code}>{text}</option>)}
+                </select>
+              </label>
+              <label className="block text-xs font-semibold text-cs-muted">Mô tả vị trí / vết hư hỏng
+                <textarea className={input} rows={3} maxLength={500} placeholder="Ví dụ: Trầy 5 cm ở góc cản trước bên trái..." value={item?.note ?? ""} onChange={event => update({ note: event.target.value })}/>
+              </label>
+              <p className="text-xs leading-5 text-cs-muted">Sau khi lưu biên bản, chọn đúng vị trí này ở phần ảnh bên dưới rồi chụp hoặc tải ảnh thật lên. Khách sẽ đối chiếu ảnh và checklist trước khi xác nhận.</p>
+            </div>;
+          })()}
+        </div>
+      </div>
       <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm"><thead><tr className="border-b border-cs-border text-left text-xs text-cs-muted"><th className="py-2 pr-2">Nhóm</th><th className="py-2 pr-2">Hạng mục</th><th className="py-2 pr-2">Tình trạng</th><th className="py-2 pr-2">SL</th><th className="py-2">Ghi chú</th><th/></tr></thead>
         <tbody>{form.items.map((item, index) => <tr key={index} className="border-b border-cs-border/60">
           <td className="py-1.5 pr-2 text-xs text-cs-muted">{CATEGORY_TEXT[item.category]}</td>
@@ -128,7 +157,7 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
         <Button type="submit" variant="secondary" loading={working}>{handover ? "Lưu nháp" : "Tạo biên bản"}</Button>
         {handover && <Button variant="primary" icon="send" loading={working} onClick={() => void run(async () => { await handoverApi.update(handover.id, form); await handoverApi.submit(handover.id); }, "Đã gửi biên bản. Chờ chủ xe xác nhận.")}>Gửi khách xác nhận</Button>}
       </div>
-      {handover && <PhotoUploader type="handover" id={handover.id} title="Ảnh tình trạng xe (chọn vị trí trước khi chụp; dịch vụ nhanh cần đủ 4 góc)" positions={VEHICLE_POSITIONS}/>}
+      {handover && <PhotoUploader type="handover" id={handover.id} title="Ảnh tình trạng xe (chọn vị trí trước khi chụp; dịch vụ nhanh cần đủ 4 góc)" positions={VEHICLE_POSITIONS} positionValue={selectedPhotoPosition} onPositionChange={setSelectedPhotoPosition}/>}
     </form> : handover && <HandoverSummary handover={handover}/>}
 
     {handover?.status === "SUBMITTED" && <div className="mt-4 rounded-xl border border-cs-border bg-cs-surface-2 p-4">

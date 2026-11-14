@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const src = rel => fs.readFileSync(path.join(import.meta.dirname, '../src', rel), 'utf8');
+const history = src('pages/customer/ServiceHistory.tsx');
+const reviews = src('pages/customer/Reviews.tsx');
+const layout = src('layouts/CustomerAccountLayout.tsx');
+const app = src('App.tsx');
+const api = src('services/customerApi.ts');
+const backend = fs.readFileSync(path.join(import.meta.dirname, '../../backend/app/Http/Controllers/Api/CustomerReviewController.php'), 'utf8');
+
+assert.match(history, /getMyRepairOrders\(\)/, 'Service history continues to fetch repair orders');
+assert.match(history, /InlineHistoryReview/, 'Review details open inline for the matching service order');
+assert.match(history, /getMyReviews\(/, 'History loads actual reviews to match each service order');
+assert.doesNotMatch(history, /ServiceReviewDialog|submitReview\(/, 'Do not embed rating form inside service history');
+assert.match(layout, /referenceFullWidth\s*=\s*\[[^\]]*"\/reviews"/, 'Reviews gets full width and no account sidebar');
+assert.match(app, /path="\/reviews" element=\{<Reviews\/>\}/, 'Existing protected reviews route preserved');
+assert.match(reviews, /getMyReviews\(\)/, 'Review page loads reviews via existing API');
+assert.match(reviews, /getMyRepairOrders\(\)/, 'Review page loads actual repair orders');
+assert.match(reviews, /order\.status === "HANDED_OVER"/, 'Only handed over cars are eligible');
+assert.match(reviews, /unreviewedOrders/, 'Already reviewed orders excluded from rating form');
+assert.match(reviews, /submitReview\(/, 'Form submits through API adapter');
+assert.match(reviews, /advisor_rating: advisor/, 'Optional advisor rating is sent');
+assert.match(reviews, /technician_rating: technician/, 'Optional technician rating is sent');
+assert.match(reviews, /maxLength=\{1000\}/, 'Comment limit follows backend');
+assert.match(reviews, /Trải nghiệm của bạn/, 'Reviews presents a customer-centered hero');
+assert.match(reviews, /data-testid="customer-reviews-standalone"/, 'Dedicated customer review page');
+assert.match(reviews, /review\.reply/, 'Admin replies shown to customer');
+assert.doesNotMatch(reviews, /<CustomerHeader\s*\/>|<CustomerTopbar\s*\/>|lg:ml-\[250px\]/, 'No duplicate headers');
+assert.match(api, /export async function submitReview/, 'API helper not removed');
+assert.match(backend, /RepairOrder::HANDED_OVER/, 'Backend checks handover');
+assert.match(backend, /Rule::unique\('reviews', 'repair_order_id'\)/, 'Backend prevents duplicate review');
+console.log('PASS: Standalone rating form; inline history review viewing; protected review API and eligibility intact.');

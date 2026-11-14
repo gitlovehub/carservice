@@ -6,10 +6,12 @@ import { compressImage, mediaApi, VEHICLE_POSITIONS, type MediaAttachableType, t
  * Ảnh bằng chứng (P1B). Ảnh lưu private trên server; hiển thị bằng blob tải kèm token.
  * readOnly: chỉ xem (khách, hoặc chứng từ đã khóa).
  */
-export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằng chứng", positions }: {
+export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằng chứng", positions, positionValue, onPositionChange }: {
   type: MediaAttachableType; id: number; readOnly?: boolean; title?: string; positions?: Record<string, string>;
+  positionValue?: string; onPositionChange?: (value: string) => void;
 }) {
   const [position, setPosition] = useState(positions ? Object.keys(positions)[0] : "");
+  const activePosition = positionValue ?? position;
   const [items, setItems] = useState<MediaItem[]>([]);
   const [urls, setUrls] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState(false);
@@ -48,7 +50,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
       for (const file of Array.from(files)) {
         const blob = await compressImage(file);
         const name = file.name.replace(/\.[^.]+$/, "") + (blob.type === "image/jpeg" ? ".jpg" : file.name.slice(file.name.lastIndexOf(".")));
-        await mediaApi.upload(type, id, blob, name, position ? { position_code: position } : {});
+        await mediaApi.upload(type, id, blob, name, activePosition ? { position_code: activePosition } : {});
       }
       await load();
     } catch (err) {
@@ -63,7 +65,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
     <div className="flex flex-wrap items-center justify-between gap-2">
       <p className="text-xs font-bold text-cs-muted">{title} ({items.length})</p>
       {!readOnly && <>
-        {positions && <select aria-label="Vị trí ảnh" className="rounded-lg border border-cs-border bg-cs-surface-2 px-2 py-1 text-xs" value={position} onChange={event => setPosition(event.target.value)}>{Object.entries(positions).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select>}
+        {positions && <select aria-label="Vị trí ảnh" className="rounded-lg border border-cs-border bg-cs-surface-2 px-2 py-1 text-xs" value={activePosition} onChange={event => { if (onPositionChange) onPositionChange(event.target.value); else setPosition(event.target.value); }}>{Object.entries(positions).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select>}
         <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" multiple className="sr-only" aria-label="Chọn ảnh" onChange={event => void upload(event.target.files)}/>
         <Button size="sm" variant="secondary" loading={busy} loadingText="Đang tải ảnh…" onClick={() => fileInput.current?.click()}>Thêm ảnh</Button>
       </>}
