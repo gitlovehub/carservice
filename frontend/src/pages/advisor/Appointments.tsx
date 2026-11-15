@@ -198,7 +198,8 @@ function Appointments() {
         localStorage.removeItem("role");
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        navigate("/login");
+        // Hết phiên: đăng nhập lại xong quay về đúng trang lịch hẹn (giữ bộ lọc trên URL).
+        navigate("/login", { state: { from: { pathname: window.location.pathname, search: window.location.search, hash: window.location.hash } } });
         return;
       }
       setAppointments([]);

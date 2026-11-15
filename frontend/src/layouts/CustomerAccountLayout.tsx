@@ -7,7 +7,8 @@ import { getUserDisplayName } from "../pages/auth/auth";
 import { CUSTOMER_ACCOUNT_GROUPS, CUSTOMER_ACCOUNT_LINKS, isAccountLinkActive } from "./customerAccountNav";
 
 /**
- * Khu "Hồ sơ của tôi": Hồ sơ, Lịch hẹn, Xe của tôi, Tiến độ xe, Báo giá, Lịch sử dùng chung một sidebar tài khoản
+ * Khu "Hồ sơ của tôi": Hồ sơ, Lịch hẹn, Xe của tôi, Báo giá, Lịch sử dùng chung một sidebar tài khoản
+ * (Tiến độ sửa chữa là trang riêng ở menu chính, không thuộc khu này)
  * (desktop: cột trái; điện thoại: thanh tab cuộn ngang). Chưa đăng nhập khách → để trang tự xử lý như cũ.
  */
 function readCachedCustomer(): { avatar?: string | null; email?: string | null; role?: string } & Parameters<typeof getUserDisplayName>[0] | null {
@@ -34,7 +35,7 @@ export default function CustomerAccountLayout() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     nav.scrollTo({ left: Math.max(0, left), behavior: reducedMotion ? "auto" : "smooth" });
   }, [location.pathname]);
-  const referenceFullWidth = ["/appointments", "/customer/appointments", "/cars", "/customer/cars", "/repair-status", "/reviews"].includes(location.pathname);
+  const referenceFullWidth = ["/appointments", "/customer/appointments", "/reviews"].includes(location.pathname);
   // Lúc đang kiểm tra phiên (tải trang lần đầu), dùng hồ sơ đã lưu để hiện khung ngay — chỉ để hiển thị,
   // không dùng để phân quyền (các trang và API vẫn tự kiểm tra).
   const cached = session.status === "checking" ? readCachedCustomer() : null;

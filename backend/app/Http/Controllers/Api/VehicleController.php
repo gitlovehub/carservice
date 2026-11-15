@@ -420,7 +420,7 @@ class VehicleController extends Controller
             return $this->customerProfileNotFoundResponse();
         }
 
-        $this->authorize('view', $vehicle);
+        $this->authorize('own', $vehicle);
 
         $vehicle->load(self::CATALOG_RELATIONS);
 
@@ -448,7 +448,7 @@ class VehicleController extends Controller
             return $this->customerProfileNotFoundResponse();
         }
 
-        $this->authorize('update', $vehicle);
+        $this->authorize('own', $vehicle);
 
         $validated = $request->validate([
             'model_id' => [
@@ -528,7 +528,7 @@ class VehicleController extends Controller
             return $this->customerProfileNotFoundResponse();
         }
 
-        $this->authorize('delete', $vehicle);
+        $this->authorize('own', $vehicle);
 
         $vehicle->delete();
 

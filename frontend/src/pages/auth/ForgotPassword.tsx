@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { fetchApi } from "../../services/api";
 import OtpInput from "../../components/auth/OtpInput";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
 import { GarageAuthError, GarageAuthLayout, GarageField } from "../../components/GaragePublic";
+import { AuthSwitchLink, PasswordInput } from "../../components/auth/PasswordInput";
+import { authFieldClass, authLinkRowClass, authPrimaryClass } from "../../components/auth/authStyles";
+import { Icon } from "../../components/ui/Icon";
 
 function ForgotPassword() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [step, setStep] = useState<"FORGOT" | "RESET" | "SUCCESS">("FORGOT");
   const [isLoading, setIsLoading] = useState(false);
@@ -163,20 +165,20 @@ function ForgotPassword() {
   return <GarageAuthLayout title={step === "FORGOT" ? "Khôi phục mật khẩu" : step === "RESET" ? "Đặt lại mật khẩu" : "Hoàn tất xác thực"} description={step === "FORGOT" ? "Nhập email đã đăng ký để nhận mã OTP đặt lại mật khẩu." : step === "RESET" ? `Mã OTP đã gửi tới ${email}.` : "Mật khẩu của bạn đã được cập nhật thành công."}>
     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     {errorMsg && <GarageAuthError message={errorMsg} />}
-    {step === "FORGOT" && <><form className="grid gap-4" onSubmit={handleForgotSubmit}>
-      <GarageField label="Email đã đăng ký"><input type="email" className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => {setEmail(e.target.value); setErrorMsg("");}} /></GarageField>
-      <button type="submit" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold !font-semibold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-transparent bg-[#cf2935] text-white hover:bg-[#b92430] min-h-14 px-6 py-4 text-sm w-full" disabled={isLoading || !email.trim()}>{isLoading ? "Đang gửi mã..." : "Gửi mã xác thực OTP →"}</button></form>
-      <p className="mt-5 mb-3 text-base text-cs-muted [&_a]:font-extrabold [&_a]:text-[#cf2935] [&_a]:hover:underline">Nhớ mật khẩu? <Link to="/login">Đăng nhập ngay</Link></p>
+    {step === "FORGOT" && <><form className="grid gap-4" onSubmit={handleForgotSubmit} noValidate>
+      <GarageField htmlFor="fp-email" label="Email đã đăng ký"><input id="fp-email" type="email" className={authFieldClass} autoComplete="email" placeholder="you@example.com" value={email} onChange={e => {setEmail(e.target.value); setErrorMsg("");}} /></GarageField>
+      <button type="submit" className={authPrimaryClass} disabled={isLoading || !email.trim()} aria-busy={isLoading || undefined}>{isLoading ? "Đang gửi mã..." : "Gửi mã xác thực OTP →"}</button></form>
+      <AuthSwitchLink text="Nhớ mật khẩu?" to="/login" label="Đăng nhập ngay" state={location.state}/>
     </>}
-    {step === "RESET" && <><form className="grid gap-4" onSubmit={handleResetSubmit}>
+    {step === "RESET" && <><form className="grid gap-4" onSubmit={handleResetSubmit} noValidate>
       <GarageField label="Mã OTP 6 số"><OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!errorMsg}/></GarageField>
-      <GarageField label="Mật khẩu mới"><div className="relative"><input className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" type={showPassword ? "text" : "password"} autoComplete="new-password" placeholder="Ít nhất 8 ký tự" value={newPassword} onChange={e => {setNewPassword(e.target.value);setErrorMsg("");}}/><button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-cs-muted hover:text-[#cf2935]" onClick={() => setShowPassword(s => !s)}>{showPassword ? "Ẩn" : "Hiện"}</button></div></GarageField>
+      <GarageField htmlFor="fp-new-password" label="Mật khẩu mới"><PasswordInput id="fp-new-password" autoComplete="new-password" placeholder="Ít nhất 8 ký tự" value={newPassword} onChange={e => {setNewPassword(e.target.value);setErrorMsg("");}}/></GarageField>
       <PasswordStrengthIndicator password={newPassword}/>
-      <GarageField label="Nhập lại mật khẩu"><div className="relative"><input className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" placeholder="Nhập lại mật khẩu mới" value={confirmPassword} onChange={e => {setConfirmPassword(e.target.value);setErrorMsg("");}}/><button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-cs-muted hover:text-[#cf2935]" onClick={() => setShowConfirmPassword(s => !s)}>{showConfirmPassword ? "Ẩn" : "Hiện"}</button></div></GarageField>
-      <button type="submit" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-transparent bg-[#cf2935] text-white hover:bg-[#b92430] min-h-14 px-6 py-4 text-sm w-full" disabled={isLoading || otp.length !== 6 || !newPassword}>{isLoading ? "Đang đặt lại mật khẩu..." : "Lưu mật khẩu mới →"}</button></form>
-      <div className="mt-5 grid gap-3 text-xs text-cs-muted [&_button]:cursor-pointer [&_button]:text-left [&_button]:font-extrabold [&_button]:text-[#cf2935] [&_button:disabled]:cursor-not-allowed">{resendCountdown > 0 ? <span>Gửi lại mã sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại mã OTP</button>}<button type="button" onClick={() => {setStep("FORGOT");setOtp("");setErrorMsg("");}}>← Thay đổi email</button></div>
+      <GarageField htmlFor="fp-confirm-password" label="Nhập lại mật khẩu"><PasswordInput id="fp-confirm-password" autoComplete="new-password" placeholder="Nhập lại mật khẩu mới" value={confirmPassword} onChange={e => {setConfirmPassword(e.target.value);setErrorMsg("");}}/></GarageField>
+      <button type="submit" className={authPrimaryClass} disabled={isLoading || otp.length !== 6 || !newPassword} aria-busy={isLoading || undefined}>{isLoading ? "Đang đặt lại mật khẩu..." : "Lưu mật khẩu mới →"}</button></form>
+      <div className={authLinkRowClass}>{resendCountdown > 0 ? <span>Gửi lại mã sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại mã OTP</button>}<button type="button" onClick={() => {setStep("FORGOT");setOtp("");setErrorMsg("");}}>← Thay đổi email</button></div>
     </>}
-    {step === "SUCCESS" && <><div className="mb-5 rounded-xl border border-[#70ae8a] bg-[#e8f7ed] p-4 font-extrabold text-[#191919]">✓ Mật khẩu đã cập nhật thành công.</div><button type="button" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-transparent bg-[#cf2935] text-white hover:bg-[#b92430] min-h-14 px-6 py-4 text-sm w-full" onClick={() => navigate('/login')}>Đăng nhập vào hệ thống →</button></>}
+    {step === "SUCCESS" && <><div className="mb-5 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 font-bold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200" role="status"><Icon name="check" size={18}/>Mật khẩu đã cập nhật thành công.</div><button type="button" className={authPrimaryClass} onClick={() => navigate('/login', { state: location.state })}>Đăng nhập vào hệ thống →</button></>}
   </GarageAuthLayout>;
 
 }

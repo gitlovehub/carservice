@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Service;
+use App\Models\ServiceCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -54,6 +55,25 @@ class ServiceControllerTest extends TestCase
             ->assertOk()
             ->assertJsonPath('0.category', 'Bảo dưỡng')
             ->assertJsonPath('1.category', 'Điện - Lạnh');
+    }
+
+    public function test_public_categories_return_admin_icons_and_skip_empty_categories(): void
+    {
+        $brakes = ServiceCategory::query()->create(['name' => 'Gầm - Phanh', 'icon' => 'disc', 'sort_order' => 2]);
+        $oil = ServiceCategory::query()->create(['name' => 'Bảo dưỡng', 'icon' => 'droplet', 'sort_order' => 1]);
+        $hidden = ServiceCategory::query()->create(['name' => 'Ẩn', 'icon' => 'bolt', 'sort_order' => 3]);
+        ServiceCategory::query()->create(['name' => 'Rỗng', 'icon' => 'gauge', 'sort_order' => 4]);
+        Service::factory()->create(['category_id' => $brakes->id, 'status' => 'ACTIVE', 'is_visible' => true]);
+        Service::factory()->count(2)->create(['category_id' => $oil->id, 'status' => 'ACTIVE', 'is_visible' => true]);
+        Service::factory()->create(['category_id' => $oil->id, 'status' => 'INACTIVE', 'is_visible' => true]);
+        Service::factory()->create(['category_id' => $hidden->id, 'status' => 'ACTIVE', 'is_visible' => false]);
+
+        $this->getJson('/api/service-categories')->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.name', 'Bảo dưỡng')
+            ->assertJsonPath('data.0.icon', 'droplet')
+            ->assertJsonPath('data.0.services_count', 2)
+            ->assertJsonPath('data.1.icon', 'disc');
     }
 
     public function test_show_hides_inactive_services(): void

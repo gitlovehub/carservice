@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\MaintenancePackage;
 use App\Models\Service;
+use App\Models\ServiceCategory;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,6 +46,23 @@ class BookingCatalogControllerTest extends TestCase
             ->assertJsonCount(1, 'groups.2.items');
     }
 
+    public function test_items_carry_the_admin_category_icon(): void
+    {
+        $brakes = ServiceCategory::query()->create(['name' => 'Gầm - Phanh', 'icon' => 'disc']);
+        $brake = Service::factory()->create(['name' => 'Thay má phanh', 'category' => 'Gầm - Phanh', 'category_id' => $brakes->id]);
+        $loose = Service::factory()->create(['name' => 'Rửa xe', 'category' => 'Khác', 'category_id' => null]);
+        $package = MaintenancePackage::factory()->create(['vehicle_model_id' => null]);
+        $package->services()->attach($brake->id, ['quantity' => 1]);
+
+        $groups = collect($this->getJson('/api/booking-catalog')->assertOk()->json('groups'))->keyBy('key');
+
+        $this->assertSame('layers', $groups['packages']['icon']);
+        $this->assertSame('layers', $groups['packages']['items'][0]['icon']);
+        $this->assertSame('disc', $groups['category:Gầm - Phanh']['icon']);
+        $this->assertSame('disc', $groups['category:Gầm - Phanh']['items'][0]['icon']);
+        $this->assertSame('wrench', collect($groups['category:Khác']['items'])->firstWhere('id', $loose->id)['icon']);
+    }
+
     public function test_filters_packages_by_vehicle_model_name_and_recommends_next_mileage_milestone(): void
     {
         $service = Service::factory()->create();
@@ -71,5 +89,6 @@ class BookingCatalogControllerTest extends TestCase
 
         $this->assertSame([$packages['shared10k']->id, $packages['vios20k']->id], $items->pluck('id')->all());
         $this->assertSame([false, true], $items->pluck('recommended')->all());
+        $this->assertSame([10000, 20000], $items->pluck('mileage_milestone')->all());
     }
 }

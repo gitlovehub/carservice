@@ -295,7 +295,7 @@ function Cars() {
             })}
           </div>
         )}
-        <div className="mt-7 text-xs font-extrabold text-cs-accent-text [&_a]:inline-flex [&_a]:items-center [&_a]:gap-2"><Link to="/customer/booking">Đặt lịch bảo dưỡng cho xe của tôi <Icon name="arrow" size={15}/></Link></div>
+        <div className="mt-7 text-xs font-extrabold text-cs-accent-text [&_a]:inline-flex [&_a]:items-center [&_a]:gap-2"><Link to="/booking">Đặt lịch bảo dưỡng cho xe của tôi <Icon name="arrow" size={15}/></Link></div>
       </main>
       {/* MODAL SỬA THÔNG TIN XE */}
       {editingVehicle && (

@@ -2,7 +2,7 @@
  * API cho 3 trang Admin: Lịch hẹn, Dịch vụ, Gói bảo dưỡng.
  * Lịch hẹn dùng chung API của Cố vấn (/advisor/appointments — Admin có quyền), các trang còn lại dùng /admin/*.
  */
-import { fetchApi } from "./api";
+import { apiClient, fetchApi } from "./api";
 import { query, type Params } from "./adminApi";
 
 type Message<T> = { message: string; data: T };
@@ -56,6 +56,8 @@ export type ServiceCategory = { id: number; name: string; icon: string; sort_ord
 export type AdminService = {
   id: number; name: string; category: string | null; category_id: number | null; description: string | null;
   base_price: string; estimated_minutes: number | null; status: ServiceStatus; is_visible: boolean; is_popular: boolean;
+  /** Ảnh minh họa admin tải lên (null = chưa có, trang Dịch vụ hiện khung xám). */
+  image_url?: string | null;
   sort_order: number; service_level?: ServiceLevel; active_packages_count?: number;
   service_category?: { id: number; name: string; icon: string } | null;
 };
@@ -104,7 +106,14 @@ export const catalogAdminApi = {
   services: (params: Params, signal?: AbortSignal) => fetchApi<{ data: LaravelPage<AdminService> }>(`/admin/services${query(params)}`, { signal }).then(r => r.data),
   service: (id: number, signal?: AbortSignal) => fetchApi<{ data: AdminService }>(`/admin/services/${id}`, { signal }).then(r => r.data),
   createService: (body: ServicePayload) => send<Message<AdminService>>("/admin/services", "POST", body),
-  updateService: (id: number, body: Partial<ServicePayload>) => send<Message<AdminService>>(`/admin/services/${id}`, "PATCH", body),  categories: (signal?: AbortSignal) =>
+  updateService: (id: number, body: Partial<ServicePayload>) => send<Message<AdminService>>(`/admin/services/${id}`, "PATCH", body),
+  uploadServiceImage: async (id: number, image: File): Promise<Message<AdminService>> => {
+    const form = new FormData();
+    form.append("image", image);
+    return (await apiClient.post<Message<AdminService>>(`/admin/services/${id}/image`, form)).data;
+  },
+  deleteServiceImage: async (id: number): Promise<Message<AdminService>> =>
+    (await apiClient.delete<Message<AdminService>>(`/admin/services/${id}/image`)).data,  categories: (signal?: AbortSignal) =>
     fetchApi<{ data: ServiceCategory[]; meta: { total: number; uncategorized: number; active?: number; visible?: number; icons: string[] } }>("/admin/service-categories", { signal }),
   createCategory: (body: { name: string; icon: string }) => send<Message<ServiceCategory>>("/admin/service-categories", "POST", body),
   updateCategory: (id: number, body: { name: string; icon: string }) => send<Message<ServiceCategory>>(`/admin/service-categories/${id}`, "PATCH", body),

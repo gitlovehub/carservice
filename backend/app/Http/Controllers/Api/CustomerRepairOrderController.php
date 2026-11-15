@@ -36,7 +36,7 @@ class CustomerRepairOrderController extends Controller
 
     public function show(Request $request, RepairOrder $repairOrder): JsonResponse
     {
-        $this->authorizeCustomerResource($request, 'view', $repairOrder);
+        $this->authorizeCustomerResource($request, 'own', $repairOrder);
 
         $repairOrder->load([
             'vehicle.model.brand',
@@ -71,7 +71,7 @@ class CustomerRepairOrderController extends Controller
 
     public function invoice(Request $request, RepairOrder $repairOrder): JsonResponse
     {
-        $this->authorizeCustomerResource($request, 'view', $repairOrder);
+        $this->authorizeCustomerResource($request, 'own', $repairOrder);
 
         return response()->json($repairOrder->invoice()->with('items', 'payments')->firstOrFail());
     }

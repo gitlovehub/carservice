@@ -2,9 +2,11 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import { FeedbackProvider } from "./components/ui/FeedbackProvider";
 import ChatWidget from "./components/ChatWidget";
+import ScrollToTopButton from "./components/ScrollToTopButton";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
+import GuestOnlyRoute from "./pages/auth/GuestOnlyRoute";
 import PublicLayout from "./layouts/PublicLayout";
 import CustomerAccountLayout from "./layouts/CustomerAccountLayout";
 import { AdminLayout, AdvisorLayout, CustomerLayout } from "./layouts/AppShell";
@@ -12,13 +14,13 @@ import ModulePlaceholder from "./pages/shared/ModulePlaceholder";
 import Home from "./pages/showcase/ReferenceHome";
 import Services from "./pages/showcase/ReferenceServices";
 import ReferenceAppointments from "./pages/showcase/ReferenceAppointments";
-import ReferenceCars from "./pages/showcase/ReferenceCars";
 import ReferenceTracking from "./pages/showcase/ReferenceTracking";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Contact from "./pages/showcase/ReferenceContact";
+import About from "./pages/showcase/ReferenceAbout";
 import CustomerDashboard from "./pages/customer/Dashboard";
 import Booking from "./pages/customer/Booking";
 import Appointments from "./pages/customer/Appointments";
@@ -67,33 +69,44 @@ function App() {
     {/* Public pages continue using their existing components. */}
     <Route element={<PublicLayout/>}>
     <Route path="/" element={<Home/>}/>
-    <Route path="/login" element={<Login/>}/>
-    <Route path="/register" element={<Register/>}/>
-    <Route path="/forgot-password" element={<ForgotPassword/>}/>
+    {/* Chỉ cho khách chưa đăng nhập; đã đăng nhập → chuyển về trang phù hợp (GuestOnlyRoute). */}
+    <Route path="/login" element={<GuestOnlyRoute><Login/></GuestOnlyRoute>}/>
+    <Route path="/register" element={<GuestOnlyRoute><Register/></GuestOnlyRoute>}/>
+    <Route path="/forgot-password" element={<GuestOnlyRoute><ForgotPassword/></GuestOnlyRoute>}/>
     <Route path="/role-selector" element={<Navigate to="/login" replace/>}/>
     <Route path="/services" element={<Services/>}/>
-    {/* Liên hệ: công khai, không cần đăng nhập. */}
+    {/* Liên hệ & Về chúng tôi: công khai, không cần đăng nhập. */}
     <Route path="/contact" element={<Contact/>}/>
+    <Route path="/about" element={<About/>}/>
     <Route path="*" element={<NotFound/>}/>
+
+    {/* Đặt lịch: KHÔNG bắt đăng nhập để khách điền trước; bản nháp được lưu,
+        tới bước gửi mới yêu cầu đăng nhập rồi quay lại đúng trang với dữ liệu cũ (Booking.tsx). */}
+    <Route element={<CustomerLayout/>}>
+      <Route path="/booking" element={<Booking/>}/>
+      <Route path="/customer/booking" element={<Booking/>}/>
+      {/* Tiến độ sửa chữa: trang riêng ở menu chính. Chưa đăng nhập → tra cứu bằng mã phiếu/lịch hẹn + 4 số cuối SĐT;
+          khách đã đăng nhập → danh sách phiếu của tài khoản (ReferenceTracking tự chọn giao diện). */}
+      <Route path="/repair-status" element={<ReferenceTracking/>}/>
+    </Route>
 
     {/* Customer shell: all legacy business pages retained, not rewritten. */}
     <Route element={<ProtectedRoute allowedRoles={["CUSTOMER"]}><CustomerLayout/></ProtectedRoute>}>
       <Route path="/customer" element={<Navigate to="/customer/appointments" replace/>}/>
       <Route path="/customer/dashboard" element={<CustomerDashboard/>}/>
-      <Route path="/customer/booking" element={<Booking/>}/>
-      <Route path="/booking" element={<Booking/>}/>
+      {/* Biên bản, ảnh & chẩn đoán đầy đủ của phiếu (cần đăng nhập). */}
+      <Route path="/customer/repair-status/manage" element={<RepairStatus/>}/>
       {/* Khu "Hồ sơ của tôi": các trang tài khoản dùng chung sidebar (CustomerAccountLayout). */}
       <Route element={<CustomerAccountLayout/>}>
         <Route path="/customer/account" element={<Account/>}/>
         <Route path="/appointments" element={<ReferenceAppointments/>}/>
         <Route path="/customer/appointments" element={<ReferenceAppointments/>}/>
-        <Route path="/cars" element={<ReferenceCars/>}/>
-        <Route path="/customer/cars" element={<ReferenceCars/>}/>
-        <Route path="/repair-status" element={<ReferenceTracking/>}/>
+        {/* "Xe của tôi": một trang quản lý duy nhất (thêm/sửa/xóa, đặt lịch cho xe). */}
+        <Route path="/cars" element={<Navigate to="/customer/cars" replace/>}/>
+        <Route path="/customer/cars" element={<Cars/>}/>
         <Route path="/quotation" element={<Quotation/>}/>
         <Route path="/customer/appointments/manage" element={<Appointments/>}/>
-        <Route path="/customer/cars/manage" element={<Cars/>}/>
-        <Route path="/customer/repair-status/manage" element={<RepairStatus/>}/>
+        <Route path="/customer/cars/manage" element={<Navigate to="/customer/cars" replace/>}/>
         <Route path="/customer/service-history" element={<ServiceHistory/>}/>
         <Route path="/reviews" element={<Reviews/>}/>
         <Route path="/invoices" element={<Invoices/>}/>
@@ -148,6 +161,6 @@ function App() {
       <Route path="contact-messages" element={<AdminContactMessages/>}/>
     </Route>
 
-  </Routes><ChatWidget/></FeedbackProvider></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;
+  </Routes><ScrollToTopButton/><ChatWidget/></FeedbackProvider></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;
 }
 export default App;

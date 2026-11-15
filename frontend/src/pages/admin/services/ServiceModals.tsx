@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Field, Input, Modal, Select, Switch, Textarea } from "../../../components/ui";
 import { useAppFeedback } from "../../../components/ui/feedbackContext";
 import { errorMessage } from "../../../services/adminApi";
@@ -27,6 +27,36 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
   const [error, setError] = useState("");
   const set = (patch: Partial<Form>) => { setForm(f => ({ ...f, ...patch })); setError(""); };
 
+  // Ảnh minh họa: chọn file → xem trước → tải lên sau khi lưu thông tin dịch vụ.
+  const [savedImage, setSavedImage] = useState<string | null>(service?.image_url ?? null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const imagePreview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile]);
+  // Giải phóng URL xem trước khi đổi ảnh / đóng form.
+  useEffect(() => () => { if (imagePreview) URL.revokeObjectURL(imagePreview); }, [imagePreview]);
+
+  const pickImage = (input: HTMLInputElement) => {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { setError("Chỉ nhận ảnh JPG, PNG hoặc WebP."); input.value = ""; return; }
+    if (file.size > 4 * 1024 * 1024) { setError("Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn."); input.value = ""; return; }
+    setError(""); setImageFile(file);
+  };
+
+  const removeSavedImage = async () => {
+    if (!service || !savedImage) return;
+    setSaving(true); setError("");
+    try {
+      const res = await catalogAdminApi.deleteServiceImage(service.id);
+      setSavedImage(null);
+      notify(res.message, "success");
+      onSaved(res.data);
+    } catch (e) {
+      setError(errorMessage(e, "Không xóa được ảnh dịch vụ."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const submit = async () => {
     const price = Number(form.base_price);
     const minutes = form.estimated_minutes ? Number(form.estimated_minutes) : null;
@@ -45,8 +75,18 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
       const res = service
         ? await catalogAdminApi.updateService(service.id, name === service.name ? rest : payload)
         : await catalogAdminApi.createService(payload);
+      let saved = res.data;
+      if (imageFile) {
+        // Thông tin đã lưu; ảnh lỗi thì báo rõ để admin thử lại, không mất phần đã nhập.
+        try {
+          saved = (await catalogAdminApi.uploadServiceImage(saved.id, imageFile)).data;
+        } catch (e) {
+          onSaved(saved);
+          throw new Error(`Đã lưu dịch vụ nhưng ảnh chưa được tải lên: ${errorMessage(e)}. Mở lại dịch vụ để thử tải ảnh.`, { cause: e });
+        }
+      }
       notify(service ? `Đã cập nhật dịch vụ “${payload.name}” (${money(price)}).` : `Đã thêm dịch vụ “${payload.name}” (${money(price)}).`, "success");
-      onSaved(res.data);
+      onSaved(saved);
     } catch (e) {
       setError(errorMessage(e, "Không lưu được dịch vụ."));
     } finally {
@@ -75,6 +115,20 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
       <Field label="Giá cơ bản (₫)" required><Input type="number" min={0} step={1000} value={form.base_price} onChange={e => set({ base_price: e.target.value })}/></Field>
       <Field label="Thời gian ước tính (phút)" hint="Tự cập nhật theo tổng bước chuẩn nếu có."><Input type="number" min={1} value={form.estimated_minutes} onChange={e => set({ estimated_minutes: e.target.value })}/></Field>
       <Field label="Mô tả ngắn" optional className="sm:col-span-2"><Textarea value={form.description} maxLength={1000} onChange={e => set({ description: e.target.value })} placeholder="Hiện dưới tên dịch vụ, ví dụ: Thay dầu và lọc dầu động cơ."/></Field>
+      <div className="flex items-start gap-3 rounded-control border border-cs-border bg-cs-surface-2 p-3 sm:col-span-2">
+        {imagePreview || savedImage
+          ? <img src={imagePreview ?? savedImage ?? undefined} alt="Xem trước ảnh dịch vụ" className="h-24 w-32 shrink-0 rounded-lg border border-cs-border bg-cs-surface object-cover"/>
+          : <div className="grid h-24 w-32 shrink-0 place-items-center rounded-lg border border-dashed border-cs-border bg-cs-surface text-caption text-cs-muted">Chưa có ảnh</div>}
+        <div className="min-w-0 flex-1">
+          <p className="text-small font-semibold text-cs-text">Ảnh minh họa <span className="font-normal text-cs-muted">(không bắt buộc)</span></p>
+          <p className="mt-0.5 text-caption text-cs-muted">Hiện trên trang Dịch vụ của khách. JPG, PNG, WebP · tối đa 4 MB · nên dùng ảnh ngang 4:3.</p>
+          <input aria-label="Chọn ảnh dịch vụ" type="file" accept="image/jpeg,image/png,image/webp" disabled={saving}
+            className="mt-2 block w-full cursor-pointer text-small text-cs-text file:mr-3 file:rounded-lg file:border-0 file:bg-cs-soft file:px-3 file:py-1.5 file:font-semibold file:text-cs-accent-text"
+            onChange={e => pickImage(e.currentTarget)}/>
+          {imageFile && <button type="button" className="mt-2 text-caption font-semibold text-cs-muted underline" disabled={saving} onClick={() => setImageFile(null)}>Bỏ ảnh vừa chọn</button>}
+          {!imageFile && savedImage && <button type="button" className="mt-2 text-caption font-semibold text-danger-fg underline" disabled={saving} onClick={() => void removeSavedImage()}>Xóa ảnh hiện tại</button>}
+        </div>
+      </div>
       <div className="flex flex-col divide-y divide-cs-border rounded-control border border-cs-border sm:col-span-2">
         {([
           ["status", "Đang áp dụng", "Tắt = ngừng dịch vụ: không dùng được khi đặt lịch và báo giá."],

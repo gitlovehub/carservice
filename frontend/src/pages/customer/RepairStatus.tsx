@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  formatDate,
+  formatDateTime,
   getMyRepairOrders,
   getMyRepairOrderDetail,
   getVehicleName,
@@ -43,7 +45,7 @@ const statusColorClasses: Record<"blue" | "amber" | "green" | "muted", string> =
 function formatEventTime(date?: string | null) {
   if (!date) return "";
   const parsed = new Date(date);
-  return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleString("vi-VN");
+  return Number.isNaN(parsed.getTime()) ? "" : formatDateTime(parsed);
 }
 
 function TrackingCard({ order }: { order: CustomerRepairOrder }) {
@@ -118,7 +120,7 @@ function TrackingCard({ order }: { order: CustomerRepairOrder }) {
       </div>
       {!!detail?.part_requests?.some(r => ["REQUESTED", "ORDERED"].includes(r.status)) && <section aria-label="Phụ tùng đang chờ" className="mt-6 border-t border-[var(--cs-border,#e9e9e6)] pt-6 text-sm">
         <h3 className="text-[17px] font-extrabold">Phụ tùng đang chờ</h3>
-        <ul className="mt-2">{detail.part_requests.filter(r => ["REQUESTED", "ORDERED"].includes(r.status)).map(r => <li key={r.id}>• {r.part?.name ?? "Phụ tùng"} × {r.quantity} · {r.eta_date ? `dự kiến về ${new Date(r.eta_date).toLocaleDateString("vi-VN")}` : "gara đang đặt hàng"}</li>)}</ul>
+        <ul className="mt-2">{detail.part_requests.filter(r => ["REQUESTED", "ORDERED"].includes(r.status)).map(r => <li key={r.id}>• {r.part?.name ?? "Phụ tùng"} × {r.quantity} · {r.eta_date ? `dự kiến về ${formatDate(r.eta_date)}` : "gara đang đặt hàng"}</li>)}</ul>
       </section>}
       {!!detail?.inspections?.[0]?.inspected_at && <CustomerDiagnosisBlock inspection={detail.inspections[0]}/>}
       {!!detail?.handovers?.length && <CustomerHandoverBlock handovers={detail.handovers} onConfirmed={() => setDetailKey(key => key + 1)}/>}
@@ -156,7 +158,7 @@ function CustomerPickupBlock({ orderId }: { orderId: number }) {
     <h3 className="text-[17px] font-extrabold">Ủy quyền nhận xe</h3>
     <p className={`mt-1 text-xs ${muted}`}>Nhờ người khác nhận xe? Khai báo trước tại đây. Gara chỉ giao xe khi người nhận có tên trong danh sách, khớp 4 số cuối giấy tờ, và bạn xác nhận biên bản trả xe.</p>
     {active.length > 0 && <ul className="mt-3 divide-y divide-[var(--cs-border,#e9e9e6)]">{active.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
-      <span>{item.full_name} · {item.phone} · giấy tờ ••••{item.id_last4}{item.valid_until ? ` · đến ${new Date(item.valid_until).toLocaleString("vi-VN")}` : ""}</span>
+      <span>{item.full_name} · {item.phone} · giấy tờ ••••{item.id_last4}{item.valid_until ? ` · đến ${formatDateTime(item.valid_until)}` : ""}</span>
       <Button size="sm" variant="danger-outline" disabled={working} onClick={() => void act(() => pickupAuthorizationApi.revoke(item.id))}>Thu hồi</Button>
     </li>)}</ul>}
     {error && <p role="alert" className="mt-2 text-sm font-semibold text-cs-danger">{error}</p>}
@@ -213,7 +215,7 @@ function CustomerHandoverBlock({ handovers, onConfirmed }: { handovers: Workflow
         {error && <p role="alert" className="text-sm font-semibold text-cs-danger">{error}</p>}
         <Button type="submit" variant="primary" loading={working}>Xác nhận đúng tình trạng</Button>
       </form>}
-      {handover.confirmations?.[0] && <p className="mt-3 text-xs text-[var(--cs-muted,#757575)]">Đã xác nhận lúc {new Date(handover.confirmations[0].confirmed_at).toLocaleString("vi-VN")}.</p>}
+      {handover.confirmations?.[0] && <p className="mt-3 text-xs text-[var(--cs-muted,#757575)]">Đã xác nhận lúc {formatDateTime(handover.confirmations[0].confirmed_at)}.</p>}
     </div>)}
   </section>;
 }

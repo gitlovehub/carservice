@@ -4,8 +4,9 @@ import { resolve } from 'node:path';
 const root=resolve(import.meta.dirname,'../../');
 const read=(path)=>readFileSync(resolve(root,path),'utf8');
 const assets=resolve(root,'frontend/public/showcase');
-for(const name of ['hero-red-suv.webp','hero-white-sedan.webp','hero-premium-suv.webp','service-1.webp','service-2.webp','service-3.webp','service-4.webp','service-5.webp','service-6.webp','car-detail.webp']){
-  assert(statSync(resolve(assets,name)).size>100000,`${name} must not be a tiny placeholder`);
+// Ảnh thật đã nén WebP (~50–150KB); ảnh giữ chỗ/lỗi thường chỉ vài KB.
+for(const name of ['hero-red-suv.webp','hero-white-sedan.webp','hero-premium-suv.webp','service-1.webp','service-2.webp','service-3.webp','service-4.webp','service-5.webp','service-6.webp','vehicle-sedan-red.webp','vehicle-sedan-white.webp']){
+  assert(statSync(resolve(assets,name)).size>40000,`${name} must not be a tiny placeholder`);
 }
 const home=read('frontend/src/pages/showcase/ReferenceHome.tsx');
 for(const name of ['hero-red-suv.webp','hero-white-sedan.webp','hero-premium-suv.webp']) assert(home.includes(name),`missing ${name}`);

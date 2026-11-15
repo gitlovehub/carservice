@@ -39,7 +39,7 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
 .v3ref-account { position: relative; }
 .v3ref-account-trigger {
   display: inline-flex; align-items: center; gap: 7px; border: 1px solid transparent;
-  border-radius: 99px; padding: 3px 6px 3px 3px; background: transparent;
+  border-radius: 99px; padding: 2px; background: transparent;
   color: #384150; cursor: pointer; transition: border-color .15s, background .15s;
 }
 .v3ref-account-trigger:hover, .v3ref-account-trigger[aria-expanded="true"] { background: #fff2f4; border-color: #f1d1d8; }
@@ -50,7 +50,6 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
 }
 .v3ref-theme-toggle:hover { background: #fff0f3; border-color: #f1d1d8; color: #b70e26; }
 .v3ref-avatar { width: 36px; height: 36px; font-weight: 750; font-size: 13px; }
-.v3ref-account-chevron { font-size: 17px; line-height: 1; padding-right: 2px; }
 .v3ref-account-popover {
   position: absolute; right: 0; top: calc(100% + 12px); min-width: 216px;
   padding: 7px; background: #fff; color: #18212d; border: 1px solid #e8eaf0;
@@ -65,8 +64,12 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
 .v3ref-account-popover :focus-visible { background: #fff0f3; color: #bd1129; }
 .v3ref-account-popover .v3ref-logout-action { color: #ba2436; border-top: 1px solid #edf0f4; border-radius: 0 0 8px 8px; margin-top: 4px; }
 .v3ref-management-link { display: flex; gap: 8px; align-items: center; font-size: 12px; font-weight: 700; color: #b6192d; }
-.v3ref-login { font-weight: 700; font-size: 13px; padding: 9px 14px; border-radius: 9px; background: var(--cs-brand-soft); color: var(--cs-on-soft); }
-.v3ref-login:hover, .v3ref-login[aria-current="page"] { background: var(--cs-soft-hover); color: var(--cs-on-soft); }
+/* Nút Đăng nhập ở header: nút chính màu đỏ thương hiệu (giống nút Đặt lịch / nút chính ở trang auth). */
+.v3ref-login { font-weight: 700; font-size: 13px; padding: 9px 16px; border-radius: 10px; background: #e11d2e; color: #fff; box-shadow: 0 6px 16px rgb(225 29 46 / 22%); transition: background-color .15s, box-shadow .15s; }
+.v3ref-login:hover, .v3ref-login[aria-current="page"] { background: #c81627; color: #fff; }
+.v3ref-login:focus-visible { outline: 2px solid #e11d2e; outline-offset: 2px; }
+html[data-theme="dark"] .v3ref-header .v3ref-login { background: #e11d2e; color: #fff !important; }
+html[data-theme="dark"] .v3ref-header .v3ref-login:hover { background: #c81627; }
 .v3ref-hamburger { width: 42px; height: 42px; font-size: 22px; align-items: center; justify-content: center; border-radius: 10px; }
 .v3ref-hamburger:hover { background: #f9eef1; }
 
@@ -83,8 +86,12 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
 .v3ref-hero-copy>p:not(.v3ref-mini) { font-size: 14px; line-height: 1.75; text-wrap: balance; }
 @media (min-width:651px) { .v3ref-hero-copy>p:not(.v3ref-mini) { max-width: none; white-space: nowrap; } }
 .v3ref-hero-button { font-size: 13px; font-weight: 700; padding: 11px 20px; border-radius: 10px; }
-.v3ref-banner h1 { font-size: clamp(27px,3.5vw,40px); line-height: 1.2; }
-.v3ref-banner p { font-size: 13px; line-height: 1.7; }
+/* Banner chung — đồng bộ với banner Về chúng tôi / Liên hệ (.v3ref-ab-hero / .v3ref-ct-hero). */
+.v3ref-banner { min-height: 0; display: block; padding: 34px 0 60px; background-position: 70% 55%; }
+.v3ref-banner .v3ref-container { padding: 0; }
+.v3ref-banner h1 { margin: 6px 0 12px; font-size: clamp(32px, 4.2vw, 52px); font-weight: 800; letter-spacing: -.04em; line-height: 1.12; }
+.v3ref-banner h1 em { font-style: normal; color: #ff2a3d; }
+.v3ref-banner p { max-width: 600px; margin: 0; font-size: 16px; line-height: 1.6; color: #e6e9ec; }
 /* Breadcrumb dùng chung (components/Breadcrumb.tsx) — viên thuốc; tone tối (mặc định, trên banner ảnh) / sáng (.is-light). */
 .v3ref-crumb { display: inline-flex; max-width: 100%; margin-bottom: 14px; padding: 6px 8px; border-radius: 40px; font-size: 13px; line-height: 1.3;
   background: #ffffff14; border: 1px solid #ffffff2b; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 6px 18px #0003; }
@@ -104,7 +111,8 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
 .v3ref-crumb.is-light li>span { color: var(--cs-text, #191919); }
 .v3ref-crumb.is-light [aria-current="page"] { background: var(--cs-soft, #fff1f1); color: var(--cs-accent-text, #cf2935); }
 .v3ref-section-head h2 { font-size: 20px; font-weight: 800; }
-.v3ref-home .v3ref-section-head h2 { font-size: 27px; letter-spacing: -.035em; }
+/* Tiêu đề section đồng bộ cho mọi trang khách (Trang chủ, Dịch vụ, Liên hệ, Về chúng tôi…). */
+.v3ref .v3ref-section-head h2 { font-size: 27px; letter-spacing: -.035em; }
 .v3ref-section-head a { font-size: 12px; font-weight: 700; }
 .v3ref-small-service strong { font-size: 12.5px; font-weight: 700; min-height: 55px; }
 .v3ref-promo h2 { font-style: normal; font-weight: 800; line-height: 1.2; }
@@ -146,6 +154,61 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
 .v3ref-pkg.is-featured .v3ref-pkg-book:hover { background: #a80f1f; }
 @media (max-width:1100px) { .v3ref-pkg-grid { grid-template-columns: repeat(2, minmax(0,1fr)); row-gap: 26px; } }
 @media (max-width:560px) { .v3ref-pkg-grid { grid-template-columns: 1fr; } }
+
+/* Trang Dịch vụ — ô tìm kiếm có icon, thanh lọc giá/sắp xếp, phân trang. */
+.v3ref-list-head { gap: 16px; flex-wrap: wrap; }
+.v3ref-sv-search { position: relative; display: flex; align-items: center; width: min(380px, 100%); }
+.v3ref-sv-search svg { position: absolute; left: 14px; color: #8a9097; pointer-events: none; }
+.v3ref-list-head .v3ref-sv-search input { width: 100%; padding: 11px 14px 11px 42px; border: 1px solid #dce0e4; border-radius: 12px; background: #fff; font-size: 13.5px; color: #2d333a; outline: none; transition: border-color .15s, box-shadow .15s; }
+.v3ref-sv-search input:focus { border-color: #d71327; box-shadow: 0 0 0 3px #d713271f; }
+.v3ref-sv-search:focus-within svg { color: #d71327; }
+.v3ref-sv-head { margin-top: 30px; scroll-margin-top: 90px; }
+/* Khoảng cách tiêu đề → nội dung bằng mục "Gói bảo dưỡng" phía trên (~22px). */
+.v3ref-sv-head .v3ref-list-head { margin-bottom: 18px; }
+.v3ref-sv-head + .v3ref-two-col { padding-top: 4px; }
+.v3ref-sv-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; margin: 0 0 20px; }
+.v3ref-sv-toolbar label { display: grid; gap: 5px; }
+.v3ref-sv-toolbar label span { font-size: 12px; font-weight: 700; color: #5c656e; }
+.v3ref-sv-toolbar select { min-width: 190px; padding: 9px 34px 9px 12px; border: 1px solid #dce0e4; border-radius: 10px; font: inherit; font-size: 13.5px; color: #2d333a; cursor: pointer;
+  appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c656e' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; }
+.v3ref-sv-toolbar select:focus { outline: none; border-color: #d71327; box-shadow: 0 0 0 3px #d713271f; }
+.v3ref-sv-clear { align-self: flex-end; padding: 9px 14px; border: 0; border-radius: 10px; background: #fdecee; color: #c10d22; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.v3ref-sv-clear:hover { background: #fbd5da; }
+.v3ref-sv-count { margin-left: auto; align-self: center; font-size: 13px; color: #6b727a; }
+/* Thanh danh mục: icon admin chọn trong ô tròn + tên + số dịch vụ. */
+.v3ref-filter-sidebar button .v3ref-sv-cat-icon { flex: none; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: #f3f4f6; color: #5c656e; font-size: 0; transition: background .15s, color .15s; }
+.v3ref-filter-sidebar button.active .v3ref-sv-cat-icon { background: #d71327; color: #fff; }
+.v3ref-filter-sidebar button .v3ref-sv-cat-name { flex: 1; min-width: 0; font-size: inherit; }
+.v3ref-sv-cat-count { flex: none; min-width: 24px; padding: 1px 7px; border-radius: 20px; background: #f3f4f6; color: #6b727a; font-size: 11.5px; font-weight: 700; text-align: center; }
+.v3ref-filter-sidebar button.active .v3ref-sv-cat-count { background: #fff; color: #c10d22; }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-filter-sidebar button .v3ref-sv-cat-icon,.v3ref-sv-cat-count) { background: var(--cs-surface-2); color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-shell .v3ref-filter-sidebar button.active .v3ref-sv-cat-icon { background: var(--cs-accent); color: #fff; }
+.v3ref-sv-pages { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+.v3ref-sv-pages button { min-width: 40px; height: 40px; padding: 0 10px; border: 1px solid #e3e5e8; border-radius: 10px; background: #fff; color: #2b3038; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: border-color .15s, color .15s, background .15s; }
+.v3ref-sv-pages button:hover:not(:disabled):not(.active) { border-color: #d71327; color: #d71327; }
+.v3ref-sv-pages button.active { background: #d71327; border-color: #d71327; color: #fff; }
+.v3ref-sv-pages button:disabled { opacity: .4; cursor: default; }
+@media (max-width:650px) { .v3ref-sv-toolbar label, .v3ref-sv-toolbar select { width: 100%; } .v3ref-sv-count { margin-left: 0; } }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-sv-search input,.v3ref-sv-toolbar select,.v3ref-sv-pages button:not(.active)) { background-color: var(--cs-surface-2); border-color: var(--cs-border); color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-sv-toolbar label span,.v3ref-sv-count) { color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-shell .v3ref-sv-clear { background: var(--cs-soft); color: var(--cs-accent-text); }
+
+/* Slider gói bảo dưỡng (trang Dịch vụ): hàng ngang cuộn có snap, nút ‹ › ở tiêu đề. */
+.v3ref-pkg-slider { margin-top: 28px; }
+.v3ref-pkg-nav { display: flex; gap: 10px; }
+.v3ref-pkg-nav .v3ref-rv-arrow { width: 40px; height: 40px; font-size: 20px; }
+.v3ref-pkg-nav .v3ref-rv-arrow:disabled { opacity: .35; cursor: default; border-color: #e3e5e8; color: #1f232a; }
+.v3ref-pkg-track { display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 4px; padding: 14px 4px 18px; margin: -10px -4px 0; scrollbar-width: none; }
+.v3ref-pkg-track::-webkit-scrollbar { display: none; }
+/* Hiện 3 thẻ + 1 phần thẻ thứ 4 bị cắt ở mép phải → khách thấy ngay là còn thẻ để trượt. */
+.v3ref-pkg-track>.v3ref-pkg { flex: 0 0 calc((100% - 3 * 18px) / 3.4); min-width: 220px; scroll-snap-align: start; }
+@media (max-width:1100px) { .v3ref-pkg-track>.v3ref-pkg { flex-basis: calc((100% - 2 * 18px) / 2.4); } }
+@media (max-width:760px) { .v3ref-pkg-track>.v3ref-pkg { flex-basis: calc((100% - 18px) / 1.4); } }
+@media (max-width:520px) { .v3ref-pkg-track>.v3ref-pkg { flex-basis: 78%; } }
+/* Mép phải mờ dần khi còn thẻ phía sau; mép trái mờ khi đã trượt qua. */
+.v3ref-pkg-slider:not(.at-end) .v3ref-pkg-track { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+.v3ref-pkg-slider:not(.at-start):not(.at-end) .v3ref-pkg-track { -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 88%, transparent); }
+.v3ref-pkg-slider.at-end:not(.at-start) .v3ref-pkg-track { -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%); mask-image: linear-gradient(90deg, transparent, #000 6%); }
 
 /* Dấu hiệu xe cần kiểm tra. */
 .v3ref-symptom-grid { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 14px; }
@@ -333,8 +396,8 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
 .v3ref-strip h3 { font-weight: 800; }
 /* ===================== Trang Liên hệ (ReferenceContact.tsx) ===================== */
 /* Banner: ảnh xe đỏ bên phải, chữ trắng bên trái; chừa khoảng dưới cho 3 thẻ đè lên. */
-.v3ref-ct-hero { position: relative; padding: 34px 0 56px; color: #fff; background-size: cover; background-position: 70% 60%;
-  background-image: linear-gradient(90deg, #0b0f14f2 0%, #0b0f14d9 40%, #0b0f1440 75%, #0b0f1400 100%), url('/showcase/hero-red-suv.webp'); }
+.v3ref-ct-hero { position: relative; padding: 34px 0 56px; color: #fff; background-size: cover; background-position: right center;
+  background-image: linear-gradient(90deg, #0b0f14f2 0%, #0b0f14d9 40%, #0b0f1440 75%, #0b0f1400 100%), url('/showcase/banner-contact.webp'); }
 .v3ref-ct-hero h1 { margin: 6px 0 12px; font-size: clamp(32px, 4.2vw, 52px); font-weight: 800; letter-spacing: -.04em; line-height: 1.12; color: #fff; }
 .v3ref-ct-hero h1 em { font-style: normal; color: #ff2a3d; }
 .v3ref-ct-hero p { max-width: 560px; margin: 0; font-size: 16px; line-height: 1.6; color: #e6e9ec; }
@@ -403,6 +466,47 @@ html[data-theme="dark"] .v3ref-shell .v3ref-ct-band { background: var(--cs-surfa
 html[data-theme="dark"] .v3ref-shell .v3ref-ct-band li + li { border-color: var(--cs-border); }
 html[data-theme="dark"] .v3ref-shell .v3ref-ct-band li>span { color: var(--cs-accent-text); }
 html[data-theme="dark"] .v3ref-shell .v3ref-ct-map iframe { filter: brightness(.85) contrast(1.05); }
+/* ===================== Trang Về chúng tôi (ReferenceAbout.tsx) ===================== */
+.v3ref-ab-hero { padding: 34px 0 60px; color: #fff; background-size: cover; background-position: right center;
+  background-image: linear-gradient(90deg, #0b0f14f2 0%, #0b0f14d9 40%, #0b0f1440 75%, #0b0f1400 100%), url('/showcase/banner-about.webp'); }
+.v3ref-ab-hero h1 { margin: 6px 0 12px; font-size: clamp(32px, 4.2vw, 52px); font-weight: 800; letter-spacing: -.04em; line-height: 1.12; color: #fff; }
+.v3ref-ab-hero h1 em { font-style: normal; color: #ff2a3d; }
+.v3ref-ab-hero p { max-width: 600px; margin: 0; font-size: 16px; line-height: 1.6; color: #e6e9ec; }
+/* Câu chuyện: chữ trái, ảnh phải (ảnh nhỏ đè góc). */
+.v3ref-ab-story { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; align-items: center; margin: 54px 0 20px; }
+.v3ref-ab-eyebrow { display: inline-flex; padding: 6px 14px; border-radius: 30px; background: #fde8eb; color: #c10d22; font-size: 12.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.v3ref-ab-story h2 { margin: 14px 0 14px; font-size: clamp(24px, 2.6vw, 32px); font-weight: 800; letter-spacing: -.035em; line-height: 1.25; color: #1f232a; }
+.v3ref-ab-story p { margin: 0 0 12px; font-size: 15px; line-height: 1.75; color: #4a5058; }
+.v3ref-ab-story ul { display: grid; gap: 10px; margin: 18px 0 24px; padding: 0; list-style: none; }
+.v3ref-ab-story li { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 600; color: #2b3038; }
+.v3ref-ab-story li svg { flex: none; padding: 3px; border-radius: 50%; background: #fde8eb; color: #d71327; }
+.v3ref-ab-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.v3ref-ab-btn { display: inline-flex; align-items: center; min-height: 46px; padding: 0 24px; border-radius: 30px; background: #d71327; color: #fff !important; font-size: 14.5px; font-weight: 800; box-shadow: 0 10px 22px #d7132740; transition: background .15s, transform .15s; }
+.v3ref-ab-btn:hover { background: #b50f20; transform: translateY(-1px); }
+.v3ref-ab-btn.is-ghost { background: transparent; color: #c10d22 !important; border: 2px solid #d71327; box-shadow: none; }
+.v3ref-ab-btn.is-ghost:hover { background: #fdecee; }
+.v3ref-ab-story-media { position: relative; padding: 0 0 40px 40px; }
+.v3ref-ab-story-media img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; object-position: 70% 50%; border-radius: 24px; box-shadow: 0 20px 44px #1a1c2629; }
+.v3ref-ab-story-media img.is-small { position: absolute; left: 0; bottom: 0; width: 42%; aspect-ratio: 1; border: 6px solid #fff; border-radius: 20px; }
+/* Giá trị cốt lõi. */
+.v3ref-ab-values { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 20px; }
+.v3ref-ab-value { padding: 26px 22px; border-radius: 20px; background: #fff; border: 1px solid #f1e3e5; box-shadow: 0 8px 24px #c9152612; }
+.v3ref-ab-value-icon { width: 58px; height: 58px; margin-bottom: 14px; border-radius: 16px; display: grid; place-items: center; background: #fdecee; color: #d71327; }
+.v3ref-ab-value h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; color: #1f232a; }
+.v3ref-ab-value p { margin: 0; font-size: 13.5px; line-height: 1.7; color: #5c656e; }
+@media (max-width:1000px) {
+  .v3ref-ab-story { grid-template-columns: 1fr; gap: 32px; }
+  .v3ref-ab-values { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width:560px) { .v3ref-ab-values { grid-template-columns: 1fr; } .v3ref-ab-story-media { padding: 0 0 30px 24px; } }
+html[data-theme="dark"] .v3ref-shell .v3ref-ab-value { background: var(--cs-surface); border-color: var(--cs-border); box-shadow: 0 10px 26px #0006; }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-ab-story h2,.v3ref-ab-value h3,.v3ref-ab-story li) { color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-ab-story p,.v3ref-ab-value p) { color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-shell :is(.v3ref-ab-eyebrow,.v3ref-ab-value-icon,.v3ref-ab-story li svg) { background: var(--cs-soft); color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-ab-btn.is-ghost { color: var(--cs-accent-text) !important; border-color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-shell .v3ref-ab-btn.is-ghost:hover { background: var(--cs-soft); }
+html[data-theme="dark"] .v3ref-shell .v3ref-ab-story-media img.is-small { border-color: var(--cs-bg); }
+
 /* Màn chào lần đầu vào web. */
 .v3ref-intro { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; cursor: pointer;
   background: radial-gradient(circle at 50% 40%, #e0283c 0%, #b50719 45%, #6e0812 100%); color: #fff; animation: v3refIntroIn .35s ease both; }
@@ -431,8 +535,11 @@ html[data-theme="dark"] .v3ref-shell .v3ref-ct-map iframe { filter: brightness(.
 .v3ref-strip-photo { flex: none; width: 150px; height: 92px; border-radius: 12px; object-fit: cover; object-position: 72% 58%; box-shadow: 0 8px 20px #c9152626; border: 3px solid #fff; }
 @media (max-width:650px) { .v3ref-strip-photo { width: 100%; height: 130px; } }
 .v3ref-strip p { font-size: 13px; }
-.v3ref-featurebar p { font-size: 12px; }
-.v3ref-featurebar small { font-size: 11px; line-height: 1.5; }
+.v3ref-featurebar p { font-size: 14px; }
+.v3ref-featurebar p strong { font-weight: 800; }
+.v3ref-featurebar small { font-size: 12.5px; line-height: 1.5; }
+.v3ref-featurebar-icon { flex: none; width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: #fdecee; color: #d71327; }
+html[data-theme="dark"] .v3ref-shell .v3ref-featurebar-icon { background: var(--cs-soft); color: var(--cs-accent-text); }
 .v3ref-filter-sidebar h3 { font-size: 13.5px; font-weight: 750; }
 .v3ref-filter-sidebar button { font-size: 12.5px; font-weight: 600; }
 .v3ref-card-body h3 { font-size: 16px; font-weight: 750; line-height: 1.43; }
@@ -504,7 +611,7 @@ html[data-theme="dark"] .v3ref-shell .v3ref-ct-map iframe { filter: brightness(.
   .v3ref-account-popover { right: -45px; }
   .v3ref-hero h1 { font-size: 35px; line-height: 1.18; }
   .v3ref-section-head h2 { font-size: 18px; }
-  .v3ref-home .v3ref-section-head h2 { font-size: 22px; }
+  .v3ref .v3ref-section-head h2 { font-size: 22px; }
   .v3ref-card-body h3 { font-size: 15px; }
   .v3ref-small-service strong { font-size: 11.5px; }
   .v3ref-car-actions a { font-size: 11px; }
@@ -555,19 +662,14 @@ html[data-theme="dark"] .v3ref-account-popover :focus-visible {
   background: var(--cs-soft);
   color: var(--cs-accent-text) !important;
 }
+/* Menu: hover & trang hiện tại cùng một kiểu ở 2 chế độ — chữ đỏ (accent) + gạch chân đỏ. */
 html[data-theme="dark"] .v3ref-menu a:hover,
 html[data-theme="dark"] .v3ref-menu a.active,
 html[data-theme="dark"] .v3ref-menu a[aria-current="page"] {
   background: transparent !important;
-  color: var(--cs-text) !important;
+  color: var(--cs-accent-text) !important;
   border-bottom-color: var(--cs-accent) !important;
 }
-html[data-theme="dark"] .v3ref-theme-toggle {
-  background: var(--cs-surface-2);
-  border-color: var(--cs-border);
-  color: var(--cs-text);
-}
-html[data-theme="dark"] .v3ref-theme-toggle:hover { background: var(--cs-hover); }
 html[data-theme="dark"] .v3ref-shell .v3ref-small-service,
 html[data-theme="dark"] .v3ref-shell .v3ref-benefits,
 html[data-theme="dark"] .v3ref-shell .v3ref-trust,
@@ -618,7 +720,7 @@ html[data-theme="dark"] .v3ref-shell :is(.v3ref-feature3-card,.v3ref-pkg,.v3ref-
 html[data-theme="dark"] .v3ref-shell .v3ref-pkg.is-featured { border-color: var(--cs-accent); }
 html[data-theme="dark"] .v3ref-shell .v3ref-marquee-item { background: var(--cs-surface-2); border-color: var(--cs-border); color: var(--cs-text); }
 /* Logo thương hiệu màu tối (Bosch, Denso…) khó thấy trên nền tối → đặt trên ô sáng. */
-html[data-theme="dark"] .v3ref-shell .v3ref-marquee-item:has(img) { background: #f4f4f2; }
+html[data-theme="dark"] .v3ref-shell .v3ref-marquee-item:has(img) { background: #f4f4f2; color: #2b3038; }
 /* Chữ chính. */
 html[data-theme="dark"] .v3ref-shell :is(.v3ref-feature3-card h3,.v3ref-pkg-km strong,.v3ref-pkg h3,.v3ref-symptom strong,
   .v3ref-rv-head h2,.v3ref-rv-score-avg strong,.v3ref-rv-card blockquote,.v3ref-rv-who strong,.v3ref-rv-chips li,
@@ -687,14 +789,72 @@ html[data-theme="dark"] .v3ref-shell .v3ref-progress-step > span { background: v
 html[data-theme="dark"] .v3ref-shell .v3ref-progress-step.done > span { background: var(--cs-success); border-color: var(--cs-success); color: #fff; }
 html[data-theme="dark"] .v3ref-shell .v3ref-modal-close { color: var(--cs-text); }
 html[data-theme="dark"] .v3ref-shell .v3ref-modal h2 { color: var(--cs-accent-text); }
+/* ===== Header: đồng nhất sáng/tối cho các nút & hover =====
+   Quy tắc: nút icon (sáng/tối, chuông, menu mobile) cùng khung 40px bo 12px có viền;
+   hover/đang mở = nền hồng nhạt + chữ/icon đỏ (tối: nền --cs-soft + --cs-accent-text). */
+.v3ref-header :is(.v3ref-theme-toggle, .v3ref-notification-trigger, .v3ref-hamburger) {
+  width: 40px; height: 40px; border-radius: 12px;
+  border: 1px solid #e6e9ed; background: #fff; color: #374151;
+  transition: background-color .15s, border-color .15s, color .15s;
+}
+.v3ref-header :is(.v3ref-theme-toggle, .v3ref-notification-trigger, .v3ref-hamburger):hover,
+.v3ref-header .v3ref-notification-trigger[aria-expanded="true"],
+.v3ref-header .v3ref-hamburger[aria-expanded="true"] {
+  background: #fff0f3; border-color: #f1d1d8; color: #c1122a;
+}
+.v3ref-header .v3ref-account-trigger:hover,
+.v3ref-header .v3ref-account-trigger[aria-expanded="true"] { background: #fff0f3; border-color: #f1d1d8; }
+.v3ref-header .v3ref-management-link:hover { color: #9f1024; }
+
+html[data-theme="dark"] .v3ref-header :is(.v3ref-theme-toggle, .v3ref-notification-trigger, .v3ref-hamburger) {
+  background: var(--cs-surface-2); border-color: var(--cs-border); color: var(--cs-text) !important;
+}
+html[data-theme="dark"] .v3ref-header :is(.v3ref-theme-toggle, .v3ref-notification-trigger, .v3ref-hamburger):hover,
+html[data-theme="dark"] .v3ref-header .v3ref-notification-trigger[aria-expanded="true"],
+html[data-theme="dark"] .v3ref-header .v3ref-hamburger[aria-expanded="true"] {
+  background: var(--cs-soft); border-color: color-mix(in srgb, var(--cs-accent) 45%, transparent); color: var(--cs-accent-text) !important;
+}
+html[data-theme="dark"] .v3ref-header .v3ref-account-trigger:hover,
+html[data-theme="dark"] .v3ref-header .v3ref-account-trigger[aria-expanded="true"] {
+  background: var(--cs-soft); border-color: color-mix(in srgb, var(--cs-accent) 45%, transparent);
+}
+html[data-theme="dark"] .v3ref-header .v3ref-management-link { color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-header .v3ref-notification-count { border-color: var(--cs-surface); }
+html[data-theme="dark"] .v3ref-account-popover .v3ref-logout-action { color: var(--cs-accent-text); border-top-color: var(--cs-border); }
+
+/* Bảng thông báo ở chế độ tối (trước đây vẫn nền trắng). */
+html[data-theme="dark"] .v3ref-notification-panel { background: var(--cs-surface); border-color: var(--cs-border); color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-notification-panel-heading { border-color: var(--cs-border); }
+html[data-theme="dark"] .v3ref-notification-panel-heading small,
+html[data-theme="dark"] .v3ref-notification-item-copy > span,
+html[data-theme="dark"] .v3ref-notification-item-copy small,
+html[data-theme="dark"] .v3ref-notification-empty { color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-notification-empty strong { color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-notification-panel-heading button,
+html[data-theme="dark"] .v3ref-notification-error,
+html[data-theme="dark"] .v3ref-notification-error button { color: var(--cs-accent-text); }
+html[data-theme="dark"] .v3ref-notification-item { background: var(--cs-surface); border-color: var(--cs-border); color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-notification-item:hover { background: var(--cs-surface-2); }
+html[data-theme="dark"] .v3ref-notification-item.is-unread { background: var(--cs-soft); }
+html[data-theme="dark"] .v3ref-notification-item-icon,
+html[data-theme="dark"] .v3ref-notification-empty-icon { background: var(--cs-soft); color: var(--cs-accent-text); }
+
 @media (max-width:1160px) {
+  /* Menu mobile: hover & trang hiện tại = nền hồng + vạch trái đỏ, giống chế độ sáng. */
   html[data-theme="dark"] .v3ref-menu a:hover,
   html[data-theme="dark"] .v3ref-menu a.active,
   html[data-theme="dark"] .v3ref-menu a[aria-current="page"] {
-    background: transparent !important;
-    color: var(--cs-text) !important;
-    border-left: 0 !important;
-    border-bottom: 2px solid var(--cs-accent) !important;
-    padding-left: 13px;
+    background: var(--cs-soft) !important;
+    color: var(--cs-accent-text) !important;
+    border-bottom: 0 !important;
+    border-left: 3px solid var(--cs-accent) !important;
+    padding-left: 10px;
   }
+  .v3ref-menu a[aria-current="page"] { background: #fff0f3; color: #b70e26; border-left: 3px solid #cf122a; padding-left: 10px; }
 }
+
+/* Ảnh dịch vụ: admin chưa tải ảnh → khung xám "Chưa có ảnh" (không dùng ảnh minh họa cố định). */
+.v3ref-card-photo.is-empty { display: grid; place-items: center; background: #e5e7eb; }
+.v3ref-card-photo.is-empty span { font-size: 12px; font-weight: 600; color: #6b7280; }
+html[data-theme="dark"] .v3ref-shell .v3ref-card-photo.is-empty { background: var(--cs-surface-2); }
+html[data-theme="dark"] .v3ref-shell .v3ref-card-photo.is-empty span { color: var(--cs-muted); }

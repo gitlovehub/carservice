@@ -16,6 +16,12 @@ use Illuminate\Support\Collection;
  */
 class BookingCatalogController extends Controller
 {
+    /** Icon cho gói bảo dưỡng (gói không có danh mục/icon do admin chọn). */
+    private const PACKAGE_ICON = 'layers';
+
+    /** Icon khi dịch vụ chưa gán danh mục. */
+    private const DEFAULT_SERVICE_ICON = 'wrench';
+
     /**
      * GET /api/booking-catalog?model_id=&brand=&model=&mileage=
      */
@@ -85,16 +91,21 @@ class BookingCatalogController extends Controller
         return [
             'key' => 'packages',
             'name' => 'Gói bảo dưỡng',
+            // Gói không có danh mục/icon do admin chọn → icon cố định.
+            'icon' => self::PACKAGE_ICON,
             'items' => $packages->map(fn (MaintenancePackage $package) => [
                 'key' => "package:{$package->id}",
                 'type' => 'package',
                 'id' => $package->id,
                 'name' => $package->name,
+                'icon' => self::PACKAGE_ICON,
                 'summary' => (string) ($package->description ?: $package->shortSummary()),
                 'includes' => $package->shortSummary(4),
                 'price' => $this->displayPrice($package->calculateEstimatedPrice()),
                 'minutes' => $this->packageMinutes($package),
                 'recommended' => $package->id === $recommendedId,
+                // Mốc km của gói: trang đặt lịch mở & làm nổi gói khi khách nhập đúng mốc.
+                'mileage_milestone' => $package->mileage_milestone,
                 'included_service_ids' => $package->services->modelKeys(),
             ])->all(),
         ];
@@ -108,6 +119,7 @@ class BookingCatalogController extends Controller
     private function serviceGroups(): Collection
     {
         $services = Service::query()
+            ->with('serviceCategory:id,icon')
             ->where('status', 'ACTIVE')
             ->where('is_visible', true)
             // D-018: dịch vụ mới tạo lên đầu trong từng danh mục (bộ lọc Phổ biến / Mới nhất cho khách làm sau).
@@ -121,6 +133,8 @@ class BookingCatalogController extends Controller
             ->map(fn (Collection $items, string $category) => [
                 'key' => "category:{$category}",
                 'name' => $category,
+                // Icon danh mục do admin chọn (Admin → Dịch vụ → Danh mục).
+                'icon' => $items->first()?->serviceCategory?->icon ?? self::DEFAULT_SERVICE_ICON,
                 'items' => $items->map(fn (Service $service) => $this->serviceItem($service))->values()->all(),
             ])
             ->values();
@@ -136,6 +150,7 @@ class BookingCatalogController extends Controller
             'type' => 'service',
             'id' => $service->id,
             'name' => $service->name,
+            'icon' => $service->serviceCategory?->icon ?? self::DEFAULT_SERVICE_ICON,
             'summary' => (string) $service->description,
             'price' => $this->displayPrice((float) $service->base_price),
             'minutes' => $service->estimated_minutes,

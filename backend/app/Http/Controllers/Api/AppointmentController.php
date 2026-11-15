@@ -98,13 +98,14 @@ class AppointmentController extends Controller
                             empty($input['trim_id']) ? null : (int) $input['trim_id'],
                             'new_vehicle.',
                         );
-                        $vehicle = Vehicle::create([
-                            'customer_id' => $customer->id,
-                            'model_id' => $model->id,
-                            'trim_id' => $trim?->id,
-                            'variant' => $trim?->name,
-                            'license_plate' => $plate,
-                        ]);
+                        $vehicle = ($plate === null ? $this->findPlatelessVehicle($customer->id, $model->id, $trim?->id) : null)
+                            ?? Vehicle::create([
+                                'customer_id' => $customer->id,
+                                'model_id' => $model->id,
+                                'trim_id' => $trim?->id,
+                                'variant' => $trim?->name,
+                                'license_plate' => $plate,
+                            ]);
                     } else {
                         // Cách cũ (gửi tên): loại thân xe lấy theo danh mục có sẵn; dòng xe mới do khách nhập để trống.
                         $brand = VehicleBrand::firstOrCreate(['name' => trim($input['brand'])], ['status' => 'ACTIVE']);
@@ -112,11 +113,12 @@ class AppointmentController extends Controller
                             ['brand_id' => $brand->id, 'name' => trim($input['model'])],
                             ['status' => 'ACTIVE']
                         );
-                        $vehicle = Vehicle::create([
-                            'customer_id' => $customer->id,
-                            'model_id' => $model->id,
-                            'license_plate' => $plate,
-                        ]);
+                        $vehicle = ($plate === null ? $this->findPlatelessVehicle($customer->id, $model->id, null) : null)
+                            ?? Vehicle::create([
+                                'customer_id' => $customer->id,
+                                'model_id' => $model->id,
+                                'license_plate' => $plate,
+                            ]);
                     }
                 }
 
@@ -134,6 +136,12 @@ class AppointmentController extends Controller
                     ->whereNotIn('status', ['CANCELLED', 'NO_SHOW'])->exists();
                 if ($duplicate) {
                     throw ValidationException::withMessages(['vehicle_id' => 'Xe đã có lịch hẹn tại khung giờ này.']);
+                }
+
+                // Odo chỉ tăng: số khách nhập nhỏ hơn số đã lưu (gõ nhầm) thì giữ nguyên.
+                $mileage = isset($validated['mileage']) ? (int) $validated['mileage'] : null;
+                if ($mileage !== null && $mileage > (int) ($vehicle->mileage ?? 0)) {
+                    $vehicle->update(['mileage' => $mileage]);
                 }
 
                 $serviceIds = $validated['service_ids'] ?? [];
@@ -414,6 +422,22 @@ class AppointmentController extends Controller
         }
 
         return $serviceIds !== [] ? 'REPAIR' : 'DIAGNOSIS';
+    }
+
+    /**
+     * Xe chưa có biển số chỉ phân biệt được bằng dòng xe + phiên bản: khách khai báo lại đúng xe đó
+     * thì dùng lại xe cũ thay vì tạo bản trùng. Có biển số khác nhau mới là hai xe khác nhau.
+     */
+    private function findPlatelessVehicle(int $customerId, int $modelId, ?int $trimId): ?Vehicle
+    {
+        return Vehicle::query()
+            ->where('customer_id', $customerId)
+            ->where('model_id', $modelId)
+            ->when($trimId === null, fn ($query) => $query->whereNull('trim_id'), fn ($query) => $query->where('trim_id', $trimId))
+            ->where(fn ($query) => $query->whereNull('license_plate')->orWhere('license_plate', ''))
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->first();
     }
 
     /**

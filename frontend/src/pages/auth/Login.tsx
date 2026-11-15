@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { fetchApi } from "../../services/api";
-import { getRoleManagementPage, setUserRole } from "./auth";
+import { readReturnLocation, resolveReturnPath, setUserRole } from "./auth";
 import OtpInput from "../../components/auth/OtpInput";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import { GarageAuthError, GarageAuthLayout, GarageField } from "../../components/GaragePublic";
+import { AuthSwitchLink, PasswordInput } from "../../components/auth/PasswordInput";
+import { authFieldClass, authLinkRowClass, authPrimaryClass } from "../../components/auth/authStyles";
+import { markAuthSession } from "../../services/authPersistence";
 
 const REMEMBER_EMAIL_KEY = "carservice_remembered_email";
 
@@ -15,13 +18,6 @@ type ApiErrorDetails = {
   errors?: Record<string, string[]>;
 };
 
-type LocationState = {
-  from?: {
-    pathname?: string;
-    search?: string;
-    hash?: string;
-  };
-};
 
 const getApiErrorDetails = (error: unknown): ApiErrorDetails => {
   if (typeof error !== "object" || error === null || !("data" in error)) {
@@ -68,7 +64,8 @@ function Login() {
   const [pendingEmail, setPendingEmail] = useState("");
   const [otp, setOtp] = useState("");
 
-  // Only the email is remembered locally; never store a plaintext password.
+  // "Ghi nhớ đăng nhập": có tích → giữ phiên khi đóng trình duyệt + nhớ email; không tích → đóng trình duyệt là đăng xuất
+  // (xem services/authPersistence.ts). Không bao giờ lưu mật khẩu.
   const [rememberMe, setRememberMe] = useState(() =>
     typeof window !== "undefined" &&
     localStorage.getItem(REMEMBER_EMAIL_KEY) !== null,
@@ -89,7 +86,6 @@ function Login() {
 
   const [apiError, setApiError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
 
   const [toast, setToast] = useState<{
@@ -123,53 +119,8 @@ function Login() {
       return;
     }
 
-    const state = location.state as LocationState | null;
-    const from = state?.from;
-    const requestedPath = from?.pathname || "";
-
-    const rolePage = getRoleManagementPage(role);
-    const isBooking = requestedPath === "/booking";
-
-    const isAllowedPath =
-      role === "CUSTOMER"
-        ? requestedPath.startsWith("/customer/") ||
-          [
-            "/booking",
-            "/appointments",
-            "/cars",
-            "/account",
-            "/contact",
-            "/repair-status",
-            "/quotation",
-            "/payment",
-            "/invoices",
-            "/reviews",
-          ].includes(requestedPath)
-        : role === "ADMIN"
-          ? requestedPath.startsWith("/admin/") ||
-            requestedPath === "/admin"
-          : role === "ADVISOR"
-            ? requestedPath.startsWith("/advisor/")
-            : false;
-
-    if (isBooking && role !== "CUSTOMER") {
-      navigate(rolePage?.path || "/", { replace: true });
-      return;
-    }
-
-    if (from && isAllowedPath) {
-      navigate(
-        {
-          pathname: from.pathname || "/",
-          search: from.search || "",
-          hash: from.hash || "",
-        },
-        { replace: true },
-      );
-      return;
-    }
-
-    navigate(rolePage?.path || "/", { replace: true });
+    // Về lại đúng trang đang đứng trước khi phải đăng nhập (quy tắc chung: resolveReturnPath).
+    navigate(resolveReturnPath(role, readReturnLocation(location.state)), { replace: true });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,6 +178,7 @@ function Login() {
     } else {
       localStorage.removeItem(REMEMBER_EMAIL_KEY);
     }
+    markAuthSession(rememberMe);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -405,9 +357,6 @@ function Login() {
     }
   };
 
-  const fieldClass = "block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]";
-  const primaryClass = "flex min-h-14 w-full cursor-pointer items-center justify-center rounded-xl bg-[#cf2935] px-6 py-4 text-sm font-bold !font-semibold text-white transition hover:bg-[#b92430] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] disabled:cursor-not-allowed disabled:opacity-55";
-
   return (
     <GarageAuthLayout
       title={step === "login" ? "Đăng nhập" : "Xác thực email"}
@@ -419,33 +368,29 @@ function Login() {
         <>
           <form className="grid gap-4" onSubmit={handleSubmit} noValidate>
             <GarageField htmlFor="login-email" label="Địa chỉ email" error={errors.email}>
-              <input id="login-email" name="email" type="email" autoComplete="username" placeholder="you@example.com" value={form.email} onChange={handleChange} aria-invalid={!!errors.email} className={fieldClass} />
+              <input id="login-email" name="email" type="email" autoComplete="username" placeholder="you@example.com" value={form.email} onChange={handleChange} aria-invalid={!!errors.email} className={authFieldClass} />
             </GarageField>
             <GarageField htmlFor="login-password" label="Mật khẩu" error={errors.password}>
-              <div className="relative">
-                <input id="login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Nhập mật khẩu" value={form.password} onChange={handleChange} aria-invalid={!!errors.password} className={`${fieldClass} pr-16`} />
-                <button type="button" aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"} onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-cs-muted hover:text-[#cf2935]">{showPassword ? "Ẩn" : "Hiện"}</button>
-              </div>
+              <PasswordInput id="login-password" name="password" autoComplete="current-password" placeholder="Nhập mật khẩu" value={form.password} onChange={handleChange} aria-invalid={!!errors.password}/>
             </GarageField>
             <div className="flex flex-wrap items-center justify-between gap-3 py-1 text-xs text-cs-muted">
-              <label htmlFor="login-remember" className="inline-flex cursor-pointer items-center gap-2.5">
+              <label htmlFor="login-remember" className="inline-flex cursor-pointer items-center gap-2.5" title="Không tích: tự đăng xuất khi đóng trình duyệt (nên dùng trên máy dùng chung).">
                 <input id="login-remember" type="checkbox" checked={rememberMe} onChange={e => { setRememberMe(e.target.checked); if (!e.target.checked) localStorage.removeItem(REMEMBER_EMAIL_KEY); }} className="size-4 cursor-pointer accent-[#cf2935]" />
                 Ghi nhớ đăng nhập
               </label>
-              <Link to="/forgot-password" className="cursor-pointer font-bold hover:text-[#cf2935] hover:underline">Quên mật khẩu?</Link>
+              <Link to="/forgot-password" state={location.state} className="cursor-pointer font-bold hover:text-[#cf2935] hover:underline">Quên mật khẩu?</Link>
             </div>
-            <button type="submit" disabled={isLoading} aria-busy={isLoading || undefined} className={primaryClass}>{isLoading ? "Đang đăng nhập..." : "Đăng nhập"}</button>
+            <button type="submit" disabled={isLoading} aria-busy={isLoading || undefined} className={authPrimaryClass}>{isLoading ? "Đang đăng nhập..." : "Đăng nhập"}</button>
           </form>
-          <p className="mt-5 mb-3 text-center text-sm text-cs-muted">Chưa có tài khoản?</p>
-          <Link to="/register" className="flex min-h-14 w-full cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-[#252525] px-6 py-4 text-sm font-bold text-white transition hover:bg-[#393939] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935]">Đăng ký</Link>
+          <AuthSwitchLink text="Chưa có tài khoản?" to="/register" label="Đăng ký ngay" state={location.state}/>
         </>
       ) : (
         <>
           <form className="grid gap-4" onSubmit={handleOtpSubmit} noValidate>
             <OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!apiError} />
-            <button type="submit" disabled={isLoading || otp.length !== 6} aria-busy={isLoading || undefined} className={primaryClass}>{isLoading ? "Đang xác thực..." : "Xác thực email →"}</button>
+            <button type="submit" disabled={isLoading || otp.length !== 6} aria-busy={isLoading || undefined} className={authPrimaryClass}>{isLoading ? "Đang xác thực..." : "Xác thực email →"}</button>
           </form>
-          <div className="mt-5 grid gap-3 text-xs text-cs-muted [&_button]:cursor-pointer [&_button]:text-left [&_button]:font-extrabold [&_button]:text-[#cf2935] [&_button:disabled]:cursor-not-allowed">
+          <div className={authLinkRowClass}>
             {resendCountdown > 0 ? <span>Gửi lại OTP sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại OTP</button>}
             <button type="button" onClick={() => { setStep("login"); setOtp(""); setApiError(""); }}>← Quay lại đăng nhập</button>
           </div>

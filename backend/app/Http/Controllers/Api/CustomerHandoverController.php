@@ -17,7 +17,7 @@ class CustomerHandoverController extends Controller
 
     public function index(Request $request, RepairOrder $repairOrder): JsonResponse
     {
-        abort_unless(Gate::forUser($request->user())->allows('view', $repairOrder), 404);
+        abort_unless(Gate::forUser($request->user())->allows('own', $repairOrder), 404);
 
         // Khách không thấy bản nháp của nhân viên.
         $items = $repairOrder->handovers()
@@ -30,7 +30,7 @@ class CustomerHandoverController extends Controller
 
     public function confirm(Request $request, VehicleHandover $handover): JsonResponse
     {
-        abort_unless(Gate::forUser($request->user())->allows('view', $handover->repairOrder), 404);
+        abort_unless(Gate::forUser($request->user())->allows('own', $handover->repairOrder), 404);
         $data = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
 
         return response()->json($this->confirmations->confirmHandoverViaAccount($handover, $request, $data['comment'] ?? null));

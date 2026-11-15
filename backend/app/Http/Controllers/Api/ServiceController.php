@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Service;
+use App\Models\ServiceCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ServiceController extends Controller
 {
@@ -41,6 +44,43 @@ class ServiceController extends Controller
         abort_if($service->status !== 'ACTIVE' || (! $service->is_visible && ! $this->isStaff($request)), 404);
 
         return response()->json($service);
+    }
+
+    /**
+     * GET /api/service-categories — danh mục (tên + icon admin chọn) cho cột trái trang Dịch vụ.
+     * Chỉ trả danh mục còn ít nhất một dịch vụ đang áp dụng và được hiển thị cho khách.
+     */
+    public function categories(): JsonResponse
+    {
+        $visible = fn ($q) => $q->where('status', 'ACTIVE')->where('is_visible', true);
+
+        $categories = ServiceCategory::query()
+            ->whereHas('services', $visible)
+            ->withCount(['services' => $visible])
+            ->orderBy('sort_order')->orderBy('name')
+            ->get(['id', 'name', 'icon', 'sort_order']);
+
+        return response()->json(['data' => $categories->map(fn (ServiceCategory $c) => [
+            'id' => $c->id, 'name' => $c->name, 'icon' => $c->icon, 'services_count' => $c->services_count,
+        ])->values()]);
+    }
+
+    /**
+     * GET /api/service-images/{service} — phát ảnh dịch vụ admin đã tải (không cần storage:link).
+     * Dịch vụ chưa có ảnh → 404, trang Dịch vụ hiện khung xám "Chưa có ảnh".
+     */
+    public function image(Service $service): StreamedResponse
+    {
+        $path = $service->image_path;
+        abort_unless($path && str_starts_with($path, Service::IMAGE_DIRECTORY.'/'), 404);
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($path), 404);
+
+        return $disk->response($path, null, [
+            'Content-Type' => $disk->mimeType($path) ?: 'image/jpeg',
+            'Cache-Control' => 'public, max-age=86400',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /** Route công khai: đọc token Sanctum nếu có để biết người gọi là nhân viên. */

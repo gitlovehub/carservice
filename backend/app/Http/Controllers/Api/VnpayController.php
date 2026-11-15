@@ -22,7 +22,7 @@ class VnpayController extends Controller
      */
     public function create(Request $request, Invoice $invoice): JsonResponse
     {
-        abort_unless(Gate::forUser($request->user())->allows('view', $invoice), 404);
+        abort_unless(Gate::forUser($request->user())->allows('own', $invoice), 404);
         abort_unless($this->vnpay->isConfigured(), 503, 'Cổng thanh toán VNPay chưa được cấu hình.');
 
         $result = $this->payments->createPayment($invoice, (string) $request->ip());

@@ -6,10 +6,13 @@ const app = read('src/App.tsx');
 const nav = read('src/layouts/customerAccountNav.ts');
 const header = read('src/components/GaragePublic.tsx');
 const group = app.slice(app.indexOf('<Route element={<CustomerAccountLayout/>}>'), app.indexOf('</Route>', app.indexOf('<Route element={<CustomerAccountLayout/>}>')));
-for (const path of ['/customer/account', '/customer/appointments', '/customer/cars', '/repair-status', '/quotation', '/customer/service-history', '/reviews', '/invoices', '/payment']) {
+for (const path of ['/customer/account', '/customer/appointments', '/customer/cars', '/quotation', '/customer/service-history', '/reviews', '/invoices', '/payment']) {
   assert.ok(group.includes(`path="${path}"`), `${path} is inside the account layout`);
   assert.ok(nav.includes(`to: "${path}"`), `${path} is in the shared account menu`);
 }
+// Tiến độ sửa chữa là trang riêng ở menu chính: không nằm trong khu Hồ sơ, không có trong menu Hồ sơ.
+assert.ok(!group.includes('path="/repair-status"') && app.includes('path="/repair-status"'), '/repair-status is a standalone page outside the account layout');
+assert.ok(!nav.includes('"/repair-status"'), '/repair-status is not in the account menu');
 assert.match(header, /CUSTOMER_ACCOUNT_LINKS/, 'Avatar dropdown + mobile drawer use the shared account menu');
 assert.match(header, /guestLinks\.filter\(link => link\.label !== "Lịch hẹn"\)/, 'Customer main nav no longer repeats account pages');
 assert.match(header, /max-\[820px\]:hidden"><AccountMenu/, 'Avatar is hidden next to the mobile menu button');

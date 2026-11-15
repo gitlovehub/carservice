@@ -19,14 +19,14 @@ class CustomerPickupAuthorizationController extends Controller
 
     public function index(Request $request, RepairOrder $repairOrder): JsonResponse
     {
-        abort_unless(Gate::forUser($request->user())->allows('view', $repairOrder), 404);
+        abort_unless(Gate::forUser($request->user())->allows('own', $repairOrder), 404);
 
         return response()->json(['data' => $repairOrder->pickupAuthorizations()->get()]);
     }
 
     public function store(Request $request, RepairOrder $repairOrder): JsonResponse
     {
-        abort_unless(Gate::forUser($request->user())->allows('view', $repairOrder), 404);
+        abort_unless(Gate::forUser($request->user())->allows('own', $repairOrder), 404);
         if (in_array($repairOrder->status, [RepairOrder::HANDED_OVER, RepairOrder::CLOSED], true)) {
             throw ValidationException::withMessages(['repair_order' => 'Phiếu đã kết thúc, không thể ủy quyền nhận xe.']);
         }
@@ -61,7 +61,7 @@ class CustomerPickupAuthorizationController extends Controller
 
     public function revoke(Request $request, PickupAuthorization $pickupAuthorization): JsonResponse
     {
-        abort_unless(Gate::forUser($request->user())->allows('view', $pickupAuthorization->repairOrder), 404);
+        abort_unless(Gate::forUser($request->user())->allows('own', $pickupAuthorization->repairOrder), 404);
         if ($pickupAuthorization->status !== PickupAuthorization::ACTIVE) {
             throw ValidationException::withMessages(['status' => 'Ủy quyền đã được sử dụng hoặc đã thu hồi.']);
         }

@@ -30,7 +30,7 @@ assert.match(shell,/v3ref-account-popover/,'customer account actions are discove
 assert.match(shell,/useTheme/,'customer header has access to the shared theme');
 assert.match(shell,/v3ref-theme-toggle/,'customer header exposes the theme toggle');
 assert.match(shell,/aria-current={location\.pathname === '\/login'/,'login link marks its active route');
-assert.match(styles,/\.v3ref-login \{[^}]*color:\s*var\(--cs-on-soft\)/s,'login link uses a contrasting theme-aware foreground');
+assert.match(styles,/\.v3ref-login \{[^}]*background:\s*#e11d2e;[^}]*color:\s*#fff/s,'login link is the red primary button with white text');
 assert.match(accountMenu,/toggleTheme/,'legacy customer account menu can switch themes');
 assert.match(styles,/html\[data-theme="dark"\] \.v3ref-shell/,'customer showcase surfaces support dark theme');
 assert.match(reviews,/className="at-customer-reviews/,'reviews page opts into customer theme styles');
@@ -40,7 +40,7 @@ assert.match(adminNav,/new URLSearchParams\(search\)\.get\('status'\)/,'advisor 
 assert.match(advisor,/isNavigationCurrent\(area, path, pathname, search\)/,'advisor menu uses normalized route matcher');
 assert.match(styles,/prefers-reduced-motion/,'reduced motion support');
 assert.match(styles,/\.v3ref-menu\.open/,'mobile navigation remains visible on demand');
-assert.match(home,/\/services\?search=/,'homepage service cards filter services');
+assert.match(home,/\/services\?(search|category)=/,'homepage service cards filter services');
 assert.match(services,/useSearchParams/,'services search reads URL query');
 assert.match(app,/path="inventory" element={<AdminInventory\/>}/);
 assert.match(app,/path="\/advisor" element={<ProtectedRoute/);

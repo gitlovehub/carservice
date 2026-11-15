@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Account;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -10,7 +11,7 @@ class StoreAppointmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null && $this->user()->role === 'CUSTOMER';
+        return $this->user() !== null && $this->user()->role === Account::ROLE_CUSTOMER;
     }
 
     public function rules(): array
@@ -35,6 +36,8 @@ class StoreAppointmentRequest extends FormRequest
             'new_vehicle.brand' => [Rule::requiredIf($this->needsVehicleNames()), 'nullable', 'string', 'max:100'],
             'new_vehicle.model' => [Rule::requiredIf($this->needsVehicleNames()), 'nullable', 'string', 'max:100'],
             'new_vehicle.license_plate' => ['nullable', 'string', 'max:20'],
+            // Số km khách nhập ở bước Dịch vụ: lưu vào hồ sơ xe (chỉ khi lớn hơn số đang lưu).
+            'mileage' => ['nullable', 'integer', 'min:0', 'max:2000000'],
             'appointment_date' => ['required', 'date_format:Y-m-d'],
             'appointment_time' => ['required', 'date_format:H:i'],
             'request_type' => ['sometimes', Rule::in(['DIAGNOSIS', 'REPAIR', 'MAINTENANCE', 'REPLACEMENT'])],
@@ -98,6 +101,9 @@ class StoreAppointmentRequest extends FormRequest
             'request_type.required' => 'Vui lòng chọn loại yêu cầu.',
             'request_type.in' => 'Loại yêu cầu không hợp lệ.',
             'symptom_description.max' => 'Mô tả triệu chứng quá dài.',
+            'mileage.integer' => 'Số km phải là số nguyên.',
+            'mileage.min' => 'Số km không hợp lệ.',
+            'mileage.max' => 'Số km không hợp lệ.',
             'note.max' => 'Ghi chú quá dài.',
             'service_ids.*.exists' => 'Dịch vụ đã chọn không tồn tại hoặc ngừng hoạt động.',
             'service_ids.*.distinct' => 'Dịch vụ bị chọn trùng.',

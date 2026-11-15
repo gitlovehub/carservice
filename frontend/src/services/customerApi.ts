@@ -314,14 +314,37 @@ export function formatMoney(value: number | string | null | undefined): string {
   return `${(Number.isFinite(n) ? n : 0).toLocaleString("vi-VN")} đ`;
 }
 
-export function formatDate(value?: string | null): string {
-  if (!value) return "—";
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString("vi-VN");
+/*
+ * Định dạng ngày giờ DÙNG CHUNG cho toàn web khách — luôn 24 giờ, không hiện giây, ngày có số 0 đầu:
+ *   ngày: 09/11/2026 · giờ: 07:05 · ngày giờ: 07:05 09/11/2026
+ * (hourCycle h23 để 0 giờ là "00", không phụ thuộc cài đặt 12/24 giờ của máy.)
+ */
+const DATE_FMT = new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+const TIME_FMT = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const toDate = (value?: string | Date | null) => {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+/** "09/11/2026"; trống/sai → "—". */
+export function formatDate(value?: string | Date | null): string {
+  const d = toDate(value);
+  return d ? DATE_FMT.format(d) : typeof value === "string" && value ? value : "—";
 }
 
-export function formatTime(value?: string | null): string {
-  return value ? value.slice(0, 5) : "—";
+/** Giờ 24h "HH:mm": nhận "09:00:00" (cột TIME) hoặc ngày giờ đầy đủ. */
+export function formatTime(value?: string | Date | null): string {
+  if (!value) return "—";
+  if (typeof value === "string" && /^\d{1,2}:\d{2}/.test(value)) return value.slice(0, 5).padStart(5, "0");
+  const d = toDate(value);
+  return d ? TIME_FMT.format(d) : "—";
+}
+
+/** "07:05 09/11/2026"; trống/sai → "—". */
+export function formatDateTime(value?: string | Date | null): string {
+  const d = toDate(value);
+  return d ? `${TIME_FMT.format(d)} ${DATE_FMT.format(d)}` : "—";
 }
 export type AdvisorCustomer = {
   id: number;

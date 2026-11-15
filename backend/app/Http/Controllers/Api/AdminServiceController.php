@@ -8,6 +8,7 @@ use App\Models\Service;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 /**
@@ -143,6 +144,59 @@ class AdminServiceController extends Controller
             'message' => 'Cập nhật dịch vụ thành công.',
             'data' => $service->fresh('serviceCategory:id,name,icon'),
         ]);
+    }
+
+    /**
+     * POST /api/admin/services/{service}/image — tải ảnh minh họa dịch vụ (thay ảnh cũ nếu có).
+     * Laravel kiểm tra định dạng + dung lượng, tự đặt tên file, lưu trên disk public.
+     */
+    public function uploadImage(Request $request, Service $service): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ], [
+            'image.required' => 'Chọn ảnh dịch vụ.',
+            'image.mimes' => 'Chỉ nhận ảnh JPG, PNG hoặc WebP.',
+            'image.max' => 'Ảnh không được vượt quá 4 MB.',
+        ]);
+
+        $previous = $service->image_path;
+        $path = $request->file('image')->store(Service::IMAGE_DIRECTORY, 'public');
+        try {
+            $service->update(['image_path' => $path]);
+        } catch (\Throwable $error) {
+            Storage::disk('public')->delete($path);
+            throw $error;
+        }
+        $this->deleteStoredImage($previous);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã lưu ảnh dịch vụ.',
+            'data' => $service->fresh('serviceCategory:id,name,icon'),
+        ]);
+    }
+
+    /** DELETE /api/admin/services/{service}/image — gỡ ảnh, trang Dịch vụ quay về khung xám "Chưa có ảnh". */
+    public function deleteImage(Service $service): JsonResponse
+    {
+        $previous = $service->image_path;
+        $service->update(['image_path' => null]);
+        $this->deleteStoredImage($previous);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã xóa ảnh dịch vụ.',
+            'data' => $service->fresh('serviceCategory:id,name,icon'),
+        ]);
+    }
+
+    /** Chỉ xóa file nằm trong thư mục ảnh dịch vụ (không đụng file khác trên disk). */
+    private function deleteStoredImage(?string $path): void
+    {
+        if ($path && str_starts_with($path, Service::IMAGE_DIRECTORY.'/')) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     /** GET /api/admin/services/{service}/steps — bước chuẩn + phút chuẩn (P5). */

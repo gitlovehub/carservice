@@ -34,7 +34,7 @@ export default function ContactMessages() {
       {m.status === "NEW" ? "Đánh dấu đã xử lý" : "Mở lại"}</Button> },
   ];
 
-  return <AdminPage title="Tin nhắn liên hệ" description={`Yêu cầu khách gửi từ trang Liên hệ${result ? ` — ${result.summary.new} tin chưa xử lý` : ""}`}>
+  return <AdminPage title="Tin nhắn liên hệ" description={`Yêu cầu khách gửi từ trang Liên hệ${result ? ` — ${result.summary.new} tin chưa xử lý` : ""}`} demo={false}>
     <Toolbar>
       <FilterSelect label="Trạng thái" value={status} onChange={value => { setStatus(value); setPage(1); }} options={[
         { value: "NEW", label: "Chưa xử lý" }, { value: "HANDLED", label: "Đã xử lý" }, { value: "all", label: "Tất cả" },

@@ -1,4 +1,5 @@
 import { fetchApi } from "../../services/api";
+import { clearAuthSessionMarker } from "../../services/authPersistence";
 
 export type UserRole =
   | "CUSTOMER"
@@ -58,6 +59,36 @@ export const getUserInitials = (user: AuthUserInfo = null): string => {
   return (words[0][0] + words[words.length - 1][0]).toUpperCase();
 };
 
+/** Trang người dùng đang đứng khi bị chuyển sang Đăng nhập (react-router `location.state.from`). */
+export type ReturnLocation = { pathname?: string; search?: string; hash?: string };
+
+const AUTH_PAGES = ["/login", "/register", "/forgot-password"];
+
+/**
+ * Đăng nhập xong thì về đâu — MỘT quy tắc dùng chung (Login, Register, GuestOnlyRoute):
+ *  - Về đúng trang đang đứng trước khi phải đăng nhập (kể cả trang công khai, giữ ?query và #hash).
+ *  - Trừ khi đó là trang auth, hoặc là khu của vai trò khác (/admin, /advisor), hoặc trang chỉ dành cho khách
+ *    mà người đăng nhập là nhân viên → về trang chính của vai trò.
+ */
+export const resolveReturnPath = (role: unknown, from?: ReturnLocation | null): string | Required<ReturnLocation> => {
+  const home = getRoleManagementPage(role)?.path ?? "/";
+  const pathname = from?.pathname;
+  if (!pathname || AUTH_PAGES.includes(pathname)) return home;
+
+  const area = pathname === "/admin" || pathname.startsWith("/admin/") ? "ADMIN"
+    : pathname === "/advisor" || pathname.startsWith("/advisor/") ? "ADVISOR" : null;
+  if (area && area !== role) return home;
+  if (role !== "CUSTOMER" && (pathname === "/booking" || pathname.startsWith("/customer/"))) return home;
+
+  return { pathname, search: from?.search ?? "", hash: from?.hash ?? "" };
+};
+
+/** Đọc `from` từ state của trang hiện tại (an toàn khi state không đúng dạng). */
+export const readReturnLocation = (state: unknown): ReturnLocation | null => {
+  const from = (state as { from?: ReturnLocation } | null)?.from;
+  return from && typeof from.pathname === "string" ? from : null;
+};
+
 export const getUserRole = (): UserRole | null => {
   const role = localStorage.getItem("role");
 
@@ -88,6 +119,7 @@ export const logout = async () => {
     }
   } catch { /* Xóa phiên ở Frontend kể cả khi mất kết nối. */ }
   finally {
+    clearAuthSessionMarker();
     localStorage.removeItem("role");
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("token");

@@ -9,11 +9,11 @@ import { GarageContact, HomeFaq, MaintenancePackages, SymptomChecker, TrustBanne
 // Nội dung ✓ là mô tả công việc + quy trình có thật (báo giá duyệt trước, theo dõi tiến độ).
 // Giá "Từ" và nút đặt lịch lấy từ các dịch vụ thuộc đúng danh mục đó.
 const featuredGroups = [
-  { category:'Bảo dưỡng định kỳ', tagline:'Xe bền, vận hành êm mỗi ngày', image:'1',
+  { category:'Bảo dưỡng định kỳ', tagline:'Xe bền, vận hành êm mỗi ngày', image:'oil-change',
     points:['Thay dầu, lọc dầu, lọc gió theo định kỳ','Kiểm tra tổng thể theo số km','Báo giá rõ ràng trước khi làm'] },
-  { category:'Gầm - Phanh', tagline:'Lái xe an toàn, tự tin', image:'3',
+  { category:'Gầm - Phanh', tagline:'Lái xe an toàn, tự tin', image:'brakes',
     points:['Kiểm tra má phanh, đĩa phanh','Kiểm tra dầu phanh và rò rỉ','Chỉ thay khi bạn duyệt báo giá'] },
-  { category:'Điện - Điện lạnh', tagline:'Mát sâu, điện ổn định', image:'5',
+  { category:'Điện - Điện lạnh', tagline:'Mát sâu, điện ổn định', image:'air-conditioning',
     points:['Kiểm tra gas và độ lạnh điều hòa','Kiểm tra hệ thống điện trên xe','Theo dõi tiến độ ngay trên web'] },
 ];
 const fold=(s:string|null|undefined)=>(s??'').normalize('NFC').trim().toLowerCase();
@@ -26,7 +26,7 @@ function FeaturedServices(){
    // Ưu tiên dịch vụ "Nổi bật", rồi theo thứ tự admin đặt.
    const primary=[...matches].sort((a,b)=>Number(!!b.is_popular)-Number(!!a.is_popular)||(a.sort_order??0)-(b.sort_order??0))[0];
    return <article className="v3ref-feature3-card" key={g.category}>
-     <img className="v3ref-feature3-img" src={`/showcase/service-${g.image}.webp`} alt="" aria-hidden="true" loading="lazy" decoding="async"/>
+     <img className="v3ref-feature3-img" src={`/images/garage/${g.image}.webp`} alt="" aria-hidden="true" loading="lazy" decoding="async"/>
      <h3>{g.category}</h3><p className="v3ref-feature3-tagline">{g.tagline}</p>
      <ul>{g.points.map(p=><li key={p}>{p}</li>)}</ul>
      <div className="v3ref-feature3-meta">{prices.length>0&&<strong>{money(Math.min(...prices))}</strong>}<Link to={`/services?category=${encodeURIComponent(g.category)}`}>Xem chi tiết</Link></div>
@@ -47,13 +47,13 @@ const steps = [
 const heroSlides = [
  { image:'/showcase/hero-red-suv.webp',title:<>Chăm sóc ô tô<br/>chuyên nghiệp,<br/><em>đúng chuẩn</em></>,subtitle:'Bảo dưỡng · Sửa chữa · Phụ tùng theo tình trạng xe thực tế',button:'Khám phá dịch vụ',to:'/services' },
  { image:'/showcase/hero-white-sedan.webp',title:<>Yên tâm từ lúc<br/>giao xe đến<br/><em>khi nhận xe</em></>,subtitle:'Theo dõi tiến độ, báo giá và xác nhận rõ ràng trên từng phiếu sửa chữa.',button:'Đặt lịch ngay',to:'/booking' },
- { image:'/showcase/hero-premium-suv.webp',title:<>Mỗi chiếc xe<br/>đều được<br/><em>chăm sóc kỹ</em></>,subtitle:'Đặt lịch nhanh chóng và quản lý toàn bộ lịch sử bảo dưỡng của bạn.',button:'Xem xe của tôi',to:'/cars' },
+ { image:'/showcase/hero-premium-suv.webp',title:<>Mỗi chiếc xe<br/>đều được<br/><em>chăm sóc kỹ</em></>,subtitle:'Đặt lịch nhanh chóng và quản lý toàn bộ lịch sử bảo dưỡng của bạn.',button:'Xem xe của tôi',to:'/customer/cars' },
 ];
 // Nội dung mẫu — thay bằng dữ liệu từ module Khuyến mãi (PROMO-01) khi có API.
 const promoSlides = [
- { tag:'ƯU ĐÃI THÁNG NÀY',title:<>Giảm <i>20%</i> phí<br/>thay dầu &amp; lọc dầu</>,desc:'Áp dụng cho mọi dòng xe khi đặt lịch trực tuyến.',button:'Nhận ưu đãi',to:'/booking',image:'/showcase/service-1.webp' },
- { tag:'MIỄN PHÍ KIỂM TRA',title:<>Kiểm tra <i>phanh &amp; lốp</i><br/>hoàn toàn miễn phí</>,desc:'Kèm báo giá chi tiết trước khi thực hiện bất kỳ hạng mục nào.',button:'Đặt lịch ngay',to:'/booking',image:'/showcase/service-3.webp' },
- { tag:'KHÁCH HÀNG MỚI',title:<>Tặng <i>100.000₫</i> cho<br/>lần bảo dưỡng đầu tiên</>,desc:'Đăng ký tài khoản CarService để nhận ưu đãi.',button:'Xem dịch vụ',to:'/services',image:'/showcase/service-2.webp' },
+ { tag:'ƯU ĐÃI THÁNG NÀY',title:<>Giảm <i>20%</i> phí<br/>thay dầu &amp; lọc dầu</>,desc:'Áp dụng cho mọi dòng xe khi đặt lịch trực tuyến.',button:'Nhận ưu đãi',to:'/booking',image:'/showcase/promo-oil-change.webp' },
+ { tag:'MIỄN PHÍ KIỂM TRA',title:<>Kiểm tra <i>phanh &amp; lốp</i><br/>hoàn toàn miễn phí</>,desc:'Kèm báo giá chi tiết trước khi thực hiện bất kỳ hạng mục nào.',button:'Đặt lịch ngay',to:'/booking',image:'/showcase/promo-brake-tire.webp' },
+ { tag:'KHÁCH HÀNG MỚI',title:<>Tặng <i>100.000₫</i> cho<br/>lần bảo dưỡng đầu tiên</>,desc:'Đăng ký tài khoản CarService để nhận ưu đãi.',button:'Xem dịch vụ',to:'/services',image:'/showcase/promo-new-customer.webp' },
 ];
 function PromoSlider(){
  const [i,setI]=useState(0);const n=promoSlides.length;const s=promoSlides[i];
@@ -70,7 +70,7 @@ function PromoSlider(){
 // `showName`: logo chỉ là biểu tượng, không có chữ → hiện thêm tên. Không có `logo` → chỉ hiện tên.
 const brands: { name:string; logo?:string; showName?:boolean }[] = [
   { name:'Castrol', logo:'/brands/castrol.svg' }, { name:'Motul', logo:'/brands/motul.svg' },
-  { name:'Mobil 1', logo:'/brands/mobil.svg' }, { name:'Shell', logo:'/brands/shell.svg', showName:true },
+  { name:'Mobil 1', logo:'/brands/mobil.svg' }, { name:'Shell', logo:'/brands/shell.svg' },
   { name:'Liqui Moly', logo:'/brands/liquimoly.svg' }, { name:'Bosch', logo:'/brands/bosch.svg' },
   { name:'Denso', logo:'/brands/denso.svg' }, { name:'Brembo', logo:'/brands/brembo.svg' },
   { name:'Michelin', logo:'/brands/michelin.svg' }, { name:'Bridgestone', logo:'/brands/bridgestone.svg' },
@@ -111,7 +111,11 @@ function usePerView(){
  return n;
 }
 /** Đánh giá thật của khách (API công khai /reviews/featured: ≥4 sao, không bị ẩn, tên đã rút gọn). */
-function CustomerReviews(){
+/** Quy trình 7 bước — dùng chung cho Trang chủ và Về chúng tôi. */
+export function ProcessSteps({ title = 'Quy trình đặt lịch đơn giản' }: { title?: string }){
+ return <section className="v3ref-home-block"><div className="v3ref-section-head"><h2>{title}</h2></div><div className="v3ref-steps">{steps.map(([icon,name],i)=><div className="v3ref-step" key={i}><span className="v3ref-step-icon">{icon}</span><small className="v3ref-step-num">{i+1}</small><strong>{name}</strong></div>)}</div></section>;
+}
+export function CustomerReviews(){
  const [res,setRes]=useState<PublicReviewResponse|null>(null);
  const perView=usePerView();const [page,setPage]=useState(0);
  useEffect(()=>{let alive=true;fetchApi<PublicReviewResponse>('/reviews/featured').then(r=>{if(alive)setRes(r)}).catch(()=>{});return()=>{alive=false}},[]);
@@ -168,7 +172,7 @@ export default function ReferenceHome(){
      <MaintenancePackages/>
      <PromoSlider/>
      <SymptomChecker/>
-     <section className="v3ref-home-block"><div className="v3ref-section-head"><h2>Quy trình đặt lịch đơn giản</h2></div><div className="v3ref-steps">{steps.map(([icon,name],i)=><div className="v3ref-step" key={i}><span className="v3ref-step-icon">{icon}</span><small className="v3ref-step-num">{i+1}</small><strong>{name}</strong></div>)}</div></section>
+     <ProcessSteps/>
      <TrustBanner/>
      <CustomerReviews/>
      <HomeFaq/>

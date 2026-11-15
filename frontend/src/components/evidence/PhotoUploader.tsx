@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/Button";
+import { formatDateTime } from "../../services/customerApi";
 import { compressImage, mediaApi, VEHICLE_POSITIONS, type MediaAttachableType, type MediaItem } from "../../services/evidenceService";
 
 /**
@@ -76,7 +77,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
         {urls[item.id]
           ? <a href={urls[item.id]} target="_blank" rel="noreferrer"><img src={urls[item.id]} alt={item.caption || item.position_code || `Ảnh #${item.id}`} className="aspect-square w-full object-cover"/></a>
           : <div className="aspect-square w-full animate-pulse"/>}
-        <p className="truncate px-1.5 py-1 text-[11px] text-cs-muted" title={item.sha256}>{(item.position_code && (positions?.[item.position_code] ?? VEHICLE_POSITIONS[item.position_code] ?? item.position_code)) || (item.created_at ? new Date(item.created_at).toLocaleString("vi-VN") : `#${item.id}`)}</p>
+        <p className="truncate px-1.5 py-1 text-[11px] text-cs-muted" title={item.sha256}>{(item.position_code && (positions?.[item.position_code] ?? VEHICLE_POSITIONS[item.position_code] ?? item.position_code)) || (item.created_at ? formatDateTime(item.created_at) : `#${item.id}`)}</p>
       </li>)}</ul>
       : <p className="mt-2 text-xs text-cs-muted">Chưa có ảnh.</p>}
   </div>;

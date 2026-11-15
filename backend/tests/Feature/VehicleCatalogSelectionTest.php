@@ -162,4 +162,70 @@ class VehicleCatalogSelectionTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.vehicle.trim.name', '1.5G-CVT');
     }
+
+    public function test_booking_same_plateless_vehicle_twice_reuses_it_but_different_plates_are_separate(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        for ($day = 0; $day <= 6; $day++) {
+            DB::table('working_hours')->updateOrInsert(['day_of_week' => $day], [
+                'open_time' => '08:00:00', 'close_time' => '17:00:00', 'max_slots' => 5, 'is_active' => true,
+            ]);
+        }
+        $customer = $this->customer();
+        $book = fn (array $vehicle, string $time) => $this->postJson('/api/appointments', [
+            'new_vehicle' => $vehicle,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => $time,
+            'symptom_description' => 'Kiểm tra tổng quát',
+        ])->assertCreated();
+
+        $book(['model_id' => $this->vios->id, 'trim_id' => $this->g->id], '09:00');
+        $book(['model_id' => $this->vios->id, 'trim_id' => $this->g->id, 'license_plate' => ''], '10:00');
+        $this->assertSame(1, Vehicle::where('customer_id', $customer->id)->count());
+
+        // Khác phiên bản, hoặc có biển số riêng → là xe khác.
+        $book(['model_id' => $this->vios->id, 'trim_id' => $this->e->id], '11:00');
+        $book(['model_id' => $this->vios->id, 'trim_id' => $this->g->id, 'license_plate' => '30A-333.33'], '13:00');
+        $book(['model_id' => $this->vios->id, 'trim_id' => $this->g->id, 'license_plate' => '30A-444.44'], '14:00');
+        $this->assertSame(4, Vehicle::where('customer_id', $customer->id)->count());
+    }
+
+    public function test_booking_saves_mileage_to_vehicle_only_when_it_increases(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        for ($day = 0; $day <= 6; $day++) {
+            DB::table('working_hours')->updateOrInsert(['day_of_week' => $day], [
+                'open_time' => '08:00:00', 'close_time' => '17:00:00', 'max_slots' => 5, 'is_active' => true,
+            ]);
+        }
+        $customer = $this->customer();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer->id, 'model_id' => $this->vios->id, 'mileage' => 10000]);
+        $book = fn (array $extra, string $time) => $this->postJson('/api/appointments', [
+            'vehicle_id' => $vehicle->id,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => $time,
+            'symptom_description' => 'Kiểm tra tổng quát',
+            ...$extra,
+        ]);
+
+        $book(['mileage' => 15000], '09:00')->assertCreated();
+        $this->assertSame(15000, $vehicle->fresh()->mileage);
+
+        // Nhập nhỏ hơn (gõ nhầm) hoặc bỏ trống: giữ nguyên odo đã lưu.
+        $book(['mileage' => 900], '10:00')->assertCreated();
+        $book([], '11:00')->assertCreated();
+        $this->assertSame(15000, $vehicle->fresh()->mileage);
+
+        $book(['mileage' => -5], '13:00')->assertJsonValidationErrors('mileage');
+
+        // Xe mới khai báo khi đặt lịch cũng nhận số km.
+        $this->postJson('/api/appointments', [
+            'new_vehicle' => ['model_id' => $this->vios->id, 'license_plate' => '30A-555.55'],
+            'mileage' => 42000,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '14:00',
+            'symptom_description' => 'Kiểm tra tổng quát',
+        ])->assertCreated();
+        $this->assertSame(42000, Vehicle::where('license_plate', '30A-555.55')->value('mileage'));
+    }
 }

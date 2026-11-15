@@ -1,22 +1,9 @@
 // Các section bổ sung cho trang chủ (ReferenceHome). Dữ liệu lấy từ API công khai;
 // section nào không có dữ liệu thì ẩn hẳn, không hiển thị nội dung giả.
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchApi } from '../../services/api';
 import { money } from './serviceDisplay';
-
-function useApi<T>(path: string) {
-  const [data, setData] = useState<T | null>(null);
-  useEffect(() => {
-    let alive = true;
-    fetchApi<T>(path).then(r => { if (alive) setData(r); }).catch(() => {});
-    return () => { alive = false; };
-  }, [path]);
-  return data;
-}
-
-type GarageSettings = { name: string; phone: string | null; email: string | null; address_line: string | null; ward: string | null; district: string | null; province: string | null; latitude: number | null; longitude: number | null };
-export const useGarage = () => useApi<{ data: GarageSettings | null }>('/garage-settings')?.data ?? null;
+import { useApi, useGarage } from './publicData';
 
 const Section = ({ id, title, action, children }: { id?: string; title: string; action?: ReactNode; children: ReactNode }) =>
   <section className="v3ref-home-block" id={id}><div className="v3ref-section-head"><h2>{title}</h2>{action}</div>{children}</section>;
@@ -39,6 +26,36 @@ export function MaintenancePackages() {
       <Link className="v3ref-pkg-book" to={`/booking?package=${p.id}`}>Đặt gói này</Link>
     </article>)}</div>
   </Section>;
+}
+
+/* ------------------------------------------- Slider gói bảo dưỡng (trang Dịch vụ) */
+/** Toàn bộ gói bảo dưỡng đang áp dụng, trượt ngang bằng nút ‹ › hoặc vuốt/cuộn (scroll-snap). */
+export function MaintenancePackageSlider() {
+  const res = useApi<Pkg[] | { data: Pkg[] }>('/maintenance-packages');
+  const track = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ start: true, end: false });
+  const list = (Array.isArray(res) ? res : res?.data ?? []).slice().sort((a, b) => (a.mileage_milestone ?? 0) - (b.mileage_milestone ?? 0) || (a.price ?? 0) - (b.price ?? 0));
+  const update = () => { const el = track.current; if (el) setEdge({ start: el.scrollLeft < 4, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 }); };
+  useEffect(update, [list.length]);
+  if (list.length === 0) return null;
+  // Trượt đúng 1 "trang" (chiều rộng phần đang thấy).
+  const go = (dir: number) => track.current?.scrollBy({ left: dir * track.current.clientWidth * 0.9, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  return <section className={`v3ref-home-block v3ref-pkg-slider${edge.start ? ' at-start' : ''}${edge.end ? ' at-end' : ''}`} aria-roledescription="carousel" aria-label="Gói bảo dưỡng theo mốc km">
+    <div className="v3ref-section-head"><h2>Gói bảo dưỡng theo mốc km</h2>
+      <div className="v3ref-pkg-nav">
+        <button type="button" className="v3ref-rv-arrow" onClick={() => go(-1)} disabled={edge.start} aria-label="Gói trước">‹</button>
+        <button type="button" className="v3ref-rv-arrow" onClick={() => go(1)} disabled={edge.end} aria-label="Gói sau">›</button>
+      </div>
+    </div>
+    <div className="v3ref-pkg-track" ref={track} onScroll={update}>{list.map(p => <article key={p.id} className="v3ref-pkg">
+      <div className="v3ref-pkg-km">{p.mileage_milestone ? <><strong>{p.mileage_milestone.toLocaleString('vi-VN')}</strong> km</> : <strong>Định kỳ</strong>}</div>
+      {p.month_milestone ? <small className="v3ref-pkg-month">hoặc {p.month_milestone} tháng</small> : null}
+      <h3>{p.name}</h3>
+      <ul>{p.services.slice(0, 4).map(s => <li key={s.id}>{s.name}</li>)}{p.services.length > 4 && <li className="v3ref-pkg-more">+{p.services.length - 4} hạng mục khác</li>}</ul>
+      <div className="v3ref-pkg-price">{money(p.price)}</div>
+      <Link className="v3ref-pkg-book" to={`/booking?package=${p.id}`}>Đặt gói này</Link>
+    </article>)}</div>
+  </section>;
 }
 
 /* ------------------------------------------------------- Dấu hiệu xe cần kiểm tra */
@@ -69,14 +86,16 @@ const FIXED_METRICS = { years: '10+', warrantyMonths: '12' };
 type Stats = { completed_orders: number; parts_count: number };
 function CountUp({ value }: { value: number }) {
   const [shown, setShown] = useState(0);
+  // Giảm chuyển động: hiện thẳng số cuối, không chạy hiệu ứng đếm.
+  const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setShown(value); return; }
+    if (reduced) return;
     let frame = 0; const start = performance.now(); const dur = 1200;
     const tick = (t: number) => { const k = Math.min(1, (t - start) / dur); setShown(Math.round(value * (1 - Math.pow(1 - k, 3)))); if (k < 1) frame = requestAnimationFrame(tick); };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [value]);
-  return <>{shown.toLocaleString('vi-VN')}</>;
+  }, [value, reduced]);
+  return <>{(reduced ? value : shown).toLocaleString('vi-VN')}</>;
 }
 const IconProps = { viewBox: '0 0 48 48', width: 48, height: 48, fill: 'none', stroke: 'currentColor', strokeWidth: 3, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
 const metricIcons = {

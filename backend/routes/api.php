@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\PartController;
 use App\Http\Controllers\Api\PartRequestController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PublicRepairLookupController;
 use App\Http\Controllers\Api\PublicReviewController;
 use App\Http\Controllers\Api\QuotationConfirmationController;
 use App\Http\Controllers\Api\QuotationController;
@@ -73,6 +74,10 @@ Route::controller(AuthController::class)->group(function (): void {
 
 Route::get('services', [ServiceController::class, 'index']);
 Route::get('services/{service}', [ServiceController::class, 'show']);
+Route::get('service-categories', [ServiceController::class, 'categories']);
+Route::get('service-images/{service}', [ServiceController::class, 'image'])->whereNumber('service');
+// Tra cứu tiến độ không cần đăng nhập (mã phiếu/lịch hẹn + 4 số cuối SĐT); giới hạn 5 lần/phút chống dò mã.
+Route::post('repair-orders/lookup', [PublicRepairLookupController::class, 'lookup'])->middleware('throttle:5,1');
 Route::get('maintenance-packages', [MaintenancePackageController::class, 'index']);
 Route::get('maintenance-packages/{maintenancePackage}', [MaintenancePackageController::class, 'show']);
 Route::get('booking-catalog', [BookingCatalogController::class, 'index']);
@@ -142,6 +147,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     |--------------------------------------------------------------------------
     */
 
+    // Khu khách hàng: chỉ tài khoản khách (nhân viên đặt lịch hộ khách ở khu làm việc; xe riêng → tài khoản khách riêng).
+    // Các thao tác "của tôi" kiểm tra đúng chủ sở hữu (policy `own`), không dựa vào quyền xem chung.
     Route::middleware('role:'.Account::ROLE_CUSTOMER)->group(function (): void {
 
         // Phiếu sửa chữa, báo giá và hóa đơn của khách hàng hiện tại
@@ -275,6 +282,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Hoạt động của từng cố vấn với lịch hẹn / phiếu sửa chữa.
         Route::get('admin/advisor-activity', [AdminAdvisorActivityController::class, 'index']);
 
+        // Ảnh minh họa dịch vụ (trang Dịch vụ phía khách).
+        Route::post('admin/services/{service}/image', [AdminServiceController::class, 'uploadImage'])->whereNumber('service');
+        Route::delete('admin/services/{service}/image', [AdminServiceController::class, 'deleteImage'])->whereNumber('service');
         // P5: bước chuẩn + phút chuẩn của dịch vụ.
         Route::get('admin/services/{service}/steps', [AdminServiceController::class, 'steps']);
         Route::put('admin/services/{service}/steps', [AdminServiceController::class, 'syncSteps']);

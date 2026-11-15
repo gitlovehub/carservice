@@ -5,18 +5,23 @@ export type CatalogItem = {
   type: "service" | "package";
   id: number;
   name: string;
+  /** Icon danh mục do admin chọn (gói: icon cố định "layers"). */
+  icon?: string;
   summary: string;
   /** Chỉ có ở gói: danh sách dịch vụ rút gọn. */
   includes?: string;
   price: number | null;
   minutes: number | null;
   recommended: boolean;
+  /** Chỉ có ở gói: mốc km (VD 5000, 10000). */
+  mileage_milestone?: number | null;
   included_service_ids?: number[];
 };
 
 export type CatalogGroup = {
   key: string;
   name: string;
+  icon?: string;
   items: CatalogItem[];
 };
 
@@ -58,8 +63,9 @@ export function formatCatalogPrice(price: number | null): string {
 
 export function formatMinutes(minutes: number | null): string | null {
   if (!minutes) return null;
-  if (minutes < 60) return `~${minutes} phút`;
+  // Không kèm "~": nơi hiển thị đặt icon đồng hồ trước thời lượng.
+  if (minutes < 60) return `${minutes} phút`;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest ? `~${hours} giờ ${rest} phút` : `~${hours} giờ`;
+  return rest ? `${hours} giờ ${rest} phút` : `${hours} giờ`;
 }

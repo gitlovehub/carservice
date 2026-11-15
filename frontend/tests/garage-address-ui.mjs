@@ -15,6 +15,7 @@ assert.match(ac, /setTimeout\(\(\) => \{[\s\S]*?\}, 300\)/, 'Requests are deboun
 assert.match(page, /<AddressAutocomplete/, 'Admin picks the address from suggestions');
 assert.match(footer, /useGarageInfo\(\)/, 'Footer shows the configured address');
 assert.match(contact, /useGarage\(\)/, 'Contact page reads the configured garage info');
+assert.match(read('src/pages/showcase/publicData.ts'), /'\/garage-settings'/, 'Garage info comes from the public garage-settings API');
 assert.match(contact, /'\/working-hours'/, 'Contact page shows the configured working hours');
 assert.match(contact, /'\/contact-messages', \{ method: 'POST'/, 'Contact form really submits to the backend');
 console.log('PASS garage settings + address autocomplete UI.');

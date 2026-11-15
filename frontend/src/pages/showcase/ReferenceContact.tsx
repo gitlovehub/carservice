@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import Breadcrumb from '../../components/Breadcrumb';
 import { ApiClientError, fetchApi } from '../../services/api';
-import { useGarage } from './HomeSections';
+import { useGarage } from './publicData';
 
 const ico = (size = 24) => ({ viewBox: '0 0 24 24', width: size, height: size, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true });
 const I = {

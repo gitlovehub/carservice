@@ -52,7 +52,8 @@ export default function AdminAppointments() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [checked, setChecked] = useState<number[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  // ?create=1 (vd từ thông báo ở trang Đặt lịch khi nhân viên mở nhầm) → mở sẵn form tạo lịch hẹn hộ khách.
+  const [creating, setCreating] = useState(() => new URLSearchParams(window.location.search).get("create") === "1");
   const [cancelling, setCancelling] = useState<AppointmentRow | null>(null);
   const [exporting, setExporting] = useState(false);
   const term = useDebounced(search.trim());

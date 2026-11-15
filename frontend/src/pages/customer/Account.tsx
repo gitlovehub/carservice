@@ -2,6 +2,7 @@ import { Modal } from "../../components/ui";
 import { useEffect, useState, useRef, type ChangeEvent } from "react";
 import Header from "../../components/Header";
 import { fetchApi } from "../../services/api";
+import { formatDate as formatDateShared } from "../../services/customerApi";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
 import VietnamAddressSelector from "../../components/common/VietnamAddressSelector";
@@ -54,11 +55,8 @@ const roleNames: Record<AccountInfo["role"], string> = {
 };
 
 const formatDate = (value?: string | null) => {
-  if (!value) return "Chưa cập nhật";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "Chưa cập nhật"
-    : date.toLocaleDateString("vi-VN");
+  const text = formatDateShared(value);
+  return text === "—" ? "Chưa cập nhật" : text;
 };
 
 const getInitials = (name: string) => {

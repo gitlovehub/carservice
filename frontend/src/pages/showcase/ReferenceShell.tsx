@@ -13,15 +13,15 @@ const menu = [
   { to:'/', label:'Trang chủ' },
   { to:'/services', label:'Dịch vụ' },
   { to:'/booking', label:'Đặt lịch' },
-  { to:'/appointments', label:'Lịch hẹn' },
-  { to:'/cars', label:'Xe của tôi' },
+  // "Lịch hẹn" và "Xe của tôi" đã nằm trong Hồ sơ cá nhân (menu trái) + menu avatar → không lặp ở header.
   { to:'/repair-status', label:'Tra cứu tiến độ' },
   { to:'/quotation', label:'Báo giá' },
+  { to:'/about', label:'Về chúng tôi' },
   { to:'/contact', label:'Liên hệ' },
 ];
 // Năm trang mẫu dùng layout full-width. Những trang nghiệp vụ khác giữ nguyên CSS và API,
 // nhưng cùng header/footer, không chuyển qua header cũ khi bấm menu.
-export const referenceRoutes = new Set(['/', '/services', '/contact', '/appointments', '/customer/appointments', '/cars', '/customer/cars', '/repair-status']);
+export const referenceRoutes = new Set(['/', '/services', '/about', '/contact', '/appointments', '/customer/appointments', '/repair-status']);
 
 function activeMenu(to: string, pathname: string) {
   if (to === '/') return pathname === '/';
@@ -75,7 +75,7 @@ export function ReferenceHeader() {
   const customer = logged && session.account.role === 'CUSTOMER';
   const initial = logged ? (session.account.full_name?.[0] || session.account.email?.[0] || 'K').toUpperCase() : 'K';
   const management = logged && session.account.role === 'ADMIN' ? '/admin' : '/advisor';
-  const paths = customer ? menu : logged ? menu.filter(x => ['/', '/services', '/contact'].includes(x.to)) : menu.filter(x => !['/appointments','/cars','/repair-status','/quotation'].includes(x.to));
+  const paths = customer ? menu : logged ? menu.filter(x => ['/', '/services', '/about', '/contact'].includes(x.to)) : menu.filter(x => !['/appointments','/cars','/quotation'].includes(x.to));
 
   useEffect(() => { setMobileOpen(false); setAccountOpen(false); }, [location.pathname]);
   useEffect(() => {
@@ -108,17 +108,20 @@ export function ReferenceHeader() {
         {customer && <CustomerNotificationBell/>}
         {logged ? customer ? <div className="v3ref-account" ref={accountRef}>
           <button type="button" className="v3ref-account-trigger" aria-expanded={accountOpen} aria-haspopup="menu" aria-label="Mở menu tài khoản" onClick={()=>setAccountOpen(v=>!v)}>
-            <span className="v3ref-avatar">{initial}</span><span className="v3ref-account-chevron" aria-hidden="true">⌄</span>
+            <span className="v3ref-avatar">{initial}</span>
           </button>
           {accountOpen && <div className="v3ref-account-popover" role="menu" aria-label="Menu tài khoản">
             <Link role="menuitem" to="/customer/account" onClick={()=>setAccountOpen(false)}>Hồ sơ cá nhân</Link>
+            <Link role="menuitem" to="/customer/appointments" onClick={()=>setAccountOpen(false)}>Lịch hẹn của tôi</Link>
+            <Link role="menuitem" to="/customer/cars" onClick={()=>setAccountOpen(false)}>Xe của tôi</Link>
             <Link role="menuitem" to="/customer/service-history" onClick={()=>setAccountOpen(false)}>Lịch sử dịch vụ</Link>
             <Link role="menuitem" to="/invoices" onClick={()=>setAccountOpen(false)}>Hóa đơn</Link>
             <Link role="menuitem" to="/reviews" onClick={()=>setAccountOpen(false)}>Đánh giá dịch vụ</Link>
             <button type="button" role="menuitem" className="v3ref-logout-action" onClick={()=>{setAccountOpen(false);void logout()}}>Đăng xuất</button>
           </div>}
         </div> : <Link to={management} className="v3ref-management-link"><span className="v3ref-avatar">{initial}</span><span>Quản lý</span></Link>
-          : <Link to="/login" aria-current={location.pathname === '/login' ? 'page' : undefined} className="v3ref-login">Đăng nhập</Link>}
+          : <Link to="/login" state={location.pathname === '/login' ? location.state : { from: { pathname: location.pathname, search: location.search, hash: location.hash } }}
+              aria-current={location.pathname === '/login' ? 'page' : undefined} className="v3ref-login">Đăng nhập</Link>}
         <button type="button" className="v3ref-hamburger" onClick={()=>setMobileOpen(v=>!v)} aria-label={mobileOpen?'Đóng menu':'Mở menu'} aria-expanded={mobileOpen} aria-controls="v3ref-navigation">{mobileOpen?'✕':'☰'}</button>
       </div>
     </div>
@@ -128,12 +131,18 @@ export function ReferenceFooter(){return <footer className="v3ref-footer"><div c
   <div><Link to="/" className="v3ref-footer-brand"><span>C</span> CarService</Link><p>Hệ thống chăm sóc, bảo dưỡng và sửa chữa ô tô minh bạch, thuận tiện.</p><SocialLinks/></div>
   <div><h4>Dịch vụ</h4><Link to="/services">Bảo dưỡng định kỳ</Link><Link to="/services">Thay dầu &amp; lọc dầu</Link><Link to="/services">Hệ thống phanh</Link><Link to="/services">Điều hòa ô tô</Link></div>
   <div><h4>Hỗ trợ</h4><Link to="/booking">Hướng dẫn đặt lịch</Link><Link to="/repair-status">Tra cứu tiến độ</Link><Link to="/quotation">Báo giá</Link><Link to="/contact">Liên hệ</Link></div>
-  <div><h4>Về CarService</h4><Link to="/">Giới thiệu</Link><Link to="/services">Dịch vụ</Link><Link to="/reviews">Đánh giá dịch vụ</Link><Link to="/contact">Hỗ trợ</Link></div>
+  <div><h4>Về CarService</h4><Link to="/about">Giới thiệu</Link><Link to="/services">Dịch vụ</Link><Link to="/reviews">Đánh giá dịch vụ</Link><Link to="/contact">Hỗ trợ</Link></div>
   <div><h4>Thông tin hỗ trợ</h4><p>Đặt lịch trực tuyến và theo dõi tiến độ xe mọi lúc.</p><Link className="v3ref-footer-cta" to="/booking">Đặt lịch ngay →</Link></div>
 </div><div className="v3ref-footer-bottom">© {new Date().getFullYear()} CarService · WD_004</div></footer>}
 
-export function ReferenceBanner({title,subtitle,image='mechanic-banner.webp'}:{title:string;subtitle:string;image?:string}){
-  return <div className="v3ref-banner" style={{backgroundImage:`linear-gradient(90deg,rgba(10,14,19,.96) 0%,rgba(10,14,19,.88) 42%,rgba(10,14,19,.15) 100%),url('/showcase/${image}')`}}><div className="v3ref-container"><Breadcrumb items={[{label:title}]}/><h1>{title}</h1><p>{subtitle}</p></div></div>;
+/** Banner đầu trang dùng chung — cùng kiểu với banner Về chúng tôi / Liên hệ. `highlight`: phần chữ đỏ cuối tiêu đề. */
+/** Ảnh banner theo bối cảnh từng trang — mỗi trang một ảnh khác nhau. `position`: căn chủ thể ra bên phải, tránh vùng chữ tối bên trái.
+    `image={null}`: không dùng ảnh — nền tối chuyển sắc đỏ nhẹ (VD trang Xe của tôi). */
+export function ReferenceBanner({title,highlight,subtitle,crumb,image=null,position='right center'}:{title:string;highlight?:string;subtitle:string;crumb?:string;image?:string|null;position?:string}){
+  const background = image
+    ? `linear-gradient(90deg,#0b0f14f2 0%,#0b0f14d9 40%,#0b0f1440 75%,#0b0f1400 100%),url('/showcase/${image}')`
+    : 'linear-gradient(110deg,#0b0f14 0%,#12141a 55%,#3b0d15 100%)';
+  return <div className="v3ref-banner" style={{backgroundImage:background,backgroundPosition:position}}><div className="v3ref-container"><Breadcrumb items={[{label:crumb??(highlight?`${title} ${highlight}`:title)}]}/><h1>{title}{highlight&&<> <em>{highlight}</em></>}</h1><p>{subtitle}</p></div></div>;
 }
 // Mạng xã hội ở footer. TẠM THỜI trỏ về trang chủ của từng mạng — thay bằng trang chính thức của gara khi có.
 // Để trống `href` thì chỉ hiện logo, không bấm được.

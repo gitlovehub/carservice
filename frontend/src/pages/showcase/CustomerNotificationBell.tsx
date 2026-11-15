@@ -6,6 +6,7 @@ import {
   readCustomerNotification,
   type CustomerNotification,
 } from '../../services/customerNotifications';
+import { formatDate } from '../../services/customerApi';
 
 function notificationDestination(item: CustomerNotification): string {
   if (item.appointment_id) return '/customer/appointments';
@@ -14,9 +15,8 @@ function notificationDestination(item: CustomerNotification): string {
 }
 
 function dateLabel(value: string | null) {
-  if (!value) return '';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'});
+  const text = formatDate(value);
+  return text === '—' ? '' : text;
 }
 
 /** Thay liên kết Đánh giá ở header bằng chuông đọc thông báo WEB từ Laravel. */

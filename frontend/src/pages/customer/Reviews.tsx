@@ -170,7 +170,7 @@ export default function Reviews() {
       {/* Banner thân thiện với khách hàng, không phải màn hình quản trị. */}
       <section
         className="relative isolate flex min-h-[235px] items-center overflow-hidden bg-[#151c22] py-12 text-white sm:min-h-[270px]"
-        style={{ backgroundImage: "linear-gradient(90deg, rgba(17,22,29,.94) 0%, rgba(17,22,29,.88) 42%, rgba(17,22,29,.22) 100%), url('/showcase/mechanic-banner.webp')", backgroundSize: "cover", backgroundPosition: "center" }}
+        style={{ backgroundImage: "linear-gradient(90deg, rgba(17,22,29,.94) 0%, rgba(17,22,29,.88) 42%, rgba(17,22,29,.22) 100%), url('/showcase/banner-reviews.webp')", backgroundSize: "cover", backgroundPosition: "right center" }}
       >
         <div className="mx-auto w-full max-w-[1220px] px-5 sm:px-8">
           <Breadcrumb items={[{ label: "Hồ sơ của tôi", to: "/customer/account" }, { label: "Đánh giá dịch vụ" }]}/>

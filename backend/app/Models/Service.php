@@ -3,16 +3,35 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'category', 'category_id', 'description', 'base_price', 'estimated_minutes', 'status', 'is_visible', 'is_popular', 'sort_order', 'service_level', 'requires_vehicle_stay'])]
+#[Fillable(['name', 'category', 'category_id', 'description', 'image_path', 'base_price', 'estimated_minutes', 'status', 'is_visible', 'is_popular', 'sort_order', 'service_level', 'requires_vehicle_stay'])]
 class Service extends Model
 {
     use HasFactory;
+
+    /** Thư mục lưu ảnh dịch vụ trên disk public. */
+    public const IMAGE_DIRECTORY = 'service-images';
+
+    /** API trả `image_url` (ảnh admin tải lên) thay cho đường dẫn lưu trữ nội bộ. */
+    protected $appends = ['image_url'];
+
+    protected $hidden = ['image_path'];
+
+    /**
+     * Ảnh phát qua route công khai (không cần storage:link); `v` đổi khi cập nhật để trình duyệt tải ảnh mới.
+     */
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->image_path
+            ? '/api/service-images/'.$this->id.'?v='.($this->updated_at?->timestamp ?? 0)
+            : null);
+    }
 
     /**
      * Giữ category (chuỗi, cho màn hình/API cũ) và category_id (bảng danh mục) luôn khớp:

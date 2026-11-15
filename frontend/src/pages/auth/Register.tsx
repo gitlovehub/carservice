@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { fetchApi } from "../../services/api";
-import { setUserRole } from "./auth";
+import { readReturnLocation, resolveReturnPath, setUserRole } from "./auth";
 import OtpInput from "../../components/auth/OtpInput";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
 import { GarageAuthError, GarageAuthLayout, GarageField } from "../../components/GaragePublic";
+import { AuthSwitchLink, PasswordInput } from "../../components/auth/PasswordInput";
+import { authFieldClass, authLinkRowClass, authPrimaryClass } from "../../components/auth/authStyles";
+import { markAuthSession } from "../../services/authPersistence";
 
 type ApiErrorResponse = {
   message?: string;
@@ -17,9 +20,7 @@ type ApiErrorResponse = {
 
 function Register() {
   const navigate = useNavigate();
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const location = useLocation();
 
   const [form, setForm] = useState({
     fullName: "",
@@ -244,17 +245,19 @@ function Register() {
           localStorage.setItem("token", response.token);
         }
         localStorage.setItem("user", JSON.stringify(response.account));
+        markAuthSession(true);
         setUserRole(response.account.role || "CUSTOMER");
         showToast("Xác thực email thành công! Đang chuyển hướng vào hệ thống...", "success");
         setTimeout(() => {
-          navigate("/");
+          // Về lại trang đang đứng trước khi phải đăng nhập/đăng ký (quy tắc chung với trang Đăng nhập).
+          navigate(resolveReturnPath(response.account.role || "CUSTOMER", readReturnLocation(location.state)), { replace: true });
         }, 800);
         return;
       }
 
       showToast("Xác thực email thành công! Vui lòng đăng nhập.", "success");
       setTimeout(() => {
-        navigate("/login");
+        navigate("/login", { state: location.state });
       }, 800);
     } catch (error: unknown) {
       setApiError(
@@ -295,20 +298,20 @@ function Register() {
     {apiError && <GarageAuthError message={apiError} />}
     {step === "REGISTER" ? <>
       <form className="grid gap-4" onSubmit={handleRegisterSubmit} noValidate>
-        <GarageField htmlFor="reg-name" label="Họ và tên" error={errors.fullName}><input className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" type="text" id="reg-name" name="fullName" autoComplete="name" placeholder="Nguyễn Văn A" value={form.fullName} onChange={handleChange} aria-invalid={!!errors.fullName} /></GarageField>
-        <GarageField htmlFor="reg-phone" label="Số điện thoại" error={errors.phone}><input className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" type="tel" id="reg-phone" name="phone" autoComplete="tel" placeholder="0912345678" value={form.phone} onChange={handleChange} aria-invalid={!!errors.phone} /></GarageField>
-        <GarageField htmlFor="reg-email" label="Địa chỉ email" error={errors.email}><input className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" type="email" id="reg-email" name="email" autoComplete="email" placeholder="you@example.com" value={form.email} onChange={handleChange} aria-invalid={!!errors.email} /></GarageField>
-        <GarageField htmlFor="reg-password" label="Mật khẩu" error={errors.password}><div className="relative"><input className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" type={showPassword ? "text" : "password"} id="reg-password" name="password" autoComplete="new-password" placeholder="Tối thiểu 8 ký tự" value={form.password} onChange={handleChange} aria-invalid={!!errors.password}/><button className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-cs-muted hover:text-[#cf2935]" type="button" onClick={() => setShowPassword(v => !v)}>{showPassword ? "Ẩn" : "Hiện"}</button></div></GarageField>
+        <GarageField htmlFor="reg-name" label="Họ và tên" error={errors.fullName}><input className={authFieldClass} type="text" id="reg-name" name="fullName" autoComplete="name" placeholder="Nguyễn Văn A" value={form.fullName} onChange={handleChange} aria-invalid={!!errors.fullName} /></GarageField>
+        <GarageField htmlFor="reg-phone" label="Số điện thoại" error={errors.phone}><input className={authFieldClass} type="tel" id="reg-phone" name="phone" autoComplete="tel" placeholder="0912345678" value={form.phone} onChange={handleChange} aria-invalid={!!errors.phone} /></GarageField>
+        <GarageField htmlFor="reg-email" label="Địa chỉ email" error={errors.email}><input className={authFieldClass} type="email" id="reg-email" name="email" autoComplete="email" placeholder="you@example.com" value={form.email} onChange={handleChange} aria-invalid={!!errors.email} /></GarageField>
+        <GarageField htmlFor="reg-password" label="Mật khẩu" error={errors.password}><PasswordInput id="reg-password" name="password" autoComplete="new-password" placeholder="Tối thiểu 8 ký tự" value={form.password} onChange={handleChange} aria-invalid={!!errors.password}/></GarageField>
         <PasswordStrengthIndicator password={form.password}/>
-        <GarageField htmlFor="reg-confirm" label="Xác nhận mật khẩu" error={errors.confirmPassword}><div className="relative"><input className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" type={showConfirmPassword ? "text" : "password"} id="reg-confirm" name="confirmPassword" autoComplete="new-password" placeholder="Nhập lại mật khẩu" value={form.confirmPassword} onChange={handleChange} aria-invalid={!!errors.confirmPassword}/><button className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-cs-muted hover:text-[#cf2935]" type="button" onClick={() => setShowConfirmPassword(v => !v)}>{showConfirmPassword ? "Ẩn" : "Hiện"}</button></div></GarageField>
-        <label className="flex cursor-pointer items-start gap-3 text-xs text-cs-muted [&_input]:mt-0.5 [&_input]:accent-[#cf2935]"><input name="agree" type="checkbox" checked={form.agree} onChange={handleChange}/><span>Tôi đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của CarService.</span></label>
+        <GarageField htmlFor="reg-confirm" label="Xác nhận mật khẩu" error={errors.confirmPassword}><PasswordInput id="reg-confirm" name="confirmPassword" autoComplete="new-password" placeholder="Nhập lại mật khẩu" value={form.confirmPassword} onChange={handleChange} aria-invalid={!!errors.confirmPassword}/></GarageField>
+        <label className="flex cursor-pointer items-start gap-3 text-xs text-cs-muted [&_input]:mt-0.5 [&_input]:size-4 [&_input]:shrink-0 [&_input]:cursor-pointer [&_input]:accent-[#cf2935]"><input name="agree" type="checkbox" checked={form.agree} onChange={handleChange}/><span>Tôi đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của CarService.</span></label>
         {errors.agree && <p className="text-xs font-bold text-[#dc4250]">{errors.agree}</p>}
-        <button type="submit" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-transparent bg-[#cf2935] text-white hover:bg-[#b92430] min-h-14 px-6 py-4 text-sm !font-semibold w-full" disabled={isLoading}>{isLoading ? "Đang tạo tài khoản..." : "Đăng ký"}</button>
+        <button type="submit" className={authPrimaryClass} disabled={isLoading} aria-busy={isLoading || undefined}>{isLoading ? "Đang tạo tài khoản..." : "Đăng ký"}</button>
       </form>
-      <p className="mt-5 mb-3 text-base text-cs-muted [&_a]:font-extrabold [&_a]:text-[#cf2935] [&_a]:hover:underline">Đã có tài khoản? <Link to="/login">Đăng nhập</Link></p>
+      <AuthSwitchLink text="Đã có tài khoản?" to="/login" label="Đăng nhập" state={location.state}/>
     </> : <>
-      <form className="grid gap-4" onSubmit={handleOtpSubmit} noValidate><OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!apiError}/><button type="submit" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-transparent bg-[#cf2935] text-white hover:bg-[#b92430] min-h-14 px-6 py-4 text-sm w-full" disabled={isLoading || otp.length !== 6}>{isLoading ? "Đang xác minh..." : "Xác thực email →"}</button></form>
-      <div className="mt-5 grid gap-3 text-xs text-cs-muted [&_button]:cursor-pointer [&_button]:text-left [&_button]:font-extrabold [&_button]:text-[#cf2935] [&_button:disabled]:cursor-not-allowed">{resendCountdown > 0 ? <span>Gửi lại OTP sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại OTP</button>}<button type="button" onClick={() => {setStep("REGISTER");setOtp("");setApiError("");}}>← Chỉnh sửa thông tin</button></div>
+      <form className="grid gap-4" onSubmit={handleOtpSubmit} noValidate><OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!apiError}/><button type="submit" className={authPrimaryClass} disabled={isLoading || otp.length !== 6} aria-busy={isLoading || undefined}>{isLoading ? "Đang xác minh..." : "Xác thực email →"}</button></form>
+      <div className={authLinkRowClass}>{resendCountdown > 0 ? <span>Gửi lại OTP sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại OTP</button>}<button type="button" onClick={() => {setStep("REGISTER");setOtp("");setApiError("");}}>← Chỉnh sửa thông tin</button></div>
     </>}
   </GarageAuthLayout>;
 

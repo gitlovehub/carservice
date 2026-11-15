@@ -121,7 +121,9 @@ export default function Services() {
                 return <tr key={s.id} className={`border-t border-cs-border transition-colors hover:bg-cs-hover/60 ${active ? "" : "text-cs-muted"}`}>
                   <td className="px-3 py-3">
                     <span className="flex min-w-0 items-center gap-3">
-                      <span className={`grid size-10 shrink-0 place-items-center rounded-control ${active ? "bg-cs-soft text-cs-accent-text" : "bg-cs-surface-2 text-cs-muted"}`}><Icon name={iconOf(s)} size={20}/></span>
+                      {s.image_url
+                        ? <img src={s.image_url} alt="" className={`size-10 shrink-0 rounded-control border border-cs-border object-cover ${active ? "" : "opacity-60"}`} loading="lazy"/>
+                        : <span className={`grid size-10 shrink-0 place-items-center rounded-control ${active ? "bg-cs-soft text-cs-accent-text" : "bg-cs-surface-2 text-cs-muted"}`}><Icon name={iconOf(s)} size={20}/></span>}
                       <span className="min-w-0">
                         <button type="button" onClick={() => setViewing(s)} className="block max-w-full cursor-pointer truncate text-left font-semibold text-cs-text hover:underline">{s.name}</button>
                         <span className="block truncate text-caption text-cs-muted">{s.description || "Chưa có mô tả"}</span>

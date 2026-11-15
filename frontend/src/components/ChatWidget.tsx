@@ -202,9 +202,22 @@ export default function ChatWidget() {
         aria-expanded={open}
         aria-controls="chatbot-panel"
         aria-label={open ? "Đóng chatbot" : "Mở chatbot tư vấn"}
-        className="group flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-[#1F2933] text-2xl text-white shadow-xl shadow-slate-900/30 ring-2 ring-[#D6A85F] transition hover:scale-105 hover:bg-[#2e3b47]"
+        className="group flex size-11 cursor-pointer items-center justify-center rounded-full bg-[#1F2933] text-white shadow-lg shadow-slate-900/30 ring-2 ring-[#D6A85F] transition hover:scale-105 hover:bg-[#2e3b47]"
       >
-        <span className="transition group-hover:rotate-12">{open ? "✕" : "💬"}</span>
+        {/* Icon trợ lý (robot) vẽ SVG — hiển thị giống nhau trên mọi máy, không phụ thuộc emoji hệ điều hành. */}
+        <span className="transition group-hover:rotate-12" aria-hidden="true">
+          {open ? (
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3v3"/><circle cx="12" cy="2.6" r="1" fill="currentColor" stroke="none"/>
+              <rect x="4.5" y="6.5" width="15" height="12" rx="4"/>
+              <path d="M2.5 11.5v3M21.5 11.5v3"/>
+              <circle cx="9.3" cy="12" r="1.4" fill="#D6A85F" stroke="none"/><circle cx="14.7" cy="12" r="1.4" fill="#D6A85F" stroke="none"/>
+              <path d="M9.5 15.6h5"/>
+            </svg>
+          )}
+        </span>
       </button>
     </div>
   );
