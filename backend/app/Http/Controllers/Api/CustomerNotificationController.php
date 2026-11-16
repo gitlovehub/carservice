@@ -23,6 +23,18 @@ class CustomerNotificationController extends Controller
         ]);
     }
 
+    /** PATCH /api/me/notifications/read-all — đánh dấu mọi thông báo WEB chưa đọc của chính tài khoản là đã đọc. */
+    public function markAllRead(Request $request): JsonResponse
+    {
+        $updated = Notification::query()
+            ->where('account_id', $request->user()->id)
+            ->where('channel', 'WEB')
+            ->whereNull('read_at')
+            ->update(['read_at' => now(), 'status' => 'READ']);
+
+        return response()->json(['success' => true, 'data' => ['updated' => $updated]]);
+    }
+
     public function markRead(Request $request, Notification $notification): JsonResponse
     {
         abort_unless(

@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { vehicleCatalogApi, type VehicleSelection } from "../../services/vehicleCatalog";
 import { SearchableSelect, type SelectOption } from "./SearchableSelect";
+import { VehicleBrandLogo } from "./VehicleBrandLogo";
+
+/** Logo hãng cạnh tên hãng (danh sách + đầu ô đã chọn) — cùng nguồn logo với mọi nơi khác. */
+const brandIcon = (name: string) => <VehicleBrandLogo brand={name} size={24}/>;
 
 type Loaded = { key: string; options: SelectOption[]; error: string };
 const idle: Loaded = { key: "", options: [], error: "" };
@@ -70,6 +74,7 @@ export function VehicleSelector({ value, onChange, errors = {}, disabled, trimRe
       options={brands.options} loading={brands.loading} loadError={brands.error} onRetry={brands.retry}
       value={value.brandId} fallbackLabel={value.brandName} error={errors.brand} disabled={disabled}
       emptyText="Không tìm thấy hãng xe."
+      renderIcon={brandIcon}
       onChange={option => onChange({
         brandId: option?.value ?? null, brandName: option?.label ?? "",
         modelId: null, modelName: "", trimId: null, trimName: "",

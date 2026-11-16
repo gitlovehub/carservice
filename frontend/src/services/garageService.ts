@@ -32,6 +32,21 @@ export function formatGarageAddress(info: GarageInfo | null): string | null {
   return [info.address_line, info.ward, info.district, info.province].filter(Boolean).join(", ");
 }
 
+/** Hiển thị số điện thoại dễ đọc: 10 số → "033 240 5972"; dạng khác giữ nguyên. */
+export function formatPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length === 10 ? `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}` : phone.trim();
+}
+
+/**
+ * Hotline gara do Admin cấu hình (Cài đặt gara) — nguồn DUY NHẤT cho mọi chỗ "Gọi hotline".
+ * Trả null khi chưa cấu hình / đang tải → nơi dùng ẩn số hoặc dẫn sang trang Liên hệ, không viết cứng số.
+ */
+export function useGarageHotline(): { display: string; tel: string } | null {
+  const phone = useGarageInfo()?.phone?.trim();
+  return phone ? { display: formatPhone(phone), tel: phone.replace(/[^\d+]/g, "") } : null;
+}
+
 /** Hook đọc thông tin gara (dùng chung cache trong phiên). */
 export function useGarageInfo(): GarageInfo | null {
   const [info, setInfo] = useState<GarageInfo | null>(null);

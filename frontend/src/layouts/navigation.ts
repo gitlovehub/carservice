@@ -4,7 +4,7 @@ export type ShellNavItem = {
   path: string;
   icon: "home" | "calendar" | "car" | "clipboard" | "users" | "wrench" |
     "settings" | "box" | "chart" | "shield" | "receipt" | "clock" |
-    "dashboard" | "layers" | "star" | "id-card" | "history" | "store" | "invoice" | "tag";
+    "dashboard" | "layers" | "star" | "id-card" | "history" | "store" | "invoice" | "tag" | "dollar";
   description?: string;
   /** Nhóm nghiệp vụ trên sidebar (Advisor/Admin). */
   group?: string;
@@ -19,7 +19,7 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Lịch hẹn", path: "/customer/appointments", icon: "clipboard" },
     { label: "Xe của tôi", path: "/customer/cars", icon: "car" },
     { label: "Tiến độ xe", path: "/repair-status", icon: "wrench" },
-    { label: "Báo giá", path: "/quotation", icon: "receipt" },
+    { label: "Báo giá", path: "/quotation", icon: "dollar" },
     { label: "Lịch sử", path: "/customer/service-history", icon: "clock" },
   ],
   advisor: [
@@ -38,7 +38,7 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Tổng quan", path: "/admin", icon: "dashboard", group: "Điều hành" },
     { label: "Lịch hẹn", path: "/admin/appointments", icon: "calendar", group: "Điều hành" },
     { label: "Phiếu sửa chữa", path: "/admin/repair-orders", icon: "clipboard", group: "Điều hành" },
-    { label: "Hoá đơn & thanh toán", path: "/admin/invoices", icon: "invoice", group: "Điều hành" },
+    { label: "Hoá đơn & thanh toán", path: "/admin/invoices", icon: "dollar", group: "Điều hành" },
     { label: "Báo cáo", path: "/admin/reports", icon: "chart", group: "Điều hành" },
     { label: "Khách hàng", path: "/admin/customers", icon: "users", group: "Con người" },
     { label: "Nhân sự", path: "/admin/staff", icon: "id-card", group: "Con người" },

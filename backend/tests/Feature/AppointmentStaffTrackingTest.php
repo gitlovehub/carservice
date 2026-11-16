@@ -105,6 +105,20 @@ class AppointmentStaffTrackingTest extends TestCase
         Mail::assertNothingSent();
     }
 
+    public function test_customer_is_notified_when_advisor_confirms_or_cancels(): void
+    {
+        $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/confirm")->assertOk();
+        $this->actingAs($this->advisorB)->postJson("/api/advisor/appointments/{$this->appointment->id}/cancel", ['cancel_reason' => 'Gara kín lịch'])->assertOk();
+
+        $rows = collect($this->actingAs($this->customerAccount)->getJson('/api/me/notifications')->assertOk()->json('data'));
+        $this->assertEqualsCanonicalizing(
+            [Notification::TYPE_APPOINTMENT_CONFIRMED, Notification::TYPE_APPOINTMENT_CANCELLED],
+            $rows->pluck('type')->all(),
+        );
+        $this->assertTrue($rows->every(fn (array $row) => $row['appointment_id'] === $this->appointment->id));
+        $this->assertStringContainsString('Gara kín lịch', $rows->firstWhere('type', Notification::TYPE_APPOINTMENT_CANCELLED)['content']);
+    }
+
     public function test_admin_sees_activity_per_advisor(): void
     {
         $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/confirm")->assertOk();

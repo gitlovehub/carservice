@@ -43,4 +43,28 @@ class Vehicle extends Model
     {
         return $this->hasMany(Appointment::class);
     }
+
+    public function repairOrders(): HasMany
+    {
+        return $this->hasMany(RepairOrder::class);
+    }
+
+    /**
+     * Xe còn đang ở garage: có phiếu sửa chữa chưa bàn giao và chưa đóng
+     * (COMPLETED = đã sửa xong nhưng xe vẫn chờ khách nhận).
+     */
+    public function hasOpenRepairOrder(): bool
+    {
+        return $this->repairOrders()
+            ->whereNotIn('status', [RepairOrder::HANDED_OVER, RepairOrder::CLOSED])
+            ->exists();
+    }
+
+    /** Xe còn lịch hẹn đang chờ / đã xác nhận / đã tiếp nhận. */
+    public function hasActiveAppointment(): bool
+    {
+        return $this->appointments()
+            ->whereIn('status', Appointment::ACTIVE_STATUSES)
+            ->exists();
+    }
 }

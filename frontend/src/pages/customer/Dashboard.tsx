@@ -4,6 +4,7 @@ import { buttonClass } from "../../components/ui/buttonClass";
 import { Link, useNavigate } from "react-router-dom";
 import { Toast, type ToastType } from "../../components/auth/Toast";
 import { fetchApi } from "../../services/api";
+import { useGarageHotline } from "../../services/garageService";
 import { getUserDisplayName } from "../auth/auth";
 import {
   FINISHED_REPAIR_STATUSES,
@@ -24,8 +25,6 @@ import {
   type CustomerVehicle,
 } from "../../services/customerApi";
 
-const HOTLINE_DISPLAY = "033 240 5972";
-const HOTLINE_TEL = "0332405972";
 
 /* Bước hiển thị trên timeline và vị trí hiện tại theo trạng thái phiếu sửa chữa */
 const STEPS = [
@@ -57,6 +56,7 @@ type User = { full_name?: string; name?: string; email?: string; customer?: { fu
 
 function CustomerDashboard() {
   const navigate = useNavigate();
+  const hotline = useGarageHotline();
 
   const [user, setUser] = useState<User>(() => {
     try {
@@ -249,11 +249,12 @@ function CustomerDashboard() {
   };
 
   const handleCopyHotline = async () => {
+    if (!hotline) return;
     try {
-      await navigator.clipboard.writeText(HOTLINE_DISPLAY);
-      showToast(`Đã sao chép số ${HOTLINE_DISPLAY}.`, "success");
+      await navigator.clipboard.writeText(hotline.display);
+      showToast(`Đã sao chép số ${hotline.display}.`, "success");
     } catch {
-      showToast(`Đường dây nóng: ${HOTLINE_DISPLAY}`, "info");
+      showToast(`Đường dây nóng: ${hotline.display}`, "info");
     }
   };
 
@@ -683,15 +684,16 @@ function CustomerDashboard() {
                   Liên hệ gara khi xe gặp sự cố hoặc cần tư vấn, báo giá.
                 </p>
 
-                <div className="mt-4 rounded-xl bg-[#1F2933] p-4 text-white">
+                {/* Hotline lấy từ Cài đặt gara (Admin); chưa cấu hình thì chỉ còn nút Liên hệ bên dưới. */}
+                {hotline && <div className="mt-4 rounded-xl bg-[#1F2933] p-4 text-white">
                   <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#E5B869]">
                     Đường dây nóng hỗ trợ kỹ thuật
                   </p>
                   <a
-                    href={`tel:${HOTLINE_TEL}`}
+                    href={`tel:${hotline.tel}`}
                     className="mt-1 block cursor-pointer text-xl font-bold tracking-wider"
                   >
-                    {HOTLINE_DISPLAY}
+                    {hotline.display}
                   </a>
                   <button
                     type="button"
@@ -700,7 +702,7 @@ function CustomerDashboard() {
                   >
                     Sao chép số
                   </button>
-                </div>
+                </div>}
 
                 <Link
                   to="/contact"

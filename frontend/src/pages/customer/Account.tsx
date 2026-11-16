@@ -2,17 +2,15 @@ import { Modal } from "../../components/ui";
 import { useEffect, useState, useRef, type ChangeEvent } from "react";
 import Header from "../../components/Header";
 import { fetchApi } from "../../services/api";
-import { formatDate as formatDateShared } from "../../services/customerApi";
+import { formatDateTime } from "../../services/customerApi";
+import { getCustomerNotifications, type CustomerNotification } from "../../services/customerNotifications";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
-import VietnamAddressSelector from "../../components/common/VietnamAddressSelector";
-import { logout } from "../auth/auth";
 import { Link } from "react-router-dom";
-import { Button, IconButton } from "../../components/ui/Button";
+import ContactEditModal from "../../components/customer/ContactEditModal";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Icon } from "../../components/ui/Icon";
-import { useAppFeedback } from "../../components/ui/feedbackContext";
-import carArt from "../../assets/car-garage.svg";
+import { AccountHeader } from "./account/AccountKit";
 
 type AccountInfo = {
   id: number;
@@ -47,25 +45,12 @@ const PRESET_AVATARS = [
   "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80",
 ];
 
-const roleNames: Record<AccountInfo["role"], string> = {
-  CUSTOMER: "Khách hàng",
-  ADMIN: "Quản trị viên",
-  ADVISOR: "Cố vấn dịch vụ",
-  TECHNICIAN: "Kỹ thuật viên",
-};
-
-const formatDate = (value?: string | null) => {
-  const text = formatDateShared(value);
-  return text === "—" ? "Chưa cập nhật" : text;
-};
-
 const getInitials = (name: string) => {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-type ProfileVehicle = { id: number; license_plate: string; year?: number | null; variant?: string | null; model?: { name?: string; brand?: { name?: string } | null } | null };
 
 /** Icon nhỏ cho các dòng thông tin (bổ sung cho bộ Icon chung). */
 function ProfileGlyph({ name }: { name: "user" | "phone" | "mail" | "pin" | "lock" | "id" | "calendar" | "shield" }) {
@@ -82,7 +67,8 @@ function ProfileGlyph({ name }: { name: "user" | "phone" | "mail" | "pin" | "loc
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d={paths[name]}/></svg>;
 }
 
-const VIETNAM_PHONE_REGEX = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+
+type ProfileTab = "profile" | "security" | "notifications";
 
 function Account() {
   const [account, setAccount] = useState<AccountInfo | null>(() => {
@@ -96,10 +82,12 @@ function Account() {
   const [customer, setCustomer] = useState<CustomerProfile | null>(
     account?.customer || null,
   );
-  const [vehicles, setVehicles] = useState<ProfileVehicle[] | null>(null);
-  // ?tab=security mở thẳng tab Bảo mật (liên kết "Cài đặt" / đổi mật khẩu).
-  const [tab, setTab] = useState<"profile" | "security">(() => new URLSearchParams(window.location.search).get("tab") === "security" ? "security" : "profile");
-  const { confirm } = useAppFeedback();
+  // ?tab=security|notifications mở thẳng tab tương ứng (liên kết "Cài đặt" / đổi mật khẩu).
+  const [tab, setTab] = useState<ProfileTab>(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab");
+    return (["security", "notifications"] as const).find(t => t === requested) ?? "profile";
+  });
+  const [notifications, setNotifications] = useState<CustomerNotification[] | null>(null);
 
   // Toast notification
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
@@ -112,18 +100,6 @@ function Account() {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Edit Profile Form
-  const [profileForm, setProfileForm] = useState({
-    fullName: "",
-    phone: "",
-    address: "",
-  });
-  const [profileErrors, setProfileErrors] = useState<{
-    fullName?: string;
-    phone?: string;
-    address?: string;
-  }>({});
 
   // Change Password Form
   const [passwordForm, setPasswordForm] = useState({
@@ -154,20 +130,15 @@ function Account() {
         localStorage.setItem("user", JSON.stringify(currentAccount));
 
         if (currentAccount.role === "CUSTOMER") {
-          const [customerResult, vehiclesResult] = await Promise.allSettled([
+          const [customerResult, notificationsResult] = await Promise.allSettled([
             fetchApi("/me/customer/"),
-            fetchApi("/me/vehicles/"),
+            getCustomerNotifications(),
           ]);
+
+          setNotifications(notificationsResult.status === "fulfilled" ? notificationsResult.value.items : []);
 
           if (customerResult.status === "fulfilled" && customerResult.value?.data) {
             setCustomer(customerResult.value.data as CustomerProfile);
-          }
-
-          if (
-            vehiclesResult.status === "fulfilled" &&
-            Array.isArray(vehiclesResult.value?.data)
-          ) {
-            setVehicles(vehiclesResult.value.data as ProfileVehicle[]);
           }
         }
       }
@@ -192,105 +163,9 @@ function Account() {
     account?.customer?.phone ||
     account?.employee?.phone ||
     "Chưa cập nhật";
-  const address =
-    customer?.address || account?.customer?.address || "Chưa cập nhật";
-  const status =
-    account?.status === "ACTIVE"
-      ? "Đang hoạt động"
-      : account?.status || "Chưa cập nhật";
-  const roleName = account ? roleNames[account.role] : "Tài khoản";
-  const profileNumber =
-    account?.role === "CUSTOMER" && (customer?.id || account?.customer?.id)
-      ? `KH-${String(customer?.id || account?.customer?.id).padStart(3, "0")}`
-      : account?.employee?.id
-        ? `NV-${String(account.employee.id).padStart(3, "0")}`
-        : "Chưa cập nhật";
 
-  // Xóa xe (cùng API trang "Xe của tôi"; backend chặn nếu xe đang có lịch / phiếu).
-  const handleDeleteVehicle = async (id: number, plate: string) => {
-    if (!await confirm({ title: "Xóa xe", reference: plate, description: "Xe sẽ bị xóa khỏi tài khoản. Không xóa được nếu xe đang có lịch hẹn hoặc đang sửa.", confirmText: "Xóa xe", variant: "danger" })) return;
-    try {
-      await fetchApi(`/me/vehicles/${id}`, { method: "DELETE" });
-      setVehicles(list => (list ?? []).filter(v => v.id !== id));
-      showToast("Đã xóa xe.", "success");
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Không xóa được xe.", "error");
-    }
-  };
-
-  // --- Handlers: Edit Profile ---
-  const handleOpenEditProfile = () => {
-    setProfileForm({
-      fullName: fullName === "Chưa cập nhật" ? "" : fullName,
-      phone: phone === "Chưa cập nhật" ? "" : phone,
-      address: address === "Chưa cập nhật" ? "" : address,
-    });
-    setProfileErrors({});
-    setIsEditProfileOpen(true);
-  };
-
-  const validateProfileForm = () => {
-    const errors: typeof profileErrors = {};
-    const trimmedName = profileForm.fullName.trim();
-    const trimmedPhone = profileForm.phone.trim();
-
-    if (!trimmedName) {
-      errors.fullName = "Vui lòng nhập họ và tên.";
-    } else if (trimmedName.length < 2) {
-      errors.fullName = "Họ và tên phải có ít nhất 2 ký tự.";
-    } else if (trimmedName.length > 100) {
-      errors.fullName = "Họ và tên không được vượt quá 100 ký tự.";
-    }
-
-    if (!trimmedPhone) {
-      errors.phone = "Vui lòng nhập số điện thoại.";
-    } else if (!VIETNAM_PHONE_REGEX.test(trimmedPhone)) {
-      errors.phone = "Số điện thoại không hợp lệ (10 chữ số, ví dụ: 0912345678).";
-    }
-
-    if (profileForm.address.trim().length > 255) {
-      errors.address = "Địa chỉ không được vượt quá 255 ký tự.";
-    }
-
-    setProfileErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateProfileForm()) return;
-
-    setIsSubmitting(true);
-    try {
-      const response = await fetchApi("/me/profile", {
-        method: "PATCH",
-        body: JSON.stringify({
-          full_name: profileForm.fullName.trim(),
-          phone: profileForm.phone.trim(),
-          address: profileForm.address.trim() || null,
-        }),
-      });
-
-      if (response?.account) {
-        setAccount(response.account);
-        if (response.account.customer) {
-          setCustomer(response.account.customer);
-        }
-        localStorage.setItem("user", JSON.stringify(response.account));
-        window.dispatchEvent(new Event("user-updated"));
-      }
-
-      showToast("Cập nhật thông tin cá nhân thành công!", "success");
-      setIsEditProfileOpen(false);
-    } catch (err: unknown) {
-      const errorMessage =
-        (err as { data?: { message?: string } })?.data?.message ||
-        "Có lỗi xảy ra khi cập nhật thông tin. Vui lòng thử lại.";
-      showToast(errorMessage, "error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // --- Sửa thông tin: dùng chung modal với bước Xác nhận ở trang Đặt lịch (ContactEditModal) ---
+  const handleOpenEditProfile = () => setIsEditProfileOpen(true);
 
   // --- Handlers: Change Password ---
   const handleOpenChangePassword = () => {
@@ -449,87 +324,94 @@ function Account() {
       )}
 
       <main className="at-customer-page"><div className="at-customer-container">
-        {/* Cột phải */}
         <section className="min-w-0">
-          <div className="at-customer-heading">
-            <div>
-              <h1>Hồ sơ của tôi</h1>
-              <p>Quản lý thông tin cá nhân, ảnh đại diện và bảo mật tài khoản.</p>
-            </div>
-            <Button variant="primary" icon="edit" onClick={handleOpenEditProfile}>Chỉnh sửa thông tin</Button>
-          </div>
+          {/* Cùng khung tiêu đề với 7 trang khác của menu tài khoản. */}
+          <AccountHeader title="Hồ sơ của tôi" description="Quản lý thông tin cá nhân và bảo mật tài khoản."/>
 
-          <div role="tablist" aria-label="Hồ sơ" className="flex gap-2 border-b border-cs-border">
-            {([["profile", "Thông tin cá nhân", "user"], ["security", "Bảo mật", "shield"]] as const).map(([key, label, icon]) =>
+          {/* Tab */}
+          <div role="tablist" aria-label="Hồ sơ" className="mt-6 flex gap-1 overflow-x-auto border-b border-cs-border [scrollbar-width:none]">
+            {([["profile", "Thông tin cá nhân", "user"], ["security", "Bảo mật & Đăng nhập", "shield"], ["notifications", "Thông báo", "bell"]] as const).map(([key, label, icon]) =>
               <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
-                className={`-mb-px flex cursor-pointer items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition ${tab === key ? "border-cs-accent text-cs-accent-text" : "border-transparent text-cs-muted hover:text-cs-text"}`}>
+                className={`-mb-px flex shrink-0 cursor-pointer items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold whitespace-nowrap transition ${tab === key ? "border-[#e11d2e] text-cs-accent-text" : "border-transparent text-cs-muted hover:text-cs-text"}`}>
                 <Icon name={icon} size={18}/>{label}
               </button>)}
           </div>
 
-          {tab === "profile" ? <div className="mt-5 space-y-5">
-            <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-lg font-bold text-cs-text">Thông tin cá nhân</h2>
-
-              </div>
-              <dl className="mt-4 space-y-2.5">
-                <div className="grid gap-1.5 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
-                  <dt className="flex items-center gap-3 text-sm text-cs-muted"><ProfileGlyph name="user"/>Ảnh đại diện</dt>
-                  <dd className="flex items-center gap-3 rounded-xl bg-cs-surface-2 px-4 py-2">
-                    {account?.avatar
-                      ? <img src={account.avatar} alt="" className="size-10 rounded-full object-cover"/>
-                      : <span className="flex size-10 items-center justify-center rounded-full bg-cs-accent text-sm font-bold text-cs-accent-contrast">{fullName === "Chưa cập nhật" ? "KH" : getInitials(fullName)}</span>}
-                    <Button size="sm" variant="ghost" icon="edit" onClick={handleOpenAvatarModal}>Đổi ảnh</Button>
-                  </dd>
+          <div className="mt-6">
+            <div className="min-w-0">
+              {tab === "profile" && <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-full bg-cs-soft text-cs-accent-text"><ProfileGlyph name="id"/></span>
+                    <h2 className="text-lg font-extrabold text-cs-text">Thông tin cá nhân</h2>
+                  </div>
+                  <button type="button" onClick={handleOpenEditProfile} className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-[#e11d2e] px-5 py-2 text-sm font-bold text-cs-accent-text transition hover:bg-cs-soft"><Icon name="edit" size={15}/>Chỉnh sửa</button>
                 </div>
-                {([["user", "Họ và tên", fullName], ["phone", "Số điện thoại", phone], ["mail", "Email", email], ["pin", "Địa chỉ", address]] as const).map(([icon, label, value]) =>
-                  <div key={label} className="grid gap-1.5 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
-                    <dt className="flex items-center gap-3 text-sm text-cs-muted"><ProfileGlyph name={icon}/>{label}</dt>
-                    <dd className={`break-words rounded-xl bg-cs-surface-2 px-4 py-2.5 text-sm font-semibold ${value === "Chưa cập nhật" ? "text-cs-muted" : "text-cs-text"}`}>{value}</dd>
-                  </div>)}
-              </dl>
+                {/* Địa chỉ vẫn sửa được trong "Chỉnh sửa". */}
+                <dl className="mt-5 space-y-2.5">
+                  <div className="grid gap-1.5 sm:grid-cols-[200px_minmax(0,1fr)] sm:items-center">
+                    <dt className="flex items-center gap-3 text-sm text-cs-muted"><ProfileGlyph name="user"/>Ảnh đại diện</dt>
+                    <dd className="flex items-center gap-3 rounded-xl bg-cs-surface-2 px-4 py-2">
+                      {account?.avatar
+                        ? <img src={account.avatar} alt="Ảnh đại diện" className="size-10 rounded-full object-cover"/>
+                        : <span className="flex size-10 items-center justify-center rounded-full bg-cs-accent text-sm font-bold text-cs-accent-contrast">{fullName === "Chưa cập nhật" ? "KH" : getInitials(fullName)}</span>}
+                      <button type="button" onClick={handleOpenAvatarModal} className="cursor-pointer text-sm font-semibold text-cs-accent-text hover:underline">Đổi ảnh</button>
+                    </dd>
+                  </div>
+                  {([["user", "Họ và tên", fullName], ["phone", "Số điện thoại", phone], ["mail", "Email", email]] as const).map(([icon, label, value]) =>
+                    <div key={label} className="grid gap-1.5 sm:grid-cols-[200px_minmax(0,1fr)] sm:items-center">
+                      <dt className="flex items-center gap-3 text-sm text-cs-muted"><ProfileGlyph name={icon}/>{label}</dt>
+                      <dd className={`break-words rounded-xl bg-cs-surface-2 px-4 py-3 text-sm font-semibold ${value === "Chưa cập nhật" ? "text-cs-muted" : "text-cs-text"}`}>{value}</dd>
+                    </div>)}
+                </dl>
+              </div>}
+
+              {tab === "security" && <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-cs-soft text-cs-accent-text"><ProfileGlyph name="shield"/></span>
+                  <h2 className="text-lg font-extrabold text-cs-text">Bảo mật & Đăng nhập</h2>
+                </div>
+                {/* Chỉ hai việc về mật khẩu: đổi (biết mật khẩu cũ) và quên (đặt lại qua mã OTP gửi email). */}
+                <div className="mt-5 divide-y divide-cs-border rounded-xl border border-cs-border">
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="mt-0.5 text-cs-muted"><ProfileGlyph name="lock"/></span>
+                      <div className="min-w-0"><p className="text-sm font-semibold text-cs-text">Đổi mật khẩu</p><p className="text-xs text-cs-muted">Nhập mật khẩu hiện tại rồi đặt mật khẩu mới (tối thiểu 8 ký tự, có chữ hoa, chữ thường và chữ số).</p></div>
+                    </div>
+                    <button type="button" onClick={handleOpenChangePassword} className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-[#e11d2e] px-5 py-2 text-sm font-bold text-cs-accent-text transition hover:bg-cs-soft"><Icon name="edit" size={15}/>Đổi mật khẩu</button>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="mt-0.5 text-cs-muted"><ProfileGlyph name="mail"/></span>
+                      <div className="min-w-0"><p className="text-sm font-semibold text-cs-text">Quên mật khẩu</p><p className="text-xs text-cs-muted">Không nhớ mật khẩu hiện tại? Nhận mã OTP qua email {email === "Chưa cập nhật" ? "đăng nhập" : email} để đặt mật khẩu mới.</p></div>
+                    </div>
+                    <Link to="/forgot-password" state={{ from: { pathname: "/customer/account", search: "?tab=security", hash: "" } }} className="inline-flex shrink-0 items-center gap-2 rounded-full border border-cs-border px-5 py-2 text-sm font-bold text-cs-text no-underline transition hover:border-[#e11d2e] hover:text-cs-accent-text">Đặt lại qua email<Icon name="arrow" size={15}/></Link>
+                  </div>
+                </div>
+              </div>}
+
+              {tab === "notifications" && <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6">
+                <div className="flex items-start gap-3">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-cs-soft text-cs-accent-text"><Icon name="bell" size={20}/></span>
+                  <div><h2 className="text-lg font-extrabold text-cs-text">Thông báo</h2><p className="text-sm text-cs-muted">Cập nhật về lịch hẹn, báo giá và tiến độ sửa xe của bạn.</p></div>
+                </div>
+                {notifications === null ? <p className="mt-5 text-sm text-cs-muted">Đang tải thông báo…</p>
+                  : !notifications.length ? <p className="mt-5 rounded-xl bg-cs-surface-2 px-4 py-8 text-center text-sm text-cs-muted">Bạn chưa có thông báo nào.</p>
+                    : <ul className="mt-5 divide-y divide-cs-border">{notifications.map(n =>
+                      <li key={n.id} className={`flex gap-3 py-3.5 ${n.read_at ? "" : "font-semibold"}`}>
+                        <span className={`mt-1.5 size-2 shrink-0 rounded-full ${n.read_at ? "bg-cs-border" : "bg-[#e11d2e]"}`} aria-hidden="true"/>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-cs-text">{n.title}</p>
+                          <p className="mt-0.5 text-sm font-normal text-cs-muted">{n.content}</p>
+                          <p className="mt-1 text-xs font-normal text-cs-muted">{formatDateTime(n.created_at)}</p>
+                        </div>
+                        {(n.repair_order_id || n.appointment_id) && <Link to={n.repair_order_id ? `/repair-status?orderId=${n.repair_order_id}` : "/customer/appointments"} className="shrink-0 self-center text-sm font-bold text-cs-accent-text no-underline hover:underline">Xem</Link>}
+                      </li>)}</ul>}
+              </div>}
+
             </div>
 
-            {account?.role === "CUSTOMER" && <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6" data-testid="profile-vehicles">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="flex items-center gap-2.5 text-lg font-bold text-cs-text"><span className="text-cs-accent-text"><Icon name="car" size={22}/></span>Xe của tôi</h2>
-                <Link to="/customer/cars" className={buttonClass({ variant: "tonal", size: "sm", className: "no-underline" })}><Icon name="plus" size={14}/>Thêm xe</Link>
-              </div>
-              {vehicles === null ? <p className="mt-4 text-sm text-cs-muted">Đang tải xe…</p>
-                : !vehicles.length ? <p className="mt-4 rounded-xl bg-cs-surface-2 px-4 py-6 text-center text-sm text-cs-muted">Bạn chưa đăng ký xe nào.</p>
-                  : <ul className="mt-4 space-y-3">{vehicles.map(vehicle => {
-                    const name = [vehicle.model?.brand?.name, vehicle.model?.name, vehicle.variant].filter(Boolean).join(" ") || "Xe chưa rõ dòng";
-                    return <li key={vehicle.id} className="flex flex-wrap items-center gap-4 rounded-xl border border-cs-border p-3 sm:flex-nowrap">
-                      <img src={carArt} alt="" className="h-16 w-28 shrink-0 rounded-lg bg-cs-surface-2 object-contain p-1"/>
-                      <div className="min-w-0 flex-1"><p className="truncate font-bold text-cs-text">{name}</p><p className="font-mono text-sm text-cs-muted">{vehicle.license_plate}{vehicle.year ? ` · ${vehicle.year}` : ""}</p></div>
-                      <div className="ml-auto flex gap-1">
-                        <Link to="/customer/cars" aria-label={`Sửa xe ${vehicle.license_plate}`} title="Sửa xe" className="inline-flex size-10 items-center justify-center rounded-lg text-cs-text hover:bg-cs-hover"><Icon name="edit" size={18}/></Link>
-                        <IconButton icon="trash" tone="danger" label={`Xóa xe ${vehicle.license_plate}`} onClick={() => void handleDeleteVehicle(vehicle.id, vehicle.license_plate)}/>
-                      </div>
-                    </li>;
-                  })}</ul>}
-            </div>}
-          </div> : <div className="mt-5 space-y-5">
-            <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-lg font-bold text-cs-text">Thông tin đăng nhập</h2>
-                <Button variant="secondary" size="sm" icon="shield" onClick={handleOpenChangePassword}>Đổi mật khẩu</Button>
-              </div>
-              <dl className="mt-4 space-y-2.5">
-                {([["mail", "Email đăng nhập", email], ["lock", "Mật khẩu", "••••••••••"], ["id", "Mã khách hàng", profileNumber], ["calendar", "Ngày tham gia", formatDate(account?.created_at)], ["user", "Vai trò", roleName], ["shield", "Trạng thái", `Tài khoản ${status.toLowerCase()}`]] as const).map(([icon, label, value]) =>
-                  <div key={label} className="grid gap-1.5 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
-                    <dt className="flex items-center gap-3 text-sm text-cs-muted"><ProfileGlyph name={icon}/>{label}</dt>
-                    <dd className="break-words rounded-xl bg-cs-surface-2 px-4 py-2.5 text-sm font-semibold text-cs-text">{value}</dd>
-                  </div>)}
-              </dl>
-            </div>
-            <div className="flex items-start gap-3 rounded-2xl border border-cs-border bg-cs-surface p-5">
-              <span className="text-cs-accent-text"><Icon name="shield" size={22}/></span>
-              <p className="text-sm leading-6 text-cs-muted">Không chia sẻ mật khẩu với bất kỳ ai. Nên đặt mật khẩu từ 8 ký tự, gồm chữ hoa, chữ thường và chữ số.</p>
-            </div>
-            <Button variant="danger-outline" icon="logout" onClick={() => void logout()}>Đăng xuất</Button>
-          </div>}
+          </div>
         </section>
       </div></main>
 
@@ -537,144 +419,18 @@ function Account() {
       {/* MODAL 1: CHỈNH SỬA THÔNG TIN CÁ NHÂN                     */}
       {/* ========================================================= */}
       {isEditProfileOpen && (
-        <Modal bare open onClose={() => setIsEditProfileOpen(false)} dismissible={!isSubmitting} title={"Chỉnh sửa thông tin cá nhân"} className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#E1E4E6] bg-cs-surface shadow-overlay transition-all">
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#E1E4E6] bg-white px-6 py-4">
-              <div>
-                <h3 className="text-lg font-bold text-[#1F2933]">
-                  Chỉnh sửa thông tin cá nhân
-                </h3>
-                <p className="mt-0.5 text-xs text-cs-muted">
-                  Cập nhật thông tin liên hệ cho tài khoản của bạn.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsEditProfileOpen(false)}
-                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveProfile} className="space-y-4 px-6 pb-6 pt-5">
-              {/* Email (Readonly) */}
-              <div>
-                <label className="block text-xs font-semibold text-[#1F2933]">
-                  Email đăng nhập
-                </label>
-                <div className="relative mt-1">
-                  <input
-                    type="email"
-                    value={email}
-                    disabled
-                    className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-xs font-medium text-slate-500 cursor-not-allowed"
-                  />
-                  <span className="absolute right-3 top-2.5 text-[11px] font-semibold text-slate-400">
-                    Định danh cố định
-                  </span>
-                </div>
-                <p className="mt-1 text-[12px] text-slate-400">
-                  Email dùng làm tài khoản đăng nhập, không thể thay đổi tại đây.
-                </p>
-              </div>
-
-              {/* Full Name */}
-              <div>
-                <label className="block text-xs font-semibold text-[#1F2933]">
-                  Họ và tên <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={profileForm.fullName}
-                  onChange={(e) => {
-                    setProfileForm({ ...profileForm, fullName: e.target.value });
-                    if (profileErrors.fullName) {
-                      setProfileErrors({ ...profileErrors, fullName: undefined });
-                    }
-                  }}
-                  placeholder="Nhập họ và tên đầy đủ"
-                  className={`mt-1 w-full rounded-xl border px-3.5 py-2.5 text-xs text-[#20252B] transition focus:outline-none ${
-                    profileErrors.fullName
-                      ? "border-rose-400 bg-rose-50/30 focus:border-rose-500"
-                      : "border-slate-300 focus:border-[#D6A85F] focus:ring-1 focus:ring-[#D6A85F]"
-                  }`}
-                />
-                {profileErrors.fullName && (
-                  <p className="mt-1 text-[12px] font-medium text-rose-500">
-                    {profileErrors.fullName}
-                  </p>
-                )}
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label className="block text-xs font-semibold text-[#1F2933]">
-                  Số điện thoại <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  value={profileForm.phone}
-                  onChange={(e) => {
-                    setProfileForm({ ...profileForm, phone: e.target.value });
-                    if (profileErrors.phone) {
-                      setProfileErrors({ ...profileErrors, phone: undefined });
-                    }
-                  }}
-                  placeholder="Ví dụ: 0912345678"
-                  className={`mt-1 w-full rounded-xl border px-3.5 py-2.5 text-xs text-[#20252B] transition focus:outline-none ${
-                    profileErrors.phone
-                      ? "border-rose-400 bg-rose-50/30 focus:border-rose-500"
-                      : "border-slate-300 focus:border-[#D6A85F] focus:ring-1 focus:ring-[#D6A85F]"
-                  }`}
-                />
-                {profileErrors.phone && (
-                  <p className="mt-1 text-[12px] font-medium text-rose-500">
-                    {profileErrors.phone}
-                  </p>
-                )}
-              </div>
-
-              {/* Address with VietnamAddressSelector */}
-              <VietnamAddressSelector
-                value={profileForm.address}
-                onChange={(newAddress) => {
-                  setProfileForm({ ...profileForm, address: newAddress });
-                  if (profileErrors.address) {
-                    setProfileErrors({ ...profileErrors, address: undefined });
-                  }
-                }}
-                error={profileErrors.address}
-              />
-
-              {/* Form Buttons */}
-              <div className="mt-6 flex items-center justify-end gap-3 border-t border-[#E1E4E6] pt-4">
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => setIsEditProfileOpen(false)}
-                  className={buttonClass({ variant: "secondary" })}
-                >
-                  Hủy bỏ
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={buttonClass({ variant: "primary" })}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Đang lưu...
-                    </>
-                  ) : (
-                    "Lưu thay đổi"
-                  )}
-                </button>
-              </div>
-            </form>
-          </Modal>
+        <ContactEditModal
+          title="Chỉnh sửa thông tin cá nhân"
+          description="Thông tin liên hệ dùng cho lịch hẹn, báo giá và thông báo của gara."
+          contact={{ name: fullName === "Chưa cập nhật" ? "" : fullName, phone: phone === "Chưa cập nhật" ? "" : phone, email: email === "Chưa cập nhật" ? "" : email }}
+          onClose={() => setIsEditProfileOpen(false)}
+          onSaved={(_, saved) => {
+            const next = saved as AccountInfo | null;
+            if (next) { setAccount(next); if (next.customer) setCustomer(next.customer); }
+            setIsEditProfileOpen(false);
+            showToast("Cập nhật thông tin cá nhân thành công!", "success");
+          }}
+        />
       )}
 
       {/* ========================================================= */}
@@ -733,9 +489,10 @@ function Account() {
                   <button
                     type="button"
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-2.5 cursor-pointer text-slate-400 hover:text-slate-700 text-xs"
+                    aria-label={showCurrentPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-[#cf2935]"
                   >
-                    {showCurrentPassword ? "Ẩn" : "Hiện"}
+                    <Icon name={showCurrentPassword ? "eye-off" : "eye"} size={17}/>
                   </button>
                 </div>
                 {passwordErrors.currentPassword && (
@@ -776,9 +533,10 @@ function Account() {
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-2.5 cursor-pointer text-slate-400 hover:text-slate-700 text-xs"
+                    aria-label={showNewPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-[#cf2935]"
                   >
-                    {showNewPassword ? "Ẩn" : "Hiện"}
+                    <Icon name={showNewPassword ? "eye-off" : "eye"} size={17}/>
                   </button>
                 </div>
                 {passwordErrors.newPassword && (
@@ -822,9 +580,10 @@ function Account() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-2.5 cursor-pointer text-slate-400 hover:text-slate-700 text-xs"
+                    aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-[#cf2935]"
                   >
-                    {showConfirmPassword ? "Ẩn" : "Hiện"}
+                    <Icon name={showConfirmPassword ? "eye-off" : "eye"} size={17}/>
                   </button>
                 </div>
                 {passwordErrors.confirmPassword && (

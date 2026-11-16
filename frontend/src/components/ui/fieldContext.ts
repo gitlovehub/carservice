@@ -15,6 +15,6 @@ export function useFieldControl() { return useContext(FieldContext); }
 export const controlClass =
   "block min-h-10 w-full rounded-control border border-cs-border bg-cs-surface px-3 py-2 text-small text-cs-text " +
   "placeholder:text-cs-muted transition-colors hover:border-cs-border-strong " +
-  "focus:border-cs-accent focus:outline-none focus:ring-2 focus:ring-cs-accent/20 " +
+  "focus:border-cs-accent focus:outline-none " +
   "disabled:cursor-not-allowed disabled:bg-cs-disabled disabled:text-cs-disabled-fg " +
-  "aria-[invalid=true]:border-danger aria-[invalid=true]:focus:ring-danger/20 max-sm:min-h-11";
+  "aria-[invalid=true]:border-danger max-sm:min-h-11";

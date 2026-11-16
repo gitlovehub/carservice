@@ -6,7 +6,7 @@ const app = read('src/App.tsx');
 const nav = read('src/layouts/customerAccountNav.ts');
 const header = read('src/components/GaragePublic.tsx');
 const group = app.slice(app.indexOf('<Route element={<CustomerAccountLayout/>}>'), app.indexOf('</Route>', app.indexOf('<Route element={<CustomerAccountLayout/>}>')));
-for (const path of ['/customer/account', '/customer/appointments', '/customer/cars', '/quotation', '/customer/service-history', '/reviews', '/invoices', '/payment']) {
+for (const path of ['/customer/account', '/customer/appointments', '/customer/cars', '/quotation', '/customer/service-history', '/invoices', '/payment']) {
   assert.ok(group.includes(`path="${path}"`), `${path} is inside the account layout`);
   assert.ok(nav.includes(`to: "${path}"`), `${path} is in the shared account menu`);
 }
@@ -35,5 +35,9 @@ assert.deepEqual(sources.filter(file => /(GARA CỦA TÔI|KHÁCH HÀNG|CARSERVIC
 assert.match(read('src/components/GaragePublic.tsx'), /GARAGE · CHĂM SÓC Ô TÔ/, 'Brand subtitle says GARAGE');
 const account = read('src/pages/customer/Account.tsx');
 assert.match(account, /<main className="at-customer-page"><div className="at-customer-container">/, 'Profile uses the shared page container');
-assert.match(account, /<div className="at-customer-heading">[\s\S]*?<h1>Hồ sơ của tôi<\/h1>/, 'Profile uses the shared page heading');
+assert.match(account, /<AccountHeader title="Hồ sơ của tôi"/, 'Profile uses the shared page heading');
+// Cả 8 trang của menu tài khoản dùng chung một tiêu đề (AccountHeader / AccountPage).
+for (const page of ['Cars', 'Appointments', 'ServiceHistory', 'Quotation', 'Invoices', 'Payment']) {
+  assert.match(read(`src/pages/customer/${page}.tsx`), /<Account(Header|Page)\b/, `${page} uses the shared account header`);
+}
 console.log('PASS garage rename + no eyebrows + consistent profile heading.');

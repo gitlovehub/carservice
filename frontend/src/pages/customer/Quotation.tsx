@@ -1,135 +1,86 @@
-import { Modal } from "../../components/ui";
-import { Button, IconButton, buttonClass } from "../../components/ui";
-import { Icon } from "../../components/ui/Icon";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
-import { Toast, type ToastType } from "../../components/auth/Toast";
-import "../../styles/garage-customer-pages.css";
-import "../../styles/garage-customer-complete.css";
-import {
-  formatMoney,
-  getMyRepairOrderDetail,
-  getMyRepairOrders,
-  getVehicleName,
-  quotationStatusLabel,
-  respondQuotation,
-  type CustomerQuotation,
-  type CustomerRepairOrder,
-} from "../../services/customerApi";
+import { Button, EmptyState, ErrorState, LoadingState, Modal, Pagination } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
+import { Icon } from "../../components/ui/Icon";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { formatDate, formatMoney, getVehicleName, respondQuotation, type QuotationItem } from "../../services/customerApi";
+import { AccountCard, AccountPage, DocumentHeader, FilterBar, HelpNote, InlineError, ModalFoot, ModalHead, SectionLabel, StatusTabs, Tag } from "./account/AccountKit";
+import { MODAL_CLASS, PRIMARY_RED } from "./account/accountStyles";
+import { useDeepLink } from "./account/useDeepLink";
+import { awaitsResponse, matchesQuery, orderSearchValues, paginate, quotationRows, selectedItemsTotal, useDetailedOrders, type QuotationRow } from "./account/useDetailedOrders";
 
-type QuotationRow = {
-  quotation: CustomerQuotation;
-  order: CustomerRepairOrder;
-};
+/**
+ * Báo giá — trang để khách DUYỆT việc gara đề xuất (không thanh toán ở đây: thanh toán thuộc Hóa đơn).
+ * Tab "Chờ bạn duyệt" mở mặc định khi có việc cần làm; sau khi phản hồi, mỗi hạng mục ghi rõ Đồng ý / Từ chối.
+ */
+const PER_PAGE = 5;
+type TabKey = "pending" | "answered" | "all";
+
+/** Trạng thái phản hồi của một hạng mục (sau khi khách đã trả lời). */
+function ItemDecision({ item }: { item: QuotationItem }) {
+  if (item.is_approved === true) return <Tag tone="success">Đồng ý</Tag>;
+  if (item.is_approved === false) return <Tag tone="neutral">Từ chối</Tag>;
+  return null;
+}
 
 export default function QuotationPage() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [rows, setRows] = useState<QuotationRow[]>([]);
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const { notify, confirm } = useAppFeedback();
+  const { orders, loading, error, reload } = useDetailedOrders();
+  const [tabChoice, setTabChoice] = useState<TabKey | null>(null);
   const [search, setSearch] = useState("");
-
-  const [selectedRow, setSelectedRow] = useState<QuotationRow | null>(null);
-  const [selectedItems, setSelectedItems] = useState<Record<number, boolean>>({});
+  const [page, setPage] = useState(1);
+  const [openedRow, setOpenedRow] = useState<QuotationRow | null>(null);
+  /** Hạng mục khách đã bấm đổi (id → chọn/bỏ); mục chưa bấm dùng mặc định "chọn nếu chưa bị từ chối". */
+  const [picks, setPicks] = useState<Record<number, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const link = useDeepLink("order");
 
-  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const rows = useMemo(() => quotationRows(orders), [orders]);
+  // Link từ thông báo (?order=<phiếu>): mở báo giá đang chờ duyệt của phiếu đó, không có thì báo giá mới nhất.
+  const linkedRow = link.value && !loading
+    ? rows.find((row) => String(row.order.id) === link.value && awaitsResponse(row.quotation)) ?? rows.find((row) => String(row.order.id) === link.value)
+    : undefined;
+  const selectedRow = openedRow ?? linkedRow ?? null;
+  const pendingCount = rows.filter((row) => awaitsResponse(row.quotation)).length;
+  // Chưa chọn tab: có báo giá chờ duyệt thì mở tab đó, không thì xem tất cả.
+  const tab: TabKey = tabChoice ?? (pendingCount > 0 ? "pending" : "all");
 
-    const payableInvoice = (row: QuotationRow) => {
-    const invoice = row.order.invoice;
-    return invoice && invoice.status !== "PAID" && invoice.status !== "CANCELLED" ? invoice : null;
-  };
-  const isApproved = (row: QuotationRow) =>
-    row.quotation.status === "APPROVED" || row.quotation.status === "PARTIALLY_APPROVED";
+  const filtered = useMemo(() => rows.filter(({ quotation, order }) =>
+    (tab === "all" || (tab === "pending") === awaitsResponse(quotation))
+    && matchesQuery(search, [quotation.quotation_code, ...orderSearchValues(order, getVehicleName(order.vehicle))])), [rows, tab, search]);
+  const { paged, currentPage, totalPages } = paginate(filtered, page, PER_PAGE);
 
-  const loadData = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const orders = await getMyRepairOrders();
-      const detailed = await Promise.all(
-        orders.map(async (o) => {
-          try {
-            return await getMyRepairOrderDetail(o.id);
-          } catch {
-            return o;
-          }
-        }),
-      );
+  /* ---------- Modal duyệt ---------- */
+  const isPending = !!selectedRow && awaitsResponse(selectedRow.quotation);
+  const items = selectedRow?.quotation.items ?? [];
+  const selectedItems: Record<number, boolean> = Object.fromEntries(items.map((item) => [item.id, picks[item.id] ?? item.is_approved !== false]));
+  const chosenCount = items.filter((item) => selectedItems[item.id]).length;
+  const chosenTotal = selectedRow ? selectedItemsTotal(selectedRow.quotation, selectedItems) : 0;
+  const discount = Number(selectedRow?.quotation.discount_amount ?? 0);
 
-      const list: QuotationRow[] = [];
-      detailed.forEach((order) => {
-        (order.quotations ?? []).forEach((q) => {
-          list.push({ quotation: q, order });
-        });
-      });
+  const openModal = (row: QuotationRow) => { setOpenedRow(row); setPicks({}); setSubmitError(""); };
+  const closeModal = () => { setOpenedRow(null); setPicks({}); setSubmitError(""); link.clear(); };
+  const toggleItem = (id: number) => setPicks((prev) => ({ ...prev, [id]: !selectedItems[id] }));
+  const selectAll = (value: boolean) => setPicks(Object.fromEntries(items.map((item) => [item.id, value])));
 
-      // Sắp xếp mới nhất lên đầu
-      list.sort((a, b) => b.quotation.id - a.quotation.id);
-      setRows(list);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Không thể tải danh sách báo giá.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadData();
-  }, []);
-
-  const openModal = (row: QuotationRow) => {
-    setSelectedRow(row);
-    setSubmitError("");
-    const initialChecked: Record<number, boolean> = {};
-    (row.quotation.items ?? []).forEach((it) => {
-      // Mặc định chọn true nếu chưa duyệt, hoặc lấy theo is_approved đã lưu
-      initialChecked[it.id] = it.is_approved !== false;
-    });
-    setSelectedItems(initialChecked);
-  };
-
-  const closeModal = () => {
-    setSelectedRow(null);
-    setSubmitError("");
-  };
-
-  const handleToggleItem = (itemId: number) => {
-    if (selectedRow?.quotation.status !== "SENT") return;
-    setSelectedItems((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
-  };
-
-  const handleSelectAll = (approveAll: boolean) => {
-    if (selectedRow?.quotation.status !== "SENT") return;
-    const next: Record<number, boolean> = {};
-    (selectedRow.quotation.items ?? []).forEach((it) => {
-      next[it.id] = approveAll;
-    });
-    setSelectedItems(next);
-  };
-
-  const handleRespond = async (isFullReject = false) => {
+  const handleRespond = async (rejectAll = false) => {
     if (!selectedRow) return;
+    if (rejectAll && !(await confirm({
+      title: "Từ chối toàn bộ báo giá?",
+      description: "Gara sẽ không thực hiện hạng mục nào trong báo giá này. Bạn có thể liên hệ gara nếu muốn lập lại báo giá.",
+      confirmText: "Từ chối toàn bộ", cancelText: "Quay lại", variant: "danger", reference: selectedRow.quotation.quotation_code,
+    }))) return;
     setSubmitting(true);
     setSubmitError("");
-
-    const responses = (selectedRow.quotation.items ?? []).map((it) => ({
-      item_id: it.id,
-      is_approved: isFullReject ? false : Boolean(selectedItems[it.id]),
-    }));
-
+    const responses = items.map((item) => ({ item_id: item.id, is_approved: rejectAll ? false : Boolean(selectedItems[item.id]) }));
     try {
       await respondQuotation(selectedRow.quotation.id, responses);
-      setToast({
-        message: isFullReject
-          ? "Đã từ chối toàn bộ báo giá."
-          : "Đã gửi phản hồi duyệt báo giá thành công.",
-        type: "success",
-      });
+      notify(rejectAll ? "Đã từ chối báo giá." : "Đã gửi phản hồi — gara sẽ làm các hạng mục bạn đồng ý.", "success");
       closeModal();
-      await loadData();
+      setTabChoice(null);
+      reload();
     } catch (e) {
       const err = e as { message?: string; data?: { message?: string } };
       setSubmitError(err?.data?.message || err?.message || "Không thể gửi phản hồi báo giá.");
@@ -138,104 +89,120 @@ export default function QuotationPage() {
     }
   };
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return rows.filter(({ quotation, order }) => {
-      if (statusFilter !== "ALL" && quotation.status !== statusFilter) return false;
-      if (!q) return true;
-      return [
-        quotation.quotation_code,
-        order.repair_order_code,
-        order.vehicle?.license_plate,
-        getVehicleName(order.vehicle),
-      ]
-        .filter(Boolean)
-        .some((val) => String(val).toLowerCase().includes(q));
-    });
-  }, [rows, statusFilter, search]);
+  const approveLabel = chosenCount === 0 ? "Chọn ít nhất 1 hạng mục" : chosenCount === items.length ? "Đồng ý toàn bộ" : `Đồng ý ${chosenCount}/${items.length} hạng mục`;
 
-  const pendingCount = rows.filter((r) => r.quotation.status === "SENT").length;
-  const approvedCount = rows.filter((r) =>
-    ["APPROVED", "PARTIALLY_APPROVED"].includes(r.quotation.status),
-  ).length;
+  return (
+    <AccountPage testId="customer-quotations" title="Báo giá" description="Xem từng hạng mục gara đề xuất và chọn những việc bạn đồng ý thực hiện.">
+      <FilterBar search={search} onSearch={(v) => { setSearch(v); setPage(1); }} placeholder="Tìm mã báo giá, biển số, tên xe…" count={loading ? undefined : `${filtered.length} báo giá`}>
+        <StatusTabs label="Lọc báo giá" value={tab} onChange={(key) => { setTabChoice(key); setPage(1); }} tabs={[
+          { key: "pending", label: "Chờ bạn duyệt", count: pendingCount, attention: true },
+          { key: "answered", label: "Đã phản hồi" },
+          { key: "all", label: "Tất cả" },
+        ]}/>
+      </FilterBar>
 
-  return <section className="at-customer-page at-customer-quotes"><div className="at-customer-container">
-    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)}/>}
-    <header className="at-customer-heading"><div>
-      <h1>Báo giá của tôi</h1>
-      <p>Xem từng hạng mục và quyết định những công việc được phép thực hiện.</p>
-    </div></header>
-    <div className="at-customer-stats">
-      <div className="at-customer-stat"><span>TỔNG BÁO GIÁ</span><strong>{loading ? "—" : rows.length}</strong><small>Báo giá thuộc tài khoản</small></div>
-      <div className="at-customer-stat"><span>CHỜ BẠN DUYỆT</span><strong>{loading ? "—" : pendingCount}</strong><small>Đang chờ phản hồi</small></div>
-      <div className="at-customer-stat"><span>ĐÃ DUYỆT</span><strong>{loading ? "—" : approvedCount}</strong><small>Toàn bộ hoặc một phần</small></div>
-    </div>
-    <div className="at-customer-filter">
-      <label htmlFor="quote-status">Lọc trạng thái</label>
-      <select id="quote-status" value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
-        <option value="ALL">Tất cả báo giá</option><option value="SENT">Chờ bạn duyệt</option>
-        <option value="APPROVED">Đã duyệt</option><option value="PARTIALLY_APPROVED">Đã duyệt một phần</option>
-        <option value="REJECTED">Đã từ chối</option><option value="CANCELLED">Đã hủy</option>
-      </select>
-      <input aria-label="Tìm báo giá" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Mã báo giá, biển số, tên xe..."/>
-    </div>
-    {loading && <div className="at-customer-empty">Đang tải báo giá...</div>}
-    {error && <div role="alert" className="at-customer-notice at-customer-error"><span>{error}</span><Button size="sm" variant="secondary" icon="refresh" onClick={() => void loadData()}>Thử lại</Button></div>}
-    {!loading && !error && filtered.length===0 && <div className="at-customer-empty"><h2>Chưa có báo giá phù hợp</h2>
-      <p>Khi gara lập báo giá cho xe của bạn, thông tin sẽ xuất hiện tại đây.</p></div>}
-    {!loading && !error && filtered.map(row => <article key={row.quotation.id} className="at-quote-card">
-      <div className="at-appointment-top"><div>
-        <p className="at-appointment-code">{row.quotation.quotation_code}{row.quotation.type === "SUPPLEMENT" && <span className="ml-2 rounded-full bg-cs-soft px-2 py-0.5 text-xs font-bold">Phát sinh</span>}</p>
-        {row.quotation.type === "SUPPLEMENT" && row.quotation.reason && <p className="text-xs text-cs-muted">Lý do phát sinh: {row.quotation.reason}</p>}
-        <h2>{getVehicleName(row.order.vehicle)}</h2>
-        <p className="at-appointment-description">{row.order.vehicle?.license_plate ?? "Chưa có biển số"} · {row.order.repair_order_code}</p>
-      </div><StatusBadge domain="quotation" status={row.quotation.status} audience="customer"/></div>
-      <div className="at-quote-bottom"><div><small>TỔNG DỰ KIẾN</small><strong>{formatMoney(row.quotation.total_amount)}</strong>
-        <span>{row.quotation.items?.length ?? 0} hạng mục · Phiên bản {row.quotation.version}</span></div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {payableInvoice(row) && (
-            <Link to={`/payment?invoice_id=${payableInvoice(row)!.id}`} className={buttonClass({ variant: "primary" })}>
-              Thanh toán<Icon name="arrow-right" size={16}/>
-            </Link>
-          )}
-          <Button variant={row.quotation.status === "SENT" ? "primary" : "outline"} iconRight="arrow-right" onClick={() => openModal(row)}>
-            {row.quotation.status === "SENT" ? "Xem và duyệt" : "Xem chi tiết"}</Button>
-        </div></div>
-    </article>)}
-    <p className="at-customer-footnote">Báo giá chỉ có hiệu lực sau khi bạn phê duyệt các hạng mục. Gara không tự duyệt thay bạn.</p>
-  </div>
-  {selectedRow && <Modal bare open onClose={closeModal} title={"Chi tiết báo giá"} className="at-customer-modal">
-      <div className="at-modal-head"><div><p className="at-customer-eyebrow">CHI TIẾT / BÁO GIÁ</p>
-        <h2 id="quote-modal-title">{selectedRow.quotation.quotation_code}</h2>
-        <p>{getVehicleName(selectedRow.order.vehicle)} · {selectedRow.order.vehicle?.license_plate ?? "Chưa có biển số"}</p>
-      </div><IconButton icon="close" label="Đóng cửa sổ" onClick={closeModal}/></div>
-      <div className="at-modal-summary"><span>{quotationStatusLabel[selectedRow.quotation.status] ?? selectedRow.quotation.status}</span><strong>{formatMoney(selectedRow.quotation.total_amount)}</strong></div>
-      {selectedRow.quotation.type === "SUPPLEMENT" && <p className="at-quote-instruction"><strong>Báo giá phát sinh</strong> trong lúc sửa{selectedRow.quotation.reason ? `: ${selectedRow.quotation.reason}` : ""}. Hạng mục bạn từ chối sẽ không được làm và không tính tiền.</p>}
-      <p className="at-quote-instruction">{selectedRow.quotation.status === "SENT" ? "Chọn hạng mục bạn đồng ý thực hiện. Bỏ chọn những hạng mục chưa muốn sửa." : "Danh sách hạng mục trong báo giá."}</p>
-      {selectedRow.quotation.status === "SENT" && <div className="at-quote-select-all"><Button size="sm" variant="ghost" icon="check" onClick={() => handleSelectAll(true)}>Chọn tất cả</Button><Button size="sm" variant="ghost" icon="x" onClick={() => handleSelectAll(false)}>Bỏ chọn</Button></div>}
-      <div className="at-quote-items">{(selectedRow.quotation.items ?? []).map(item => <label className="at-quote-item" key={item.id}>
-        {selectedRow.quotation.status === "SENT" && <input type="checkbox" checked={Boolean(selectedItems[item.id])} onChange={() => handleToggleItem(item.id)}/>}
-        <div><small>{item.item_type === "PART" ? "PHỤ TÙNG" : "DỊCH VỤ"}</small><strong>{item.description || "Hạng mục sửa chữa"}</strong>
-          <span>Số lượng: {Number(item.quantity)} · Đơn giá: {formatMoney(item.unit_price)}</span></div>
-        <b>{formatMoney(item.amount)}</b>
-      </label>)}{!selectedRow.quotation.items?.length && <p className="at-quote-instruction">Chưa có chi tiết hạng mục.</p>}</div>
-      {submitError && <p role="alert" className="at-customer-notice at-customer-error">{submitError}</p>}
-            {isApproved(selectedRow) && !selectedRow.order.invoice && (
-        <p className="at-quote-instruction">Bạn có thể thanh toán (VNPay hoặc tiền mặt) sau khi gara hoàn tất sửa chữa và lập hóa đơn.</p>
-      )}
-      {selectedRow.order.invoice?.status === "PAID" && (
-        <p className="at-quote-instruction">Hóa đơn {selectedRow.order.invoice.invoice_code} đã được thanh toán.</p>
-      )}
-            <div className="at-modal-actions"><Button variant="secondary" onClick={closeModal}>Đóng</Button>
-        {payableInvoice(selectedRow) && (
-          <Link to={`/payment?invoice_id=${payableInvoice(selectedRow)!.id}`} className={buttonClass({ variant: "primary" })}>
-            Thanh toán {formatMoney(payableInvoice(selectedRow)!.total_amount)}<Icon name="arrow-right" size={16}/>
-          </Link>
+      {loading ? <AccountCard><LoadingState label="Đang tải báo giá…"/></AccountCard>
+        : error ? <AccountCard><ErrorState description={error} onRetry={reload}/></AccountCard>
+        : filtered.length === 0 ? (
+          <AccountCard>
+            <EmptyState icon={tab === "pending" ? "check" : "dollar"}
+              title={!rows.length ? "Chưa có báo giá nào" : tab === "pending" && !search ? "Không có báo giá nào chờ bạn duyệt" : "Không có báo giá phù hợp"}
+              description={!rows.length ? "Khi gara lập báo giá cho xe của bạn, báo giá sẽ hiện tại đây để bạn duyệt." : tab === "pending" && !search ? "Bạn đã phản hồi tất cả báo giá." : "Thử đổi tab hoặc từ khóa."}/>
+          </AccountCard>
+        ) : (
+          <div className="space-y-4">
+            {paged.map((row) => {
+              const { quotation, order } = row;
+              const pending = awaitsResponse(quotation);
+              const total = quotation.items?.length ?? 0;
+              const approved = (quotation.items ?? []).filter((item) => item.is_approved === true).length;
+              return (
+                <AccountCard key={quotation.id} as="article" className={`p-5 ${pending ? "border-warning/60 ring-1 ring-warning/30" : ""}`}>
+                  <DocumentHeader brand={order.vehicle?.model?.brand?.name} code={quotation.quotation_code}
+                    tag={quotation.type === "SUPPLEMENT" && <Tag>Phát sinh</Tag>}
+                    title={getVehicleName(order.vehicle)} meta={`${order.vehicle?.license_plate ?? "Chưa có biển số"} · Phiếu sửa chữa ${order.repair_order_code}`}
+                    badge={<StatusBadge domain="quotation" status={quotation.status} audience="customer"/>}/>
+                  {quotation.type === "SUPPLEMENT" && quotation.reason && <p className="mt-2 text-[13px] text-cs-muted">Lý do phát sinh: {quotation.reason}</p>}
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-cs-border pt-4">
+                    <div>
+                      <p className="text-[13px] font-semibold text-cs-muted">{pending ? `Tổng dự kiến · ${total} hạng mục` : `Đã đồng ý ${approved}/${total} hạng mục`}</p>
+                      <p className="text-[20px] font-extrabold text-cs-text">{formatMoney(quotation.total_amount)}</p>
+                    </div>
+                    <Button size="sm" variant={pending ? "primary" : "secondary"} className={pending ? PRIMARY_RED : ""} iconRight="arrow-right" onClick={() => openModal(row)}>{pending ? "Xem và duyệt" : "Xem chi tiết"}</Button>
+                  </div>
+                </AccountCard>
+              );
+            })}
+            <Pagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} pageSize={PER_PAGE} onChange={setPage}/>
+          </div>
         )}
-        {selectedRow.quotation.status === "SENT" && <><Button variant="danger-outline" icon="x" disabled={submitting} onClick={() => void handleRespond(true)}>Từ chối</Button>
-          <Button variant="success" size="lg" icon="check" loading={submitting} loadingText="Đang gửi..." disabled={!selectedRow.quotation.items?.length} onClick={() => void handleRespond(false)}>Đồng ý báo giá</Button></>}
-      </div>
-    </Modal>}
-  </section>;
 
+      <HelpNote icon={null}>Gara chỉ làm và tính tiền những hạng mục bạn đồng ý.</HelpNote>
+
+      {selectedRow && (
+        <Modal bare open onClose={closeModal} dismissible={!submitting} title="Chi tiết báo giá" className={`${MODAL_CLASS} max-w-3xl`}>
+          <ModalHead icon="dollar" eyebrow={selectedRow.quotation.type === "SUPPLEMENT" ? "Báo giá phát sinh" : "Chi tiết báo giá"} title={selectedRow.quotation.quotation_code}
+            subtitle={`${getVehicleName(selectedRow.order.vehicle)} · ${selectedRow.order.vehicle?.license_plate ?? "Chưa có biển số"} · Phiên bản ${selectedRow.quotation.version}`}
+            badge={<StatusBadge domain="quotation" status={selectedRow.quotation.status} audience="customer"/>} onClose={closeModal} disabled={submitting}/>
+          <div className="space-y-4 p-5 sm:p-6">
+            {selectedRow.quotation.type === "SUPPLEMENT" && <p className="rounded-xl bg-warning-soft px-4 py-3 text-[14px] text-warning-fg"><strong>Phát sinh trong lúc sửa</strong>{selectedRow.quotation.reason ? `: ${selectedRow.quotation.reason}` : ""}.</p>}
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <SectionLabel>{isPending ? `Chọn hạng mục đồng ý làm (${chosenCount}/${items.length})` : "Hạng mục & phản hồi của bạn"}</SectionLabel>
+              {isPending && items.length > 1 && (
+                <div className="flex gap-1">
+                  <Button size="sm" variant="ghost" icon="check" onClick={() => selectAll(true)}>Chọn tất cả</Button>
+                  <Button size="sm" variant="ghost" icon="x" onClick={() => selectAll(false)}>Bỏ chọn</Button>
+                </div>
+              )}
+            </div>
+            <div className="divide-y divide-cs-border overflow-hidden rounded-xl border border-cs-border">
+              {items.map((item) => {
+                const checked = Boolean(selectedItems[item.id]);
+                const Row = isPending ? "label" : "div";
+                const dimmed = isPending ? !checked : item.is_approved === false;
+                return (
+                  <Row key={item.id} className={`flex items-center gap-4 px-4 py-3 transition-colors ${isPending ? "cursor-pointer hover:bg-cs-surface-2" : ""} ${dimmed ? "opacity-60" : ""}`}>
+                    {isPending && <input type="checkbox" checked={checked} onChange={() => toggleItem(item.id)} className="size-5 shrink-0 accent-[#e11d2e]"/>}
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.06em] text-cs-muted">{item.item_type === "PART" ? "Phụ tùng" : "Dịch vụ"}{!isPending && <ItemDecision item={item}/>}</p>
+                      <p className={`font-semibold text-cs-text ${!isPending && item.is_approved === false ? "line-through" : ""}`}>{item.description || "Hạng mục sửa chữa"}</p>
+                      <p className="text-[13px] text-cs-muted">SL {Number(item.quantity)} × {formatMoney(item.unit_price)}</p>
+                    </div>
+                    <b className="shrink-0 tabular-nums text-cs-text">{formatMoney(item.amount)}</b>
+                  </Row>
+                );
+              })}
+              {!items.length && <p className="px-4 py-6 text-center text-[14px] text-cs-muted">Chưa có chi tiết hạng mục.</p>}
+            </div>
+
+            {/* Tổng: khi đang duyệt = tổng các mục đã chọn; sau phản hồi = tổng gara chốt (đã gồm giảm trừ). */}
+            <dl className="space-y-1.5 rounded-xl bg-cs-surface-2 px-4 py-3">
+              {isPending ? <>
+                <div className="flex items-center justify-between"><dt className="text-[14px] font-semibold text-cs-muted">Tổng các hạng mục đã chọn</dt><dd className="text-[20px] font-extrabold tabular-nums text-cs-text">{formatMoney(chosenTotal)}</dd></div>
+                {discount > 0 && <p className="text-[12px] text-cs-muted">Chưa gồm giảm trừ {formatMoney(discount)} — số tiền cuối cùng ghi trên hóa đơn.</p>}
+              </> : <>
+                {discount > 0 && <div className="flex items-center justify-between text-[14px]"><dt className="text-cs-muted">Giảm trừ</dt><dd className="font-semibold text-cs-accent-text">-{formatMoney(discount)}</dd></div>}
+                <div className="flex items-center justify-between"><dt className="text-[14px] font-semibold text-cs-muted">Tổng báo giá</dt><dd className="text-[20px] font-extrabold tabular-nums text-cs-text">{formatMoney(selectedRow.quotation.total_amount)}</dd></div>
+              </>}
+            </dl>
+
+            {selectedRow.quotation.customer_response_at && <p className="text-[13px] text-cs-muted">Bạn đã phản hồi ngày {formatDate(selectedRow.quotation.customer_response_at)}.</p>}
+            {selectedRow.order.invoice && (
+              <p className="flex flex-wrap items-center gap-1.5 text-[14px] text-cs-muted"><Icon name="receipt" size={15}/>Phiếu sửa chữa này đã có hóa đơn <b className="font-mono text-cs-text">{selectedRow.order.invoice.invoice_code}</b> ·
+                <Link to="/invoices" className="font-bold text-cs-accent-text hover:underline">Xem hóa đơn</Link></p>
+            )}
+            {submitError && <InlineError>{submitError}</InlineError>}
+          </div>
+          <ModalFoot>
+            <Button variant="secondary" onClick={closeModal} disabled={submitting}>Đóng</Button>
+            {isPending && <>
+              <Button variant="danger-outline" icon="x" disabled={submitting} onClick={() => void handleRespond(true)}>Từ chối toàn bộ</Button>
+              <Button variant="success" size="lg" icon="check" loading={submitting} loadingText="Đang gửi..." disabled={chosenCount === 0} onClick={() => void handleRespond(false)}>{approveLabel}</Button>
+            </>}
+          </ModalFoot>
+        </Modal>
+      )}
+    </AccountPage>
+  );
 }

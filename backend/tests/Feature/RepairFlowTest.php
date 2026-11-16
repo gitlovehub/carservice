@@ -11,6 +11,7 @@ use App\Models\Inspection;
 use App\Models\InspectionRecommendation;
 use App\Models\Inventory;
 use App\Models\MaintenancePackage;
+use App\Models\Notification;
 use App\Models\Part;
 use App\Models\Quotation;
 use App\Models\RepairOrder;
@@ -253,6 +254,30 @@ class RepairFlowTest extends TestCase
         $this->actingAs($this->advisor)->postJson("/api/invoices/{$invoiceId}/payments", ['amount' => 1000000])->assertCreated();
         $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$orderId}/hand-over")->assertOk();
         $this->assertSame(RepairOrder::HANDED_OVER, $this->repairOrder->fresh()->status);
+
+        $this->assertDatabaseHas('notifications', [
+            'account_id' => $this->customerAccount->id,
+            'repair_order_id' => $orderId,
+            'type' => Notification::TYPE_REVIEW_INVITE,
+            'channel' => 'WEB',
+        ]);
+        $this->actingAs($this->customerAccount)->getJson('/api/me/notifications')->assertOk()
+            ->assertJsonPath('data.0.type', Notification::TYPE_REVIEW_INVITE)
+            ->assertJsonPath('data.0.repair_order_id', $orderId);
+
+        // Mỗi bước cố vấn làm mà khách cần biết đều có thông báo gắn đúng phiếu.
+        $types = Notification::query()->where('account_id', $this->customerAccount->id)->where('repair_order_id', $orderId)->pluck('type')->all();
+        foreach ([
+            Notification::TYPE_QUOTATION_SENT, Notification::TYPE_REPAIR_STARTED, Notification::TYPE_REPAIR_COMPLETED,
+            Notification::TYPE_INVOICE_ISSUED, Notification::TYPE_PAYMENT_RECEIVED, Notification::TYPE_REVIEW_INVITE,
+        ] as $expected) {
+            $this->assertContains($expected, $types, "Thiếu thông báo {$expected}");
+        }
+        // 2 lần trả tiền mặt → 2 thông báo đã nhận tiền; khách chỉ thấy thông báo của chính mình.
+        $this->assertSame(2, collect($types)->filter(fn ($t) => $t === Notification::TYPE_PAYMENT_RECEIVED)->count());
+
+        $this->actingAs($this->customerAccount)->patchJson('/api/me/notifications/read-all')->assertOk();
+        $this->actingAs($this->customerAccount)->getJson('/api/me/notifications')->assertJsonPath('unread_count', 0);
 
         $this->actingAs($this->customerAccount)
             ->postJson('/api/me/reviews', ['repair_order_id' => $orderId, 'overall_rating' => 5])

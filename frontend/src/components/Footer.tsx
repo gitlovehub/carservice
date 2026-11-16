@@ -1,11 +1,13 @@
 import { useInAppShell } from "../layouts/ShellContext";
 import { Link } from "react-router-dom";
 import BrandLogo from "./common/BrandLogo";
-import { formatGarageAddress, useGarageInfo } from "../services/garageService";
+import { formatGarageAddress, useGarageHotline, useGarageInfo } from "../services/garageService";
 
 function Footer() {
   // Địa chỉ do Admin cấu hình (Thông tin gara); chưa cấu hình thì giữ nội dung cũ.
   const garageAddress = formatGarageAddress(useGarageInfo());
+  // Hotline do Admin cấu hình — không viết cứng số.
+  const hotline = useGarageHotline();
   const inShell = useInAppShell();
   if (inShell) return null;
 
@@ -102,15 +104,15 @@ function Footer() {
             </p>
 
             <div className="mt-4 space-y-3 text-xs text-slate-600">
-              <div>
+              {hotline && <div>
                 <p className="font-semibold text-slate-800">Đường dây nóng hỗ trợ kỹ thuật</p>
                 <a
-                  href="tel:0332405972"
+                  href={`tel:${hotline.tel}`}
                   className="mt-0.5 block font-mono text-sm font-semibold text-slate-900 transition hover:text-amber-600"
                 >
-                  033 240 5972
+                  {hotline.display}
                 </a>
-              </div>
+              </div>}
 
               <div>
                 <p className="font-semibold text-slate-800">Email tiếp nhận</p>

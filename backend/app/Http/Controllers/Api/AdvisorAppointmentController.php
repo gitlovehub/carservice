@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Vehicle;
 use App\Services\AppointmentActivityService;
 use App\Services\CapacityService;
+use App\Services\CustomerNotifier;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +24,10 @@ class AdvisorAppointmentController extends Controller
 {
     use AppliesSort;
 
-    public function __construct(private readonly AppointmentActivityService $activity) {}
+    public function __construct(
+        private readonly AppointmentActivityService $activity,
+        private readonly CustomerNotifier $notifier,
+    ) {}
 
     public function store(StoreInternalAppointmentRequest $request): JsonResponse
     {
@@ -321,6 +325,7 @@ class AdvisorAppointmentController extends Controller
             'status' => 'CONFIRMED',
         ]);
         $this->activity->record($appointment, AppointmentActivityService::CONFIRMED, $request->user(), ['status' => 'PENDING'], ['status' => 'CONFIRMED']);
+        $this->notifier->appointmentConfirmed($appointment);
 
         return response()->json([
             'success' => true,
@@ -393,6 +398,7 @@ class AdvisorAppointmentController extends Controller
             'cancel_reason' => $request->input('cancel_reason'),
         ]);
         $this->activity->record($appointment, AppointmentActivityService::CANCELLED, $request->user(), ['status' => $oldStatus], ['status' => 'CANCELLED'], $request->input('cancel_reason'));
+        $this->notifier->appointmentCancelled($appointment, (string) $request->input('cancel_reason'));
 
         return response()->json([
             'success' => true,

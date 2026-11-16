@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, EmptyState, ErrorState, Field, LoadingState, Modal, Pagination, SearchInput, Textarea } from "../../components/ui";
+import { Button, EmptyState, ErrorState, Field, LoadingState, Modal, Pagination, SearchInput, StarIcon, Textarea } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { adminApi, errorMessage, fmtDate, type AdminReview } from "../../services/adminApi";
@@ -47,8 +47,8 @@ export default function Reviews() {
     try {
       await adminApi.hideReview(review.id, !review.hidden);
       notify(review.hidden
-        ? `Đã hiện lại đánh giá ${review.rating}★ của ${review.customer ?? "khách hàng"}.`
-        : `Đã ẩn đánh giá ${review.rating}★ của ${review.customer ?? "khách hàng"} khỏi trang công khai.`, "success");
+        ? `Đã hiện lại đánh giá ${review.rating} sao của ${review.customer ?? "khách hàng"}.`
+        : `Đã ẩn đánh giá ${review.rating} sao của ${review.customer ?? "khách hàng"} khỏi trang công khai.`, "success");
       list.reload();
     } catch (error) {
       notify(errorMessage(error, "Không cập nhật được trạng thái hiển thị của đánh giá."), "error");
@@ -86,7 +86,7 @@ export default function Reviews() {
             <span className="text-[2.6rem] font-bold leading-none tabular-nums text-cs-text">{summary.visible ? num(summary.average) : "—"}</span>
             <span className="pb-1"><Stars value={summary.average}/><span className="block text-caption text-cs-muted">{num(summary.visible)} lượt đánh giá</span></span>
           </div>
-          {summary.recent_average !== null && <p className="mt-2 text-caption text-cs-text-2">30 ngày gần đây: <b className="tabular-nums text-cs-text">{num(summary.recent_average)}★</b></p>}
+          {summary.recent_average !== null && <p className="mt-2 text-caption text-cs-text-2">30 ngày gần đây: <b className="tabular-nums text-cs-text">{num(summary.recent_average)}</b> <StarIcon size={12} className="inline align-[-1px]"/></p>}
           <ul className="mt-4 flex flex-col gap-1">
             {[5, 4, 3, 2, 1].map(star => {
               const n = summary.distribution[String(star)] ?? 0;
@@ -94,7 +94,7 @@ export default function Reviews() {
               return <li key={star}>
                 <button type="button" aria-pressed={active} onClick={() => changeRating(active ? "all" : String(star) as RatingFilter)}
                   className={`flex w-full cursor-pointer items-center gap-2.5 rounded-control border px-2 py-1.5 text-small transition-colors ${active ? "border-cs-accent/50 bg-cs-soft" : "border-transparent hover:border-cs-border hover:bg-cs-hover"}`}>
-                  <span className="flex w-8 items-center gap-0.5 text-cs-text-2">{star}<Icon name="star" size={12} className="text-warning"/></span>
+                  <span className="flex w-8 items-center gap-0.5 text-cs-text-2">{star}<StarIcon size={12}/></span>
                   <Progress value={(n / Math.max(1, summary.visible)) * 100} tone={star >= 4 ? "success" : star === 3 ? "warning" : "danger"} label={`${star} sao`}/>
                   <span className="w-8 text-right tabular-nums text-cs-muted">{n}</span>
                 </button>
@@ -103,7 +103,7 @@ export default function Reviews() {
           </ul>
           <p className={`mt-4 rounded-control p-3 text-caption ${summary.low_unreplied ? "bg-warning-soft text-warning-fg" : "bg-cs-surface-2 text-cs-text-2"}`}>
             {summary.low_unreplied
-              ? `Có ${summary.low_unreplied} đánh giá từ 3★ trở xuống chưa được phản hồi. Nên liên hệ khách và trả lời trong 24 giờ.`
+              ? `Có ${summary.low_unreplied} đánh giá từ 3 sao trở xuống chưa được phản hồi. Nên liên hệ khách và trả lời trong 24 giờ.`
               : summary.unreplied ? `Mọi đánh giá thấp đã được phản hồi. Còn ${summary.unreplied} đánh giá tốt chưa trả lời.` : "Mọi đánh giá đều đã được phản hồi."}
           </p>
         </>}
@@ -140,7 +140,7 @@ export default function Reviews() {
     </div>
 
     <Modal open={!!replying} onClose={() => setReplying(null)} dismissible={!sending} title={replying?.reply ? "Sửa phản hồi" : "Phản hồi đánh giá"}
-      description={replying ? `${replying.customer ?? "Khách hàng"} · ${replying.rating}★ · ${replying.order_code ?? ""}` : undefined}
+      description={replying ? `${replying.customer ?? "Khách hàng"} · ${replying.rating} sao · ${replying.order_code ?? ""}` : undefined}
       footer={<><Button disabled={sending} onClick={() => setReplying(null)}>Huỷ</Button><Button variant="primary" icon="send" loading={sending} loadingText="Đang gửi..." onClick={() => void sendReply()} disabled={!reply.trim()}>Gửi phản hồi</Button></>}>
       {replying && <div className="mb-4 rounded-control bg-cs-surface-2 p-3 text-small">
         <Stars value={replying.rating} size={14}/>

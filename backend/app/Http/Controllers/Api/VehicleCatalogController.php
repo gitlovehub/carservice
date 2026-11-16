@@ -10,6 +10,7 @@ use App\Support\VehicleName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 /**
  * Danh mục xe công khai cho bộ chọn Hãng → Dòng xe → Phiên bản.
@@ -33,6 +34,30 @@ class VehicleCatalogController extends Controller
             ->get(['id', 'name']);
 
         return response()->json(['data' => $brands]);
+    }
+
+    /**
+     * GET /api/vehicle-catalog/brand-logos — logo Admin đã tải lên của MỌI hãng (kể cả hãng đã ẩn:
+     * xe cũ vẫn hiển thị logo). FE gộp với logo có sẵn, hiển thị đồng bộ ở khách / admin / cố vấn.
+     */
+    public function brandLogos(): JsonResponse
+    {
+        $brands = VehicleBrand::query()->whereNotNull('logo_updated_at')->orderBy('name')->get(['id', 'name', 'logo_updated_at']);
+
+        return response()->json(['data' => $brands->map(fn (VehicleBrand $b) => ['id' => $b->id, 'name' => $b->name, 'logo_version' => $b->logo_version])->values()]);
+    }
+
+    /** GET /api/vehicle-catalog/brands/{brand}/logo?v= — ảnh PNG; URL có phiên bản nên cache lâu được. */
+    public function brandLogo(VehicleBrand $brand): Response
+    {
+        $png = $brand->logo_png ? base64_decode($brand->logo_png, true) : false;
+        abort_if($png === false, 404, 'Hãng xe chưa có logo.');
+
+        return response($png, 200, [
+            'Content-Type' => 'image/png',
+            'Cache-Control' => 'public, max-age=31536000, immutable',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /** GET /api/vehicle-catalog/brands/{brand}/models?search= */

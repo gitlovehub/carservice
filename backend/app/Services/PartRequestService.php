@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Inventory;
 use App\Models\InventoryTransaction;
-use App\Models\Notification;
 use App\Models\PartRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -12,6 +11,8 @@ use Illuminate\Validation\ValidationException;
 /** P6 — xử lý yêu cầu phụ tùng: đặt hàng (ETA), nhận hàng (nhập kho + báo khách), hủy. */
 class PartRequestService
 {
+    public function __construct(private readonly CustomerNotifier $notifier) {}
+
     public function order(PartRequest $request, ?string $etaDate, ?string $supplierNote): PartRequest
     {
         if (! in_array($request->status, PartRequest::OPEN, true)) {
@@ -47,18 +48,7 @@ class PartRequestService
             ]);
             $locked->update(['status' => PartRequest::RECEIVED, 'received_at' => now()]);
 
-            if ($order->customer?->account_id) {
-                $partName = $locked->part()->value('name');
-                Notification::query()->create([
-                    'account_id' => $order->customer->account_id,
-                    'repair_order_id' => $order->id,
-                    'title' => 'Phụ tùng đã về',
-                    'content' => "Phụ tùng {$partName} cho phiếu {$order->repair_order_code} đã về gara. Gara sẽ tiếp tục sửa chữa.",
-                    'type' => 'PART_ARRIVED',
-                    'channel' => 'WEB',
-                    'status' => 'PENDING',
-                ]);
-            }
+            $this->notifier->partArrived($order, (string) $locked->part()->value('name'));
 
             return $locked->load('part');
         });

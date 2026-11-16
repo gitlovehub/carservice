@@ -32,11 +32,21 @@ class AdminVehicleCatalogApiTest extends TestCase
         }
     }
 
+    /** Logo hợp lệ (PNG 256×256 như bước xử lý tạo ra) — thêm hãng bắt buộc có logo. */
+    private function logo(): string
+    {
+        $img = imagecreatetruecolor(256, 256);
+        ob_start();
+        imagepng($img);
+
+        return base64_encode((string) ob_get_clean());
+    }
+
     public function test_admin_can_create_update_and_toggle_each_level(): void
     {
         $this->actingAsAdmin();
 
-        $brandId = $this->postJson('/api/admin/vehicle-brands', ['name' => '  Lynk   &  Co '])
+        $brandId = $this->postJson('/api/admin/vehicle-brands', ['name' => '  Lynk   &  Co ', 'logo_png' => $this->logo()])
             ->assertCreated()
             ->assertJsonPath('data.name', 'Lynk & Co')
             ->assertJsonPath('data.status', 'ACTIVE')
@@ -70,7 +80,7 @@ class AdminVehicleCatalogApiTest extends TestCase
         $model = VehicleModel::factory()->create(['brand_id' => $brand->id, 'name' => 'Vios']);
         VehicleTrim::factory()->create(['model_id' => $model->id, 'name' => '1.5G-CVT']);
 
-        $this->postJson('/api/admin/vehicle-brands', ['name' => 'toyota'])->assertJsonValidationErrors('name');
+        $this->postJson('/api/admin/vehicle-brands', ['name' => 'toyota', 'logo_png' => $this->logo()])->assertJsonValidationErrors('name');
         $this->postJson('/api/admin/vehicle-models', ['brand_id' => $brand->id, 'name' => 'VIOS'])->assertJsonValidationErrors('name');
         $this->postJson('/api/admin/vehicle-trims', ['model_id' => $model->id, 'name' => '1.5g-cvt'])->assertJsonValidationErrors('name');
         $this->postJson('/api/admin/vehicle-trims', ['model_id' => $model->id, 'name' => '   '])->assertJsonValidationErrors('name');

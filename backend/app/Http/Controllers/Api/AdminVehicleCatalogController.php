@@ -8,10 +8,12 @@ use App\Models\Vehicle;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
 use App\Models\VehicleTrim;
+use App\Services\BrandLogoProcessor;
 use App\Support\VehicleName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -67,28 +69,67 @@ class AdminVehicleCatalogController extends Controller
         return $this->ok('Lấy danh sách hãng xe thành công.', $brands);
     }
 
-    /** POST /api/admin/vehicle-brands */
-    public function brandStore(Request $request): JsonResponse
+    /** POST /api/admin/vehicle-brands — bắt buộc logo_png (base64 từ bước xem trước). */
+    public function brandStore(Request $request, BrandLogoProcessor $logos): JsonResponse
     {
         $data = $this->validateNamed($request, 100);
         $this->assertUniqueName(VehicleBrand::query(), $data['name']);
 
-        $brand = VehicleBrand::create($data + ['status' => 'ACTIVE', 'source' => self::SOURCE]);
+        $brand = VehicleBrand::create($data + ['status' => 'ACTIVE', 'source' => self::SOURCE] + $this->logoChanges($request, $logos, required: true));
 
         return $this->ok('Thêm hãng xe thành công.', $brand->loadCount(['models', 'trims']), 201);
     }
 
-    /** PATCH /api/admin/vehicle-brands/{brand} */
-    public function brandUpdate(Request $request, VehicleBrand $brand): JsonResponse
+    /** PATCH /api/admin/vehicle-brands/{brand} — logo_png để thay logo (không bỏ được logo). */
+    public function brandUpdate(Request $request, VehicleBrand $brand, BrandLogoProcessor $logos): JsonResponse
     {
         $data = $this->validateNamed($request, 100, partial: true);
         if (isset($data['name'])) {
             $this->assertUniqueName(VehicleBrand::query(), $data['name'], $brand->id);
         }
 
-        $brand->update($data);
+        $brand->update($data + $this->logoChanges($request, $logos));
 
         return $this->ok('Cập nhật hãng xe thành công.', $brand->fresh()->loadCount(['models', 'trims']));
+    }
+
+    /**
+     * POST /api/admin/vehicle-brands/logo-preview {url}
+     * Tải ảnh từ link → tách nền + cắt gọn → trả PNG (base64) để Admin xem trước; CHƯA lưu.
+     */
+    public function brandLogoPreview(Request $request, BrandLogoProcessor $logos): JsonResponse
+    {
+        // Nguồn ảnh: tải file từ máy (multipart "file") HOẶC dán link ("url").
+        $data = $request->validate([
+            'file' => ['required_without:url', 'nullable', 'file', 'mimetypes:image/png,image/jpeg,image/webp,image/gif,image/bmp,image/avif', 'max:5120'],
+            'url' => ['required_without:file', 'nullable', 'string', 'max:2048'],
+        ], [
+            'file.required_without' => 'Vui lòng chọn ảnh hoặc dán link ảnh logo.',
+            'url.required_without' => 'Vui lòng chọn ảnh hoặc dán link ảnh logo.',
+            'file.mimetypes' => 'Chỉ nhận ảnh PNG, JPG, WebP, GIF, BMP, AVIF.',
+            'file.max' => 'Ảnh không được lớn hơn 5MB.',
+        ]);
+
+        $png = isset($data['file'])
+            ? $logos->process((string) file_get_contents($data['file']->getRealPath()))
+            : $logos->fromUrl($data['url']);
+
+        return $this->ok('Đã xử lý ảnh logo.', ['logo_png' => base64_encode($png)]);
+    }
+
+    /**
+     * Logo hãng BẮT BUỘC khi thêm hãng mới; khi sửa chỉ được thay logo khác (không có thao tác bỏ logo).
+     *
+     * @return array{logo_png?: string, logo_updated_at?: Carbon}
+     */
+    private function logoChanges(Request $request, BrandLogoProcessor $logos, bool $required = false): array
+    {
+        $data = $request->validate(
+            ['logo_png' => [$required ? 'required' : 'nullable', 'string', 'max:500000']],
+            ['logo_png.required' => 'Vui lòng tải lên hoặc dán link logo hãng.'],
+        );
+
+        return empty($data['logo_png']) ? [] : ['logo_png' => $logos->assertProcessedPng($data['logo_png']), 'logo_updated_at' => now()];
     }
 
     /* ----------------------------------------------------------------- Dòng xe */

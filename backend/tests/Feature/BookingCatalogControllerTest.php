@@ -90,5 +90,13 @@ class BookingCatalogControllerTest extends TestCase
         $this->assertSame([$packages['shared10k']->id, $packages['vios20k']->id], $items->pluck('id')->all());
         $this->assertSame([false, true], $items->pluck('recommended')->all());
         $this->assertSame([10000, 20000], $items->pluck('mileage_milestone')->all());
+
+        // Chỉ "phù hợp" khi xe thật sự tới hạn (cách mốc ≤ 1.000 km): xe mới / giữa hai mốc → không gợi ý gói nào.
+        $recommendedAt = fn (int $km) => collect($this->getJson("/api/booking-catalog?brand=Toyota&model=Vios&mileage={$km}")
+            ->json('groups.0.items'))->pluck('recommended')->all();
+        $this->assertSame([false, false], $recommendedAt(2000), 'Xe 2.000 km chưa tới hạn gói 10.000 km');
+        $this->assertSame([false, false], $recommendedAt(15000), 'Giữa hai mốc: không gói nào tới hạn');
+        $this->assertSame([true, false], $recommendedAt(10800), 'Vừa qua mốc 10.000 km vẫn tới hạn gói đó');
+        $this->assertSame([true, false], $recommendedAt(9000), 'Sắp tới mốc (còn 1.000 km)');
     }
 }

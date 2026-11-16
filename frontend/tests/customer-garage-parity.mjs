@@ -21,7 +21,7 @@ assert.match(history,/getMyRepairOrders\(\)/);
 assert.match(history,/\.filter\(row => finished\.has\(row\.status\)\)/);
 assert.doesNotMatch(history,/localStorage|seed|demo-data/);
 assert.match(quotation,/respondQuotation\(selectedRow\.quotation\.id, responses\)/);
-assert.match(quotation,/className="at-quote-card"/);
+assert.match(quotation,/<AccountPage testId="customer-quotations"/, 'Quotation uses the shared account page frame');
 assert.doesNotMatch(quotation,/localStorage|seed|demo-data/);
 assert.match(api,/fetchApi\("\/me\/repair-orders"\)/);
 assert.match(api,/fetchApi\(`\/me\/quotations\/\$\{quotationId\}\/respond`/);

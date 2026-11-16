@@ -8,6 +8,9 @@ import type { IconName } from "../components/ui/Icon";
 export type CustomerAccountLink = { label: string; to: string; icon: IconName; match: string[]; group: CustomerAccountGroup };
 export type CustomerAccountGroup = "Tài khoản" | "Dịch vụ" | "Chi phí";
 
+/** Tên khu vực tài khoản — cấp giữa của breadcrumb và nhãn vùng sidebar (khác trang "Hồ sơ của tôi"). */
+export const ACCOUNT_AREA_LABEL = "Tài khoản của tôi";
+
 export const CUSTOMER_ACCOUNT_GROUPS: CustomerAccountGroup[] = ["Tài khoản", "Dịch vụ", "Chi phí"];
 
 export const CUSTOMER_ACCOUNT_LINKS: CustomerAccountLink[] = [
@@ -15,11 +18,17 @@ export const CUSTOMER_ACCOUNT_LINKS: CustomerAccountLink[] = [
   { group: "Tài khoản", label: "Xe của tôi", to: "/customer/cars", icon: "car", match: ["/customer/cars", "/cars"] },
   { group: "Dịch vụ", label: "Lịch hẹn", to: "/customer/appointments", icon: "calendar", match: ["/customer/appointments", "/appointments"] },
   { group: "Dịch vụ", label: "Lịch sử bảo dưỡng", to: "/customer/service-history", icon: "clock", match: ["/customer/service-history"] },
-  { group: "Dịch vụ", label: "Đánh giá", to: "/reviews", icon: "star", match: ["/reviews"] },
-  { group: "Chi phí", label: "Báo giá", to: "/quotation", icon: "file", match: ["/quotation"] },
+  { group: "Chi phí", label: "Báo giá", to: "/quotation", icon: "dollar", match: ["/quotation"] },
   { group: "Chi phí", label: "Hóa đơn", to: "/invoices", icon: "receipt", match: ["/invoices"] },
   { group: "Chi phí", label: "Thanh toán", to: "/payment", icon: "card", match: ["/payment", "/payment/vnpay-return"] },
 ];
+
+/**
+ * Menu avatar ở header: chỉ lối tắt hay dùng (hồ sơ, xe, lịch hẹn, lịch sử bảo dưỡng, báo giá chờ duyệt).
+ * Hóa đơn / Thanh toán vào qua sidebar. Lấy từ CUSTOMER_ACCOUNT_LINKS → tên luôn khớp sidebar.
+ */
+const AVATAR_MENU_PATHS = ["/customer/account", "/customer/appointments", "/customer/cars", "/customer/service-history", "/quotation"];
+export const AVATAR_MENU_LINKS = AVATAR_MENU_PATHS.map(path => CUSTOMER_ACCOUNT_LINKS.find(link => link.to === path)!);
 
 // Các route /manage vẫn thuộc mục cha: giữ menu active khi đi từ 5 trang mới vào trang nghiệp vụ đầy đủ.
 export const isAccountLinkActive = (link: CustomerAccountLink, pathname: string) =>

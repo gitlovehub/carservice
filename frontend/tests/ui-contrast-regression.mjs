@@ -20,13 +20,14 @@ for (const dest of ['/admin/accounts','/admin/services','/admin/inventory','/adm
 for (const page of ['Accounts','Services','Inventory','Reports']) assert.doesNotMatch(read('pages/admin/'+page+'.tsx'),/AdminHubNav/,page+' must not duplicate navigation');
 // Chữ chú thích dùng token đạt tương phản AA thay vì xám viết cứng (#8A949E chỉ 3.08:1).
 for (const page of ['Accounts','Services','Inventory','AdminAppointments']) assert.doesNotMatch(read('pages/admin/'+page+'.tsx'),/text-\[#8A949E\]/i,page+' must not use low-contrast caption gray');
-assert.match(garage,/grid grid-cols-3 items-stretch/, 'Vehicle cards should use a responsive Tailwind grid');
+assert.match(garage,/data-testid="customer-car-card" className="grid[^"]*max-\[670px\]:grid-cols-1/, 'Vehicle cards should use a responsive Tailwind grid');
 assert.match(garage,/getMyVehicles\(\)/,'Vehicle cards must use backend data');
 assert.match(garage,/await addMyVehicle\(payload\)/,'Vehicle add must remain API-backed');
 assert.match(garage,/await updateMyVehicle\(editingVehicle.id, payload\)/,'Vehicle edit must remain API-backed');
 assert.match(garage,/await deleteMyVehicle\(deletingVehicle.id\)/,'Vehicle delete must remain API-backed');
 assert.doesNotMatch(garage,/<table/,'Customer garage should be cards, not legacy table');
-assert.match(garage,/max-\[1050px\]:grid-cols-2/,'Two columns at tablet breakpoint');
+// Thẻ xe dạng ngang: màn trung bình thu về 3 cột (ảnh | thông tin | thao tác), điện thoại 1 cột.
+assert.match(garage,/max-\[1180px\]:grid-cols-\[170px_minmax\(0,1fr\)_auto\]/,'Compact card layout at tablet breakpoint');
 assert.match(garage,/max-\[670px\]:grid-cols-1/,'Single-column mobile layout');
 assert.match(theme,/--color-cs-surface/,'Theme must expose palette to Tailwind v4');
 assert.match(read('components/ui/Icon.tsx'),/plus: <path/,'Add vehicle icon must exist');

@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import {
-  formatDate,
-  getVehicleName,
-  submitReview,
-  type CustomerRepairOrder,
-  type CustomerReview,
-} from "../../services/customerApi";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Button, Modal, RatingInput, RatingStars } from "../../components/ui";
+import { Icon } from "../../components/ui/Icon";
+import { controlClass } from "../../components/ui/fieldContext";
+import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
+import { formatDate, getMyRepairOrderDetail, getVehicleName, submitReview, type CustomerRepairOrder, type CustomerReview } from "../../services/customerApi";
+import { MAX_SUGGESTIONS, buildSuggestions, composeComment, serviceNamesOf } from "./reviewSuggestions";
+import { InlineError, ModalFoot, ModalHead } from "./account/AccountKit";
+import { MODAL_CLASS, PRIMARY_RED } from "./account/accountStyles";
 
 type Props = {
   order: CustomerRepairOrder;
@@ -14,82 +15,54 @@ type Props = {
   onReviewed: (review: CustomerReview) => void;
 };
 
-function RatingInput({ label, optional, value, onChange }: {
-  label: string;
-  optional?: boolean;
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  return <fieldset className="space-y-2">
-    <legend className="text-sm font-semibold text-[var(--cs-text,#191919)]">
-      {label} {optional && <span className="font-normal text-[var(--cs-muted,#666)]">(không bắt buộc)</span>}
-    </legend>
-    <div className="flex flex-wrap items-center gap-1.5" aria-label={label}>
-      {[1, 2, 3, 4, 5].map(star => <button
-        key={star}
-        type="button"
-        aria-label={`${label}: ${star} sao`}
-        aria-pressed={value === star}
-        title={`${star} sao`}
-        onClick={() => onChange(value === star && optional ? 0 : star)}
-        className={`flex size-10 cursor-pointer items-center justify-center rounded-lg border text-[27px] leading-none transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ce2735] ${star <= value ? "border-[#f4c369] bg-[#fff4d9] text-[#cb8615]" : "border-[var(--cs-border,#ddd)] bg-[var(--cs-surface,#fff)] text-[#9ca3af] hover:border-[#cf2935]"}`}
-      >★</button>)}
-      <span className="ml-2 text-xs text-[var(--cs-muted,#666)]">{value ? `${value}/5 sao` : "Chưa chọn"}</span>
-    </div>
-  </fieldset>;
-}
+const scoreLabels = ["", "Rất chưa hài lòng", "Chưa hài lòng", "Bình thường", "Hài lòng", "Rất hài lòng"];
 
-function ReadonlyStars({ rating }: { rating: number | null | undefined }) {
-  if (!rating) return <span className="text-xs text-[var(--cs-muted,#666)]">Không đánh giá</span>;
-  return <span aria-label={`${rating} trên 5 sao`} className="text-lg tracking-[0.12em] text-[#cf8c19]">
-    {"★".repeat(Math.max(0, Math.min(5, rating)))}<span className="text-[#c6cbd0]">{"★".repeat(Math.max(0, 5 - rating))}</span>
-  </span>;
-}
-
-/** Hộp thoại đánh giá chỉ dành cho phiếu đã bàn giao, sử dụng API POST /me/reviews hiện có. */
+/**
+ * Modal đánh giá của MỘT phiếu sửa chữa (mở từ Lịch sử bảo dưỡng hoặc link thông báo):
+ * chưa đánh giá → form gửi (POST /me/reviews); đã đánh giá → xem lại kèm phản hồi của gara.
+ * Khách chấm MỘT điểm chung cho gara (overall_rating) — đúng điểm mà admin, báo cáo và trang chủ dùng.
+ */
 export default function ServiceReviewDialog({ order, review, onClose, onReviewed }: Props) {
   const [overall, setOverall] = useState(0);
-  const [advisor, setAdvisor] = useState(0);
-  const [technician, setTechnician] = useState(0);
+  const [preview, setPreview] = useState(0);
   const [comment, setComment] = useState("");
+  const [pickedChips, setPickedChips] = useState<string[]>([]);
+  const [serviceNames, setServiceNames] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const closeRef = useRef<HTMLButtonElement>(null);
   const canSubmit = !review && order.status === "HANDED_OVER";
 
+  // Dịch vụ / gói của đúng phiếu (danh sách phiếu không kèm) → gợi ý sát với lần bảo dưỡng; lỗi thì dùng gợi ý chung.
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !sending) onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onClose, sending]);
+    if (!canSubmit) return;
+    let active = true;
+    getMyRepairOrderDetail(order.id).then((detail) => { if (active) setServiceNames(serviceNamesOf(detail)); }).catch(() => {});
+    return () => { active = false; };
+  }, [canSubmit, order.id]);
+
+  const suggestions = useMemo(() => buildSuggestions(serviceNames, overall), [serviceNames, overall]);
+  // Đổi từ khen sang góp ý (hoặc ngược lại): gợi ý đã chọn mà không còn trong danh sách thì không tính.
+  const chips = pickedChips.filter((chip) => suggestions.includes(chip));
+  const toggleChip = (text: string) => setPickedChips(chips.includes(text)
+    ? chips.filter((chip) => chip !== text)
+    : chips.length >= MAX_SUGGESTIONS ? chips : [...chips, text]);
+  const chipsLength = chips.length ? chips.join(". ").length + 2 : 0;
+  const finalComment = composeComment(chips, comment);
 
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit || sending) return;
-    if (overall < 1) {
-      setError("Vui lòng chọn số sao đánh giá tổng thể.");
-      return;
-    }
+    if (overall < 1) { setError("Vui lòng chọn số sao đánh giá."); return; }
     setSending(true);
     setError("");
     try {
       const response = await submitReview({
         repair_order_id: order.id,
         overall_rating: overall,
-        ...(advisor > 0 ? { advisor_rating: advisor } : {}),
-        ...(technician > 0 ? { technician_rating: technician } : {}),
-        comment: comment.trim(),
+        comment: finalComment.slice(0, 1000),
       });
       // Chỉ cập nhật giao diện khi Backend đã trả về bản ghi đánh giá thực.
-      if (!response?.data?.id) throw new Error("Hệ thống chưa xác nhận đã lưu đánh giá. Vui lòng kiểm tra lịch sử trước khi gửi lại.");
+      if (!response?.data?.id) throw new Error("Hệ thống chưa xác nhận đã lưu đánh giá. Vui lòng tải lại trang trước khi gửi lại.");
       onReviewed(response.data as CustomerReview);
     } catch (cause: unknown) {
       const apiError = cause as { data?: { message?: string; errors?: Record<string, string[]> }; message?: string };
@@ -100,60 +73,87 @@ export default function ServiceReviewDialog({ order, review, onClose, onReviewed
     }
   }
 
-  return <div
-    className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/65 px-3 py-5 backdrop-blur-[3px] sm:px-6"
-    onMouseDown={event => { if (event.target === event.currentTarget && !sending) onClose(); }}
-  >
-    <section role="dialog" aria-modal="true" aria-labelledby="service-review-title"
-      className="max-h-[min(90dvh,800px)] w-full max-w-[590px] overflow-y-auto rounded-[22px] border border-[var(--cs-border,#eee)] bg-[var(--cs-surface,#fff)] p-5 text-[var(--cs-text,#191919)] shadow-2xl sm:p-7">
-      <header className="flex items-start justify-between gap-3 border-b border-[var(--cs-border,#eee)] pb-4">
-        <div>
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#d12b37]">CarService · Trải nghiệm khách hàng</p>
-          <h2 id="service-review-title" className="text-xl font-extrabold tracking-normal sm:text-2xl">{review ? "Đánh giá đã gửi" : "Đánh giá dịch vụ"}</h2>
-          <p className="mt-1 text-xs text-[var(--cs-muted,#666)]">{review ? "Cảm ơn bạn đã chia sẻ trải nghiệm." : "Chia sẻ cảm nhận sau khi nhận lại xe từ gara."}</p>
+  return (
+    <Modal bare open onClose={onClose} dismissible={!sending} title={review ? "Đánh giá của bạn" : "Đánh giá dịch vụ"} className={`${MODAL_CLASS} max-w-xl`}>
+      <ModalHead icon="star" eyebrow={review ? "Đánh giá của bạn" : "Đánh giá dịch vụ"} title={order.repair_order_code}
+        subtitle={order.handed_over_at ? `Bàn giao ngày ${formatDate(order.handed_over_at)}` : undefined} onClose={onClose} disabled={sending}/>
+
+      <div className="space-y-5 p-5 sm:p-6">
+        <div className="flex items-center gap-3 rounded-2xl border border-cs-border p-4">
+          <VehicleBrandLogo brand={order.vehicle?.model?.brand?.name} size={44}/>
+          <div className="min-w-0">
+            <p className="font-bold text-cs-text">{getVehicleName(order.vehicle)}</p>
+            <p className="font-mono text-[13px] text-cs-muted">{order.vehicle?.license_plate ?? "Chưa có biển số"}</p>
+          </div>
         </div>
-        <button ref={closeRef} type="button" disabled={sending} onClick={onClose} aria-label="Đóng đánh giá"
-          className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-[var(--cs-border,#ddd)] text-xl hover:border-[#cf2935] hover:text-[#cf2935] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] disabled:opacity-50">×</button>
-      </header>
-      <div className="mt-4 rounded-2xl border border-[var(--cs-border,#e8e8e8)] bg-[var(--cs-bg,#f7f7f6)] p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <strong className="text-sm">{getVehicleName(order.vehicle)}</strong>
-          <span className="rounded-full bg-[#e5f5e9] px-2.5 py-1 text-[11px] font-bold text-[#237342]">Đã bàn giao</span>
-        </div>
-        <p className="mt-1 text-xs text-[var(--cs-muted,#666)]">{order.vehicle?.license_plate ?? "Chưa có biển số"} · {order.repair_order_code}</p>
-        {order.handed_over_at && <p className="mt-1 text-xs text-[var(--cs-muted,#666)]">Bàn giao: {formatDate(order.handed_over_at)}</p>}
+
+        {review ? (
+          <>
+            <div className="flex flex-wrap items-center gap-3">
+              <RatingStars value={review.overall_rating} size={26}/>
+              <span className="text-[15px] font-bold text-cs-text">{scoreLabels[review.overall_rating] ?? ""}</span>
+            </div>
+            {review.comment
+              ? <p className="whitespace-pre-wrap rounded-xl bg-cs-surface-2 px-4 py-3 text-[14px] leading-relaxed text-cs-text">“{review.comment}”</p>
+              : <p className="text-[14px] text-cs-muted">Bạn đã chấm sao mà không viết nhận xét.</p>}
+            {review.reply
+              ? <div className="rounded-xl border-l-[3px] border-cs-accent bg-cs-soft px-4 py-3">
+                  <p className="flex items-center gap-1.5 text-[13px] font-bold text-cs-accent-text"><Icon name="reply" size={15}/>Phản hồi từ CarService{review.replied_at && <span className="font-normal text-cs-muted">· {formatDate(review.replied_at)}</span>}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-[14px] text-cs-text">{review.reply}</p>
+                </div>
+              : <p className="text-[13px] text-cs-muted">Gara chưa phản hồi đánh giá này.</p>}
+            <p className="text-[13px] text-cs-muted">Gửi ngày {formatDate(review.created_at)} · Mỗi phiếu chỉ đánh giá một lần.</p>
+          </>
+        ) : canSubmit ? (
+          <form id="service-review-form" onSubmit={send} className="space-y-5">
+            <div className="flex flex-col items-center gap-2 rounded-2xl bg-cs-surface-2 px-4 py-5 text-center">
+              <p className="text-[15px] font-bold text-cs-text">Bạn hài lòng với lần bảo dưỡng này thế nào?</p>
+              <RatingInput label="Số sao đánh giá" value={overall} onPreview={setPreview} onChange={(value) => { setOverall(value); setError(""); }}/>
+              <p className={`min-h-6 text-[15px] font-bold transition-colors duration-200 ${preview || overall ? "text-warning-fg" : "text-cs-muted"}`} aria-live="polite">
+                {scoreLabels[preview || overall] || "Chạm vào sao để chấm điểm"}
+              </p>
+            </div>
+
+            <div className="space-y-2.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-[14px] font-bold text-cs-text">Nhận xét nhanh <span className="font-normal text-cs-muted">(chọn tối đa {MAX_SUGGESTIONS})</span></p>
+                <span className="text-xs text-cs-muted">{chips.length}/{MAX_SUGGESTIONS}</span>
+              </div>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Gợi ý nhận xét">
+                {suggestions.map((text) => {
+                  const picked = chips.includes(text);
+                  const full = !picked && chips.length >= MAX_SUGGESTIONS;
+                  return (
+                    <button key={text} type="button" aria-pressed={picked} disabled={full} onClick={() => toggleChip(text)}
+                      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-40 ${picked ? "border-cs-accent bg-cs-soft text-cs-accent-text" : "border-cs-border bg-cs-surface text-cs-text-2 hover:-translate-y-px hover:border-cs-accent/60"}`}>
+                      {picked && <Icon name="check" size={14}/>}{text}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="flex items-baseline justify-between text-[14px] font-bold text-cs-text">
+                <span>Viết thêm <span className="font-normal text-cs-muted">(không bắt buộc)</span></span>
+                <span className="text-xs font-normal text-cs-muted">{finalComment.length}/1000</span>
+              </span>
+              <textarea value={comment} onChange={(event) => setComment(event.target.value)} maxLength={Math.max(0, 1000 - chipsLength)} rows={3}
+                placeholder="Chia sẻ thêm trải nghiệm của bạn…" className={`${controlClass} resize-none`}/>
+            </label>
+            {error && <InlineError>{error}</InlineError>}
+          </form>
+        ) : (
+          <InlineError>Chỉ đánh giá được sau khi gara bàn giao xe.</InlineError>
+        )}
       </div>
-      {review ? <div className="mt-5 space-y-4">
-        <div className="flex items-center justify-between gap-3"><strong className="text-sm">Đánh giá tổng thể</strong><ReadonlyStars rating={review.overall_rating}/></div>
-        {review.advisor_rating != null && <div className="flex items-center justify-between gap-3"><span className="text-sm">Tư vấn, chăm sóc khách hàng</span><ReadonlyStars rating={review.advisor_rating}/></div>}
-        {review.technician_rating != null && <div className="flex items-center justify-between gap-3"><span className="text-sm">Chất lượng bảo dưỡng / sửa chữa</span><ReadonlyStars rating={review.technician_rating}/></div>}
-        {review.comment && <div className="rounded-xl bg-[var(--cs-bg,#f7f7f6)] p-4 text-sm leading-6">{review.comment}</div>}
-        {review.reply && <div className="rounded-xl border border-[#f2d3d5] bg-[#fff1f1] p-4 text-sm text-[#85202c]"><strong>Phản hồi từ CarService</strong><p className="mt-1 leading-6">{review.reply}</p></div>}
-        <p className="text-xs text-[var(--cs-muted,#666)]">Mỗi phiếu sửa chữa chỉ được đánh giá một lần.</p>
-        <button type="button" onClick={onClose} className="min-h-11 w-full cursor-pointer rounded-xl border border-[var(--cs-border,#ddd)] px-5 text-sm font-bold hover:border-[#cf2935]">Đóng</button>
-      </div> : canSubmit ? <form onSubmit={send} className="mt-5 space-y-5">
-        <RatingInput label="Mức độ hài lòng tổng thể *" value={overall} onChange={setOverall}/>
-        <div className="grid gap-5 border-t border-[var(--cs-border,#eee)] pt-4 sm:grid-cols-2">
-          <RatingInput label="Tư vấn và chăm sóc" optional value={advisor} onChange={setAdvisor}/>
-          <RatingInput label="Chất lượng sửa chữa" optional value={technician} onChange={setTechnician}/>
-        </div>
-        <div>
-          <label htmlFor="review-comment" className="mb-2 block text-sm font-semibold">Nhận xét của bạn (không bắt buộc)</label>
-          <textarea id="review-comment" rows={3} maxLength={1000} value={comment} onChange={event => setComment(event.target.value)}
-            placeholder="Ví dụ: Nhân viên tư vấn rõ ràng, bảo dưỡng đúng hẹn, xe hoạt động tốt..."
-            className="w-full resize-y rounded-xl border border-[var(--cs-border,#ddd)] bg-[var(--cs-surface,#fff)] p-3 text-sm leading-6 outline-[#cf2935]" />
-          <p className="mt-1 text-right text-xs text-[var(--cs-muted,#666)]">{comment.length}/1000 ký tự</p>
-        </div>
-        {error && <p role="alert" className="rounded-xl border border-[#f5c4c8] bg-[#fff0f1] p-3 text-sm text-[#a22530]">{error}</p>}
-        <p className="text-xs leading-5 text-[var(--cs-muted,#666)]">Đánh giá được lưu theo đúng phiếu sửa chữa và không thể gửi thêm lần thứ hai.</p>
-        <div className="flex flex-wrap justify-end gap-2">
-          <button type="button" disabled={sending} onClick={onClose} className="min-h-11 cursor-pointer rounded-xl border border-[var(--cs-border,#ddd)] px-5 text-sm font-bold hover:border-[#cf2935] disabled:opacity-50">Để sau</button>
-          <button type="submit" disabled={sending || overall < 1}
-            className="min-h-11 cursor-pointer rounded-xl bg-[#cf2935] px-6 text-sm font-bold text-white transition-colors hover:bg-[#ad1e2a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] disabled:cursor-not-allowed disabled:opacity-50">
-            {sending ? "Đang gửi..." : "★ Gửi đánh giá"}
-          </button>
-        </div>
-      </form> : <div className="mt-5 rounded-xl border border-[#f1d8d8] bg-[#fff1f1] p-4 text-sm text-[#942633]">Chỉ đánh giá được sau khi phiếu sửa chữa chuyển sang trạng thái Đã bàn giao.</div>}
-    </section>
-  </div>;
+
+      <ModalFoot>
+        {canSubmit ? <>
+          <Button variant="secondary" onClick={onClose} disabled={sending}>Để sau</Button>
+          <Button type="submit" form="service-review-form" variant="primary" icon="send" className={PRIMARY_RED} loading={sending} loadingText="Đang gửi..." disabled={overall < 1}>Gửi đánh giá</Button>
+        </> : <Button variant="secondary" onClick={onClose}>Đóng</Button>}
+      </ModalFoot>
+    </Modal>
+  );
 }

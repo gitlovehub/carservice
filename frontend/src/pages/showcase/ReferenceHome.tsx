@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ReferenceBottomStrip } from './ReferenceShell';
 import { fetchApi } from '../../services/api';
-import { money, type Service } from './serviceDisplay';
+import { RatingStars } from '../../components/ui/Rating';
+import { byPopularity, money, type Service } from './serviceDisplay';
+import { guideSlugOf } from './serviceGuides';
 import { GarageContact, HomeFaq, MaintenancePackages, SymptomChecker, TrustBanner } from './HomeSections';
 
 // 3 danh mục chủ lực trên trang chủ — `category` phải trùng tên danh mục trong Admin → Danh mục dịch vụ.
@@ -23,13 +25,13 @@ function FeaturedServices(){
  return <div className="v3ref-feature3-grid">{featuredGroups.map(g=>{
    const matches=items.filter(s=>fold(s.category)===fold(g.category));
    const prices=matches.map(s=>Number(s.base_price??s.estimated_price)).filter(n=>Number.isFinite(n)&&n>0);
-   // Ưu tiên dịch vụ "Nổi bật", rồi theo thứ tự admin đặt.
-   const primary=[...matches].sort((a,b)=>Number(!!b.is_popular)-Number(!!a.is_popular)||(a.sort_order??0)-(b.sort_order??0))[0];
+   // Dịch vụ phổ biến nhất của nhóm (theo số lần thực hiện thật).
+   const primary=[...matches].sort(byPopularity)[0];
    return <article className="v3ref-feature3-card" key={g.category}>
      <img className="v3ref-feature3-img" src={`/images/garage/${g.image}.webp`} alt="" aria-hidden="true" loading="lazy" decoding="async"/>
      <h3>{g.category}</h3><p className="v3ref-feature3-tagline">{g.tagline}</p>
      <ul>{g.points.map(p=><li key={p}>{p}</li>)}</ul>
-     <div className="v3ref-feature3-meta">{prices.length>0&&<strong>{money(Math.min(...prices))}</strong>}<Link to={`/services?category=${encodeURIComponent(g.category)}`}>Xem chi tiết</Link></div>
+     <div className="v3ref-feature3-meta">{prices.length>0&&<strong>{money(Math.min(...prices))}</strong>}<Link to={guideSlugOf(g.category) ? `/services/${guideSlugOf(g.category)}` : `/services?category=${encodeURIComponent(g.category)}`}>Xem chi tiết</Link></div>
      <Link className="v3ref-feature3-book" to={primary?`/booking?service=${primary.id}`:'/booking'}>Đặt lịch ngay <span aria-hidden="true">→</span></Link>
    </article>;})}</div>;
 }
@@ -85,7 +87,8 @@ function BrandMarquee(){
 type PublicReview = { id:number; customer:string; vehicle:string|null; services:string[]; rating:number; comment:string; reply:string|null; date:string|null };
 type PublicReviewResponse = { data:PublicReview[]; summary:{ average:number; count:number } };
 /** Sao có hỗ trợ số lẻ (4,5 sao): lớp sao vàng phủ theo % lên lớp sao xám. */
-const Stars=({value,small}:{value:number;small?:boolean})=><span className={`v3ref-rv-stars${small?' is-sm':''}`} role="img" aria-label={`${value} trên 5 sao`}>★★★★★<span style={{width:`${Math.max(0,Math.min(5,value))/5*100}%`}} aria-hidden="true">★★★★★</span></span>;
+/** Sao dùng chung toàn hệ thống (components/ui/Rating). */
+const Stars=({value,small}:{value:number;small?:boolean})=><RatingStars value={value} size={small?18:22} gap={small?2:3}/>;
 /** Tiêu đề ngắn cho thẻ, suy ra từ nội dung nhận xét (hệ thống đánh giá không có trường tiêu đề). */
 function reviewTitle(r:PublicReview){
  const t=r.comment.toLowerCase();

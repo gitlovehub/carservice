@@ -1,8 +1,10 @@
 import { useEffect,useMemo,useRef,useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { fetchApi } from '../../services/api';
+import { bookingLinkFor, useServicePicks } from '../../services/servicePicks';
 import { ReferenceBanner,ReferenceBottomStrip } from './ReferenceShell';
-import { foldVi, money, serviceImage, type Service } from './serviceDisplay';
+import ServicePicksBar from './ServicePicksBar';
+import { byPopularity, foldVi, money, serviceImage, type Service } from './serviceDisplay';
 
 /** Ảnh dịch vụ do admin tải lên; chưa có (hoặc ảnh lỗi) → khung xám "Chưa có ảnh", không dùng ảnh minh họa cố định. */
 function ServicePhoto({ service }: { service: Service }) {
@@ -78,7 +80,7 @@ export default function ReferenceServices(){
   if(sort==='price_asc')sorted.sort(byPrice(1));
   else if(sort==='price_desc')sorted.sort(byPrice(-1));
   else if(sort==='newest')sorted.sort((a,b)=>time(b)-time(a)||b.id-a.id);
-  else sorted.sort((a,b)=>Number(!!b.is_popular)-Number(!!a.is_popular)||(a.sort_order??0)-(b.sort_order??0)||a.name.localeCompare(b.name,'vi'));
+  else sorted.sort(byPopularity); // "Phổ biến" (mặc định): theo số lần thực hiện thật — CL-01
   return sorted;
  },[items,category,query,price,sort]);
  const pages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
@@ -86,6 +88,9 @@ export default function ReferenceServices(){
  const shown=filtered.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
  const goPage=(p:number)=>{setParam('page',p===1?'':String(p),'');listTop.current?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})};
  const filtersOn=query!==''||price!==''||sort!=='';
+ // Dịch vụ đã chọn — dùng chung kho lựa chọn với trang chi tiết nhóm dịch vụ.
+ const [picks,setPicks]=useServicePicks();
+ const toggle=(id:number)=>setPicks(current=>({...current,ids:current.ids.includes(id)?current.ids.filter(x=>x!==id):[...current.ids,id]}));
  return <main className="v3ref"><ReferenceBanner title="Dịch vụ của" highlight="CarService" subtitle="Đa dạng dịch vụ chăm sóc, bảo dưỡng và sửa chữa ô tô theo tình trạng thực tế của xe — báo giá rõ ràng trước khi làm." image="banner-services.webp" position="right center"/>
  <div className="v3ref-featurebar">{FEATURES.map(f=><div key={f.title}><span className="v3ref-featurebar-icon">{f.icon}</span><p><strong>{f.title}</strong><small>{f.desc}</small></p></div>)}</div>
  <div className="v3ref-container"><MaintenancePackageSlider/></div>
@@ -104,11 +109,22 @@ export default function ReferenceServices(){
    {filtersOn&&<button type="button" className="v3ref-sv-clear" onClick={()=>setSearchParams(prev=>{const c=new URLSearchParams(prev);['search','price','sort','page'].forEach(k=>c.delete(k));return c},{replace:true})}>Xoá bộ lọc</button>}
    {!loading&&!error&&filtered.length>0&&<small className="v3ref-sv-count">Hiển thị {(page-1)*PAGE_SIZE+1}–{Math.min(page*PAGE_SIZE,filtered.length)} / {filtered.length} dịch vụ</small>}
   </div>
- {loading?<p className="v3ref-empty">Đang tải danh mục dịch vụ…</p>:error?<div className="v3ref-empty" role="alert">{error}<br/><button onClick={()=>setRetry(v=>v+1)}>Thử tải lại</button></div>:filtered.length===0?<p className="v3ref-empty">Không có dịch vụ phù hợp với bộ lọc.</p>:<div className="v3ref-service-grid">{shown.map(service=><article className="v3ref-service-card" key={service.id}><ServicePhoto service={service}/><div className="v3ref-card-body"><h3>{service.name}</h3><p>{service.description||'Tư vấn và thực hiện theo tình trạng thực tế của xe.'}</p><div className="v3ref-card-bottom"><strong>{money(service.base_price??service.estimated_price)}</strong><Link to={`/booking?service=${service.id}`}>Đặt lịch →</Link></div></div></article>)}</div>}
+ {loading?<p className="v3ref-empty">Đang tải danh mục dịch vụ…</p>:error?<div className="v3ref-empty" role="alert">{error}<br/><button onClick={()=>setRetry(v=>v+1)}>Thử tải lại</button></div>:filtered.length===0?<p className="v3ref-empty">Không có dịch vụ phù hợp với bộ lọc.</p>:<div className="v3ref-service-grid">{shown.map(service=>{
+  // Cùng cách hoạt động với trang chi tiết nhóm dịch vụ: tick chọn (lưu lại) → thanh "Đặt lịch" ở đáy.
+  const on=picks.ids.includes(service.id);
+  return <article className={`v3ref-service-card ${on?'ring-2 ring-[#e11d2e]':''}`} key={service.id}><ServicePhoto service={service}/><div className="v3ref-card-body">
+   <div className="flex items-start justify-between gap-3"><h3>{service.name}</h3>
+    <input type="checkbox" checked={on} onChange={()=>toggle(service.id)} aria-label={`Chọn ${service.name}`} className="mt-1 size-5 shrink-0 cursor-pointer accent-[#e11d2e]"/></div>
+   <p>{service.description||'Tư vấn và thực hiện theo tình trạng thực tế của xe.'}</p>
+   <div className="v3ref-card-bottom"><strong>{money(service.base_price??service.estimated_price)}</strong>
+    {/* Đặt lịch ngay dịch vụ này: thêm vào lựa chọn rồi sang đặt lịch cùng các dịch vụ đã chọn khác. */}
+    <Link to={bookingLinkFor({...picks,ids:[...new Set([...picks.ids,service.id])]})} onClick={()=>{if(!on)toggle(service.id)}}>Đặt lịch →</Link></div>
+  </div></article>;})}</div>}
  {!loading&&!error&&pages>1&&<nav className="v3ref-sv-pages" aria-label="Phân trang dịch vụ">
   <button type="button" onClick={()=>goPage(page-1)} disabled={page===1} aria-label="Trang trước">‹</button>
   {Array.from({length:pages},(_,k)=>k+1).map(p=><button type="button" key={p} className={p===page?'active':''} aria-current={p===page?'page':undefined} onClick={()=>goPage(p)}>{p}</button>)}
   <button type="button" onClick={()=>goPage(page+1)} disabled={page===pages} aria-label="Trang sau">›</button>
  </nav>}
- </section></div><div className="v3ref-container"><ReferenceBottomStrip title="Chưa chắc nên chọn dịch vụ nào?" subtitle="Hãy đặt lịch để cố vấn kiểm tra và đề xuất dịch vụ phù hợp với xe của bạn."/></div></main>;
+ </section></div><div className={`v3ref-container ${picks.ids.length?'pb-24':''}`}><ReferenceBottomStrip title="Chưa chắc nên chọn dịch vụ nào?" subtitle="Hãy đặt lịch để cố vấn kiểm tra và đề xuất dịch vụ phù hợp với xe của bạn."/></div>
+ <ServicePicksBar picks={picks} services={items} onClear={()=>setPicks(()=>({ids:[],symptom:''}))}/></main>;
 }

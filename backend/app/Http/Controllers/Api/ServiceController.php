@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Service;
 use App\Models\ServiceCategory;
+use App\Models\WorkItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -32,7 +33,20 @@ class ServiceController extends Controller
             $query->where('name', 'like', '%'.$request->search.'%');
         }
 
-        return response()->json($query->orderBy('category')->orderBy('name')->get());
+        // CL-01 / D-018: "Phổ biến" = số lần dịch vụ được thực hiện thật (công việc trên phiếu, trừ công việc đã hủy).
+        // Chỉ trả thứ hạng (popularity_rank, 1 = dùng nhiều nhất; null = chưa ai dùng) — không lộ số lượng thật ra ngoài.
+        $services = $query
+            ->withCount(['workItems as usage_count' => fn ($q) => $q->where('status', '!=', WorkItem::CANCELLED)])
+            ->orderBy('category')->orderBy('name')
+            ->get();
+
+        $rankByUsage = $services->pluck('usage_count')->filter()->unique()->sortDesc()->values()->flip();
+        $services->each(function (Service $service) use ($rankByUsage): void {
+            $service->setAttribute('popularity_rank', $service->usage_count > 0 ? $rankByUsage[$service->usage_count] + 1 : null);
+            $service->makeHidden('usage_count');
+        });
+
+        return response()->json($services);
     }
 
     /**

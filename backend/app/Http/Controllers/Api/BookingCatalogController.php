@@ -19,6 +19,9 @@ class BookingCatalogController extends Controller
     /** Icon cho gói bảo dưỡng (gói không có danh mục/icon do admin chọn). */
     private const PACKAGE_ICON = 'layers';
 
+    /** Gói "phù hợp với xe" khi số km cách mốc của gói tối đa chừng này (sắp tới hoặc vừa qua mốc). */
+    private const DUE_WINDOW_KM = 1000;
+
     /** Icon khi dịch vụ chưa gán danh mục. */
     private const DEFAULT_SERVICE_ICON = 'wrench';
 
@@ -83,9 +86,12 @@ class BookingCatalogController extends Controller
             ->filter(fn (MaintenancePackage $package) => $package->services->isNotEmpty())
             ->values();
 
+        // "Phù hợp với xe" chỉ khi xe THẬT SỰ tới hạn: số km cách mốc của gói không quá DUE_WINDOW_KM
+        // (sắp tới hoặc vừa qua mốc). Xe 2.000 km không bị gợi ý gói 5.000 km; nhiều gói cùng khớp → mốc gần nhất.
         $recommendedId = $mileage === null ? null : $packages
-            ->filter(fn (MaintenancePackage $package) => $package->mileage_milestone !== null && $package->mileage_milestone >= $mileage)
-            ->sortBy('mileage_milestone')
+            ->filter(fn (MaintenancePackage $package) => $package->mileage_milestone !== null
+                && abs($package->mileage_milestone - $mileage) <= self::DUE_WINDOW_KM)
+            ->sortBy(fn (MaintenancePackage $package) => abs($package->mileage_milestone - $mileage))
             ->first()?->id;
 
         return [

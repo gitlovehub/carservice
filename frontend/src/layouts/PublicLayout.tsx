@@ -6,7 +6,8 @@ import { ReferenceHeader, ReferenceFooter, referenceRoutes } from "../pages/show
  * Không đổi giao diện đột ngột khi vào Đặt lịch, Báo giá, Quản lý xe hay Đăng nhập. */
 export default function PublicLayout() {
   const { pathname } = useLocation();
-  const reference = referenceRoutes.has(pathname);
+  // Trang chi tiết nhóm dịch vụ (/services/:slug) dùng cùng khung với trang Dịch vụ.
+  const reference = referenceRoutes.has(pathname) || pathname.startsWith("/services/");
   return <div className={`flex min-h-dvh flex-col bg-cs-bg text-cs-text ${reference ? "v3ref-shell" : ""}`}>
     <ReferenceHeader />
     <PageTransition className="flex flex-1 flex-col"><Outlet /></PageTransition>

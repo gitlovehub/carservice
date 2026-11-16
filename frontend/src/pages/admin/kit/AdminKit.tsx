@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Button, Drawer, IconButton, PageHeader, Switch } from "../../../components/ui";
+import { Button, Drawer, IconButton, PageHeader, RatingStars, Switch } from "../../../components/ui";
 import { Icon, type IconName } from "../../../components/ui/Icon";
 import { initials, num, toneSoft, type Tone } from "./format";
 
@@ -151,7 +151,7 @@ export function FilterSelect<T extends string>({ label, value, onChange, options
   // Lựa chọn đầu tiên là mặc định ("Tất cả"); chọn khác → bộ lọc đang áp dụng, tô màu nhấn.
   const active = options.length > 0 && value !== options[0].value;
   return <div data-ui="filter" data-active={active || undefined}
-    className={`relative inline-flex min-h-10 min-w-0 max-w-full shrink-0 items-center gap-2 rounded-control border px-3 text-small transition-colors focus-within:border-cs-accent focus-within:ring-2 focus-within:ring-cs-accent/20 max-sm:min-h-11 ${active
+    className={`relative inline-flex min-h-10 min-w-0 max-w-full shrink-0 items-center gap-2 rounded-control border px-3 text-small transition-colors focus-within:border-cs-accent max-sm:min-h-11 ${active
       ? "border-cs-accent/50 bg-cs-soft text-cs-accent-text"
       : "border-cs-border bg-cs-surface text-cs-text hover:border-cs-border-strong hover:bg-cs-hover"} ${className}`}>
     <Icon name="filter" size={14} className={`shrink-0 ${active ? "" : "text-cs-muted"}`}/>
@@ -213,13 +213,9 @@ export function Progress({ value, tone, label }: { value: number; tone?: Tone; l
 /** Công tắc bật/tắt — dùng chung `Switch` (xanh lá kiểu iOS). Giữ tên Toggle cho các trang Admin cũ. */
 export const Toggle = Switch;
 
+/** Sao đánh giá của Admin = sao dùng chung toàn hệ thống (components/ui/Rating). */
 export function Stars({ value, size = 16 }: { value: number; size?: number }) {
-  return <span className="inline-flex items-center gap-0.5 text-warning" aria-label={`${value} trên 5 sao`}>
-    {[1, 2, 3, 4, 5].map(i => <svg key={i} width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"
-      fill={i <= Math.round(value) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
-      <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>
-    </svg>)}
-  </span>;
+  return <RatingStars value={value} size={size}/>;
 }
 
 /** Danh sách nhãn – giá trị trong ngăn chi tiết. */

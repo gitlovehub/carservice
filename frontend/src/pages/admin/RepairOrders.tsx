@@ -90,7 +90,7 @@ export default function RepairOrders() {
   return <AdminPage title="Phiếu sửa chữa" description="Theo dõi toàn bộ xe trong xưởng: đang ở bước nào, ai phụ trách" demo={false}>
     <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard icon="car" tone="brand" label="Xe trong xưởng" value={summary?.in_shop ?? "—"}/>
-      <StatCard icon="receipt" tone="warning" label="Báo giá / chờ duyệt" value={summary?.groups.quote ?? "—"}/>
+      <StatCard icon="dollar" tone="warning" label="Báo giá / chờ duyệt" value={summary?.groups.quote ?? "—"}/>
       <StatCard icon="box" tone="violet" label="Chờ phụ tùng" value={summary?.groups.parts ?? "—"}/>
       <StatCard icon="check" tone="success" label="Đã hoàn tất" value={summary?.groups.done ?? "—"}/>
     </div>

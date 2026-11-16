@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { ShellNavItem } from "../../layouts/navigation";
 
-export type IconName = ShellNavItem["icon"] | "sun" | "moon" | "menu" | "close" | "logout" | "arrow" | "plus"
+export type IconName = ShellNavItem["icon"] | "sun" | "moon" | "crown" | "menu" | "close" | "logout" | "arrow" | "plus"
   | "search" | "chevron-left" | "chevron-right" | "chevron-down" | "edit" | "trash" | "more" | "check"
   | "alert" | "info" | "eye" | "filter" | "user" | "refresh" | "sidebar" | "card" | "star" | "file"
   | "arrow-right" | "arrow-left" | "x" | "send" | "cash" | "printer" | "download" | "lock" | "key" | "grid"
@@ -47,7 +47,10 @@ const paths: Record<IconName, ReactNode> = {
   sidebar: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></>,
   card: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></>,
   bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 9h18c0-1-3-2-3-9"/><path d="M10 21h4"/></>,
-  star: <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>,
+  // Cùng hình sao đánh giá dùng chung (Rating.tsx): sao đặc, góc bo tròn.
+  star: <path d="M12 3.2 14.7 8.7 20.8 9.6 16.4 13.9 17.4 19.9 12 17.1 6.6 19.9 7.6 13.9 3.2 9.6 9.3 8.7Z" fill="currentColor" strokeWidth="2.4"/>,
+  // Đồng tiền có ký hiệu $ — biểu tượng Báo giá.
+  dollar: <><circle cx="12" cy="12" r="9"/><path d="M12 6.5v11M14.8 9.3c-.3-1-1.4-1.8-2.8-1.8-1.6 0-2.8.9-2.8 2.1s1.1 1.7 2.8 2.1 2.8.9 2.8 2.1-1.2 2.1-2.8 2.1c-1.5 0-2.6-.8-2.9-1.9"/></>,
   file: <><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></>,
   "arrow-right": <path d="M5 12h14m-6-6 6 6-6 6"/>,
   "arrow-left": <path d="M19 12H5m6-6-6 6 6 6"/>,
@@ -58,6 +61,7 @@ const paths: Record<IconName, ReactNode> = {
   download: <><path d="M12 4v11m-5-5 5 5 5-5"/><path d="M4 19h16"/></>,
   lock: <><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></>,
   key: <><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9m-3 3 3 3m-6 0 2 2"/></>,
+  crown: <><path d="M3 7.5 7.5 11 12 4.5l4.5 6.5L21 7.5 19 18H5z"/><path d="M5 21h14"/></>,
   dashboard: <><rect x="3" y="3" width="8" height="9" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/></>,
   layers: <><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></>,
   "id-card": <><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.5a3.4 3.4 0 0 1 6.4 0M14.5 10h4M14.5 13.5h3"/></>,

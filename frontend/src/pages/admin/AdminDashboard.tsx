@@ -36,7 +36,7 @@ function DashboardBody({ data, range, setRange }: { data: DashboardData; range: 
   const { kpis } = data;
   const tasks: Task[] = [
     { icon: "calendar", tone: "info", label: "Lịch hẹn chờ xác nhận", hint: "Cố vấn cần gọi xác nhận với khách", count: data.attention.pending_appointments, to: "/admin/appointments" },
-    { icon: "receipt", tone: "warning", label: "Báo giá chờ khách duyệt", hint: "Nhắc khách phản hồi để bắt đầu sửa", count: data.repair_status.quoting, to: "/admin/repair-orders" },
+    { icon: "dollar", tone: "warning", label: "Báo giá chờ khách duyệt", hint: "Nhắc khách phản hồi để bắt đầu sửa", count: data.repair_status.quoting, to: "/admin/repair-orders" },
     { icon: "box", tone: "violet", label: "Xe chờ phụ tùng", hint: "Theo dõi đơn đặt hàng phụ tùng", count: data.repair_status.waiting_parts, to: "/admin/repair-orders" },
     { icon: "invoice", tone: "danger", label: "Hoá đơn chưa thu đủ", hint: "Công nợ cần thu khi bàn giao", count: kpis.unpaid_invoices.value, to: "/admin/invoices" },
     { icon: "alert", tone: "warning", label: "Phụ tùng dưới mức tối thiểu", hint: data.low_stock.slice(0, 2).map(p => p.name).join(", ") || "Đủ hàng", count: data.low_stock.length, to: "/admin/inventory?tab=stock" },

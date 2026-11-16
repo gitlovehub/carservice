@@ -1,14 +1,24 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Badge, Button, DataTable, EmptyState, Field, IconButton, Input, Modal, NEWEST_FIRST, PageHeader, Pagination, SearchInput, Select, confirmDelete, useAppFeedback, useTableSort, type Column, type SortState } from "../../components/ui";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Button, DataTable, EmptyState, Field, IconButton, Input, Modal, NEWEST_FIRST, PageHeader, Pagination, SearchInput, Select, Switch, confirmDelete, useAppFeedback, useTableSort, type Column, type SortState } from "../../components/ui";
 import { SearchableSelect, type SelectOption } from "../../components/vehicle/SearchableSelect";
+import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import { Icon } from "../../components/ui/Icon";
-import { useAdminQuery } from "./kit/useAdminQuery";import {
-  adminVehicleCatalogApi, type AdminLevel, type CatalogBrand, type CatalogModel, type CatalogStatus, type CatalogTrim, type Paginated,
+import { useAdminQuery } from "./kit/useAdminQuery";
+import { fmtDate, fmtDateTime } from "../../services/adminApi";
+import {
+  adminVehicleCatalogApi, brandLogoUrl, loadBrandLogos, type AdminLevel, type CatalogBrand, type CatalogModel, type CatalogStatus, type CatalogTrim, type Paginated,
 } from "../../services/vehicleCatalog";
 
 type Row = CatalogBrand | CatalogModel | CatalogTrim;
 type Filters = { search: string; status: "" | CatalogStatus; brandId: number | null; modelId: number | null; page: number };
-type FormState = { id: number | null; name: string; status: CatalogStatus; brandId: number | null; modelId: number | null; bodyType: string };
+type FormState = {
+  id: number | null; name: string; status: CatalogStatus; brandId: number | null; modelId: number | null; bodyType: string;
+  /** Logo hãng: link Admin dán, ảnh mới đã xử lý (base64), logo đang lưu (phiên bản), có bỏ logo không. */
+  logoLink: string; logoPng: string | null; logoVersion: number | null;
+};
+const emptyLogo = { logoLink: "", logoPng: null, logoVersion: null };
+/** Logo hãng cạnh tên trong ô chọn hãng. */
+const brandIcon = (name: string) => <VehicleBrandLogo brand={name} size={24}/>;
 
 const LEVELS: Record<AdminLevel, { tab: string; noun: string; add: string }> = {
   brands: { tab: "Hãng xe", noun: "hãng xe", add: "Thêm hãng xe" },
@@ -62,6 +72,58 @@ function useParentOptions(level: "brands" | "models", brandId: number | null, en
   return { options: state.key === key ? state.options : [], loading: key !== null && state.key !== key };
 }
 
+/**
+ * Logo hãng trong modal: dán link ảnh → "Xử lý ảnh" (server tách nền thành PNG trong suốt, cắt gọn 256²)
+ * → xem trước trên nền sáng và nền tối → bấm Lưu mới ghi. Chưa có logo tải lên thì dùng logo có sẵn / chữ cái đầu.
+ */
+function BrandLogoField({ form, busy, error, onLink, onProcess }: {
+  form: FormState; busy: boolean; error: string;
+  onLink: (link: string) => void; onProcess: (file?: File) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const pickFile = (file: File | null | undefined) => { if (file) onProcess(file); };
+  const preview = form.logoPng
+    ? `data:image/png;base64,${form.logoPng}`
+    : form.id !== null && form.logoVersion ? brandLogoUrl(form.id, form.logoVersion) : null;
+  const status = form.logoPng ? "Logo mới — bấm Lưu để áp dụng"
+    : preview ? "Logo đang dùng — tải ảnh khác để thay"
+    : form.id === null ? "Bắt buộc — chưa có logo" : "Chưa có logo tải lên — đang dùng logo có sẵn hoặc chữ cái đầu";
+
+  // Bắt buộc khi thêm hãng mới; hãng có sẵn (nhập từ CSV) chưa có logo vẫn sửa / ẩn được.
+  return <Field label="Logo hãng" required={form.id === null} hint="Tải ảnh lên, dán link hoặc dán ảnh (Ctrl+V) — PNG, JPG, WebP… tối đa 5MB. Hệ thống tự tách nền thành PNG trong suốt và cắt gọn vào khung vuông.">
+    <div className="flex flex-col gap-3"
+      onDragOver={event => event.preventDefault()}
+      onDrop={event => { event.preventDefault(); pickFile(event.dataTransfer.files[0]); }}>
+      <div className="flex items-center gap-3">
+        {/* Xem trên nền sáng và nền tối để soi viền sót màu nền. */}
+        {[["bg-white", "Nền sáng"], ["bg-[#1f2329]", "Nền tối"]].map(([bg, label]) => (
+          <span key={label} title={label} className={`flex size-16 shrink-0 items-center justify-center rounded-control border border-cs-border ${bg}`}>
+            {preview
+              ? <img src={preview} alt={`Logo ${form.name}`} className="size-full object-contain p-1.5"/>
+              : bg === "bg-white" ? <VehicleBrandLogo brand={form.name} size={52}/> : <Icon name="tag" size={20} className="text-white/40"/>}
+          </span>
+        ))}
+        <div className="min-w-0 flex-1">
+          <p className={`text-small ${!preview && form.id === null ? "font-semibold text-danger-fg" : "text-cs-text-2"}`}>{status}</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <div className="min-w-48 flex-1">
+          <Input value={form.logoLink} placeholder="Dán link https://…/logo.png hoặc dán ảnh" inputMode="url" onChange={event => onLink(event.target.value)}
+            onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); onProcess(); } }}
+            // Dán ảnh đã sao chép (chụp màn hình, "Copy image") thẳng vào ô này.
+            onPaste={event => { const file = [...event.clipboardData.files].find(f => f.type.startsWith("image/")); if (file) { event.preventDefault(); pickFile(file); } }}/>
+        </div>
+        <Button variant="secondary" icon="refresh" loading={busy && !!form.logoLink.trim()} loadingText="Đang xử lý..." disabled={busy || !form.logoLink.trim()} onClick={() => onProcess()} className="shrink-0">Xử lý link</Button>
+        <Button variant="secondary" icon="upload" loading={busy && !form.logoLink.trim()} loadingText="Đang xử lý..." disabled={busy} onClick={() => fileRef.current?.click()} className="shrink-0">Tải ảnh lên</Button>
+        <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,image/avif" hidden
+          onChange={event => { pickFile(event.target.files?.[0]); event.target.value = ""; }}/>
+      </div>
+      {error && <p role="alert" className="rounded-control bg-danger-soft p-2.5 text-small text-danger-fg">{error}</p>}
+    </div>
+  </Field>;
+}
+
 export default function VehicleCatalog() {
   const { confirm, notify } = useAppFeedback();
   const [level, setLevel] = useState<AdminLevel>("brands");
@@ -72,6 +134,8 @@ export default function VehicleCatalog() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [logoError, setLogoError] = useState("");
 
   // Mặc định mới tạo lên đầu; đổi cột sắp xếp thì về trang 1.
   const tableSort = useTableSort(NEWEST_FIRST, () => setFilters(current => ({ ...current, page: 1 })));
@@ -99,12 +163,32 @@ export default function VehicleCatalog() {
 
   const openForm = (row?: Row) => {
     setFormError("");
+    setLogoError("");
     if (row) {
-      setForm({ id: row.id, name: row.name, status: row.status ?? "ACTIVE", brandId: null, modelId: null, bodyType: (row as CatalogModel).body_type ?? "" });
+      setForm({ id: row.id, name: row.name, status: row.status ?? "ACTIVE", brandId: null, modelId: null, bodyType: (row as CatalogModel).body_type ?? "",
+        ...emptyLogo, logoVersion: (row as CatalogBrand).logo_version ?? null });
     } else {
-      setForm({ id: null, name: "", status: "ACTIVE", brandId: filters.brandId, modelId: filters.modelId, bodyType: "" });
+      setForm({ id: null, name: "", status: "ACTIVE", brandId: filters.brandId, modelId: filters.modelId, bodyType: "", ...emptyLogo });
     }
   };
+
+  /** Dán link / tải file ảnh → server tách nền + cắt gọn → xem trước (chưa lưu, bấm Lưu mới ghi vào hãng). */
+  async function processLogo(file?: File) {
+    const link = form?.logoLink.trim();
+    if (!file && !link) return setLogoError("Dán link hoặc tải ảnh logo lên trước.");
+    if (file && file.size > 5 * 1024 * 1024) return setLogoError("Ảnh không được lớn hơn 5MB.");
+    setLogoBusy(true);
+    setLogoError("");
+    try {
+      const png = file ? await adminVehicleCatalogApi.previewBrandLogoFile(file) : await adminVehicleCatalogApi.previewBrandLogo(link!);
+      // Ảnh từ file: xóa link cũ (nếu có) để không bị bắt "Xử lý ảnh" lại khi Lưu.
+      setForm(current => current && { ...current, logoPng: png, logoLink: file ? "" : current.logoLink });
+    } catch (error) {
+      setLogoError(errorText(error, "Không xử lý được ảnh này."));
+    } finally {
+      setLogoBusy(false);
+    }
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -113,8 +197,11 @@ export default function VehicleCatalog() {
     if (!name) return setFormError("Vui lòng nhập tên.");
     if (form.id === null && level === "models" && !form.brandId) return setFormError("Vui lòng chọn hãng xe.");
     if (form.id === null && level === "trims" && !form.modelId) return setFormError("Vui lòng chọn dòng xe.");
+    if (level === "brands" && form.logoLink.trim() && !form.logoPng) return setFormError("Bấm “Xử lý link” để xem trước logo, hoặc xóa link.");
 
     const body: Record<string, unknown> = { name, status: form.status };
+    if (level === "brands" && form.id === null && !form.logoPng) return setFormError("Vui lòng tải lên hoặc dán link logo hãng.");
+    if (level === "brands" && form.logoPng) body.logo_png = form.logoPng;
     if (level === "models") body.body_type = form.bodyType || null;
     if (form.id === null && level === "models") body.brand_id = form.brandId;
     if (form.id === null && level === "trims") body.model_id = form.modelId;
@@ -126,6 +213,8 @@ export default function VehicleCatalog() {
         ? await adminVehicleCatalogApi.create(level, body)
         : await adminVehicleCatalogApi.update(level, form.id, body);
       notify(response.message, "success");
+      // Đổi logo → tải lại danh sách logo để mọi nơi (khách / admin / cố vấn) hiện logo mới ngay.
+      if (level === "brands" && form.logoPng) void loadBrandLogos(true);
       setForm(null);
       setReload(n => n + 1);
     } catch (error) {
@@ -166,25 +255,31 @@ export default function VehicleCatalog() {
     }
   }
 
-  const statusBadge = (row: Row) => row.status === "INACTIVE"
-    ? <Badge tone="neutral">Đã ẩn</Badge>
-    : <Badge tone="success">Đang hiển thị</Badge>;
+  /** Cột trạng thái: nút gạt kiểu iOS — gạt là ẩn / hiện ngay (thay nút con mắt cũ). */
+  const statusBadge = (row: Row) => <Switch size="sm" checked={row.status !== "INACTIVE"} disabled={busyId !== null}
+    label={row.status === "INACTIVE" ? `Hiển thị lại “${row.name}”` : `Ẩn “${row.name}” khỏi bộ chọn xe`}
+    onChange={() => void toggle(row)}/>;
+
+  /** Ngày tạo (hãng / dòng xe) — dữ liệu nhập từ CSV ban đầu cùng một ngày; thêm tay sau đó sẽ khác. */
+  const createdCell = (row: Row) => <span className="tabular-nums text-cs-text-2" title={fmtDateTime((row as CatalogBrand | CatalogModel).created_at)}>{fmtDate((row as CatalogBrand | CatalogModel).created_at)}</span>;
 
   const columns: Column<Row>[] = level === "brands" ? [
-    { key: "name", sortKey: "name", header: "Hãng xe", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
+    { key: "name", sortKey: "name", header: "Hãng xe", primary: true, render: row => <span className="inline-flex items-center gap-2.5"><VehicleBrandLogo brand={row.name} size={32}/><span className="font-semibold">{row.name}</span></span> },
     { key: "models", sortKey: "models", header: "Dòng xe", align: "center", render: row => <span className="tabular-nums">{(row as CatalogBrand).models_count ?? 0}</span> },
     { key: "trims", sortKey: "trims", header: "Phiên bản", align: "center", render: row => <span className="tabular-nums">{(row as CatalogBrand).trims_count ?? 0}</span> },
+    { key: "created", sortKey: "created", header: "Ngày tạo", hideOnMobile: true, render: createdCell },
     { key: "status", sortKey: "status", header: "Trạng thái", align: "center", render: statusBadge },
   ] : level === "models" ? [
     { key: "name", sortKey: "name", header: "Dòng xe", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
-    { key: "brand", sortKey: "brand", header: "Hãng", render: row => (row as CatalogModel).brand?.name ?? "—" },
+    { key: "brand", sortKey: "brand", header: "Hãng", render: row => { const brand = (row as CatalogModel).brand?.name; return brand ? <span className="inline-flex items-center gap-2"><VehicleBrandLogo brand={brand} size={24}/>{brand}</span> : "—"; } },
     { key: "body", sortKey: "body", header: "Kiểu dáng", hideOnMobile: true, render: row => BODY_TYPES[(row as CatalogModel).body_type ?? ""] ?? "—" },
     { key: "trims", sortKey: "trims", header: "Phiên bản", align: "center", render: row => <span className="tabular-nums">{(row as CatalogModel).trims_count ?? 0}</span> },
     { key: "vehicles", sortKey: "vehicles", header: "Xe khách", align: "center", render: row => <span className="tabular-nums">{(row as CatalogModel).vehicles_count ?? 0}</span> },
+    { key: "created", sortKey: "created", header: "Ngày tạo", hideOnMobile: true, render: createdCell },
     { key: "status", sortKey: "status", header: "Trạng thái", align: "center", render: statusBadge },
   ] : [
     { key: "name", sortKey: "name", header: "Phiên bản", primary: true, render: row => <span className="font-semibold">{row.name}</span> },
-    { key: "model", sortKey: "model", header: "Dòng xe", render: row => { const model = (row as CatalogTrim).model; return model ? `${model.brand?.name ?? ""} ${model.name}`.trim() : "—"; } },
+    { key: "model", sortKey: "model", header: "Dòng xe", render: row => { const model = (row as CatalogTrim).model; return model ? <span className="inline-flex items-center gap-2">{model.brand?.name && <VehicleBrandLogo brand={model.brand.name} size={24}/>}{`${model.brand?.name ?? ""} ${model.name}`.trim()}</span> : "—"; } },
     { key: "vehicles", sortKey: "vehicles", header: "Xe khách", align: "center", render: row => <span className="tabular-nums">{(row as CatalogTrim).vehicles_count ?? 0}</span> },
     { key: "status", sortKey: "status", header: "Trạng thái", align: "center", render: statusBadge },
   ];
@@ -233,7 +328,7 @@ export default function VehicleCatalog() {
           <option value="INACTIVE">Đã ẩn</option>
         </Select>
       </Field>
-      {level !== "brands" && <SearchableSelect label="Hãng xe" placeholder="Tất cả hãng" options={brandOptions.options} loading={brandOptions.loading}
+      {level !== "brands" && <SearchableSelect label="Hãng xe" placeholder="Tất cả hãng" options={brandOptions.options} loading={brandOptions.loading} renderIcon={brandIcon}
         value={filters.brandId} onChange={option => setFilters(current => ({ ...current, brandId: option?.value ?? null, modelId: null, page: 1 }))}/>}
       {level === "trims" && <SearchableSelect label="Dòng xe" placeholder="Tất cả dòng xe" options={modelFilterOptions.options} loading={modelFilterOptions.loading}
         value={filters.modelId} disabled={filters.brandId === null} disabledHint="Chọn hãng để lọc theo dòng xe."
@@ -257,8 +352,6 @@ export default function VehicleCatalog() {
       actions={row => <>
         {level === "brands" && <IconButton icon="arrow-right" label={`Xem dòng xe của ${row.name}`} onClick={() => switchLevel("models", { brandId: row.id })}/>}
         {level === "models" && <IconButton icon="arrow-right" label={`Xem phiên bản của ${row.name}`} onClick={() => switchLevel("trims", { brandId: (row as CatalogModel).brand_id, modelId: row.id })}/>}
-        <IconButton icon={row.status === "INACTIVE" ? "eye" : "lock"} label={row.status === "INACTIVE" ? "Hiển thị lại" : "Ẩn khỏi bộ chọn xe"}
-          loading={busyId === row.id} disabled={busyId !== null} onClick={() => void toggle(row)}/>
         <IconButton icon="edit" label="Chỉnh sửa" disabled={busyId !== null} onClick={() => openForm(row)}/>
         {level === "trims" && <IconButton icon="trash" tone="danger" label="Xóa phiên bản" disabled={busyId !== null} onClick={() => void remove(row)}/>}
       </>}
@@ -273,7 +366,7 @@ export default function VehicleCatalog() {
         <Button type="submit" form="vehicle-catalog-form" variant="primary" icon="check" loading={saving} loadingText="Đang lưu...">Lưu</Button>
       </>}>
       {form && <form id="vehicle-catalog-form" onSubmit={event => void submit(event)} className="flex flex-col gap-4">
-        {form.id === null && level !== "brands" && <SearchableSelect label="Hãng xe" placeholder="Chọn hãng xe…" required
+        {form.id === null && level !== "brands" && <SearchableSelect label="Hãng xe" placeholder="Chọn hãng xe…" required renderIcon={brandIcon}
           options={brandOptions.options} loading={brandOptions.loading} value={form.brandId}
           onChange={option => setForm(current => current && { ...current, brandId: option?.value ?? null, modelId: null })}/>}
         {form.id === null && level === "trims" && <SearchableSelect label="Dòng xe" placeholder="Chọn dòng xe…" required
@@ -284,18 +377,24 @@ export default function VehicleCatalog() {
           <Input value={form.name} maxLength={level === "trims" ? 150 : 100} autoFocus
             onChange={event => setForm(current => current && { ...current, name: event.target.value })}/>
         </Field>
+        {level === "brands" && <BrandLogoField form={form} busy={logoBusy} error={logoError}
+          onLink={link => setForm(current => current && { ...current, logoLink: link, logoPng: null })}
+          onProcess={file => void processLogo(file)}/>}
         {level === "models" && <Field label="Kiểu dáng" optional>
           <Select value={form.bodyType} onChange={event => setForm(current => current && { ...current, bodyType: event.target.value })}>
             <option value="">Chưa phân loại</option>
             {Object.entries(BODY_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </Select>
         </Field>}
-        <Field label="Trạng thái" hint="Đã ẩn: không xuất hiện trong bộ chọn xe, xe đã lưu vẫn giữ nguyên.">
-          <Select value={form.status} onChange={event => setForm(current => current && { ...current, status: event.target.value as CatalogStatus })}>
-            <option value="ACTIVE">Đang hiển thị</option>
-            <option value="INACTIVE">Đã ẩn</option>
-          </Select>
-        </Field>
+        {/* Trạng thái: nút gạt kiểu iOS — bật = hiển thị trong bộ chọn xe. */}
+        <div className="flex items-center justify-between gap-4 rounded-control border border-cs-border px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-small font-semibold text-cs-text">{form.status === "ACTIVE" ? "Đang hiển thị" : "Đã ẩn"}</p>
+            <p className="text-caption text-cs-muted">Đã ẩn: không xuất hiện trong bộ chọn xe, xe đã lưu vẫn giữ nguyên.</p>
+          </div>
+          <Switch checked={form.status === "ACTIVE"} label="Hiển thị trong bộ chọn xe"
+            onChange={on => setForm(current => current && { ...current, status: on ? "ACTIVE" : "INACTIVE" })}/>
+        </div>
         {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg">{formError}</p>}
       </form>}
     </Modal>

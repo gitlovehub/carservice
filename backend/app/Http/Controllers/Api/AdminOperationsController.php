@@ -14,6 +14,7 @@ use App\Models\RepairOrder;
 use App\Models\Review;
 use App\Models\TechnicianProfile;
 use App\Models\WorkItem;
+use App\Services\CustomerNotifier;
 use App\Support\VehicleName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -313,13 +314,19 @@ class AdminOperationsController extends Controller
     }
 
     /** POST /api/admin/reviews/{review}/reply */
-    public function replyReview(Request $request, Review $review): JsonResponse
+    public function replyReview(Request $request, Review $review, CustomerNotifier $notifier): JsonResponse
     {
         $data = $request->validate(['reply' => ['required', 'string', 'max:2000']], ['reply.required' => 'Vui lòng nhập nội dung phản hồi.']);
         $reply = trim($data['reply']);
         abort_if($reply === '', 422, 'Vui lòng nhập nội dung phản hồi.');
 
+        $isNewReply = $review->reply !== $reply;
         $review->update(['reply' => $reply, 'replied_at' => now()]);
+
+        // Báo khách khi có phản hồi mới (gửi lại đúng nội dung cũ thì không báo trùng).
+        if ($isNewReply && $review->repairOrder) {
+            $notifier->reviewReplied($review->repairOrder);
+        }
 
         return response()->json(['message' => 'Đã gửi phản hồi.', 'data' => $this->reviewRow($review->fresh($this->reviewRelations()))]);
     }

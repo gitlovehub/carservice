@@ -93,6 +93,9 @@ Route::controller(VehicleCatalogController::class)
     ->name('vehicle-catalog.')
     ->group(function (): void {
         Route::get('brands', 'brands')->name('brands');
+        // Logo hãng do Admin tải lên (danh sách để FE đồng bộ + ảnh PNG từng hãng).
+        Route::get('brand-logos', 'brandLogos')->name('brand-logos');
+        Route::get('brands/{brand}/logo', 'brandLogo')->whereNumber('brand')->name('brand-logo');
         Route::get('brands/{brand}/models', 'models')->whereNumber('brand')->name('models');
         Route::get('models/{model}/trims', 'trims')->whereNumber('model')->name('trims');
         Route::get('search', 'search')->name('search');
@@ -175,8 +178,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Thanh toán hóa đơn qua VNPay
         Route::post('me/invoices/{invoice}/vnpay', [VnpayController::class, 'create'])->middleware(['throttle:10,1', 'idempotency']);
 
-        // Thông báo của khách (đổi lịch, phụ tùng về): chỉ đọc/sửa bản ghi thuộc tài khoản đang đăng nhập.
+        // Thông báo của khách (chuông header, tạo qua CustomerNotifier): chỉ đọc/sửa bản ghi thuộc tài khoản đang đăng nhập.
         Route::get('me/notifications', [CustomerNotificationController::class, 'index']);
+        Route::patch('me/notifications/read-all', [CustomerNotificationController::class, 'markAllRead']);
         Route::patch('me/notifications/{notification}/read', [CustomerNotificationController::class, 'markRead'])->whereNumber('notification');
 
         // Đánh giá dịch vụ
@@ -372,6 +376,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('vehicle-catalog/summary', 'summary');
             Route::get('vehicle-brands', 'brandIndex');
             Route::post('vehicle-brands', 'brandStore');
+            // Dán link ảnh → tách nền + cắt gọn → xem trước (chưa lưu). Giới hạn lượt vì phải tải ảnh từ ngoài.
+            Route::post('vehicle-brands/logo-preview', 'brandLogoPreview')->middleware('throttle:20,1');
             Route::patch('vehicle-brands/{brand}', 'brandUpdate')->whereNumber('brand');
 
             Route::get('vehicle-models', 'modelIndex');

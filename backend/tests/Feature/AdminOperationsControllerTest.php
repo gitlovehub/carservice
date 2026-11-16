@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\Invoice;
+use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\RepairOrder;
 use App\Models\Review;
@@ -163,6 +164,25 @@ class AdminOperationsControllerTest extends TestCase
 
         $this->patchJson("/api/admin/reviews/{$five->id}", ['is_hidden' => true])->assertOk()->assertJsonPath('data.hidden', true);
         $this->getJson('/api/admin/reviews')->assertJsonPath('summary.visible', 2);
+    }
+
+    public function test_reply_notifies_customer_once_per_new_reply(): void
+    {
+        $account = Account::factory()->create();
+        $order = $this->order(RepairOrder::HANDED_OVER);
+        $order->customer->update(['account_id' => $account->id]);
+        $review = Review::query()->create([
+            'repair_order_id' => $order->id, 'customer_id' => $order->customer_id, 'overall_rating' => 3,
+        ]);
+
+        $this->postJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Cảm ơn anh/chị.'])->assertOk();
+        $this->postJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Cảm ơn anh/chị.'])->assertOk();
+
+        $this->assertSame(1, Notification::query()->where('account_id', $account->id)->where('type', Notification::TYPE_REVIEW_REPLIED)->count());
+        $this->assertDatabaseHas('notifications', ['account_id' => $account->id, 'repair_order_id' => $review->repair_order_id, 'type' => Notification::TYPE_REVIEW_REPLIED]);
+
+        $this->postJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Gara đã liên hệ lại anh/chị.'])->assertOk();
+        $this->assertSame(2, Notification::query()->where('account_id', $account->id)->where('type', Notification::TYPE_REVIEW_REPLIED)->count());
     }
 
     public function test_audit_logs_are_labelled_and_filterable(): void

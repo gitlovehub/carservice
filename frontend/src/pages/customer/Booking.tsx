@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Button, Modal, buttonClass } from "../../components/ui";
+import { Button, buttonClass } from "../../components/ui";
+import ContactEditModal from "../../components/customer/ContactEditModal";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -12,6 +13,8 @@ import {
   type CatalogItem,
 } from "../../services/bookingCatalog";
 import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
+import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
+import { clearServicePicks, readServicePicks, syncServicePicks } from "../../services/servicePicks";
 import { emptySelection, selectionFromVehicle, type VehicleSelection } from "../../services/vehicleCatalog";
 import BookingSummary from "./booking/BookingSummary";
 import { ReferenceBanner } from "../showcase/ReferenceShell";
@@ -22,6 +25,7 @@ import ServicePicker from "./booking/ServicePicker";
 import BookingReviewModal from "./booking/BookingReviewModal";
 import { logout } from "../auth/auth";
 import { getStatus, type StatusTone } from "../../config/status";
+import { formatLicensePlate } from "../../services/licensePlate";
 
 type SavedVehicle = {
   id: number;
@@ -38,29 +42,6 @@ type SavedVehicle = {
 const MORNING_SLOTS = ["08:00", "09:00", "09:30", "10:30", "11:15"];
 const AFTERNOON_SLOTS = ["13:30", "14:15", "15:00", "16:00", "16:45"];
 
-// Tự động format biển số xe theo chuẩn VN (VD: 30A-123.45 hoặc 51K-888.88 hoặc 29A-1234)
-function formatLicensePlate(input: string): string {
-  const clean = input.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (!clean) return "";
-
-  // Bắt đầu bằng 2 số tỉnh + 1 hoặc 2 chữ cái (VD: 30K, 29LD)
-  const match = clean.match(/^([0-9]{2}[A-Z]{1,2})([0-9]*)$/);
-  if (match) {
-    const prefix = match[1];
-    const nums = match[2];
-    if (!nums) return prefix;
-    if (nums.length <= 4) {
-      return `${prefix}-${nums}`;
-    }
-    // 5 số: 3 số đầu + '.' + 2 số cuối (VD: 30K-888.88)
-    const p1 = nums.slice(0, 3);
-    const p2 = nums.slice(3, 5);
-    return `${prefix}-${p1}.${p2}`;
-  }
-
-  return clean;
-}
-
 const WEEKDAY_FULL = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
 
 /** Đầu thẻ của một bước: ô icon + tiêu đề + mô tả; nền hồng (sáng) / tối, tuỳ chọn ảnh xe mờ ở bên phải. */
@@ -74,70 +55,7 @@ const STATUS_TONE_CLASS: Record<StatusTone, string> = {
   accent: "bg-cs-soft text-cs-accent-text",
 };
 
-const VIETNAM_PHONE_REGEX =/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
-
-/** Cập nhật nhanh họ tên + SĐT ngay ở bước xác nhận (PATCH /me/profile) — không rời trang đặt lịch. */
-function QuickContactModal({ contact, onClose, onSaved }: { contact: CustomerContact; onClose: () => void; onSaved: (c: CustomerContact) => void }) {
-  const [name, setName] = useState(contact.name);
-  const [phone, setPhone] = useState(contact.phone);
-  const [errs, setErrs] = useState<{ name?: string; phone?: string; form?: string }>({});
-  const [saving, setSaving] = useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const n = name.trim(), p = phone.trim();
-    const next: typeof errs = {};
-    if (n.length < 2) next.name = "Họ và tên phải có ít nhất 2 ký tự.";
-    else if (n.length > 100) next.name = "Họ và tên không được vượt quá 100 ký tự.";
-    if (!VIETNAM_PHONE_REGEX.test(p)) next.phone = "Số điện thoại không hợp lệ (10 chữ số, ví dụ: 0912345678).";
-    setErrs(next);
-    if (Object.keys(next).length) return;
-
-    setSaving(true);
-    try {
-      const res = await fetchApi("/me/profile", { method: "PATCH", body: JSON.stringify({ full_name: n, phone: p }) });
-      if (res?.account) {
-        localStorage.setItem("user", JSON.stringify(res.account));
-        window.dispatchEvent(new Event("user-updated"));
-      }
-      onSaved({ ...contact, name: res?.account?.customer?.full_name ?? n, phone: res?.account?.customer?.phone ?? p });
-    } catch (err: unknown) {
-      setErrs({ form: (err as { data?: { message?: string } })?.data?.message || "Không lưu được thông tin. Vui lòng thử lại." });
-      setSaving(false);
-    }
-  };
-
-  const field = (bad?: string) => `mt-1.5 w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#e11d2e] focus:ring-2 focus:ring-[#e11d2e]/15 ${bad ? "border-rose-400" : "border-slate-300"}`;
-
-  return (
-    <Modal open onClose={onClose} dismissible={!saving} size="md" title="Cập nhật thông tin liên hệ"
-      description="Gara dùng thông tin này để xác nhận lịch hẹn với bạn."
-      footer={<>
-        <button type="button" className={buttonClass({ variant: "secondary" })} onClick={onClose} disabled={saving}>Hủy</button>
-        <button type="submit" form="quick-contact-form" className={buttonClass({ variant: "primary" })} disabled={saving}>{saving ? "Đang lưu..." : "Lưu thông tin"}</button>
-      </>}>
-      <form id="quick-contact-form" onSubmit={submit} className="space-y-4" noValidate>
-        <label className="block text-sm font-semibold text-slate-800">Họ và tên <span className="text-rose-500">*</span>
-          <input autoFocus value={name} onChange={(e) => { setName(e.target.value); setErrs((x) => ({ ...x, name: undefined })); }} className={field(errs.name)} placeholder="Nhập họ và tên"/>
-          {errs.name && <span className="mt-1 block text-xs font-medium text-rose-500">{errs.name}</span>}
-        </label>
-        <label className="block text-sm font-semibold text-slate-800">Số điện thoại <span className="text-rose-500">*</span>
-          <input type="tel" inputMode="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setErrs((x) => ({ ...x, phone: undefined })); }} className={field(errs.phone)} placeholder="Ví dụ: 0912345678"/>
-          {errs.phone && <span className="mt-1 block text-xs font-medium text-rose-500">{errs.phone}</span>}
-        </label>
-        {contact.email && (
-          <label className="block text-sm font-semibold text-slate-800">Email
-            <input value={contact.email} disabled className="mt-1.5 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-sm text-slate-500"/>
-            <span className="mt-1 block text-xs font-normal text-slate-400">Email đăng nhập không đổi được ở đây.</span>
-          </label>
-        )}
-        {errs.form && <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">{errs.form}</p>}
-      </form>
-    </Modal>
-  );
-}
-
-type VehicleOption = { id: number | null; name: string; sub: string };
+type VehicleOption = { id: number | null; name: string; sub: string; brand?: string | null };
 
 /** Xe chưa có biển số cùng dòng xe + phiên bản = cùng một xe → chỉ hiện 1 thẻ (ưu tiên xe đang chọn).
     Biển số khác nhau mới là các xe khác nhau. */
@@ -202,7 +120,10 @@ function SavedVehicleSlider({ options, selectedId, onSelect }: { options: Vehicl
           return (
             <button key={opt.id ?? "new"} type="button" role="radio" aria-checked={on} onClick={() => onSelect(opt.id)}
               className={`relative flex shrink-0 basis-[calc((100%-0.625rem)/1.5)] snap-start items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition sm:basis-[calc((100%-1.25rem)/2.5)] lg:basis-[calc((100%-1.875rem)/3.5)] ${on ? "border-[#e11d2e] bg-[#fff1f2] shadow-[0_8px_20px_#e11d2e1f] dark:bg-[var(--cs-soft)]" : "border-slate-200 bg-white hover:border-[#e11d2e]"}`}>
-              <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${on ? "bg-[#e11d2e] text-white" : "bg-slate-100 text-slate-500"}`}><Icon name={opt.id === null ? "plus" : "car"} size={18}/></span>
+              {opt.id === null
+                ? <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${on ? "bg-[#e11d2e] text-white" : "bg-slate-100 text-slate-500"}`}><Icon name="plus" size={18}/></span>
+                // Xe đã lưu: logo hãng (logo Admin tải lên / có sẵn / chữ cái đầu).
+                : <VehicleBrandLogo brand={opt.brand} size={40} className="rounded-xl"/>}
               <span className="min-w-0"><span className="block truncate text-sm font-bold text-slate-900">{opt.name}</span><span className="block truncate text-xs text-slate-500">{opt.sub}</span></span>
               {on && <span className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-[#e11d2e] text-white shadow"><Icon name="check" size={13}/></span>}
             </button>
@@ -277,7 +198,7 @@ function readStoredContact(): CustomerContact {
 
 export default function Booking() {
   const { notify } = useAppFeedback();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -286,7 +207,7 @@ export default function Booking() {
   const [draft] = useState<BookingDraft | null>(() => {
     const saved = readDraft();
     if (!saved || !draftHasContent(saved)) return null;
-    const hasDeepLink = ["service", "package", "vehicle_id", "symptom"].some((k) => searchParams.has(k));
+    const hasDeepLink = ["service", "services", "package", "vehicle_id", "symptom"].some((k) => searchParams.has(k));
     return saved.awaitingLogin || !hasDeepLink ? saved : null;
   });
   const draftDateIndex = draft ? Array.from({ length: 8 }, (_, i) => isoDay(i)).indexOf(draft.date) : -1;
@@ -314,13 +235,44 @@ export default function Booking() {
     groups: [],
     error: "",
   });
-  const [selectedKeys, setSelectedKeys] = useState<string[]>(() => draft?.selectedKeys ?? []);
+  // Dịch vụ / gói khách bấm "Đặt lịch" ở trang khác (?service=ID, ?services=1,2,3, ?package=ID): đưa vào
+  // lựa chọn NGAY từ bước 1 → được lưu vào nháp luôn (rời trang / đăng nhập giữa chừng vẫn còn). Sang bước 2,
+  // mục nào không áp dụng cho dòng xe đã chọn sẽ bị bỏ khi danh mục tải xong.
+  const [linkedKeys] = useState<string[]>(() => {
+    const serviceIds = [searchParams.get("service"), ...(searchParams.get("services") ?? "").split(",")]
+      .map((id) => (id ?? "").trim()).filter((id) => /^\d+$/.test(id));
+    const packageId = (searchParams.get("package") ?? "").trim();
+    const fromLink = [...serviceIds.map((id) => `service:${id}`), ...(/^\d+$/.test(packageId) ? [`package:${packageId}`] : [])];
+    // Vào Đặt lịch từ menu (không mang lựa chọn, không có nháp): dùng dịch vụ khách đang tick ở trang Dịch vụ.
+    const fromPicks = fromLink.length === 0 && !draft ? readServicePicks().ids.map((id) => `service:${id}`) : [];
+    return [...new Set([...fromLink, ...fromPicks])];
+  });
+  // Luôn GỘP mục trong link vào lựa chọn — kể cả khi khôi phục nháp (vd. nháp chờ đăng nhập) — để bấm "Đặt lịch"
+  // ở dịch vụ / gói nào thì dịch vụ đó chắc chắn có ở bước 2.
+  const [selectedKeys, setSelectedKeys] = useState<string[]>(() => [...new Set([...(draft?.selectedKeys ?? []), ...linkedKeys])]);
+  // Mục vừa mang sang từ link: sáng nhẹ MỘT lần khi khách tới bước 2 để biết đã có sẵn ở đây.
+  const [flashKeys, setFlashKeys] = useState<string[]>(() => linkedKeys.filter((key) => !(draft?.selectedKeys ?? []).includes(key)));
+
+  // Lựa chọn từ link đã nằm trong state + nháp → bỏ ?service / ?services / ?package / ?symptom khỏi URL, để tải lại
+  // trang không "nhét lại" dịch vụ khách vừa xóa. (Đăng nhập giữa chừng vẫn quay về đúng form nhờ nháp.)
+  useEffect(() => {
+    if (!["service", "services", "package", "symptom"].some((key) => searchParams.has(key))) return;
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      ["service", "services", "package", "symptom"].forEach((key) => next.delete(key));
+      return next;
+    }, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  // Đồng bộ kho lựa chọn chung (trang Dịch vụ / chi tiết nhóm dịch vụ) theo đúng dịch vụ đang chọn ở đây:
+  // khách xóa dịch vụ ở bước 2 thì nơi khác cũng bỏ tick.
+  useEffect(() => {
+    syncServicePicks(selectedKeys.filter((key) => key.startsWith("service:")).map((key) => Number(key.slice("service:".length))));
+  }, [selectedKeys]);
   // ?symptom=... (từ mục "Xe bạn có dấu hiệu này?" ở trang chủ) điền sẵn mô tả triệu chứng.
   const [symptom, setSymptom] = useState(() => draft?.symptom ?? (searchParams.get("symptom") ?? "").slice(0, 500));
   const [mileage, setMileage] = useState(() => draft?.mileage ?? "");
   const [debouncedMileage, setDebouncedMileage] = useState(() => draft?.mileage ?? "");
-  // Đã khôi phục nháp thì không áp ?service / ?package của URL đè lên lựa chọn cũ.
-  const deepLinkApplied = useRef(Boolean(draft));
   const dayStripRef = useRef<HTMLDivElement>(null);
 
   // Bước 3: Ngày & Giờ — ngày trong nháp đã quá hạn (ngoài 8 ngày tới) thì chọn lại từ đầu.
@@ -488,18 +440,8 @@ export default function Booking() {
         if (cancelled) return;
         setCatalog({ requestKey: catalogRequestKey, groups, error: "" });
         const available = indexCatalogItems(groups);
-        setSelectedKeys((keys) => {
-          const kept = keys.filter((key) => available.has(key));
-          if (deepLinkApplied.current) return kept;
-          deepLinkApplied.current = true;
-          const serviceParam = searchParams.get("service");
-          const packageParam = searchParams.get("package");
-          const linked = [
-            serviceParam ? `service:${serviceParam}` : null,
-            packageParam ? `package:${packageParam}` : null,
-          ].filter((key): key is string => key !== null && available.has(key) && !kept.includes(key));
-          return [...kept, ...linked];
-        });
+        // Bỏ mục không áp dụng cho dòng xe đang chọn (hàm cập nhật thuần — không đổi ref/state khác bên trong).
+        setSelectedKeys((keys) => keys.filter((key) => available.has(key)));
       })
       .catch(() => {
         if (cancelled) return;
@@ -513,7 +455,7 @@ export default function Booking() {
     return () => {
       cancelled = true;
     };
-  }, [catalogNeeded, catalogRequestKey, selectedModelId, vehicleBrand, effectiveModelName, debouncedMileage, searchParams]);
+  }, [catalogNeeded, catalogRequestKey, selectedModelId, vehicleBrand, effectiveModelName, debouncedMileage]);
 
   const catalogGroups = catalog.groups;
   const itemsByKey = useMemo(() => indexCatalogItems(catalogGroups), [catalogGroups]);
@@ -694,6 +636,8 @@ export default function Booking() {
       setBookingStatus(response?.data?.status ?? "PENDING");
       setReviewOpen(false);
       clearDraft();
+      // Dịch vụ đã chọn ở trang chi tiết nhóm dịch vụ đã vào lịch hẹn → xóa để lần sau bắt đầu mới.
+      clearServicePicks();
       setRestoredNotice(false);
       goToStep(SUCCESS_STEP);
 
@@ -828,7 +772,7 @@ export default function Booking() {
                   <SavedVehicleSlider
                     options={[
                       { id: null, name: "Xe mới", sub: "Chọn hãng, dòng xe bên dưới" },
-                      ...dedupePlatelessVehicles(savedVehicles, selectedSavedVehicleId).map((v) => ({ id: v.id as number | null, name: [v.model?.brand?.name, v.model?.name, v.trim?.name].filter(Boolean).join(" ") || "Xe của bạn", sub: v.license_plate || "Chưa có biển số" })),
+                      ...dedupePlatelessVehicles(savedVehicles, selectedSavedVehicleId).map((v) => ({ id: v.id as number | null, brand: v.model?.brand?.name, name: [v.model?.brand?.name, v.model?.name, v.trim?.name].filter(Boolean).join(" ") || "Xe của bạn", sub: v.license_plate || "Chưa có biển số" })),
                     ]}
                     selectedId={selectedSavedVehicleId}
                     onSelect={handleSelectSavedVehicle}
@@ -860,6 +804,8 @@ export default function Booking() {
                   loading={catalogLoading}
                   loadError={catalog.error}
                   selectedKeys={selectedKeys}
+                  flashKeys={flashKeys}
+                  onFlashDone={(key) => setFlashKeys((keys) => keys.filter((k) => k !== key))}
                   onSelectedKeysChange={(keys) => {
                     setSelectedKeys(keys);
                     clearError("services");
@@ -1020,7 +966,7 @@ export default function Booking() {
                   </section>
                 ) : null}
                 {isLoggedIn && contactModalOpen && (
-                  <QuickContactModal contact={contact} onClose={() => setContactModalOpen(false)}
+                  <ContactEditModal contact={contact} description="Gara dùng thông tin này để xác nhận lịch hẹn với bạn." onClose={() => setContactModalOpen(false)}
                     onSaved={(c) => { setContact(c); setContactModalOpen(false); notify("Đã cập nhật thông tin liên hệ.", "success"); }}/>
                 )}
                 {!isLoggedIn && (
@@ -1106,7 +1052,7 @@ export default function Booking() {
                     </div>
                     <div className="grid border-b border-slate-200 sm:grid-cols-2">
                       <div className="flex items-center gap-4 px-5 py-4 max-sm:border-b max-sm:border-slate-200 sm:border-r sm:border-slate-200">
-                        <span className="text-slate-600"><Icon name="car" size={28}/></span>
+                        <VehicleBrandLogo brand={vehicleBrand} size={40} className="rounded-xl"/>
                         <div className="min-w-0"><p className="text-sm text-slate-500">Xe sử dụng</p><p className="truncate text-base font-extrabold text-slate-900 sm:text-lg">{vehicleLabel}</p></div>
                       </div>
                       <div className="flex items-center gap-4 px-5 py-4">

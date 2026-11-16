@@ -20,7 +20,10 @@ assert.doesNotMatch(header, /href: "\/#services"/);
 assert.match(header, /session\.account\.role === "ADMIN" \? "\/admin\/appointments"/);
 assert.match(header, /session\.account\.role === "ADVISOR" \? "\/advisor\/appointments"/);
 assert.match(app, /<Route path="\/booking" element={<Booking\/>}\/>/);
-assert.match(app, /<Route path="\/appointments" element={<ReferenceAppointments\/>}\/>/);
+// Lịch hẹn chỉ còn một trang trong khu tài khoản; URL cũ chuyển hướng về đó.
+assert.match(app, /<Route path="\/appointments" element={<Navigate to="\/customer\/appointments" replace\/>}\/>/);
+assert.match(app, /<Route path="\/customer\/appointments" element={<Appointments\/>}\/>/);
+assert.match(app, /<Route path="\/customer\/appointments\/manage" element={<Navigate to="\/customer\/appointments" replace\/>}\/>/);
 // Đặt lịch: công khai (khách điền trước), vẫn trong khung CustomerLayout; tới bước gửi mới bắt đăng nhập,
 // nháp được lưu và đăng nhập xong quay lại /booking.
 const protectedGroup=app.indexOf('allowedRoles={["CUSTOMER"]}><CustomerLayout/>');

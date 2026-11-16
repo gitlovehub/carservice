@@ -3,6 +3,7 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import {
   createAdvisorVehicle,
   deleteAdvisorVehicle,
@@ -418,12 +419,17 @@ function CustomerCars() {
                           </td>
 
                           <td className="px-5 py-4">
-                            <p className="text-[12px] font-semibold">
-                              {car.model?.brand?.name || "Chưa xác định"}
-                            </p>
-                            <p className="mt-1 text-[11px] text-cs-muted">
-                              {car.model?.name || car.variant || "Chưa xác định"}
-                            </p>
+                            <div className="flex items-center gap-2.5">
+                              {car.model?.brand?.name && <VehicleBrandLogo brand={car.model.brand.name} size={32}/>}
+                              <div className="min-w-0">
+                                <p className="text-[12px] font-semibold">
+                                  {car.model?.brand?.name || "Chưa xác định"}
+                                </p>
+                                <p className="mt-1 text-[11px] text-cs-muted">
+                                  {car.model?.name || car.variant || "Chưa xác định"}
+                                </p>
+                              </div>
+                            </div>
                           </td>
 
                           <td className="px-5 py-4 text-[12px] text-cs-muted">

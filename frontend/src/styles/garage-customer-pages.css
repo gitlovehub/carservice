@@ -89,5 +89,12 @@ html[data-theme="light"] .at-track-status-muted{background:#eceff3!important;col
 
 /* Khu "Hồ sơ của tôi": mọi trang dùng chung một kiểu tiêu đề (trước đây 30px / 46px, đậm 700 / 800 tùy trang).
    CSS ngoài @layer nên thắng class tiện ích Tailwind của các trang cũ. */
-.cs-account-content h1{font:700 clamp(28px,3.6vw,40px)/1.18 var(--font-sans);letter-spacing:.005em;color:var(--cs-text);margin-top:0}
+/* Cỡ chữ tiêu đề do AccountHeader (pages/customer/account/AccountKit.tsx) quyết định — chỉ bỏ lề trên ở đây. */
+.cs-account-content h1{margin-top:0}
 .cs-account-content > :is(.at-customer-page,main,section),.cs-account-content > * > :is(.at-customer-page,main){padding-top:0}
+/* Khoảng cách đều: khung (CustomerAccountLayout) đã tạo đúng 24px giữa breadcrumb – sidebar – nội dung.
+   Bỏ lề/độ rộng riêng mà từng trang cũ tự thêm (lề ngang 22–34px, lùi trái 250px của sidebar cũ, max-width + margin auto). */
+.cs-account-content > :is(.at-customer-page,main,section),.cs-account-content > * > :is(.at-customer-page,main){padding-left:0;padding-right:0;padding-bottom:0;margin-left:0;margin-right:0;max-width:none;min-height:0;width:auto}
+.cs-account-content .at-customer-container{max-width:none;margin:0}
+/* Trang cũ (Hóa đơn, Thanh toán…) bọc thêm một lớp canh giữa có lề: <main><div class="mx-auto max-w-[1200px] px-6 py-10"> */
+.cs-account-content main > .mx-auto:first-child{margin-left:0;margin-right:0;padding:0}

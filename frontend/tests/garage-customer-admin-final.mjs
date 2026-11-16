@@ -12,7 +12,7 @@ for(const module of ['accounts','services','inventory','reports']) assert.ok(nav
 for(const name of ['Accounts','Inventory','Services','Reports']) assert.doesNotMatch(read(`pages/admin/${name}.tsx`), /AdminHubNav/, `${name} must not duplicate the sidebar`);
 const appointment = read('pages/customer/Appointments.tsx');
 // Breadcrumb trang trí "GARA CỦA TÔI / …" đã bỏ theo yêu cầu (thừa); trang vẫn có tiêu đề riêng.
-assert.match(appointment, /<h1>Lịch hẹn của tôi<\/h1>/);
+assert.match(appointment, /<AccountPage[\s\S]*?title="Lịch hẹn"/, 'Appointments uses the shared account page frame');
 assert.doesNotMatch(appointment, /GARA CỦA TÔI \//);
 assert.match(appointment, /getMyAppointments\(/);
 assert.match(appointment, /await updateAppointment\(/);

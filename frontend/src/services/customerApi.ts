@@ -15,6 +15,11 @@ export type CustomerVehicle = {
   trim_id?: number | null;
   model?: { id?: number; name?: string; brand?: VehicleBrand } | null;
   trim?: { id: number; name: string; status?: string } | null;
+  created_at?: string | null;
+  vin?: string | null;
+  note?: string | null;
+  /** Số phiếu sửa chữa của xe; > 0 → đã có lịch sử, không đổi được hãng/dòng/phiên bản/năm. */
+  repair_orders_count?: number;
 };
 
 export type AppointmentStatus =
@@ -95,6 +100,11 @@ export type CustomerQuotation = {
   items?: QuotationItem[];
 };
 
+export type CustomerWorkItem = {
+  id: number; description?: string | null; status?: string; started_at?: string | null; completed_at?: string | null;
+  technician?: { id: number; employee?: { id: number; full_name: string } | null } | null;
+};
+
 export type CustomerRepairOrder = {
   id: number;
   /** Biên bản giao nhận đã gửi khách (P2). */
@@ -120,9 +130,17 @@ export type CustomerRepairOrder = {
   vehicle?: CustomerVehicle | null;
   statusHistory?: { id: number; status: string; note?: string | null; created_at?: string | null }[];
   status_history?: { id: number; status: string; note?: string | null; created_at?: string | null }[];
-  work_items?: { id: number; description?: string | null; status?: string }[];
-  workItems?: { id: number; description?: string | null; status?: string }[];
+  work_items?: CustomerWorkItem[];
+  workItems?: CustomerWorkItem[];
   quotations?: CustomerQuotation[];
+  /** Màn chi tiết lịch sử dịch vụ: chỉ tên người phụ trách (không có SĐT/tài khoản nhân viên). */
+  advisor?: { id: number; full_name: string } | null;
+  used_parts?: Array<{ id: number; work_item_id?: number | null; quantity: number | string; unit_price: number | string; used_at?: string | null; part?: { id: number; name: string; unit?: string | null } | null }>;
+  appointment?: {
+    id: number; appointment_code?: string; request_type?: string; symptom_description?: string | null;
+    services?: { id: number; name: string }[]; packages?: { id: number; name: string }[];
+  } | null;
+  initial_condition?: string | null;
   invoice?: {
     id: number;
     invoice_code: string;
@@ -130,6 +148,7 @@ export type CustomerRepairOrder = {
     subtotal?: number | string;
     discount_amount?: number | string;
     status: "UNPAID" | "PARTIALLY_PAID" | "PAID" | "CANCELLED" | string;
+    created_at?: string | null;
     items?: InvoiceItem[];
     payments?: { id: number; amount: number | string; status: string; payment_date?: string; paid_at?: string | null; created_at?: string | null; payment_method?: string }[];
   } | null;
@@ -146,7 +165,7 @@ export async function addMyVehicle(data: {
   model_id?: number;
   trim_id?: number | null;
   model_name?: string;
-  license_plate: string;
+  license_plate?: string | null;
   mileage?: number;
   year?: number;
 }) {
@@ -161,7 +180,7 @@ export async function updateMyVehicle(
   data: {
     model_id?: number;
     trim_id?: number | null;
-    license_plate?: string;
+    license_plate?: string | null;
     mileage?: number;
     year?: number;
     note?: string;
@@ -232,6 +251,12 @@ export async function getMyRepairOrders(): Promise<CustomerRepairOrder[]> {
   return Array.isArray(res?.data) ? res.data : [];
 }
 
+/** Phiếu kèm báo giá đã gửi + hóa đơn + thanh toán — MỘT request cho trang Báo giá / Hóa đơn / Thanh toán. */
+export async function getMyBillingOrders(): Promise<CustomerRepairOrder[]> {
+  const res = await fetchApi("/me/repair-orders?include=billing&per_page=100");
+  return Array.isArray(res?.data) ? res.data : [];
+}
+
 export async function getMyRepairOrderDetail(id: number): Promise<CustomerRepairOrder> {
   return fetchApi(`/me/repair-orders/${id}`);
 }
@@ -269,8 +294,6 @@ export async function getMyReviews(): Promise<CustomerReview[]> {
 export async function submitReview(data: {
   repair_order_id: number;
   overall_rating: number;
-  advisor_rating?: number;
-  technician_rating?: number;
   comment?: string;
 }) {
   return fetchApi("/me/reviews", {

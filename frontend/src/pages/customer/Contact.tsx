@@ -3,10 +3,11 @@ import { Button } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { formatGarageAddress, useGarageInfo } from "../../services/garageService";
+import { formatGarageAddress, useGarageHotline, useGarageInfo } from "../../services/garageService";
 
 function Contact() {
   const garageAddress = formatGarageAddress(useGarageInfo());
+  const hotline = useGarageHotline();
   const { notify } = useAppFeedback();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -77,9 +78,9 @@ function Contact() {
                             Điện thoại
                           </p>
 
-                          <a href="tel:0332405972" className="mt-1 block text-[13px] font-semibold text-[#20252B] hover:text-[#D6A85F] transition">
-                            033 240 5972
-                          </a>
+                          {hotline
+                            ? <a href={`tel:${hotline.tel}`} className="mt-1 block text-[13px] font-semibold text-[#20252B] hover:text-[#D6A85F] transition">{hotline.display}</a>
+                            : <p className="mt-1 text-[13px] text-cs-muted">Đang cập nhật</p>}
                         </div>
                       </div>
                     </div>

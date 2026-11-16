@@ -22,6 +22,9 @@ type ServicePickerProps = {
   loadError: string;
   selectedKeys: string[];
   onSelectedKeysChange: (keys: string[]) => void;
+  /** Mục vừa mang sang từ nút "Đặt lịch" ở trang khác: sáng nhẹ một lần rồi báo xong qua onFlashDone. */
+  flashKeys?: string[];
+  onFlashDone?: (key: string) => void;
   symptom: string;
   onSymptomChange: (value: string) => void;
   mileage: string;
@@ -57,6 +60,8 @@ export default function ServicePicker({
   loadError,
   selectedKeys,
   onSelectedKeysChange,
+  flashKeys = [],
+  onFlashDone,
   symptom,
   onSymptomChange,
   mileage,
@@ -88,7 +93,7 @@ export default function ServicePicker({
   const [flashKey, setFlashKey] = useState<string | null>(null);
   const lastMileage = useRef(mileage);
   const drawerBodyRef = useRef<HTMLDivElement>(null);
-  // Danh mục tải lại theo km (gợi ý "Phù hợp với xe") — đọc bản mới nhất qua ref để không huỷ hẹn giờ.
+  // Danh mục tải lại theo km — đọc bản mới nhất qua ref để không huỷ hẹn giờ.
   const groupsRef = useRef(groups);
   useEffect(() => { groupsRef.current = groups; }, [groups]);
   useEffect(() => {
@@ -149,6 +154,20 @@ export default function ServicePicker({
     setDrawerState("open");
   };
 
+  // Bấm một dòng ở "Dịch vụ đã chọn": mở ngăn "Chọn dịch vụ" ngay tại mục đó (mở đúng nhóm, cuộn tới, sáng nhẹ 1 lần)
+  // để khách xem lại chi tiết hoặc đổi sang gói / dịch vụ khác.
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+  const openDrawerAt = (itemKey: string) => {
+    const group = groups.find((g) => g.items.some((item) => item.key === itemKey));
+    setOpenGroupKey(group?.key ?? groups[0]?.key ?? null);
+    setDrawerState("open");
+    setFocusKey(itemKey);
+    // Đợi ngăn kéo trượt ra + nhóm mở xong rồi cuộn tới mục.
+    window.setTimeout(() => {
+      drawerBodyRef.current?.querySelector(`[data-item-key="${CSS.escape(itemKey)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 320);
+  };
+
   const toggleGroup = (key: string) => {
     const willOpen = openGroupKey !== key;
     setOpenGroupKey(willOpen ? key : null);
@@ -195,7 +214,12 @@ export default function ServicePicker({
         ) : (
           <ul className="divide-y divide-slate-200">
             {selectedItems.map((item) => (
-              <li key={item.key} className="flex items-center justify-between gap-3 px-4 py-3.5">
+              <li key={item.key}
+                role="button" tabIndex={0} title="Bấm để xem / đổi trong danh sách dịch vụ"
+                onClick={() => openDrawerAt(item.key)}
+                onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openDrawerAt(item.key); } }}
+                className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl px-4 py-3.5 focus-visible:outline-2 focus-visible:outline-[#e11d2e] ${flashKeys.includes(item.key) ? "cs-flash-once" : ""}`}
+                onAnimationEnd={() => { if (flashKeys.includes(item.key)) onFlashDone?.(item.key); }}>
                 <div className="flex min-w-0 items-center gap-3">
                   <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${item.type === "package" ? "bg-[#e11d2e] text-white" : "bg-[#fde8eb] text-[#e11d2e] dark:bg-[var(--cs-soft)] dark:text-[var(--cs-accent-text)]"}`}>
                     <Icon name={iconOf(item.icon, item.type === "package" ? "layers" : "wrench")} size={18}/>
@@ -212,7 +236,7 @@ export default function ServicePicker({
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   <span className="text-sm font-bold text-slate-900">{formatCatalogPrice(item.price)}</span>
-                  <button type="button" onClick={() => toggle(item)} aria-label={`Xóa ${item.name}`}
+                  <button type="button" onClick={(event) => { event.stopPropagation(); toggle(item); }} onKeyDown={(event) => event.stopPropagation()} aria-label={`Xóa ${item.name}`}
                     className="rounded-lg px-2 py-1 text-xs font-bold text-cs-accent-text hover:bg-[var(--cs-soft,#fff1f1)]">
                     Xóa
                   </button>
@@ -354,12 +378,15 @@ export default function ServicePicker({
                               const minutes = formatMinutes(item.minutes);
                               return (
                                 <li key={item.key} data-item-key={item.key}
-                                  className={`flex items-start justify-between gap-3 px-4 py-3 ${flashKey === item.key ? "cs-milestone-flash" : ""}`}>
+                                  className={`flex items-start justify-between gap-3 px-4 py-3 ${flashKey === item.key ? "cs-milestone-flash" : focusKey === item.key ? "cs-flash-once" : ""}`}
+                                  onAnimationEnd={() => { if (focusKey === item.key) setFocusKey(null); }}>
                                   <div className="min-w-0">
                                     <p className="break-words text-sm font-semibold">
                                       {item.name}
+                                      {/* Chỉ khi xe thật sự tới hạn gói này (số km cách mốc ≤ 1.000 km — backend tính). */}
                                       {item.recommended && (
-                                        <span className="ml-1.5 inline-block rounded bg-emerald-500/15 px-1.5 py-0.5 align-middle text-[11px] font-bold text-emerald-600">
+                                        <span className="ml-1.5 inline-block rounded bg-emerald-500/15 px-1.5 py-0.5 align-middle text-[11px] font-bold text-emerald-600"
+                                          title="Số km hiện tại của xe đã tới mốc bảo dưỡng của gói này">
                                           Phù hợp với xe
                                         </span>
                                       )}

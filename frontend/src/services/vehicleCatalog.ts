@@ -1,10 +1,14 @@
-import { fetchApi } from "./api";
+import { API_BASE_URL, fetchApi } from "./api";
 
 /** Danh mục xe: Hãng → Dòng xe → Phiên bản. Dữ liệu luôn lấy từ Laravel API, không hardcode. */
 export type CatalogStatus = "ACTIVE" | "INACTIVE";
-export type CatalogBrand = { id: number; name: string; models_count?: number; trims_count?: number; status?: CatalogStatus; source?: string | null };
+export type CatalogBrand = {
+  id: number; name: string; models_count?: number; trims_count?: number; status?: CatalogStatus; source?: string | null;
+  /** Phiên bản logo Admin tải lên (null = chưa có). */
+  logo_version?: number | null; created_at?: string | null;
+};
 export type CatalogModel = {
-  id: number; brand_id: number; name: string; body_type?: string | null; trims_count?: number; vehicles_count?: number;
+  id: number; brand_id: number; name: string; body_type?: string | null; trims_count?: number; vehicles_count?: number; created_at?: string | null;
   status?: CatalogStatus; source?: string | null; brand?: { id: number; name: string; status?: CatalogStatus };
 };
 export type CatalogTrim = {
@@ -56,7 +60,41 @@ export const adminVehicleCatalogApi = {
   remove(level: AdminLevel, id: number) {
     return fetchApi<{ message: string }>(`${adminPath[level]}/${id}`, { method: "DELETE" });
   },
+  /** Dán link ảnh → server tách nền + cắt gọn → PNG 256² (base64) để xem trước; CHƯA lưu. */
+  previewBrandLogo(url: string) {
+    return fetchApi<{ data: { logo_png: string } }>("/admin/vehicle-brands/logo-preview", { method: "POST", body: JSON.stringify({ url }) }).then(r => r.data.logo_png);
+  },
+  /** Như trên nhưng nguồn là file ảnh tải từ máy (PNG, JPG, WebP…; tối đa 5MB). */
+  previewBrandLogoFile(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    return fetchApi<{ data: { logo_png: string } }>("/admin/vehicle-brands/logo-preview", { method: "POST", body: form }).then(r => r.data.logo_png);
+  },
 };
+
+/* ------------------------------------------------------------------ Logo hãng do Admin tải lên */
+
+/** Ảnh logo Admin tải lên của một hãng (ghép theo API_BASE_URL — đúng cả khi API ở tên miền khác). */
+export const brandLogoUrl = (brandId: number, version: number) => `${API_BASE_URL}/vehicle-catalog/brands/${brandId}/logo?v=${version}`;
+
+type LogoMap = Map<string, string>;
+let logoMap: LogoMap = new Map();
+let logoRequest: Promise<void> | null = null;
+const logoListeners = new Set<() => void>();
+
+/** Tải (một lần mỗi phiên) danh sách logo Admin đã tải lên: tên hãng (chữ thường) → URL ảnh. */
+export function loadBrandLogos(force = false): Promise<void> {
+  if (logoRequest && !force) return logoRequest;
+  logoRequest = fetchApi<{ data: { id: number; name: string; logo_version: number }[] }>("/vehicle-catalog/brand-logos")
+    .then(response => {
+      logoMap = new Map((response.data ?? []).map(brand => [brand.name.trim().toLowerCase(), brandLogoUrl(brand.id, brand.logo_version)]));
+      logoListeners.forEach(listener => listener());
+    })
+    .catch(() => { logoRequest = null; });
+  return logoRequest;
+}
+export const subscribeBrandLogos = (listener: () => void) => { logoListeners.add(listener); return () => { logoListeners.delete(listener); }; };
+export const brandLogoSnapshot = (): LogoMap => logoMap;
 
 /** Lựa chọn ban đầu của bộ chọn từ một xe đã lưu (để sửa xe). */
 export function selectionFromVehicle(vehicle: {

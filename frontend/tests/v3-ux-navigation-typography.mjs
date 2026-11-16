@@ -6,7 +6,6 @@ const index=fs.readFileSync(path.join(import.meta.dirname,'../index.html'),'utf8
 const layout=src('layouts/PublicLayout.tsx');
 const shell=src('pages/showcase/ReferenceShell.tsx');
 const accountMenu=src('components/RoleAccountMenu.tsx');
-const reviews=src('pages/customer/Reviews.tsx');
 const app=src('App.tsx');
 const styles=src('styles/v3-polish.css');
 const customerStyles=src('styles/garage-customer-complete.css');
@@ -33,7 +32,6 @@ assert.match(shell,/aria-current={location\.pathname === '\/login'/,'login link 
 assert.match(styles,/\.v3ref-login \{[^}]*background:\s*#e11d2e;[^}]*color:\s*#fff/s,'login link is the red primary button with white text');
 assert.match(accountMenu,/toggleTheme/,'legacy customer account menu can switch themes');
 assert.match(styles,/html\[data-theme="dark"\] \.v3ref-shell/,'customer showcase surfaces support dark theme');
-assert.match(reviews,/className="at-customer-reviews/,'reviews page opts into customer theme styles');
 assert.match(customerStyles,/html\[data-theme="dark"\].*at-customer-reviews/,'customer reviews text and surfaces support dark theme');
 assert.match(styles,/html\[data-theme="dark"\] \.v3ref-menu a:hover,[\s\S]*?background: transparent !important;[\s\S]*?border-bottom-color: var\(--cs-accent\)/,'dark navigation hover only adds a red underline');
 assert.match(adminNav,/new URLSearchParams\(search\)\.get\('status'\)/,'advisor status links compare status query');

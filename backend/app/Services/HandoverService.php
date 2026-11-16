@@ -17,7 +17,10 @@ use Illuminate\Validation\ValidationException;
  */
 class HandoverService
 {
-    public function __construct(private readonly ConfirmationService $confirmations) {}
+    public function __construct(
+        private readonly ConfirmationService $confirmations,
+        private readonly CustomerNotifier $notifier,
+    ) {}
 
     public function create(RepairOrder $order, string $type, array $data, Employee $staff): VehicleHandover
     {
@@ -96,6 +99,8 @@ class HandoverService
                 'snapshot_sha256' => $this->confirmations->hash($snapshot),
                 'submitted_at' => now(),
             ])->save();
+            // Biên bản đã khóa → khách cần vào xác nhận (trang Tiến độ của đúng phiếu).
+            $this->notifier->handoverSubmitted($handover->repairOrder, $handover->type === VehicleHandover::TYPE_CHECK_OUT);
 
             return $handover->fresh('checklistItems');
         });

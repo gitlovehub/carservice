@@ -1,4 +1,4 @@
-import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { LABELS } from "../../config/labels";
 import { Icon } from "./Icon";
 import { FieldContext, controlClass, useFieldControl } from "./fieldContext";
@@ -36,6 +36,20 @@ export function Field({ label, hint, error, required, optional, className = "", 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className = "", ...props }, ref) {
   const field = useFieldControl();
   return <input ref={ref} {...field} {...props} className={`${controlClass} ${className}`}/>;
+});
+
+/** Ô mật khẩu có nút con mắt ẩn/hiện — dùng thay cho <Input type="password"> ở mọi form. */
+export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputHTMLAttributes<HTMLInputElement>, "type">>(function PasswordInput({ className = "", ...props }, ref) {
+  const field = useFieldControl();
+  const [visible, setVisible] = useState(false);
+  return <div className="relative">
+    <input ref={ref} {...field} {...props} type={visible ? "text" : "password"} className={`${controlClass} pr-11 ${className}`}/>
+    <button type="button" onClick={() => setVisible(v => !v)} aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"} aria-pressed={visible}
+      title={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"} disabled={props.disabled}
+      className="absolute top-1/2 right-1.5 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-md text-cs-muted transition hover:bg-cs-hover hover:text-cs-text disabled:cursor-not-allowed disabled:opacity-50">
+      <Icon name={visible ? "eye-off" : "eye"} size={17}/>
+    </button>
+  </div>;
 });
 
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(function Select({ className = "", children, ...props }, ref) {

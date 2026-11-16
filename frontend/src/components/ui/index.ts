@@ -3,7 +3,7 @@
  * Cách dùng ghi ở đầu mỗi file. Không tạo bản sao component trong trang.
  *
  *   Nút ............ Button, IconButton, buttonClass (cho <Link>)
- *   Biểu mẫu ....... Field, Input, Select, Textarea, SearchInput
+ *   Biểu mẫu ....... Field, Input, PasswordInput, Select, Textarea, SearchInput
  *   Trạng thái ..... Badge, StatusBadge (config/status.ts)
  *   Lớp phủ ........ Modal, Drawer, Dropdown; xác nhận/thông báo: useAppFeedback + confirmDelete/confirmDiscard
  *   Dữ liệu ........ DataTable, Pagination
@@ -13,7 +13,7 @@
  */
 export { Button, IconButton, type ButtonProps, type IconButtonProps } from "./Button";
 export { buttonClass, type ButtonVariant, type ButtonSize } from "./buttonClass";
-export { Field, Input, Select, Textarea, SearchInput } from "./Field";
+export { Field, Input, PasswordInput, Select, Textarea, SearchInput } from "./Field";
 export { controlClass } from "./fieldContext";
 export { Badge, StatusBadge } from "./Badge";
 export { Modal, Drawer } from "./Modal";
@@ -27,6 +27,7 @@ export { confirmDelete, confirmDiscard } from "./confirmPresets";
 export { useAppFeedback } from "./feedbackContext";
 export { Icon, type IconName } from "./Icon";
 export { Switch } from "./Switch";
+export { RatingInput, RatingStars, StarIcon } from "./Rating";
 export { KmInput, QuantityStepper } from "./QuantityStepper";
 export { SortHeader } from "./SortHeader";
 export { NEWEST_FIRST, ariaSort, useTableSort, type SortDir, type SortState } from "./tableSort";

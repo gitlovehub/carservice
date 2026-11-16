@@ -134,7 +134,7 @@ export default function Invoices() {
     actions={<Button variant="outline" icon="download" loading={exporting} loadingText="Đang xuất..." onClick={() => void exportCsv()}>Xuất Excel (CSV)</Button>}>
     <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard icon="coins" tone="success" label="Tổng đã thu" value={summary ? vnd(summary.collected) : "—"}/>
-      <StatCard icon="invoice" tone="warning" label="Hoá đơn chưa thanh toán đủ" value={summary?.open ?? "—"}/>
+      <StatCard icon="invoice" tone="warning" label="Hoá đơn còn nợ" value={summary?.open ?? "—"}/>
       <StatCard icon="alert" tone="danger" label="Công nợ còn lại" value={summary ? vnd(summary.debt) : "—"}/>
       <StatCard icon="receipt" tone="neutral" label="Tổng số hoá đơn" value={summary?.total ?? "—"}/>
     </div>

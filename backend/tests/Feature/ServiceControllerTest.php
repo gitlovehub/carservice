@@ -2,8 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Customer;
+use App\Models\Employee;
+use App\Models\RepairOrder;
 use App\Models\Service;
 use App\Models\ServiceCategory;
+use App\Models\Vehicle;
+use App\Models\WorkItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -74,6 +79,42 @@ class ServiceControllerTest extends TestCase
             ->assertJsonPath('data.0.icon', 'droplet')
             ->assertJsonPath('data.0.services_count', 2)
             ->assertJsonPath('data.1.icon', 'disc');
+    }
+
+    public function test_index_ranks_services_by_real_usage_without_exposing_counts(): void
+    {
+        $oil = Service::factory()->create(['name' => 'Thay dầu']);
+        $brake = Service::factory()->create(['name' => 'Kiểm tra phanh']);
+        $unused = Service::factory()->create(['name' => 'Rửa xe']);
+        $order = $this->repairOrder();
+        foreach ([WorkItem::COMPLETED, WorkItem::COMPLETED, WorkItem::IN_PROGRESS] as $status) {
+            WorkItem::query()->create(['repair_order_id' => $order->id, 'service_id' => $oil->id, 'status' => $status, 'description' => 'Công việc']);
+        }
+        WorkItem::query()->create(['repair_order_id' => $order->id, 'service_id' => $brake->id, 'status' => WorkItem::COMPLETED, 'description' => 'Công việc']);
+        // Công việc đã hủy không tính là đã dùng.
+        WorkItem::query()->create(['repair_order_id' => $order->id, 'service_id' => $brake->id, 'status' => WorkItem::CANCELLED, 'description' => 'Công việc']);
+        WorkItem::query()->create(['repair_order_id' => $order->id, 'service_id' => $unused->id, 'status' => WorkItem::CANCELLED, 'description' => 'Công việc']);
+
+        $rows = collect($this->getJson('/api/services')->assertOk()->json())->keyBy('name');
+
+        $this->assertSame(1, $rows['Thay dầu']['popularity_rank']);
+        $this->assertSame(2, $rows['Kiểm tra phanh']['popularity_rank']);
+        $this->assertNull($rows['Rửa xe']['popularity_rank']);
+        $this->assertArrayNotHasKey('usage_count', $rows['Thay dầu'], 'Số lần dùng thật không lộ ra API công khai');
+    }
+
+    private function repairOrder(): RepairOrder
+    {
+        $customer = Customer::factory()->create();
+
+        return RepairOrder::query()->create([
+            'repair_order_code' => 'RO-POP-1',
+            'customer_id' => $customer->id,
+            'vehicle_id' => Vehicle::factory()->create(['customer_id' => $customer->id])->id,
+            'advisor_id' => Employee::factory()->create()->id,
+            'status' => RepairOrder::IN_PROGRESS,
+            'received_at' => now(),
+        ]);
     }
 
     public function test_show_hides_inactive_services(): void

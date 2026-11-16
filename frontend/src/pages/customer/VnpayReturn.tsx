@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { ErrorState, LoadingState, buttonClass } from "../../components/ui";
+import { Icon, type IconName } from "../../components/ui/Icon";
+import { AccountCard, AccountPage, InfoTile } from "./account/AccountKit";
+import { PRIMARY_RED } from "./account/accountStyles";
 import {
   formatMoney,
   getVnpayReturnResult,
@@ -10,11 +14,11 @@ import {
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLS = 10;
 
-const resultStyle: Record<string, { title: string; tone: string; icon: string }> = {
-  SUCCESS: { title: "Thanh toán thành công", tone: "border-emerald-200 bg-emerald-50 text-emerald-800", icon: "✓" },
-  PENDING: { title: "Đang chờ xác nhận", tone: "border-amber-200 bg-amber-50 text-amber-800", icon: "…" },
-  CANCELLED: { title: "Giao dịch đã hủy", tone: "border-slate-200 bg-slate-50 text-slate-700", icon: "✕" },
-  FAILED: { title: "Thanh toán không thành công", tone: "border-red-200 bg-red-50 text-red-700", icon: "!" },
+const resultStyle: Record<string, { title: string; tone: string; icon: IconName }> = {
+  SUCCESS: { title: "Thanh toán thành công", tone: "bg-success-soft text-success-fg", icon: "check" },
+  PENDING: { title: "Đang chờ xác nhận", tone: "bg-warning-soft text-warning-fg", icon: "clock" },
+  CANCELLED: { title: "Giao dịch đã hủy", tone: "bg-cs-surface-2 text-cs-muted", icon: "x" },
+  FAILED: { title: "Thanh toán không thành công", tone: "bg-danger-soft text-danger-fg", icon: "alert" },
 };
 
 /**
@@ -61,74 +65,37 @@ export default function VnpayReturn() {
   const stillPending = data?.result === "PENDING";
 
   return (
-    <div className="min-h-screen bg-cs-bg text-[#20252B]">
-      <main className="lg:ml-[250px]">
-        <div className="mx-auto max-w-[640px] px-6 py-10 md:py-14">
-          <h1 className="mt-3 text-[28px] font-bold tracking-normal text-[#1F2933]">Kết quả thanh toán VNPay</h1>
-
-          <div className="mt-8 overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
-            {shownError ? (
-              <div className="p-8 text-center">
-                <p className="text-base font-bold text-red-700">Không xác nhận được giao dịch</p>
-                <p className="mt-2 text-xs text-slate-500">{shownError}</p>
+    <AccountPage testId="customer-vnpay-return" title="Kết quả thanh toán" description="Kết quả giao dịch VNPay do hệ thống gara xác nhận.">
+      <AccountCard className="max-w-[720px] overflow-hidden">
+        {shownError ? (
+          <ErrorState title="Không xác nhận được giao dịch" description={shownError}/>
+        ) : !data || !style ? (
+          <LoadingState label="Đang kiểm tra kết quả giao dịch với hệ thống…"/>
+        ) : (
+          <div className="space-y-5 p-5 sm:p-6">
+            <div className={`flex items-start gap-4 rounded-2xl p-5 ${style.tone}`} role="status" aria-live="polite">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-cs-surface/70"><Icon name={style.icon} size={24}/></span>
+              <div>
+                <p className="text-[18px] font-extrabold">{style.title}</p>
+                <p className="mt-1 text-[14px]">{data.message}</p>
+                {stillPending && polls >= MAX_POLLS && <p className="mt-2 text-[13px]">Chưa nhận được xác nhận từ VNPay. Bạn có thể tải lại trang sau ít phút hoặc xem trạng thái trong danh sách hóa đơn.</p>}
               </div>
-            ) : !data || !style ? (
-              <p className="p-12 text-center text-xs text-cs-muted">Đang kiểm tra kết quả giao dịch với hệ thống...</p>
-            ) : (
-              <>
-                <div className={`m-6 rounded-2xl border p-5 ${style.tone}`} role="status" aria-live="polite">
-                  <p className="text-lg font-bold">
-                    <span aria-hidden="true" className="mr-2">{style.icon}</span>
-                    {style.title}
-                  </p>
-                  <p className="mt-1 text-sm">{data.message}</p>
-                  {stillPending && polls >= MAX_POLLS && (
-                    <p className="mt-2 text-xs">
-                      Hệ thống chưa nhận được xác nhận từ VNPay. Bạn có thể tải lại trang sau ít phút hoặc xem trạng thái trong danh sách hóa đơn.
-                    </p>
-                  )}
-                </div>
-
-                <dl className="grid gap-3 px-6 pb-6 text-xs sm:grid-cols-2">
-                  <div className="rounded-xl bg-cs-bg p-4">
-                    <dt className="font-bold text-cs-muted">HÓA ĐƠN</dt>
-                    <dd className="mt-1 text-sm font-bold">{data.invoice.invoice_code}</dd>
-                  </div>
-                  <div className="rounded-xl bg-cs-bg p-4">
-                    <dt className="font-bold text-cs-muted">SỐ TIỀN GIAO DỊCH</dt>
-                    <dd className="mt-1 text-sm font-bold">{formatMoney(data.payment.amount)}</dd>
-                  </div>
-                  <div className="rounded-xl border border-[#E1E4E6] p-4">
-                    <dt className="font-bold text-cs-muted">MÃ GIAO DỊCH VNPAY</dt>
-                    <dd className="mt-1 font-mono text-sm">{data.payment.transaction_code ?? "—"}</dd>
-                  </div>
-                  <div className="rounded-xl border border-[#E1E4E6] p-4">
-                    <dt className="font-bold text-cs-muted">TRẠNG THÁI HÓA ĐƠN</dt>
-                    <dd className="mt-1 text-sm font-bold">{invoiceStatusLabel[data.invoice.status] ?? data.invoice.status}</dd>
-                  </div>
-                </dl>
-              </>
-            )}
-
-            <div className="flex flex-wrap justify-end gap-3 border-t border-[#E1E4E6] p-6">
-              <Link
-                to="/invoices"
-                className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-              >
-                Danh sách hóa đơn
-              </Link>
-              {data && data.result !== "SUCCESS" && data.invoice.status !== "PAID" && (
-                <Link
-                  to={`/payment?invoice_id=${data.invoice.id}`}
-                  className="inline-flex items-center rounded-xl bg-[#1F2933] px-4 py-2 text-xs font-bold text-white hover:bg-[#111827]"
-                >
-                  {stillPending ? "Quay lại trang thanh toán" : "Thử thanh toán lại"}
-                </Link>
-              )}
             </div>
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <InfoTile label="Hóa đơn" value={data.invoice.invoice_code} mono/>
+              <InfoTile label="Số tiền giao dịch" value={formatMoney(data.payment.amount)}/>
+              <InfoTile label="Mã giao dịch VNPay" value={data.payment.transaction_code ?? "—"} mono/>
+              <InfoTile label="Trạng thái hóa đơn" value={invoiceStatusLabel[data.invoice.status] ?? data.invoice.status}/>
+            </dl>
           </div>
+        )}
+        <div className="flex flex-wrap justify-end gap-2 border-t border-cs-border px-5 py-4 sm:px-6">
+          <Link to="/invoices" className={buttonClass({ variant: "secondary" })}>Danh sách hóa đơn</Link>
+          {data && data.result !== "SUCCESS" && data.invoice.status !== "PAID" && (
+            <Link to={`/payment?invoice_id=${data.invoice.id}`} className={`${buttonClass({ variant: "primary" })} ${PRIMARY_RED}`}>{stillPending ? "Quay lại trang thanh toán" : "Thử thanh toán lại"}</Link>
+          )}
         </div>
-      </main>
-    </div>
+      </AccountCard>
+    </AccountPage>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Button, EmptyState, ErrorState, LoadingState } from "../../components/ui";
+import { Button, EmptyState, ErrorState, LoadingState, StarIcon } from "../../components/ui";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { adminApi, type ReportData } from "../../services/adminApi";
 import { AdminPage, FilterSelect, Panel, PanelLink, Progress, StatCard, Stars, Tabs } from "./kit/AdminKit";
@@ -196,10 +196,10 @@ function Operations({ data }: { data: ReportData }) {
           <div className="text-center md:border-r md:border-cs-border md:pr-6">
             <p className="text-title font-bold tabular-nums text-cs-text">{satisfaction.average ? num(satisfaction.average.value) : "—"}</p>
             {satisfaction.average && <Stars value={satisfaction.average.value} size={18}/>}
-            <p className="mt-2 text-small text-cs-text-2"><b className="text-success">{pct(satisfaction.positive_rate)}</b> khách hài lòng (4–5★)</p>
+            <p className="mt-2 text-small text-cs-text-2"><b className="text-success">{pct(satisfaction.positive_rate)}</b> khách hài lòng (4–5 sao)</p>
           </div>
           <div>
-            {stars.map(star => <MetricRow key={star} label={<span className="inline-flex items-center gap-1">{star}<Icon name="star" size={13} className="text-warning"/></span>}
+            {stars.map(star => <MetricRow key={star} label={<span className="inline-flex items-center gap-1">{star}<StarIcon size={13}/></span>}
               value={num(satisfaction.distribution[star])} percent={share(satisfaction.distribution[star], satisfaction.count)} tone={star >= 4 ? "success" : star === 3 ? "warning" : "danger"}/>)}
           </div>
         </div>}

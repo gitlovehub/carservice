@@ -32,7 +32,7 @@ export function QuantityStepper({ value, onChange, label, min = 1, max = 999, st
   const h = size === "md" ? "h-10" : "h-8";
   const btn = `grid ${size === "md" ? "w-10" : "w-8"} h-full shrink-0 cursor-pointer place-items-center text-cs-text-2 transition-colors hover:bg-cs-hover hover:text-cs-text disabled:cursor-not-allowed disabled:opacity-40`;
   const width = className.includes("w-") ? "" : unit ? "w-[168px]" : "w-[104px]";
-  return <div role="group" aria-label={label} className={`inline-flex ${h} ${width} shrink-0 items-center overflow-hidden rounded-control border border-cs-border bg-cs-surface focus-within:border-cs-accent focus-within:ring-2 focus-within:ring-cs-accent/20 ${className}`}>
+  return <div role="group" aria-label={label} className={`inline-flex ${h} ${width} shrink-0 items-center overflow-hidden rounded-control border border-cs-border bg-cs-surface focus-within:border-cs-accent${className}`}>
     <button type="button" className={btn} aria-label={`Giảm ${label}${step > 1 ? ` ${fmt.format(step)}` : ""}`} disabled={disabled || (value !== null && value <= min)} onClick={() => bump(-1)}><Icon name="minus" size={14}/></button>
     <span className="flex h-full min-w-0 flex-1 items-center border-x border-cs-border">
       <input id={id} type="text" inputMode="numeric" aria-label={label} value={text} placeholder={placeholder} disabled={disabled}

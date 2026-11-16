@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon } from "../ui/Icon";
 import { controlClass } from "../ui/fieldContext";
 import { foldText } from "../../services/vehicleCatalog";
@@ -26,6 +26,8 @@ type Props = {
   /** Tên đang lưu nhưng không còn trong danh sách (đã bị ẩn) — vẫn hiển thị đúng. */
   fallbackLabel?: string;
   testId?: string;
+  /** Hình nhỏ trước mỗi lựa chọn (vd. logo hãng) — cũng hiện ở đầu ô khi đã chọn, thay kính lúp. */
+  renderIcon?: (label: string) => ReactNode;
 };
 
 /**
@@ -34,7 +36,7 @@ type Props = {
  */
 export function SearchableSelect({
   label, placeholder, options, value, onChange, loading, loadError, onRetry, error, disabled, disabledHint,
-  emptyText = "Không có kết quả phù hợp.", required, optional, fallbackLabel, testId,
+  emptyText = "Không có kết quả phù hợp.", required, optional, fallbackLabel, testId, renderIcon,
 }: Props) {
   const id = useId();
   const listId = `${id}-list`;
@@ -74,7 +76,10 @@ export function SearchableSelect({
       {optional && <span className="ml-1 font-normal normal-case tracking-normal text-cs-muted">(không bắt buộc)</span>}
     </label>
     <div className="relative">
-      <Icon name="search" size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-cs-muted"/>
+      {/* Đã chọn + có hình (logo hãng) → hiện hình của lựa chọn; đang gõ tìm → kính lúp. */}
+      {renderIcon && selectedLabel && !open
+        ? <span className="pointer-events-none absolute left-2 top-1/2 flex -translate-y-1/2 overflow-hidden rounded-md">{renderIcon(selectedLabel)}</span>
+        : <Icon name="search" size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-cs-muted"/>}
       <input
         ref={inputRef}
         id={id}
@@ -90,7 +95,7 @@ export function SearchableSelect({
         disabled={isDisabled}
         placeholder={loading ? "Đang tải…" : selectedLabel || placeholder}
         value={open ? query : selectedLabel}
-        className={`${controlClass} pl-9 ${value !== null && !isDisabled ? "pr-16" : "pr-9"}`}
+        className={`${controlClass} ${renderIcon && selectedLabel && !open ? "pl-10" : "pl-9"} ${value !== null && !isDisabled ? "pr-16" : "pr-9"}`}
         onFocus={event => { setQuery(""); setActive(0); setOpen(true); event.currentTarget.select(); }}
         onClick={() => setOpen(true)}
         onBlur={() => window.setTimeout(() => setOpen(false), 120)}
@@ -126,7 +131,10 @@ export function SearchableSelect({
           className={`flex cursor-pointer items-center justify-between gap-3 px-3 py-2 text-small max-sm:min-h-11 ${index === activeIndex ? "bg-cs-hover" : ""} ${isSelected ? "font-semibold text-cs-accent-text" : "text-cs-text"}`}
           onMouseEnter={() => setActive(index)}
           onMouseDown={event => { event.preventDefault(); choose(option); }}>
-          <span className="min-w-0 break-words">{option.label}</span>
+          <span className="flex min-w-0 items-center gap-2.5">
+            {renderIcon && <span className="flex shrink-0 overflow-hidden rounded-md">{renderIcon(option.label)}</span>}
+            <span className="min-w-0 break-words">{option.label}</span>
+          </span>
           {option.hint && <span className="shrink-0 text-caption text-cs-muted">{option.hint}</span>}
           {isSelected && <Icon name="check" size={14} className="shrink-0"/>}
         </li>;

@@ -64,7 +64,7 @@ export default function Services() {
       </div>
 
       {!loading && !error && items.length > 0 && <div className="mb-7 flex flex-col gap-3.5">
-        <label className="flex h-11 max-w-[520px] items-center gap-2.5 rounded-full border border-[#e9e9e6] bg-white px-4 text-cs-muted transition focus-within:border-[#cf2935] focus-within:ring-4 focus-within:ring-[#cf2935]/10 dark:border-[#34373a] dark:bg-[#191b1e]">
+        <label className="flex h-11 max-w-[520px] items-center gap-2.5 rounded-full border border-[#e9e9e6] bg-white px-4 text-cs-muted transition focus-within:border-[#cf2935]dark:border-[#34373a] dark:bg-[#191b1e]">
           <span aria-hidden="true">⌕</span>
           <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Tìm dịch vụ (ví dụ: thay dầu, phanh…)" aria-label="Tìm dịch vụ" className="min-w-0 flex-1 border-0 bg-transparent text-sm text-inherit outline-0 dark:text-[#f5f5f4]" />
         </label>

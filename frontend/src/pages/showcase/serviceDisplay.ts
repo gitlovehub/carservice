@@ -4,10 +4,18 @@ import { API_BASE_URL } from '../../services/api';
 export type Service = {
   id: number; name: string; description?: string | null; category?: string | null;
   base_price?: number | string | null; estimated_price?: number | string | null;
-  is_popular?: boolean | null; sort_order?: number | null; created_at?: string | null;
+  created_at?: string | null;
+  /** Thứ hạng phổ biến theo số lần thực hiện thật (1 = dùng nhiều nhất; null = chưa ai dùng). CL-01 / D-018. */
+  popularity_rank?: number | null;
   /** Ảnh admin tải lên ("/api/service-images/{id}?v=…"); null = chưa có ảnh. */
   image_url?: string | null;
 };
+
+/** "Phổ biến": hạng nhỏ đứng trước; dịch vụ chưa ai dùng xếp sau, giữa chúng ưu tiên dịch vụ mới tạo. */
+export const byPopularity = (a: Service, b: Service) =>
+  (a.popularity_rank ?? Number.MAX_SAFE_INTEGER) - (b.popularity_rank ?? Number.MAX_SAFE_INTEGER)
+  || (b.created_at ? new Date(b.created_at).getTime() : 0) - (a.created_at ? new Date(a.created_at).getTime() : 0)
+  || b.id - a.id;
 
 export const money = (n: number | string | null | undefined) =>
   n == null || n === '' || !Number.isFinite(Number(n))

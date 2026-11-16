@@ -13,7 +13,7 @@ function CustomerTopbar() {
     "/quotation": "Báo giá",
     "/payment": "Thanh toán",
     "/invoices": "Hóa đơn",
-    "/reviews": "Đánh giá",
+    "/customer/service-history": "Lịch sử bảo dưỡng",
     "/account": "Tài khoản",
     "/repair-status": "Theo dõi sửa chữa",
   };

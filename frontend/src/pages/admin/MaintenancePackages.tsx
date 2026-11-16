@@ -6,15 +6,17 @@ import { catalogAdminApi, money, type AdminPackage } from "../../services/catalo
 import { AdminPage, FilterSelect } from "./kit/AdminKit";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { PackageFormModal } from "./packages/PackageFormModal";
+import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 
 const PER_PAGE = 5;
 const n = (value: number) => new Intl.NumberFormat("vi-VN").format(value);
 const modelText = (p: AdminPackage) => p.vehicle_model ? [p.vehicle_model.brand?.name, p.vehicle_model.name].filter(Boolean).join(" ") : "Dùng chung mọi dòng xe";
 const minutesOf = (p: AdminPackage) => p.services.reduce((sum, s) => sum + (s.estimated_minutes ?? 0) * (s.pivot?.quantity ?? 1), 0);
 
-/** Logo hãng: chưa có ảnh logo trong dữ liệu → chữ viết tắt của hãng; gói dùng chung → icon cờ lê. */
+/** Logo hãng (dùng chung VehicleBrandLogo với trang khách/cố vấn); gói dùng chung mọi dòng xe → icon cờ lê. */
 function BrandMark({ p, size = 44 }: { p: AdminPackage; size?: number }) {
   const brand = p.vehicle_model?.brand?.name;
+  if (brand) return <VehicleBrandLogo brand={brand} size={size}/>;
   return <span aria-hidden="true" style={{ width: size, height: size, fontSize: Math.round(size * 0.32) }}
     className="grid shrink-0 place-items-center rounded-full border border-cs-border bg-cs-surface font-bold tracking-tight text-cs-accent-text">
     {brand ? brand.replace(/[^A-Za-zÀ-ỹ0-9]/g, "").slice(0, 2).toUpperCase() : <Icon name="wrench" size={Math.round(size * 0.45)}/>}

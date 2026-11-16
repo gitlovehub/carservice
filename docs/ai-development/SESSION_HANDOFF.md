@@ -3,6 +3,12 @@
 > Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
 > Cập nhật: 10/11/2026 — góp ý PO đợt 3 trang Admin (xong). Tiếp theo: client → cố vấn (B-05 để lúc làm cố vấn).
 
+## NEXT CL-01 — Sắp xếp "Phổ biến" theo số lần dùng thật (15/11/2026, `v3-client`, chưa commit)
+
+- Backend `ServiceController::index`: `withCount(workItems as usage_count)` trừ `CANCELLED` → gắn `popularity_rank` (1 = dùng nhiều nhất, đồng hạng khi bằng nhau, `null` = chưa ai dùng); ẩn `usage_count` để API công khai không lộ sản lượng gara.
+- Frontend: `serviceDisplay.byPopularity` (hạng → mới tạo trước → id); `/services` sắp xếp "Phổ biến" (mặc định) và thẻ nổi bật trang chủ dùng hạng này. Gỡ `is_popular`/`sort_order` khỏi kiểu `Service` (cột không tồn tại → trước đây "Phổ biến" thực chất xếp theo tên). "Mới nhất" giữ nguyên (`created_at`).
+- Test: `ServiceControllerTest::test_index_ranks_services_by_real_usage_without_exposing_counts`; backend 307/307; smoke 31/31; tsc đạt. API dev: hạng 1 "Kiểm tra phanh", 2 "Bảo dưỡng định kỳ".
+- Còn: `catalogAdminApi.ts` vẫn khai báo `is_popular` cho admin (không dùng ở client) — để nguyên.
 ## Mới nhất: góp ý PO đợt 3 — tinh gọn bảng Admin (10/11/2026, nhánh v3) — PO chốt "tạm thời done trang admin"
 
 - **Bảng chung (`DataTable`)**: bỏ dòng "Sắp xếp: … (giảm dần)" (xoá `SortStatus`); bấm dòng = mở chi tiết (Tab + Enter/Space), bỏ cột Thao tác trùng ở Phiếu sửa chữa, Hoá đơn, Khách hàng, Phụ tùng & kho (tab Tồn kho: bấm dòng = Nhập kho); thêm `evenColumns` (chia đều cột) + `actionsWidth`. `useTableSort` thêm `reset` / `isDefault`.

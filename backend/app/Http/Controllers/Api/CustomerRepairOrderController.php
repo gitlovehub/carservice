@@ -16,6 +16,9 @@ use Illuminate\Validation\Rule;
 
 class CustomerRepairOrderController extends Controller
 {
+    /** Báo giá khách được xem (nháp / đã hủy nội bộ thì không). */
+    private const CUSTOMER_VISIBLE_QUOTATIONS = [Quotation::SENT, Quotation::APPROVED, Quotation::PARTIALLY_APPROVED, Quotation::REJECTED];
+
     public function __construct(private readonly RepairOrderService $service) {}
 
     public function index(Request $request): JsonResponse
@@ -31,7 +34,19 @@ class CustomerRepairOrderController extends Controller
             $query->where('status', $status);
         }
 
-        return response()->json($query->paginate(20));
+        // ?include=billing: kèm báo giá đã gửi khách + hóa đơn + thanh toán trong CÙNG một request,
+        // để trang Báo giá / Hóa đơn / Thanh toán không phải gọi chi tiết từng phiếu (N+1 request).
+        if ($request->query('include') === 'billing') {
+            $query->with([
+                'quotations' => fn ($q) => $q->whereIn('status', self::CUSTOMER_VISIBLE_QUOTATIONS),
+                'quotations.items',
+                'invoice.items',
+                'invoice.payments',
+            ]);
+        }
+
+        // Mặc định 20 phiếu/trang như cũ; trang Báo giá / Hóa đơn xin tối đa 100 để không sót chứng từ cũ.
+        return response()->json($query->paginate(min(100, max(1, (int) $request->query('per_page', 20)))));
     }
 
     public function show(Request $request, RepairOrder $repairOrder): JsonResponse
@@ -41,12 +56,7 @@ class CustomerRepairOrderController extends Controller
         $repairOrder->load([
             'vehicle.model.brand',
             'statusHistory',
-            'quotations' => fn ($query) => $query->whereIn('status', [
-                Quotation::SENT,
-                Quotation::APPROVED,
-                Quotation::PARTIALLY_APPROVED,
-                Quotation::REJECTED,
-            ]),
+            'quotations' => fn ($query) => $query->whereIn('status', self::CUSTOMER_VISIBLE_QUOTATIONS),
             'quotations.items',
             'workItems',
             'invoice.items',
@@ -64,6 +74,16 @@ class CustomerRepairOrderController extends Controller
             'handovers' => fn ($query) => $query->whereIn('status', [VehicleHandover::STATUS_SUBMITTED, VehicleHandover::STATUS_CONFIRMED]),
             'handovers.checklistItems',
             'handovers.confirmations',
+            // Màn "Chi tiết lịch sử dịch vụ" của khách: chỉ tên người phụ trách (không lộ SĐT/tài khoản nhân viên),
+            // phụ tùng đã dùng và dịch vụ/gói khách đã đặt trong lịch hẹn.
+            'advisor:id,full_name',
+            'workItems.technician:id,employee_id',
+            'workItems.technician.employee:id,full_name',
+            'usedParts:id,repair_order_id,work_item_id,part_id,quantity,unit_price,used_at',
+            'usedParts.part:id,name,unit',
+            'appointment:id,appointment_code,request_type,symptom_description',
+            'appointment.services:id,name',
+            'appointment.packages:id,name',
         ]);
 
         return response()->json($repairOrder);

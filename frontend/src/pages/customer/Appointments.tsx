@@ -1,11 +1,12 @@
-import { Modal } from "../../components/ui";
-import { Button, buttonClass } from "../../components/ui";
-import { Icon } from "../../components/ui/Icon";
-import "../../styles/garage-customer-pages.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Button, EmptyState, ErrorState, LoadingState, Modal, Pagination, buttonClass } from "../../components/ui";
+import { StatusBadge } from "../../components/ui/Badge";
+import { Icon } from "../../components/ui/Icon";
+import { controlClass } from "../../components/ui/fieldContext";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import {
-  appointmentStatusLabel,
   cancelAppointment,
   formatDate,
   formatTime,
@@ -15,13 +16,31 @@ import {
   requestTypeLabel,
   updateAppointment,
   type CustomerAppointment,
-  type Pagination,
 } from "../../services/customerApi";
-import { StatusBadge } from "../../components/ui/Badge";
-import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { AccountCard, AccountPage, FilterBar, FilterSelect, InfoTile, InlineError, ModalFoot, ModalHead } from "./account/AccountKit";
+import { MODAL_CLASS, PRIMARY_RED } from "./account/accountStyles";
+import { useDeepLink } from "./account/useDeepLink";
 
+const PER_PAGE = 5;
 const canCancel = (a: CustomerAppointment) => ["PENDING", "CONFIRMED"].includes(a.status);
 const canEdit = (a: CustomerAppointment) => a.status === "PENDING";
+
+type Tab = "all" | "upcoming" | "checked_in" | "cancelled";
+const TABS: { id: Tab; label: string; accept: (a: CustomerAppointment) => boolean }[] = [
+  { id: "all", label: "Tất cả", accept: () => true },
+  { id: "upcoming", label: "Sắp tới", accept: (a) => ["PENDING", "CREATED", "CONFIRMED"].includes(a.status) },
+  { id: "checked_in", label: "Đã tiếp nhận", accept: (a) => a.status === "CHECKED_IN" },
+  { id: "cancelled", label: "Đã hủy", accept: (a) => ["CANCELLED", "NO_SHOW"].includes(a.status) },
+];
+
+type SortKey = "date_desc" | "date_asc" | "created_desc";
+const SORTS: { id: SortKey; label: string }[] = [
+  { id: "date_desc", label: "Ngày hẹn: mới nhất" },
+  { id: "date_asc", label: "Ngày hẹn: sớm nhất" },
+  { id: "created_desc", label: "Vừa đặt gần đây" },
+];
+/** Mốc thời gian của lịch hẹn (ngày + giờ) để sắp xếp. */
+const appointmentTime = (a: CustomerAppointment) => new Date(`${a.appointment_date?.slice(0, 10)}T${(a.appointment_time ?? "00:00").slice(0, 5)}:00`).getTime() || 0;
 
 const errorText = (e: unknown, fallback: string) => {
   const err = e as { message?: string; data?: { message?: string; errors?: Record<string, string[]> } };
@@ -30,112 +49,110 @@ const errorText = (e: unknown, fallback: string) => {
 };
 
 function servicesText(a: CustomerAppointment) {
-  const names = [
-    ...(a.services ?? []).map((s) => s.name),
-    ...(a.packages ?? []).map((p) => p.name),
-  ];
+  const names = [...(a.services ?? []).map((s) => s.name), ...(a.packages ?? []).map((p) => p.name)];
   return names.length > 0 ? names.join(", ") : requestTypeLabel[a.request_type] ?? a.request_type;
 }
 
-function Appointments() {
+/** Khối ngày bên trái thẻ: thứ, ngày lớn, tháng/năm. */
+function DateBlock({ value }: { value: string }) {
+  const date = new Date(`${value.slice(0, 10)}T12:00:00`);
+  const valid = !Number.isNaN(date.getTime());
+  return (
+    <div className="flex w-[76px] shrink-0 flex-col items-center justify-center rounded-2xl bg-cs-soft px-2 py-3 text-cs-accent-text">
+      <span className="text-[12px] font-bold uppercase">{valid ? date.toLocaleDateString("vi-VN", { weekday: "short" }) : "—"}</span>
+      <span className="text-[28px] font-extrabold leading-none">{valid ? String(date.getDate()).padStart(2, "0") : "—"}</span>
+      <span className="mt-1 text-[12px] font-semibold">{valid ? `Th${date.getMonth() + 1}/${date.getFullYear()}` : ""}</span>
+    </div>
+  );
+}
+
+export default function Appointments() {
   const { notify } = useAppFeedback();
   const [items, setItems] = useState<CustomerAppointment[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({
-    current_page: 1,
-    per_page: 10,
-    total: 0,
-    last_page: 1,
-  });
-  const [status, setStatus] = useState("");
-  const [keyword, setKeyword] = useState("");
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [tab, setTab] = useState<Tab>("all");
+  const [keyword, setKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const [sort, setSort] = useState<SortKey>("date_desc");
 
-  const [selected, setSelected] = useState<CustomerAppointment | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+  /** Lịch hẹn khách bấm mở; `detail` = bản chi tiết đã tải (GET /appointments/{id}) của lịch đang mở. */
+  const [opened, setOpened] = useState<CustomerAppointment | null>(null);
+  const [detail, setDetail] = useState<CustomerAppointment | null>(null);
   const [modalError, setModalError] = useState("");
-  const [editing, setEditing] = useState(false);
+  const [mode, setMode] = useState<"view" | "edit" | "cancel">("view");
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
-  const [cancelling, setCancelling] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError("");
-    getMyAppointments({ status, page, perPage: 10 })
-      .then((res) => {
-        if (!active) return;
-        setItems(res.items);
-        setPagination(res.pagination);
-      })
-      .catch((e: unknown) => {
-        if (active) setError(errorText(e, "Không thể tải danh sách lịch hẹn."));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [status, page, reloadKey]);
+    getMyAppointments({ page: 1, perPage: 100 })
+      .then((res) => { if (active) setItems(res.items); })
+      .catch((e: unknown) => { if (active) setError(errorText(e, "Không thể tải danh sách lịch hẹn.")); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [reloadKey]);
+  const reloadList = () => { setLoading(true); setError(""); setReloadKey((k) => k + 1); };
 
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((a) =>
-      [a.appointment_code, a.vehicle?.license_plate, getVehicleName(a.vehicle), servicesText(a)]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q)),
-    );
-  }, [items, keyword]);
+    const accept = TABS.find((t) => t.id === tab)?.accept ?? (() => true);
+    const list = items.filter(accept).filter((a) => !q || [a.appointment_code, a.vehicle?.license_plate, getVehicleName(a.vehicle), servicesText(a)]
+      .some((v) => String(v ?? "").toLowerCase().includes(q)));
+    return list.sort((a, b) => sort === "date_asc" ? appointmentTime(a) - appointmentTime(b)
+      : sort === "created_desc" ? b.id - a.id
+      : appointmentTime(b) - appointmentTime(a));
+  }, [items, tab, keyword, sort]);
 
-  const openDetail = useCallback(async (a: CustomerAppointment) => {
-    setSelected(a);
-    setEditing(false);
-    setCancelling(false);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+  const paged = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+
+  // Link từ thông báo (?appointment=<id>): sau khi tải danh sách, modal của đúng lịch hẹn tự mở.
+  const { value: linkedId, clear: clearLink } = useDeepLink("appointment");
+  const linked = linkedId && !loading ? items.find((a) => String(a.id) === linkedId) : undefined;
+  const opening = opened ?? linked ?? null;
+  const openingId = opening?.id ?? null;
+
+  // Tải chi tiết của lịch đang mở (dịch vụ, gói, lý do hủy…); trong lúc chờ hiện dữ liệu từ danh sách.
+  useEffect(() => {
+    if (openingId === null) return;
+    let active = true;
+    getAppointmentDetail(openingId)
+      .then((data) => {
+        if (!active) return;
+        setDetail(data);
+        setEditDate(data.appointment_date?.slice(0, 10) ?? "");
+        setEditTime(formatTime(data.appointment_time));
+      })
+      .catch((e: unknown) => { if (active) setModalError(errorText(e, "Không thể tải chi tiết lịch hẹn.")); });
+    return () => { active = false; };
+  }, [openingId]);
+  const selected = opening && detail?.id === opening.id ? detail : opening;
+  const detailLoading = opening !== null && detail?.id !== opening.id && !modalError;
+
+  const openDetail = useCallback((a: CustomerAppointment, nextMode: "view" | "cancel" = "view") => {
+    setOpened(a);
+    setMode(nextMode);
     setCancelReason("");
     setModalError("");
-    setDetailLoading(true);
-    try {
-      const detail = await getAppointmentDetail(a.id);
-      setSelected(detail);
-      setEditDate(detail.appointment_date?.slice(0, 10) ?? "");
-      setEditTime(formatTime(detail.appointment_time));
-    } catch (e) {
-      setModalError(errorText(e, "Không thể tải chi tiết lịch hẹn."));
-    } finally {
-      setDetailLoading(false);
-    }
   }, []);
 
-  const closeModal = () => {
-    setSelected(null);
-    setEditing(false);
-    setCancelling(false);
-    setModalError("");
-  };
+  const closeModal = () => { setOpened(null); setDetail(null); setMode("view"); setModalError(""); clearLink(); };
 
   const handleSaveEdit = async () => {
     if (!selected) return;
-    if (!editDate || !editTime) {
-      setModalError("Vui lòng chọn ngày và giờ hẹn.");
-      return;
-    }
+    if (!editDate || !editTime) { setModalError("Vui lòng chọn ngày và giờ hẹn."); return; }
     setSaving(true);
     setModalError("");
     try {
-      await updateAppointment(selected.id, {
-        appointment_date: editDate,
-        appointment_time: editTime,
-      });
+      await updateAppointment(selected.id, { appointment_date: editDate, appointment_time: editTime });
       notify(`Đã đổi lịch hẹn ${selected.appointment_code} sang ${editTime} ngày ${formatDate(editDate)}.`, "success");
       closeModal();
-      setReloadKey((k) => k + 1);
+      reloadList();
     } catch (e) {
       setModalError(errorText(e, "Không thể cập nhật lịch hẹn."));
     } finally {
@@ -151,7 +168,7 @@ function Appointments() {
       await cancelAppointment(selected.id, cancelReason.trim() || "Khách hàng chủ động hủy");
       notify(`Đã hủy lịch hẹn ${selected.appointment_code}.`, "success");
       closeModal();
-      setReloadKey((k) => k + 1);
+      reloadList();
     } catch (e) {
       setModalError(errorText(e, "Không thể hủy lịch hẹn."));
     } finally {
@@ -160,193 +177,128 @@ function Appointments() {
   };
 
   const todayISO = new Date().toISOString().slice(0, 10);
-
-  const awaitingCount = items.filter(a => ["PENDING", "CREATED"].includes(a.status)).length;
-  const confirmedCount = items.filter(a => a.status === "CONFIRMED").length;
+  const count = (id: Tab) => items.filter(TABS.find((t) => t.id === id)!.accept).length;
 
   return (
-    <div className="at-customer-page at-customer-appointments">
-      <div className="at-customer-container">
-        <div className="at-customer-heading">
-          <div>
-          <h1>Lịch hẹn của tôi</h1>
-          <p>Theo dõi lịch đã gửi, xác nhận từ gara và thông tin tiếp nhận.</p></div>
-          <Link className={buttonClass({ variant: "primary" })} to="/booking"><Icon name="plus" size={16}/>Đặt lịch mới</Link>
-        </div>
-        <div className="at-customer-stats">
-          <div className="at-customer-stat"><span>TỔNG LỊCH HẸN</span><strong>{loading ? "…" : pagination.total}</strong><small>Trong tài khoản của bạn</small></div>
-          <div className="at-customer-stat"><span>CHỜ XÁC NHẬN</span><strong>{loading ? "…" : awaitingCount}</strong><small>Trên trang hiện tại · Cố vấn sẽ phản hồi</small></div>
-          <div className="at-customer-stat"><span>ĐÃ XÁC NHẬN</span><strong>{loading ? "…" : confirmedCount}</strong><small>Trên trang hiện tại · Sẵn sàng đến gara</small></div>
-        </div>
-        <div className="at-customer-filter">
-          <label htmlFor="appointment-status">Lọc trạng thái</label>
-          <select id="appointment-status" value={status} onChange={e => {setStatus(e.target.value);setPage(1)}}>
-            <option value="">Tất cả lịch hẹn</option>
-            {Object.entries(appointmentStatusLabel).map(([code,label]) => <option key={code} value={code}>{label}</option>)}
-          </select>
-          <label className="at-search-label" htmlFor="appointment-keyword">Tìm kiếm</label>
-          <input id="appointment-keyword" value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Mã lịch, biển số, tên xe…" />
-        </div>
-        {error && <div role="alert" className="at-customer-notice at-customer-error"><span>{error}</span><Button size="sm" variant="secondary" icon="refresh" onClick={() => setReloadKey(k=>k+1)}>Thử lại</Button></div>}
-        {loading && <div className="at-customer-empty">Đang tải lịch hẹn...</div>}
-        {!loading && filtered.length===0 && <div className="at-customer-empty"><h2>Chưa có lịch hẹn phù hợp</h2><p>Thử đổi bộ lọc hoặc tạo lịch bảo dưỡng mới.</p><Link to="/booking" className={buttonClass({ variant: "primary" })}><Icon name="calendar" size={16}/>Đặt lịch bảo dưỡng</Link></div>}
-        {!loading && filtered.map(a => <article key={a.id} className="at-appointment-card">
-          <div className="at-appointment-top">
-            <div><p className="at-appointment-code">{a.appointment_code}</p><h2>{getVehicleName(a.vehicle)}</h2><p className="at-appointment-description">{a.vehicle?.license_plate ?? "Chưa có biển số"} · {servicesText(a)}</p></div>
-            <StatusBadge domain="appointment" status={a.status} audience="customer"/>
-          </div>
-          <div className="at-appointment-bottom">
-            <strong>▣ {formatDate(a.appointment_date)} · {formatTime(a.appointment_time)}</strong>
-            <div className="at-appointment-actions"><Button size="sm" variant="ghost" icon="eye" onClick={() => void openDetail(a)}>Chi tiết</Button>
-              {canCancel(a) && <Button size="sm" variant="danger-outline" icon="x" onClick={() => { void openDetail(a).then(() => setCancelling(true)); }}>Hủy lịch</Button>}
-            </div>
-          </div>
-        </article>)}
-        {pagination.last_page>1 && <div className="at-customer-pagination"><span>Trang {pagination.current_page}/{pagination.last_page} · {pagination.total} lịch hẹn</span><div>
-          <Button size="sm" variant="outline" icon="chevron-left" disabled={page<=1} onClick={() => setPage(p=>Math.max(1,p-1))}>Trước</Button>
-          <Button size="sm" variant="outline" iconRight="chevron-right" disabled={page>=pagination.last_page} onClick={() => setPage(p=>p+1)}>Sau</Button>
-        </div></div>}
+    <AccountPage
+      testId="customer-appointments"
+      title="Lịch hẹn"
+      description="Theo dõi lịch đã đặt, xác nhận từ gara; đổi giờ hoặc hủy lịch khi cần."
+      actions={<Link to="/booking" className={`${buttonClass({ variant: "primary" })} ${PRIMARY_RED}`}><Icon name="plus" size={16}/>Đặt lịch mới</Link>}
+    >
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Lọc lịch hẹn">
+        {TABS.map((t) => (
+          <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => { setTab(t.id); setPage(1); }}
+            className={`cursor-pointer rounded-full border px-4 py-2 text-[14px] font-bold transition-colors ${tab === t.id ? "border-cs-accent bg-cs-soft text-cs-accent-text" : "border-cs-border bg-cs-surface text-cs-muted hover:text-cs-text"}`}>
+            {t.label} <span className="ml-1 font-semibold opacity-70">{loading ? "" : count(t.id)}</span>
+          </button>
+        ))}
       </div>
 
+      <FilterBar search={keyword} onSearch={(v) => { setKeyword(v); setPage(1); }} placeholder="Tìm mã lịch hẹn, dịch vụ, biển số…" count={loading ? undefined : `${filtered.length} lịch hẹn`}>
+        <FilterSelect label="Sắp xếp lịch hẹn" value={sort} onChange={(v) => { setSort(v as SortKey); setPage(1); }}>
+          {SORTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+        </FilterSelect>
+      </FilterBar>
+
+      {loading ? <AccountCard><LoadingState label="Đang tải lịch hẹn…"/></AccountCard>
+        : error ? <AccountCard><ErrorState description={error} onRetry={() => reloadList()}/></AccountCard>
+        : filtered.length === 0 ? (
+          <AccountCard>
+            <EmptyState icon="calendar" title={items.length ? "Không có lịch hẹn phù hợp" : "Bạn chưa có lịch hẹn nào"}
+              description={items.length ? "Thử đổi bộ lọc hoặc từ khóa tìm kiếm." : "Đặt lịch bảo dưỡng để gara chuẩn bị trước cho xe của bạn."}
+              action={<Link to="/booking" className={`${buttonClass({ variant: "primary" })} ${PRIMARY_RED}`}><Icon name="plus" size={16}/>Đặt lịch mới</Link>}/>
+          </AccountCard>
+        ) : (
+          <div className="space-y-4">
+            {paged.map((a) => (
+              <AccountCard key={a.id} as="article" className="flex flex-wrap items-center gap-5 p-4 sm:flex-nowrap">
+                <DateBlock value={a.appointment_date}/>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-extrabold tracking-[0.06em] text-cs-accent-text">{a.appointment_code}</p>
+                  <h2 className="mt-0.5 break-words text-[17px] font-extrabold leading-snug text-cs-text">{servicesText(a)}</h2>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-cs-muted">
+                    <span className="inline-flex items-center gap-2"><VehicleBrandLogo brand={a.vehicle?.model?.brand?.name} size={24}/>{getVehicleName(a.vehicle)}</span>
+                    {a.vehicle?.license_plate && <span className="rounded-md border border-cs-border px-2 py-0.5 font-mono text-[13px] font-bold text-cs-text">{a.vehicle.license_plate}</span>}
+                  </div>
+                </div>
+                <div className="flex w-full items-center justify-between gap-4 border-t border-cs-border pt-3 sm:w-auto sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[15px] font-bold text-cs-text"><Icon name="clock" size={16}/>{formatTime(a.appointment_time)}</span>
+                    <StatusBadge domain="appointment" status={a.status} audience="customer"/>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {canCancel(a) && <Button size="sm" variant="danger-outline" icon="x" onClick={() => openDetail(a, "cancel")}>Hủy lịch</Button>}
+                    <Button size="sm" variant="secondary" icon="eye" onClick={() => openDetail(a)}>Chi tiết</Button>
+                  </div>
+                </div>
+              </AccountCard>
+            ))}
+            <Pagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} pageSize={PER_PAGE} onChange={setPage}/>
+          </div>
+        )}
+
       {selected && (
-        <Modal bare open onClose={closeModal} dismissible={!saving} title={"Chi tiết lịch hẹn"} className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-cs-surface p-6 shadow-overlay md:p-8">
-            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+        <Modal bare open onClose={closeModal} dismissible={!saving} title="Chi tiết lịch hẹn" className={`${MODAL_CLASS} max-w-2xl`}>
+          <ModalHead icon="calendar" eyebrow="Chi tiết lịch hẹn" title={selected.appointment_code}
+            badge={<StatusBadge domain="appointment" status={selected.status} audience="customer"/>} onClose={closeModal} disabled={saving}/>
+          {detailLoading ? <LoadingState compact label="Đang tải chi tiết…"/> : (
+            <div className="space-y-5 p-5 sm:p-6">
+              <div className="flex items-center gap-3 rounded-2xl border border-cs-border p-4">
+                <VehicleBrandLogo brand={selected.vehicle?.model?.brand?.name} size={44}/>
+                <div className="min-w-0">
+                  <p className="font-bold text-cs-text">{getVehicleName(selected.vehicle)}</p>
+                  <p className="font-mono text-[13px] text-cs-muted">{selected.vehicle?.license_plate ?? "Chưa có biển số"}</p>
+                </div>
+              </div>
+              <dl className="grid gap-3 sm:grid-cols-3">
+                <InfoTile label="Ngày hẹn" value={formatDate(selected.appointment_date)}/>
+                <InfoTile label="Giờ hẹn" value={formatTime(selected.appointment_time)}/>
+                <InfoTile label="Loại yêu cầu" value={requestTypeLabel[selected.request_type] ?? selected.request_type}/>
+              </dl>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#D6A85F]">
-                  CHI TIẾT LỊCH HẸN
-                </p>
-                <h3 className="text-lg font-extrabold text-[#1F2933]">{selected.appointment_code}</h3>
-                <StatusBadge domain="appointment" status={selected.status} audience="customer" className="mt-1"/>
+                <p className="text-[13px] font-bold text-cs-muted">Dịch vụ / gói đã chọn</p>
+                <p className="mt-1 text-[15px] text-cs-text">{servicesText(selected)}</p>
               </div>
-              <button
-                type="button"
-                onClick={closeModal}
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
-              >
-                ✕
-              </button>
+              {selected.symptom_description && <div><p className="text-[13px] font-bold text-cs-muted">Mô tả tình trạng</p><p className="mt-1 whitespace-pre-line text-[15px] text-cs-text">{selected.symptom_description}</p></div>}
+              {selected.note && <div><p className="text-[13px] font-bold text-cs-muted">Ghi chú</p><p className="mt-1 whitespace-pre-line text-[15px] text-cs-text">{selected.note}</p></div>}
+              {selected.status === "CANCELLED" && selected.cancel_reason && <InlineError>Lý do hủy: {selected.cancel_reason}</InlineError>}
+
+              {mode === "edit" && (
+                <div className="grid gap-4 rounded-2xl border border-cs-border p-4 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1.5"><span className="text-label text-cs-text-2">Ngày hẹn mới</span>
+                    <input type="date" min={todayISO} value={editDate} onChange={(e) => setEditDate(e.target.value)} className={controlClass}/></label>
+                  <label className="flex flex-col gap-1.5"><span className="text-label text-cs-text-2">Giờ hẹn mới</span>
+                    <input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} className={controlClass}/></label>
+                </div>
+              )}
+              {mode === "cancel" && (
+                <label className="flex flex-col gap-1.5">
+                  <span className="flex items-baseline justify-between text-label text-cs-text-2">
+                    <span>Lý do hủy <span className="font-normal text-cs-muted">(không bắt buộc)</span></span>
+                    <span className="text-xs font-normal text-cs-muted">{cancelReason.length}/255</span>
+                  </span>
+                  <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} maxLength={255} rows={2} className={`${controlClass} resize-none`} placeholder="Ví dụ: Bận việc đột xuất"/>
+                </label>
+              )}
+              {modalError && <InlineError>{modalError}</InlineError>}
             </div>
-
-            {detailLoading ? (
-              <p className="py-8 text-center text-xs text-cs-muted">Đang tải chi tiết...</p>
-            ) : (
-              <div className="mt-4 space-y-3 text-xs">
-                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-cs-bg p-4">
-                  <div>
-                    <p className="text-slate-400">Xe</p>
-                    <p className="mt-0.5 font-bold text-slate-800">{getVehicleName(selected.vehicle)}</p>
-                    <p className="font-mono text-slate-500">{selected.vehicle?.license_plate ?? "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400">Loại yêu cầu</p>
-                    <p className="mt-0.5 font-bold text-slate-800">
-                      {requestTypeLabel[selected.request_type] ?? selected.request_type}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400">Ngày hẹn</p>
-                    <p className="mt-0.5 font-bold text-slate-800">{formatDate(selected.appointment_date)}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400">Giờ hẹn</p>
-                    <p className="mt-0.5 font-bold text-slate-800">{formatTime(selected.appointment_time)}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="font-bold text-slate-700">Dịch vụ / gói đã chọn</p>
-                  <p className="mt-1 text-slate-600">{servicesText(selected)}</p>
-                </div>
-                {selected.symptom_description && (
-                  <div>
-                    <p className="font-bold text-slate-700">Mô tả tình trạng</p>
-                    <p className="mt-1 text-slate-600">{selected.symptom_description}</p>
-                  </div>
-                )}
-                {selected.note && (
-                  <div>
-                    <p className="font-bold text-slate-700">Ghi chú</p>
-                    <p className="mt-1 text-slate-600">{selected.note}</p>
-                  </div>
-                )}
-                {selected.status === "CANCELLED" && selected.cancel_reason && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-800">
-                    <strong>Lý do hủy:</strong> {selected.cancel_reason}
-                  </div>
-                )}
-
-                {editing && (
-                  <div className="grid grid-cols-2 gap-3 rounded-xl border border-[#E1E4E6] p-4">
-                    <div>
-                      <label className="mb-1 block font-semibold">Ngày hẹn mới</label>
-                      <input
-                        type="date"
-                        min={todayISO}
-                        value={editDate}
-                        onChange={(e) => setEditDate(e.target.value)}
-                        className="h-10 w-full rounded-lg border border-[#DDE1E4] px-3 outline-none focus:border-[#D6A85F]"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block font-semibold">Giờ hẹn mới</label>
-                      <input
-                        type="time"
-                        value={editTime}
-                        onChange={(e) => setEditTime(e.target.value)}
-                        className="h-10 w-full rounded-lg border border-[#DDE1E4] px-3 outline-none focus:border-[#D6A85F]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {cancelling && (
-                  <div className="rounded-xl border border-[#E1E4E6] p-4">
-                    <label className="mb-1 block font-semibold">Lý do hủy (không bắt buộc)</label>
-                    <textarea
-                      value={cancelReason}
-                      onChange={(e) => setCancelReason(e.target.value)}
-                      maxLength={255}
-                      rows={3}
-                      className="w-full rounded-lg border border-[#DDE1E4] p-3 outline-none focus:border-[#D6A85F]"
-                    />
-                  </div>
-                )}
-
-                {modalError && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-semibold text-red-700">
-                    {modalError}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
-                  {editing ? (
-                    <>
-                      <Button variant="secondary" onClick={() => setEditing(false)}>Bỏ qua</Button>
-                      <Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void handleSaveEdit()}>Lưu thay đổi</Button>
-                    </>
-                  ) : cancelling ? (
-                    <>
-                      <Button variant="secondary" onClick={() => setCancelling(false)}>Không hủy</Button>
-                      <Button variant="danger" icon="x" loading={saving} loadingText="Đang hủy..." onClick={() => void handleCancel()}>Xác nhận hủy lịch</Button>
-                    </>
-                  ) : (
-                    <>
-                      {canEdit(selected) && (
-                        <Button variant="secondary" icon="calendar" onClick={() => setEditing(true)}>Đổi ngày giờ</Button>
-                      )}
-                      {canCancel(selected) && (
-                        <Button variant="danger-outline" icon="x" onClick={() => setCancelling(true)}>Hủy lịch</Button>
-                      )}
-                      <Button variant="secondary" onClick={closeModal}>Đóng</Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </Modal>
+          )}
+          <ModalFoot>
+            {mode === "edit" ? <>
+              <Button variant="secondary" onClick={() => setMode("view")} disabled={saving}>Bỏ qua</Button>
+              <Button variant="primary" icon="check" className={PRIMARY_RED} loading={saving} loadingText="Đang lưu..." onClick={() => void handleSaveEdit()}>Lưu thay đổi</Button>
+            </> : mode === "cancel" ? <>
+              <Button variant="secondary" onClick={() => setMode("view")} disabled={saving}>Không hủy</Button>
+              <Button variant="danger" icon="x" loading={saving} loadingText="Đang hủy..." onClick={() => void handleCancel()}>Xác nhận hủy lịch</Button>
+            </> : <>
+              <Button variant="secondary" onClick={closeModal}>Đóng</Button>
+              {canCancel(selected) && <Button variant="danger-outline" icon="x" onClick={() => setMode("cancel")}>Hủy lịch</Button>}
+              {canEdit(selected) && <Button variant="primary" icon="calendar" className={PRIMARY_RED} onClick={() => setMode("edit")}>Đổi ngày giờ</Button>}
+            </>}
+          </ModalFoot>
+        </Modal>
       )}
-    </div>
+    </AccountPage>
   );
 }
-
-export default Appointments;

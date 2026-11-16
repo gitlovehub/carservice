@@ -1,5 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { Button, ErrorState, Field, Input, LoadingState, buttonClass } from "../../components/ui";
+import { Link } from "react-router-dom";
+import { Button, ErrorState, Field, Input, LoadingState, PasswordInput, buttonClass } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { fetchApi } from "../../services/api";
@@ -207,18 +208,21 @@ export default function AdminProfile() {
           <form onSubmit={event => void changePassword(event)} className="flex flex-col gap-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Mật khẩu hiện tại" required>
-                <Input type="password" autoComplete="current-password" value={passwords.current} disabled={changing} onChange={e => setPw({ current: e.target.value })}/>
+                <PasswordInput autoComplete="current-password" value={passwords.current} disabled={changing} onChange={e => setPw({ current: e.target.value })}/>
               </Field>
               <Field label="Mật khẩu mới" required>
-                <Input type="password" autoComplete="new-password" value={passwords.next} disabled={changing} onChange={e => setPw({ next: e.target.value })}/>
+                <PasswordInput autoComplete="new-password" value={passwords.next} disabled={changing} onChange={e => setPw({ next: e.target.value })}/>
               </Field>
               <Field label="Nhập lại mật khẩu mới" required>
-                <Input type="password" autoComplete="new-password" value={passwords.confirm} disabled={changing} onChange={e => setPw({ confirm: e.target.value })}/>
+                <PasswordInput autoComplete="new-password" value={passwords.confirm} disabled={changing} onChange={e => setPw({ confirm: e.target.value })}/>
               </Field>
             </div>
             <p className="flex items-center gap-1.5 text-caption text-cs-muted"><Icon name="info" size={14}/>Tối thiểu 8 ký tự, gồm chữ thường, chữ hoa và chữ số; không trùng mật khẩu hiện tại.</p>
             {passwordError && <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-fg">{passwordError}</p>}
-            <div className="flex justify-end border-t border-cs-border pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-cs-border pt-4">
+              {/* Không nhớ mật khẩu hiện tại → đặt lại qua OTP email (trang Quên mật khẩu dùng chung), xong quay về đây. */}
+              <Link to="/forgot-password" state={{ from: { pathname: "/admin/profile", search: "", hash: "" } }}
+                className="text-small font-semibold text-cs-muted no-underline hover:text-cs-accent-text hover:underline">Quên mật khẩu hiện tại? Đặt lại qua email</Link>
               <Button type="submit" variant="primary" icon="key" loading={changing} loadingText="Đang đổi..."
                 disabled={!passwords.current || !passwords.next || !passwords.confirm}>Đổi mật khẩu</Button>
             </div>

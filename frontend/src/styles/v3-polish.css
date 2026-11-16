@@ -56,10 +56,16 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
   border-radius: 13px; box-shadow: 0 18px 48px rgb(17 24 39 / 16%); z-index: 75;
 }
 .v3ref-account-popover a, .v3ref-account-popover button {
-  display: block; width: 100%; padding: 10px 12px; border: 0; border-radius: 8px;
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; border-radius: 8px;
   background: transparent; text-align: left; font: 600 12.5px/1.5 var(--cs-ui-font);
   color: #2b3441; cursor: pointer; white-space: nowrap;
 }
+.v3ref-account-popover a svg, .v3ref-account-popover button svg { flex-shrink: 0; opacity: .7; }
+.v3ref-account-popover a[aria-current="page"] { background: #fff0f3; color: #bd1129; }
+/* Khối "đang đăng nhập": tên + email, không bấm được. */
+.v3ref-account-identity { display: grid; gap: 2px; padding: 8px 12px 10px; margin-bottom: 4px; border-bottom: 1px solid #edf0f4; max-width: 260px; }
+.v3ref-account-identity strong { font: 750 13.5px/1.35 var(--cs-ui-font); color: #18212d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3ref-account-identity small { font: 500 12px/1.4 var(--cs-ui-font); color: #6b7380; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v3ref-account-popover a:hover, .v3ref-account-popover button:hover,
 .v3ref-account-popover :focus-visible { background: #fff0f3; color: #bd1129; }
 .v3ref-account-popover .v3ref-logout-action { color: #ba2436; border-top: 1px solid #edf0f4; border-radius: 0 0 8px 8px; margin-top: 4px; }
@@ -67,6 +73,7 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
 /* Nút Đăng nhập ở header: nút chính màu đỏ thương hiệu (giống nút Đặt lịch / nút chính ở trang auth). */
 .v3ref-login { font-weight: 700; font-size: 13px; padding: 9px 16px; border-radius: 10px; background: #e11d2e; color: #fff; box-shadow: 0 6px 16px rgb(225 29 46 / 22%); transition: background-color .15s, box-shadow .15s; }
 .v3ref-login:hover, .v3ref-login[aria-current="page"] { background: #c81627; color: #fff; }
+.v3ref-admin-link { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
 .v3ref-login:focus-visible { outline: 2px solid #e11d2e; outline-offset: 2px; }
 html[data-theme="dark"] .v3ref-header .v3ref-login { background: #e11d2e; color: #fff !important; }
 html[data-theme="dark"] .v3ref-header .v3ref-login:hover { background: #c81627; }
@@ -104,7 +111,8 @@ html[data-theme="dark"] .v3ref-header .v3ref-login:hover { background: #c81627; 
 .v3ref-crumb [aria-current="page"] { background: #ffffff1f; }
 .v3ref-crumb [aria-current="page"]::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: #ff3b4f; box-shadow: 0 0 0 3px #ff3b4f40; }
 /* Tone sáng: trên nền trang (Đặt lịch, khu Hồ sơ của tôi). */
-.v3ref-crumb.is-light { background: var(--cs-surface, #fff); border-color: var(--cs-border, #e5e5e2); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 4px 14px #1a1c260d; }
+/* Nền sáng (khu Hồ sơ): không margin-bottom — khoảng cách do khung CustomerAccountLayout (gap) quyết định. */
+.v3ref-crumb.is-light { margin-bottom: 0; background: var(--cs-surface, #fff); border-color: var(--cs-border, #e5e5e2); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 4px 14px #1a1c260d; }
 .v3ref-crumb.is-light a { color: var(--cs-muted, #686c71) !important; }
 .v3ref-crumb.is-light a:hover { background: var(--cs-hover, #ebebe8); color: var(--cs-text, #191919) !important; }
 .v3ref-crumb.is-light .v3ref-crumb-sep { color: var(--cs-muted, #686c71); opacity: .6; }
@@ -326,9 +334,6 @@ html[data-theme="dark"] .v3ref-shell .v3ref-sv-clear { background: var(--cs-soft
 .v3ref-rv-score-count strong { display: block; font-size: 30px; font-weight: 800; line-height: 1.05; }
 .v3ref-rv-score-count small { font-size: 13px; color: #4a5058; }
 /* Sao (hỗ trợ sao lẻ: lớp sao vàng phủ theo % lên lớp sao xám). */
-.v3ref-rv-stars { position: relative; display: inline-block; font-size: 22px; letter-spacing: 3px; line-height: 1; color: #d9dce0; white-space: nowrap; }
-.v3ref-rv-stars>span { position: absolute; inset: 0 auto 0 0; overflow: hidden; color: #f5a623; }
-.v3ref-rv-stars.is-sm { font-size: 18px; letter-spacing: 2px; }
 /* Carousel trượt ngang: viewport cắt phần thừa, track chứa mọi thẻ trên 1 hàng và dịch theo trang. */
 .v3ref-rv-viewport { --rv-gap: 26px; overflow: hidden; margin: -14px -14px -24px; padding: 14px 14px 24px; touch-action: pan-y; }
 .v3ref-rv-track { display: flex; gap: var(--rv-gap); align-items: stretch;
@@ -606,7 +611,8 @@ html[data-theme="dark"] .v3ref-shell .v3ref-featurebar-icon { background: var(--
   .v3ref-logo small { font-size: 8px; }
   .v3ref-logo>span { width: 34px; height: 34px; font-size: 21px; }
   .v3ref-nav-right { gap: 5px; }
-  .v3ref-reviews-link span, .v3ref-management-link>span:last-child { display: none; }
+  .v3ref-reviews-link span, .v3ref-management-link>span:last-child, .v3ref-admin-link>span { display: none; }
+  .v3ref-admin-link { padding: 9px 11px; }
   .v3ref-reviews-link { font-size: 19px; }
   .v3ref-account-popover { right: -45px; }
   .v3ref-hero h1 { font-size: 35px; line-height: 1.18; }
@@ -656,6 +662,10 @@ html[data-theme="dark"] .v3ref-account-popover {
 }
 html[data-theme="dark"] .v3ref-account-popover a,
 html[data-theme="dark"] .v3ref-account-popover button { color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-account-identity { border-bottom-color: var(--cs-border); }
+html[data-theme="dark"] .v3ref-account-identity strong { color: var(--cs-text); }
+html[data-theme="dark"] .v3ref-account-identity small { color: var(--cs-muted); }
+html[data-theme="dark"] .v3ref-account-popover a[aria-current="page"] { background: var(--cs-soft); color: var(--cs-accent-text); }
 html[data-theme="dark"] .v3ref-account-popover a:hover,
 html[data-theme="dark"] .v3ref-account-popover button:hover,
 html[data-theme="dark"] .v3ref-account-popover :focus-visible {
@@ -742,7 +752,6 @@ html[data-theme="dark"] .v3ref-shell .v3ref-rv-chips li { color: var(--cs-text);
 html[data-theme="dark"] .v3ref-shell .v3ref-symptom:hover .v3ref-symptom-icon { background: var(--cs-accent); color: #fff; }
 html[data-theme="dark"] .v3ref-shell .v3ref-rv-score { background: linear-gradient(135deg, var(--cs-surface), var(--cs-surface-2)); box-shadow: 0 10px 28px #0006, inset 0 0 0 1px var(--cs-border); }
 html[data-theme="dark"] .v3ref-shell .v3ref-rv-score-sep { background: var(--cs-border); }
-html[data-theme="dark"] .v3ref-shell .v3ref-rv-stars { color: #4a4e55; }
 html[data-theme="dark"] .v3ref-shell .v3ref-rv-dots button:not(.active) { background: #4a4e55; }
 html[data-theme="dark"] .v3ref-shell .v3ref-rv-arrow { color: var(--cs-text); }
 /* FAQ: nút + / ×. */
@@ -835,6 +844,7 @@ html[data-theme="dark"] .v3ref-notification-error,
 html[data-theme="dark"] .v3ref-notification-error button { color: var(--cs-accent-text); }
 html[data-theme="dark"] .v3ref-notification-item { background: var(--cs-surface); border-color: var(--cs-border); color: var(--cs-text); }
 html[data-theme="dark"] .v3ref-notification-item:hover { background: var(--cs-surface-2); }
+html[data-theme="dark"] .v3ref-notification-item-meta em { color: var(--cs-accent-text); }
 html[data-theme="dark"] .v3ref-notification-item.is-unread { background: var(--cs-soft); }
 html[data-theme="dark"] .v3ref-notification-item-icon,
 html[data-theme="dark"] .v3ref-notification-empty-icon { background: var(--cs-soft); color: var(--cs-accent-text); }

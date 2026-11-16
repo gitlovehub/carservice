@@ -6,7 +6,6 @@ use App\Mail\AppointmentRescheduledMail;
 use App\Models\Account;
 use App\Models\Appointment;
 use App\Models\AuditLog;
-use App\Models\Notification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -31,7 +30,10 @@ class AppointmentActivityService
 
     public const NO_SHOW = 'appointment.no_show';
 
-    public function __construct(private readonly AppointmentSlotService $slots) {}
+    public function __construct(
+        private readonly AppointmentSlotService $slots,
+        private readonly CustomerNotifier $notifier,
+    ) {}
 
     public function record(Appointment $appointment, string $action, Account $actor, array $old = [], array $new = [], ?string $reason = null): void
     {
@@ -66,18 +68,7 @@ class AppointmentActivityService
             $locked->update(['appointment_date' => $date, 'appointment_time' => $time]);
             $this->record($locked, self::RESCHEDULED, $actor, $old, ['appointment_date' => $date, 'appointment_time' => $time], $reason);
 
-            $account = $locked->customer?->account;
-            if ($account) {
-                Notification::query()->create([
-                    'account_id' => $account->id,
-                    'appointment_id' => $locked->id,
-                    'title' => 'Lịch hẹn đã được đổi',
-                    'content' => "Lịch {$locked->appointment_code} đổi sang {$time} ngày ".Carbon::parse($date)->format('d/m/Y').". Lý do: {$reason}",
-                    'type' => 'APPOINTMENT_RESCHEDULED',
-                    'channel' => 'WEB',
-                    'status' => 'PENDING',
-                ]);
-            }
+            $this->notifier->appointmentRescheduled($locked, $reason);
 
             return $locked;
         });

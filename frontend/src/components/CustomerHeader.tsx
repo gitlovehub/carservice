@@ -48,11 +48,6 @@ const menuItems = [
     icon: "▤",
   },
   {
-    label: "Đánh giá",
-    path: "/reviews",
-    icon: "★",
-  },
-  {
     label: "Tài khoản",
     path: "/account",
     icon: "◉",

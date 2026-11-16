@@ -58,7 +58,7 @@ const TONE_ICON: Record<Tone, string> = {
 function nextStep(o: CustomerRepairOrder): { tone: Tone; icon: IconName; title: string; text: ReactNode; action?: { label: string; to: string } } {
   const pendingQuote = o.quotations?.slice().sort((a, b) => b.id - a.id).find(q => q.status === 'SENT');
   if (pendingQuote || o.status === 'WAITING_APPROVAL') return {
-    tone: 'warning', icon: 'file', title: 'Báo giá đang chờ bạn duyệt',
+    tone: 'warning', icon: 'dollar', title: 'Báo giá đang chờ bạn duyệt',
     text: <>Gara chỉ bắt đầu sửa các hạng mục bạn đồng ý.{pendingQuote && <> Tổng báo giá: <strong>{money(pendingQuote.total_amount)}</strong>.</>}</>,
     action: { label: 'Xem & duyệt báo giá', to: '/quotation' },
   };
@@ -84,7 +84,7 @@ function nextStep(o: CustomerRepairOrder): { tone: Tone; icon: IconName; title: 
   }
   if (o.status === 'HANDED_OVER') return {
     tone: 'success', icon: 'star', title: 'Đã bàn giao xe', text: 'Cảm ơn bạn đã tin tưởng CarService. Dành một phút đánh giá để gara phục vụ tốt hơn nhé.',
-    action: { label: 'Đánh giá dịch vụ', to: '/reviews' },
+    action: { label: 'Đánh giá dịch vụ', to: `/customer/service-history?review=${o.id}` },
   };
   if (o.status === 'CLOSED') return { tone: 'neutral', icon: 'info', title: 'Phiếu đã đóng', text: o.note || 'Phiếu sửa chữa này đã kết thúc.' };
   if (['INSPECTING', 'QUOTING'].includes(o.status)) return {
@@ -313,7 +313,7 @@ function MemberTracking() {
               </button>)}
           </div>
           {/* Viền + vòng sáng đặt ở khung ngoài (focus-within); ô input bên trong không viền để không lồng 2 khung. */}
-          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-cs-border bg-cs-surface px-3 transition focus-within:border-[#e11d2e] focus-within:ring-3 focus-within:ring-[#e11d2e]/15 sm:max-w-sm">
+          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-cs-border bg-cs-surface px-3 transition focus-within:border-[#e11d2e]sm:max-w-sm">
             <span className="text-cs-muted"><Icon name="search" size={16}/></span>
             <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nhập mã phiếu hoặc biển số xe…" aria-label="Mã phiếu hoặc biển số xe"
               className="min-w-0 flex-1 rounded-none! border-0! bg-transparent! py-2.5 text-sm text-cs-text shadow-none! outline-none! placeholder:text-cs-muted"/>

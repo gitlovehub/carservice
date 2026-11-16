@@ -40,6 +40,14 @@ Không có.
 - Rời P1 khi P1D-03 VERIFIED và PO nghiệm thu P1.
 
 
+## Cập nhật 15/11/2026 (nhánh `v3-client`)
+
+- Khu "Hồ sơ của tôi" của khách: 8 trang (Hồ sơ, Xe, Lịch hẹn, Lịch sử bảo dưỡng, Đánh giá, Báo giá, Hóa đơn, Thanh toán) dùng chung khung `pages/customer/account/AccountKit.tsx` (tiêu đề, lọc, thẻ, modal) — chỉ nằm trong sidebar tài khoản.
+- Xe của tôi: thẻ ngang + modal chi tiết; logo hãng (`components/vehicle/VehicleBrandLogo.tsx`, file `public/brand-logos/`); bảo vệ lịch sử (không xóa xe đang ở xưởng / có lịch hẹn mở; xe có lịch sử khóa đổi hãng/dòng/năm/VIN; thêm lại biển số đã xóa → khôi phục) — `CustomerVehicleHistoryProtectionTest`.
+- Lịch sử bảo dưỡng: modal "Chi tiết lịch sử dịch vụ" (API `/me/repair-orders/{id}` thêm tên cố vấn/KTV, phụ tùng đã dùng, dịch vụ đã đặt).
+- **NEXT CL-01 xong** (xem MASTER_TASK_LIST). Toàn bộ chưa commit — PO tự commit.
+- Kiểm thử: backend 307/307, smoke frontend 31/31, `tsc -p tsconfig.app.json` đạt.
+
 ## Cập nhật 09/11/2026 (v3)
 
 Danh mục xe 3 cấp (Hãng → Dòng xe → Phiên bản) từ CSV đã triển khai và commit trên `v3` (chưa push), xem SESSION_HANDOFF.md. DB dev migrate tới `2026_11_09_100000` và đã seed CSV. Còn: UX-01..09, FINAL-01, gắn bộ chọn xe cho trang cố vấn.

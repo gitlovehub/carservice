@@ -48,9 +48,10 @@ class VehicleHandover extends Model
         return $this->belongsTo(RepairOrder::class);
     }
 
+    /** Kể cả xe khách đã xóa khỏi danh sách, để biên bản giao nhận luôn hiện đúng xe. */
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class);
+        return $this->belongsTo(Vehicle::class)->withTrashed();
     }
 
     public function staff(): BelongsTo

@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import { FeedbackProvider } from "./components/ui/FeedbackProvider";
 import ChatWidget from "./components/ChatWidget";
@@ -13,7 +13,7 @@ import { AdminLayout, AdvisorLayout, CustomerLayout } from "./layouts/AppShell";
 import ModulePlaceholder from "./pages/shared/ModulePlaceholder";
 import Home from "./pages/showcase/ReferenceHome";
 import Services from "./pages/showcase/ReferenceServices";
-import ReferenceAppointments from "./pages/showcase/ReferenceAppointments";
+import ServiceGuidePage from "./pages/showcase/ServiceGuidePage";
 import ReferenceTracking from "./pages/showcase/ReferenceTracking";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
@@ -32,7 +32,6 @@ import Quotation from "./pages/customer/Quotation";
 import Payment from "./pages/customer/Payment";
 import VnpayReturn from "./pages/customer/VnpayReturn";
 import Invoices from "./pages/customer/Invoices";
-import Reviews from "./pages/customer/Reviews";
 import AdvisorCustomers from "./pages/advisor/Customers";
 import AdvisorCustomerCars from "./pages/advisor/Customer-cars";
 import AdvisorAppointments from "./pages/advisor/Appointments";
@@ -64,17 +63,27 @@ import AdminVehicleCatalog from "./pages/admin/VehicleCatalog";
 import AdminReports from "./pages/admin/Reports";
 import AdminProfile from "./pages/admin/Profile";
 
+/** Link cũ /reviews (?orderId=) → Lịch sử bảo dưỡng; có orderId thì mở sẵn modal đánh giá của phiếu đó. */
+function LegacyReviewsRedirect() {
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get("orderId");
+  return <Navigate to={orderId ? `/customer/service-history?review=${encodeURIComponent(orderId)}` : "/customer/service-history"} replace/>;
+}
+
 function App() {
   return <BrowserRouter><ThemeProvider><AuthProvider><AppErrorBoundary><FeedbackProvider><Routes>
     {/* Public pages continue using their existing components. */}
     <Route element={<PublicLayout/>}>
     <Route path="/" element={<Home/>}/>
-    {/* Chỉ cho khách chưa đăng nhập; đã đăng nhập → chuyển về trang phù hợp (GuestOnlyRoute). */}
+    {/* Đăng nhập / Đăng ký chỉ cho khách chưa đăng nhập; đã đăng nhập → chuyển về trang phù hợp (GuestOnlyRoute). */}
     <Route path="/login" element={<GuestOnlyRoute><Login/></GuestOnlyRoute>}/>
     <Route path="/register" element={<GuestOnlyRoute><Register/></GuestOnlyRoute>}/>
-    <Route path="/forgot-password" element={<GuestOnlyRoute><ForgotPassword/></GuestOnlyRoute>}/>
+    {/* Quên mật khẩu mở cả khi đã đăng nhập (tab Bảo mật ở Hồ sơ dẫn tới đây để đặt lại qua OTP email). */}
+    <Route path="/forgot-password" element={<ForgotPassword/>}/>
     <Route path="/role-selector" element={<Navigate to="/login" replace/>}/>
     <Route path="/services" element={<Services/>}/>
+    {/* Trang chi tiết nhóm dịch vụ chủ lực: bài viết + gợi ý theo tình trạng + chọn dịch vụ → đặt lịch. */}
+    <Route path="/services/:slug" element={<ServiceGuidePage/>}/>
     {/* Liên hệ & Về chúng tôi: công khai, không cần đăng nhập. */}
     <Route path="/contact" element={<Contact/>}/>
     <Route path="/about" element={<About/>}/>
@@ -99,16 +108,18 @@ function App() {
       {/* Khu "Hồ sơ của tôi": các trang tài khoản dùng chung sidebar (CustomerAccountLayout). */}
       <Route element={<CustomerAccountLayout/>}>
         <Route path="/customer/account" element={<Account/>}/>
-        <Route path="/appointments" element={<ReferenceAppointments/>}/>
-        <Route path="/customer/appointments" element={<ReferenceAppointments/>}/>
+        {/* Lịch hẹn: một trang duy nhất trong khu tài khoản (xem, đổi giờ, hủy ngay trong modal). */}
+        <Route path="/appointments" element={<Navigate to="/customer/appointments" replace/>}/>
+        <Route path="/customer/appointments" element={<Appointments/>}/>
         {/* "Xe của tôi": một trang quản lý duy nhất (thêm/sửa/xóa, đặt lịch cho xe). */}
         <Route path="/cars" element={<Navigate to="/customer/cars" replace/>}/>
         <Route path="/customer/cars" element={<Cars/>}/>
         <Route path="/quotation" element={<Quotation/>}/>
-        <Route path="/customer/appointments/manage" element={<Appointments/>}/>
+        <Route path="/customer/appointments/manage" element={<Navigate to="/customer/appointments" replace/>}/>
         <Route path="/customer/cars/manage" element={<Navigate to="/customer/cars" replace/>}/>
         <Route path="/customer/service-history" element={<ServiceHistory/>}/>
-        <Route path="/reviews" element={<Reviews/>}/>
+        {/* Không còn trang Đánh giá riêng: link cũ /reviews?orderId= chuyển sang Lịch sử và mở modal của đúng phiếu. */}
+        <Route path="/reviews" element={<LegacyReviewsRedirect/>}/>
         <Route path="/invoices" element={<Invoices/>}/>
         <Route path="/payment" element={<Payment/>}/>
         <Route path="/payment/vnpay-return" element={<VnpayReturn/>}/>

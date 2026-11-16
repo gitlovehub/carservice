@@ -67,7 +67,7 @@ assert(quotation.includes('variant="success" size="lg" icon="check"') && quotati
 const booking = read('../src/pages/customer/Booking.tsx');
 assert(booking.includes('icon="arrow-left"') && booking.includes('"arrow-right"') && booking.includes('size="lg"'), 'Đặt lịch: Quay lại + mũi tên, Tiếp tục primary lg');
 const cars = read('../src/pages/customer/Cars.tsx');
-assert(cars.includes('variant="tonal" icon="plus"') && cars.includes('icon="trash" tone="danger"'), 'Xe của tôi: Thêm xe tonal, Xóa icon đỏ');
+assert(cars.includes('variant="primary" icon="plus"') && cars.includes('ADD_CAR_BUTTON') && cars.includes('icon="trash" tone="danger"'), 'Xe của tôi: Thêm xe nút đỏ chính (như Đăng nhập), Xóa icon đỏ');
 const panels = read('../src/pages/advisor/RepairOrderPanels.tsx');
 for (const needle of ['icon="send"', 'iconRight="arrow-right"', 'variant="success" icon="cash"', 'disabled={invoice.status !== "PAID"}', 'variant="tonal" icon="plus"']) {
   assert(panels.includes(needle), `Phiếu sửa chữa thiếu ${needle}`);

@@ -34,6 +34,9 @@ use Illuminate\Support\Str;
 
 class RepairOrderService
 {
+    /** Mỗi bước khách cần biết (báo giá, sửa, hóa đơn, thanh toán, bàn giao) → thông báo chuông qua CustomerNotifier. */
+    public function __construct(private readonly CustomerNotifier $notifier) {}
+
     /*
     |--------------------------------------------------------------------------
     | 1. Tiếp nhận xe
@@ -425,6 +428,7 @@ class RepairOrderService
             $ro->flow_type = RepairOrder::FLOW_QUICK;
             $this->transition($ro, RepairOrder::WAITING_APPROVAL, $actor,
                 "Dịch vụ nhanh: đã gửi báo giá niêm yết {$quotation->quotation_code} cho khách (không qua chẩn đoán).");
+            $this->notifier->quotationSent($ro, false);
 
             return $quotation->load('items');
         });
@@ -445,6 +449,7 @@ class RepairOrderService
                 $this->transition($ro, RepairOrder::WAITING_APPROVAL, $actor,
                     "Đã gửi báo giá {$quotation->quotation_code} cho khách.");
             }
+            $this->notifier->quotationSent($ro, $quotation->type === Quotation::TYPE_SUPPLEMENT);
 
             return $quotation;
         });
@@ -529,6 +534,7 @@ class RepairOrderService
                 "Bắt đầu sửa chữa theo báo giá {$quotation->quotation_code}.");
             $this->refreshEstimatedReadyAt($ro);
             $this->syncPartShortages($ro, $quotation, $actor);
+            $this->notifier->repairStarted($ro);
 
             return $ro;
         });
@@ -542,6 +548,7 @@ class RepairOrderService
     public function markWaitingForParts(RepairOrder $ro, ?Account $actor, ?string $note = null): RepairOrder
     {
         $this->transition($ro, RepairOrder::WAITING_FOR_PARTS, $actor, $note ?? 'Đang chờ phụ tùng.');
+        $this->notifier->waitingForParts($ro);
 
         return $ro;
     }
@@ -673,6 +680,7 @@ class RepairOrderService
         }
 
         $this->transition($ro, RepairOrder::COMPLETED, $actor, $note ?? 'Hoàn tất toàn bộ công việc sửa chữa.');
+        $this->notifier->repairCompleted($ro);
 
         return $ro;
     }
@@ -700,6 +708,7 @@ class RepairOrderService
 
         $ro->close_reason = $reason;
         $this->transition($ro, RepairOrder::CLOSED, $actor, $note);
+        $this->notifier->repairClosed($ro, $note);
 
         return $ro;
     }
@@ -752,6 +761,7 @@ class RepairOrderService
             $invoice->subtotal = $subtotal;
             $invoice->total_amount = $subtotal - $invoice->discount_amount;
             $invoice->save();
+            $this->notifier->invoiceIssued($ro, (float) $invoice->total_amount);
 
             return $invoice->load('items');
         });
@@ -789,9 +799,18 @@ class RepairOrderService
             ]);
 
             $this->refreshInvoiceStatus($invoice);
+            // Tiền mặt tại quầy (thu ngay) → báo khách; QR chờ cổng xác nhận rồi mới báo.
+            if ($payment->status === Payment::SUCCESS) {
+                $this->notifyPayment($invoice, (float) $amount);
+            }
 
             return $payment;
         });
+    }
+
+    private function notifyPayment(Invoice $invoice, float $amount): void
+    {
+        $this->notifier->paymentReceived($invoice->repairOrder, $amount, $invoice->status === Invoice::PAID);
     }
 
     /**
@@ -814,6 +833,9 @@ class RepairOrderService
             $payment->save();
 
             $this->refreshInvoiceStatus($payment->invoice);
+            if ($success) {
+                $this->notifyPayment($payment->invoice, (float) $payment->amount);
+            }
 
             return $payment;
         });
@@ -851,6 +873,7 @@ class RepairOrderService
         }
 
         $this->transition($ro, RepairOrder::HANDED_OVER, $actor, 'Đã bàn giao xe cho khách.');
+        $this->notifier->reviewInvite($ro);
 
         return $ro;
     }
