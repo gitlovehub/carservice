@@ -58,10 +58,12 @@ export function TimeRangeBar({ value, onChange }: { value: TimeRange; onChange: 
         <label className="flex items-center gap-2">đến <input type="date" className={dateInput} value={value.to} min={value.from || undefined} onChange={e => e.target.value && onChange({ ...value, to: e.target.value })}/></label>
       </span>}
       {value.mode === "all" && <span className="px-2 text-small text-cs-muted">Toàn bộ lịch hẹn, không giới hạn thời gian</span>}
-      <button type="button" onClick={() => onChange(todayRange())} aria-pressed={isTodayRange(value)}
-        className={`inline-flex min-h-10 shrink-0 cursor-pointer items-center rounded-control border px-4 text-small font-semibold transition-colors max-sm:min-h-11 ${isTodayRange(value)
-          ? "border-cs-accent/40 bg-cs-soft text-cs-accent-text"
-          : "border-cs-accent/60 text-cs-accent-text hover:bg-cs-soft"}`}>Hôm nay</button>
+      {/* Đang xem hôm nay → nút mờ, không bấm được; xem ngày / khoảng khác → nút sáng (vàng) để quay về hôm nay. */}
+      <button type="button" onClick={() => onChange(todayRange())} disabled={isTodayRange(value)}
+        title={isTodayRange(value) ? "Đang xem hôm nay" : "Quay về hôm nay"}
+        className={`inline-flex min-h-10 shrink-0 items-center rounded-control border px-4 text-small font-semibold transition-colors max-sm:min-h-11 ${isTodayRange(value)
+          ? "cursor-not-allowed border-cs-border bg-cs-surface text-cs-muted opacity-60"
+          : "cursor-pointer border-cs-accent bg-cs-accent text-cs-accent-contrast hover:bg-cs-accent-hover"}`}>Hôm nay</button>
     </div>
   </div>;
 }

@@ -322,14 +322,18 @@ function Appointments() {
           empty={<EmptyState icon="calendar" title="Không có lịch hẹn" description={emptyText}
             action={filtersActive ? <Button size="sm" variant="outline" icon="refresh" onClick={clearFilters}>Xoá bộ lọc</Button> : undefined}/>}/>
           {/* Chân bảng: tổng số (từ API) bên trái; số dòng/trang + phân trang bên phải, cùng chiều cao. */}
-          {total > 0 && <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cs-border px-4 py-2.5 text-small text-cs-text-2">
+          {total > 0 && <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-small text-cs-text-2">
             <span>Hiển thị <span className="tabular-nums">{from} – {to}</span> trên <b className="tabular-nums text-cs-text">{total}</b> lịch hẹn</span>
             <span className="flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-2 text-cs-muted">Số dòng/trang:
-                <select value={perPage} onChange={e => { setPerPage(e.target.value); resetPage(); }}
-                  className="min-h-10 cursor-pointer rounded-control border border-cs-border bg-cs-surface px-2.5 text-small font-semibold text-cs-text transition-colors hover:border-cs-border-strong focus:border-cs-accent focus:outline-none max-sm:min-h-11">
-                  {["10", "20", "50"].map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
+                {/* Mũi tên tự vẽ (bỏ mũi tên gốc của trình duyệt) để sát số và cách viền đều. */}
+                <span className="relative inline-flex">
+                  <select value={perPage} onChange={e => { setPerPage(e.target.value); resetPage(); }}
+                    className="min-h-10 cursor-pointer appearance-none rounded-control border border-cs-border bg-cs-surface pl-3 pr-8 text-small font-semibold tabular-nums text-cs-text transition-colors hover:border-cs-border-strong focus:border-cs-accent focus:outline-none max-sm:min-h-11">
+                    {["10", "20", "50"].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                  <Icon name="chevron-down" size={15} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-cs-muted"/>
+                </span>
               </label>
               {result && result.pagination.last_page > 1 && <Pagination className="" showSummary={false} page={result.pagination.current_page} totalPages={result.pagination.last_page} disabled={list.loading} onChange={setPage}/>}
             </span>
