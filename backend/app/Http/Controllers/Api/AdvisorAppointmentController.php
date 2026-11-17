@@ -476,17 +476,38 @@ class AdvisorAppointmentController extends Controller
     }
 
     /**
-     * Cố vấn đổi lịch giúp khách: bắt buộc lý do, kiểm khung giờ như khi đặt lịch, ghi ai đổi, báo khách (web + email).
+     * Cố vấn đổi lịch SAU KHI đã thống nhất với khách (gọi điện / tại quầy…): khách không phải xác nhận lại trên web.
+     * Bắt buộc: loại lý do (+ ghi chú khi "Lý do khác"), xác nhận khách đã đồng ý (kiểm ở backend), cách liên hệ.
+     * expected_date / expected_time: ngày giờ cố vấn đang thấy — khác DB (người khác vừa đổi) thì từ chối.
      */
     public function reschedule(Request $request, int $id): JsonResponse
     {
         $data = $request->validate([
             'appointment_date' => ['required', 'date_format:Y-m-d'],
             'appointment_time' => ['required', 'date_format:H:i'],
-            'reason' => ['required', 'string', 'min:5', 'max:255'],
+            'reason_type' => ['required', 'in:'.implode(',', array_keys(AppointmentActivityService::RESCHEDULE_REASONS))],
+            'reason' => ['nullable', 'string', 'max:255', 'required_if:reason_type,OTHER', 'min:5'],
+            'customer_agreed' => ['accepted'],
+            'contact_method' => ['required', 'in:'.implode(',', array_keys(AppointmentActivityService::CONTACT_METHODS))],
+            'expected_date' => ['nullable', 'date_format:Y-m-d'],
+            'expected_time' => ['nullable', 'date_format:H:i'],
+        ], [
+            'customer_agreed.accepted' => 'Chỉ đổi lịch sau khi đã liên hệ và khách đồng ý giờ mới. Lịch cũ được giữ nguyên.',
+            'reason.required_if' => 'Nhập lý do đổi lịch (ít nhất 5 ký tự).',
+            'reason.min' => 'Lý do đổi lịch cần ít nhất 5 ký tự.',
+            'reason_type.required' => 'Chọn lý do đổi lịch.',
+            'contact_method.required' => 'Chọn cách đã liên hệ với khách.',
         ]);
+        $note = trim((string) ($data['reason'] ?? ''));
+        // Lý do lưu lịch sử + gửi khách: "Khách hàng yêu cầu: bận buổi sáng".
+        $reason = AppointmentActivityService::RESCHEDULE_REASONS[$data['reason_type']].($note !== '' ? ": {$note}" : '');
         $appointment = Appointment::query()->findOrFail($id);
-        $updated = $this->activity->reschedule($appointment, $data['appointment_date'], $data['appointment_time'], $data['reason'], $request->user());
+        $updated = $this->activity->reschedule($appointment, $data['appointment_date'], $data['appointment_time'], mb_substr($reason, 0, 255), $request->user(), [
+            'reason_type' => $data['reason_type'],
+            'contact_method' => $data['contact_method'],
+            'expected_date' => $data['expected_date'] ?? null,
+            'expected_time' => $data['expected_time'] ?? null,
+        ]);
 
         return response()->json([
             'success' => true,

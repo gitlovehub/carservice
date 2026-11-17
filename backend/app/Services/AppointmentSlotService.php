@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\GarageSetting;
+use App\Support\GarageDay;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -21,7 +22,8 @@ class AppointmentSlotService
      */
     public function assertBookable(string $date, string $time, int $vehicleId, ?int $ignoreAppointmentId = null, bool $requireConfiguredSlot = false): void
     {
-        if (Carbon::parse("$date $time")->lessThanOrEqualTo(now())) {
+        // Giờ hẹn là giờ gara (VN); app chạy UTC → parse theo múi giờ gara rồi mới so với hiện tại.
+        if (Carbon::parse("$date $time", GarageDay::TIMEZONE)->lessThanOrEqualTo(now())) {
             throw ValidationException::withMessages(['appointment_time' => 'Giờ hẹn phải ở tương lai.']);
         }
 
@@ -97,7 +99,7 @@ class AppointmentSlotService
             foreach ($times as $time) {
                 $count = $booked[$time] ?? 0;
                 $status = match (true) {
-                    Carbon::parse($day->toDateString().' '.$time)->lessThanOrEqualTo(now()) => 'past',
+                    Carbon::parse($day->toDateString().' '.$time, GarageDay::TIMEZONE)->lessThanOrEqualTo(now()) => 'past',
                     ! $active || $hours === null || "$time:00" < substr($hours->open_time, 0, 8) || "$time:00" >= substr($hours->close_time, 0, 8) => 'closed',
                     $count >= $max => 'full',
                     default => 'available',

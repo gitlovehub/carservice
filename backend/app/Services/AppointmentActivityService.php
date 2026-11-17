@@ -51,23 +51,53 @@ class AppointmentActivityService
         ]);
     }
 
-    public function reschedule(Appointment $appointment, string $date, string $time, string $reason, Account $actor): Appointment
-    {
-        if (! in_array($appointment->status, ['PENDING', 'CONFIRMED'], true)) {
-            throw ValidationException::withMessages(['status' => 'Chỉ đổi được lịch đang chờ xác nhận hoặc đã xác nhận.']);
-        }
-        $time = strlen($time) === 5 ? "$time:00" : $time;
-        $old = ['appointment_date' => Carbon::parse($appointment->appointment_date)->toDateString(), 'appointment_time' => substr((string) $appointment->appointment_time, 0, 8)];
-        if ($old['appointment_date'] === $date && $old['appointment_time'] === $time) {
-            throw ValidationException::withMessages(['appointment_time' => 'Ngày giờ mới trùng với lịch hiện tại.']);
-        }
+    /** Lý do đổi lịch (cố vấn chọn) → nhãn tiếng Việt ghi vào lịch sử / gửi khách. */
+    public const RESCHEDULE_REASONS = [
+        'CUSTOMER_REQUEST' => 'Khách hàng yêu cầu',
+        'GARAGE_ADJUSTMENT' => 'Gara cần điều chỉnh khung giờ',
+        'OTHER' => 'Lý do khác',
+    ];
 
-        $updated = DB::transaction(function () use ($appointment, $date, $time, $reason, $actor, $old): Appointment {
+    /** Cách cố vấn đã thống nhất giờ mới với khách. */
+    public const CONTACT_METHODS = ['PHONE' => 'Điện thoại', 'IN_PERSON' => 'Trực tiếp tại gara', 'OTHER' => 'Kênh khác'];
+
+    /**
+     * Cố vấn đổi lịch SAU KHI đã thống nhất với khách (khách không phải xác nhận lại trên web):
+     * chỉ lịch Chờ xác nhận / Đã xác nhận, giữ nguyên trạng thái, kiểm khung giờ như khi đặt, khoá dòng chống hai người đổi cùng lúc,
+     * ghi lịch sử (giờ cũ → mới, lý do, cách liên hệ, người đổi) và báo khách bằng kênh sẵn có (chuông web + email).
+     *
+     * @param  array{reason_type?: string, contact_method?: string, expected_date?: string|null, expected_time?: string|null}  $meta
+     */
+    public function reschedule(Appointment $appointment, string $date, string $time, string $reason, Account $actor, array $meta = []): Appointment
+    {
+        $this->assertReschedulable($appointment);
+        $time = strlen($time) === 5 ? "$time:00" : $time;
+
+        $old = [];
+        $updated = DB::transaction(function () use ($appointment, $date, $time, $reason, $actor, $meta, &$old): Appointment {
             $locked = Appointment::query()->lockForUpdate()->findOrFail($appointment->id);
-            // ADV-04: cố vấn đổi lịch chỉ vào khung giờ đặt lịch đã cấu hình.
+            // Kiểm lại sau khi khoá: người khác có thể vừa tiếp nhận / huỷ / đổi lịch này.
+            $this->assertReschedulable($locked);
+            $old = ['appointment_date' => Carbon::parse($locked->appointment_date)->toDateString(), 'appointment_time' => substr((string) $locked->appointment_time, 0, 8)];
+            $expectedDate = $meta['expected_date'] ?? null;
+            $expectedTime = isset($meta['expected_time']) ? substr((string) $meta['expected_time'], 0, 5) : null;
+            if (($expectedDate && $expectedDate !== $old['appointment_date']) || ($expectedTime && $expectedTime !== substr($old['appointment_time'], 0, 5))) {
+                throw ValidationException::withMessages(['appointment_date' => 'Lịch hẹn vừa được người khác đổi sang '.substr($old['appointment_time'], 0, 5).' ngày '
+                    .Carbon::parse($old['appointment_date'])->format('d/m/Y').'. Vui lòng tải lại và kiểm tra trước khi đổi.']);
+            }
+            if ($old['appointment_date'] === $date && $old['appointment_time'] === $time) {
+                throw ValidationException::withMessages(['appointment_time' => 'Ngày giờ mới trùng với lịch hiện tại.']);
+            }
+            // ADV-04: cố vấn đổi lịch chỉ vào khung giờ đặt lịch đã cấu hình (ngày nghỉ, giờ làm việc, sức chứa, trùng xe).
             $this->slots->assertBookable($date, $time, (int) $locked->vehicle_id, (int) $locked->id, requireConfiguredSlot: true);
+            // Chỉ đổi ngày giờ — trạng thái (Chờ xác nhận / Đã xác nhận) giữ nguyên.
             $locked->update(['appointment_date' => $date, 'appointment_time' => $time]);
-            $this->record($locked, self::RESCHEDULED, $actor, $old, ['appointment_date' => $date, 'appointment_time' => $time], $reason);
+            $this->record($locked, self::RESCHEDULED, $actor, $old, array_filter([
+                'appointment_date' => $date, 'appointment_time' => $time,
+                'reason_type' => $meta['reason_type'] ?? null,
+                'contact_method' => $meta['contact_method'] ?? null,
+                'customer_agreed' => isset($meta['contact_method']) ? true : null,
+            ], fn ($v) => $v !== null), $reason);
 
             $this->notifier->appointmentRescheduled($locked, $reason);
 
@@ -85,5 +115,20 @@ class AppointmentActivityService
         }
 
         return $updated;
+    }
+
+    /** Chỉ lịch Chờ xác nhận / Đã xác nhận mới đổi được ngày giờ; mỗi trạng thái còn lại có thông báo riêng. */
+    private function assertReschedulable(Appointment $appointment): void
+    {
+        $message = match ($appointment->status) {
+            'PENDING', 'CONFIRMED' => null,
+            'CHECKED_IN' => 'Lịch đã tiếp nhận xe, không thể đổi ngày giờ hẹn.',
+            'CANCELLED' => 'Lịch hẹn đã huỷ, không thể đổi.',
+            'NO_SHOW' => 'Khách đã không đến lịch này. Vui lòng tạo lịch hẹn mới nếu khách muốn đặt lại.',
+            default => 'Trạng thái lịch hẹn hiện tại không cho phép đổi lịch.',
+        };
+        if ($message) {
+            throw ValidationException::withMessages(['status' => $message]);
+        }
     }
 }

@@ -70,15 +70,17 @@ class AppointmentStaffTrackingTest extends TestCase
 
     public function test_advisor_reschedules_with_reason_and_customer_is_notified(): void
     {
+        $agreed = ['customer_agreed' => true, 'contact_method' => 'PHONE'];
         $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
-            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:15',
+            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:15', 'reason_type' => 'OTHER', ...$agreed,
         ])->assertUnprocessable()->assertJsonValidationErrors('reason');
         $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
-            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '20:00', 'reason' => 'Khách xin đổi giờ',
+            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '20:00', 'reason_type' => 'CUSTOMER_REQUEST', ...$agreed,
         ])->assertUnprocessable();
 
         $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
-            'appointment_date' => $this->date->addDay()->toDateString(), 'appointment_time' => '14:15', 'reason' => 'Khách bận buổi sáng',
+            'appointment_date' => $this->date->addDay()->toDateString(), 'appointment_time' => '14:15',
+            'reason_type' => 'OTHER', 'reason' => 'Khách bận buổi sáng', ...$agreed,
         ])->assertOk();
 
         $fresh = $this->appointment->fresh();
@@ -87,7 +89,7 @@ class AppointmentStaffTrackingTest extends TestCase
         $log = $fresh->activities()->first();
         $this->assertSame('appointment.rescheduled', $log->action);
         $this->assertSame('09:00:00', $log->old_values['appointment_time']);
-        $this->assertSame('Khách bận buổi sáng', $log->reason);
+        $this->assertSame('Lý do khác: Khách bận buổi sáng', $log->reason);
         Mail::assertSent(AppointmentRescheduledMail::class, fn ($mail) => $mail->hasTo('khach@example.test') && str_contains($mail->render(), 'Khách bận buổi sáng'));
         $this->assertSame($this->customerAccount->id, Notification::query()->where('type', 'APPOINTMENT_RESCHEDULED')->sole()->account_id);
     }
@@ -100,8 +102,9 @@ class AppointmentStaffTrackingTest extends TestCase
 
         $this->appointment->update(['status' => 'CHECKED_IN']);
         $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
-            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:15', 'reason' => 'Đổi sau khi xe đã tới',
-        ])->assertUnprocessable();
+            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:15', 'reason_type' => 'CUSTOMER_REQUEST',
+            'customer_agreed' => true, 'contact_method' => 'PHONE',
+        ])->assertUnprocessable()->assertJsonPath('errors.status.0', 'Lịch đã tiếp nhận xe, không thể đổi ngày giờ hẹn.');
         Mail::assertNothingSent();
     }
 

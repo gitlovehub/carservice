@@ -61,7 +61,8 @@ class AdvisorBookingTest extends TestCase
     {
         $id = $this->book()->assertCreated()->json('data.id');
         $this->actingAs($this->advisor)->postJson("/api/advisor/appointments/{$id}/reschedule", [
-            'appointment_date' => $this->date, 'appointment_time' => '15:00', 'reason' => 'Khách xin đổi giờ',
+            'appointment_date' => $this->date, 'appointment_time' => '15:00', 'reason_type' => 'CUSTOMER_REQUEST', 'reason' => 'Khách xin đổi giờ',
+            'customer_agreed' => true, 'contact_method' => 'PHONE',
         ])->assertUnprocessable()->assertJsonValidationErrors('appointment_time');
         $this->assertSame('09:30:00', substr((string) Appointment::query()->findOrFail($id)->appointment_time, 0, 8));
     }

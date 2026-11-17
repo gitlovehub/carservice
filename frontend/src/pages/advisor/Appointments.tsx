@@ -10,6 +10,7 @@ import { catalogAdminApi, dmy, hhmm, weekRange, type AppointmentRow, type Appoin
 import { appointmentFilterOptions, bookingApi, capacityApi, type AppointmentFilterOptions, type BookingAvailability } from "../../services/workflowService";
 import { ClearFilters, FilterSelect } from "../admin/kit/AdminKit";
 import { AppointmentItemFilter, type ItemSelection } from "./AppointmentItemFilter";
+import { RescheduleModal } from "./RescheduleModal";
 import { TimeRangeBar } from "./TimeRangeBar";
 import { isTodayRange, rangeBounds, todayRange, type TimeRange } from "./timeRange";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
@@ -141,6 +142,7 @@ function Appointments() {
   const [anchor, setAnchor] = useState(() => new Date());
   const [detail, setDetail] = useState<AppointmentRow | null>(null);
   const [cancelling, setCancelling] = useState<AppointmentRow | null>(null);
+  const [rescheduling, setRescheduling] = useState<AppointmentRow | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
@@ -246,7 +248,7 @@ function Appointments() {
   const menu = (a: AppointmentRow): DropdownItem[] => [
     { label: "Xem chi tiết", icon: "eye", onSelect: () => setDetail(a) },
     ...(a.status === "PENDING" && !isOverdue(a) ? [{ label: "Gửi email xác nhận", icon: "mail" as const, onSelect: () => void handleSendEmail(a) }] : []),
-    ...(["PENDING", "CONFIRMED"].includes(a.status) ? [{ label: "Đổi lịch / lịch sử (Tiếp nhận)", icon: "calendar" as const, onSelect: () => navigate(`/advisor/reception?appointment=${a.id}`) }] : []),
+    ...(["PENDING", "CONFIRMED"].includes(a.status) ? [{ label: "Đổi lịch hẹn", icon: "calendar" as const, onSelect: () => setRescheduling(a) }] : []),
     ...(isOverdue(a) && !isExpired(a) ? [{ label: "Khách không đến", icon: "ban" as const, onSelect: () => void handleNoShow(a) }] : []),
     ...(["PENDING", "CONFIRMED"].includes(a.status) ? [{ type: "separator" as const }, { label: a.status === "PENDING" ? "Từ chối lịch" : "Huỷ lịch", icon: "x" as const, danger: true, onSelect: () => { setCancelling(a); setCancelReason(""); } }] : []),
   ];
@@ -390,6 +392,9 @@ function Appointments() {
 
     <AppointmentItemFilter open={itemFilterOpen} onClose={() => setItemFilterOpen(false)} options={options} value={items}
       onApply={value => { setItems(value); setItemFilterOpen(false); resetPage(); }}/>
+
+    {rescheduling && <RescheduleModal appointment={rescheduling} onClose={() => setRescheduling(null)}
+      onDone={message => { setRescheduling(null); notify(message, "success"); reload(); }}/>}
 
     {cancelling && <Modal open onClose={() => setCancelling(null)} dismissible={!busy} size="sm" title={cancelling.status === "PENDING" ? "Từ chối lịch hẹn" : "Huỷ lịch hẹn"}
       description={`${cancelling.appointment_code} · ${cancelling.customer?.full_name ?? ""}`}
