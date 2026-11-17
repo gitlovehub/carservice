@@ -191,8 +191,8 @@ class AdvisorAppointmentController extends Controller
             if ($request->filled('sort')) {
                 $this->applySort($query, $request, [
                     'created' => 'created_at', 'code' => 'appointment_code', 'status' => 'status', 'type' => 'request_type',
+                    // Giờ hẹn = ngày rồi giờ; trùng thời điểm thì applySort thêm appointments.id cùng chiều → thứ tự ổn định giữa các trang.
                     'time' => fn ($q, string $dir) => $q->orderBy('appointment_date', $dir)->orderBy('appointment_time', $dir),
-                    'nearest' => fn ($q) => $this->orderByNearest($q),
                     'customer' => fn ($q, string $dir) => $q->orderBy(Customer::query()->select('full_name')->whereColumn('customers.id', 'appointments.customer_id'), $dir),
                 ], tieBreaker: 'appointments.id');
             } else {
@@ -242,29 +242,6 @@ class AdvisorAppointmentController extends Controller
             ->map(fn (Service $s) => ['id' => $s->id, 'name' => $s->name, 'category' => $s->category, 'active' => $s->status === 'ACTIVE']);
 
         return response()->json(['data' => ['packages' => $packages, 'services' => $services]]);
-    }
-
-    /**
-     * Sắp "gần hiện tại nhất" (giờ gara):
-     * 0) hôm nay đã qua giờ mà còn Chờ xác nhận / Chờ xe đến ("Quá giờ" — khách có thể đến trễ);
-     * 1) sắp tới (trừ đã huỷ / không đến) — sớm nhất trước;
-     * 2) ngày trước còn Chờ xác nhận / Chờ xe đến ("Quá hạn" — cần đánh dấu không đến / huỷ) — mới nhất trước;
-     * 3) còn lại (đã qua đã xử lý, đã huỷ…) — mới nhất trước.
-     */
-    private function orderByNearest($query): void
-    {
-        $now = now(GarageDay::TIMEZONE);
-        $today = $now->toDateString();
-        $time = $now->format('H:i:s');
-        $bucket = "CASE WHEN status IN ('PENDING','CONFIRMED') AND appointment_date = ? AND appointment_time < ? THEN 0"
-            ." WHEN (appointment_date > ? OR (appointment_date = ? AND appointment_time >= ?)) AND status NOT IN ('CANCELLED','NO_SHOW') THEN 1"
-            ." WHEN status IN ('PENDING','CONFIRMED') AND appointment_date < ? THEN 2 ELSE 3 END";
-        $bind = [$today, $time, $today, $today, $time, $today];
-
-        $query->orderByRaw($bucket, $bind)
-            ->orderByRaw("CASE WHEN ({$bucket}) IN (0, 1) THEN appointment_date END ASC", $bind)
-            ->orderByRaw("CASE WHEN ({$bucket}) IN (0, 1) THEN appointment_time END ASC", $bind)
-            ->orderBy('appointment_date', 'desc')->orderBy('appointment_time', 'desc');
     }
 
     /** Chuẩn hoá ngày từ query về Y-m-d (sai định dạng → 422). */

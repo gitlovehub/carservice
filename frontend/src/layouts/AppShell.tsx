@@ -177,23 +177,23 @@ function WorkLayout({ area }: { area: WorkArea }) {
           </div>
         </header>
         <div className="cs-work-content" id="main-content" tabIndex={-1}><PageTransition><Outlet/></PageTransition></div>
-        {area === "admin" && <WorkFooter/>}
+        <WorkFooter area={area}/>
       </div>
     </div>
   </ShellContext.Provider>;
 }
 
 /**
- * Chân trang khu Admin: luôn nằm đáy màn hình (nội dung ngắn vẫn cân đối), cuộn theo nội dung khi trang dài.
+ * Chân trang khu Admin + Cố vấn: luôn nằm đáy màn hình (nội dung ngắn vẫn cân đối), cuộn theo nội dung khi trang dài.
  * Liên hệ lấy từ Thông tin gara; chưa cấu hình thì không hiện.
  */
-function WorkFooter() {
+function WorkFooter({ area }: { area: string }) {
   const garage = useGarageInfo();
   const year = new Date().getFullYear();
   return <footer className="cs-work-footer">
     <div className="cs-work-footer-inner">
       <p className="cs-work-footer-brand">
-        <span className="cs-ws-brand-mark" aria-hidden="true">C</span>
+        {area === "advisor" ? <AdvisorMark/> : <span className="cs-ws-brand-mark" aria-hidden="true">C</span>}
         <span>© {year} <b>{garage?.name || "CarService"}</b> · Hệ thống quản lý gara</span>
       </p>
       {(garage?.phone || garage?.email) && <ul className="cs-work-footer-links" aria-label="Liên hệ gara">

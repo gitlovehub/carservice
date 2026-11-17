@@ -295,6 +295,7 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
 [data-area="advisor"] .cs-ws-link.is-active::before { display: none; }
 [data-area="advisor"] .cs-ws-brand-mark { background: linear-gradient(135deg, #f2cf86, #b8822c); color: #1e1810; }
 .cs-adv-logo { width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; object-fit: cover; }
+.cs-work-footer-brand .cs-adv-logo { width: 26px; height: 26px; border-radius: 8px; }
 /*
  * Giao diện tối (PO 17/11/2026): mọi khung nội dung khu cố vấn dùng cùng kiểu thẻ với Tổng quan —
  * nền kính nâu (gradient), viền ánh vàng đồng — kể cả panel trang chi tiết phiếu, thẻ trong danh sách, ô số liệu.

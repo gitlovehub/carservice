@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button, DataTable, Dropdown, EmptyState, ErrorState, LoadingState, Modal, Pagination, SearchInput, useTableSort, type Column, type DropdownItem, type SortDir, type SortState } from "../../components/ui";
+import { Button, buttonClass, DataTable, Dropdown, EmptyState, ErrorState, LoadingState, Modal, Pagination, SearchInput, type Column, type DropdownItem, type SortDir, type SortState } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Field, Textarea } from "../../components/ui/Field";
 import { Icon, type IconName } from "../../components/ui/Icon";
@@ -36,14 +36,15 @@ const STATS: Array<{ id: StatusFilter; label: string; icon: IconName; tone: stri
   { id: "NO_SHOW", label: "Không đến", icon: "ban", tone: "bg-neutral-soft text-neutral-fg" },
 ];
 const WEEKDAY = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-/** Mặc định: gần hiện tại nhất — quá giờ chưa xử lý → sắp tới (sớm nhất trước) → đã xử lý / đã qua (backend sắp). */
-const NEAREST: SortState = { key: "nearest", dir: "asc" };
+/**
+ * Sắp xếp (Laravel sắp trước khi phân trang; trùng thời điểm thì theo id để không nhảy dòng giữa các trang).
+ * time = ngày hẹn rồi giờ hẹn; created = lúc khách đặt.
+ */
 const SORT_OPTIONS = [
-  { value: "nearest:asc", label: "Gần hiện tại nhất" },
-  // Sắp theo NGÀY hẹn rồi mới tới giờ trong ngày.
-  { value: "time:desc", label: "Ngày hẹn mới nhất" },
-  { value: "time:asc", label: "Ngày hẹn cũ nhất" },
-  { value: "created:desc", label: "Mới đặt nhất" },
+  // "Ngày hẹn" (không phải "Giờ"): sắp theo ngày trước, cùng ngày mới xét giờ — khớp tên cột "Ngày giờ hẹn".
+  { value: "time:asc", label: "Ngày hẹn sớm nhất" },
+  { value: "time:desc", label: "Ngày hẹn muộn nhất" },
+  { value: "created:desc", label: "Mới đặt gần đây" },
   { value: "created:asc", label: "Đặt lâu nhất" },
 ];
 const isoDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -61,6 +62,14 @@ function OverdueBadge({ a }: { a: AppointmentRow }) {
     className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold ${expired ? "bg-danger-soft text-danger-fg" : "bg-warning-soft text-warning-fg"}`}>
     <Icon name={expired ? "alert" : "clock"} size={12}/>{expired ? "Quá hạn" : "Quá giờ"}</span>;
 }
+/** Lúc đặt lịch (created_at, UTC) → giờ VN "dd/mm/yyyy · HH:mm". */
+const bookedAt = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.valueOf())) return iso;
+  const date = d.toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric" });
+  const time = d.toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${date} · ${time}`;
+};
 const initials = (name?: string | null) => (name ?? "?").trim().split(/\s+/).slice(-2).map(w => w[0]).join("").toUpperCase();
 const handler = (a: AppointmentRow) => a.handled_by ? (a.handled_by.employee?.full_name || a.handled_by.email || "—") : "Chưa xử lý";
 
@@ -137,7 +146,22 @@ function Appointments() {
   const [version, setVersion] = useState(0);
   const term = useDebounced(search.trim(), 350);
   const week = useMemo(() => weekRange(anchor), [anchor]);
-  const tableSort = useTableSort(NEAREST, () => setPage(1));
+  // Mặc định theo khoảng xem: Ngày / 7 ngày / Tùy chỉnh → giờ hẹn sớm nhất (làm việc theo thứ tự trong ngày);
+  // Tháng / Tất cả → giờ hẹn muộn nhất (tra cứu, mới nhất trước). Người dùng đã tự chọn thì giữ lựa chọn đó.
+  const [sortChoice, setSortChoice] = useState<SortState | null>(null);
+  const defaultSort: SortState = range.mode === "month" || range.mode === "all" ? { key: "time", dir: "desc" } : { key: "time", dir: "asc" };
+  const sort = sortChoice ?? defaultSort;
+  const tableSort = {
+    sort,
+    params: { sort: sort.key, dir: sort.dir },
+    isDefault: sortChoice === null,
+    reset: () => setSortChoice(null),
+    /** Bấm tiêu đề cột: cùng cột → đảo chiều; cột khác → chiều mặc định của cột (giờ hẹn tăng, ngày đặt giảm). */
+    toggle: (key: string, dir?: SortDir) => {
+      setSortChoice({ key, dir: dir ?? (sort.key === key ? (sort.dir === "asc" ? "desc" : "asc") : key === "time" ? "asc" : "desc") });
+      setPage(1);
+    },
+  };
 
   useEffect(() => {
     let active = true;
@@ -270,7 +294,8 @@ function Appointments() {
       </div>
     </section>
 
-    <div className="adv-card adv-page-body space-y-4">
+    {/* Khung cao tối thiểu cố định: bảng ít dòng thì trang không bị co ngắn, phân trang luôn nằm đáy khung, menu ⋯ đủ chỗ mở. */}
+    <div className="adv-card adv-page-body flex flex-col gap-4 lg:min-h-[720px]">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6" role="group" aria-label="Lọc theo trạng thái">
         {STATS.map(s => <button key={s.id} type="button" className="adv-stat" aria-pressed={status === s.id} onClick={() => { setStatus(s.id); resetPage(); }}>
           <span className={`adv-stat-icon ${s.tone}`} aria-hidden="true"><Icon name={s.icon} size={18}/></span>
@@ -280,7 +305,7 @@ function Appointments() {
 
       {view === "list"
         ? <TimeRangeBar value={range} onChange={value => { setRange(value); resetPage(); }}/>
-        : <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-cs-border p-2">
+        : <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" icon="chevron-left" onClick={() => setAnchor(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7))}>Tuần trước</Button>
           <span className="px-2 text-small font-semibold tabular-nums text-cs-text">{dmy(week.from)} – {dmy(week.to)}</span>
           <Button variant="outline" iconRight="chevron-right" onClick={() => setAnchor(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7))}>Tuần sau</Button>
@@ -290,7 +315,7 @@ function Appointments() {
       {view === "list" && availability.data && <SlotNotice data={availability.data} onWeek={() => { setAnchor(new Date(`${slotDay}T00:00:00`)); setView("week"); }}/>}
 
       {/* Tìm kiếm + 3 bộ lọc cùng chiều cao 40px (màn hẹp 44px); ≥1280px một hàng, nhỏ hơn tự xuống hàng. */}
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)_auto]">
         <SearchInput value={search} onChange={value => { setSearch(value); resetPage(); }} className="sm:max-w-none [&_input]:max-sm:min-h-11"
           placeholder="Tìm mã lịch, khách hàng, SĐT, biển số, tên xe…"/>
         <button type="button" onClick={() => setItemFilterOpen(true)} aria-haspopup="dialog" data-active={itemCount > 0 || undefined}
@@ -301,17 +326,19 @@ function Appointments() {
           {itemCount > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-cs-accent px-1.5 text-caption font-bold text-cs-accent-contrast">{itemCount}</span>}
           <Icon name="chevron-down" size={15} className="ml-auto shrink-0 opacity-70"/>
         </button>
-        <FilterSelect label="Trạng thái" value={status} className="w-full" options={STATS.map(s => ({ value: s.id, label: s.label }))}
+        {/* Ẩn nhãn "Trạng thái" / "Sắp xếp" cho gọn (vẫn có aria-label); "Tất cả trạng thái" tự giải thích. */}
+        <FilterSelect label="Trạng thái" hideLabel value={status} className="w-full" options={STATS.map(s => ({ value: s.id, label: s.id === "ALL" ? "Tất cả trạng thái" : s.label }))}
           onChange={value => { setStatus(value); resetPage(); }}/>
-        {view === "list" && <FilterSelect label="Sắp xếp" value={`${tableSort.sort.key}:${tableSort.sort.dir}`} options={SORT_OPTIONS} className="w-full"
+        {view === "list" && <FilterSelect label="Sắp xếp" hideLabel value={`${tableSort.sort.key}:${tableSort.sort.dir}`} options={SORT_OPTIONS} className="w-full"
           onChange={value => { const [key, dir] = value.split(":"); tableSort.toggle(key, dir as SortDir); }}/>}
+        {/* Xoá bộ lọc nằm cuối hàng bộ lọc (chỉ hiện khi đang lọc). */}
+        {filtersActive && <span className="flex justify-end"><ClearFilters active onClear={clearFilters}/></span>}
       </div>
-      {(chips.length > 0 || filtersActive) && <div className="flex flex-wrap items-center gap-2" aria-label="Bộ lọc đang áp dụng">
+      {chips.length > 0 && <div className="flex flex-wrap items-center gap-2" aria-label="Gói & dịch vụ đang lọc">
         {chips.map(chip => <span key={chip.key} className="inline-flex max-w-full items-center gap-1 rounded-full bg-cs-soft py-1 pl-3 pr-1 text-caption font-semibold text-cs-accent-text">
           <span className="truncate">{chip.label}</span>
           <button type="button" aria-label={`Bỏ lọc ${chip.label}`} className="grid size-5 cursor-pointer place-items-center rounded-full hover:bg-cs-hover" onClick={() => { chip.remove(); resetPage(); }}><Icon name="x" size={12}/></button>
         </span>)}
-        <ClearFilters active={filtersActive} onClear={clearFilters}/>
       </div>}
 
       {view === "list"
@@ -322,7 +349,7 @@ function Appointments() {
           empty={<EmptyState icon="calendar" title="Không có lịch hẹn" description={emptyText}
             action={filtersActive ? <Button size="sm" variant="outline" icon="refresh" onClick={clearFilters}>Xoá bộ lọc</Button> : undefined}/>}/>
           {/* Chân bảng: tổng số (từ API) bên trái; số dòng/trang + phân trang bên phải, cùng chiều cao. */}
-          {total > 0 && <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-small text-cs-text-2">
+          {total > 0 && <div className="mt-auto flex flex-wrap items-center justify-between gap-3 px-1 text-small text-cs-text-2">
             <span>Hiển thị <span className="tabular-nums">{from} – {to}</span> trên <b className="tabular-nums text-cs-text">{total}</b> lịch hẹn</span>
             <span className="flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-2 text-cs-muted">Số dòng/trang:
@@ -346,13 +373,15 @@ function Appointments() {
     {detail && <Modal open onClose={() => setDetail(null)} size="lg" title="Chi tiết lịch hẹn" description={detail.appointment_code}
       footer={<>
         <Button variant="secondary" onClick={() => setDetail(null)}>Đóng</Button>
+        {/* Chi tiết chỉ để xem + liên hệ khách (gọi / email). Thao tác đổi trạng thái (Xác nhận, Tiếp nhận…) chỉ ở cột Thao tác của bảng. */}
+        {detail.customer?.phone && <a href={`tel:${detail.customer.phone.replace(/[^+\d]/g, "")}`} className={buttonClass({ variant: "outline" })}><Icon name="phone" size={16}/>Gọi {detail.customer.phone}</a>}
         {detail.status === "PENDING" && !isOverdue(detail) && <Button variant="outline" icon="mail" loading={busy === `email-${detail.id}`} onClick={() => { const a = detail; setDetail(null); void handleSendEmail(a); }}>Gửi email xác nhận</Button>}
-        {["PENDING", "CONFIRMED", "CHECKED_IN"].includes(detail.status) && <span onClick={() => setDetail(null)}>{primaryAction(detail)}</span>}
       </>}>
       <div className="grid gap-3 sm:grid-cols-2">
         <Info label="Khách hàng"><b>{detail.customer?.full_name ?? "—"}</b><p className="text-xs text-cs-muted">{detail.customer?.phone}{detail.customer?.email ? ` · ${detail.customer.email}` : ""}</p></Info>
         <Info label="Xe / biển số"><span className="flex items-center gap-2"><VehicleBrandLogo brand={detail.vehicle?.model?.brand?.name} size={28}/><b>{vehicleName(detail)}</b></span><p className="text-xs text-cs-muted">{detail.vehicle?.license_plate || "xxx.xx"}</p></Info>
-        <Info label="Ngày giờ hẹn"><span className="flex flex-wrap items-center gap-2"><b>{dmy(detail.appointment_date)} · {hhmm(detail.appointment_time)}</b><OverdueBadge a={detail}/></span></Info>
+        <Info label="Ngày giờ hẹn"><span className="flex flex-wrap items-center gap-2"><b>{dmy(detail.appointment_date)} · {hhmm(detail.appointment_time)}</b><OverdueBadge a={detail}/></span>
+          {detail.created_at && <p className="mt-2 text-xs text-cs-muted">Đặt lúc: {bookedAt(detail.created_at)}</p>}</Info>
         <Info label="Trạng thái"><StatusBadge domain="appointment" status={detail.status}/><p className="mt-2 text-xs text-cs-muted">Người xử lý: {handler(detail)}</p></Info>
         <div className="cs-info-panel p-4 sm:col-span-2"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-cs-muted">Khách yêu cầu</p><CustomerRequestSummary request={detail}/></div>
         {detail.cancel_reason && <div className="cs-info-panel p-4 sm:col-span-2"><p className="text-xs font-bold text-danger-fg">Lý do huỷ</p><p className="mt-2 text-sm text-cs-text">{detail.cancel_reason}</p></div>}

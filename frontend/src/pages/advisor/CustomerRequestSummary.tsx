@@ -28,6 +28,16 @@ export default function CustomerRequestSummary({ request, compact = false }: { r
       </li>)}
     </ul>}
 
+    {/* Tổng dự kiến = cộng giá ước tính từng gói / dịch vụ lúc đặt (chỉ hiện khi có từ 2 mục có giá). */}
+    {(() => {
+      const prices = [...packages.map(p => toNumber(p.pivot?.estimated_price)), ...services.map(s => toNumber(s.pivot?.estimated_price))].filter(v => v > 0);
+      if (prices.length < 2) return null;
+      return <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-cs-border pt-2">
+        <span className="font-semibold">Tổng dự kiến</span>
+        <b className="tabular-nums text-cs-accent-text">{formatVnd(prices.reduce((sum, v) => sum + v, 0))}</b>
+      </div>;
+    })()}
+
     {!hasItems && !request.symptom_description && <p className="text-cs-muted">Khách chưa chọn dịch vụ.</p>}
 
     {request.symptom_description && <div>

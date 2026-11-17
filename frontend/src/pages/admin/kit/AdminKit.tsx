@@ -144,8 +144,10 @@ export function Tabs<T extends string>({ items, value, onChange, variant = "unde
 }
 
 /* ---------- Bộ lọc ---------- */
-export function FilterSelect<T extends string>({ label, value, onChange, options, className = "" }: {
+export function FilterSelect<T extends string>({ label, value, onChange, options, className = "", hideLabel = false }: {
   label: string; value: T; onChange: (value: T) => void; options: Array<{ value: T; label: string }>; className?: string;
+  /** Ẩn chữ nhãn trên giao diện (vẫn giữ cho trình đọc màn hình qua aria-label). */
+  hideLabel?: boolean;
 }) {
   const current = options.find(option => option.value === value) ?? options[0];
   // Lựa chọn đầu tiên là mặc định ("Tất cả"); chọn khác → bộ lọc đang áp dụng, tô màu nhấn.
@@ -155,7 +157,7 @@ export function FilterSelect<T extends string>({ label, value, onChange, options
       ? "border-cs-accent/50 bg-cs-soft text-cs-accent-text"
       : "border-cs-border bg-cs-surface text-cs-text hover:border-cs-border-strong hover:bg-cs-hover"} ${className}`}>
     <Icon name="filter" size={14} className={`shrink-0 ${active ? "" : "text-cs-muted"}`}/>
-    <span className={`shrink-0 ${active ? "" : "text-cs-muted"}`}>{label}</span>
+    {!hideLabel && <span className={`shrink-0 ${active ? "" : "text-cs-muted"}`}>{label}</span>}
     <span className="min-w-0 truncate font-semibold">{current?.label}</span>
     <Icon name="chevron-down" size={15} className="ml-auto shrink-0 opacity-70"/>
     {/* Select gốc phủ trong suốt: giữ bàn phím, trình đọc màn hình và danh sách chọn của hệ điều hành. */}

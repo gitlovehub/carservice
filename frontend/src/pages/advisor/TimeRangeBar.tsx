@@ -31,7 +31,7 @@ export function TimeRangeBar({ value, onChange }: { value: TimeRange; onChange: 
   };
   const navigable = value.mode === "day" || value.mode === "week" || value.mode === "month";
 
-  return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cs-border p-2">
+  return <div className="flex flex-wrap items-center justify-between gap-3">
     <div role="radiogroup" aria-label="Khoảng thời gian" className={`${box} max-w-full gap-0.5 overflow-x-auto p-1`}>
       {MODES.map(m => <button key={m.id} type="button" role="radio" aria-checked={value.mode === m.id} onClick={() => setMode(m.id)}
         className={`min-h-8 shrink-0 cursor-pointer whitespace-nowrap rounded-[8px] px-3.5 text-small font-semibold transition-colors sm:px-4 ${value.mode === m.id
