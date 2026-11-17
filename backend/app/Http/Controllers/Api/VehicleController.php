@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\RepairOrder;
 use App\Models\Vehicle;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
+use App\Support\GarageDay;
 use App\Support\VehicleCatalogSelection;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -30,7 +33,11 @@ class VehicleController extends Controller
      */
     public function index(Request $request)
     {
+        $request->validate(['segment' => ['nullable', Rule::in(array_keys($this->segments()))]]);
         $query = Vehicle::with(['customer', ...self::CATALOG_RELATIONS]);
+        if ($request->filled('segment')) {
+            $this->segments()[$request->input('segment')]($query);
+        }
 
         if ($request->filled('customer_id')) {
             $query->where('customer_id', $request->customer_id);
@@ -39,22 +46,62 @@ class VehicleController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
 
+            // ADV-09: tìm cả theo chủ xe (tên / SĐT) và hãng / dòng xe.
             $query->where(function ($q) use ($search) {
                 $q->where('license_plate', 'like', "%{$search}%")
                     ->orWhere('vin', 'like', "%{$search}%")
-                    ->orWhere('variant', 'like', "%{$search}%");
+                    ->orWhere('variant', 'like', "%{$search}%")
+                    ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%"))
+                    ->orWhereHas('model', fn ($m) => $m->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('brand', fn ($b) => $b->where('name', 'like', "%{$search}%")));
             });
+        }
+        if ($request->filled('brand_id')) {
+            $query->whereHas('model', fn ($m) => $m->where('brand_id', (int) $request->query('brand_id')));
         }
 
         $vehicles = $query
+            ->with(['repairOrders' => fn ($q) => $q->select('id', 'vehicle_id', 'repair_order_code', 'status')
+                ->whereNotIn('status', [RepairOrder::HANDED_OVER, RepairOrder::CLOSED])])
+            ->withMax('repairOrders as last_service_at', 'received_at')
+            // Mockup 17/11: lịch hẹn sắp tới gần nhất (nhãn "Có lịch hẹn").
+            ->withMin(['appointments as next_appointment_date' => fn ($q) => $this->upcoming($q)], 'appointment_date')
             ->latest()
-            ->paginate(10);
+            ->paginate(min(100, max(5, (int) $request->query('per_page', 10))));
+        $vehicles->getCollection()->each(function (Vehicle $vehicle): void {
+            $vehicle->setAttribute('open_repair_order_id', $vehicle->repairOrders->first()?->id);
+            $vehicle->setAttribute('open_repair_order_code', $vehicle->repairOrders->first()?->repair_order_code);
+            $vehicle->unsetRelation('repairOrders');
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Lấy danh sách xe thành công.',
             'data' => $vehicles,
+            'summary' => collect($this->segments())->map(fn (callable $scope) => $scope(Vehicle::query())->count())
+                ->put('total', Vehicle::query()->count())->all(),
         ]);
+    }
+
+    /** Lịch hẹn còn hiệu lực từ hôm nay (theo ngày gara). */
+    private function upcoming($query)
+    {
+        return $query->whereIn('status', ['PENDING', 'CONFIRMED'])->whereDate('appointment_date', '>=', GarageDay::today());
+    }
+
+    /**
+     * Nhóm xe cho thẻ số liệu / bộ lọc của cố vấn (mockup 17/11).
+     * maintenance = xe từng đặt gói bảo dưỡng định kỳ tại gara (lịch hẹn có gói, không tính lịch đã huỷ).
+     *
+     * @return array<string, callable(Builder): Builder>
+     */
+    private function segments(): array
+    {
+        return [
+            'in_shop' => fn (Builder $q) => $q->whereHas('repairOrders', fn ($o) => $o->whereNotIn('status', [RepairOrder::HANDED_OVER, RepairOrder::CLOSED])),
+            'upcoming' => fn (Builder $q) => $q->whereHas('appointments', fn ($a) => $this->upcoming($a)),
+            'maintenance' => fn (Builder $q) => $q->whereHas('appointments', fn ($a) => $a->where('status', '!=', 'CANCELLED')->has('packages')),
+        ];
     }
 
     /**
@@ -139,7 +186,20 @@ class VehicleController extends Controller
      */
     public function show(Vehicle $vehicle)
     {
-        $vehicle->load(['customer', ...self::CATALOG_RELATIONS]);
+        // Mockup 17/11 (trang Xe của khách hàng): lịch sử sửa (10 phiếu, hoá đơn + hạng mục), lịch hẹn sắp tới / gần đây, gói bảo dưỡng đã dùng.
+        $vehicle->load(['customer', ...self::CATALOG_RELATIONS,
+            'repairOrders' => fn ($q) => $q->latest('received_at')->limit(10)
+                ->select('id', 'vehicle_id', 'repair_order_code', 'status', 'received_at', 'mileage_received', 'handed_over_at'),
+            'repairOrders.invoice:id,repair_order_id,total_amount,status', 'repairOrders.invoice.items:id,invoice_id,description',
+            'repairOrders.workItems:id,repair_order_id,description,service_id', 'repairOrders.workItems.service:id,name',
+        ])->loadCount('repairOrders');
+        $vehicle->setAttribute('open_repair_order', $vehicle->repairOrders()->whereNotIn('status', [RepairOrder::HANDED_OVER, RepairOrder::CLOSED])
+            ->first(['id', 'repair_order_code', 'status']));
+        $vehicle->setAttribute('upcoming_appointments', $this->upcoming($vehicle->appointments())->with('packages:id,name')
+            ->orderBy('appointment_date')->orderBy('appointment_time')->limit(5)->get(['id', 'vehicle_id', 'appointment_code', 'appointment_date', 'appointment_time', 'status']));
+        $vehicle->setAttribute('past_appointments', $vehicle->appointments()->with('packages:id,name')
+            ->where(fn ($q) => $q->whereDate('appointment_date', '<', GarageDay::today())->orWhereNotIn('status', ['PENDING', 'CONFIRMED']))
+            ->orderByDesc('appointment_date')->orderByDesc('appointment_time')->limit(5)->get(['id', 'vehicle_id', 'appointment_code', 'appointment_date', 'appointment_time', 'status']));
 
         return response()->json([
             'success' => true,
@@ -230,11 +290,26 @@ class VehicleController extends Controller
      */
     public function destroy(Vehicle $vehicle)
     {
+        if ($vehicle->hasOpenRepairOrder()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Xe đang có phiếu sửa chữa chưa giao nên chưa thể xóa.',
+            ], 422);
+        }
+
+        if ($vehicle->hasActiveAppointment()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Xe đang có lịch hẹn chưa hoàn tất. Hãy huỷ lịch hẹn trước khi xóa xe.',
+            ], 422);
+        }
+
+        // Xóa mềm: lịch hẹn và lịch sử sửa chữa vẫn giữ nguyên.
         $vehicle->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Xóa xe thành công.',
+            'message' => 'Đã xóa xe. Lịch sử sửa chữa vẫn được lưu.',
         ]);
     }
 
@@ -245,10 +320,19 @@ class VehicleController extends Controller
      */
     public function byCustomer($customerId)
     {
-        $vehicles = Vehicle::with(self::CATALOG_RELATIONS)
+        $vehicles = Vehicle::with([
+            ...self::CATALOG_RELATIONS,
+            // ADV-02/03: quầy tiếp nhận cần biết xe nào đang có phiếu chưa kết thúc (không tạo được phiếu thứ hai).
+            'repairOrders' => fn ($q) => $q->select('id', 'vehicle_id', 'repair_order_code', 'status')
+                ->whereNotIn('status', [RepairOrder::HANDED_OVER, RepairOrder::CLOSED]),
+        ])
             ->where('customer_id', $customerId)
             ->latest()
-            ->get();
+            ->get()
+            ->each(function (Vehicle $vehicle): void {
+                $vehicle->setAttribute('open_repair_order_code', $vehicle->repairOrders->first()?->repair_order_code);
+                $vehicle->unsetRelation('repairOrders');
+            });
 
         return response()->json([
             'success' => true,

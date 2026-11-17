@@ -7,10 +7,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInternalAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Customer;
+use App\Models\MaintenancePackage;
+use App\Models\Service;
 use App\Models\Vehicle;
 use App\Services\AppointmentActivityService;
+use App\Services\AppointmentEmailConfirmationService;
+use App\Services\AppointmentSlotService;
 use App\Services\CapacityService;
+use App\Services\CounterRecordService;
 use App\Services\CustomerNotifier;
+use App\Support\GarageDay;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -27,13 +33,24 @@ class AdvisorAppointmentController extends Controller
     public function __construct(
         private readonly AppointmentActivityService $activity,
         private readonly CustomerNotifier $notifier,
+        private readonly AppointmentSlotService $slots,
+        private readonly CounterRecordService $counterRecords,
     ) {}
+
+    /** GET /api/advisor/booking-availability?date= — tình trạng từng khung giờ trong ngày (ADV-04). */
+    public function availability(Request $request): JsonResponse
+    {
+        $data = $request->validate(['date' => ['required', 'date_format:Y-m-d']]);
+
+        return response()->json(['data' => $this->slots->availability($data['date'])]);
+    }
 
     public function store(StoreInternalAppointmentRequest $request): JsonResponse
     {
-        $data = $request->validated();
         $actor = $request->user();
-        $appointment = DB::transaction(function () use ($data, $actor) {
+        $appointment = DB::transaction(function () use ($request, $actor) {
+            // ADV-04: khách gọi điện / chưa có hồ sơ → tạo khách + xe cùng lịch (lỗi phía sau thì rollback hết).
+            $data = $this->counterRecords->resolve($request->validated());
             $date = $data['appointment_date'];
             $time = $data['appointment_time'].':00';
             $when = Carbon::createFromFormat('Y-m-d H:i:s', "$date $time");
@@ -49,47 +66,8 @@ class AdvisorAppointmentController extends Controller
                 ]);
             }
 
-            if ($when->lessThanOrEqualTo(now())) {
-                throw ValidationException::withMessages([
-                    'appointment_time' => 'Giờ hẹn phải ở tương lai.',
-                ]);
-            }
-
-            $hours = DB::table('working_hours')
-                ->where('day_of_week', $when->dayOfWeek)
-                ->lockForUpdate()
-                ->first();
-
-            if (DB::table('holidays')->where('holiday_date', $date)->exists()) {
-                throw ValidationException::withMessages([
-                    'appointment_date' => 'Garage nghỉ lễ ngày này.',
-                ]);
-            }
-
-            if (! $hours || ! $hours->is_active
-                || $time < substr($hours->open_time, 0, 8)
-                || $time >= substr($hours->close_time, 0, 8)) {
-                throw ValidationException::withMessages([
-                    'appointment_time' => 'Ngoài giờ làm việc của garage.',
-                ]);
-            }
-
-            $activeInSlot = Appointment::query()
-                ->where('appointment_date', $date)
-                ->where('appointment_time', $time)
-                ->whereNotIn('status', ['CANCELLED', 'NO_SHOW']);
-
-            if ($activeInSlot->count() >= (int) ($hours->max_slots ?? 5)) {
-                throw ValidationException::withMessages([
-                    'appointment_time' => 'Khung giờ đã đầy.',
-                ]);
-            }
-
-            if ((clone $activeInSlot)->where('vehicle_id', $vehicle->id)->exists()) {
-                throw ValidationException::withMessages([
-                    'vehicle_id' => 'Xe đã có lịch hẹn tại khung giờ này.',
-                ]);
-            }
+            // Cùng quy tắc với đổi lịch: tương lai, không nghỉ lễ, trong giờ làm việc, đúng khung giờ đặt lịch, còn chỗ, xe chưa có lịch trùng giờ.
+            $this->slots->assertBookable($date, $time, (int) $vehicle->id, requireConfiguredSlot: true);
 
             $appointment = Appointment::query()->create([
                 'appointment_code' => 'APT-'.$when->format('Ymd').'-'.strtoupper(Str::random(8)),
@@ -132,6 +110,8 @@ class AdvisorAppointmentController extends Controller
                 'packages.services:id,estimated_minutes',
                 // Nhân viên xử lý gần nhất.
                 'handledBy:id,email,role', 'handledBy.employee:id,account_id,full_name',
+                // ADV-08: phiếu đã tạo từ lịch (trang Tiếp nhận biết lịch nào đã có phiếu).
+                'repairOrder:id,appointment_id,repair_order_code,status',
             ]);
 
             // Lọc theo nhân viên xử lý (tài khoản cố vấn).
@@ -140,16 +120,17 @@ class AdvisorAppointmentController extends Controller
             }
 
             // Lọc theo ngày hẹn cụ thể (YYYY-MM-DD)
+            // appointment_date là cột DATE: so sánh trực tiếp (không bọc DATE()) để dùng được index idx_appointments_datetime.
             if ($request->filled('date')) {
-                $query->whereDate('appointment_date', $request->query('date'));
+                $query->where('appointment_date', $this->day($request->query('date')));
             }
 
-            // Lọc theo khoảng ngày (YYYY-MM-DD), dùng cho danh sách theo tuần của Admin.
+            // Lọc theo khoảng ngày (YYYY-MM-DD): Ngày / 7 ngày / Tháng / Tùy chỉnh (cố vấn), tuần (Admin).
             if ($request->filled('date_from')) {
-                $query->whereDate('appointment_date', '>=', $request->query('date_from'));
+                $query->where('appointment_date', '>=', $this->day($request->query('date_from')));
             }
             if ($request->filled('date_to')) {
-                $query->whereDate('appointment_date', '<=', $request->query('date_to'));
+                $query->where('appointment_date', '<=', $this->day($request->query('date_to')));
             }
 
             // Loại yêu cầu (MAINTENANCE, REPAIR, DIAGNOSIS, REPLACEMENT).
@@ -157,19 +138,42 @@ class AdvisorAppointmentController extends Controller
                 $query->where('request_type', $request->query('request_type'));
             }
 
-            // Tìm kiếm theo biển số xe hoặc tên/SĐT khách hàng
-            if ($request->filled('search')) {
-                $search = $request->query('search');
-                $query->where(function ($q) use ($search) {
-                    $q->whereHas('vehicle', function ($v) use ($search) {
-                        $v->where('license_plate', 'like', "%{$search}%");
-                    })
-                        ->orWhereHas('customer', function ($c) use ($search) {
-                            $c->where('full_name', 'like', "%{$search}%")
-                                ->orWhere('phone', 'like', "%{$search}%");
-                        })
-                        ->orWhere('appointment_code', 'like', "%{$search}%");
+            // ADV-08: lọc theo dịch vụ khách yêu cầu (chọn lẻ hoặc nằm trong gói đã chọn).
+            if ($request->filled('service_id')) {
+                $serviceId = (int) $request->query('service_id');
+                $query->where(fn ($q) => $q->whereHas('services', fn ($s) => $s->where('services.id', $serviceId))
+                    ->orWhereHas('packages.services', fn ($s) => $s->where('services.id', $serviceId)));
+            }
+
+            // Lọc nhiều gói bảo dưỡng / dịch vụ cùng lúc (?package_ids=1,2&service_ids=3): khớp BẤT KỲ mục nào được chọn
+            // (dịch vụ tính cả khi nằm trong gói khách chọn).
+            $serviceIds = $this->idList($request->query('service_ids'));
+            $packageIds = $this->idList($request->query('package_ids'));
+            if ($serviceIds || $packageIds) {
+                $query->where(function ($q) use ($serviceIds, $packageIds) {
+                    if ($serviceIds) {
+                        $q->orWhereHas('services', fn ($s) => $s->whereKey($serviceIds))
+                            ->orWhereHas('packages.services', fn ($s) => $s->whereKey($serviceIds));
+                    }
+                    if ($packageIds) {
+                        $q->orWhereHas('packages', fn ($p) => $p->whereKey($packageIds));
+                    }
                 });
+            }
+
+            // Tìm theo mã lịch, biển số, hãng / dòng xe, tên / SĐT khách. Nhiều từ ("Lexus LX", "Tèo 0901") → mỗi từ phải khớp một trường.
+            if ($request->filled('search')) {
+                $terms = preg_split('/\s+/u', trim((string) $request->query('search')), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                foreach (array_slice($terms, 0, 5) as $term) {
+                    $like = '%'.addcslashes($term, '%_\\').'%';
+                    $query->where(function ($q) use ($like) {
+                        $q->where('appointment_code', 'like', $like)
+                            ->orWhereHas('vehicle', fn ($v) => $v->where('license_plate', 'like', $like))
+                            ->orWhereHas('vehicle.model', fn ($m) => $m->where('name', 'like', $like))
+                            ->orWhereHas('vehicle.model.brand', fn ($b) => $b->where('name', 'like', $like))
+                            ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', $like)->orWhere('phone', 'like', $like));
+                    });
+                }
             }
 
             // Số lịch theo trạng thái với cùng bộ lọc (trừ trạng thái) — cho các chip lọc nhanh.
@@ -188,6 +192,7 @@ class AdvisorAppointmentController extends Controller
                 $this->applySort($query, $request, [
                     'created' => 'created_at', 'code' => 'appointment_code', 'status' => 'status', 'type' => 'request_type',
                     'time' => fn ($q, string $dir) => $q->orderBy('appointment_date', $dir)->orderBy('appointment_time', $dir),
+                    'nearest' => fn ($q) => $this->orderByNearest($q),
                     'customer' => fn ($q, string $dir) => $q->orderBy(Customer::query()->select('full_name')->whereColumn('customers.id', 'appointments.customer_id'), $dir),
                 ], tieBreaker: 'appointments.id');
             } else {
@@ -209,12 +214,74 @@ class AdvisorAppointmentController extends Controller
                 ],
             ], Response::HTTP_OK);
 
+        } catch (ValidationException $e) {
+            throw $e; // 422 có thông báo, không gộp thành lỗi 500.
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * GET /api/advisor/appointments/filter-options — danh sách gói bảo dưỡng (kể cả gói riêng theo dòng xe) và dịch vụ
+     * cho thanh lọc trang Lịch hẹn. Gồm cả mục đã ngừng để lọc được lịch cũ.
+     */
+    public function filterOptions(): JsonResponse
+    {
+        $packages = MaintenancePackage::query()->with('vehicleModel.brand:id,name')
+            ->orderByRaw("status = 'ACTIVE' desc")->orderBy('mileage_milestone')->orderBy('name')
+            ->get(['id', 'name', 'status', 'mileage_milestone', 'vehicle_model_id'])
+            ->map(fn (MaintenancePackage $p) => [
+                'id' => $p->id, 'name' => $p->name, 'active' => $p->status === 'ACTIVE',
+                'model' => $p->vehicleModel ? trim($p->vehicleModel->brand?->name.' '.$p->vehicleModel->name) : null,
+            ]);
+        $services = Service::query()->orderByRaw("status = 'ACTIVE' desc")->orderBy('category')->orderBy('name')
+            ->get(['id', 'name', 'category', 'status'])
+            ->map(fn (Service $s) => ['id' => $s->id, 'name' => $s->name, 'category' => $s->category, 'active' => $s->status === 'ACTIVE']);
+
+        return response()->json(['data' => ['packages' => $packages, 'services' => $services]]);
+    }
+
+    /**
+     * Sắp "gần hiện tại nhất" (giờ gara):
+     * 0) hôm nay đã qua giờ mà còn Chờ xác nhận / Chờ xe đến ("Quá giờ" — khách có thể đến trễ);
+     * 1) sắp tới (trừ đã huỷ / không đến) — sớm nhất trước;
+     * 2) ngày trước còn Chờ xác nhận / Chờ xe đến ("Quá hạn" — cần đánh dấu không đến / huỷ) — mới nhất trước;
+     * 3) còn lại (đã qua đã xử lý, đã huỷ…) — mới nhất trước.
+     */
+    private function orderByNearest($query): void
+    {
+        $now = now(GarageDay::TIMEZONE);
+        $today = $now->toDateString();
+        $time = $now->format('H:i:s');
+        $bucket = "CASE WHEN status IN ('PENDING','CONFIRMED') AND appointment_date = ? AND appointment_time < ? THEN 0"
+            ." WHEN (appointment_date > ? OR (appointment_date = ? AND appointment_time >= ?)) AND status NOT IN ('CANCELLED','NO_SHOW') THEN 1"
+            ." WHEN status IN ('PENDING','CONFIRMED') AND appointment_date < ? THEN 2 ELSE 3 END";
+        $bind = [$today, $time, $today, $today, $time, $today];
+
+        $query->orderByRaw($bucket, $bind)
+            ->orderByRaw("CASE WHEN ({$bucket}) IN (0, 1) THEN appointment_date END ASC", $bind)
+            ->orderByRaw("CASE WHEN ({$bucket}) IN (0, 1) THEN appointment_time END ASC", $bind)
+            ->orderBy('appointment_date', 'desc')->orderBy('appointment_time', 'desc');
+    }
+
+    /** Chuẩn hoá ngày từ query về Y-m-d (sai định dạng → 422). */
+    private function day(mixed $value): string
+    {
+        $text = is_string($value) ? substr($value, 0, 10) : '';
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $text) || ! checkdate((int) substr($text, 5, 2), (int) substr($text, 8, 2), (int) substr($text, 0, 4))) {
+            throw ValidationException::withMessages(['date' => 'Ngày lọc không hợp lệ (YYYY-MM-DD).']);
+        }
+
+        return $text;
+    }
+
+    /** "1,2,abc" → [1, 2]. @return array<int, int> */
+    private function idList(mixed $value): array
+    {
+        return array_values(array_unique(array_filter(array_map('intval', explode(',', is_string($value) ? $value : '')), fn (int $id) => $id > 0)));
     }
 
     /**
@@ -231,6 +298,7 @@ class AdvisorAppointmentController extends Controller
             'packages.parts:id,name,unit',
             'handledBy:id,email,role', 'handledBy.employee:id,account_id,full_name',
             'createdBy:id,email,role', 'createdBy.employee:id,account_id,full_name',
+            'repairOrder:id,appointment_id,repair_order_code,status',
             // Lịch sử: ai xác nhận / tiếp nhận / đổi / hủy, lúc nào, lý do.
             'activities:id,account_id,action,auditable_type,auditable_id,old_values,new_values,reason,created_at',
             'activities.account:id,email,role', 'activities.account.employee:id,account_id,full_name',
@@ -263,7 +331,8 @@ class AdvisorAppointmentController extends Controller
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        $when = Carbon::parse(Carbon::parse($appointment->appointment_date)->toDateString().' '.substr((string) $appointment->appointment_time, 0, 8));
+        // Giờ hẹn là giờ gara (VN); app chạy UTC nên phải parse theo múi giờ gara.
+        $when = Carbon::parse(Carbon::parse($appointment->appointment_date)->toDateString().' '.substr((string) $appointment->appointment_time, 0, 8), GarageDay::TIMEZONE);
         if ($when->isFuture()) {
             return response()->json([
                 'success' => false,
@@ -331,6 +400,28 @@ class AdvisorAppointmentController extends Controller
             'success' => true,
             'message' => 'Xác nhận lịch hẹn thành công.',
             'data' => $appointment->fresh(),
+        ], Response::HTTP_OK);
+    }
+
+    /**
+     * Gửi email kèm dịch vụ đã đặt + nút "Xác nhận lịch hẹn" để khách tự xác nhận (PENDING → CONFIRMED khi khách bấm).
+     */
+    public function sendConfirmationEmail(Request $request, int $id, AppointmentEmailConfirmationService $emailConfirmation): JsonResponse
+    {
+        $appointment = Appointment::query()->with('customer.account')->findOrFail($id);
+        try {
+            $email = $emailConfirmation->send($appointment, $request->user());
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['success' => false, 'message' => 'Không gửi được email. Vui lòng thử lại hoặc gọi điện cho khách.'], Response::HTTP_BAD_GATEWAY);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã gửi email xác nhận tới {$email}. Lịch tự chuyển sang Đã xác nhận khi khách bấm trong email.",
         ], Response::HTTP_OK);
     }
 

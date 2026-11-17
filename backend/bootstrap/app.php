@@ -18,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
             'api/*',
+            // Link xác nhận lịch từ email: chữ ký trong URL là quyền truy cập, khách không có phiên đăng nhập.
+            'appointments/*/email-confirm',
         ]);
         $middleware->alias([
             'role' => EnsureAccountRole::class,

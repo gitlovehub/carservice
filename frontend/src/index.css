@@ -254,3 +254,8 @@ img {
 /* `backwards` (không phải `both`): hết hiệu ứng thì không còn transform — nếu còn, modal `position: fixed` bên trong sẽ canh theo khung trang thay vì màn hình. */
 .cs-page-enter { animation: cs-page-enter .28s cubic-bezier(.22,.61,.36,1) backwards; }
 @media (prefers-reduced-motion: reduce) { .cs-page-enter { animation: none; } }
+
+/* Logo hãng xe nền trong suốt (VehicleBrandLogo). Theme tối: viền sáng mảnh quanh nét để phần màu đen của logo không chìm vào nền. */
+html[data-theme="dark"] .cs-brand-logo img {
+  filter: drop-shadow(0 0 0.6px rgb(255 255 255 / 0.85)) drop-shadow(0 0 0.6px rgb(255 255 255 / 0.5));
+}

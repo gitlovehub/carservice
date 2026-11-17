@@ -33,9 +33,8 @@ export function QuickServicePanel({ order, onChanged }: { order: WorkflowOrder; 
     finally { setWorking(false); }
   }
 
-  return <section className={`${card} mt-6 print:hidden`} data-testid="quick-service-panel">
-    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text">Dịch vụ nhanh</p>
-    <h2 className="mt-1 text-lg font-bold text-cs-text">Báo giá niêm yết (không qua chẩn đoán)</h2>
+  return <section className={`${card} print:hidden`} data-testid="quick-service-panel">
+    <h2 className="text-lg font-bold text-cs-text">Dịch vụ nhanh · báo giá niêm yết</h2>
     <p className="mt-1 text-xs text-cs-muted">Chỉ dùng cho dịch vụ mức "Nhanh". Cần đủ 4 ảnh tổng quan (đầu, đuôi, trái, phải) trong biên bản nhận xe. Khách vẫn phải duyệt giá trước khi làm. Việc khác cần kiểm tra → dùng bước chẩn đoán bên dưới.</p>
     {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
     <ul className="mt-3 space-y-1.5">{services.map(service => <li key={service.id}>

@@ -27,6 +27,8 @@
     "test:check-out": "node tests/check-out-pickup-ui.mjs",
     "test:service-flow": "node tests/service-flow-ui.mjs",
     "test:part-requests": "node tests/part-requests-ui.mjs",
+    "test:walk-in": "node tests/walk-in-reception-ui.mjs",
+    "test:advisor-booking": "node tests/advisor-booking-ui.mjs",
     "test:capacity": "node tests/capacity-ui.mjs",
     "test:advisor-tracking": "node tests/advisor-tracking-ui.mjs",
     "test:garage-address": "node tests/garage-address-ui.mjs",

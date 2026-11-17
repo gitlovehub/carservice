@@ -26,13 +26,15 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Tổng quan", path: "/advisor", icon: "home", group: "Điều hành" },
     { label: "Lịch hẹn", path: "/advisor/appointments", icon: "calendar", group: "Điều hành" },
     { label: "Tiếp nhận xe", path: "/advisor/reception", icon: "car", group: "Điều hành" },
-    { label: "Phiếu sửa chữa", path: "/advisor/service-orders", icon: "clipboard", group: "Sửa chữa" },
-    { label: "Lập báo giá", path: "/advisor/service-orders?status=QUOTING", icon: "receipt", group: "Sửa chữa" },
-    { label: "Tiến độ sửa chữa", path: "/advisor/service-orders?status=IN_PROGRESS", icon: "wrench", group: "Sửa chữa" },
-    { label: "Thu tiền & bàn giao", path: "/advisor/service-orders?status=COMPLETED", icon: "receipt", group: "Sửa chữa" },
+    // Nhóm + thứ tự theo mockup PO 17/11/2026. "Đặt lịch hộ" không còn trong menu: mở từ Lịch hẹn ("Tạo lịch hẹn") hoặc Khách hàng.
+    { label: "Phiếu sửa chữa", path: "/advisor/service-orders", icon: "clipboard", group: "Quản lý sửa chữa" },
+    { label: "Báo giá & phê duyệt", path: "/advisor/quotations", icon: "receipt", group: "Quản lý sửa chữa" },
+    { label: "Tiến độ sửa chữa", path: "/advisor/repair-progress", icon: "wrench", group: "Quản lý sửa chữa" },
+    { label: "Phụ tùng chờ xử lý", path: "/advisor/parts", icon: "box", group: "Quản lý sửa chữa" },
+    { label: "Kiểm tra & bàn giao", path: "/advisor/delivery", icon: "users", group: "Thanh toán & bàn giao" },
+    { label: "Thanh toán", path: "/advisor/payments", icon: "dollar", group: "Thanh toán & bàn giao" },
     { label: "Khách hàng", path: "/advisor/customers", icon: "users", group: "Khách hàng" },
-    { label: "Xe khách hàng", path: "/advisor/customer-cars", icon: "car", group: "Khách hàng" },
-    { label: "Đặt lịch hộ", path: "/advisor/create-booking", icon: "calendar", group: "Khách hàng", soon: true },
+    { label: "Xe của khách hàng", path: "/advisor/customer-cars", icon: "car", group: "Khách hàng" },
   ],
   admin: [
     { label: "Tổng quan", path: "/admin", icon: "dashboard", group: "Điều hành" },
@@ -73,6 +75,7 @@ const detailPages: Array<{ area: ShellArea; pattern: RegExp; parent: string; lab
 /** Trang riêng không nằm trong menu (mở từ menu tài khoản): breadcrumb Khu vực › Trang. */
 const standalonePages: Array<{ area: ShellArea; path: string; label: string }> = [
   { area: "admin", path: "/admin/profile", label: "Hồ sơ của bạn" },
+  { area: "advisor", path: "/advisor/profile", label: "Hồ sơ của bạn" },
 ];
 
 export type Crumb = { label: string; to?: string };

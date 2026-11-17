@@ -40,7 +40,7 @@ class AdminOperationsController extends Controller
     ];
 
     /** Phương thức lưu trong DB → nhóm hiển thị. */
-    public const METHOD_GROUPS = [Payment::DIRECT => 'CASH', Payment::QR => 'BANK_TRANSFER', Payment::VNPAY => 'VNPAY'];
+    public const METHOD_GROUPS = [Payment::DIRECT => 'CASH', Payment::QR => 'BANK_TRANSFER', Payment::TRANSFER => 'BANK_TRANSFER', Payment::CARD => 'CARD', Payment::EWALLET => 'EWALLET', Payment::VNPAY => 'VNPAY'];
 
     private const ROLE_LABELS = [
         Account::ROLE_ADMIN => 'Quản trị viên', Account::ROLE_ADVISOR => 'Cố vấn dịch vụ',
@@ -51,6 +51,8 @@ class AdminOperationsController extends Controller
     private const ACTIONS = [
         'appointment.created_by_staff' => ['CREATE', 'Tạo lịch hẹn hộ khách'],
         'appointment.confirmed' => ['STATUS', 'Xác nhận lịch hẹn'],
+        'appointment.confirmation_email_sent' => ['UPDATE', 'Gửi email xác nhận lịch cho khách'],
+        'appointment.confirmed_by_customer' => ['STATUS', 'Khách xác nhận lịch qua email'],
         'appointment.checked_in' => ['STATUS', 'Tiếp nhận xe theo lịch hẹn'],
         'appointment.cancelled' => ['DELETE', 'Huỷ lịch hẹn'],
         'appointment.no_show' => ['STATUS', 'Đánh dấu khách không đến'],
@@ -107,7 +109,8 @@ class AdminOperationsController extends Controller
     {
         $repairOrder->load(['customer:id,full_name,phone', 'vehicle:id,model_id,license_plate', 'vehicle.model:id,brand_id,name', 'vehicle.model.brand:id,name',
             'advisor:id,full_name', 'workItems.technician.employee:id,full_name', 'workItems.service:id,name', 'latestQuotation.items',
-            'statusHistory.changedByAccount:id,email,role', 'statusHistory.changedByAccount.employee:id,account_id,full_name']);
+            'statusHistory.changedByAccount:id,email,role', 'statusHistory.changedByAccount.employee:id,account_id,full_name',
+            'partRequests' => fn ($q) => $q->latest('id'), 'partRequests.part:id,name,unit']);
 
         $prices = $repairOrder->latestQuotation?->items->where('item_type', 'SERVICE')->keyBy('service_id') ?? collect();
 
@@ -121,6 +124,11 @@ class AdminOperationsController extends Controller
             'quotation_items' => $repairOrder->latestQuotation?->items->map(fn ($i) => [
                 'type' => $i->item_type, 'name' => $i->description, 'quantity' => (int) $i->quantity, 'amount' => (float) $i->amount, 'approved' => (bool) $i->is_approved,
             ])->values() ?? [],
+            // ADV-01 (D-020): phụ tùng cố vấn báo thiếu cho phiếu — Admin đặt / nhận ở Phụ tùng & kho → Cần đặt hàng.
+            'part_requests' => $repairOrder->partRequests->map(fn ($r) => [
+                'id' => $r->id, 'part' => $r->part?->name, 'unit' => $r->part?->unit, 'quantity' => (int) $r->quantity,
+                'status' => $r->status, 'eta_date' => $r->eta_date?->toDateString(), 'note' => $r->request_note,
+            ])->values(),
             'timeline' => $repairOrder->statusHistory->sortBy('id')->map(fn ($h) => [
                 'at' => $h->created_at?->toIso8601String(),
                 'status' => $h->status,

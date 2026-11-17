@@ -8,7 +8,7 @@ export type IconName = ShellNavItem["icon"] | "sun" | "moon" | "crown" | "menu" 
   | "phone" | "mail" | "pin" | "trend-up" | "trend-down" | "coins" | "x-circle" | "upload" | "drag" | "list"
   | "bank" | "qr" | "reply" | "eye-off" | "bell"
   // Danh mục dịch vụ / loại yêu cầu.
-  | "minus" | "sort" | "sort-asc" | "sort-desc" | "engine" | "snowflake" | "tire" | "bolt" | "disc" | "droplet" | "sparkle" | "battery" | "tools" | "gauge" | "ban";
+  | "minus" | "sort" | "sort-asc" | "sort-desc" | "engine" | "snowflake" | "tire" | "bolt" | "disc" | "droplet" | "sparkle" | "battery" | "tools" | "gauge" | "ban" | "coffee";
 type Props = { name: IconName; size?: number; className?: string };
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-6h6v6"/></>,
@@ -99,6 +99,7 @@ const paths: Record<IconName, ReactNode> = {
   tools: <><path d="M14 5a4 4 0 0 0 5 5l-9 9a2 2 0 0 1-3-3z"/><path d="m4 4 3 1 4 4-2 2-4-4z"/></>,
   gauge: <><path d="M4 18a8 8 0 1 1 16 0"/><path d="m12 14 4-5"/><circle cx="12" cy="14" r="1.2"/></>,
   ban: <><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></>,
+  coffee: <><path d="M4 9h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M12 3v3"/></>,
 };
 export function Icon({ name, size = 18, className }: Props) {
   return <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;

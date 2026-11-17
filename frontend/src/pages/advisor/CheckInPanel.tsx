@@ -70,7 +70,7 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
   // Trả xe: khi phiếu hoàn thành; hoặc mở sớm khi trả xe không sửa (đóng phiếu).
   if (isOut && !handover && (!order.requires_check_in || !checkedIn)) return null;
   if (isOut && !handover && order.status !== "COMPLETED" && !openEarly) {
-    return <section className={`${card} mt-6 print:hidden`} data-testid="check-out-panel">
+    return <section className={`${card} print:hidden`} data-testid="check-out-panel">
       <p className="text-sm text-cs-muted">Trả xe không sửa (đóng phiếu) cần biên bản trả xe được chủ xe xác nhận.</p>
       <div className="mt-3"><Button size="sm" variant="secondary" onClick={() => setOpenEarly(true)}>Lập biên bản trả xe</Button></div>
     </section>;
@@ -93,9 +93,8 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
   const editable = !handover || handover.status === "DRAFT";
   const confirmation = handover?.confirmations?.[0];
 
-  return <section className={`${card} mt-6 print:hidden`} data-testid={isOut ? "check-out-panel" : "check-in-panel"}>
-    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text">Biên bản {isOut ? "trả" : "nhận"} xe</p>
-    <h2 className="mt-1 text-lg font-bold text-cs-text">Tình trạng xe khi {isOut ? "trả" : "nhận"} {handover && <span className="ml-2 text-sm font-semibold text-cs-muted">· {{ DRAFT: "Nháp", SUBMITTED: "Chờ khách xác nhận", CONFIRMED: "Khách đã xác nhận", VOID: "Đã hủy" }[handover.status]}</span>}</h2>
+  return <section className={`${card} print:hidden`} data-testid={isOut ? "check-out-panel" : "check-in-panel"}>
+    <h2 className="text-lg font-bold text-cs-text">Biên bản {isOut ? "trả" : "nhận"} xe {handover && <span className="ml-2 text-sm font-semibold text-cs-muted">· {{ DRAFT: "Nháp", SUBMITTED: "Chờ khách xác nhận", CONFIRMED: "Khách đã xác nhận", VOID: "Đã hủy" }[handover.status]}</span>}</h2>
     {order.requires_check_in && handover?.status !== "CONFIRMED" && <div className="mt-3"><Notice>{isOut ? "Chỉ bàn giao xe (hoặc đóng phiếu) khi chủ xe đã xác nhận biên bản trả xe. Người nhận phải là chủ xe hoặc người chủ xe đã ủy quyền trong tài khoản." : "Phiếu chỉ chuyển sang kiểm tra khi khách đã xác nhận biên bản nhận xe."}</Notice></div>}
     {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
 
@@ -175,7 +174,7 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
       ? <div className="mt-4"><Button size="sm" variant="danger-outline" icon="x" disabled={working} onClick={() => setVoidReason("")}>Hủy biên bản</Button></div>
       : <form className="mt-4 flex flex-wrap items-end gap-2" onSubmit={event => { event.preventDefault(); void run(() => handoverApi.void(handover.id, voidReason), "Đã hủy biên bản. Lập biên bản mới."); }}>
         <label className="min-w-64 flex-1 text-xs font-semibold text-cs-muted">Lý do hủy<input className={input} required minLength={5} maxLength={1000} value={voidReason} onChange={e => setVoidReason(e.target.value)}/></label>
-        <Button size="sm" variant="secondary" onClick={() => setVoidReason(null)}>Thôi</Button>
+        <Button size="sm" variant="secondary" onClick={() => setVoidReason(null)}>Đóng</Button>
         <Button type="submit" size="sm" variant="danger-outline" icon="x" loading={working}>Hủy biên bản</Button>
       </form>)}
   </section>;

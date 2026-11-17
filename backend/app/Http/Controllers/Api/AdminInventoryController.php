@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Inventory;
 use App\Models\InventoryTransaction;
 use App\Models\Part;
+use App\Models\PartRequest;
 use App\Support\VehicleName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -14,9 +15,9 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Admin quản lý phụ tùng & kho: danh mục phụ tùng (giá, dòng xe tương thích), tồn kho, nhập / xuất tay
@@ -71,6 +72,49 @@ class AdminInventoryController extends Controller
             ],
             'categories' => Part::query()->whereNotNull('category')->distinct()->orderBy('category')->pluck('category'),
             'units' => Part::query()->distinct()->orderBy('unit')->pluck('unit'),
+        ]);
+    }
+
+    /**
+     * GET /api/advisor/parts?search=&category=&status=all|ok|low|out|requested&model_id=&per_page=
+     * Cố vấn xem tồn kho — chỉ đọc (D-020: nhập kho / đặt hàng là việc của Admin). Chỉ phụ tùng đang kinh doanh,
+     * không trả giá vốn / giá trị tồn. `model_id` = phụ tùng tương thích dòng xe (tab "Phụ tùng theo xe").
+     */
+    public function advisorParts(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'category' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', Rule::in(['all', 'ok', 'low', 'out', 'requested'])],
+            'model_id' => ['nullable', 'integer', 'exists:vehicle_models,id'],
+            'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
+        ]);
+        $status = $filters['status'] ?? 'all';
+        $active = fn (): Builder => Part::query()->where('status', 'ACTIVE');
+        $outOfStock = fn (Builder $q) => $q->where(fn (Builder $q) => $q->doesntHave('inventory')->orWhereHas('inventory', fn (Builder $i) => $i->where('quantity', '<=', 0)));
+        $low = fn (Builder $q) => $q->whereHas('inventory', fn (Builder $i) => $i->where('quantity', '>', 0)->whereColumn('quantity', '<', 'min_quantity'));
+        $ok = fn (Builder $q) => $q->whereHas('inventory', fn (Builder $i) => $i->where('quantity', '>', 0)->whereColumn('quantity', '>=', 'min_quantity'));
+        $requested = fn (Builder $q) => $q->whereHas('partRequests', fn (Builder $r) => $r->whereIn('status', PartRequest::OPEN));
+
+        $page = $this->partQuery()->where('status', 'ACTIVE')
+            ->when($filters['category'] ?? null, fn (Builder $q, string $c) => $q->where('category', $c))
+            ->when($filters['model_id'] ?? null, fn (Builder $q, int $id) => $q->whereHas('compatibleModels', fn (Builder $m) => $m->where('vehicle_models.id', $id)))
+            ->when($status === 'ok', $ok)->when($status === 'low', $low)->when($status === 'out', $outOfStock)->when($status === 'requested', $requested)
+            ->when($this->term($filters), fn (Builder $q, string $like) => $q->where(fn (Builder $q) => $q->where('name', 'like', $like)->orWhere('sku', 'like', $like)))
+            ->orderBy('sku')->orderBy('id')
+            ->paginate($filters['per_page'] ?? 10);
+
+        return response()->json([
+            'data' => $page->getCollection()->map(fn (Part $p) => collect($this->partRow($p))->except('cost')->all())->values(),
+            'meta' => $this->meta($page),
+            'summary' => [
+                'total' => $active()->count(),
+                'ok' => $ok($active())->count(),
+                'low' => $low($active())->count(),
+                'out' => $outOfStock($active())->count(),
+                'requests_open' => PartRequest::query()->whereIn('status', PartRequest::OPEN)->count(),
+            ],
+            'categories' => $active()->whereNotNull('category')->distinct()->orderBy('category')->pluck('category'),
         ]);
     }
 
@@ -139,6 +183,7 @@ class AdminInventoryController extends Controller
         if ($old && str_starts_with($old, 'part-images/')) {
             Storage::disk('public')->delete($old);
         }
+
         return response()->json(['message' => 'Đã xóa ảnh phụ tùng.', 'data' => $this->partRow($this->partQuery()->findOrFail($part->id))]);
     }
 
@@ -148,6 +193,7 @@ class AdminInventoryController extends Controller
         abort_unless($part->image_path && str_starts_with($part->image_path, 'part-images/'), 404);
         $disk = Storage::disk('public');
         abort_unless($disk->exists($part->image_path), 404);
+
         return $disk->response($part->image_path, null, [
             'Content-Type' => $disk->mimeType($part->image_path) ?: 'image/jpeg',
             'Cache-Control' => 'public, max-age=86400',
@@ -227,7 +273,9 @@ class AdminInventoryController extends Controller
 
     private function partQuery(): Builder
     {
-        return Part::query()->with(['inventory', 'compatibleModels:id,brand_id,name', 'compatibleModels.brand:id,name']);
+        return Part::query()->with(['inventory', 'compatibleModels:id,brand_id,name', 'compatibleModels.brand:id,name'])
+            // ADV-01: số lượng đang chờ đặt / chờ về cho phiếu sửa chữa (cảnh báo khi nhập kho thường → tránh cộng 2 lần).
+            ->withSum(['partRequests as requested_quantity' => fn (Builder $q) => $q->whereIn('status', PartRequest::OPEN)], 'quantity');
     }
 
     /** @return array<string, mixed> */
@@ -286,6 +334,7 @@ class AdminInventoryController extends Controller
             'stock' => $stock,
             'min' => $min,
             'level' => $stock <= 0 ? 'out' : ($stock < $min ? 'low' : 'ok'),
+            'requested' => (int) ($p->requested_quantity ?? 0),
             'status' => $p->status,
             'updated_at' => ($p->inventory?->updated_at ?? $p->updated_at)?->toIso8601String(),
             'compat' => $p->compatibleModels->map(fn ($m) => ['id' => $m->id, 'name' => trim(($m->brand?->name ?? '').' '.$m->name)])->values(),

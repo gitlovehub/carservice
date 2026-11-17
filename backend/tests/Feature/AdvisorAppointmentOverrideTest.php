@@ -43,7 +43,7 @@ class AdvisorAppointmentOverrideTest extends TestCase
             'customer_id' => $customer->id,
             'vehicle_id' => $vehicle->id,
             'appointment_date' => now()->addDays(2)->toDateString(),
-            'appointment_time' => '10:00',
+            'appointment_time' => '10:30',
             'request_type' => 'MAINTENANCE',
         ]);
 
@@ -67,7 +67,7 @@ class AdvisorAppointmentOverrideTest extends TestCase
         $advisor = Account::factory()->advisor()->create();
         $customer = Customer::factory()->create();
         $date = now()->addDays(2)->toDateString();
-        $time = '10:00:00';
+        $time = '10:30:00';
 
         for ($number = 1; $number <= 5; $number++) {
             Appointment::query()->create([
@@ -85,7 +85,7 @@ class AdvisorAppointmentOverrideTest extends TestCase
 
         $this->actingAs($advisor)
             ->postJson('/api/advisor/appointments', array_merge(
-                $this->payload($customer, $vehicle, $date, '10:00'),
+                $this->payload($customer, $vehicle, $date, '10:30'),
                 [],
             ))
             ->assertUnprocessable()
@@ -104,14 +104,14 @@ class AdvisorAppointmentOverrideTest extends TestCase
             'customer_id' => $customer->id,
             'vehicle_id' => $vehicle->id,
             'appointment_date' => $date,
-            'appointment_time' => '10:00:00',
+            'appointment_time' => '10:30:00',
             'request_type' => 'MAINTENANCE',
             'status' => 'PENDING',
         ]);
 
         $this->actingAs($advisor)
             ->postJson('/api/advisor/appointments', array_merge(
-                $this->payload($customer, $vehicle, $date, '10:00'),
+                $this->payload($customer, $vehicle, $date, '10:30'),
                 [],
             ))
             ->assertUnprocessable()
@@ -174,7 +174,7 @@ class AdvisorAppointmentOverrideTest extends TestCase
         }
     }
 
-    private function payload(Customer $customer, Vehicle $vehicle, ?string $date = null, string $time = '10:00'): array
+    private function payload(Customer $customer, Vehicle $vehicle, ?string $date = null, string $time = '10:30'): array
     {
         return [
             'customer_id' => $customer->id,

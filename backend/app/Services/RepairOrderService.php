@@ -35,7 +35,10 @@ use Illuminate\Support\Str;
 class RepairOrderService
 {
     /** Mỗi bước khách cần biết (báo giá, sửa, hóa đơn, thanh toán, bàn giao) → thông báo chuông qua CustomerNotifier. */
-    public function __construct(private readonly CustomerNotifier $notifier) {}
+    public function __construct(
+        private readonly CustomerNotifier $notifier,
+        private readonly PartRequestService $partRequests,
+    ) {}
 
     /*
     |--------------------------------------------------------------------------
@@ -545,9 +548,26 @@ class RepairOrderService
     | 7. WAITING_FOR_PARTS
     |--------------------------------------------------------------------------
     */
-    public function markWaitingForParts(RepairOrder $ro, ?Account $actor, ?string $note = null): RepairOrder
+    /**
+     * ADV-01 (D-020): "Chờ phụ tùng" phải nói rõ đang thiếu gì — cần ≥ 1 yêu cầu phụ tùng đang mở.
+     * Chưa có thì cố vấn báo thiếu ngay lúc chuyển ($parts: [{part_id, quantity, note?}]) → tạo yêu cầu cho kho.
+     *
+     * @param  array<int, array{part_id: int, quantity: int, note?: string|null}>  $parts
+     */
+    public function markWaitingForParts(RepairOrder $ro, ?Account $actor, ?string $note = null, array $parts = []): RepairOrder
     {
-        $this->transition($ro, RepairOrder::WAITING_FOR_PARTS, $actor, $note ?? 'Đang chờ phụ tùng.');
+        DB::transaction(function () use ($ro, $actor, $note, $parts): void {
+            if ($ro->status !== RepairOrder::IN_PROGRESS) {
+                throw InvalidStatusTransitionException::because("Không thể chuyển sang chờ phụ tùng khi phiếu đang {$ro->status}.");
+            }
+            foreach ($parts as $line) {
+                $this->partRequests->report($ro, (int) $line['part_id'], (int) $line['quantity'], $line['note'] ?? null, $actor);
+            }
+            if (! $ro->partRequests()->whereIn('status', PartRequest::OPEN)->exists()) {
+                throw InvalidStatusTransitionException::because('Chọn phụ tùng đang thiếu (và số lượng) để kho đặt hàng trước khi chuyển sang chờ phụ tùng.');
+            }
+            $this->transition($ro, RepairOrder::WAITING_FOR_PARTS, $actor, $note ?? 'Đang chờ phụ tùng.');
+        });
         $this->notifier->waitingForParts($ro);
 
         return $ro;
@@ -771,13 +791,24 @@ class RepairOrderService
      * DIRECT => coi như thu tiền ngay tại quầy, đánh SUCCESS luôn.
      * QR     => chờ cổng thanh toán xác nhận, tạo ở trạng thái PENDING.
      */
-    public function recordPayment(Invoice $invoice, string $method, float $amount): Payment
+    public function recordPayment(Invoice $invoice, string $method, float $amount, ?string $transactionCode = null, ?Account $actor = null): Payment
     {
-        if (! in_array($method, [Payment::DIRECT, Payment::QR], true)) {
-            throw InvalidStatusTransitionException::because('Phương thức thanh toán phải là DIRECT hoặc QR.');
+        if (! in_array($method, [...Payment::COUNTER_METHODS, Payment::QR], true)) {
+            throw InvalidStatusTransitionException::because('Phương thức thanh toán không hợp lệ.');
+        }
+        // PO 17/11/2026: chuyển khoản / thẻ / ví thu tại quầy phải có mã giao dịch để đối soát, không ghi trùng mã.
+        $transactionCode = $transactionCode === null ? null : trim($transactionCode);
+        $counter = in_array($method, Payment::COUNTER_METHODS, true);
+        if ($counter && $method !== Payment::DIRECT) {
+            if ($transactionCode === null || $transactionCode === '') {
+                throw InvalidStatusTransitionException::because('Nhập mã giao dịch (mã chuyển khoản / mã chuẩn chi POS / mã ví) để đối soát.');
+            }
+            if (Payment::query()->where('payment_method', $method)->where('transaction_code', $transactionCode)->where('status', Payment::SUCCESS)->exists()) {
+                throw InvalidStatusTransitionException::because("Mã giao dịch {$transactionCode} đã được ghi nhận trước đó.");
+            }
         }
 
-        return DB::transaction(function () use ($invoice, $method, $amount) {
+        return DB::transaction(function () use ($invoice, $method, $amount, $transactionCode, $counter, $actor) {
             $invoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->id);
 
             if ($invoice->status === Invoice::PAID) {
@@ -793,9 +824,12 @@ class RepairOrderService
                 'invoice_id' => $invoice->id,
                 'amount' => $amount,
                 'payment_method' => $method,
+                'transaction_code' => $counter && $method !== Payment::DIRECT ? $transactionCode : null,
                 'qr_reference' => $method === Payment::QR ? Str::upper(Str::random(12)) : null,
-                'status' => $method === Payment::DIRECT ? Payment::SUCCESS : Payment::PENDING,
-                'paid_at' => $method === Payment::DIRECT ? now() : null,
+                // Thu tại quầy: cố vấn xác nhận đã nhận tiền → thành công ngay; QR chờ cổng xác nhận.
+                'status' => $counter ? Payment::SUCCESS : Payment::PENDING,
+                'paid_at' => $counter ? now() : null,
+                'recorded_by' => $counter ? $actor?->id : null,
             ]);
 
             $this->refreshInvoiceStatus($invoice);
@@ -859,8 +893,38 @@ class RepairOrderService
     | 12. Bàn giao xe
     |--------------------------------------------------------------------------
     */
+    /**
+     * Kiểm tra sau sửa chữa (PO 17/11/2026, bắt buộc trước bàn giao): chỉ khi phiếu đã sửa xong (COMPLETED),
+     * phải tick đủ mọi hạng mục `RepairOrder::QUALITY_CHECK_ITEMS`. Lưu người kiểm + thời điểm; làm lại thì ghi đè.
+     *
+     * @param  list<string>  $checked
+     */
+    public function recordQualityCheck(RepairOrder $ro, array $checked, ?string $note, ?Account $actor): RepairOrder
+    {
+        if ($ro->status !== RepairOrder::COMPLETED) {
+            throw InvalidStatusTransitionException::because('Chỉ kiểm tra sau sửa chữa khi phiếu đã hoàn thành sửa chữa và chưa bàn giao.');
+        }
+        $missing = array_diff(array_keys(RepairOrder::QUALITY_CHECK_ITEMS), $checked);
+        if ($missing !== []) {
+            $labels = array_map(fn (string $code) => RepairOrder::QUALITY_CHECK_ITEMS[$code], array_values($missing));
+            throw InvalidStatusTransitionException::because('Chưa kiểm đủ: '.implode(', ', $labels).'.');
+        }
+
+        $ro->forceFill([
+            'quality_check' => ['items' => array_keys(RepairOrder::QUALITY_CHECK_ITEMS), 'note' => $note],
+            'quality_checked_at' => now(),
+            'quality_checked_by' => $actor?->id,
+        ])->save();
+
+        return $ro;
+    }
+
     public function handOver(RepairOrder $ro, ?Account $actor): RepairOrder
     {
+        if ($ro->quality_checked_at === null) {
+            throw InvalidStatusTransitionException::because('Chưa kiểm tra sau sửa chữa. Hoàn tất checklist kiểm tra trước khi bàn giao xe.');
+        }
+
         $invoice = $ro->invoice;
 
         if (! $invoice || $invoice->status !== Invoice::PAID) {

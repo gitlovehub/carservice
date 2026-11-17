@@ -143,14 +143,16 @@ export function AreaChart({ labels, series, height = 260, title, format = num }:
 }
 
 /** Biểu đồ vành khuyên kèm chú thích. */
-export function DonutChart({ segments, centerValue, centerLabel, title }: {
+export function DonutChart({ segments, centerValue, centerLabel, title, size = "md" }: {
   segments: Array<{ label: string; value: number; color: string }>; centerValue: ReactNode; centerLabel: string; title: string;
+  /** "lg" = vòng 208px (lòng trong rộng hơn cho nhãn giữa dài). */
+  size?: "md" | "lg";
 }) {
   const total = segments.reduce((sum, s) => sum + s.value, 0) || 1;
   const r = 15.9155; // chu vi = 100
   const offsets = segments.reduce<number[]>((acc, _s, i) => [...acc, (i ? acc[i - 1] : 25) - (i ? (segments[i - 1].value / total) * 100 : 0)], []);
   return <div className="flex flex-wrap items-center gap-6">
-    <div className="relative mx-auto size-44 shrink-0">
+    <div className={`relative mx-auto shrink-0 ${size === "lg" ? "size-52" : "size-44"}`}>
       <svg viewBox="0 0 42 42" className="size-full" role="img" aria-label={title}>
         <circle cx="21" cy="21" r={r} fill="none" stroke="var(--cs-surface-2)" strokeWidth="7"/>
         {segments.map((s, i) => {

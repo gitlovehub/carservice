@@ -29,11 +29,15 @@ assert.doesNotMatch(shell, /bell|notification|thông báo mới/i);
 assert.match(nav, /export function crumbs\(/);
 
 // Menu: nhóm, tên trang tổng quan thống nhất, trang khung gắn nhãn "Sắp có".
-for (const group of ['Điều hành', 'Sửa chữa', 'Khách hàng', 'Con người', 'Danh mục', 'Hệ thống']) assert.ok(nav.includes(`group: "${group}"`), `Thiếu nhóm ${group}`);
+// Cố vấn: nhóm theo mockup PO 17/11/2026 (Điều hành · Quản lý sửa chữa · Thanh toán & bàn giao · Khách hàng).
+for (const group of ['Điều hành', 'Quản lý sửa chữa', 'Thanh toán & bàn giao', 'Khách hàng', 'Con người', 'Danh mục', 'Hệ thống']) assert.ok(nav.includes(`group: "${group}"`), `Thiếu nhóm ${group}`);
 assert.match(nav, /\{ label: "Tổng quan", path: "\/advisor"/);
 assert.match(nav, /\{ label: "Tổng quan", path: "\/admin"/);
 assert.doesNotMatch(nav, /Bàn điều hành|Trung tâm điều hành/);
-assert.match(nav, /path: "\/advisor\/create-booking"[^}]*soon: true/);
+// ADV-04: "Đặt lịch hộ" có trang thật; từ 17/11 không nằm trong menu (mockup PO) mà mở từ Lịch hẹn + Khách hàng.
+assert.doesNotMatch(nav, /path: "\/advisor\/[^"]*"[^}]*soon: true/);
+const advisorAppointments = readFileSync(new URL('../src/pages/advisor/Appointments.tsx', import.meta.url), 'utf8');
+assert.match(advisorAppointments, /\/advisor\/create-booking/, 'Lịch hẹn phải có nút mở Đặt lịch hộ');
 // Admin: sidebar mới — mọi mục đều có trang thật; "Sắp có" chỉ cho Khuyến mãi (PO yêu cầu 11/11/2026, task PROMO-01).
 for (const path of ['/admin/staff', '/admin/repair-orders', '/admin/invoices', '/admin/reviews', '/admin/vehicle-brands', '/admin/audit-logs']) assert.match(nav, new RegExp(`path: "${path}"`));
 const adminNav = nav.slice(nav.indexOf('admin: ['));

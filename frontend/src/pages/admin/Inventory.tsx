@@ -9,13 +9,14 @@ import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
 import { adminApi, errorMessage, fmtDateTime, type AdminPart, type PartPayload, type StockMove } from "../../services/adminApi";
 import { emptySelection, type VehicleSelection } from "../../services/vehicleCatalog";
 import { AdminPage, ClearFilters, FilterSelect, Pill, Progress, SplitView, StatCard, Tabs, Toolbar } from "./kit/AdminKit";
+import { PartOrders } from "./PartOrders";
 import { num, vnd, type Tone } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
 
-type Tab = "catalog" | "stock" | "moves";
+type Tab = "catalog" | "stock" | "orders" | "moves";
 type StatusFilter = "all" | "ACTIVE" | "INACTIVE" | "low" | "out";
-type Editing = Omit<AdminPart, "updated_at" | "level" | "stock"> & { stock: number };
+type Editing = Omit<AdminPart, "updated_at" | "level" | "stock" | "requested"> & { stock: number };
 type StockForm = { type: "IN" | "OUT"; partId: number | null; qty: number; note: string };
 
 const TONES: Tone[] = ["warning", "violet", "info", "success", "brand", "neutral"];
@@ -39,7 +40,7 @@ function PartName({ part }: { part: AdminPart }) {
 export default function Inventory() {
   const { notify } = useAppFeedback();
   const [params, setParams] = useSearchParams();
-  const tab: Tab = (["catalog", "stock", "moves"] as Tab[]).find(t => t === params.get("tab")) ?? "catalog";
+  const tab: Tab = (["catalog", "stock", "orders", "moves"] as Tab[]).find(t => t === params.get("tab")) ?? "catalog";
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -58,6 +59,10 @@ export default function Inventory() {
   const moveSort = useTableSort(NEWEST_FIRST, () => setMovePage(1));
   const partParams = { search: term, category, status, page, ...partSort.params };
   const parts = useAdminQuery(tab !== "moves" ? `parts:${JSON.stringify(partParams)}` : null, signal => adminApi.parts(partParams, signal));
+  // ADV-01: yêu cầu phụ tùng đang mở (cố vấn báo thiếu) — dùng cho tab "Cần đặt hàng" và số trên tab.
+  const [requestsVersion, setRequestsVersion] = useState(0);
+  const requests = useAdminQuery(`part-requests:${requestsVersion}`, signal => adminApi.partRequests({ status: "OPEN", per_page: 100 }, signal));
+  const openRequests = (requests.data ?? requests.stale)?.data ?? [];
   const moves = useAdminQuery(tab === "moves" ? `moves:${term}:${movePage}:${moveSort.sort.key}:${moveSort.sort.dir}` : null, signal => adminApi.stockMoves({ search: term, page: movePage, ...moveSort.params }, signal));
   const partOptions = useAdminQuery(stockForm ? "parts:all" : null, signal => adminApi.parts({ per_page: 100, sort: "name", dir: "asc" }, signal));
   const result = parts.data ?? parts.stale;
@@ -126,7 +131,7 @@ export default function Inventory() {
       const response = await adminApi.adjustStock(stockForm.partId, { type: stockForm.type, quantity: stockForm.qty, note: stockForm.note.trim() || null });
       notify(response.message, "success");
       setStockForm(null);
-      parts.reload(); moves.reload(); partOptions.reload();
+      parts.reload(); moves.reload(); partOptions.reload(); setRequestsVersion(n => n + 1);
     } catch (error) {
       setFormError(errorMessage(error, "Không cập nhật được tồn kho."));
     } finally {
@@ -168,6 +173,7 @@ export default function Inventory() {
     { key: "stock", sortKey: "stock", header: "Tồn hiện tại / Tối thiểu", render: p => {
       const pct = (p.stock / Math.max(1, p.min * 1.3)) * 100;
       return <span className="block min-w-36"><span className="mb-1 flex justify-between text-small"><b className="tabular-nums">{num(p.stock)} / {num(p.min)}</b>
+        {p.requested > 0 && <span className="text-caption font-semibold text-info-fg">Chờ về {num(p.requested)}</span>}
         {p.level !== "ok" && <span className={`text-caption font-semibold ${p.level === "out" ? "text-danger-fg" : "text-warning-fg"}`}>{p.level === "out" ? "Hết hàng" : "Sắp hết"}</span>}</span>
         <Progress value={pct} tone={p.level === "out" || p.stock / Math.max(1, p.min) < 0.5 ? "danger" : p.level === "low" ? "warning" : "success"} label={`Tồn kho ${p.name}`}/></span>;
     } },
@@ -246,7 +252,9 @@ export default function Inventory() {
     </div>
     <div className="mb-4">
       <Tabs label="Phụ tùng & kho" value={tab} onChange={switchTab} items={[
-        { id: "catalog", label: "Danh mục phụ tùng", icon: "tag" }, { id: "stock", label: "Tồn kho", icon: "box" }, { id: "moves", label: "Lịch sử nhập xuất", icon: "history" },
+        { id: "catalog", label: "Danh mục phụ tùng", icon: "tag" }, { id: "stock", label: "Tồn kho", icon: "box" },
+        { id: "orders", label: "Cần đặt hàng", icon: "clock", count: openRequests.length || undefined, tone: "warning" },
+        { id: "moves", label: "Lịch sử nhập xuất", icon: "history" },
       ]}/>
     </div>
 
@@ -266,6 +274,9 @@ export default function Inventory() {
       onRowClick={p => openStock("IN", p)}
       footer={pager}/></>}
 
+    {tab === "orders" && <PartOrders rows={openRequests} loading={requests.loading && !requests.stale} error={requests.error || undefined} onRetry={requests.reload}
+      onChanged={() => { setRequestsVersion(n => n + 1); moves.reload(); }}/>}
+
     {tab === "moves" && <>{filters}<DataTable sort={moveSort.sort} onSort={moveSort.toggle} caption="Lịch sử nhập xuất" columns={moveColumns} rows={moveResult?.data ?? []} rowKey={m => m.id}
       loading={moves.loading} error={moves.error || undefined} onRetry={moves.reload}
       empty={<EmptyState icon="history" title="Chưa có giao dịch nhập xuất"/>}
@@ -280,6 +291,10 @@ export default function Inventory() {
         <Field label="Số lượng" required hint={stockForm.type === "OUT" && selectedStockPart ? `Tối đa ${num(selectedStockPart.stock)}` : undefined}>
           <QuantityStepper label="Số lượng" size="md" className="w-full" min={1} max={stockForm.type === "OUT" && selectedStockPart ? Math.max(1, selectedStockPart.stock) : 99999} value={stockForm.qty || 1} onChange={v => setStockForm({ ...stockForm, qty: v ?? 1 })}/>
         </Field>
+        {stockForm.type === "IN" && selectedStockPart && selectedStockPart.requested > 0 && <div role="note" className="rounded-control border border-warning/40 bg-warning-soft p-3 text-small text-warning-fg sm:col-span-2">
+          Phụ tùng này đang có <b>{num(selectedStockPart.requested)} {selectedStockPart.unit}</b> chờ về cho phiếu sửa chữa. Nếu đây là hàng đặt cho phiếu, hãy nhập ở tab <b>Cần đặt hàng</b> (bấm "Hàng đã về") để không cộng kho hai lần và khách được báo.
+          <Button size="sm" variant="outline" className="mt-2" onClick={() => { setStockForm(null); switchTab("orders"); }}>Mở Cần đặt hàng</Button>
+        </div>}
         <Field label={stockForm.type === "IN" ? "Nhà cung cấp / ghi chú" : "Lý do xuất"} optional className="sm:col-span-2"><Input value={stockForm.note} maxLength={255} onChange={e => setStockForm({ ...stockForm, note: e.target.value })}/></Field>
         {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
       </div>}

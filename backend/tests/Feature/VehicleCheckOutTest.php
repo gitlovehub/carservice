@@ -59,7 +59,7 @@ class VehicleCheckOutTest extends TestCase
 
     private function readyToHandOver(): void
     {
-        RepairOrder::query()->whereKey($this->orderId)->update(['status' => RepairOrder::COMPLETED]);
+        RepairOrder::query()->whereKey($this->orderId)->update(['status' => RepairOrder::COMPLETED, 'quality_checked_at' => now()]);
         Invoice::query()->create(['repair_order_id' => $this->orderId, 'invoice_code' => 'INV-CO', 'status' => Invoice::PAID, 'subtotal' => 0, 'discount_amount' => 0, 'total_amount' => 0]);
     }
 

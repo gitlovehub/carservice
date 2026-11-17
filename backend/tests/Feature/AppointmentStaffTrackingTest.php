@@ -71,18 +71,18 @@ class AppointmentStaffTrackingTest extends TestCase
     public function test_advisor_reschedules_with_reason_and_customer_is_notified(): void
     {
         $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
-            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:00',
+            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:15',
         ])->assertUnprocessable()->assertJsonValidationErrors('reason');
         $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
             'appointment_date' => $this->date->toDateString(), 'appointment_time' => '20:00', 'reason' => 'Khách xin đổi giờ',
         ])->assertUnprocessable();
 
         $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
-            'appointment_date' => $this->date->addDay()->toDateString(), 'appointment_time' => '14:00', 'reason' => 'Khách bận buổi sáng',
+            'appointment_date' => $this->date->addDay()->toDateString(), 'appointment_time' => '14:15', 'reason' => 'Khách bận buổi sáng',
         ])->assertOk();
 
         $fresh = $this->appointment->fresh();
-        $this->assertSame('14:00:00', substr((string) $fresh->appointment_time, 0, 8));
+        $this->assertSame('14:15:00', substr((string) $fresh->appointment_time, 0, 8));
         $this->assertSame($this->advisorA->id, (int) $fresh->handled_by_account_id);
         $log = $fresh->activities()->first();
         $this->assertSame('appointment.rescheduled', $log->action);
@@ -95,12 +95,12 @@ class AppointmentStaffTrackingTest extends TestCase
     public function test_cannot_reschedule_checked_in_and_customers_cannot_use_staff_endpoints(): void
     {
         $this->actingAs($this->customerAccount)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
-            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:00', 'reason' => 'Tự đổi qua API nhân viên',
+            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:15', 'reason' => 'Tự đổi qua API nhân viên',
         ])->assertForbidden();
 
         $this->appointment->update(['status' => 'CHECKED_IN']);
         $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
-            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:00', 'reason' => 'Đổi sau khi xe đã tới',
+            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:15', 'reason' => 'Đổi sau khi xe đã tới',
         ])->assertUnprocessable();
         Mail::assertNothingSent();
     }

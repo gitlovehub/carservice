@@ -24,6 +24,10 @@ for(const needle of ['getAdvisorAppointments','listWorkflowOrders','pagination?.
 assert(!dashboard.includes('490.000') && !dashboard.includes('86M'),'Do not fabricate metric values');
 assert(!/#[0-9a-f]{6}/i.test(dashboard), 'Dashboard colors must come from tokens (no hard-coded hex / neon)');
 assert(!/[A-Z]{4,} [A-Z]{3,}/.test(dashboard.replace(/"[A-Z_]+"/g, '')), 'No decorative English captions on the dashboard');
-assert(app.includes('<WorkspaceDashboard role="advisor"/>'));
+// ADV-10 (mockup PO 16/11/2026): Tổng quan cố vấn là trang riêng, số liệu từ /api/advisor/dashboard (không số minh hoạ).
+assert(app.includes('<Route index element={<AdvisorDashboard/>}/>'), 'Advisor home uses AdvisorDashboard');
+const advisorDash = read('../src/pages/advisor/AdvisorDashboard.tsx');
+assert(advisorDash.includes('advisorDashboardApi(signal)'), 'Advisor dashboard loads the real dashboard API');
+assert(!/value=\{\d|series=\{\[\d/.test(advisorDash), 'Advisor dashboard must not hard-code metric values');
 for (const variant of ['sm:grid-cols-2', 'xl:grid-cols-4', 'xl:grid-cols-[']) assert(dashboard.includes(variant), `Tailwind responsive variant ${variant} must remain`);
 console.log('PASS: role scoped theme, legacy dark compatibility, responsive GARAGE dashboards and real appointment integration.');

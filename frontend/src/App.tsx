@@ -38,13 +38,19 @@ import AdvisorAppointments from "./pages/advisor/Appointments";
 import ReceptionWorkflow from "./pages/advisor/ReceptionWorkflow";
 import AdvisorRepairOrders from "./pages/advisor/AdvisorRepairOrders";
 import AdvisorRepairOrderDetail from "./pages/advisor/AdvisorRepairOrderDetail";
+import AdvisorQuotations from "./pages/advisor/AdvisorQuotations";
+import AdvisorRepairProgress from "./pages/advisor/AdvisorRepairProgress";
+import AdvisorParts from "./pages/advisor/AdvisorParts";
+import AdvisorDelivery from "./pages/advisor/AdvisorDelivery";
+import AdvisorBilling from "./pages/advisor/AdvisorBilling";
+import AdvisorCreateBooking from "./pages/advisor/CreateBooking";
+import AdvisorDashboard from "./pages/advisor/AdvisorDashboard";
 
 
 
 
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import WorkspaceDashboard from "./pages/shared/WorkspaceDashboard";
 import AdminAccounts from "./pages/admin/Accounts";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminAppointments from "./pages/admin/AdminAppointments";
@@ -130,18 +136,23 @@ function App() {
     <Route path="/account" element={<ProtectedRoute allowedRoles={["CUSTOMER"]}><Account/></ProtectedRoute>}/>
 
     <Route path="/advisor" element={<ProtectedRoute allowedRoles={["ADVISOR"]}><AdvisorLayout/></ProtectedRoute>}>
-      <Route index element={<WorkspaceDashboard role="advisor"/>}/>
+      <Route index element={<AdvisorDashboard/>}/>
       <Route path="appointments" element={<AdvisorAppointments/>}/>
       <Route path="reception" element={<ReceptionWorkflow/>}/>
       <Route path="service-orders" element={<AdvisorRepairOrders/>}/>
       <Route path="service-orders/:orderId" element={<AdvisorRepairOrderDetail/>}/>
       <Route path="customers" element={<AdvisorCustomers/>}/>
       <Route path="customer-cars" element={<AdvisorCustomerCars/>}/>
-      <Route path="create-booking" element={<ModulePlaceholder area="Cố vấn" title="Đặt lịch hộ" description="Tạo lịch hẹn thay cho khách gọi điện hoặc đến trực tiếp." owner="Nhóm module lịch hẹn"/>}/>
+      <Route path="create-booking" element={<AdvisorCreateBooking/>}/>
       {/* Báo giá, tiến độ, thanh toán được thao tác trên chi tiết phiếu; các menu cũ trỏ vào danh sách đã lọc. */}
-      <Route path="repair-status" element={<Navigate to="/advisor/service-orders?status=IN_PROGRESS" replace/>}/>
-      <Route path="quotation" element={<Navigate to="/advisor/service-orders?status=QUOTING" replace/>}/>
-      <Route path="payments" element={<Navigate to="/advisor/service-orders?status=COMPLETED" replace/>}/>
+      <Route path="repair-status" element={<Navigate to="/advisor/repair-progress" replace/>}/>
+      <Route path="quotations" element={<AdvisorQuotations/>}/>
+      <Route path="repair-progress" element={<AdvisorRepairProgress/>}/>
+      <Route path="parts" element={<AdvisorParts/>}/>
+      <Route path="delivery" element={<AdvisorDelivery/>}/>
+      <Route path="quotation" element={<Navigate to="/advisor/quotations" replace/>}/>
+      <Route path="payments" element={<AdvisorBilling/>}/>
+      <Route path="profile" element={<AdminProfile area="advisor"/>}/>
     </Route>
     <Route path="/customers" element={<Navigate to="/advisor/customers" replace/>}/>
     <Route path="/customer-cars" element={<Navigate to="/advisor/customer-cars" replace/>}/>

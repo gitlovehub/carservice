@@ -40,11 +40,17 @@ function resizeAvatar(file: File): Promise<string> {
   });
 }
 
+const areaCopy = {
+  admin: { role: "Quản trị viên", description: "Thông tin tài khoản quản trị của bạn", path: "/admin/profile" },
+  advisor: { role: "Cố vấn dịch vụ", description: "Thông tin tài khoản cố vấn của bạn", path: "/advisor/profile" },
+} as const;
+
 /**
- * Hồ sơ của bạn (Admin) — xem / sửa họ tên, số điện thoại (PATCH /me/profile) và đổi mật khẩu (POST /me/change-password).
+ * Hồ sơ của bạn (Admin / Cố vấn) — xem / sửa họ tên, số điện thoại (PATCH /me/profile) và đổi mật khẩu (POST /me/change-password).
  * Email là tên đăng nhập nên chỉ xem. Lưu xong phát "user-updated" để tên trên thanh trên cùng cập nhật ngay.
  */
-export default function AdminProfile() {
+export default function AdminProfile({ area = "admin" }: { area?: keyof typeof areaCopy }) {
+  const copy = areaCopy[area];
   const { notify } = useAppFeedback();
   const [me, setMe] = useState<Me | null>(null);
   const [loadError, setLoadError] = useState("");
@@ -138,7 +144,7 @@ export default function AdminProfile() {
     }
   };
 
-  if (!me) return <AdminPage title="Hồ sơ của bạn" description="Thông tin tài khoản quản trị của bạn" demo={false}>
+  if (!me) return <AdminPage title="Hồ sơ của bạn" description={copy.description} demo={false}>
     <div className="rounded-card border border-cs-border bg-cs-surface shadow-card">
       {loadError ? <ErrorState description={loadError} onRetry={() => setReload(n => n + 1)}/> : <LoadingState/>}
     </div>
@@ -146,7 +152,7 @@ export default function AdminProfile() {
 
   const setPw = (patch: Partial<Passwords>) => { setPasswords(p => ({ ...p, ...patch })); setPasswordError(""); };
 
-  return <AdminPage title="Hồ sơ của bạn" description="Thông tin tài khoản quản trị của bạn" demo={false}>
+  return <AdminPage title="Hồ sơ của bạn" description={copy.description} demo={false}>
     <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
       {/* Thẻ tóm tắt */}
       <section className="flex flex-col items-center rounded-card border border-cs-border bg-cs-surface p-6 text-center shadow-card">
@@ -168,7 +174,7 @@ export default function AdminProfile() {
         <h2 className="mt-3 text-subheading font-semibold text-cs-text">{name}</h2>
         <p className="mt-0.5 break-all text-small text-cs-muted">{me.email}</p>
         <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-          <Pill tone="brand" icon="key">Quản trị viên</Pill>
+          <Pill tone="brand" icon={area === "admin" ? "key" : "user"}>{copy.role}</Pill>
           <Pill tone={me.status === "ACTIVE" ? "success" : "neutral"}>{me.status === "ACTIVE" ? "Đang hoạt động" : me.status}</Pill>
         </div>
         <dl className="mt-5 w-full space-y-2 border-t border-cs-border pt-4 text-left text-small">
@@ -221,7 +227,7 @@ export default function AdminProfile() {
             {passwordError && <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-fg">{passwordError}</p>}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-cs-border pt-4">
               {/* Không nhớ mật khẩu hiện tại → đặt lại qua OTP email (trang Quên mật khẩu dùng chung), xong quay về đây. */}
-              <Link to="/forgot-password" state={{ from: { pathname: "/admin/profile", search: "", hash: "" } }}
+              <Link to="/forgot-password" state={{ from: { pathname: copy.path, search: "", hash: "" } }}
                 className="text-small font-semibold text-cs-muted no-underline hover:text-cs-accent-text hover:underline">Quên mật khẩu hiện tại? Đặt lại qua email</Link>
               <Button type="submit" variant="primary" icon="key" loading={changing} loadingText="Đang đổi..."
                 disabled={!passwords.current || !passwords.next || !passwords.confirm}>Đổi mật khẩu</Button>

@@ -40,6 +40,12 @@ Không có.
 - Rời P1 khi P1D-03 VERIFIED và PO nghiệm thu P1.
 
 
+## Cập nhật 16/11/2026 (nhánh `v3-advisor`)
+
+- Bước cuối: làm lại khu **cố vấn** + hoàn thiện luồng (D-020..022). Xong: ADV-06 (chi tiết phiếu theo bước), ADV-01 (Chờ phụ tùng: cố vấn báo thiếu, Admin đặt/nhận), ADV-02/03 (khách vãng lai, xe chưa có trong hệ thống), ADV-04 (Đặt lịch hộ + kiểm khung giờ khi cố vấn đặt/đổi lịch). ADV-07 (danh sách phiếu dạng bảng + tìm kiếm + chip đếm), ADV-10 (Tổng quan cố vấn theo mockup PO), ADV-08 (Lịch hẹn + Tiếp nhận theo mockup PO), ADV-09 (Khách hàng / Xe khách hàng). Tiếp theo ADV-QA.
+- DB dev migrate tới `2026_11_16_063420` (part_requests.request_note).
+- Chưa commit — PO tự commit. Mới nhất: backend 339/339, smoke 30/30, tsc + build đạt.
+
 ## Cập nhật 15/11/2026 (nhánh `v3-client`)
 
 - Khu "Hồ sơ của tôi" của khách: 8 trang (Hồ sơ, Xe, Lịch hẹn, Lịch sử bảo dưỡng, Đánh giá, Báo giá, Hóa đơn, Thanh toán) dùng chung khung `pages/customer/account/AccountKit.tsx` (tiêu đề, lọc, thẻ, modal) — chỉ nằm trong sidebar tài khoản.

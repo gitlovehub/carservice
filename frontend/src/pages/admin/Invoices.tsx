@@ -11,7 +11,7 @@ import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
 
 const methodInfo: Record<PaymentGroup, { label: string; icon: IconName }> = {
-  CASH: { label: "Tiền mặt", icon: "cash" }, BANK_TRANSFER: { label: "Chuyển khoản", icon: "bank" }, VNPAY: { label: "VNPAY", icon: "qr" },
+  CASH: { label: "Tiền mặt", icon: "cash" }, BANK_TRANSFER: { label: "Chuyển khoản", icon: "bank" }, CARD: { label: "Thẻ ngân hàng", icon: "card" }, EWALLET: { label: "Ví điện tử", icon: "coins" }, VNPAY: { label: "VNPAY", icon: "qr" },
 };
 type View = "invoices" | "payments";
 
@@ -130,7 +130,7 @@ export default function Invoices() {
       </PaneSection>
     </>;
 
-  return <AdminPage title="Hoá đơn & thanh toán" description="Tra cứu hoá đơn, công nợ và giao dịch (tiền mặt, chuyển khoản, VNPAY)" demo={false}
+  return <AdminPage title="Hoá đơn & thanh toán" description="Tra cứu hoá đơn, công nợ và giao dịch (tiền mặt, chuyển khoản, thẻ, ví điện tử, VNPAY)" demo={false}
     actions={<Button variant="outline" icon="download" loading={exporting} loadingText="Đang xuất..." onClick={() => void exportCsv()}>Xuất Excel (CSV)</Button>}>
     <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard icon="coins" tone="success" label="Tổng đã thu" value={summary ? vnd(summary.collected) : "—"}/>

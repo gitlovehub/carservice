@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\AdminServiceCategoryController;
 use App\Http\Controllers\Api\AdminServiceController;
 use App\Http\Controllers\Api\AdminVehicleCatalogController;
 use App\Http\Controllers\Api\AdvisorAppointmentController;
+use App\Http\Controllers\Api\AdvisorDashboardController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingCatalogController;
@@ -230,8 +231,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::prefix('advisor/appointments')->group(function (): void {
             Route::post('/', [AdvisorAppointmentController::class, 'store']);
             Route::get('/', [AdvisorAppointmentController::class, 'index']);
-            Route::get('/{id}', [AdvisorAppointmentController::class, 'show']);
+            Route::get('/filter-options', [AdvisorAppointmentController::class, 'filterOptions']);
+            Route::get('/{id}', [AdvisorAppointmentController::class, 'show'])->whereNumber('id');
             Route::post('/{id}/confirm', [AdvisorAppointmentController::class, 'confirm']);
+            // Gửi mail để khách tự bấm xác nhận lịch (song song với gọi điện).
+            Route::post('/{id}/send-confirmation-email', [AdvisorAppointmentController::class, 'sendConfirmationEmail'])->middleware('throttle:10,1');
             Route::post('/{id}/check-in', [AdvisorAppointmentController::class, 'checkIn']);
             Route::post('/{id}/cancel', [AdvisorAppointmentController::class, 'cancel']);
             Route::post('/{id}/no-show', [AdvisorAppointmentController::class, 'noShow']);
@@ -239,11 +243,21 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('/{id}/reschedule', [AdvisorAppointmentController::class, 'reschedule'])->middleware('throttle:20,1');
         });
 
+        // ADV-10: Tổng quan cố vấn (một lần tải, số liệu thật).
+        Route::get('advisor/dashboard', [AdvisorDashboardController::class, 'show']);
+
+        // ADV-04: tình trạng từng khung giờ đặt lịch trong ngày (đặt lịch hộ / đổi lịch).
+        Route::get('advisor/booking-availability', [AdvisorAppointmentController::class, 'availability']);
+
         // P7: công suất gara theo phút / ngày (Q6: chỉ cảnh báo).
         Route::get('advisor/capacity', [CapacityController::class, 'show']);
         Route::get('advisor/capacity/range', [CapacityController::class, 'range']);
 
-        // P6: phụ tùng chờ — đặt hàng (ETA), nhận hàng (nhập kho), hủy.
+        // P6 + ADV-01 (D-020): phụ tùng chờ. Cố vấn báo thiếu / hủy khi chưa đặt; Admin đặt hàng (ETA) + nhận hàng (kiểm trong controller).
+        Route::post('repair-orders/{repairOrder}/part-requests', [PartRequestController::class, 'store']);
+        // Trang "Phụ tùng" của cố vấn: chỉ xem tồn kho + lịch sử nhập/xuất (D-020, không có giá vốn).
+        Route::get('advisor/parts', [AdminInventoryController::class, 'advisorParts']);
+        Route::get('advisor/stock-moves', [AdminInventoryController::class, 'moves']);
         Route::controller(PartRequestController::class)->prefix('part-requests')->group(function (): void {
             Route::get('/', 'index');
             Route::post('{partRequest}/order', 'order');
@@ -452,6 +466,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
                 Route::post('review', 'review');
                 Route::post('complete', 'complete');
                 Route::post('close', 'close');
+                Route::post('quality-check', 'qualityCheck');
                 Route::post('hand-over', 'handOver');
             });
         });
@@ -463,6 +478,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         */
 
         Route::controller(QuotationController::class)->group(function (): void {
+
+            // Trang "Báo giá & phê duyệt": danh sách + số đếm theo trạng thái.
+            Route::get('quotations', 'index');
 
             Route::post(
                 'repair-orders/{repairOrder}/quotations',

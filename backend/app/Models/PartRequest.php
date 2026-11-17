@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** Yêu cầu đặt phụ tùng còn thiếu cho một phiếu (P6). */
 #[Fillable([
-    'repair_order_id', 'quotation_item_id', 'part_id', 'quantity', 'status', 'supplier_note',
+    'repair_order_id', 'quotation_item_id', 'part_id', 'quantity', 'request_note', 'status', 'supplier_note',
     'ordered_at', 'eta_date', 'received_at', 'cancel_reason', 'created_by_account_id',
 ])]
 class PartRequest extends Model
@@ -46,5 +46,10 @@ class PartRequest extends Model
     public function quotationItem(): BelongsTo
     {
         return $this->belongsTo(QuotationItem::class);
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'created_by_account_id');
     }
 }

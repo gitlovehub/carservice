@@ -3,6 +3,131 @@
 > Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
 > Cập nhật: 10/11/2026 — góp ý PO đợt 3 trang Admin (xong). Tiếp theo: client → cố vấn (B-05 để lúc làm cố vấn).
 
+## ADV-17 — Xe của khách hàng theo mockup PO (17/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+- Chi tiết ở MASTER_TASK_LIST ADV-17. "Xe bảo dưỡng định kỳ" = xe từng đặt gói bảo dưỡng tại gara (dữ liệu thật); hệ thống chưa có "đến hạn bảo dưỡng".
+- Toàn bộ trang cố vấn trong sidebar đã theo mockup, trừ Lịch hẹn / Tiếp nhận (mockup 16/11, bố cục riêng). **Tiếp theo: ADV-QA**.
+
+## ADV-16 — Khách hàng làm lại theo mockup PO (17/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+- `Customers.tsx` thành danh sách + khung chi tiết như các trang mockup khác; API `/customers` thêm tổng chi tiêu, hạng khách, nhóm lọc. Chi tiết ở MASTER_TASK_LIST ADV-16.
+- **Cần PO xác nhận**: "Thân thiết" = từ 3 lượt sửa đã bàn giao (`Customer::LOYAL_MIN_VISITS`) — mình tự đặt, chỉ để hiển thị / lọc; đổi số này một chỗ ở backend.
+- Trang Xe khách hàng vẫn bản ADV-09 (banner + bảng) — chưa có mockup.
+
+## ADV-15 — Thanh toán theo mockup PO (17/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+- PO chọn (D-025): thu tại quầy 4 phương thức, trừ tiền mặt bắt buộc mã giao dịch. Migration `payments.recorded_by` (DB dev đã migrate). Chi tiết ở MASTER_TASK_LIST ADV-15.
+- Dữ liệu thử trên DB dev: RO-2026-DM0197 đã thu đủ (chuyển khoản 100.000 ₫ mã TEST-ADV15-CK-… + tiền mặt 2.978.000 ₫), chưa kiểm tra / chưa bàn giao; RO-2026-KF8VW0 **đã bàn giao** (17/11).
+- Thông báo thanh toán / bàn giao chỉ tạo thông báo web (không email) — chạy thử an toàn với `.env` local.
+- Đã làm đủ 9 mockup cố vấn (Tổng quan, Lịch hẹn, Tiếp nhận, Phiếu, Báo giá, Tiến độ, Phụ tùng, Kiểm tra & bàn giao, Thanh toán). **Tiếp theo: ADV-QA**.
+
+## ADV-14 — Kiểm tra & bàn giao + sidebar theo mockup PO (17/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+- PO chọn: kiểm tra sau sửa **bắt buộc** trước bàn giao (D-024) → migration mới (DB dev đã migrate), API `quality-check`, `handOver` chặn. Chi tiết ở MASTER_TASK_LIST ADV-14.
+- Dữ liệu thử: RO-2026-KF8VW0 đã có kết quả kiểm tra (ghi chú "[DỮ LIỆU THỬ ADV-14]"), đang "Đủ điều kiện bàn giao" — chưa bàn giao.
+- Phiếu COMPLETED cũ trên DB dev giờ phải kiểm tra trước khi bàn giao (đúng quy tắc mới). Phiếu đã bàn giao trước đây hiện "bàn giao trước khi có bước kiểm tra".
+- Menu "Thanh toán" tạm trỏ danh sách phiếu chờ thu tiền — chờ mockup trang Thanh toán. **Tiếp theo: mockup Thanh toán hoặc ADV-QA**.
+
+## ADV-13 — Phụ tùng (cố vấn, chỉ xem) theo mockup PO (17/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+- PO xác nhận 17/11: **giữ D-020** — trang cố vấn không có Nhập kho / Xuất kho / Điều chỉnh tồn; thay bằng "Báo thiếu phụ tùng" cho phiếu. Chi tiết ở MASTER_TASK_LIST ADV-13.
+- API mới `GET /advisor/parts`, `GET /advisor/stock-moves` (chỉ đọc, ẩn giá vốn). `services/advisorPartsApi.ts`.
+- Còn trong sidebar mockup: Kiểm tra & bàn giao, Thanh toán. **Tiếp theo: mockup tiếp của PO hoặc ADV-QA**.
+
+## ADV-12 — Tiến độ sửa chữa theo mockup PO (17/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+- Trang mới `/advisor/repair-progress` (chi tiết ở MASTER_TASK_LIST ADV-12). Bắt đầu / Xong công việc, Báo thiếu phụ tùng, Hoàn thành sửa chữa làm được ngay ở khung xem nhanh (cùng API + điều kiện với trang chi tiết).
+- **Múi giờ**: `App\Support\GarageDay` (Asia/Ho_Chi_Minh) cho lọc theo ngày. Các chỗ cũ khác vẫn dùng ngày UTC (vd. `AdvisorDashboardController` "hôm nay", seeder) — chưa rà, nên kiểm trong ADV-QA vì lệch 0h–7h sáng.
+- Còn trong sidebar mockup: Phụ tùng chờ xử lý, Kiểm tra & bàn giao, Thanh toán. **Tiếp theo: mockup tiếp của PO hoặc ADV-QA**.
+
+## ADV-11 — Báo giá & phê duyệt theo mockup PO (17/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+- Trang mới `/advisor/quotations` + API `GET /quotations` (chi tiết ở MASTER_TASK_LIST ADV-11). Khung xem nhanh tải phiếu (`workflowApi.order`) rồi lấy báo giá theo id — không thêm API chi tiết báo giá.
+- Không làm "Đánh dấu đã phê duyệt" (D-008/D-012) và tab "Tệp đính kèm" (chưa có dữ liệu).
+- `advisorListKit.tsx` / `advisorListFormat.ts` dùng chung với Phiếu sửa chữa (StageTrack phiếu nay dựng bằng `Track`).
+- **Tiếp theo: ADV-QA** (hoặc mockup PO tiếp theo: Tiến độ sửa chữa / Phụ tùng chờ xử lý / Kiểm tra & bàn giao / Thanh toán — sidebar mockup đã có các mục này).
+
+## ADV-07b — Phiếu sửa chữa theo mockup PO (17/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+- `AdvisorRepairOrders.tsx` viết lại thành danh sách thẻ + khung xem nhanh (chi tiết ở MASTER_TASK_LIST ADV-07b). CSS `.adv-ro-*`, `.adv-track*` trong `advisorDashboard.css`.
+- `repairOrderFlow.ts` mới (STEPS, `nextAction`, `currentStepIndex`, `hasHandover`, `CLOSE_REASONS`, `orderStepPath`) — chi tiết phiếu import từ đây, nhận `?step=reception|inspection|quotation|repair|delivery`.
+- Backend `GET /repair-orders` thêm `from`/`to` (ngày nhận xe); `RepairOrderListTest` 4/4. `listRepairOrders` thêm `from`, `to`, `perPage`.
+- Nút thao tác của mockup ("Gửi phê duyệt cho khách") dẫn tới bước Báo giá ở trang chi tiết, không gửi ngay trong khung xem nhanh.
+- **Tiếp theo: ADV-QA**.
+
+## ADV-09 — Khách hàng / Xe khách hàng (16/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+- `Customers.tsx`, `Customer-cars.tsx` viết lại; banner chung mới `AdvisorPageHero.tsx` (tab liên kết, `aria-current`). Chi tiết ở MASTER_TASK_LIST ADV-09.
+- Backend: `CustomerController` index/show, `VehicleController` index (+ `open_repair_order_id`) và **destroy chặn xe đang ở xưởng / có lịch chưa xong** (trước đây nhân viên xoá được). Test `AdvisorCustomerListTest`.
+- `CreateBooking` nhận khách chọn sẵn qua router state (nút "Đặt lịch hộ" ở ngăn chi tiết khách).
+- `getAdvisorCustomers` / `getAdvisorVehicles` cũ không còn trang nào dùng (giữ, dọn sau).
+- **Tiếp theo: ADV-QA** (trọn luồng + 9 nhánh ngoại lệ; không bấm gửi OTP / đổi lịch vì `.env` local gửi email thật).
+
+## ADV-08 (phần 2) — Tiếp nhận xe theo mockup PO (16/11/2026, `v3-advisor`, chưa commit) — ADV-08 VERIFIED
+
+- `ReceptionWorkflow.tsx` viết lại (chi tiết ở MASTER_TASK_LIST ADV-08). Giữ đủ hành vi cũ mà smoke test khoá (xác minh lịch + cảnh báo công suất, xác nhận xe đến, xác nhận tạo phiếu — mỗi lịch một phiếu, đổi xe có lý do + audit, xe chưa có trong hệ thống, lịch sử + đổi lịch, tải 7 ngày, khách vãng lai `?mode=walk-in`). Biên bản nhận xe (`CheckInPanel`) nhúng trực tiếp sau khi tạo phiếu.
+- **Không làm theo mockup**: ô tick "Khách hàng đã kiểm tra, xác nhận…" do cố vấn bấm + "Ký xác nhận điện tử" — trái quy tắc "không để nhân viên xác nhận thay khách" (đề bài giảng viên) và D-008/D-012. Xác nhận do chủ xe: tài khoản hoặc OTP email tại quầy (lưu ý `.env` local dùng Resend → OTP gửi email thật).
+- Backend: `Appointment::repairOrder()` (HasOne), `AdvisorAppointmentController` index/show nạp `repairOrder:id,appointment_id,repair_order_code,status` (bỏ được việc dò từng trang phiếu để tìm phiếu của lịch).
+- Dữ liệu thử DB dev: lịch #255 → phiếu **RO-2026-RKYG3Q** (RECEIVED, chưa lập biên bản).
+- **Tiếp theo: ADV-09** (Khách hàng / Xe khách hàng).
+
+## ADV-08 (phần 1) — Lịch hẹn cố vấn theo mockup PO (16/11/2026, `v3-advisor`, chưa commit)
+
+- `Appointments.tsx` viết lại theo mockup (xem MASTER_TASK_LIST ADV-08). Dùng `catalogAdminApi` (cùng API `/advisor/appointments` với Admin). Style dùng chung: `advisorDashboard.css` thêm lớp `.adv-theme` (biến màu như Tổng quan), `.adv-page-hero`, `.adv-hero-tab`, `.adv-stat`, `.adv-notice`, `.adv-avatar`; nút trong bảng không xuống dòng (`.cs-btn` có `white-space: normal` ngoài layer Tailwind nên tiện ích `whitespace-nowrap` không thắng); ô tìm kiếm chiếm cả dòng trên điện thoại (áp cả danh sách phiếu ADV-07).
+- Khác mockup có chủ ý: không cột Mã lịch (PO từng bỏ ở Admin — vẫn tìm theo mã, có trong chi tiết); không ô chọn hàng loạt (chưa có thao tác hàng loạt); trạng thái theo đúng hệ thống (không có "Đang tiếp nhận / Hoàn thành" riêng).
+- **Tiếp theo: ADV-08 phần 2 — trang Tiếp nhận** theo cùng phong cách.
+
+## ADV-10 — Tổng quan cố vấn theo mockup PO (16/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+- PO gửi mockup (nền tối vàng đồng, banner ảnh xưởng, 4 thẻ chỉ số có xu hướng, lịch hẹn hôm nay/sắp tới, donut trạng thái phiếu, Cần xử lý, Phiếu gần đây) + 2 ảnh nền + 1 biểu tượng. Làm ADV-10 trước ADV-08.
+- Backend `GET /api/advisor/dashboard` (ADVISOR + ADMIN) — mọi số là số thật; xu hướng 7 ngày: lịch mới đặt / số lịch theo ngày hẹn / số phiếu bắt đầu sửa (lịch sử trạng thái) / số xe bàn giao. Không có số "so với kỳ trước" bịa — chỉ "Lịch hẹn hôm nay" so với hôm qua (đếm thật).
+- FE: `AdvisorDashboard.tsx` thay `WorkspaceDashboard` cho route `/advisor` (file `WorkspaceDashboard.tsx` giờ không còn trang nào dùng — vẫn giữ vì 3 smoke test đọc nó; dọn ở bước sau). Sidebar khu cố vấn: mục chọn gradient vàng, logo dùng `public/advisor/advisor-logo.png` khi có.
+- **Cần PO**: biểu tượng (bìa hồ sơ + xe + cố vấn) chỉ đính kèm trong chat, không có file — lưu thành `frontend/public/advisor/advisor-logo.png` thì sidebar tự hiện.
+- Phát hiện + sửa lỗi cũ: `DemoOperationsSeeder` tạo giờ nhận xe có thể vượt "bây giờ" khi chạy ngay sau một khung giờ → `DemoOperationsSeederTest` hỏng theo giờ chạy; nay `cap()` giờ nhận xe.
+- **Tiếp theo: ADV-08** (Lịch hẹn + Tiếp nhận; gồm chỉnh ô tìm kiếm hẹp trên 390px ở danh sách phiếu).
+
+## NEXT ADV-07 — Danh sách phiếu cố vấn (16/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+Kiểm thử còn nợ từ ADV-04 đã chạy lại và đạt: backend 337/337 (sửa 2 assertion `RepairOrderListTest` chỉ khác thứ tự khoá → `assertEqualsCanonicalizing`), Pint, tsc, ESLint, smoke 30/30 (không phải 31), build. Trình duyệt `/advisor/service-orders` đạt (xem MASTER_TASK_LIST). Ghi chú nhỏ: trên 390px ô tìm kiếm hơi hẹp (cùng hàng ô "Phụ trách") — để ADV-08 làm chung khi chỉnh Toolbar. **Tiếp theo: ADV-08** (Lịch hẹn + Tiếp nhận).
+
+ADV-07 đã viết: backend `index` nhận `status=A,B`, `search` (mã phiếu / biển số / tên / SĐT), `mine=1`, `sort=created|ready`, `per_page`, trả thêm `counts` (theo trạng thái, cùng phạm vi tìm kiếm; eager `vehicle.model.brand`). FE `AdvisorRepairOrders.tsx`: DataTable (Xe = logo + biển số + dòng xe + mã phiếu; Khách; Trạng thái; Nhận xe; Dự kiến xong — đỏ nếu quá giờ; Cố vấn — ẩn khi lọc "của tôi"), chip nhóm Đang mở (mặc định) / Nhận xe / Chẩn đoán / Báo giá / Đang sửa / Chờ phụ tùng / Chờ bàn giao / Đã xong / Tất cả, bấm dòng mở chi tiết.
+
+## NEXT ADV-04 — Đặt lịch hộ + kiểm khung giờ (16/11/2026, `v3-advisor`, chưa commit)
+
+- **Backend**: `App\Services\CounterRecordService` (rules + messages + `resolve()` tạo khách / xe mới trong transaction) — dùng chung cho `POST /repair-orders` (ADV-02/03) và `POST /advisor/appointments` (`StoreInternalAppointmentRequest` gộp rules). `AppointmentSlotService::assertBookable(..., requireConfiguredSlot)` — cố vấn đặt lịch + đổi lịch (`AppointmentActivityService::reschedule`) bắt buộc giờ thuộc `GarageSetting::bookingSlots()`; `availability($date)` trả từng khung (past / closed / full / available, số đã đặt, ngày nghỉ, giờ mở cửa). Route mới `GET /advisor/booking-availability?date=` (ADVISOR + ADMIN). `AdvisorAppointmentController::store` bỏ đoạn kiểm trùng lặp, gọi service. Test mới `AdvisorBookingTest` 4/4; sửa giờ trong `AdvisorAppointmentOverrideTest` (10:00 → 10:30) và `AppointmentStaffTrackingTest` (14:00 → 14:15) cho đúng khung giờ mặc định — test "khung giờ đầy" trước đây chỉ đạt vì lý do khác sau thay đổi này, nay kiểm đúng.
+- **Phía khách KHÔNG đổi**: `POST /appointments` (khách) vẫn chỉ kiểm giờ làm việc (UI khách vốn chỉ cho chọn khung giờ). Ghi T-005 trong `DECISION_LOG.md` để PO quyết có siết thêm không.
+- **Frontend**: `CreateBooking.tsx` (route `create-booking`, bỏ placeholder + nhãn "Sắp có"); `CustomerVehiclePicker.tsx` tách từ `WalkInReception` (tìm SĐT / tên / biển số, khách mới, xe có sẵn / mới, `blockBusyVehicles`), `counterForms.ts` thêm `CounterPick`, `pickError`, `pickPayload`; `workflowService.bookingApi` (availability, packages theo dòng xe, create). Smoke mới `test:advisor-booking`; `workspace-layout.mjs` đổi assertion "Sắp có" → đã có trang.
+- Trình duyệt: đặt lịch qua giao diện (#255, TÈO · 12A-123.45 · 17/11 08:00, ghi chú "[DỮ LIỆU THỬ ADV-04]") → Tiếp nhận → Xác nhận → Khách đến (lịch đang CHECKED_IN, **chưa tạo phiếu**) → chọn "Xe khác, chưa có trong hệ thống" hiện form đúng. 0 lỗi console/API, 0 tràn ngang. Không bấm "Đổi lịch" (gửi email thật).
+- **Tiếp theo**: ADV-07 (danh sách phiếu → DataTable + tìm kiếm).
+
+## NEXT ADV-02 + ADV-03 — Khách vãng lai + xe chưa có trong hệ thống (16/11/2026, `v3-advisor`, chưa commit)
+
+- **Backend** `RepairOrderController::store`: ngoài `customer_id` / `vehicle_id` nhận `customer{full_name, phone, email?}` (cấm khi có `appointment_id`) và `vehicle{model_id, trim_id?, license_plate, year?}`; tạo khách / xe (qua `VehicleCatalogSelection::apply`, biển số viết hoa, số km = km tiếp nhận) rồi `RepairOrderService::receive` trong một `DB::transaction` → lỗi (thiếu lý do đổi xe, xe khác chủ, xe đang có phiếu) thì không để lại khách / xe dở dang. Thông báo validate tiếng Việt (trùng SĐT / biển số → hướng dẫn tìm hồ sơ có sẵn). `VehicleController::byCustomer` thêm `open_repair_order_code`. Test mới `WalkInReceptionTest` 7/7.
+- **Frontend**: `ReceptionWorkflow` thêm tab "Theo lịch hẹn | Khách vãng lai" (`?mode=walk-in`). `WalkInReception.tsx` (3 khối: Khách hàng — tìm SĐT/tên/biển số hoặc Khách mới; Xe khách mang tới; Tiếp nhận — km, lời khách kể, ghi chú nội bộ → hộp xác nhận → mở chi tiết phiếu). `CounterFields.tsx` (`NewVehicleFields`, `NewCustomerFields`, `VehicleChoiceList`) + `counterForms.ts` (kiểm tra biển số / SĐT / năm). Tiếp nhận theo lịch dùng `VehicleChoiceList` (luôn hiện, kể cả khách 1 xe) + "Xe khác, chưa có trong hệ thống". `workflowService`: `receiveWalkIn`, `searchCounter`, `counterCustomerVehicles`, `ReceivePayload.vehicle`. Smoke mới `test:walk-in`.
+- Kiểm thử: backend 329/329, smoke 29/29, tsc, build; ESLint file mới sạch (`ReceptionWorkflow.tsx` còn 1 lỗi cũ `set-state-in-effect` → ADV-08). Trình duyệt: form khách mới, tìm không thấy, tìm theo biển số, danh sách xe thu gọn, tạo phiếu thật #191 (TÈO · 99A-999.99, ghi chú "[DỮ LIỆU THỬ ADV-02]") — 0 lỗi console/API. **Chưa kiểm trình duyệt**: tiếp nhận theo lịch + xe mới (DB dev không có lịch CHECKED_IN chưa có phiếu) — bao phủ bởi `WalkInReceptionTest::test_appointment_customer_brings_unregistered_vehicle_with_reason`.
+- **Tiếp theo**: ADV-04 (Đặt lịch hộ + backend kiểm khung giờ khi cố vấn đặt/đổi lịch).
+
+## NEXT ADV-01 — Chờ phụ tùng theo D-020 (16/11/2026, `v3-advisor`, chưa commit)
+
+- **Backend**: `PartRequestService::report()` (cố vấn báo thiếu: phiếu IN_PROGRESS/WAITING_FOR_PARTS, mỗi phụ tùng 1 yêu cầu mở / phiếu, lưu `request_note` + người báo); `receive($alreadyInStock)` — mặc định nhập kho 1 lần (giao dịch IN gắn phiếu + người nhập), `already_in_stock` chỉ đóng yêu cầu (chặn nếu tồn < SL) để không cộng 2 lần khi kho đã nhập bằng phiếu nhập thường. `RepairOrderService::markWaitingForParts` nhận `parts[]`, bắt buộc ≥ 1 yêu cầu mở (transaction). `PartRequestController`: `store` mới, `order`/`receive` **chỉ ADMIN** (403), `cancel` cố vấn chỉ khi REQUESTED; `index` thêm `repair_order_id`, `per_page`, kèm biển số / cố vấn / tồn kho. Admin: `/admin/parts` thêm `requested`; `/admin/repair-orders/{id}` thêm `part_requests`. `Part::partRequests()`, `PartRequest::createdBy()`. Migration `2026_11_16_063420_add_request_note_to_part_requests_table` (DB dev đã migrate).
+- **Cố vấn**: `PartRequestsPanel` viết lại (danh sách + trạng thái Chờ kho đặt / Kho đã đặt · ngày về / Quá hạn / Đã về; nút "Báo thiếu phụ tùng"; "Rút lại báo thiếu" khi REQUESTED); `WaitForPartsModal` thay nút chuyển thẳng; `RepairPanel` + "Việc tiếp theo" phân biệt chờ kho đặt / đã đặt / đã về đủ / phiếu cũ chưa ghi phụ tùng (RO-…DM0192, DM0195). `openPartRequests` trong `workflowService`.
+- **Admin**: `pages/admin/PartOrders.tsx` = tab **Cần đặt hàng** trong Phụ tùng & kho (gom theo phụ tùng: Cần / Tồn kho / Cho phiếu / Trạng thái + ngày về; lọc + tìm + Xoá bộ lọc; khung phải từng yêu cầu: ngày dự kiến + NCC → "Đã đặt hàng"/"Cập nhật", "Hàng đã về — nhập kho", "Đã có trong kho" (khi tồn đủ), Huỷ có lý do). Tồn kho hiện "Chờ về N"; hộp Nhập kho cảnh báo + nút "Mở Cần đặt hàng". Phiếu sửa chữa: mục "Phụ tùng đang chờ" + link.
+- Kiểm thử: `PartRequestTest` 9/9 (viết lại theo quyền mới), backend 322/322, smoke 28/28, tsc, build. ESLint file mới sạch; `Inventory.tsx` còn 2 lỗi cũ (preview ảnh, `preserve-caught-error`) không do ADV-01.
+- Dữ liệu thử DB dev: phiếu #190 (VF 9) đã đi QUOTING → IN_PROGRESS → WAITING_FOR_PARTS; yêu cầu "Ắc quy 12V 60Ah" đã nhận (nhập kho +1), yêu cầu "Bộ má phanh trước gốm Ceramic" × 2 đang REQUESTED — đều ghi chú "[DỮ LIỆU THỬ ADV-01]".
+- **Tiếp theo**: ADV-02 + ADV-03 (khách vãng lai; thêm xe mới tại quầy).
+
+## NEXT ADV-06 — Chi tiết phiếu cố vấn theo bước (16/11/2026, `v3-advisor`, chưa commit)
+
+- **PO chốt (16/11)**: B-05 = Admin/kho (D-020); thứ tự ADV-06 → ADV-01 → ADV-02/03 → ADV-04 → ADV-07..10 → ADV-QA, AI tự thiết kế, cố vấn giữ **vàng đồng**, bảng chỉ hiện cột cần thiết (D-021); được tạo dữ liệu thử DB dev (D-022).
+- `AdvisorRepairOrderDetail.tsx` viết lại: đầu trang (mã phiếu + trạng thái + "Dịch vụ nhanh", dòng khách · biển số · xe; Làm mới, In phiếu, menu ⋯ "Đóng phiếu"); thanh 5 bước bấm được để xem lại bước cũ (mặc định bước đang làm, tự nhảy khi phiếu đổi trạng thái); thanh **Việc tiếp theo** (`nextAction`) theo trạng thái + báo giá/biên bản/hóa đơn; cột phải sticky: logo hãng, biển số, dòng xe, đổi xe so với lịch, khách (gọi được), nguồn (lịch hẹn / khách vãng lai), giờ nhận/dự kiến xong, chi phí (báo giá, phát sinh đã duyệt, hóa đơn, đã thu, còn lại), lịch sử 4 mục gần nhất. In: mọi bước đều in.
+- `CloseOrderModal`: chọn lý do (`CLOSE_REASONS`) + ghi chú ≥ 5 ký tự; nếu xe đã nhận theo biên bản mà chưa có biên bản trả xe xác nhận → không cho đóng, nút "Lập biên bản trả xe" mở bước Bàn giao. Nút đóng phiếu cũ trong `QuotationPanel` (khách từ chối) giờ mở hộp thoại này (`onRequestClose`).
+- Panel: bỏ nhãn "Bước N ·" + `mt-6` (khoảng cách do trang lo); `PaymentPanel` khóa "Bàn giao xe" tới khi PAID **và** biên bản trả xe đã xác nhận (trước đây chỉ kiểm PAID, backend mới chặn); dòng báo giá/đề xuất không còn đè ô SL; `CustomerRequestSummary` bỏ "Loại yêu cầu".
+- Backend: `RepairOrderController::show` nạp thêm `vehicle.model.brand`, `vehicle.trim`, `bookedVehicle` (+ test `test_order_detail_includes_vehicle_brand_and_model_for_header`). FE: `workflowApi.services/parts` cache 30 giây.
+- **Lưu ý**: `.env` local `MAIL_MAILER=resend` (gửi email thật) → khi chạy thử KHÔNG bấm gửi OTP; dùng khách tự xác nhận trong tài khoản (`/me/handovers/{id}/confirm`, `/me/quotations/{id}/respond`). Chỉ OTP + đổi lịch hẹn gửi mail.
+- Kiểm thử: backend 318/318; smoke 28/28 (cập nhật `button-redesign.mjs` theo điều kiện bàn giao mới); tsc + build; ESLint file sửa sạch (nợ cũ ở Appointments/Customers/Customer-cars/ReceptionWorkflow → ADV-07..09). Trình duyệt (CDP): phiếu RECEIVED/INSPECTING/QUOTING/WAITING_APPROVAL/IN_PROGRESS/WAITING_FOR_PARTS/COMPLETED/HANDED_OVER/CLOSED sáng + tối, 390px, bấm xem lại bước, mở hộp thoại Đóng phiếu — 0 lỗi console/API, 0 tràn ngang.
+- Dữ liệu thử DB dev (khách demo TÈO): #188 RECEIVED (Kia K5 30A-122.35), #189 INSPECTING (Innova), #190 QUOTING (VF 9) — ghi chú "[DỮ LIỆU THỬ ADV-06]", dùng tiếp cho ADV-QA.
+- **Tiếp theo**: ADV-01 (Chờ phụ tùng theo D-020).
+
 ## NEXT CL-01 — Sắp xếp "Phổ biến" theo số lần dùng thật (15/11/2026, `v3-client`, chưa commit)
 
 - Backend `ServiceController::index`: `withCount(workItems as usage_count)` trừ `CANCELLED` → gắn `popularity_rank` (1 = dùng nhiều nhất, đồng hạng khi bằng nhau, `null` = chưa ai dùng); ẩn `usage_count` để API công khai không lộ sản lượng gara.

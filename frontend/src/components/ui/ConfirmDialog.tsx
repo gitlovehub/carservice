@@ -57,10 +57,10 @@ export function ConfirmDialog({ options, area, onClose }: { options: ConfirmOpti
   return <div data-area={area} className="cs-overlay cs-feedback-layer fixed inset-0 z-[400] flex items-center justify-center overflow-y-auto px-4 py-6">
     <div className="cs-overlay-backdrop absolute inset-0 bg-cs-overlay" aria-hidden="true" onMouseDown={() => onClose(false)}/>
     <section ref={panelRef} role="alertdialog" aria-modal="true" aria-labelledby="cs-confirm-title" aria-describedby="cs-confirm-desc" data-ui-dialog="confirm"
-      className="cs-modal-panel relative w-full max-w-[480px] overflow-hidden rounded-panel border border-cs-border bg-cs-surface text-cs-text shadow-overlay">
+      className={`cs-modal-panel relative w-full ${options.checklist?.length || options.details?.length ? "max-w-[560px]" : "max-w-[480px]"} overflow-hidden rounded-panel border border-cs-border bg-cs-surface text-cs-text shadow-overlay`}>
       <header className="flex items-start gap-4 px-6 pb-2 pt-5">
         <div className={`grid size-10 shrink-0 place-items-center rounded-control ${variantStyle[variant].box}`} aria-hidden="true">
-          <Icon name={variantStyle[variant].icon} size={20}/>
+          <Icon name={options.icon ?? variantStyle[variant].icon} size={20}/>
         </div>
         <div className="min-w-0 flex-1 pt-1">
           <h2 id="cs-confirm-title" className="text-subheading text-cs-text">{options.title}</h2>
@@ -69,8 +69,16 @@ export function ConfirmDialog({ options, area, onClose }: { options: ConfirmOpti
         <IconButton icon="close" label={LABELS.action.close} size="sm" onClick={() => onClose(false)} className="-mr-2 -mt-1"/>
       </header>
       <div className="space-y-4 px-6 pb-5 pl-[80px] max-sm:pl-6">
-        <p id="cs-confirm-desc" className="text-small text-cs-text-2">{options.description}</p>
-        {options.phone && <a className={buttonClass({ variant: "outline", size: "sm" })} href={`tel:${options.phone.replace(/[^+\d]/g, "")}`}>Gọi {options.phone}</a>}
+        <p id="cs-confirm-desc" className="whitespace-pre-line text-small text-cs-text-2">{options.description}</p>
+        {options.details?.length ? <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 gap-y-2 rounded-card bg-cs-surface-2 px-4 py-3 text-small">
+          {options.details.map(item => <div key={item.label} className="contents">
+            <dt className="text-cs-muted">{item.label}</dt><dd className="flex min-w-0 items-center justify-end gap-2 font-semibold tabular-nums text-cs-text">
+              {item.badge && <span className="shrink-0 rounded-full bg-success-soft px-2 py-0.5 text-caption font-semibold text-success-fg">{item.badge}</span>}
+              <span className="truncate">{item.value}</span></dd>
+          </div>)}
+        </dl> : null}
+        {options.note && <p className="flex items-start gap-2 rounded-card bg-warning-soft px-3 py-2.5 text-caption text-warning"><Icon name="alert" size={15} className="mt-0.5 shrink-0"/>{options.note}</p>}
+        {options.phone &&<a className={buttonClass({ variant: "outline", size: "sm" })} href={`tel:${options.phone.replace(/[^+\d]/g, "")}`}>Gọi {options.phone}</a>}
         {options.checklist?.length ? <div className="space-y-3 rounded-card border border-cs-border bg-cs-surface-2 p-4">
           {options.checklist.map((item, i) => <label key={i} className="flex cursor-pointer items-start gap-3 text-small text-cs-text">
             <input type="checkbox" className="mt-0.5 size-4 shrink-0 cursor-pointer accent-[var(--cs-accent)]" checked={checked[i] || false}

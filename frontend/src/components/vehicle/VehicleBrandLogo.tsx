@@ -70,7 +70,11 @@ function getBrandLogoUrl(brandName: string | null | undefined, uploaded: Map<str
   return `/brand-logos/${slug.includes(".") ? slug : `${slug}.png`}`;
 }
 
-/** Logo khung vuông nền trắng (giữ logo màu tối vẫn rõ ở chế độ tối). `size` = cạnh px. */
+/**
+ * Logo hãng nền trong suốt (PO 16/11/2026). `size` = cạnh px.
+ * Theme tối: `.cs-brand-logo img` có viền sáng mảnh (index.css) để phần màu đen của logo (BMW, Mercedes…) không chìm vào nền.
+ * Không dùng class `bg-white` / `text-[#…]`: shell.css đổi các class đó theo theme tối.
+ */
 export function VehicleBrandLogo({ brand, size = 32, className = "" }: { brand: string | null | undefined; size?: number; className?: string }) {
   const uploaded = useSyncExternalStore(subscribeBrandLogos, brandLogoSnapshot);
   useEffect(() => { void loadBrandLogos(); }, []);
@@ -82,13 +86,13 @@ export function VehicleBrandLogo({ brand, size = 32, className = "" }: { brand: 
 
   return (
     <span
-      className={`flex shrink-0 items-center justify-center overflow-hidden bg-white ${className}`}
+      className={`cs-brand-logo flex shrink-0 items-center justify-center overflow-hidden ${className}`}
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
       {url && !failed
         ? <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain p-[4%]" onError={() => setFailedUrl(url)}/>
-        : <span className="font-extrabold text-[#20252B]" style={{ fontSize: Math.round(size * 0.42) }}>{initial}</span>}
+        : <span className="font-extrabold text-cs-text" style={{ fontSize: Math.round(size * 0.42) }}>{initial}</span>}
     </span>
   );
 }

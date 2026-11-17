@@ -252,7 +252,8 @@ class DemoOperationsSeeder extends Seeder
     private function seedRepairOrder(Appointment $appointment, Vehicle $vehicle, Employee $advisor, Collection $services, CarbonImmutable $at, int $offset, array $context): void
     {
         $target = $this->targetStatus($offset);
-        $received = $at->addMinutes(mt_rand(5, 25));
+        // Lịch vừa qua vài phút: giờ nhận xe không được vượt "bây giờ" (trước đây test hỏng nếu chạy ngay sau một khung giờ).
+        $received = $this->cap($at->addMinutes(mt_rand(5, 25)));
         $mileage = max(1000, (int) ($vehicle->mileage ?? 0) + mt_rand(500, 4000));
 
         // Chuỗi trạng thái hợp lệ theo RepairOrder::TRANSITIONS.

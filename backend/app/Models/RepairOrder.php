@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'handed_over_at', 'closed_at', 'close_reason', 'note',
     'booked_vehicle_id', 'vehicle_change_reason', 'source', 'requires_check_in',
     'flow_type', 'estimated_ready_at',
+    'quality_check', 'quality_checked_at', 'quality_checked_by',
 ])]
 class RepairOrder extends Model
 {
@@ -73,6 +74,8 @@ class RepairOrder extends Model
             'closed_at' => 'datetime',
             'requires_check_in' => 'boolean',
             'estimated_ready_at' => 'datetime',
+            'quality_check' => 'array',
+            'quality_checked_at' => 'datetime',
         ];
     }
 
@@ -97,6 +100,25 @@ class RepairOrder extends Model
     }
 
     /** Biên bản CHECK_OUT đã được chủ xe xác nhận (bản mới nhất). */
+    /**
+     * Hạng mục kiểm tra sau sửa chữa — cố vấn phải tick đủ trước khi bàn giao (PO 17/11/2026).
+     *
+     * @var array<string, string>
+     */
+    public const QUALITY_CHECK_ITEMS = [
+        'ENGINE' => 'Động cơ, vận hành ổn định',
+        'BRAKES' => 'Hệ thống phanh',
+        'STEERING' => 'Hệ thống lái',
+        'ELECTRICAL' => 'Hệ thống đèn, điện',
+        'EXTERIOR_CLEAN' => 'Ngoại thất & vệ sinh xe',
+        'APPROVED_ITEMS' => 'Đối chiếu hạng mục đã phê duyệt',
+    ];
+
+    public function qualityInspector(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'quality_checked_by');
+    }
+
     public function confirmedCheckOut(): HasOne
     {
         return $this->hasOne(VehicleHandover::class)

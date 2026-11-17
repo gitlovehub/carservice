@@ -1,4 +1,4 @@
-import { formatVnd, requestTypeLabel, toNumber, type CustomerRequest } from "../../services/workflowService";
+import { formatVnd, toNumber, type CustomerRequest } from "../../services/workflowService";
 
 /**
  * Những gì khách chọn khi đặt lịch: gói (kèm nội dung), dịch vụ lẻ, mô tả tình trạng.
@@ -10,8 +10,6 @@ export default function CustomerRequestSummary({ request, compact = false }: { r
   const hasItems = packages.length > 0 || services.length > 0;
 
   return <div className="space-y-3 text-sm text-cs-text">
-    <p className="text-xs text-cs-muted">Loại yêu cầu: <strong className="text-cs-text">{requestTypeLabel(request.request_type)}</strong></p>
-
     {packages.map(pkg => <div key={`package-${pkg.id}`} className="rounded-xl border border-cs-border p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-semibold"><span className="mr-1.5 rounded bg-cs-soft px-1.5 py-0.5 text-[11px] font-bold uppercase text-cs-accent-text">Gói</span>{pkg.name}</p>

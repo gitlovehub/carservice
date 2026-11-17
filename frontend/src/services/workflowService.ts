@@ -40,8 +40,13 @@ export type WorkflowAppointment = CustomerRequest & {
   status: AppointmentWorkflowStatus;
   customer_id?: number | null;
   vehicle_id?: number | null;
-  customer?: { id: number; full_name?: string; phone?: string } | null;
-  vehicle?: { id: number; license_plate?: string; variant?: string } | null;
+  customer?: { id: number; full_name?: string; phone?: string; email?: string | null } | null;
+  vehicle?: {
+    id: number; license_plate?: string; variant?: string; year?: number | null; mileage?: number | null;
+    model?: { id: number; name?: string; brand?: { id: number; name?: string } | null } | null;
+  } | null;
+  /** ADV-08: phiếu sửa chữa đã tạo từ lịch (null = chưa có). */
+  repair_order?: { id: number; repair_order_code?: string; status: string } | null;
 };
 export type WorkflowInspection = {
   id: number; diagnosis?: string | null; condition_description?: string | null; inspected_at?: string | null;
@@ -64,16 +69,45 @@ export type WorkflowQuotation = {
   id: number; quotation_code?: string; version?: number; status: string;
   type?: "INITIAL" | "SUPPLEMENT"; reason?: string | null; parent_quotation_id?: number | null;
   subtotal?: Money; discount_amount?: Money; total_amount?: Money; items?: WorkflowQuotationItem[];
+  created_at?: string | null; customer_response_at?: string | null; valid_until?: string | null;
 };
+/** Dòng danh sách "Báo giá & phê duyệt" (GET /quotations). */
+export type QuotationListRow = WorkflowQuotation & {
+  repair_order_id: number; items_count?: number;
+  repair_order?: {
+    id: number; repair_order_code?: string; status: string;
+    customer?: { id: number; full_name?: string; phone?: string } | null;
+    vehicle?: { id: number; license_plate?: string; model?: { id: number; name?: string; brand?: { id: number; name?: string } | null } | null } | null;
+  } | null;
+};
+export type QuotationListParams = { page?: number; statuses?: string[]; search?: string; from?: string; to?: string; perPage?: number };
+export async function listQuotations(params: QuotationListParams, signal?: AbortSignal): Promise<WorkflowPage<QuotationListRow> & { counts: Record<string, number> }> {
+  const query = new URLSearchParams({ page: String(params.page ?? 1) });
+  if (params.statuses?.length) query.set("status", params.statuses.join(","));
+  if (params.search?.trim()) query.set("search", params.search.trim());
+  if (params.from) query.set("from", params.from);
+  if (params.to) query.set("to", params.to);
+  if (params.perPage) query.set("per_page", String(params.perPage));
+  const result = await fetchApi<WorkflowPage<QuotationListRow> & { counts?: Record<string, number> | unknown[] }>(`/quotations?${query}`, { signal });
+  return { ...result, counts: Array.isArray(result.counts) ? {} : (result.counts ?? {}) };
+}
 export type WorkflowWorkItem = {
   id: number; description?: string | null; status: string; service?: { name?: string } | null;
   technician?: { employee?: { full_name?: string } | null } | null;
+  started_at?: string | null; completed_at?: string | null; standard_minutes?: number | null;
 };
 export type WorkflowUsedPart = { id: number; part_id: number; quantity: number; unit_price: Money; part?: { name?: string; unit?: string } | null };
-export type WorkflowPayment = { id: number; amount: Money; payment_method: string; status: string; paid_at?: string | null };
+export type CounterMethod = "DIRECT" | "TRANSFER" | "CARD" | "EWALLET";
+export type WorkflowPayment = {
+  id: number; amount: Money; payment_method: string; status: string; paid_at?: string | null; created_at?: string | null;
+  transaction_code?: string | null; gateway_txn_ref?: string | null;
+  /** Người thu tại quầy (quan hệ `collector`). */
+  collector?: { id: number; email?: string; employee?: { full_name?: string } | null } | null;
+};
 export type WorkflowInvoice = {
   id: number; invoice_code?: string; status: string; subtotal?: Money; discount_amount?: Money; total_amount?: Money;
-  items?: Array<{ id: number; description?: string | null; quantity: number; unit_price: Money; amount: Money }>;
+  items?: Array<{ id: number; item_type?: "SERVICE" | "PART" | string; description?: string | null; quantity: number; unit_price: Money; amount: Money }>;
+  created_at?: string | null;
   payments?: WorkflowPayment[];
 };
 export type HandoverChecklistItem = {
@@ -86,7 +120,13 @@ export type HandoverChecklistItem = {
 export type PartRequestRow = {
   id: number; part_id: number; quantity: number; status: "REQUESTED" | "ORDERED" | "RECEIVED" | "CANCELLED";
   eta_date?: string | null; supplier_note?: string | null; received_at?: string | null; part?: { name?: string; unit?: string | null } | null;
+  /** ADV-01: lý do cố vấn báo thiếu (null = tự tạo khi khách duyệt mà kho thiếu). */
+  request_note?: string | null; ordered_at?: string | null; cancel_reason?: string | null; quotation_item_id?: number | null;
 };
+/** Yêu cầu phụ tùng còn mở (chưa về, chưa hủy) của phiếu. */
+export const openPartRequests = (order: { part_requests?: PartRequestRow[] }) => (order.part_requests ?? []).filter(r => r.status === "REQUESTED" || r.status === "ORDERED");
+/** Phụ tùng cố vấn báo thiếu khi chuyển phiếu sang chờ phụ tùng. */
+export type ShortagePartInput = { part_id: number; quantity: number; note?: string };
 export type PickupAuthorization = {
   id: number; full_name: string; phone: string; id_last4: string; valid_until?: string | null;
   status: "ACTIVE" | "USED" | "REVOKED"; created_at?: string;
@@ -122,31 +162,55 @@ export type WorkflowOrder = {
   note?: string | null;
   received_at?: string | null;
   customer?: { id?: number; full_name?: string; phone?: string } | null;
-  vehicle?: { id?: number; license_plate?: string; variant?: string } | null;
+  vehicle?: {
+    id?: number; license_plate?: string; variant?: string; year?: number | null;
+    model?: { id: number; name?: string; brand?: { id: number; name?: string } | null } | null;
+    trim?: { id: number; name?: string } | null;
+  } | null;
+  booked_vehicle?: { id: number; license_plate?: string } | null;
+  close_reason?: string | null;
+  closed_at?: string | null;
+  completed_at?: string | null;
+  handed_over_at?: string | null;
   advisor?: { id?: number; full_name?: string } | null;
   assignments?: Array<{ id: number; technician_id: number; status?: string; technician?: { employee?: { full_name?: string } } }>;
   inspections?: WorkflowInspection[];
   status_history?: Array<{ id: number; status?: string; note?: string | null; created_at?: string }>;
   quotations?: WorkflowQuotation[];
   work_items?: WorkflowWorkItem[];
+  /** Danh sách có `with_progress=1`: số công việc (trừ đã huỷ) và số đã xong. */
+  work_total?: number; work_done?: number;
+  /** Kiểm tra sau sửa chữa (bắt buộc trước bàn giao, PO 17/11/2026). */
+  quality_check?: { items: string[]; note?: string | null } | null;
+  quality_checked_at?: string | null;
+  quality_inspector?: { id: number; email?: string; employee?: { full_name?: string } | null } | null;
+  /** Danh sách có `with_delivery=1`: biên bản trả xe đã được chủ xe xác nhận. */
+  check_out_confirmed?: boolean;
   used_parts?: WorkflowUsedPart[];
   invoice?: WorkflowInvoice | null;
 };
 export type WorkflowPage<T> = { data: T[]; current_page: number; last_page: number; total: number };
+/** ADV-03: xe khách mang tới chưa có trong hệ thống — tạo hồ sơ xe cùng lúc với phiếu. */
+export type NewVehicleInput = { model_id: number; trim_id?: number | null; license_plate: string; year?: number | null };
+/** ADV-02: khách vãng lai mới — tạo hồ sơ khách cùng lúc với phiếu. */
+export type NewCustomerInput = { full_name: string; phone: string; email?: string | null };
 export type ReceivePayload = {
   appointment_id: number;
   customer_id: number;
-  vehicle_id: number;
+  /** Một trong hai: xe có sẵn (`vehicle_id`) hoặc xe mới (`vehicle`). */
+  vehicle_id?: number;
+  vehicle?: NewVehicleInput;
   mileage_received?: number;
   initial_condition?: string;
   note?: string;
   /** Bắt buộc khi xe mang tới khác xe trong lịch hẹn (cùng chủ). */
   vehicle_change_reason?: string;
 };
-export type CustomerVehicleOption = { id: number; license_plate: string; model?: { name?: string } | null };
+export type CustomerVehicleOption = { id: number; license_plate: string; year?: number | null; model?: { name?: string; brand?: { name?: string } | null } | null };
 
 /** P7: tải / năng lực gara theo ngày (chỉ cảnh báo — Q6). */
-export type CapacityDay = { date: string; capacity_minutes: number | null; load_minutes: number; booked_minutes: number; open_work_minutes: number; appointments: number; utilization: number | null; over_capacity: boolean; suggestions?: CapacityDay[] };
+export type CapacityBasis = { type: "closed" | "manual" } | { type: "bays" | "technicians"; count: number; open_minutes: number };
+export type CapacityDay = { date: string; capacity_minutes: number | null; capacity_basis?: CapacityBasis | null; load_minutes: number; booked_minutes: number; open_work_minutes: number; appointments: number; utilization: number | null; over_capacity: boolean; suggestions?: CapacityDay[] };
 export const capacityApi = {
   day: (date: string) => fetchApi<CapacityDay>(`/advisor/capacity?date=${date}`),
   range: async (from: string, days = 7) => (await fetchApi<{ data: CapacityDay[] }>(`/advisor/capacity/range?from=${from}&days=${days}`)).data,
@@ -161,6 +225,43 @@ export async function advisorAppointment(id: number): Promise<WorkflowAppointmen
   const response = await getAdvisorAppointment(id) as { data: WorkflowAppointment };
   if (!response?.data) throw new Error("API không trả thông tin lịch hẹn.");
   return response.data;
+}
+
+/** ADV-07: danh sách phiếu có lọc nhiều trạng thái, tìm kiếm, phiếu của tôi, sắp xếp + số đếm theo trạng thái. */
+export type RepairOrderListParams = {
+  page?: number; statuses?: string[]; search?: string; mine?: boolean; sort?: string; dir?: string;
+  /** Khoảng ngày nhận xe `YYYY-MM-DD` (gồm cả hai đầu). */
+  from?: string; to?: string; perPage?: number;
+  /** Tiến độ sửa chữa: kèm `work_total`/`work_done` từng phiếu + `progress` (xong hôm nay, dự kiến xong hôm nay). */
+  withProgress?: boolean; completedOn?: string; readyOn?: string;
+  /** Kiểm tra & bàn giao: kèm hoá đơn + biên bản trả xe + `delivery` (số theo tình trạng); lọc một tình trạng. */
+  withDelivery?: boolean; delivery?: DeliveryState;
+  /** Thanh toán: kèm hoá đơn + `billing` (chờ / đã thanh toán, doanh thu đã thu hôm nay / tháng); lọc chờ / đã thanh toán. */
+  withBilling?: boolean; billing?: "unpaid" | "paid";
+};
+export type BillingSummary = { unpaid: number; paid: number; revenue_today: number; revenue_month: number };
+export type RepairProgressSummary = { completed_today: number; ready_today: number };
+export type DeliveryState = "check" | "payment" | "checkout" | "ready" | "handed_today" | "late";
+export async function listRepairOrders(params: RepairOrderListParams, signal?: AbortSignal): Promise<WorkflowPage<WorkflowOrder> & { counts: Record<string, number>; progress?: RepairProgressSummary; delivery?: Record<DeliveryState, number>; billing?: BillingSummary }> {
+  const query = new URLSearchParams({ page: String(params.page ?? 1) });
+  if (params.withDelivery) query.set("with_delivery", "1");
+  if (params.withBilling) query.set("with_billing", "1");
+  if (params.billing) query.set("billing", params.billing);
+  if (params.delivery) query.set("delivery", params.delivery);
+  if (params.withProgress) query.set("with_progress", "1");
+  if (params.completedOn) query.set("completed_on", params.completedOn);
+  if (params.readyOn) query.set("ready_on", params.readyOn);
+  if (params.from) query.set("from", params.from);
+  if (params.to) query.set("to", params.to);
+  if (params.perPage) query.set("per_page", String(params.perPage));
+  if (params.statuses?.length) query.set("status", params.statuses.join(","));
+  if (params.search?.trim()) query.set("search", params.search.trim());
+  if (params.mine) query.set("mine", "1");
+  if (params.sort) query.set("sort", params.sort);
+  if (params.dir) query.set("dir", params.dir);
+  const result = await fetchApi<WorkflowPage<WorkflowOrder> & { counts?: Record<string, number> | unknown[]; progress?: RepairProgressSummary; delivery?: Record<DeliveryState, number>; billing?: BillingSummary }>(`/repair-orders?${query}`, { signal });
+  // PHP trả mảng rỗng `[]` khi không có phiếu nào → chuẩn hoá thành object.
+  return { ...result, counts: Array.isArray(result.counts) ? {} : (result.counts ?? {}) };
 }
 
 /** Index is pagination-based; do not silently assume a single page contains every matching order. */
@@ -215,6 +316,21 @@ export async function confirmPendingAppointment(id: number): Promise<WorkflowApp
   return advisorAppointment(id);
 }
 
+export type AppointmentFilterOptions = {
+  packages: Array<{ id: number; name: string; active: boolean; model: string | null }>;
+  services: Array<{ id: number; name: string; category: string | null; active: boolean }>;
+};
+/** Gói bảo dưỡng (kể cả gói riêng theo dòng xe) + dịch vụ cho thanh lọc trang Lịch hẹn. */
+export async function appointmentFilterOptions(): Promise<AppointmentFilterOptions> {
+  return (await fetchApi<{ data: AppointmentFilterOptions }>("/advisor/appointments/filter-options")).data;
+}
+
+/** Gửi mail kèm dịch vụ đã đặt để khách tự bấm xác nhận lịch (PENDING → CONFIRMED khi khách bấm). */
+export async function sendAppointmentConfirmationEmail(id: number): Promise<string> {
+  const response = await fetchApi<{ message?: string }>(`/advisor/appointments/${id}/send-confirmation-email`, { method: "POST" });
+  return response.message || "Đã gửi email xác nhận cho khách.";
+}
+
 /** One appointment maps to one order (also backed by a UNIQUE DB constraint). */
 export async function receiveRepairOrder(data: ReceivePayload): Promise<{ order: WorkflowOrder; existing: boolean }> {
   const appointment = await advisorAppointment(data.appointment_id);
@@ -223,7 +339,7 @@ export async function receiveRepairOrder(data: ReceivePayload): Promise<{ order:
   const actualVehicle = appointment.vehicle?.id ?? appointment.vehicle_id;
   if (!actualCustomer || !actualVehicle) throw new Error("Lịch thiếu khách hàng hoặc xe. Không thể tạo phiếu.");
   if (data.customer_id !== actualCustomer) throw new Error("Thông tin khách không khớp lịch hẹn.");
-  if (data.vehicle_id !== actualVehicle && !data.vehicle_change_reason?.trim()) throw new Error("Xe khác lịch hẹn: nhập lý do đổi xe.");
+  if ((data.vehicle || data.vehicle_id !== actualVehicle) && !data.vehicle_change_reason?.trim()) throw new Error("Xe khác lịch hẹn: nhập lý do đổi xe.");
   const old = await findOrderForAppointment(appointment.id);
   if (old) return { order: old, existing: true };
   try {
@@ -240,6 +356,141 @@ export async function receiveRepairOrder(data: ReceivePayload): Promise<{ order:
     throw error;
   }
 }
+
+/** ADV-02: tiếp nhận khách vãng lai (không lịch hẹn). Khách / xe có sẵn hoặc mới — backend tạo trong một giao dịch. */
+export type WalkInPayload = {
+  customer_id?: number; customer?: NewCustomerInput;
+  vehicle_id?: number; vehicle?: NewVehicleInput;
+  mileage_received?: number; initial_condition?: string; note?: string;
+};
+export const receiveWalkIn = (data: WalkInPayload) =>
+  fetchApi<WorkflowOrder>("/repair-orders", { method: "POST", body: JSON.stringify(data) });
+
+export type CounterCustomer = { id: number; full_name: string; phone?: string | null; email?: string | null };
+export type CounterVehicle = {
+  id: number; customer_id: number; license_plate?: string | null; year?: number | null; variant?: string | null;
+  model?: { id: number; name?: string; brand?: { id: number; name?: string } | null } | null;
+  trim?: { id: number; name?: string } | null;
+  customer?: CounterCustomer | null;
+  /** Mã phiếu đang mở của xe (chỉ có ở /customers/{id}/vehicles) — xe này chưa nhận phiếu mới được. */
+  open_repair_order_code?: string | null;
+};
+/** Tìm tại quầy: theo tên / SĐT / email khách và theo biển số xe (gộp kết quả, bỏ trùng khách). */
+export async function searchCounter(term: string): Promise<{ customers: CounterCustomer[]; vehicles: CounterVehicle[] }> {
+  const q = encodeURIComponent(term.trim());
+  const [customers, vehicles] = await Promise.all([
+    fetchApi<{ data: { data: CounterCustomer[] } }>(`/customers?search=${q}`),
+    fetchApi<{ data: { data: CounterVehicle[] } }>(`/vehicles?search=${q}`),
+  ]);
+  return { customers: customers.data?.data ?? [], vehicles: vehicles.data?.data ?? [] };
+}
+export async function counterCustomerVehicles(customerId: number): Promise<CounterVehicle[]> {
+  return (await fetchApi<{ data: CounterVehicle[] }>(`/customers/${customerId}/vehicles`)).data ?? [];
+}
+
+/** ADV-09: Khách hàng / Xe khách hàng (cố vấn). */
+type LaravelPage<T> = { data: T[]; current_page: number; last_page: number; per_page: number; total: number };
+export type CustomerTier = "NEW" | "RETURNING" | "LOYAL";
+export type CustomerSegment = "new" | "in_shop" | "loyal";
+export type CustomerRow = CounterCustomer & {
+  vehicles_count: number; repair_orders_count: number; last_visit_at: string | null; has_account: boolean; created_at?: string;
+  address?: string | null;
+  /** Mockup 17/11: tổng hoá đơn đã thanh toán, số lượt đã bàn giao, hạng khách, đang có xe ở xưởng. */
+  total_spent?: number; completed_visits?: number; tier?: CustomerTier; in_shop?: boolean;
+};
+type CustomerAppointmentRef = { id: number; appointment_code: string; status: string; appointment_date: string; appointment_time: string };
+export type CustomerDetail = CustomerRow & {
+  vehicles: CounterVehicle[];
+  repair_orders: Array<{
+    id: number; repair_order_code: string; status: string; received_at: string | null;
+    vehicle?: { license_plate?: string | null; model?: { name?: string; brand?: { name?: string } | null } | null } | null;
+    invoice?: { id: number; total_amount: Money; status: string; items?: Array<{ id: number; description?: string | null }> } | null;
+    work_items?: Array<{ id: number; description?: string | null; service?: { name?: string } | null }>;
+  }>;
+  appointments: CustomerAppointmentRef[];
+  past_appointments?: CustomerAppointmentRef[];
+  reviews?: Array<{ id: number; overall_rating: number; comment?: string | null; reply?: string | null; created_at?: string; repair_order?: { id: number; repair_order_code?: string } | null }>;
+};
+export type CustomerSummary = { total: number; with_account: number; new_this_month: number; new_30_days?: number; in_shop?: number; loyal?: number; loyal_min_visits?: number };
+export type VehicleRow = CounterVehicle & {
+  mileage?: number | null; vin?: string | null; note?: string | null; last_service_at?: string | null; open_repair_order_id?: number | null;
+  /** Mockup 17/11: ngày lịch hẹn sắp tới gần nhất (nhãn "Có lịch hẹn"). */
+  next_appointment_date?: string | null; created_at?: string | null;
+};
+export type VehicleSegment = "in_shop" | "upcoming" | "maintenance";
+type VehicleAppointmentRef = { id: number; appointment_code: string; appointment_date: string; appointment_time: string; status: string; packages?: Array<{ id: number; name: string }> };
+export type VehicleDetail = VehicleRow & {
+  repair_orders_count: number;
+  repair_orders: Array<{
+    id: number; repair_order_code: string; status: string; received_at: string | null; mileage_received?: number | null;
+    invoice?: { id: number; total_amount: Money; status: string; items?: Array<{ id: number; description?: string | null }> } | null;
+    work_items?: Array<{ id: number; description?: string | null; service?: { name?: string } | null }>;
+  }>;
+  open_repair_order?: { id: number; repair_order_code: string; status: string } | null;
+  upcoming_appointments: VehicleAppointmentRef[];
+  past_appointments: VehicleAppointmentRef[];
+};
+const pageQuery = (params: Record<string, string | number | undefined | null>) => {
+  const q = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== "" && v !== "all") q.set(k, String(v)); });
+  return q.toString();
+};
+export const customerDirectoryApi = {
+  customers: async (params: { search?: string; page?: number; per_page?: number; segment?: CustomerSegment | null }, signal?: AbortSignal) => {
+    const r = await fetchApi<{ data: LaravelPage<CustomerRow>; summary: CustomerSummary }>(`/customers?${pageQuery(params)}`, { signal });
+    return { page: r.data, summary: r.summary };
+  },
+  customer: async (id: number, signal?: AbortSignal) => (await fetchApi<{ data: CustomerDetail }>(`/customers/${id}`, { signal })).data,
+  vehicles: async (params: { search?: string; page?: number; per_page?: number; brand_id?: string; customer_id?: number | null }, signal?: AbortSignal) =>
+    (await fetchApi<{ data: LaravelPage<VehicleRow> }>(`/vehicles?${pageQuery(params)}`, { signal })).data,
+  /** Mockup 17/11: danh sách xe kèm số liệu nhóm (tổng, đang sửa, có lịch hẹn, bảo dưỡng định kỳ). */
+  vehiclePage: async (params: { search?: string; page?: number; per_page?: number; brand_id?: string; customer_id?: number | null; segment?: VehicleSegment | null }, signal?: AbortSignal) => {
+    const r = await fetchApi<{ data: LaravelPage<VehicleRow>; summary: Record<VehicleSegment | "total", number> }>(`/vehicles?${pageQuery(params)}`, { signal });
+    return { page: r.data, summary: r.summary };
+  },
+  vehicle: async (id: number, signal?: AbortSignal) => (await fetchApi<{ data: VehicleDetail }>(`/vehicles/${id}`, { signal })).data,
+};
+
+/** ADV-10: Tổng quan cố vấn — một lần tải, số liệu thật. */
+export type DashboardAppointment = {
+  id: number; code: string; status: string; date: string; time: string; customer: string | null; plate: string | null;
+  brand: string | null; model: string | null; request: string | null; more: number;
+};
+export type AdvisorDashboard = {
+  generated_at: string; days: string[];
+  kpis: {
+    pending: { value: number; series: number[] };
+    today: { value: number; previous: number; series: number[] };
+    repairing: { value: number; waiting_parts: number; series: number[] };
+    delivery: { value: number; handed_today: number; series: number[] };
+  };
+  appointments_yesterday: DashboardAppointment[];
+  appointments_today: DashboardAppointment[];
+  appointments_upcoming: DashboardAppointment[];
+  stages: Array<{ key: "intake" | "quote" | "repair" | "parts" | "deliver"; label: string; value: number }>;
+  todo: { received: number; quoting: number; waiting_approval: number; waiting_parts: number; parts_ready: number; confirmed_today: number; pending_appointments: number; ready_delivery: number };
+  recent_orders: Array<{ id: number; code: string; status: string; customer: string | null; plate: string | null; brand: string | null; model: string | null }>;
+};
+export const advisorDashboardApi = (signal?: AbortSignal) =>
+  fetchApi<{ data: AdvisorDashboard }>("/advisor/dashboard", { signal }).then(r => r.data);
+
+/** ADV-04: đặt lịch hộ khách. */
+export type SlotStatus = "available" | "full" | "closed" | "past";
+export type BookingAvailability = {
+  date: string; holiday: string | null; open: string | null; close: string | null; active: boolean; max_slots: number;
+  slots: Array<{ time: string; period: "morning" | "afternoon"; booked: number; status: SlotStatus }>;
+};
+export type BookingPackage = { id: number; name: string; mileage_milestone?: number | null; estimated_price?: Money; vehicle_model_id?: number | null; services?: Array<{ id: number; name: string }> };
+export type AdvisorBookingPayload = WalkInPayload & {
+  appointment_date: string; appointment_time: string; request_type: "DIAGNOSIS" | "REPAIR" | "MAINTENANCE";
+  service_ids?: number[]; package_ids?: number[]; symptom_description?: string; note?: string;
+};
+export const bookingApi = {
+  availability: async (date: string) => (await fetchApi<{ data: BookingAvailability }>(`/advisor/booking-availability?date=${date}`)).data,
+  packages: (modelId?: number | null) => fetchApi<BookingPackage[]>(`/maintenance-packages${modelId ? `?model_id=${modelId}` : ""}`),
+  create: async (payload: AdvisorBookingPayload) =>
+    (await fetchApi<{ data: WorkflowAppointment }>("/advisor/appointments", { method: "POST", body: JSON.stringify(payload) })).data,
+};
 
 export type CatalogService = { id: number; name: string; category?: string | null; base_price?: Money; service_level?: "QUICK" | "STANDARD" | "MAJOR"; estimated_minutes?: number | null; status?: string };
 export type CatalogPart = { id: number; sku: string; name: string; unit?: string | null; sell_price?: Money; inventory?: { quantity: number } | null };
@@ -287,11 +538,25 @@ export type TechnicianOption = {
   employee?: { id: number; full_name?: string; phone?: string } | null;
 };
 
+/**
+ * Danh mục dịch vụ / phụ tùng: nhiều panel của chi tiết phiếu cùng cần → dùng chung một lần tải trong 30 giây
+ * (tránh gọi lặp khi các bước đều được dựng sẵn). Lỗi thì bỏ cache để lần sau tải lại.
+ */
+const CATALOG_TTL_MS = 30_000;
+const catalogCache = new Map<string, { at: number; promise: Promise<unknown> }>();
+function cachedCatalog<T>(path: string): Promise<T> {
+  const hit = catalogCache.get(path);
+  if (hit && Date.now() - hit.at < CATALOG_TTL_MS) return hit.promise as Promise<T>;
+  const promise = fetchApi<T>(path).catch(error => { catalogCache.delete(path); throw error; });
+  catalogCache.set(path, { at: Date.now(), promise });
+  return promise;
+}
+
 export const workflowApi = {
   order: (id: number) => fetchApi<WorkflowOrder>(`/repair-orders/${id}`),
   technicians: () => fetchApi<TechnicianOption[]>("/technicians"),
-  services: () => fetchApi<CatalogService[]>("/services"),
-  parts: () => fetchApi<CatalogPart[]>("/parts"),
+  services: () => cachedCatalog<CatalogService[]>("/services"),
+  parts: () => cachedCatalog<CatalogPart[]>("/parts"),
   createQuotation: (id: number, payload: { discount_amount?: number; items: QuotationLineInput[]; type?: "INITIAL" | "SUPPLEMENT"; reason?: string }) =>
     fetchApi<WorkflowQuotation>(`/repair-orders/${id}/quotations`, { method: "POST", body: JSON.stringify(payload) }),
   /** P5: dịch vụ nhanh — báo giá niêm yết, bỏ chẩn đoán (backend kiểm điều kiện). */
@@ -301,6 +566,18 @@ export const workflowApi = {
   // Không có "respondQuotation" phía nhân viên: chỉ khách duyệt báo giá (customerApi.respondQuotation → /me/...).
   transition: (id: number, step: "start-repair" | "waiting-for-parts" | "resume" | "complete" | "hand-over", note?: string) =>
     fetchApi<WorkflowOrder>(`/repair-orders/${id}/${step}`, { method: "POST", body: JSON.stringify(note ? { note } : {}) }),
+  /** ADV-01 (D-020): chờ phụ tùng phải có ≥ 1 yêu cầu đang mở — gửi kèm phụ tùng thiếu nếu chưa có. */
+  waitForParts: (id: number, parts: ShortagePartInput[], note?: string) =>
+    fetchApi<WorkflowOrder>(`/repair-orders/${id}/waiting-for-parts`, { method: "POST", body: JSON.stringify({ parts, ...(note ? { note } : {}) }) }),
+  /** Cố vấn báo thiếu phụ tùng (kho / Admin đặt hàng và nhận hàng). */
+  reportPartShortage: (id: number, input: ShortagePartInput) =>
+    fetchApi<PartRequestRow>(`/repair-orders/${id}/part-requests`, { method: "POST", body: JSON.stringify(input) }),
+  /** Rút lại báo thiếu khi kho chưa đặt hàng. */
+  cancelPartRequest: (requestId: number, reason: string) =>
+    fetchApi<PartRequestRow>(`/part-requests/${requestId}/cancel`, { method: "POST", body: JSON.stringify({ reason }) }),
+  /** Kiểm tra sau sửa chữa — phải tick đủ mọi hạng mục (QUALITY_ITEMS) trước khi bàn giao. */
+  qualityCheck: (id: number, items: string[], note?: string) =>
+    fetchApi<WorkflowOrder>(`/repair-orders/${id}/quality-check`, { method: "POST", body: JSON.stringify({ items, ...(note ? { note } : {}) }) }),
   close: (id: number, closeReason: string, note: string) =>
     fetchApi<WorkflowOrder>(`/repair-orders/${id}/close`, { method: "POST", body: JSON.stringify({ close_reason: closeReason, note }) }),
   recordInspection: (id: number, payload: InspectionInput) =>
@@ -315,6 +592,9 @@ export const workflowApi = {
   createInvoice: (id: number) => fetchApi<WorkflowInvoice>(`/repair-orders/${id}/invoice`, { method: "POST" }),
   payCash: (invoiceId: number, amount: number) =>
     fetchApi<WorkflowPayment>(`/invoices/${invoiceId}/payments`, { method: "POST", body: JSON.stringify({ payment_method: "DIRECT", amount }) }),
+  /** Thu tại quầy (PO 17/11/2026): trừ tiền mặt bắt buộc mã giao dịch. */
+  payAtCounter: (invoiceId: number, method: CounterMethod, amount: number, transactionCode?: string) =>
+    fetchApi<WorkflowPayment>(`/invoices/${invoiceId}/payments`, { method: "POST", body: JSON.stringify({ payment_method: method, amount, ...(transactionCode ? { transaction_code: transactionCode } : {}) }) }),
   assignTechnician: (id: number, technicianId: number, note?: string) => fetchApi(`/repair-orders/${id}/assign-technician`, {
     method: "POST", body: JSON.stringify({ technician_id: technicianId, note: note || null }),
   }),

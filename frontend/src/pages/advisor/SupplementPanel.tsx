@@ -64,9 +64,8 @@ export function SupplementPanel({ order, onChanged }: { order: WorkflowOrder; on
     setLines([]); setReason("");
   }
 
-  return <section className={`${card} mt-6 print:hidden`} data-testid="supplement-panel">
-    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text">Phát sinh khi sửa</p>
-    <h2 className="mt-1 text-lg font-bold text-cs-text">Báo giá phát sinh</h2>
+  return <section className={`${card} print:hidden`} data-testid="supplement-panel">
+    <h2 className="text-lg font-bold text-cs-text">Báo giá phát sinh</h2>
     <p className="mt-1 text-xs text-cs-muted">Phát sinh cộng thêm vào báo giá gốc. Chỉ hạng mục khách đồng ý mới được làm và tính tiền.</p>
     {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
 

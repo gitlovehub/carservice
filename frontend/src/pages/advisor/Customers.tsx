@@ -1,488 +1,297 @@
-import { Button, IconButton, PageHeader, Modal } from "../../components/ui";
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  createAdvisorCustomer,
-  getAdvisorCustomers,
-  updateAdvisorCustomer,
-  type AdvisorCustomer,
-  type AdvisorCustomerInput,
-} from "../../services/customerApi";
+import { useRef, useState, type FormEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Button, EmptyState, ErrorState, LoadingState, Modal, Pagination, SearchInput } from "../../components/ui";
+import { Badge, StatusBadge } from "../../components/ui/Badge";
+import { buttonClass } from "../../components/ui/buttonClass";
+import { Dropdown } from "../../components/ui/Dropdown";
+import { Field, Input } from "../../components/ui/Field";
+import { Icon, type IconName } from "../../components/ui/Icon";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
+import { dmy, hhmm } from "../../services/catalogAdminApi";
+import { createAdvisorCustomer, updateAdvisorCustomer } from "../../services/customerApi";
+import { customerDirectoryApi, formatVnd, type CustomerDetail, type CustomerRow, type CustomerSegment, type CustomerTier } from "../../services/workflowService";
+import { useAdminQuery } from "../admin/kit/useAdminQuery";
+import { useDebounced } from "../admin/kit/useDebounced";
+import { vehicleTitle } from "./counterForms";
+import { errorText } from "./workflowFormat";
+import "./advisorDashboard.css";
 
-const emptyForm: AdvisorCustomerInput = {
-  full_name: "",
-  phone: "",
-  email: "",
-  address: "",
+/**
+ * Khách hàng (cố vấn) — theo mockup PO 17/11/2026: 4 thẻ số liệu (bấm để lọc), danh sách khách dạng thẻ
+ * (tìm tên / SĐT / email / biển số), khung chi tiết: liên hệ, khách từ, số xe, tổng chi tiêu (hoá đơn đã thanh toán),
+ * hạng khách; tab Xe · Lịch sử dịch vụ · Lịch hẹn · Đánh giá · Ghi chú. Ảnh khách không có trong hệ thống → chữ viết tắt.
+ * "Thân thiết" = từ N lượt sửa đã bàn giao (backend `Customer::LOYAL_MIN_VISITS`), chỉ để hiển thị / lọc.
+ */
+
+const initials = (name?: string | null) => (name ?? "?").trim().split(/\s+/).slice(-2).map(w => w[0]).join("").toUpperCase();
+const TIER: Record<CustomerTier, { label: string; tone: "warning" | "info" | "neutral" }> = {
+  LOYAL: { label: "Thân thiết", tone: "warning" }, RETURNING: { label: "Khách quen", tone: "info" }, NEW: { label: "Khách mới", tone: "neutral" },
 };
+const PER_PAGE = 6;
 
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    const data = (error as Error & {
-      data?: {
-        errors?: Record<string, string[]>;
-      };
-    }).data;
+type FormState = { full_name: string; phone: string; email: string };
+const emptyForm: FormState = { full_name: "", phone: "", email: "" };
 
-    const firstValidationError = data?.errors
-      ? Object.values(data.errors).flat()[0]
-      : undefined;
+export default function Customers() {
+  const { notify } = useAppFeedback();
+  const [params, setParams] = useSearchParams();
+  const segment = (["new", "in_shop", "loyal"] as CustomerSegment[]).find(s => s === params.get("segment")) ?? null;
+  const selectedParam = Number(params.get("customer")) || null;
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [editing, setEditing] = useState<CustomerRow | "new" | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [version, setVersion] = useState(0);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const term = useDebounced(search.trim(), 350);
 
-    return firstValidationError || error.message;
+  const query = { search: term, page, per_page: PER_PAGE, segment };
+  const list = useAdminQuery(`advisor-customers:${JSON.stringify(query)}:${version}`, signal => customerDirectoryApi.customers(query, signal));
+  const result = list.data ?? list.stale;
+  const rows = result?.page.data ?? [];
+  const summary = result?.summary;
+  const selectedId = selectedParam ?? rows[0]?.id ?? null;
+
+  const setParam = (changes: Record<string, string | null>) => {
+    const next = new URLSearchParams(params);
+    Object.entries(changes).forEach(([key, value]) => value === null ? next.delete(key) : next.set(key, value));
+    setParams(next, { replace: true });
+  };
+  const pickSegment = (next: CustomerSegment | null) => { setParam({ segment: next, customer: null }); setPage(1); };
+  const select = (c: CustomerRow) => {
+    setParam({ customer: String(c.id) });
+    // Màn hẹp: khung chi tiết nằm dưới danh sách → cuộn tới.
+    if (!window.matchMedia("(min-width: 1280px)").matches) window.setTimeout(() => previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  };
+
+  function openForm(target: CustomerRow | "new") {
+    setEditing(target);
+    setForm(target === "new" ? emptyForm : { full_name: target.full_name, phone: target.phone ?? "", email: target.email ?? "" });
+    setFormError("");
   }
 
-  return "Đã xảy ra lỗi. Vui lòng thử lại.";
-}
-
-function Customers() {
-  const [customers, setCustomers] = useState<AdvisorCustomer[]>([]);
-  const [search, setSearch] = useState("");
-  const [submittedSearch, setSubmittedSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [lastPage, setLastPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] =
-    useState<AdvisorCustomer | null>(null);
-  const [form, setForm] = useState<AdvisorCustomerInput>(emptyForm);
-  const [formError, setFormError] = useState("");
-
-  const loadCustomers = useCallback(async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const result = await getAdvisorCustomers({
-        search: submittedSearch,
-        page,
-      });
-
-      setCustomers(result.data);
-      setLastPage(result.last_page);
-      setTotal(result.total);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [submittedSearch, page]);
-
-  useEffect(() => {
-    void loadCustomers();
-  }, [loadCustomers]);
-
-  const openCreateModal = () => {
-    setEditingCustomer(null);
-    setForm(emptyForm);
-    setFormError("");
-    setModalOpen(true);
-  };
-
-  const openEditModal = (customer: AdvisorCustomer) => {
-    setEditingCustomer(customer);
-    setForm({
-      full_name: customer.full_name,
-      phone: customer.phone,
-      email: customer.email ?? "",
-      address: customer.address ?? "",
-    });
-    setFormError("");
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    if (saving) return;
-    setModalOpen(false);
-    setEditingCustomer(null);
-    setForm(emptyForm);
-    setFormError("");
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  async function submit(event: FormEvent) {
     event.preventDefault();
-    setSaving(true);
-    setFormError("");
-
-    const payload: AdvisorCustomerInput = {
-      full_name: form.full_name.trim(),
-      phone: form.phone.trim(),
-      email: form.email?.trim() || null,
-      address: form.address?.trim() || null,
-    };
-
+    if (!editing) return;
+    setSaving(true); setFormError("");
+    const payload = { full_name: form.full_name.trim(), phone: form.phone.trim(), email: form.email.trim() || null };
     try {
-      if (editingCustomer) {
-        await updateAdvisorCustomer(editingCustomer.id, payload);
-      } else {
-        await createAdvisorCustomer(payload);
-      }
+      if (editing === "new") { await createAdvisorCustomer(payload); notify("Đã thêm khách hàng.", "success"); setPage(1); }
+      // Không gửi địa chỉ để giữ nguyên địa chỉ khách tự nhập.
+      else { await updateAdvisorCustomer(editing.id, payload); notify("Đã cập nhật khách hàng.", "success"); }
+      setEditing(null);
+      setVersion(v => v + 1);
+    } catch (err) { setFormError(errorText(err)); }
+    finally { setSaving(false); }
+  }
 
-      setModalOpen(false);
-      setEditingCustomer(null);
-      setForm(emptyForm);
+  const stats: Array<{ segment: CustomerSegment | null; label: string; icon: IconName; value?: number; tone?: "success" | "warning" }> = [
+    { segment: null, label: "Tổng khách hàng", icon: "users", value: summary?.total },
+    { segment: "new", label: "Khách hàng mới (30 ngày)", icon: "user", value: summary?.new_30_days, tone: "success" },
+    { segment: "in_shop", label: "Có xe đang sửa", icon: "car", value: summary?.in_shop },
+    { segment: "loyal", label: "Khách hàng thân thiết", icon: "star", value: summary?.loyal },
+  ];
+  const segmentLabel = segment ? stats.find(s => s.segment === segment)?.label : null;
 
-      if (!editingCustomer && page !== 1) {
-        setPage(1);
-      } else {
-        await loadCustomers();
-      }
-    } catch (err) {
-      setFormError(getErrorMessage(err));
-    } finally {
-      setSaving(false);
-    }
-  };
+  return <main className="page-container adv-theme space-y-5">
+    <h1 className="sr-only">Khách hàng</h1>
+    <section className="adv-ro-stats" aria-label="Thống kê khách hàng">
+      {stats.map(s => <button key={s.label} type="button" className="adv-card adv-ro-stat" aria-pressed={segment === s.segment} onClick={() => pickSegment(s.segment)}
+        title={s.segment === "loyal" && summary?.loyal_min_visits ? `Từ ${summary.loyal_min_visits} lượt sửa đã bàn giao` : undefined}>
+        <span className="adv-ro-stat-icon" data-tone={s.tone} aria-hidden="true"><Icon name={s.icon} size={26}/></span>
+        <span className="min-w-0"><span className="block text-small font-semibold leading-snug text-cs-text-2">{s.label}</span>
+          <span className="block text-[1.9rem] font-bold leading-tight tabular-nums text-cs-text">{s.value === undefined ? "–" : s.value.toLocaleString("vi-VN")}</span></span>
+      </button>)}
+      <button type="button" className="adv-btn-gold adv-ro-create" onClick={() => openForm("new")}><Icon name="plus" size={20}/>Thêm khách hàng</button>
+    </section>
 
-  const applySearch = () => {
-    setPage(1);
-    setSubmittedSearch(search.trim());
-  };
-
-  const resetSearch = () => {
-    setSearch("");
-    setSubmittedSearch("");
-    setPage(1);
-  };
-
-  return (
-    <div className="min-h-screen bg-cs-bg text-[#20252B]">
-
-      <div className="lg:ml-[250px]">
-
-        <main>
-          <div className="mx-auto max-w-[1200px] px-6 py-8 lg:px-8 lg:py-10">
-            <PageHeader title="Khách hàng" description="Tìm kiếm và quản lý thông tin khách hàng tại gara."
-              actions={<Button variant="primary" icon="plus" onClick={openCreateModal}>Thêm khách hàng</Button>}/>
-
-            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm">
-                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-cs-muted">
-                  TỔNG KHÁCH HÀNG
-                </p>
-                <p className="mt-3 text-[24px] font-bold text-[#20252B]">
-                  {total}
-                </p>
-                <p className="mt-1 text-[11px] text-cs-muted">
-                  Dữ liệu từ hệ thống
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm">
-                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-cs-muted">
-                  KẾT QUẢ HIỂN THỊ
-                </p>
-                <p className="mt-3 text-[24px] font-bold text-[#20252B]">
-                  {customers.length}
-                </p>
-                <p className="mt-1 text-[11px] text-cs-muted">
-                  Khách hàng trên trang này
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm">
-                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-cs-muted">
-                  VAI TRÒ
-                </p>
-                <p className="mt-3 text-[14px] font-bold text-[#20252B]">
-                  Cố vấn dịch vụ
-                </p>
-                <p className="mt-1 text-[11px] text-cs-muted">
-                  Quản lý thông tin khách hàng
-                </p>
-              </div>
-            </div>
-
-            <div className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-sm">
-              <div className="mb-5">
-                <p className="text-[13px] font-semibold text-[#20252B]">
-                  Tìm kiếm khách hàng
-                </p>
-                <p className="mt-1 text-[11px] text-cs-muted">
-                  Tìm theo tên, số điện thoại hoặc email.
-                </p>
-              </div>
-
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  applySearch();
-                }}
-                className="grid gap-3 sm:grid-cols-[1fr_auto_auto]"
-              >
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Tên, số điện thoại hoặc email"
-                  className="w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-[13px] outline-none transition placeholder:text-cs-muted focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
-                />
-
-                <Button type="submit" variant="outline" icon="search">Tìm kiếm</Button>
-
-                <Button variant="ghost" icon="x" onClick={resetSearch}>Xóa bộ lọc</Button>
-              </form>
-            </div>
-
-            <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-sm">
-              <div className="flex flex-col gap-3 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[13px] font-semibold text-[#20252B]">
-                    Danh sách khách hàng
-                  </p>
-                  <p className="mt-1 text-[11px] text-cs-muted">
-                    Danh sách khách hàng của gara
-                  </p>
-                </div>
-
-                <p className="w-fit rounded-lg bg-cs-surface-2 px-3 py-1.5 text-[11px] font-semibold text-cs-muted">
-                  {total} khách hàng
-                </p>
-              </div>
-
-              {error && (
-                <div className="m-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
-                  <p>{error}</p>
-                  <Button size="sm" variant="secondary" icon="refresh" className="mt-2" onClick={() => void loadCustomers()}>Thử tải lại</Button>
-                </div>
-              )}
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[850px] border-collapse">
-                  <thead>
-                    <tr className="border-b border-[#E1E4E6] bg-cs-bg text-left">
-                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
-                        STT
-                      </th>
-                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
-                        KHÁCH HÀNG
-                      </th>
-                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
-                        SỐ ĐIỆN THOẠI
-                      </th>
-                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
-                        EMAIL
-                      </th>
-                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
-                        ĐỊA CHỈ
-                      </th>
-                      <th className="px-5 py-3 text-[11px] font-bold text-cs-muted">
-                        THAO TÁC
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className="px-5 py-14 text-center text-[13px] text-cs-muted"
-                        >
-                          Đang tải danh sách khách hàng...
-                        </td>
-                      </tr>
-                    ) : customers.length > 0 ? (
-                      customers.map((customer, index) => (
-                        <tr
-                          key={customer.id}
-                          className="border-b border-[#EEF0F2] last:border-0 transition hover:bg-cs-surface-2"
-                        >
-                          <td className="px-5 py-4 text-[12px] text-cs-muted">
-                            {(page - 1) * 10 + index + 1}
-                          </td>
-
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3E8D2] text-[11px] font-bold text-[#5B4630]">
-                                {customer.full_name
-                                  .trim()
-                                  .split(/\s+/)
-                                  .slice(-1)[0]
-                                  ?.charAt(0)
-                                  .toUpperCase() || "K"}
-                              </div>
-
-                              <div>
-                                <p className="text-[12px] font-semibold text-[#20252B]">
-                                  {customer.full_name}
-                                </p>
-                                <p className="mt-1 text-[11px] text-cs-muted">
-                                  Mã khách hàng: {customer.id}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td className="px-5 py-4 text-[12px] text-[#374151]">
-                            {customer.phone}
-                          </td>
-                          <td className="px-5 py-4 text-[12px] text-[#374151]">
-                            {customer.email || "Chưa cập nhật"}
-                          </td>
-                          <td className="px-5 py-4 text-[12px] text-[#374151]">
-                            {customer.address || "Chưa cập nhật"}
-                          </td>
-
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-2">
-                              <IconButton icon="edit" label="Sửa khách hàng" onClick={() => openEditModal(customer)}/>
-                              <Link
-                                to={`/advisor/customer-cars?customerId=${customer.id}`}
-                                className="inline-flex rounded-lg border border-[#D9DDE1] px-3 py-1.5 text-[11px] font-semibold text-[#374151] transition hover:border-[#D6A85F] hover:bg-[#F7F2E9]"
-                              >
-                                Xe
-                              </Link>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="px-5 py-14 text-center">
-                          <p className="text-[13px] font-semibold text-[#20252B]">
-                            Không tìm thấy khách hàng
-                          </p>
-                          <p className="mt-1 text-[11px] text-cs-muted">
-                            Thử thay đổi từ khóa hoặc thêm khách hàng mới.
-                          </p>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex flex-col gap-3 border-t border-[#EEF0F2] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-[11px] text-cs-muted">
-                  Trang {page} / {lastPage}
-                </p>
-
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" icon="chevron-left" disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))}>Trước</Button>
-                  <Button size="sm" variant="outline" iconRight="chevron-right" disabled={page >= lastPage || loading} onClick={() => setPage((current) => Math.min(lastPage, current + 1))}>Tiếp</Button>
-                </div>
-              </div>
-            </div>
+    <div className="adv-ro-layout">
+      <section className="adv-card adv-ro-list" aria-label="Danh sách khách hàng">
+        <header className="adv-ro-list-head"><h2>Danh sách khách hàng</h2></header>
+        <div className="space-y-2 p-4">
+          <div className="flex items-center gap-2">
+            <SearchInput value={search} onChange={v => { setSearch(v); setPage(1); setParam({ customer: null }); }} placeholder="Tìm theo tên, SĐT, email, biển số…" className="adv-ro-search"/>
+            <Dropdown label="Lọc nhóm khách" items={[
+              { label: "Tất cả khách hàng", icon: segment === null ? "check" : undefined, onSelect: () => pickSegment(null) },
+              ...stats.filter(s => s.segment).map(s => ({ label: s.label, icon: segment === s.segment ? "check" as const : undefined, onSelect: () => pickSegment(s.segment) })),
+            ]} trigger={props => <button type="button" {...props} aria-label="Lọc nhóm khách" className={`grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-xl border bg-cs-surface text-cs-text-2 hover:border-cs-accent ${segment ? "adv-ro-filter-on" : "border-cs-border"}`}><Icon name="filter" size={18}/></button>}/>
           </div>
-        </main>
+          {segmentLabel && <p className="flex items-center gap-2 text-caption text-cs-text-2">Đang lọc: <b className="text-cs-text">{segmentLabel}</b>
+            <button type="button" className="font-semibold text-cs-accent-text hover:underline" onClick={() => pickSegment(null)}>Bỏ lọc</button></p>}
+        </div>
+        <div className="flex-1 space-y-2.5 px-4 pb-4">
+          {list.loading && !result ? <LoadingState compact label="Đang tải khách hàng..."/>
+            : list.error ? <ErrorState compact description={list.error} onRetry={list.reload}/>
+            : !rows.length ? <EmptyState compact icon="users" title="Không tìm thấy khách hàng" description={term ? "Thử tên, SĐT, email hoặc biển số khác." : "Chưa có khách hàng ở nhóm này."}/>
+            : rows.map(c => <button key={c.id} type="button" className="adv-appt adv-ro-item" aria-current={c.id === selectedId} onClick={() => select(c)}>
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="adv-avatar !h-11 !w-11 !text-[14px]" aria-hidden="true">{initials(c.full_name)}</span>
+                <span className="min-w-0 flex-1"><b className="block truncate text-small text-cs-text">{c.full_name}</b><span className="block text-caption tabular-nums text-cs-text-2">{c.phone}</span></span>
+                <span className="hidden shrink-0 items-center gap-1 text-caption text-cs-text-2 sm:flex"><Icon name="car" size={15}/>{c.vehicles_count} xe</span>
+                <span className="w-24 shrink-0 text-right sm:w-28"><span className="block text-caption text-cs-muted">Tổng chi tiêu</span><b className="block text-small tabular-nums text-cs-text">{formatVnd(c.total_spent ?? 0)}</b></span>
+              </span>
+              <Icon name="chevron-right" size={18} className="shrink-0 text-cs-muted"/>
+            </button>)}
+        </div>
+        {result && result.page.last_page > 1 && <div className="border-t border-cs-border px-4 py-3">
+          <Pagination page={result.page.current_page} totalPages={result.page.last_page} totalItems={result.page.total} pageSize={PER_PAGE} disabled={list.loading} onChange={p => { setPage(p); setParam({ customer: null }); }}/>
+        </div>}
+      </section>
+
+      <div ref={previewRef} className="adv-ro-preview adv-ro-preview-always">
+        {selectedId ? <CustomerPreview key={`${selectedId}-${version}`} id={selectedId} loyalMin={summary?.loyal_min_visits} onEdit={openForm}/>
+          : <section className="adv-card grid min-h-[320px] place-items-center p-8 text-center text-small text-cs-muted">Chọn một khách ở danh sách.</section>}
       </div>
-
-      {modalOpen && (
-        <Modal bare open onClose={closeModal} dismissible={!saving} title={"Thông tin khách hàng"} className="my-auto w-full max-w-[560px] rounded-2xl bg-cs-surface p-6 shadow-overlay">
-            <div className="mb-6 flex items-start justify-between gap-4">
-              <div>
-                <h3
-                  id="customer-modal-title"
-                  className="text-[18px] font-bold text-[#20252B]"
-                >
-                  {editingCustomer ? "Cập nhật khách hàng" : "Thêm khách hàng"}
-                </h3>
-                <p className="mt-1 text-[12px] text-cs-muted">
-                  Nhập thông tin khách hàng bên dưới.
-                </p>
-              </div>
-
-              <IconButton icon="close" label="Đóng biểu mẫu" disabled={saving} onClick={closeModal}/>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="customer-name"
-                  className="mb-2 block text-[12px] font-semibold text-[#374151]"
-                >
-                  Họ và tên <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="customer-name"
-                  required
-                  maxLength={100}
-                  value={form.full_name}
-                  onChange={(event) =>
-                    setForm({ ...form, full_name: event.target.value })
-                  }
-                  placeholder="Nhập họ và tên"
-                  className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-[13px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="customer-phone"
-                  className="mb-2 block text-[12px] font-semibold text-[#374151]"
-                >
-                  Số điện thoại <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="customer-phone"
-                  required
-                  maxLength={20}
-                  value={form.phone}
-                  onChange={(event) =>
-                    setForm({ ...form, phone: event.target.value })
-                  }
-                  placeholder="Nhập số điện thoại"
-                  className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-[13px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="customer-email"
-                  className="mb-2 block text-[12px] font-semibold text-[#374151]"
-                >
-                  Email
-                </label>
-                <input
-                  id="customer-email"
-                  type="email"
-                  maxLength={150}
-                  value={form.email ?? ""}
-                  onChange={(event) =>
-                    setForm({ ...form, email: event.target.value })
-                  }
-                  placeholder="example@email.com"
-                  className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-[13px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="customer-address"
-                  className="mb-2 block text-[12px] font-semibold text-[#374151]"
-                >
-                  Địa chỉ
-                </label>
-                <textarea
-                  id="customer-address"
-                  rows={3}
-                  maxLength={255}
-                  value={form.address ?? ""}
-                  onChange={(event) =>
-                    setForm({ ...form, address: event.target.value })
-                  }
-                  placeholder="Nhập địa chỉ khách hàng"
-                  className="w-full resize-y rounded-xl border border-[#D9DDE1] px-4 py-3 text-[13px] outline-none focus:border-[#D6A85F] focus:ring-2 focus:ring-[#D6A85F]/10"
-                />
-              </div>
-
-              {formError && (
-                <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-700">
-                  {formError}
-                </p>
-              )}
-
-              <div className="flex justify-end gap-3 border-t border-[#EEF0F2] pt-5">
-                <Button variant="secondary" disabled={saving} onClick={closeModal}>Hủy</Button>
-                <Button type="submit" variant="primary" icon={editingCustomer ? "check" : "plus"} loading={saving} loadingText="Đang lưu...">{editingCustomer ? "Lưu thay đổi" : "Thêm khách hàng"}</Button>
-              </div>
-            </form>
-          </Modal>
-      )}
     </div>
-  );
+
+    {editing && <Modal open onClose={() => setEditing(null)} dismissible={!saving} size="sm"
+      title={editing === "new" ? "Thêm khách hàng" : "Sửa khách hàng"} description={editing === "new" ? "Khách vãng lai — khách có thể tự tạo tài khoản sau bằng cùng SĐT / email." : editing.full_name}
+      footer={<>
+        <Button variant="secondary" disabled={saving} onClick={() => setEditing(null)}>Huỷ</Button>
+        <Button type="submit" form="advisor-customer-form" variant="primary" icon="check" loading={saving}>{editing === "new" ? "Thêm khách" : "Lưu"}</Button>
+      </>}>
+      <form id="advisor-customer-form" onSubmit={submit} className="space-y-3">
+        <Field label="Họ tên" required><Input value={form.full_name} maxLength={100} required onChange={e => setForm({ ...form, full_name: e.target.value })}/></Field>
+        <Field label="Số điện thoại" required><Input inputMode="tel" value={form.phone} maxLength={20} required onChange={e => setForm({ ...form, phone: e.target.value })}/></Field>
+        <Field label="Email" optional hint="Dùng để khách nhận mã xác nhận biên bản / báo giá."><Input type="email" value={form.email} maxLength={150} onChange={e => setForm({ ...form, email: e.target.value })}/></Field>
+        {formError && <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-small text-danger-fg">{formError}</p>}
+      </form>
+    </Modal>}
+  </main>;
 }
 
-export default Customers;
+type Tab = "vehicles" | "history" | "appointments" | "reviews" | "notes";
+
+function serviceSummary(order: CustomerDetail["repair_orders"][number]) {
+  const names = order.invoice?.items?.length ? order.invoice.items.map(i => i.description) : (order.work_items ?? []).map(w => w.service?.name || w.description);
+  return names.filter(Boolean).join(", ") || "—";
+}
+
+function HistoryTable({ orders }: { orders: CustomerDetail["repair_orders"] }) {
+  return <div className="overflow-x-auto rounded-xl border border-cs-border"><table className="w-full min-w-[620px] text-small">
+    <thead className="bg-cs-surface-2 text-left text-cs-text-2"><tr>
+      <th className="px-3 py-2.5 font-semibold">Ngày</th><th className="px-3 py-2.5 font-semibold">Phiếu sửa chữa</th><th className="px-3 py-2.5 font-semibold">Hạng mục</th>
+      <th className="px-3 py-2.5 text-right font-semibold">Thành tiền</th><th className="px-3 py-2.5 font-semibold">Trạng thái</th>
+    </tr></thead>
+    <tbody className="divide-y divide-cs-border">{orders.map(o => <tr key={o.id} className="text-cs-text">
+      <td className="whitespace-nowrap px-3 py-2.5 tabular-nums">{dmy(o.received_at)}</td>
+      <td className="whitespace-nowrap px-3 py-2.5"><Link className="font-semibold hover:text-cs-accent-text hover:underline" to={`/advisor/service-orders/${o.id}`}>{o.repair_order_code}</Link>
+        <span className="block text-caption text-cs-muted">{o.vehicle?.license_plate || "xxx.xx"}</span></td>
+      <td className="max-w-72 px-3 py-2.5"><span className="line-clamp-2">{serviceSummary(o)}</span></td>
+      <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold tabular-nums">{o.invoice ? formatVnd(o.invoice.total_amount) : "—"}</td>
+      <td className="whitespace-nowrap px-3 py-2.5"><StatusBadge domain="repair" status={o.status}/></td>
+    </tr>)}</tbody>
+  </table></div>;
+}
+
+function CustomerPreview({ id, loyalMin, onEdit }: { id: number; loyalMin?: number; onEdit: (c: CustomerRow) => void }) {
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<Tab>("vehicles");
+  const detail = useAdminQuery(`advisor-customer:${id}`, signal => customerDirectoryApi.customer(id, signal));
+  const c = detail.data;
+  if (!c) return <section className="adv-card min-h-[420px] p-6">
+    {detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact label="Đang tải khách hàng..."/>}
+  </section>;
+
+  const tier = TIER[c.tier ?? "NEW"];
+  const book = () => navigate("/advisor/create-booking", { state: { customer: { id: c.id, full_name: c.full_name, phone: c.phone, email: c.email } } });
+  const fact = (icon: IconName, label: string, value: string, extra = "") => <div className={`adv-ro-vehicle !flex items-center gap-3 !p-3.5 ${extra}`}>
+    <Icon name={icon} size={24} className="shrink-0 text-cs-muted"/><span className="min-w-0"><span className="block text-caption text-cs-muted">{label}</span><b className="block truncate tabular-nums text-cs-text">{value}</b></span>
+  </div>;
+  const TABS: Array<{ id: Tab; label: string; icon: IconName }> = [
+    { id: "vehicles", label: `Xe (${c.vehicles.length})`, icon: "car" },
+    { id: "history", label: "Lịch sử", icon: "wrench" },
+    { id: "appointments", label: "Lịch hẹn", icon: "calendar" },
+    { id: "reviews", label: "Đánh giá", icon: "star" },
+    { id: "notes", label: "Ghi chú", icon: "file" },
+  ];
+
+  return <section className="adv-card adv-ro-detail" aria-label={`Khách hàng ${c.full_name}`}>
+    <header className="flex flex-wrap items-start gap-4">
+      <span className="adv-avatar !h-20 !w-20 !text-2xl" aria-hidden="true">{initials(c.full_name)}</span>
+      <div className="min-w-0 flex-1">
+        <h2 className="text-title text-cs-text">{c.full_name}</h2>
+        <p className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-small">
+          <a className="inline-flex items-center gap-2 tabular-nums text-cs-text hover:text-cs-accent-text" href={`tel:${c.phone}`}><Icon name="phone" size={16} className="text-cs-muted"/>{c.phone}</a>
+          {c.email ? <a className="inline-flex min-w-0 items-center gap-2 text-cs-text hover:text-cs-accent-text" href={`mailto:${c.email}`}><Icon name="mail" size={16} className="text-cs-muted"/><span className="truncate">{c.email}</span></a>
+            : <span className="inline-flex items-center gap-2 text-cs-muted"><Icon name="mail" size={16}/>Chưa có email</span>}
+        </p>
+        <p className="mt-1.5">{c.has_account ? <Badge tone="success">Có tài khoản — tự duyệt trên web</Badge> : <Badge tone="neutral">Khách vãng lai — xác nhận qua email</Badge>}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" icon="edit" onClick={() => onEdit(c)}>Chỉnh sửa</Button>
+        <Dropdown label="Thao tác khác" items={[
+          { label: "Đặt lịch hộ", icon: "calendar", onSelect: book },
+          { label: "Quản lý xe của khách", icon: "car", onSelect: () => navigate(`/advisor/customer-cars?customerId=${c.id}`) },
+          { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
+        ]}/>
+      </div>
+    </header>
+
+    <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+      {fact("calendar", "Khách hàng từ", c.created_at ? new Date(c.created_at).toLocaleDateString("vi-VN") : "—")}
+      {fact("car", "Số xe sở hữu", `${c.vehicles_count} xe`)}
+      {fact("cash", "Tổng chi tiêu", formatVnd(c.total_spent ?? 0))}
+      <div className="adv-ro-vehicle !flex items-center gap-3 !p-3.5 adv-tier" data-tier={c.tier} title={loyalMin ? `Thân thiết: từ ${loyalMin} lượt sửa đã bàn giao (${c.completed_visits ?? 0} lượt)` : undefined}>
+        <Icon name="star" size={24} className="shrink-0"/><span className="min-w-0"><span className="block text-caption text-cs-muted">Hạng khách hàng</span><b className="block text-cs-text">{tier.label}</b></span>
+      </div>
+    </div>
+
+    <div role="tablist" aria-label="Thông tin khách" className="adv-ro-tabs adv-ro-tabs-5">
+      {TABS.map(t => <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className="adv-ro-tab" onClick={() => setTab(t.id)}><Icon name={t.icon} size={18}/><span>{t.label}</span></button>)}
+    </div>
+
+    <div role="tabpanel" className="min-h-[160px] space-y-4">
+      {tab === "vehicles" && <>
+        {c.vehicles.length ? <div className="grid gap-3 lg:grid-cols-2">{c.vehicles.slice(0, 6).map(v => <Link key={v.id} to={`/advisor/customer-cars?customerId=${c.id}`} className="adv-appt adv-ro-item">
+          <span className="flex min-w-0 items-center gap-4">
+            <VehicleBrandLogo brand={v.model?.brand?.name} size={52}/>
+            <span className="min-w-0 space-y-1"><b className="block truncate text-small text-cs-text">{vehicleTitle(v)}</b>
+              <span className="block text-caption tabular-nums text-cs-text-2">{v.license_plate || "xxx.xx"}</span>
+              <span className="flex flex-wrap items-center gap-2 text-caption text-cs-muted">{v.year && <span>{v.year}</span>}
+                {v.open_repair_order_code ? <Badge tone="success">Đang sửa chữa</Badge> : <Badge tone="neutral">Không ở xưởng</Badge>}</span></span>
+          </span>
+          <Icon name="chevron-right" size={18} className="shrink-0 text-cs-muted"/>
+        </Link>)}</div> : <p className="text-small text-cs-muted">Khách chưa có xe nào.</p>}
+        <div className="flex items-center justify-between gap-2"><h3 className="adv-section-title">Lịch sử dịch vụ gần nhất</h3>
+          {c.repair_orders.length > 3 && <button type="button" className="inline-flex items-center gap-1 text-small font-semibold text-cs-accent-text hover:underline" onClick={() => setTab("history")}>Xem tất cả<Icon name="arrow-right" size={15}/></button>}</div>
+        {c.repair_orders.length ? <HistoryTable orders={c.repair_orders.slice(0, 3)}/> : <p className="text-small text-cs-muted">Khách chưa sửa xe tại gara.</p>}
+      </>}
+
+      {tab === "history" && (c.repair_orders.length ? <>
+        <HistoryTable orders={c.repair_orders}/>
+        {c.repair_orders_count > c.repair_orders.length && <p className="text-caption text-cs-muted">Hiển thị {c.repair_orders.length} / {c.repair_orders_count} lần sửa gần nhất.</p>}
+      </> : <p className="text-small text-cs-muted">Khách chưa sửa xe tại gara.</p>)}
+
+      {tab === "appointments" && <div className="grid gap-4 lg:grid-cols-2">
+        {([["Sắp tới", c.appointments], ["Gần đây", c.past_appointments ?? []]] as const).map(([title, items]) => <div key={title} className="rounded-xl border border-cs-border p-4">
+          <h3 className="adv-section-title">{title}</h3>
+          {items.length ? <ul className="mt-2 space-y-1.5">{items.map(a => <li key={a.id}><Link to={`/advisor/reception?appointment=${a.id}`} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-small hover:bg-cs-hover">
+            <span className="tabular-nums text-cs-text">{dmy(a.appointment_date)} · <b>{hhmm(a.appointment_time)}</b></span><StatusBadge domain="appointment" status={a.status}/>
+          </Link></li>)}</ul> : <p className="mt-2 text-small text-cs-muted">Không có.</p>}
+          {title === "Sắp tới" && <button type="button" className={`${buttonClass({ variant: "outline", size: "sm" })} mt-3`} onClick={book}><Icon name="calendar" size={15}/>Đặt lịch hộ</button>}
+        </div>)}
+      </div>}
+
+      {tab === "reviews" && ((c.reviews ?? []).length ? <ul className="space-y-3">{(c.reviews ?? []).map(r => <li key={r.id} className="rounded-xl border border-cs-border p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-warning-fg" aria-label={`${r.overall_rating} sao`}>{"★".repeat(r.overall_rating)}<span className="text-cs-border-strong">{"★".repeat(Math.max(0, 5 - r.overall_rating))}</span></span>
+          {r.repair_order && <Link className="text-caption font-semibold text-cs-accent-text hover:underline" to={`/advisor/service-orders/${r.repair_order.id}`}>{r.repair_order.repair_order_code}</Link>}
+          <span className="text-caption text-cs-muted">{r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}</span>
+        </div>
+        {r.comment && <p className="mt-1.5 text-small text-cs-text">{r.comment}</p>}
+        {r.reply && <p className="mt-2 rounded-lg bg-cs-surface-2 px-3 py-2 text-caption text-cs-text-2"><b>Gara phản hồi:</b> {r.reply}</p>}
+      </li>)}</ul> : <p className="text-small text-cs-muted">Khách chưa gửi đánh giá.</p>)}
+
+      {tab === "notes" && <dl className="grid gap-4 rounded-xl border border-cs-border p-4 text-small sm:grid-cols-2">
+        <div><dt className="text-caption text-cs-muted">Địa chỉ</dt><dd className="mt-1 text-cs-text">{c.address || "Chưa có"}</dd></div>
+        <div><dt className="text-caption text-cs-muted">Lần ghé gần nhất</dt><dd className="mt-1 tabular-nums text-cs-text">{c.last_visit_at ? dmy(c.last_visit_at) : "Chưa ghé"}</dd></div>
+        <div><dt className="text-caption text-cs-muted">Số lần ghé / đã bàn giao</dt><dd className="mt-1 tabular-nums text-cs-text">{c.repair_orders_count} / {c.completed_visits ?? 0}</dd></div>
+        <div><dt className="text-caption text-cs-muted">Xác nhận báo giá, biên bản</dt><dd className="mt-1 text-cs-text">{c.has_account ? "Khách tự xác nhận trong tài khoản" : c.email ? "Mã OTP gửi email khách" : "Cần bổ sung email để gửi mã xác nhận"}</dd></div>
+      </dl>}
+    </div>
+  </section>;
+}

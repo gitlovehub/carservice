@@ -35,6 +35,8 @@ export type AppointmentRow = {
   services: Array<{ id: number; name: string; base_price: string; estimated_minutes: number | null } & Priced>;
   packages: Array<{ id: number; name: string; mileage_milestone: number | null } & Priced>;
   handled_by?: { employee?: { full_name?: string } | null; email?: string } | null;
+  /** Phiếu sửa chữa đã tạo từ lịch (null = chưa có). */
+  repair_order?: { id: number; repair_order_code?: string; status: string } | null;
 };
 export type AppointmentList = {
   data: AppointmentRow[];

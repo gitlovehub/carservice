@@ -146,6 +146,7 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
 .cs-ws-clock:hover { background: var(--cs-hover); }
 .cs-ws-clock:focus-visible { outline: 2px solid var(--cs-focus); outline-offset: 2px; }
 .cs-ws-clock svg { color: var(--cs-accent-text); flex-shrink: 0; }
+.cs-ws-clock-sep { width: 1px; height: 14px; margin: 0 4px; background: var(--cs-border); }
 /* Nút sáng/tối hình tròn, cao bằng ô đồng hồ. */
 .cs-work-top .cs-ws-theme-toggle {
   width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding: 0;
@@ -274,3 +275,42 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
 
 /* Khu Admin: mọi trang dùng chung khung page-container (lề token), rộng hơn để chứa ngăn chi tiết bên phải. */
 [data-area="admin"] .page-container { max-width: 95rem; }
+
+/* ---------- Khu Cố vấn (mockup PO 16/11/2026): sidebar nâu đen, mục chọn gradient vàng đồng ---------- */
+[data-area="advisor"] .page-container { max-width: 100rem; }
+[data-area="advisor"] .cs-work-sidebar {
+  background:
+    radial-gradient(120% 60% at 0% 100%, rgb(227 187 111 / 0.16), transparent 60%),
+    linear-gradient(180deg, #1d1a15 0%, var(--cs-sidebar-bg) 55%, #15130f 100%);
+  border-right: 1px solid rgb(227 187 111 / 0.12);
+}
+[data-area="advisor"] .cs-ws-link { font-size: 14px; border-radius: 12px; }
+[data-area="advisor"] .cs-ws-link:hover { color: #f2cf86; }
+[data-area="advisor"] .cs-ws-link.is-active,
+[data-area="advisor"] .cs-ws-link.is-active:hover {
+  background: linear-gradient(135deg, #f2cf86 0%, #d9a347 55%, #b8822c 100%);
+  color: #1e1810; font-weight: 600;
+  box-shadow: 0 10px 22px -14px rgb(227 187 111 / 0.9), inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+[data-area="advisor"] .cs-ws-link.is-active::before { display: none; }
+[data-area="advisor"] .cs-ws-brand-mark { background: linear-gradient(135deg, #f2cf86, #b8822c); color: #1e1810; }
+.cs-adv-logo { width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; object-fit: cover; }
+/*
+ * Giao diện tối (PO 17/11/2026): mọi khung nội dung khu cố vấn dùng cùng kiểu thẻ với Tổng quan —
+ * nền kính nâu (gradient), viền ánh vàng đồng — kể cả panel trang chi tiết phiếu, thẻ trong danh sách, ô số liệu.
+ */
+html[data-theme="dark"] [data-area="advisor"] :is(.adv-panel, .adv-card) {
+  background: linear-gradient(160deg, rgb(52 43 30 / 0.78), rgb(24 21 17 / 0.9)) !important;
+  border-color: rgb(227 187 111 / 0.22) !important;
+  box-shadow: 0 16px 36px -28px rgb(0 0 0 / 0.8);
+  backdrop-filter: blur(8px);
+}
+html[data-theme="dark"] [data-area="advisor"] :is(.adv-appt, .adv-stat, .adv-veh-row) { background: rgb(242 207 134 / 0.04); border-color: rgb(227 187 111 / 0.16); }
+html[data-theme="dark"] [data-area="advisor"] :is(.adv-appt, .adv-stat, .adv-veh-row):hover { background: rgb(242 207 134 / 0.09); border-color: rgb(227 187 111 / 0.45); }
+html[data-theme="dark"] [data-area="advisor"] :is(.adv-ro-vehicle, .adv-ro-footer, .adv-veh-facts, .adv-quote-total) { background: rgb(242 207 134 / 0.045); border-color: rgb(227 187 111 / 0.16); }
+html[data-theme="dark"] [data-area="advisor"] .adv-ro-tab:not([aria-selected="true"]) { background: rgb(242 207 134 / 0.05); border-color: rgb(227 187 111 / 0.16); }
+html[data-theme="dark"] [data-area="advisor"] .cs-work-top { background: rgb(18 16 12 / 0.82); border-bottom-color: rgb(227 187 111 / 0.14); backdrop-filter: blur(10px); }
+/* Giao diện tối: nền vân sóng vàng (ảnh PO gửi) phía sau nội dung. */
+html[data-theme="dark"] [data-area="advisor"] .cs-work-main {
+  background: linear-gradient(rgb(17 15 12 / 0.55), rgb(17 15 12 / 0.55)), url("/advisor/advisor-bg.jpg") center top / cover fixed, var(--cs-bg);
+}

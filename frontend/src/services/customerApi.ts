@@ -506,6 +506,9 @@ export async function getVnpayReturnResult(search: string): Promise<VnpayReturnR
 export const paymentMethodLabel: Record<string, string> = {
   DIRECT: "Tiền mặt tại quầy",
   QR: "Chuyển khoản QR",
+  TRANSFER: "Chuyển khoản tại quầy",
+  CARD: "Thẻ ngân hàng",
+  EWALLET: "Ví điện tử",
   VNPAY: "VNPay",
 };
 

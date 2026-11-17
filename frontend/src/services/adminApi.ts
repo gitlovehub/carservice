@@ -30,7 +30,7 @@ export type DashboardData = {
 };
 
 /* ------------------------------------------------------------------ Báo cáo */
-export type PaymentGroup = "CASH" | "BANK_TRANSFER" | "VNPAY";
+export type PaymentGroup = "CASH" | "BANK_TRANSFER" | "CARD" | "EWALLET" | "VNPAY";
 export type ReportData = {
   period: string;
   label: string;
@@ -62,6 +62,8 @@ export type AdminOrderDetail = AdminOrder & {
   items: Array<{ name: string | null; status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"; technician: string | null; price: number }>;
   quotation_items: Array<{ type: "SERVICE" | "PART"; name: string; quantity: number; amount: number; approved: boolean }>;
   timeline: Array<{ at: string | null; status: string; by: string; note: string | null }>;
+  /** ADV-01: phụ tùng cố vấn báo thiếu cho phiếu. */
+  part_requests: Array<{ id: number; part: string | null; unit: string | null; quantity: number; status: PartRequestStatus; eta_date: string | null; note: string | null }>;
 };
 export type OrderList = Paged<AdminOrder, { total: number; in_shop: number; groups: Record<OrderGroup, number> }> & { technicians: Array<{ id: number; name: string | null }> };
 
@@ -128,6 +130,17 @@ export type AdminAccount = { id: number; email: string; name: string; role: Acco
 export type AdminPart = {
   id: number; sku: string; name: string; description: string | null; category: string | null; unit: string; cost: number; price: number;
   image_url: string | null; stock: number; min: number; level: "ok" | "low" | "out"; status: "ACTIVE" | "INACTIVE"; updated_at: string | null; compat: Array<{ id: number; name: string }>;
+  /** Số lượng đang chờ đặt / chờ về cho phiếu sửa chữa (ADV-01). */
+  requested: number;
+};
+/** Yêu cầu phụ tùng cho phiếu (GET /api/part-requests — dạng Laravel paginate). */
+export type PartRequestStatus = "REQUESTED" | "ORDERED" | "RECEIVED" | "CANCELLED";
+export type AdminPartRequest = {
+  id: number; part_id: number; quantity: number; status: PartRequestStatus; request_note: string | null; supplier_note: string | null;
+  eta_date: string | null; ordered_at: string | null; received_at: string | null; created_at: string | null; quotation_item_id: number | null;
+  part: { id: number; sku: string | null; name: string; unit: string | null; inventory: { quantity: number } | null } | null;
+  repair_order: { id: number; repair_order_code: string; status: string; vehicle: { license_plate: string | null } | null; advisor: { full_name: string | null } | null } | null;
+  created_by: { email: string; employee: { full_name: string | null } | null } | null;
 };
 export type PartPayload = {
   sku: string; name: string; category: string | null; unit: string; cost_price: number; sell_price: number; description: string | null;
@@ -202,6 +215,12 @@ export const adminApi = {
   },
   adjustStock: (id: number, body: { type: "IN" | "OUT"; quantity: number; note: string | null }) => send<Message<AdminPart>>(`/admin/parts/${id}/stock`, "POST", body),
   stockMoves: (params: Params, signal?: AbortSignal) => fetchApi<Paged<StockMove>>(`/admin/stock-moves${query(params)}`, { signal }),
+  /** ADV-01 (D-020): kho đặt hàng + nhận hàng cho phụ tùng cố vấn báo thiếu. */
+  partRequests: (params: Params, signal?: AbortSignal) =>
+    fetchApi<{ data: AdminPartRequest[]; total: number }>(`/part-requests${query(params)}`, { signal }),
+  orderPartRequest: (id: number, body: { eta_date: string; supplier_note: string | null }) => send<AdminPartRequest>(`/part-requests/${id}/order`, "POST", body),
+  receivePartRequest: (id: number, alreadyInStock = false) => send<AdminPartRequest>(`/part-requests/${id}/receive`, "POST", { already_in_stock: alreadyInStock }),
+  cancelPartRequest: (id: number, reason: string) => send<AdminPartRequest>(`/part-requests/${id}/cancel`, "POST", { reason }),
 
   holidays: (signal?: AbortSignal) => fetchApi<{ data: HolidayRange[] }>("/admin/holidays", { signal }).then(r => r.data),
   saveHoliday: (body: { from: string; to: string | null; reason: string; replace_ids?: number[] }) => send<Message<HolidayRange> & { affected_appointments: number }>("/admin/holidays", "POST", body),

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { DataTable, ErrorState, LoadingState, Pagination, SearchInput, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
@@ -75,6 +76,20 @@ export default function RepairOrders() {
           </ul>}
         {selected.estimate > 0 && <p className="mt-3 flex justify-between border-t border-cs-border pt-2 text-small font-semibold text-cs-text">Tổng báo giá<span className="tabular-nums">{vnd(selected.estimate)}</span></p>}
       </PaneSection>
+      {selected.part_requests.length > 0 && <PaneSection title="Phụ tùng đang chờ" icon="box">
+        <ul className="flex flex-col gap-2 text-small">
+          {selected.part_requests.map(r => {
+            const overdue = r.status === "ORDERED" && !!r.eta_date && r.eta_date < new Date().toISOString().slice(0, 10);
+            const label = { REQUESTED: "Cần đặt hàng", ORDERED: overdue ? "Quá hạn" : "Đã đặt", RECEIVED: "Đã về", CANCELLED: "Đã huỷ" }[r.status];
+            const tone = r.status === "REQUESTED" ? "text-warning-fg" : overdue ? "text-danger-fg" : r.status === "RECEIVED" ? "text-success-fg" : r.status === "ORDERED" ? "text-info-fg" : "text-cs-muted";
+            return <li key={r.id} className="flex items-start gap-3">
+              <span className="min-w-0 flex-1 text-cs-text">{r.part ?? "—"} × {r.quantity}{r.unit ? ` ${r.unit}` : ""}{r.note && <span className="block text-caption text-cs-muted">{r.note}</span>}</span>
+              <span className={`whitespace-nowrap text-caption font-semibold ${tone}`}>{label}{r.eta_date && ["ORDERED"].includes(r.status) ? ` · ${fmtDate(r.eta_date)}` : ""}</span>
+            </li>;
+          })}
+        </ul>
+        <Link to="/admin/inventory?tab=orders" className="mt-3 inline-flex items-center gap-1 text-small font-semibold text-cs-accent-text hover:underline">Đặt / nhận hàng ở Phụ tùng & kho<Icon name="chevron-right" size={14}/></Link>
+      </PaneSection>}
       <PaneSection title="Tiến trình" icon="history">
         <ol className="relative ml-1.5 border-l-2 border-cs-border pl-5">
           {selected.timeline.map((t, i) => <li key={`${t.status}-${i}`} className="relative pb-3 last:pb-0 text-small">

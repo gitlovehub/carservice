@@ -16,7 +16,7 @@ Có ~91 thay đổi chưa commit (Phase 5 + P0). Đề xuất 2 commit riêng tr
 
 UX-B1..B3 (`/me/vehicles` kèm hãng, API Tổng quan, API doanh thu) là thay đổi API contract, cần PO duyệt. Không chặn P1.
 
-## B-05 · Nghiệp vụ "Chờ phụ tùng" — PO quyết định khi làm tiếp (ghi 10/11/2026)
+## ~~B-05 · Nghiệp vụ "Chờ phụ tùng"~~ — ĐÃ GỠ 16/11/2026: PO chọn **Admin / kho** (D-020) → đã làm (ADV-01 VERIFIED). Đề xuất 4 ("báo cố vấn khi phụ tùng cuối về") hiện thể hiện bằng "Việc tiếp theo" trên chi tiết phiếu; nhắc trên Tổng quan cố vấn làm ở ADV-10
 
 > **Lịch (D-017):** không chặn hiện tại. Làm xong client → tới cố vấn → PO chốt logic ở đây (task ADV-01).
 

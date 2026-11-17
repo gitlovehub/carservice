@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Validation\ValidationException;
 
@@ -46,6 +47,12 @@ class Appointment extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(Account::class, 'created_by_account_id');
+    }
+
+    /** Phiếu sửa chữa tạo từ lịch này (mỗi lịch tối đa một phiếu — ràng buộc UNIQUE). */
+    public function repairOrder(): HasOne
+    {
+        return $this->hasOne(RepairOrder::class);
     }
 
     public function activities(): MorphMany

@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Services\CounterRecordService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/** Cố vấn / Admin đặt lịch hộ khách (ADV-04): khách + xe có sẵn, hoặc khách mới / xe mới (CounterRecordService). */
 class StoreInternalAppointmentRequest extends FormRequest
 {
     public function authorize(): bool
@@ -15,8 +17,7 @@ class StoreInternalAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_id' => ['required', 'integer', 'exists:customers,id'],
-            'vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
+            ...CounterRecordService::rules(),
             'appointment_date' => ['required', 'date_format:Y-m-d'],
             'appointment_time' => ['required', 'date_format:H:i'],
             'request_type' => ['required', Rule::in(['DIAGNOSIS', 'REPAIR', 'MAINTENANCE', 'REPLACEMENT'])],
@@ -35,6 +36,7 @@ class StoreInternalAppointmentRequest extends FormRequest
     public function messages(): array
     {
         return [
+            ...CounterRecordService::messages(),
             'package_ids.max' => 'Mỗi lịch hẹn chỉ chọn một gói bảo dưỡng.',
             'package_ids.*.exists' => 'Gói bảo dưỡng không tồn tại hoặc đã ngừng áp dụng.',
             'service_ids.*.exists' => 'Dịch vụ không tồn tại hoặc đã ngừng hoạt động.',

@@ -75,8 +75,8 @@ function AccountMenu({ area }: { area: WorkArea }) {
       <p className="mt-1 text-caption text-cs-accent-text">{roleLabel[area]}</p>
     </div>}
     items={[
-      ...(area === "admin" ? [{ label: "Hồ sơ của bạn", icon: "user" as const, onSelect: () => navigate("/admin/profile") }] : []),
-      { label: "Website công khai", icon: "arrow", onSelect: () => navigate("/") },
+      { label: "Hồ sơ của bạn", icon: "user", onSelect: () => navigate(`/${area}/profile`) },
+      { label: "Ra ngoài website", icon: "arrow", onSelect: () => navigate("/") },
       { type: "separator" },
       { label: LABELS.action.logout, icon: "logout", danger: true, onSelect: () => { void logout(); } },
     ]}
@@ -88,6 +88,13 @@ function AccountMenu({ area }: { area: WorkArea }) {
       <Icon name="chevron-down" size={14} className="text-cs-muted"/>
     </button>}
   />;
+}
+
+/** Biểu tượng khu cố vấn (ảnh PO gửi, public/advisor/advisor-logo.png); thiếu file thì về chữ "C". */
+function AdvisorMark() {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <span className="cs-ws-brand-mark" aria-hidden="true">C</span>;
+  return <img src="/advisor/advisor-logo.png" alt="" aria-hidden="true" className="cs-adv-logo" onError={() => setFailed(true)}/>;
 }
 
 function ThemeToggle() {
@@ -140,7 +147,7 @@ function WorkLayout({ area }: { area: WorkArea }) {
       <aside id="cs-workspace-sidebar" className="cs-work-sidebar" data-open={mobileOpen} aria-label={roleLabel[area]}>
         <div className="cs-ws-brand">
           <Link to={areaInfo[area].home} onClick={close} aria-label="CarService — Tổng quan">
-            <span className="cs-ws-brand-mark" aria-hidden="true">C</span>
+            {area === "advisor" ? <AdvisorMark/> : <span className="cs-ws-brand-mark" aria-hidden="true">C</span>}
             <span className="cs-ws-brand-text">CarService<small>{roleLabel[area]}</small></span>
           </Link>
           <span className="cs-ws-mobile-only">
@@ -149,7 +156,7 @@ function WorkLayout({ area }: { area: WorkArea }) {
         </div>
         <SidebarNav area={area} onNavigate={close}/>
         <div className="cs-ws-foot">
-          <Link to="/" className="cs-ws-link" title="Website công khai"><Icon name="arrow" size={18}/><span className="cs-ws-label">Website công khai</span></Link>
+          <Link to="/" className="cs-ws-link" title="Ra ngoài website"><Icon name="arrow" size={18}/><span className="cs-ws-label">Ra ngoài website</span></Link>
         </div>
       </aside>
       <div className="cs-work-main">
@@ -164,7 +171,7 @@ function WorkLayout({ area }: { area: WorkArea }) {
           </span>
           <Breadcrumbs area={area}/>
           <div className="cs-ws-actions">
-            {area === "admin" && <LiveClock/>}
+            <LiveClock/>
             <ThemeToggle/>
             <AccountMenu area={area}/>
           </div>

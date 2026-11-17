@@ -12,6 +12,12 @@ export type ConfirmOptions = {
   phone?: string;
   /** Icon nút xác nhận. Mặc định với variant danger: "trash" nếu là xóa, ngược lại "x" (hủy/đóng/từ chối). */
   confirmIcon?: IconName;
+  /** Icon ở đầu hộp thoại (mặc định theo variant). */
+  icon?: IconName;
+  /** Bảng thông tin ngắn để đối chiếu trước khi xác nhận (vd. khách, xe, giờ hẹn). */
+  details?: Array<{ label: string; value: string; /** Badge xanh lá nhỏ cạnh giá trị, vd. "Hôm nay". */ badge?: string }>;
+  /** Lưu ý nổi bật (màu cảnh báo), vd. lịch hẹn không phải hôm nay. */
+  note?: string;
 };
 
 export type ToastTone = "success" | "error" | "warning" | "info";

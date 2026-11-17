@@ -227,6 +227,7 @@ class RepairFlowTest extends TestCase
         $this->approveAndStartRepair();
         WorkItem::query()->where('repair_order_id', $this->repairOrder->id)->update(['status' => WorkItem::COMPLETED]);
         $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/complete")->assertOk();
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/quality-check", ['items' => array_keys(RepairOrder::QUALITY_CHECK_ITEMS)])->assertOk();
 
         return $this->actingAs($this->advisor)
             ->postJson("/api/repair-orders/{$this->repairOrder->id}/invoice")
@@ -434,5 +435,15 @@ class RepairFlowTest extends TestCase
 
         $this->assertCount(2, $response->json('invoice.items'));
         $this->assertSame(RepairOrder::COMPLETED, $response->json('status_history.0.status'));
+    }
+
+    public function test_order_detail_includes_vehicle_brand_and_model_for_header(): void
+    {
+        $vehicle = $this->repairOrder->vehicle()->with('model.brand')->first();
+
+        $this->actingAs($this->advisor)->getJson("/api/repair-orders/{$this->repairOrder->id}")
+            ->assertOk()
+            ->assertJsonPath('vehicle.model.name', $vehicle->model->name)
+            ->assertJsonPath('vehicle.model.brand.name', $vehicle->model->brand->name);
     }
 }

@@ -23,7 +23,7 @@ class CapacityService
     /** @return array<string, mixed> */
     public function forDate(CarbonImmutable $date): array
     {
-        $capacity = $this->capacityMinutes($date);
+        [$capacity, $basis] = $this->capacityMinutes($date);
         $appointments = Appointment::query()
             ->whereDate('appointment_date', $date->toDateString())
             ->whereIn('status', ['CONFIRMED', 'CHECKED_IN'])
@@ -43,6 +43,8 @@ class CapacityService
         return [
             'date' => $date->toDateString(),
             'capacity_minutes' => $capacity,
+            // Cơ sở tính công suất để giao diện giải thích: closed | manual (admin đặt) | bays (số cầu nâng) | technicians (số KTV) | null.
+            'capacity_basis' => $basis,
             'booked_minutes' => $booked,
             'open_work_minutes' => $openWork,
             'load_minutes' => $load,
@@ -78,31 +80,27 @@ class CapacityService
         return $minutes > 0 ? $minutes : self::DEFAULT_APPOINTMENT_MINUTES;
     }
 
-    private function capacityMinutes(CarbonImmutable $date): ?int
+    /** @return array{0: ?int, 1: ?array{type: string, count?: int, open_minutes?: int}} [phút công suất, cơ sở tính] */
+    private function capacityMinutes(CarbonImmutable $date): array
     {
         $hours = WorkingHour::query()->where('day_of_week', $date->dayOfWeek)->first();
         if (! $hours || ! $hours->is_active) {
-            return 0;
+            return [0, ['type' => 'closed']];
         }
         if ($hours->daily_capacity_minutes !== null) {
-            return (int) $hours->daily_capacity_minutes;
+            return [(int) $hours->daily_capacity_minutes, ['type' => 'manual']];
         }
+        $openMinutes = (int) CarbonImmutable::parse($hours->open_time)->diffInMinutes(CarbonImmutable::parse($hours->close_time));
         if ($hours->bay_count) {
-            $open = CarbonImmutable::parse($hours->open_time);
-            $close = CarbonImmutable::parse($hours->close_time);
-
-            return (int) $open->diffInMinutes($close) * (int) $hours->bay_count;
+            return [$openMinutes * (int) $hours->bay_count, ['type' => 'bays', 'count' => (int) $hours->bay_count, 'open_minutes' => $openMinutes]];
         }
         // Mặc định: số kỹ thuật viên đang hoạt động × số phút mở cửa trong ngày.
         $technicians = self::activeTechnicians();
         if ($technicians > 0) {
-            $open = CarbonImmutable::parse($hours->open_time);
-            $close = CarbonImmutable::parse($hours->close_time);
-
-            return (int) $open->diffInMinutes($close) * $technicians;
+            return [$openMinutes * $technicians, ['type' => 'technicians', 'count' => $technicians, 'open_minutes' => $openMinutes]];
         }
 
-        return null;
+        return [null, null];
     }
 
     /** Số kỹ thuật viên có tài khoản đang hoạt động — cơ sở tính công suất tự động. */

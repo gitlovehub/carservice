@@ -64,7 +64,8 @@ class AppointmentActivityService
 
         $updated = DB::transaction(function () use ($appointment, $date, $time, $reason, $actor, $old): Appointment {
             $locked = Appointment::query()->lockForUpdate()->findOrFail($appointment->id);
-            $this->slots->assertBookable($date, $time, (int) $locked->vehicle_id, (int) $locked->id);
+            // ADV-04: cố vấn đổi lịch chỉ vào khung giờ đặt lịch đã cấu hình.
+            $this->slots->assertBookable($date, $time, (int) $locked->vehicle_id, (int) $locked->id, requireConfiguredSlot: true);
             $locked->update(['appointment_date' => $date, 'appointment_time' => $time]);
             $this->record($locked, self::RESCHEDULED, $actor, $old, ['appointment_date' => $date, 'appointment_time' => $time], $reason);
 

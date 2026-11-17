@@ -69,7 +69,8 @@ assert(booking.includes('icon="arrow-left"') && booking.includes('"arrow-right"'
 const cars = read('../src/pages/customer/Cars.tsx');
 assert(cars.includes('variant="primary" icon="plus"') && cars.includes('ADD_CAR_BUTTON') && cars.includes('icon="trash" tone="danger"'), 'Xe của tôi: Thêm xe nút đỏ chính (như Đăng nhập), Xóa icon đỏ');
 const panels = read('../src/pages/advisor/RepairOrderPanels.tsx');
-for (const needle of ['icon="send"', 'iconRight="arrow-right"', 'variant="success" icon="cash"', 'disabled={invoice.status !== "PAID"}', 'variant="tonal" icon="plus"']) {
+// Bàn giao: khóa tới khi thu đủ tiền VÀ (nếu nhận xe theo biên bản) chủ xe đã xác nhận biên bản trả xe.
+for (const needle of ['icon="send"', 'iconRight="arrow-right"', 'variant="success" icon="cash"', 'invoice?.status !== "PAID" ? "Thu đủ tiền', 'disabled={!!handOverBlocker}', 'variant="tonal" icon="plus"']) {
   assert(panels.includes(needle), `Phiếu sửa chữa thiếu ${needle}`);
 }
 const adminDashboard = read('../src/pages/admin/AdminDashboard.tsx');

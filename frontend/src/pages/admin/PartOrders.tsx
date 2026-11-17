@@ -1,0 +1,154 @@
+import { useMemo, useState } from "react";
+import { Button, DataTable, EmptyState, Field, Input, SearchInput, type Column } from "../../components/ui";
+import { Icon } from "../../components/ui/Icon";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { adminApi, errorMessage, fmtDateTime, type AdminPartRequest } from "../../services/adminApi";
+import { ClearFilters, FilterSelect, Pill, SplitView, Toolbar } from "./kit/AdminKit";
+import { num, type Tone } from "./kit/format";
+
+/**
+ * Phụ tùng & kho → "Cần đặt hàng" (ADV-01 / D-020).
+ * Cố vấn báo thiếu phụ tùng cho phiếu; kho (Admin) gom theo phụ tùng, đặt hàng (ngày dự kiến về),
+ * và "Đã về" = nhập kho QUA yêu cầu (một lần). Hàng đã nhập bằng phiếu nhập thường → "Đã có trong kho" (không cộng lần nữa).
+ */
+
+type Stage = "REQUESTED" | "OVERDUE" | "ORDERED";
+type Group = {
+  partId: number; name: string; sku: string | null; unit: string | null; stock: number;
+  needed: number; requests: AdminPartRequest[]; stage: Stage; eta: string | null;
+};
+type Filter = "all" | Stage;
+
+const today = () => new Date().toISOString().slice(0, 10);
+const fmtDay = (iso: string | null) => iso ? new Date(iso).toLocaleDateString("vi-VN") : "—";
+const isOverdue = (r: AdminPartRequest) => r.status === "ORDERED" && !!r.eta_date && r.eta_date < today();
+const STAGE: Record<Stage, { label: string; tone: Tone }> = {
+  REQUESTED: { label: "Cần đặt", tone: "warning" },
+  OVERDUE: { label: "Quá hạn", tone: "danger" },
+  ORDERED: { label: "Đã đặt", tone: "info" },
+};
+
+function groupByPart(rows: AdminPartRequest[]): Group[] {
+  const groups = new Map<number, Group>();
+  for (const r of rows) {
+    const g = groups.get(r.part_id) ?? {
+      partId: r.part_id, name: r.part?.name ?? `Phụ tùng #${r.part_id}`, sku: r.part?.sku ?? null, unit: r.part?.unit ?? null,
+      stock: r.part?.inventory?.quantity ?? 0, needed: 0, requests: [], stage: "ORDERED" as Stage, eta: null,
+    };
+    g.needed += r.quantity;
+    g.requests.push(r);
+    groups.set(r.part_id, g);
+  }
+  // Mức cần xử lý: còn yêu cầu chưa đặt > đã đặt nhưng quá hạn > đã đặt. Ngày về sớm nhất trong các yêu cầu đã đặt.
+  return [...groups.values()].map(g => {
+    const stage: Stage = g.requests.some(r => r.status === "REQUESTED") ? "REQUESTED" : g.requests.some(isOverdue) ? "OVERDUE" : "ORDERED";
+    const eta = g.requests.map(r => r.eta_date).filter((d): d is string => !!d).sort()[0] ?? null;
+    return { ...g, stage, eta };
+  }).sort((a, b) => ["REQUESTED", "OVERDUE", "ORDERED"].indexOf(a.stage) - ["REQUESTED", "OVERDUE", "ORDERED"].indexOf(b.stage) || a.name.localeCompare(b.name, "vi"));
+}
+
+function RequestCard({ request, stock, onChanged }: { request: AdminPartRequest; stock: number; onChanged: (message: string) => void }) {
+  const [eta, setEta] = useState(request.eta_date ?? "");
+  const [supplier, setSupplier] = useState(request.supplier_note ?? "");
+  const [cancelReason, setCancelReason] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
+  const { confirm } = useAppFeedback();
+  const order = request.repair_order;
+  const unit = request.part?.unit ?? "";
+
+  async function run(task: () => Promise<unknown>, message: string) {
+    setWorking(true); setError("");
+    try { await task(); onChanged(message); }
+    catch (err) { setError(errorMessage(err, "Không cập nhật được yêu cầu.")); }
+    finally { setWorking(false); }
+  }
+  async function receive(alreadyInStock: boolean) {
+    const ok = await confirm(alreadyInStock ? {
+      title: "Đóng yêu cầu — hàng đã có trong kho", reference: order?.repair_order_code,
+      description: `Dùng khi ${request.quantity} ${unit} đã được nhập bằng phiếu nhập thường. Tồn kho KHÔNG cộng thêm; khách được báo phụ tùng đã về.`,
+      confirmText: "Đóng yêu cầu", variant: "success",
+    } : {
+      title: "Hàng đã về — nhập kho", reference: order?.repair_order_code,
+      description: `Nhập ${request.quantity} ${unit} "${request.part?.name}" vào kho (một phiếu nhập gắn phiếu sửa chữa) và báo khách phụ tùng đã về.`,
+      confirmText: "Nhập kho", variant: "success", checklist: ["Đã kiểm đếm đủ số lượng, đúng mã phụ tùng."],
+    });
+    if (ok) await run(() => adminApi.receivePartRequest(request.id, alreadyInStock), alreadyInStock ? "Đã đóng yêu cầu (hàng đã có trong kho)." : "Đã nhập kho và báo khách phụ tùng đã về.");
+  }
+
+  return <li className="rounded-card border border-cs-border bg-cs-surface p-4">
+    <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className="min-w-0">
+        <p className="font-semibold text-cs-text">{order?.repair_order_code ?? "—"} <span className="font-normal text-cs-muted">· {order?.vehicle?.license_plate ?? "—"}</span></p>
+        <p className="text-caption text-cs-muted">Cố vấn {order?.advisor?.full_name ?? request.created_by?.employee?.full_name ?? "—"} · báo {fmtDateTime(request.created_at)}</p>
+      </div>
+      <b className="tabular-nums text-cs-text">× {num(request.quantity)} {unit}</b>
+    </div>
+    <p className="mt-2 text-small text-cs-text-2">{request.request_note ?? (request.quotation_item_id ? "Khách đã duyệt báo giá nhưng kho không đủ hàng." : "—")}</p>
+    {request.status === "ORDERED" && <p className="mt-1 text-caption text-cs-muted">Đã đặt {fmtDateTime(request.ordered_at)}{request.supplier_note ? ` · ${request.supplier_note}` : ""}</p>}
+    {error && <p role="alert" className="mt-2 rounded-control bg-danger-soft p-2 text-small text-danger-fg">{error}</p>}
+
+    <div className="mt-3 grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)]">
+      <Field label="Ngày dự kiến về"><Input type="date" min={today()} value={eta} onChange={e => setEta(e.target.value)}/></Field>
+      <Field label="Nhà cung cấp"><Input maxLength={1000} value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Không bắt buộc"/></Field>
+      <Button variant="outline" icon="calendar" className="sm:col-span-2 sm:justify-self-end" disabled={working || !eta} onClick={() => void run(() => adminApi.orderPartRequest(request.id, { eta_date: eta, supplier_note: supplier.trim() || null }), request.status === "ORDERED" ? "Đã cập nhật ngày dự kiến về." : "Đã ghi đặt hàng.")}>
+        {request.status === "ORDERED" ? "Cập nhật" : "Đã đặt hàng"}
+      </Button>
+    </div>
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <Button variant="success" icon="box" disabled={working} onClick={() => void receive(false)}>Hàng đã về — nhập kho</Button>
+      {stock >= request.quantity && <Button variant="ghost" size="sm" disabled={working} onClick={() => void receive(true)}>Đã có trong kho</Button>}
+      <span className="flex-1"/>
+      {cancelReason === null
+        ? <Button variant="ghost" size="sm" tone="danger" icon="x" disabled={working} onClick={() => setCancelReason("")}>Huỷ yêu cầu</Button>
+        : <span className="flex w-full flex-wrap items-end gap-2">
+          <Field label="Lý do huỷ" className="min-w-48 flex-1"><Input minLength={5} maxLength={1000} value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="VD: khách tự mua, ngừng sản xuất"/></Field>
+          <Button size="sm" disabled={working} onClick={() => setCancelReason(null)}>Đóng</Button>
+          <Button size="sm" variant="danger-outline" icon="x" disabled={working || cancelReason.trim().length < 5} onClick={() => void run(() => adminApi.cancelPartRequest(request.id, cancelReason.trim()), "Đã huỷ yêu cầu phụ tùng.")}>Huỷ yêu cầu</Button>
+        </span>}
+    </div>
+  </li>;
+}
+
+export function PartOrders({ rows, loading, error, onRetry, onChanged }: {
+  rows: AdminPartRequest[]; loading: boolean; error?: string; onRetry: () => void; onChanged: () => void;
+}) {
+  const { notify } = useAppFeedback();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [openPart, setOpenPart] = useState<number | null>(null);
+  const groups = useMemo(() => groupByPart(rows), [rows]);
+  const needle = search.trim().toLowerCase();
+  const shown = groups.filter(g => (filter === "all" || g.stage === filter)
+    && (!needle || `${g.name} ${g.sku ?? ""} ${g.requests.map(r => `${r.repair_order?.repair_order_code} ${r.repair_order?.vehicle?.license_plate}`).join(" ")}`.toLowerCase().includes(needle)));
+  const selected = groups.find(g => g.partId === openPart) ?? null;
+
+  const columns: Column<Group>[] = [
+    { key: "part", header: "Phụ tùng", primary: true, render: g => <span><b className="text-cs-text">{g.name}</b><span className="block text-caption text-cs-muted">{g.sku}</span></span> },
+    { key: "needed", header: "Cần", align: "right", render: g => <b className="tabular-nums">{num(g.needed)}{g.unit ? ` ${g.unit}` : ""}</b> },
+    { key: "stock", header: "Tồn kho", align: "right", hideOnMobile: true, render: g => <span className={`tabular-nums ${g.stock >= g.needed ? "text-success-fg" : "text-cs-text-2"}`}>{num(g.stock)}</span> },
+    { key: "orders", header: "Cho phiếu", render: g => <span className="text-small">{g.requests.map(r => r.repair_order?.repair_order_code).join(", ")}</span> },
+    { key: "stage", header: "Trạng thái", render: g => <span className="flex flex-col items-start gap-0.5"><Pill tone={STAGE[g.stage].tone}>{STAGE[g.stage].label}</Pill>{g.eta && <span className="text-caption text-cs-muted">về {fmtDay(g.eta)}</span>}</span> },
+  ];
+
+  const changed = (message: string) => { notify(message, "success"); onChanged(); };
+
+  return <SplitView paneOpen={!!selected} onClose={() => setOpenPart(null)} paneWidth={460}
+    paneTitle={<span className="flex items-center gap-2 text-cs-accent-text"><Icon name="box" size={18}/>{selected?.name}</span>}
+    pane={selected && <div className="space-y-3">
+      <p className="text-small text-cs-text-2">Cần <b className="text-cs-text">{num(selected.needed)} {selected.unit}</b> cho {selected.requests.length} phiếu · tồn kho hiện tại <b className="text-cs-text">{num(selected.stock)}</b>.</p>
+      <ul className="space-y-3">{selected.requests.map(r => <RequestCard key={`${r.id}:${r.status}:${r.eta_date}`} request={r} stock={selected.stock} onChanged={changed}/>)}</ul>
+    </div>}
+    list={<>
+      <Toolbar>
+        <SearchInput value={search} onChange={setSearch} placeholder="Tìm phụ tùng, mã phiếu, biển số…"/>
+        <FilterSelect label="Trạng thái" value={filter} onChange={setFilter} options={[
+          { value: "all", label: "Tất cả" }, { value: "REQUESTED", label: "Cần đặt" }, { value: "OVERDUE", label: "Quá hạn" }, { value: "ORDERED", label: "Đã đặt" },
+        ]}/>
+        <ClearFilters active={search !== "" || filter !== "all"} onClear={() => { setSearch(""); setFilter("all"); }}/>
+      </Toolbar>
+      <DataTable caption="Phụ tùng cần đặt hàng" columns={columns} rows={shown} rowKey={g => g.partId} loading={loading} error={error} onRetry={onRetry}
+        onRowClick={g => setOpenPart(g.partId)} rowClassName={g => g.partId === openPart ? "bg-cs-soft/60" : g.stage === "OVERDUE" ? "bg-danger-soft/40" : ""}
+        empty={<EmptyState icon="check" title={groups.length ? "Không có phụ tùng ở trạng thái này" : "Không có phụ tùng cần đặt"} description={groups.length ? undefined : "Khi cố vấn báo thiếu phụ tùng cho phiếu sửa chữa, yêu cầu sẽ hiện ở đây."}/>}/>
+    </>}/>;
+}

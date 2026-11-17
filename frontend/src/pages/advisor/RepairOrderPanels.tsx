@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import {
-  billableQuotations, formatVnd, latestQuotation, toNumber, workflowApi,
+  billableQuotations, formatVnd, latestQuotation, openPartRequests, toNumber, workflowApi,
   type CatalogPart, type CatalogService, type InspectionResult, type QuotationLineInput, type RecommendationInput,
   type WorkflowOrder, type WorkflowQuotation,
 } from "../../services/workflowService";
 import { card, input, Notice } from "./WorkflowUI";
 import { Button, IconButton } from "../../components/ui/Button";
-import { errorText } from "./workflowFormat";
+import { errorText, formatDateTime } from "./workflowFormat";
 import { QuantityStepper } from "../../components/ui/QuantityStepper";
 import { StatusBadge } from "../../components/ui/Badge";
 import { getStatus } from "../../config/status";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
 import { CounterApprovalPanel } from "./CounterApprovalPanel";
-import { PartRequestsPanel } from "./PartRequestsPanel";
+import { PartRequestsPanel, WaitForPartsModal } from "./PartRequestsPanel";
 
 /** Panels for the steps after diagnosis; every action calls Laravel and then reloads the order. */
 type PanelProps = { order: WorkflowOrder; onChanged: (message: string) => Promise<void> };
@@ -61,7 +61,7 @@ function ApprovalHistory({ quotation }: { quotation: WorkflowQuotation }) {
   </details>;
 }
 
-export function QuotationPanel({ order, onChanged }: PanelProps) {
+export function QuotationPanel({ order, onChanged, onRequestClose }: PanelProps & { onRequestClose?: () => void }) {
   const { confirm } = useAppFeedback();
   const quotation = latestQuotation(order);
   const [services, setServices] = useState<CatalogService[]>([]);
@@ -145,15 +145,9 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
     await run(() => workflowApi.transition(order.id, "start-repair"), "Đã bắt đầu sửa chữa. Cập nhật từng công việc ở Bước 4.");
   }
 
-  async function closeDeclined() {
-    if (!await confirm({ title: "Đóng phiếu do khách từ chối báo giá", description: "Phiếu chuyển sang CLOSED và không thể mở lại. Chỉ làm khi khách không sửa nữa.", confirmText: "Đóng phiếu", variant: "danger" })) return;
-    await run(() => workflowApi.close(order.id, "CUSTOMER_DECLINED_QUOTE", "Khách từ chối báo giá."), "Đã đóng phiếu.");
-  }
-
   if (!quotation && !canBuild) return null;
-  return <section className={`${card} mt-6 print:hidden`}>
-    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text">Bước 3 · Báo giá</p>
-    <h2 className="mt-1 text-lg font-bold text-cs-text">Báo giá cho khách {quotation && <span className="ml-2 inline-flex items-center gap-2 text-sm font-semibold text-cs-muted">{quotation.quotation_code} <StatusBadge domain="quotation" status={quotation.status}/></span>}</h2>
+  return <section className={`${card} print:hidden`}>
+    <h2 className="text-lg font-bold text-cs-text">Báo giá cho khách {quotation && <span className="ml-2 inline-flex items-center gap-2 text-sm font-semibold text-cs-muted">{quotation.quotation_code} <StatusBadge domain="quotation" status={quotation.status}/></span>}</h2>
     <div className="mt-4">{error && <Notice tone="error">{error}</Notice>}</div>
 
     {quotation && <QuotationTable quotation={quotation}/>}
@@ -166,26 +160,26 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
     </div>}
     {quotation && ["APPROVED", "PARTIALLY_APPROVED"].includes(quotation.status) && order.status === "WAITING_APPROVAL" &&
       <div className="mt-5"><Button variant="primary" iconRight="arrow-right" loading={working} onClick={() => void startRepair()}>Bắt đầu sửa chữa</Button></div>}
-    {quotation?.status === "REJECTED" && order.status === "WAITING_APPROVAL" && <div className="mt-5 flex flex-wrap gap-3">
-      <Notice tone="error">Khách từ chối toàn bộ báo giá. Lập báo giá mới bên dưới hoặc đóng phiếu.</Notice>
-      <Button variant="danger-outline" icon="x" disabled={working} onClick={() => void closeDeclined()}>Đóng phiếu (khách từ chối)</Button>
+    {quotation?.status === "REJECTED" && order.status === "WAITING_APPROVAL" && <div className="mt-5">
+      <Notice tone="error">Khách từ chối toàn bộ báo giá. Lập báo giá mới bên dưới, hoặc đóng phiếu nếu khách không sửa nữa.</Notice>
+      {onRequestClose && <Button variant="danger-outline" icon="ban" disabled={working} onClick={onRequestClose}>Đóng phiếu (khách từ chối)</Button>}
     </div>}
 
     {canBuild && <form className="mt-6 space-y-4 border-t border-cs-border pt-5" onSubmit={event => void createQuotation(event)}>
       <h3 className="font-bold text-cs-text">{quotation ? "Lập báo giá mới" : "Lập báo giá từ kết quả chẩn đoán"}</h3>
       {!recommendations.length && <Notice>Chưa có đề xuất từ bước kiểm tra. Có thể thêm dịch vụ thủ công; phụ tùng chỉ được báo giá khi đã có trong đề xuất ở bước kiểm tra.</Notice>}
-      {lines.map(line => <div key={line.key} className="grid gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 md:grid-cols-[120px_minmax(0,2fr)_80px_140px_minmax(0,1.5fr)_auto] md:items-end">
+      {lines.map(line => <div key={line.key} className="grid gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 md:grid-cols-[110px_minmax(0,1fr)_120px_140px_auto] md:items-end">
         <label className="text-xs font-semibold text-cs-muted">Loại<select className={input} value={line.item_type} onChange={event => updateLine(line.key, { item_type: event.target.value as "SERVICE" | "PART" })}><option value="SERVICE">Dịch vụ</option><option value="PART">Phụ tùng</option></select></label>
         <label className="text-xs font-semibold text-cs-muted">Hạng mục *<select required className={input} value={line.ref_id} onChange={event => updateLine(line.key, { ref_id: event.target.value })}>
-          <option value="">— Chọn —</option>
+          <option value="">{services.length || parts.length ? "— Chọn —" : "Đang tải danh mục…"}</option>
           {line.item_type === "SERVICE"
             ? services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)
             : parts.filter(part => recommendedPartIds.has(part.id)).map(part => <option key={part.id} value={part.id}>{part.name} · tồn {part.inventory?.quantity ?? 0}</option>)}
         </select></label>
-        <div className="text-xs font-semibold text-cs-muted">SL<QuantityStepper label="Số lượng" max={9999} className="mt-1 w-[112px]" value={Number(line.quantity) || 1} onChange={v => updateLine(line.key, { quantity: String(v ?? 1) })}/></div>
+        <div className="text-xs font-semibold text-cs-muted">SL<QuantityStepper label="Số lượng" max={9999} className="mt-1 w-28" value={Number(line.quantity) || 1} onChange={v => updateLine(line.key, { quantity: String(v ?? 1) })}/></div>
         <label className="text-xs font-semibold text-cs-muted">Đơn giá (₫)<input className={input} type="number" min="0" step="any" required value={line.unit_price} onChange={event => updateLine(line.key, { unit_price: event.target.value })}/></label>
-        <label className="text-xs font-semibold text-cs-muted">Mô tả (tùy chọn)<input className={input} value={line.description} onChange={event => updateLine(line.key, { description: event.target.value })} placeholder="Mặc định: tên hạng mục"/></label>
         <IconButton icon="trash" tone="danger" label="Xóa dòng báo giá" onClick={() => setLines(previous => previous.filter(item => item.key !== line.key))}/>
+        <label className="text-xs font-semibold text-cs-muted md:col-span-5">Mô tả cho khách (tùy chọn)<input className={input} value={line.description} onChange={event => updateLine(line.key, { description: event.target.value })} placeholder="Mặc định: tên hạng mục"/></label>
       </div>)}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap gap-3">
@@ -207,6 +201,8 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
   const [partId, setPartId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [note, setNote] = useState("");
+  const [waitDialog, setWaitDialog] = useState(false);
+  const pendingParts = openPartRequests(order);
   // Báo giá gốc + phát sinh đã duyệt (khớp backend billableQuotationIds).
   const approvedParts = billableQuotations(order).flatMap(q => q.items ?? []).filter(item => item.item_type === "PART" && item.is_approved);
   const workItems = order.work_items ?? [];
@@ -234,12 +230,15 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
   }
 
   if (!inRepair && !workItems.length) return null;
-  return <section className={`${card} mt-6 print:hidden`}>
-    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text">Bước 4 · Sửa chữa</p>
-    <h2 className="mt-1 text-lg font-bold text-cs-text">Tiến độ sửa chữa</h2>
+  return <section className={`${card} print:hidden`}>
+    <h2 className="text-lg font-bold text-cs-text">Tiến độ sửa chữa</h2>
     <div className="mt-4">{error && <Notice tone="error">{error}</Notice>}</div>
-    {order.status === "WAITING_FOR_PARTS" && <Notice>Phiếu đang chờ phụ tùng. Khi hàng về, bấm Tiếp tục sửa chữa.</Notice>}
-    {order.estimated_ready_at && inRepair && <p className="mb-3 text-sm text-cs-text" data-testid="estimated-ready">Dự kiến xong: <strong>{new Date(order.estimated_ready_at).toLocaleString("vi-VN")}</strong> <span className="text-xs text-cs-muted">(theo phút chuẩn của các bước)</span></p>}
+    {order.status === "WAITING_FOR_PARTS" && (pendingParts.length
+      ? <Notice>Đang chờ {pendingParts.length} phụ tùng — kho đặt hàng và nhập kho khi hàng về. Khi đủ phụ tùng, bấm Tiếp tục sửa chữa.</Notice>
+      : order.part_requests?.some(r => r.status === "RECEIVED")
+        ? <Notice tone="success">Phụ tùng đã về đủ. Có thể tiếp tục sửa chữa.</Notice>
+        : <Notice>Phiếu đang chờ phụ tùng nhưng chưa ghi thiếu phụ tùng nào. Bấm "Báo thiếu phụ tùng" bên dưới để kho đặt hàng.</Notice>)}
+    {order.estimated_ready_at && inRepair && <p className="mb-3 text-sm text-cs-text" data-testid="estimated-ready">Dự kiến xong: <strong>{formatDateTime(order.estimated_ready_at)}</strong> <span className="text-xs text-cs-muted">(theo phút chuẩn của các bước)</span></p>}
 
     <h3 className="mb-2 text-sm font-bold text-cs-text">Công việc ({workItems.length - unfinished}/{workItems.length} xong)</h3>
     {workItems.length ? <ul className="space-y-2">{workItems.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 text-sm">
@@ -266,17 +265,19 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
     {inRepair && <div className="mt-6 space-y-3 border-t border-cs-border pt-5">
       <label className="block text-xs font-semibold text-cs-muted">Ghi chú (tùy chọn)<input className={input} value={note} onChange={event => setNote(event.target.value)} placeholder="Ví dụ: đã chạy thử 5 km, phanh ổn định"/></label>
       <div className="flex flex-wrap gap-3">
-        {order.status === "IN_PROGRESS" && <Button variant="secondary" icon="clock" disabled={working} onClick={() => void run(() => workflowApi.transition(order.id, "waiting-for-parts", note.trim() || undefined), "Phiếu chuyển sang chờ phụ tùng.")}>Chờ phụ tùng</Button>}
+        {order.status === "IN_PROGRESS" && <Button variant="secondary" icon="clock" disabled={working} onClick={() => setWaitDialog(true)}>Chờ phụ tùng</Button>}
         {order.status === "WAITING_FOR_PARTS" && <Button variant="primary" iconRight="arrow-right" loading={working} onClick={() => void run(() => workflowApi.transition(order.id, "resume", note.trim() || undefined), "Tiếp tục sửa chữa.")}>Tiếp tục sửa chữa</Button>}
         {order.status === "IN_PROGRESS" && <Button variant="primary" iconRight="arrow-right" disabled={working || unfinished > 0} onClick={() => void complete()}>Hoàn thành sửa chữa</Button>}
       </div>
       {order.status === "IN_PROGRESS" && unfinished > 0 && <p className="text-xs text-cs-muted">Còn {unfinished} công việc chưa xong nên chưa thể hoàn thành phiếu.</p>}
+      {order.status === "WAITING_FOR_PARTS" && pendingParts.length > 0 && <p className="text-xs text-cs-muted">Phụ tùng chưa về hết: muốn tiếp tục sửa (làm hạng mục khác trước) thì ghi lý do ở ô Ghi chú (ít nhất 5 ký tự).</p>}
     </div>}
+    {waitDialog && <WaitForPartsModal order={order} open onClose={() => setWaitDialog(false)} onDone={onChanged}/>}
   </section>;
 }
 
 
-const paymentMethodText: Record<string, string> = { DIRECT: "Tiền mặt", QR: "QR", VNPAY: "VNPay" };
+const paymentMethodText: Record<string, string> = { DIRECT: "Tiền mặt", TRANSFER: "Chuyển khoản", CARD: "Thẻ ngân hàng", EWALLET: "Ví điện tử", QR: "QR", VNPAY: "VNPay" };
 
 export function PaymentPanel({ order, onChanged }: PanelProps) {
   const { confirm } = useAppFeedback();
@@ -314,10 +315,14 @@ export function PaymentPanel({ order, onChanged }: PanelProps) {
     await run(() => workflowApi.transition(order.id, "hand-over"), "Đã bàn giao xe. Phiếu sửa chữa hoàn tất.");
   }
 
+  // Xe nhận theo biên bản: chỉ bàn giao khi chủ xe đã xác nhận biên bản trả xe (backend cũng chặn).
+  const needsCheckout = !!order.requires_check_in && !(order.handovers ?? []).some(h => h.type === "CHECK_OUT" && h.status === "CONFIRMED");
+  const handOverBlocker = !order.quality_checked_at ? "Hoàn tất kiểm tra sau sửa chữa (phía trên) trước khi bàn giao xe."
+    : invoice?.status !== "PAID" ? "Thu đủ tiền để bàn giao xe." : needsCheckout ? "Cần biên bản trả xe được chủ xe xác nhận (bên dưới) trước khi bàn giao." : "";
+
   if (!["COMPLETED", "HANDED_OVER"].includes(order.status)) return null;
-  return <section className={`${card} mt-6`}>
-    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text print:hidden">Bước 5 · Thanh toán & bàn giao</p>
-    <h2 className="mt-1 text-lg font-bold text-cs-text">Hóa đơn {invoice && <span className="ml-2 inline-flex items-center gap-2 text-sm font-semibold text-cs-muted">{invoice.invoice_code} <StatusBadge domain="invoice" status={invoice.status}/></span>}</h2>
+  return <section className={card}>
+    <h2 className="text-lg font-bold text-cs-text">Hóa đơn {invoice && <span className="ml-2 inline-flex items-center gap-2 text-sm font-semibold text-cs-muted">{invoice.invoice_code} <StatusBadge domain="invoice" status={invoice.status}/></span>}</h2>
     <div className="mt-4 print:hidden">{error && <Notice tone="error">{error}</Notice>}</div>
     {!invoice && <div className="print:hidden"><p className="mb-4 text-sm text-cs-muted">Hóa đơn được tính từ các hạng mục khách đã duyệt trong báo giá.</p>
       <Button variant="primary" icon="receipt" loading={working} onClick={() => void run(() => workflowApi.createInvoice(order.id), "Đã lập hóa đơn. Thu tiền mặt tại quầy.")}>Lập hóa đơn</Button></div>}
@@ -336,8 +341,8 @@ export function PaymentPanel({ order, onChanged }: PanelProps) {
         {cashGiven && <p className="text-sm text-cs-text md:col-span-3">{change >= 0 ? `Tiền thối lại khách: ${formatVnd(change)}` : `Khách đưa thiếu ${formatVnd(-change)}`}</p>}
       </form>}
       {order.status === "COMPLETED" && <div className="mt-5 print:hidden">
-        <Button variant="success" size="lg" icon="car" loading={working} disabled={invoice.status !== "PAID"} onClick={() => void handOver()}>Bàn giao xe cho khách</Button>
-        {invoice.status !== "PAID" && <p className="mt-2 text-xs text-cs-muted">Thu đủ tiền để bàn giao xe.</p>}
+        <Button variant="success" size="lg" icon="car" loading={working} disabled={!!handOverBlocker} onClick={() => void handOver()}>Bàn giao xe cho khách</Button>
+        {handOverBlocker && <p className="mt-2 text-xs text-cs-muted">{handOverBlocker}</p>}
       </div>}
       {order.status === "HANDED_OVER" && <div className="mt-5"><Notice tone="success">Đã bàn giao xe. Khách có thể gửi đánh giá dịch vụ.</Notice></div>}
     </>}
@@ -448,7 +453,7 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
   }
 
   const recEditor = <div className="space-y-3">
-    {recs.map(row => <div key={row.key} className="grid gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 md:grid-cols-[120px_minmax(0,2fr)_80px_minmax(0,1.5fr)_auto] md:items-end">
+    {recs.map(row => <div key={row.key} className="grid gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 md:grid-cols-[110px_minmax(0,2fr)_120px_minmax(0,1.5fr)_auto] md:items-end">
       <label className="text-xs font-semibold text-cs-muted">Loại<select className={input} value={row.item_type} onChange={event => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, item_type: event.target.value as "SERVICE" | "PART", ref_id: "" } : item))}><option value="SERVICE">Dịch vụ</option><option value="PART">Phụ tùng</option></select></label>
       <label className="text-xs font-semibold text-cs-muted">{row.item_type === "PART" ? "Phụ tùng" : "Dịch vụ"} *<select required className={input} value={row.ref_id} onChange={event => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, ref_id: event.target.value } : item))}>
         <option value="">— Chọn —</option>
@@ -456,7 +461,7 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
           ? services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)
           : parts.map(part => <option key={part.id} value={part.id}>{part.name} · tồn {part.inventory?.quantity ?? 0} {part.unit || ""}</option>)}
       </select></label>
-      <div className="text-xs font-semibold text-cs-muted">SL<QuantityStepper label="Số lượng đề xuất" max={9999} className="mt-1 w-[112px]" value={Number(row.quantity) || 1} onChange={v => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, quantity: String(v ?? 1) } : item))}/></div>
+      <div className="text-xs font-semibold text-cs-muted">SL<QuantityStepper label="Số lượng đề xuất" max={9999} className="mt-1 w-28" value={Number(row.quantity) || 1} onChange={v => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, quantity: String(v ?? 1) } : item))}/></div>
       <label className="text-xs font-semibold text-cs-muted">Lý do (tùy chọn)<input className={input} value={row.note} onChange={event => setRecs(previous => previous.map(item => item.key === row.key ? { ...item, note: event.target.value } : item))} placeholder="Ví dụ: má phanh còn 2mm"/></label>
       <IconButton icon="trash" tone="danger" label="Xóa đề xuất" onClick={() => setRecs(previous => previous.filter(item => item.key !== row.key))}/>
     </div>)}
@@ -466,9 +471,8 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
     </div>
   </div>;
 
-  return <section className={`${card} mt-6`}>
-    <p className="text-xs font-bold uppercase tracking-[0.14em] text-cs-accent-text print:hidden">Bước 2 · Kiểm tra & chẩn đoán</p>
-    <h2 className="mt-1 text-lg font-bold text-cs-text">Kiểm tra và chẩn đoán</h2>
+  return <section className={card}>
+    <h2 className="text-lg font-bold text-cs-text">Kiểm tra và chẩn đoán</h2>
     <div className="mt-4 print:hidden">{error && <Notice tone="error">{error}</Notice>}</div>
 
     {inspection && <div className="space-y-4 text-sm text-cs-text">
