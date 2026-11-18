@@ -5,7 +5,7 @@ import { StatusBadge } from "../../components/ui/Badge";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import { useAuthSession } from "../../contexts/authSession";
-import { advisorDashboardApi, type AdvisorDashboard as Data, type DashboardAppointment } from "../../services/workflowService";
+import { advisorDashboardApi, customerUpdatesApi, type AdvisorDashboard as Data, type CustomerUpdate, type DashboardAppointment } from "../../services/workflowService";
 import { getUserDisplayName } from "../auth/auth";
 import { DonutChart } from "../admin/kit/Charts";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
@@ -124,6 +124,54 @@ function AppointmentRows({ items, tab }: { items: DashboardAppointment[]; tab: A
   </ul>;
 }
 
+const UPDATE_TYPES: Record<CustomerUpdate["type"], { label: string; icon: IconName; tone: string }> = {
+  BOOKED: { label: "Đặt lịch mới", icon: "plus", tone: "bg-info-soft text-info-fg" },
+  RESCHEDULED: { label: "Tự đổi lịch", icon: "refresh", tone: "bg-warning-soft text-warning-fg" },
+  CONFIRMED: { label: "Xác nhận qua email", icon: "check", tone: "bg-success-soft text-success-fg" },
+  CANCELLED: { label: "Tự hủy lịch", icon: "x", tone: "bg-danger-soft text-danger-fg" },
+};
+const ddmm = (iso: string) => { const [, m, d] = iso.split("-"); return `${d}/${m}`; };
+/** "vừa xong", "15 phút trước", "3 giờ trước", quá 1 ngày → dd/mm HH:mm. */
+function ago(iso: string | null, now: Date) {
+  if (!iso) return "";
+  const at = new Date(iso);
+  const minutes = Math.floor((now.getTime() - at.getTime()) / 60_000);
+  if (minutes < 1) return "vừa xong";
+  if (minutes < 60) return `${minutes} phút trước`;
+  if (minutes < 24 * 60) return `${Math.floor(minutes / 60)} giờ trước`;
+  return `${String(at.getDate()).padStart(2, "0")}/${String(at.getMonth() + 1).padStart(2, "0")} ${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
+}
+
+/** Cập nhật từ khách: khu nhân viên chưa có chuông thông báo — những việc khách tự làm với lịch hẹn hiện ở đây. Bấm dòng → mở lịch. */
+function CustomerUpdates({ now }: { now: Date }) {
+  const navigate = useNavigate();
+  const query = useAdminQuery("advisor-customer-updates", signal => customerUpdatesApi(signal));
+  const items = query.data ?? query.stale;
+  const open = (u: CustomerUpdate) => navigate(["PENDING", "CONFIRMED"].includes(u.appointment.status)
+    ? `/advisor/reception?appointment=${u.appointment.id}` : "/advisor/appointments");
+  return <Panel title="Cập nhật từ khách" icon="bell" action={<button type="button" onClick={query.reload} className="inline-flex cursor-pointer items-center gap-1 text-caption font-semibold text-cs-text-2 hover:text-cs-accent-text"><Icon name="refresh" size={14}/>Làm mới</button>}>
+    {!items ? (query.error ? <ErrorState compact description={query.error} onRetry={query.reload}/> : <LoadingState compact/>)
+      : !items.length ? <EmptyState compact icon="bell" title="Chưa có cập nhật" description="Khi khách đặt, đổi, xác nhận hoặc hủy lịch, thông tin sẽ hiện ở đây."/>
+      : <ul className="space-y-0.5 px-2 pb-3">
+        {items.map(u => {
+          const t = UPDATE_TYPES[u.type];
+          const a = u.appointment;
+          const when = u.type === "RESCHEDULED" && u.old_date && u.old_time
+            ? `${u.old_time} ${ddmm(u.old_date)} → ${a.appointment_time} ${ddmm(a.appointment_date)}`
+            : `${a.appointment_time} ${ddmm(a.appointment_date)}`;
+          return <li key={u.key}><button type="button" onClick={() => open(u)} className="flex w-full cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-cs-hover">
+            <span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${t.tone}`} aria-hidden="true"><Icon name={t.icon} size={15}/></span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-baseline justify-between gap-2"><b className="truncate text-small text-cs-text">{u.customer_name || "Khách hàng"}</b><span className="shrink-0 text-caption text-cs-muted">{ago(u.at, now)}</span></span>
+              <span className="block truncate text-caption text-cs-text-2">{t.label} · <span className="tabular-nums">{when}</span></span>
+              <span className="block truncate text-caption text-cs-muted">{[a.vehicle, a.license_plate || "xxx.xx"].filter(Boolean).join(" · ")}</span>
+            </span>
+          </button></li>;
+        })}
+      </ul>}
+  </Panel>;
+}
+
 function TodoRow({ to, icon, label, count, highlight }: { to: string; icon: IconName; label: string; count: number; highlight?: boolean }) {
   return <li><Link to={to} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-cs-hover">
     <Icon name={icon} size={18} className="shrink-0 text-cs-accent-text"/>
@@ -196,6 +244,7 @@ function DashboardBody({ data, name }: { data: Data; name: string }) {
             <TodoRow to="/advisor/service-orders?group=deliver" icon="cash" label="Thu tiền & bàn giao xe" count={todo.ready_delivery}/>
           </ul>
         </Panel>
+        <CustomerUpdates now={now}/>
       </div>
 
       <Panel title="Phiếu sửa chữa gần đây" icon="history" action={seeAll("/advisor/service-orders")} className="adv-area-recent">

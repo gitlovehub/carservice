@@ -11,6 +11,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
 use App\Services\AppointmentSlotService;
+use App\Services\CustomerActivityFeed;
 use App\Services\CustomerReschedulePolicy;
 use App\Support\VehicleCatalogSelection;
 use Carbon\Carbon;
@@ -415,10 +416,14 @@ class AppointmentController extends Controller
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        $oldStatus = $appointment->status;
+        $reason = $request->input('cancel_reason', 'Khách hàng chủ động hủy');
         $appointment->update([
             'status' => 'CANCELLED',
-            'cancel_reason' => $request->input('cancel_reason', 'Khách hàng chủ động hủy'),
+            'cancel_reason' => $reason,
         ]);
+        // Ghi lịch sử để cố vấn thấy ở "Cập nhật từ khách" và lịch sử lịch hẹn.
+        CustomerActivityFeed::recordCancel($appointment, $account, $oldStatus, $reason);
 
         return response()->json([
             'success' => true,

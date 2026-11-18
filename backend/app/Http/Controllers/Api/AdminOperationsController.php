@@ -57,6 +57,8 @@ class AdminOperationsController extends Controller
         'appointment.cancelled' => ['DELETE', 'Huỷ lịch hẹn'],
         'appointment.no_show' => ['STATUS', 'Đánh dấu khách không đến'],
         'appointment.rescheduled' => ['UPDATE', 'Đổi lịch hẹn'],
+        'appointment.rescheduled_by_customer' => ['UPDATE', 'Khách tự đổi lịch hẹn'],
+        'appointment.cancelled_by_customer' => ['UPDATE', 'Khách tự hủy lịch hẹn'],
         'repair_order.vehicle_changed' => ['UPDATE', 'Đổi xe trên phiếu sửa chữa'],
         'PICKUP_AUTHORIZATION_CREATED' => ['CREATE', 'Khách uỷ quyền nhận xe'],
         'VNPAY_OVERPAID' => ['STATUS', 'Thanh toán VNPAY vượt số tiền còn lại'],

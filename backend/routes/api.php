@@ -245,6 +245,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // ADV-10: Tổng quan cố vấn (một lần tải, số liệu thật).
         Route::get('advisor/dashboard', [AdvisorDashboardController::class, 'show']);
+        // "Cập nhật từ khách": khách đặt / tự đổi / xác nhận qua email / hủy lịch (chưa có chuông thông báo nhân viên).
+        Route::get('advisor/customer-updates', [AdvisorDashboardController::class, 'customerUpdates']);
 
         // ADV-04: tình trạng từng khung giờ đặt lịch trong ngày (đặt lịch hộ / đổi lịch).
         Route::get('advisor/booking-availability', [AdvisorAppointmentController::class, 'availability']);

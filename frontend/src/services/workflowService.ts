@@ -474,6 +474,20 @@ export type AdvisorDashboard = {
 export const advisorDashboardApi = (signal?: AbortSignal) =>
   fetchApi<{ data: AdvisorDashboard }>("/advisor/dashboard", { signal }).then(r => r.data);
 
+/** "Cập nhật từ khách": khách đặt lịch / tự đổi lịch / xác nhận qua email / tự hủy (mới nhất trước). */
+export type CustomerUpdate = {
+  key: string;
+  type: "BOOKED" | "RESCHEDULED" | "CONFIRMED" | "CANCELLED";
+  at: string | null;
+  customer_name: string | null;
+  reason: string | null;
+  old_date: string | null;
+  old_time: string | null;
+  appointment: { id: number; appointment_code: string; appointment_date: string; appointment_time: string; status: string; vehicle: string | null; license_plate: string | null };
+};
+export const customerUpdatesApi = (signal?: AbortSignal) =>
+  fetchApi<{ data: CustomerUpdate[] }>("/advisor/customer-updates?limit=10", { signal }).then(r => r.data);
+
 /** ADV-04: đặt lịch hộ khách. */
 export type SlotStatus = "available" | "full" | "closed" | "past";
 export type BookingAvailability = {

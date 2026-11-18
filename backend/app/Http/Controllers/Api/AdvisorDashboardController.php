@@ -7,6 +7,8 @@ use App\Models\Appointment;
 use App\Models\PartRequest;
 use App\Models\RepairOrder;
 use App\Models\RepairOrderStatusHistory;
+use App\Services\CustomerActivityFeed;
+use Illuminate\Http\Request;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +24,14 @@ class AdvisorDashboardController extends Controller
         RepairOrder::IN_PROGRESS, RepairOrder::WAITING_FOR_PARTS, RepairOrder::COMPLETED];
 
     private const ACTIVE_APPOINTMENT = ['PENDING', 'CONFIRMED', 'CHECKED_IN'];
+
+    /** GET /api/advisor/customer-updates?limit= — hoạt động gần đây do khách tự làm với lịch hẹn. */
+    public function customerUpdates(Request $request, CustomerActivityFeed $feed): JsonResponse
+    {
+        $limit = max(1, min(30, (int) $request->query('limit', 10)));
+
+        return response()->json(['data' => $feed->latest($limit)]);
+    }
 
     /** GET /api/advisor/dashboard */
     public function show(): JsonResponse
