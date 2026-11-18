@@ -2,11 +2,10 @@ import { Modal } from "../../components/ui";
 import { useEffect, useState, useRef, type ChangeEvent } from "react";
 import Header from "../../components/Header";
 import { fetchApi } from "../../services/api";
-import { formatDateTime } from "../../services/customerApi";
-import { getCustomerNotifications, type CustomerNotification } from "../../services/customerNotifications";
+import { NotificationsPanel } from "./account/NotificationsPanel";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import ContactEditModal from "../../components/customer/ContactEditModal";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Icon } from "../../components/ui/Icon";
@@ -83,11 +82,15 @@ function Account() {
     account?.customer || null,
   );
   // ?tab=security|notifications mở thẳng tab tương ứng (liên kết "Cài đặt" / đổi mật khẩu).
-  const [tab, setTab] = useState<ProfileTab>(() => {
-    const requested = new URLSearchParams(window.location.search).get("tab");
-    return (["security", "notifications"] as const).find(t => t === requested) ?? "profile";
-  });
-  const [notifications, setNotifications] = useState<CustomerNotification[] | null>(null);
+  // Tab nằm trên URL → "Xem tất cả thông báo" ở chuông mở đúng tab kể cả khi đang đứng ở trang này.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const tab: ProfileTab = (["security", "notifications"] as const).find(t => t === requestedTab) ?? "profile";
+  const setTab = (next: ProfileTab) => setSearchParams(prev => {
+    const params = new URLSearchParams(prev);
+    if (next === "profile") params.delete("tab"); else params.set("tab", next);
+    return params;
+  }, { replace: true });
 
   // Toast notification
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
@@ -130,12 +133,7 @@ function Account() {
         localStorage.setItem("user", JSON.stringify(currentAccount));
 
         if (currentAccount.role === "CUSTOMER") {
-          const [customerResult, notificationsResult] = await Promise.allSettled([
-            fetchApi("/me/customer/"),
-            getCustomerNotifications(),
-          ]);
-
-          setNotifications(notificationsResult.status === "fulfilled" ? notificationsResult.value.items : []);
+          const [customerResult] = await Promise.allSettled([fetchApi("/me/customer/")]);
 
           if (customerResult.status === "fulfilled" && customerResult.value?.data) {
             setCustomer(customerResult.value.data as CustomerProfile);
@@ -390,24 +388,7 @@ function Account() {
                 </div>
               </div>}
 
-              {tab === "notifications" && <div className="rounded-2xl border border-cs-border bg-cs-surface p-5 sm:p-6">
-                <div className="flex items-start gap-3">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-cs-soft text-cs-accent-text"><Icon name="bell" size={20}/></span>
-                  <div><h2 className="text-lg font-extrabold text-cs-text">Thông báo</h2><p className="text-sm text-cs-muted">Cập nhật về lịch hẹn, báo giá và tiến độ sửa xe của bạn.</p></div>
-                </div>
-                {notifications === null ? <p className="mt-5 text-sm text-cs-muted">Đang tải thông báo…</p>
-                  : !notifications.length ? <p className="mt-5 rounded-xl bg-cs-surface-2 px-4 py-8 text-center text-sm text-cs-muted">Bạn chưa có thông báo nào.</p>
-                    : <ul className="mt-5 divide-y divide-cs-border">{notifications.map(n =>
-                      <li key={n.id} className={`flex gap-3 py-3.5 ${n.read_at ? "" : "font-semibold"}`}>
-                        <span className={`mt-1.5 size-2 shrink-0 rounded-full ${n.read_at ? "bg-cs-border" : "bg-[#e11d2e]"}`} aria-hidden="true"/>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm text-cs-text">{n.title}</p>
-                          <p className="mt-0.5 text-sm font-normal text-cs-muted">{n.content}</p>
-                          <p className="mt-1 text-xs font-normal text-cs-muted">{formatDateTime(n.created_at)}</p>
-                        </div>
-                        {(n.repair_order_id || n.appointment_id) && <Link to={n.repair_order_id ? `/repair-status?orderId=${n.repair_order_id}` : "/customer/appointments"} className="shrink-0 self-center text-sm font-bold text-cs-accent-text no-underline hover:underline">Xem</Link>}
-                      </li>)}</ul>}
-              </div>}
+              {tab === "notifications" && <NotificationsPanel/>}
 
             </div>
 

@@ -140,6 +140,9 @@ export default function CustomerNotificationBell() {
           })}
         </div>}
       {error && items.length > 0 && <p className="v3ref-notification-error" role="alert">{error}</p>}
+      <button type="button" className="v3ref-notification-all" onClick={() => { setOpen(false); navigate('/customer/account?tab=notifications'); }}>
+        Xem tất cả thông báo <Icon name="arrow" size={15}/>
+      </button>
     </section>}
   </div>;
 }

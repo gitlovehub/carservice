@@ -14,10 +14,12 @@ class CustomerNotificationController extends Controller
     {
         $accountId = $request->user()->id;
         $query = Notification::query()->where('account_id', $accountId)->where('channel', 'WEB');
+        // Chuông: 30 tin mới nhất; trang Hồ sơ > Thông báo xin nhiều hơn (?limit=, tối đa 200).
+        $limit = max(1, min(200, (int) $request->query('limit', 30)));
 
         return response()->json([
             'success' => true,
-            'data' => (clone $query)->orderByDesc('created_at')->orderByDesc('id')->limit(30)
+            'data' => (clone $query)->orderByDesc('created_at')->orderByDesc('id')->limit($limit)
                 ->get(['id', 'appointment_id', 'repair_order_id', 'title', 'content', 'type', 'created_at', 'read_at']),
             'unread_count' => (clone $query)->whereNull('read_at')->count(),
         ]);
@@ -33,6 +35,17 @@ class CustomerNotificationController extends Controller
             ->update(['read_at' => now(), 'status' => 'READ']);
 
         return response()->json(['success' => true, 'data' => ['updated' => $updated]]);
+    }
+
+    /** DELETE /api/me/notifications — xóa toàn bộ thông báo WEB của chính tài khoản (nút "Xóa tất cả"). */
+    public function destroyAll(Request $request): JsonResponse
+    {
+        $deleted = Notification::query()
+            ->where('account_id', $request->user()->id)
+            ->where('channel', 'WEB')
+            ->delete();
+
+        return response()->json(['success' => true, 'message' => 'Đã xóa toàn bộ thông báo.', 'data' => ['deleted' => $deleted]]);
     }
 
     public function markRead(Request $request, Notification $notification): JsonResponse

@@ -878,3 +878,9 @@ html[data-theme="dark"] .v3ref-shell .v3ref-card-photo.is-empty span { color: va
 .v3ref-intro-bar::after { background: #e0283c; }
 @media (max-width:650px) { .v3ref-logo-img { height: 42px; } }
 .v3ref-avatar { overflow: hidden; }
+
+/* Chuông: nút "Xem tất cả thông báo" cuối bảng → Hồ sơ > Thông báo (lọc, xóa tất cả). */
+.v3ref-notification-all { display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; width: 100%; padding: 13px 16px; border: 0; border-top: 1px solid #f1eeee; background: white; color: #c71e30; font-size: 13px; font-weight: 800; cursor: pointer; transition: background-color .15s, color .15s; }
+.v3ref-notification-all:hover { background: #fff1f2; color: #e11d2e; }
+html[data-theme="dark"] .v3ref-notification-all { background: var(--cs-surface); border-color: var(--cs-border); color: #ff5a68; }
+html[data-theme="dark"] .v3ref-notification-all:hover { background: var(--cs-soft); }

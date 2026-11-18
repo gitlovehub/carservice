@@ -182,6 +182,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Thông báo của khách (chuông header, tạo qua CustomerNotifier): chỉ đọc/sửa bản ghi thuộc tài khoản đang đăng nhập.
         Route::get('me/notifications', [CustomerNotificationController::class, 'index']);
         Route::patch('me/notifications/read-all', [CustomerNotificationController::class, 'markAllRead']);
+        Route::delete('me/notifications', [CustomerNotificationController::class, 'destroyAll']);
         Route::patch('me/notifications/{notification}/read', [CustomerNotificationController::class, 'markRead'])->whereNumber('notification');
 
         // Đánh giá dịch vụ

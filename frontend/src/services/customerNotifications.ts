@@ -12,8 +12,9 @@ export type CustomerNotification = {
   read_at: string | null;
 };
 
-export async function getCustomerNotifications(): Promise<{items: CustomerNotification[]; unreadCount: number}> {
-  const response = await fetchApi<{data: CustomerNotification[]; unread_count: number}>("/me/notifications");
+/** Chuông: 30 tin mới nhất (mặc định); trang Hồ sơ > Thông báo xin nhiều hơn. */
+export async function getCustomerNotifications(limit?: number): Promise<{items: CustomerNotification[]; unreadCount: number}> {
+  const response = await fetchApi<{data: CustomerNotification[]; unread_count: number}>(`/me/notifications${limit ? `?limit=${limit}` : ""}`);
   return {
     items: Array.isArray(response?.data) ? response.data : [],
     unreadCount: Number(response?.unread_count ?? 0),
@@ -26,6 +27,32 @@ export async function readCustomerNotification(id: number) {
 
 export async function readAllCustomerNotifications() {
   return fetchApi("/me/notifications/read-all", {method: "PATCH"});
+}
+
+/** Xóa toàn bộ thông báo của chính khách. */
+export async function clearCustomerNotifications() {
+  return fetchApi("/me/notifications", {method: "DELETE"});
+}
+
+/* ------------------------------------------------------------------ Nhóm (bộ lọc ở Hồ sơ > Thông báo) */
+
+export type NotificationGroup = "appointment" | "quotation" | "repair" | "billing" | "review";
+export const NOTIFICATION_GROUPS: Array<{ key: NotificationGroup; label: string }> = [
+  { key: "appointment", label: "Lịch hẹn" },
+  { key: "quotation", label: "Báo giá" },
+  { key: "repair", label: "Sửa chữa" },
+  { key: "billing", label: "Hóa đơn & thanh toán" },
+  { key: "review", label: "Đánh giá" },
+];
+
+/** Nhóm của một thông báo theo type (khớp backend Notification::TYPE_*); loại lạ → theo phiếu / lịch hẹn. */
+export function notificationGroup(item: CustomerNotification): NotificationGroup {
+  const type = item.type ?? "";
+  if (type.startsWith("APPOINTMENT_")) return "appointment";
+  if (type.startsWith("QUOTATION_")) return "quotation";
+  if (type === "INVOICE_ISSUED" || type === "PAYMENT_RECEIVED") return "billing";
+  if (type.startsWith("REVIEW_")) return "review";
+  return item.repair_order_id ? "repair" : "appointment";
 }
 
 /* ------------------------------------------------------------------ Đích đến của từng loại */
