@@ -305,7 +305,7 @@ export default function AdvisorRepairOrderDetail() {
 
         <div className={visible(0)} data-step="reception">
           <ReceptionSummary order={order}/>
-          <CheckInPanel key={`check-in-${order.handovers?.map(h => `${h.id}:${h.status}`).join(",") ?? ""}`} order={order} onChanged={refreshAfterAction}/>
+          <CheckInPanel order={order} onChanged={refreshAfterAction}/>
           <QuickServicePanel key={`quick-${order.status}`} order={order} onChanged={refreshAfterAction}/>
         </div>
 
@@ -335,7 +335,7 @@ export default function AdvisorRepairOrderDetail() {
           {notYet(4) && <StepPlaceholder>Thu tiền và trả xe sau khi sửa xong. Nếu khách không sửa nữa, dùng "Thao tác khác → Đóng phiếu".</StepPlaceholder>}
           <QualityCheckPanel key={`qc-${order.quality_checked_at ?? ""}-${order.status}`} order={order} onChanged={refreshAfterAction}/>
           <PaymentPanel order={order}/>
-          <CheckInPanel type="CHECK_OUT" key={`check-out-${order.status}-${order.handovers?.map(h => `${h.id}:${h.status}`).join(",") ?? ""}`} order={order} onChanged={refreshAfterAction}/>
+          <CheckInPanel type="CHECK_OUT" order={order} onChanged={refreshAfterAction}/>
         </div>
       </div>
 

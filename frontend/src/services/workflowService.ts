@@ -161,7 +161,7 @@ export type WorkflowOrder = {
   initial_condition?: string | null;
   note?: string | null;
   received_at?: string | null;
-  customer?: { id?: number; full_name?: string; phone?: string } | null;
+  customer?: { id?: number; full_name?: string; phone?: string; email?: string | null } | null;
   vehicle?: {
     id?: number; license_plate?: string; variant?: string; year?: number | null;
     model?: { id: number; name?: string; brand?: { id: number; name?: string } | null } | null;
