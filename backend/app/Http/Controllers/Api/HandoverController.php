@@ -21,6 +21,48 @@ class HandoverController extends Controller
         private readonly ConfirmationService $confirmations,
     ) {}
 
+    /**
+     * Trang "Biên bản giao nhận" (cố vấn): mọi biên bản nhận / trả xe, mới nhất trước.
+     * GET /api/handovers?type=CHECK_IN|CHECK_OUT&status=DRAFT|SUBMITTED|CONFIRMED|VOID&search=&page=&per_page=
+     * `counts` = số biên bản theo trạng thái (cùng loại + từ khoá, bỏ lọc trạng thái) cho các thẻ thống kê.
+     */
+    public function list(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'type' => ['nullable', Rule::in([VehicleHandover::TYPE_CHECK_IN, VehicleHandover::TYPE_CHECK_OUT])],
+            'status' => ['nullable', Rule::in([VehicleHandover::STATUS_DRAFT, VehicleHandover::STATUS_SUBMITTED, VehicleHandover::STATUS_CONFIRMED, VehicleHandover::STATUS_VOID])],
+            'search' => ['nullable', 'string', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ]);
+
+        $base = VehicleHandover::query()
+            ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
+            ->when(trim((string) ($filters['search'] ?? '')), function ($q, $search) {
+                $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $search).'%';
+                $q->where(fn ($w) => $w->where('person_name', 'like', $like)
+                    ->orWhereHas('repairOrder', fn ($o) => $o->where('repair_order_code', 'like', $like)
+                        ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', $like)->orWhere('phone', 'like', $like)))
+                    ->orWhereHas('vehicle', fn ($v) => $v->where('license_plate', 'like', $like)));
+            });
+
+        $counts = (clone $base)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+
+        $page = (clone $base)
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
+            ->with([
+                'repairOrder:id,repair_order_code,status,customer_id,vehicle_id,requires_check_in',
+                'repairOrder.customer:id,full_name,phone,email',
+                'vehicle' => fn ($q) => $q->with('model.brand'),
+                'staff:id,full_name',
+                'checklistItems',
+                'confirmations',
+            ])
+            ->latest('id')
+            ->paginate($filters['per_page'] ?? 10);
+
+        return response()->json([...$page->toArray(), 'counts' => $counts]);
+    }
+
     public function index(RepairOrder $repairOrder): JsonResponse
     {
         abort_unless(Gate::allows('view', $repairOrder), 403);

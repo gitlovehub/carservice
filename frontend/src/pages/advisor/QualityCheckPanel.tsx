@@ -4,7 +4,7 @@ import { Icon } from "../../components/ui/Icon";
 import { workflowApi, type WorkflowOrder } from "../../services/workflowService";
 import { QUALITY_ITEMS } from "./repairOrderFlow";
 import { fullDayTime } from "./advisorListFormat";
-import { Notice } from "./WorkflowUI";
+import { Notice, Req } from "./WorkflowUI";
 import { errorText } from "./workflowFormat";
 
 /**
@@ -36,7 +36,7 @@ export function QualityCheckPanel({ order, onChanged, bare = false }: { order: W
 
   return <section className={bare ? "" : "rounded-2xl border border-cs-border bg-cs-surface p-5"} data-testid="quality-check">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h3 className="adv-section-title">Checklist kiểm tra sau sửa chữa</h3>
+      <h3 className="adv-section-title">Checklist kiểm tra sau sửa chữa{editing && <Req/>}</h3>
       {saved && !editing && <span className="inline-flex items-center gap-1 text-caption font-semibold text-success-fg"><Icon name="check" size={14}/>Đã kiểm tra</span>}
     </div>
     {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}

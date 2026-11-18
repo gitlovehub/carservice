@@ -14,7 +14,8 @@ import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
 import { dayTime, fullDayTime, vehicleName } from "./advisorListFormat";
 import { WaitForPartsModal } from "./PartRequestsPanel";
-import { orderStepPath } from "./repairOrderFlow";
+import { orderStepPath, stagePath } from "./repairOrderFlow";
+import { useStageRedirect } from "./useStageRedirect";
 import { errorText } from "./workflowFormat";
 import "./advisorDashboard.css";
 
@@ -197,6 +198,7 @@ function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void 
   const [tab, setTab] = useState<Tab>("progress");
   const [working, setWorking] = useState(false);
   const [waitDialog, setWaitDialog] = useState(false);
+  const redirect = useStageRedirect();
   const detail = useAdminQuery(`progress-order:${id}`, () => workflowApi.order(id));
   const order = detail.data;
 
@@ -223,7 +225,14 @@ function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void 
   }
   async function complete() {
     if (!order || !await confirm({ title: "Hoàn thành sửa chữa", reference: order.repair_order_code, description: "Xác nhận xe đã sửa xong và chạy thử đạt. Sau bước này cố vấn lập hóa đơn để thu tiền.", confirmText: "Hoàn thành" })) return;
-    await run(() => workflowApi.transition(order.id, "complete"), "Phiếu đã hoàn thành sửa chữa. Tiếp theo: lập hóa đơn.");
+    setWorking(true);
+    try {
+      await workflowApi.transition(order.id, "complete");
+      notify("Phiếu đã hoàn thành sửa chữa. Tiếp theo: kiểm tra sau sửa chữa và thu tiền.", "success");
+      // Sửa xong → tự sang trang Kiểm tra & bàn giao.
+      if (!(await redirect(order))) onChanged();
+    } catch (err) { notify(errorText(err), "error"); }
+    finally { setWorking(false); }
   }
 
   const TABS: Array<{ id: Tab; label: string; icon: IconName }> = [
@@ -248,7 +257,6 @@ function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void 
           <span>Khách hàng: <b className="text-cs-text">{order.customer?.full_name || "—"}</b></span>
         </p>
       </div>
-      <Link className={buttonClass({ variant: "outline", size: "sm" })} to={orderStepPath(order.id, 3)}><Icon name="arrow-right" size={16}/>Xem chi tiết phiếu</Link>
     </header>
 
     <div className="adv-prog-top">
@@ -350,12 +358,15 @@ function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void 
 
     <footer className="adv-ro-footer !justify-end">
       <span className="cs-btn-row">
-        <Link className={buttonClass({ variant: "outline" })} to={orderStepPath(order.id, 3)}><Icon name="edit" size={16}/>Cập nhật tiến độ</Link>
-        {order.status === "IN_PROGRESS" && <Button variant="outline" icon="box" disabled={working} onClick={() => setWaitDialog(true)}>Báo thiếu phụ tùng</Button>}
+        {order.status === "IN_PROGRESS" && <>
+          <Link className={buttonClass({ variant: "outline" })} to={orderStepPath(order.id, 3)}><Icon name="edit" size={16}/>Cập nhật tiến độ</Link>
+          <Button variant="outline" icon="box" disabled={working} onClick={() => setWaitDialog(true)}>Báo thiếu phụ tùng</Button>
+          <button type="button" className="adv-btn-gold" disabled={working || unfinished > 0}
+            title={unfinished > 0 ? `Còn ${unfinished} công việc chưa xong` : undefined} onClick={() => void complete()}><Icon name="check" size={18}/>Hoàn thành sửa chữa</button>
+        </>}
         {order.status === "WAITING_FOR_PARTS" && <Link className="adv-btn-gold" to={orderStepPath(order.id, 3)}>Tiếp tục sửa chữa<Icon name="arrow-right" size={18}/></Link>}
-        {order.status === "IN_PROGRESS" && <button type="button" className="adv-btn-gold disabled:cursor-not-allowed disabled:opacity-50" disabled={working || unfinished > 0}
-          title={unfinished > 0 ? `Còn ${unfinished} công việc chưa xong` : undefined} onClick={() => void complete()}><Icon name="check" size={18}/>Hoàn thành sửa chữa</button>}
-        {order.status === "COMPLETED" && <Link className="adv-btn-gold" to={orderStepPath(order.id, 4)}>Thu tiền & bàn giao<Icon name="arrow-right" size={18}/></Link>}
+        {order.status === "COMPLETED" && <Link className="adv-btn-gold" to={stagePath(order) ?? `/advisor/delivery?order=${order.id}`}>Kiểm tra & bàn giao<Icon name="arrow-right" size={18}/></Link>}
+        {!["IN_PROGRESS", "WAITING_FOR_PARTS", "COMPLETED"].includes(order.status) && <Link className="adv-btn-gold" to={orderStepPath(order.id, 3)}>Xem chi tiết phiếu<Icon name="arrow-right" size={18}/></Link>}
       </span>
     </footer>
     {order.status === "IN_PROGRESS" && unfinished > 0 && <p className="-mt-2 text-right text-caption text-cs-muted">Còn {unfinished} công việc chưa xong nên chưa thể hoàn thành phiếu.</p>}

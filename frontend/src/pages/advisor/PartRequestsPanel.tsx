@@ -99,9 +99,9 @@ export function PartRequestsPanel({ order, onChanged }: { order: WorkflowOrder; 
       <p className="mt-1 text-xs text-cs-muted">{row.request_note ? `Lý do: ${row.request_note}` : row.quotation_item_id ? "Tự tạo: khách đã duyệt nhưng kho không đủ hàng." : ""}{row.cancel_reason ? ` · Hủy: ${row.cancel_reason}` : ""}</p>
       {row.status === "REQUESTED" && (withdraw?.id === row.id
         ? <form className="mt-2 flex flex-wrap items-end gap-2" onSubmit={e => { e.preventDefault(); void run(() => workflowApi.cancelPartRequest(row.id, withdraw.reason.trim()), "Đã rút lại báo thiếu phụ tùng.", () => setWithdraw(null)); }}>
-          <Field label="Lý do rút lại" className="min-w-56 flex-1"><Input minLength={5} maxLength={1000} required value={withdraw.reason} onChange={e => setWithdraw({ id: row.id, reason: e.target.value })} placeholder="Ví dụ: khách tự mua phụ tùng"/></Field>
-          <Button size="sm" variant="secondary" disabled={working} onClick={() => setWithdraw(null)}>Đóng</Button>
-          <Button type="submit" size="sm" variant="danger-outline" icon="x" loading={working} disabled={withdraw.reason.trim().length < 5}>Rút lại</Button>
+          <Field label="Lý do rút lại" required className="min-w-56 flex-1"><Input minLength={5} maxLength={1000} required value={withdraw.reason} onChange={e => setWithdraw({ id: row.id, reason: e.target.value })} placeholder="Ví dụ: khách tự mua phụ tùng"/></Field>
+          <Button variant="secondary" disabled={working} onClick={() => setWithdraw(null)}>Đóng</Button>
+          <Button type="submit" variant="danger-outline" icon="x" loading={working} disabled={withdraw.reason.trim().length < 5}>Rút lại</Button>
         </form>
         : <Button size="sm" variant="ghost" tone="danger" icon="x" className="mt-1" disabled={working} onClick={() => setWithdraw({ id: row.id, reason: "" })}>Rút lại báo thiếu</Button>)}
     </li>)}</ul>}

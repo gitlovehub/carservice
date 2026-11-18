@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
-import { Button } from "../../components/ui/Button";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Dropdown } from "../../components/ui/Dropdown";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -16,7 +15,7 @@ import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
 import { RangePicker, Track } from "./advisorListKit";
 import { dayTime, fullDayTime, rangeDates, vehicleName, type Range, type TrackStep } from "./advisorListFormat";
-import { orderStepPath } from "./repairOrderFlow";
+import { orderStepPath, stagePath } from "./repairOrderFlow";
 import { errorText } from "./workflowFormat";
 import "./advisorDashboard.css";
 
@@ -186,7 +185,6 @@ function quotationTrack(order: WorkflowOrder, q: WorkflowQuotation): TrackStep[]
 type Tab = "items" | "history" | "notes";
 
 function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged: () => void }) {
-  const navigate = useNavigate();
   const { confirm, notify } = useAppFeedback();
   const [tab, setTab] = useState<Tab>("items");
   const [sending, setSending] = useState(false);
@@ -246,7 +244,6 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
       <div className="flex items-center gap-2">
         <QuoteBadge status={q.status}/>
         <Dropdown label="Thao tác khác" items={[
-          { label: "Mở bước báo giá của phiếu", icon: "clipboard", onSelect: () => navigate(quotationPath) },
           { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
         ]}/>
       </div>
@@ -265,7 +262,6 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
         <p className="flex items-center gap-2"><Icon name="phone" size={16} className="shrink-0 text-cs-muted"/>
           {order.customer?.phone ? <a className="tabular-nums text-cs-text hover:text-cs-accent-text hover:underline" href={`tel:${order.customer.phone}`}>{order.customer.phone}</a> : <span className="text-cs-muted">—</span>}</p>
       </div>
-      <Link className={buttonClass({ variant: "outline", size: "sm" })} to={orderStepPath(order.id)}><Icon name="clipboard" size={16}/>Xem phiếu sửa chữa</Link>
     </div>
 
     <div role="tablist" aria-label="Nội dung báo giá" className="adv-ro-tabs adv-ro-tabs-3">
@@ -346,13 +342,13 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
       <span className="cs-btn-row">
         {q.status === "DRAFT" && <>
           <Link className={buttonClass({ variant: "outline" })} to={quotationPath}><Icon name="edit" size={16}/>Điều chỉnh báo giá</Link>
-          <Button variant="primary" icon="send" loading={sending} onClick={() => void send()}>Gửi cho khách</Button>
+          <button type="button" className="adv-btn-gold" disabled={sending} aria-busy={sending || undefined} onClick={() => void send()}><Icon name="send" size={18}/>{sending ? "Đang gửi..." : "Gửi cho khách"}</button>
         </>}
         {q.status === "SENT" && <Link className="adv-btn-gold" to={quotationPath}><Icon name="mail" size={18}/>Khách xác nhận tại quầy</Link>}
         {q.status === "REJECTED" && order.status === "WAITING_APPROVAL" && <Link className="adv-btn-gold" to={quotationPath}><Icon name="edit" size={18}/>Lập báo giá mới</Link>}
-        {["APPROVED", "PARTIALLY_APPROVED"].includes(q.status) && <Link className="adv-btn-gold" to={orderStepPath(order.id, order.status === "WAITING_APPROVAL" ? 2 : 3)}>
+        {["APPROVED", "PARTIALLY_APPROVED"].includes(q.status) && <Link className="adv-btn-gold" to={order.status === "WAITING_APPROVAL" ? quotationPath : stagePath(order) ?? orderStepPath(order.id, 3)}>
           {order.status === "WAITING_APPROVAL" ? "Bắt đầu sửa chữa" : "Xem tiến độ sửa chữa"}<Icon name="arrow-right" size={18}/></Link>}
-        {(q.status === "CANCELLED" || (q.status === "REJECTED" && order.status !== "WAITING_APPROVAL")) && <Link className={buttonClass({ variant: "outline" })} to={orderStepPath(order.id)}><Icon name="clipboard" size={16}/>Mở phiếu</Link>}
+        {(q.status === "CANCELLED" || (q.status === "REJECTED" && order.status !== "WAITING_APPROVAL")) && <Link className="adv-btn-gold" to={orderStepPath(order.id)}><Icon name="clipboard" size={18}/>Mở phiếu</Link>}
       </span>
     </footer>
   </section>;

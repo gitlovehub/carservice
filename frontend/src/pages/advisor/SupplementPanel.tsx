@@ -6,7 +6,7 @@ import {
   type CatalogService, type QuotationLineInput, type WorkflowOrder,
 } from "../../services/workflowService";
 import { CounterApprovalPanel } from "./CounterApprovalPanel";
-import { card, input, Notice } from "./WorkflowUI";
+import { card, input, inputBare, Notice, Req } from "./WorkflowUI";
 import { errorText } from "./workflowFormat";
 
 /**
@@ -88,13 +88,13 @@ export function SupplementPanel({ order, onChanged }: { order: WorkflowOrder; on
 
     {inRepair && !pending && <form className="mt-5 space-y-3 border-t border-cs-border pt-4" onSubmit={event => void create(event)}>
       <h3 className="text-sm font-bold text-cs-text">Lập báo giá phát sinh</h3>
-      <label className="block text-xs font-semibold text-cs-muted">Lý do phát sinh (khách sẽ thấy)<textarea className={input} rows={2} required minLength={5} maxLength={1000} value={reason} onChange={e => setReason(e.target.value)}/></label>
+      <label className="block text-xs font-semibold text-cs-muted">Lý do phát sinh (khách sẽ thấy)<Req/><textarea className={input} rows={2} required minLength={5} maxLength={1000} value={reason} onChange={e => setReason(e.target.value)}/></label>
       <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-        <select className={input} aria-label="Dịch vụ phát sinh" value={serviceId} onChange={e => setServiceId(e.target.value)}><option value="">Chọn dịch vụ…</option>{services.map(s => <option key={s.id} value={s.id}>{s.name} · {formatVnd(s.base_price)}</option>)}</select>
+        <select className={inputBare} aria-label="Dịch vụ phát sinh" value={serviceId} onChange={e => setServiceId(e.target.value)}><option value="">Chọn dịch vụ…</option>{services.map(s => <option key={s.id} value={s.id}>{s.name} · {formatVnd(s.base_price)}</option>)}</select>
         <Button variant="tonal" icon="plus" disabled={!serviceId} onClick={() => addLine("SERVICE")}>Thêm dịch vụ</Button>
       </div>
       <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-        <select className={input} aria-label="Phụ tùng phát sinh" value={partId} onChange={e => setPartId(e.target.value)}><option value="">Chọn phụ tùng đã có trong đề xuất chẩn đoán…</option>{recommendedParts.map(r => <option key={r.id} value={r.part_id ?? ""}>{r.part?.name}</option>)}</select>
+        <select className={inputBare} aria-label="Phụ tùng phát sinh" value={partId} onChange={e => setPartId(e.target.value)}><option value="">Chọn phụ tùng đã có trong đề xuất chẩn đoán…</option>{recommendedParts.map(r => <option key={r.id} value={r.part_id ?? ""}>{r.part?.name}</option>)}</select>
         <Button variant="tonal" icon="plus" disabled={!partId} onClick={() => addLine("PART")}>Thêm phụ tùng</Button>
       </div>
       {lines.length > 0 && <ul className="space-y-1 text-sm">{lines.map((line, index) => <li key={index} className="flex justify-between gap-3">

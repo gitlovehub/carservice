@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { DayFilter } from "./DayFilter";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
-import { buttonClass } from "../../components/ui/buttonClass";
 import { Field, Input, Textarea } from "../../components/ui/Field";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { KmInput } from "../../components/ui/QuantityStepper";
@@ -13,13 +12,12 @@ import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import { catalogAdminApi, dmy, hhmm, type AppointmentRow } from "../../services/catalogAdminApi";
 import {
   advisorAppointment, capacityApi, checkInConfirmedAppointment, confirmPendingAppointment, counterCustomerVehicles, receiveRepairOrder, sendAppointmentConfirmationEmail, workflowApi,
-  type CatalogService, type CounterVehicle, type WorkflowAppointment, type WorkflowOrder,
+  type CatalogService, type CounterVehicle, type WorkflowAppointment,
 } from "../../services/workflowService";
 import { FilterSelect } from "../admin/kit/AdminKit";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { AppointmentHistoryPanel } from "./AppointmentHistoryPanel";
 import { CapacityWeek } from "./CapacityWeek";
-import { CheckInPanel } from "./CheckInPanel";
 import { VehicleChoiceList } from "./CounterFields";
 import { emptyVehicleDraft, toNewVehicle, vehicleDraftError, type NewVehicleDraft } from "./counterForms";
 import CustomerRequestSummary from "./CustomerRequestSummary";
@@ -129,7 +127,6 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
   const navigate = useNavigate();
   const { confirm, notify } = useAppFeedback();
   const [selected, setSelected] = useState<WorkflowAppointment | null>(null);
-  const [order, setOrder] = useState<WorkflowOrder | null>(null);
   const [loadError, setLoadError] = useState("");
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -144,39 +141,36 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
   const chosenVehicle = vehicleChoice ?? bookedVehicleId;
   const vehicleChanged = chosenVehicle === "new" || (chosenVehicle != null && bookedVehicleId != null && chosenVehicle !== bookedVehicleId);
 
-  const load = useCallback(async () => {
-    const appointment = await advisorAppointment(id);
-    const linked = appointment.repair_order ? await workflowApi.order(appointment.repair_order.id) : null;
-    return { appointment, linked };
-  }, [id]);
-  const apply = useCallback(({ appointment, linked }: { appointment: WorkflowAppointment; linked: WorkflowOrder | null }) => {
-    setSelected(appointment); setOrder(linked); setLoadError("");
-  }, []);
+  const load = useCallback(() => advisorAppointment(id), [id]);
+  // Lịch đã có phiếu → biên bản nhận xe, chẩn đoán… làm ở trang Phiếu sửa chữa (PO 18/11): tự chuyển sang phiếu.
+  const openOrder = useCallback((orderId: number, success?: string) =>
+    navigate(`/advisor/service-orders/${orderId}`, { replace: !success, state: success ? { success } : undefined }), [navigate]);
   useEffect(() => {
     let active = true;
-    load().then(r => { if (active) apply(r); }).catch(err => { if (active) setLoadError(errorText(err)); });
+    load().then(appointment => {
+      if (!active) return;
+      if (appointment.repair_order) openOrder(appointment.repair_order.id);
+      else { setSelected(appointment); setLoadError(""); }
+    }).catch(err => { if (active) setLoadError(errorText(err)); });
     return () => { active = false; };
-  }, [load, apply]);
+  }, [load, openOrder]);
   const refresh = async (message?: string) => {
-    apply(await load());
+    const appointment = await load();
     if (message) notify(message, "success");
     onChanged();
+    setSelected(appointment); setLoadError("");
   };
 
   // Xe của cùng khách: cho phép nhận xe khác lịch hẹn (bắt buộc lý do, backend ghi audit).
   useEffect(() => {
     const customerId = selected?.customer?.id ?? selected?.customer_id;
-    if (selected?.status !== "CHECKED_IN" || !customerId || order) return;
+    if (selected?.status !== "CHECKED_IN" || !customerId) return;
     let active = true;
     counterCustomerVehicles(customerId).then(list => { if (active) setVehicles(list); }).catch(() => { if (active) setVehicles([]); });
     return () => { active = false; };
-  }, [selected, order]);
+  }, [selected]);
 
-  const checkIn = order?.handovers?.slice().reverse().find(h => h.type === "CHECK_IN" && h.status !== "VOID") ?? null;
-  const step = !selected || ["PENDING", "CONFIRMED"].includes(selected.status) ? 0
-    : !order ? 1
-    : order.status !== "RECEIVED" || checkIn?.status === "CONFIRMED" ? 3
-    : checkIn?.status === "SUBMITTED" ? 2 : 1;
+  const step = !selected || ["PENDING", "CONFIRMED"].includes(selected.status) ? 0 : 1;
   useEffect(() => { onStep(step); }, [step, onStep]);
 
   // Lần gửi mail xác nhận gần nhất (activities mới nhất đứng đầu).
@@ -245,12 +239,14 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
         ...(note.trim() ? { note: note.trim() } : {}),
         ...(vehicleChanged ? { vehicle_change_reason: changeReason.trim() } : {}),
       });
-      await refresh(result.existing ? "Lịch đã có phiếu, không tạo trùng." : "Đã tạo phiếu. Lập biên bản nhận xe bên dưới.");
+      onChanged();
+      // Có phiếu → sang trang Phiếu sửa chữa để lập biên bản nhận xe, chẩn đoán, báo giá.
+      openOrder(result.order.id, result.existing ? "Lịch đã có phiếu, không tạo trùng." : "Đã tạo phiếu. Lập biên bản nhận xe (ảnh, hư hỏng, chìa khóa, giấy tờ) rồi gửi chủ xe xác nhận.");
     } catch (err) { setError(errorText(err)); }
     finally { setWorking(false); }
   }
 
-  if (loadError) return <ErrorState description={loadError} onRetry={() => void load().then(apply).catch(err => setLoadError(errorText(err)))}/>;
+  if (loadError) return <ErrorState description={loadError} onRetry={() => void refresh().catch(err => setLoadError(errorText(err)))}/>;
   if (!selected) return <LoadingState label="Đang tải lịch hẹn..."/>;
   const vehicleName = [selected.vehicle?.model?.brand?.name, selected.vehicle?.model?.name].filter(Boolean).join(" ") || selected.vehicle?.variant || "Xe của khách";
 
@@ -263,7 +259,6 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
           <p className="mt-0.5 flex flex-wrap items-center gap-2 text-small text-cs-text-2"><Icon name="calendar" size={14}/>{formatSlot(selected.appointment_date, selected.appointment_time)}{isTodayIso(selected.appointment_date) && <TodayBadge/>}<StatusBadge domain="appointment" status={selected.status}/></p>
         </div>
       </div>
-      {order && <Link to={`/advisor/service-orders/${order.id}`} className={buttonClass({ variant: "outline", size: "sm" })}><Icon name="clipboard" size={15}/>Mở phiếu {order.repair_order_code}</Link>}
     </header>
     {error && <Notice tone="error">{error}</Notice>}
 
@@ -301,14 +296,14 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
       <Button variant="primary" icon="car" loading={working} loadingText="Đang tiếp nhận..." onClick={() => void handleCheckIn()}>Khách đã đến</Button>
     </section>}
 
-    {selected.status === "CHECKED_IN" && !order && <form onSubmit={event => void submitReceive(event)} className="space-y-4 border-t border-cs-border pt-5">
+    {selected.status === "CHECKED_IN" && <form onSubmit={event => void submitReceive(event)} className="space-y-4 border-t border-cs-border pt-5">
       <p className="adv-section-title"><Icon name="car" size={17} className="text-cs-accent-text"/>Kiểm tra xe thực tế</p>
       <div>
         <p className="mb-2 text-sm font-semibold text-cs-text">Xe thực tế mang tới</p>
         <VehicleChoiceList name="received-vehicle" vehicles={vehicles} value={chosenVehicle} onChange={setVehicleChoice} bookedVehicleId={bookedVehicleId}
           newVehicle={newVehicle} onNewVehicleChange={setNewVehicle} newLabel="Xe khác, chưa có trong hệ thống"/>
       </div>
-      {vehicleChanged && <Field label="Lý do đổi xe (bắt buộc, được ghi vết)" required><Input minLength={5} maxLength={500} value={changeReason} onChange={e => setChangeReason(e.target.value)} placeholder="Ví dụ: xe đặt lịch đang đi công tác, khách mang xe còn lại"/></Field>}
+      {vehicleChanged && <Field label="Lý do đổi xe" required hint="Được ghi vết trong lịch sử phiếu."><Input minLength={5} maxLength={500} value={changeReason} onChange={e => setChangeReason(e.target.value)} placeholder="Ví dụ: xe đặt lịch đang đi công tác, khách mang xe còn lại"/></Field>}
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Số km khi tiếp nhận" optional><KmInput label="Số km khi tiếp nhận" value={mileage} onChange={setMileage}/></Field>
         <Field label="Ghi chú tiếp nhận" optional><Input maxLength={500} value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú nội bộ"/></Field>
@@ -316,21 +311,9 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
       <Field label="Khách mô tả tình trạng / yêu cầu" hint="Hiện trạng xe (trầy, móp, phụ kiện, ảnh) ghi ở biên bản nhận xe ngay sau khi tạo phiếu."><Textarea rows={2} maxLength={2000} value={condition} onChange={e => setCondition(e.target.value)}/></Field>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-cs-border pt-4">
         <p className="text-caption text-cs-muted">Mỗi lịch hẹn chỉ được có một phiếu sửa chữa.</p>
-        <Button type="submit" variant="primary" iconRight="arrow-right" loading={working} loadingText="Đang tạo phiếu...">Tạo phiếu sửa chữa & lập biên bản</Button>
+        <button type="submit" className="adv-btn-gold" disabled={working} aria-busy={working || undefined}>{working ? "Đang tạo phiếu..." : "Tạo phiếu sửa chữa & lập biên bản"}<Icon name="arrow-right" size={18}/></button>
       </div>
     </form>}
-
-    {order && order.status === "RECEIVED" && checkIn?.status !== "CONFIRMED" && <section className="border-t border-cs-border pt-5">
-      <p className="adv-section-title mb-2"><Icon name="car" size={17} className="text-cs-accent-text"/>Ghi nhận tình trạng xe ban đầu</p>
-      <p className="mb-3 text-small text-cs-muted">Đánh dấu vị trí trầy / móp trên sơ đồ, chụp ảnh từng vị trí, ghi chìa khóa và giấy tờ. Gửi biên bản để <b>chủ xe tự xác nhận</b> trong tài khoản hoặc bằng mã OTP gửi email tại quầy — nhân viên không xác nhận thay khách.</p>
-      <CheckInPanel key={`check-in-${order.handovers?.map(h => `${h.id}:${h.status}`).join(",") ?? ""}`} order={order} onChanged={message => refresh(message)}/>
-    </section>}
-
-    {order && step === 3 && <section className="flex flex-wrap items-center gap-4 rounded-2xl border border-success/40 bg-success-soft p-4">
-      <span className="grid size-11 place-items-center rounded-full bg-success-solid text-on-solid" aria-hidden="true"><Icon name="check" size={22}/></span>
-      <div className="min-w-0 flex-1"><b className="text-cs-text">{checkIn?.status === "CONFIRMED" ? "Chủ xe đã xác nhận biên bản nhận xe" : "Phiếu đã qua bước tiếp nhận"}</b><p className="text-small text-cs-text-2">Tiếp tục kiểm tra, chẩn đoán và lập báo giá trên phiếu {order.repair_order_code}.</p></div>
-      <Button variant="primary" iconRight="arrow-right" onClick={() => navigate(`/advisor/service-orders/${order.id}`)}>Chuyển sang chẩn đoán & báo giá</Button>
-    </section>}
 
     <details className="border-t border-cs-border pt-5">
       <summary className="adv-section-title cursor-pointer"><Icon name="history" size={17} className="text-cs-accent-text"/>Đổi lịch & lịch sử xác nhận</summary>

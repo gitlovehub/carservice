@@ -69,10 +69,12 @@ assert(booking.includes('icon="arrow-left"') && booking.includes('"arrow-right"'
 const cars = read('../src/pages/customer/Cars.tsx');
 assert(cars.includes('variant="primary" icon="plus"') && cars.includes('ADD_CAR_BUTTON') && cars.includes('icon="trash" tone="danger"'), 'Xe của tôi: Thêm xe nút đỏ chính (như Đăng nhập), Xóa icon đỏ');
 const panels = read('../src/pages/advisor/RepairOrderPanels.tsx');
-// Bàn giao: khóa tới khi thu đủ tiền VÀ (nếu nhận xe theo biên bản) chủ xe đã xác nhận biên bản trả xe.
-for (const needle of ['icon="send"', 'iconRight="arrow-right"', 'variant="success" icon="cash"', 'invoice?.status !== "PAID" ? "Thu đủ tiền', 'disabled={!!handOverBlocker}', 'variant="tonal" icon="plus"']) {
+for (const needle of ['icon="send"', 'iconRight="arrow-right"', 'variant="tonal" icon="plus"', 'className="adv-btn-gold"']) {
   assert(panels.includes(needle), `Phiếu sửa chữa thiếu ${needle}`);
 }
+// Bàn giao (trang Kiểm tra & bàn giao): khóa tới khi kiểm tra xong, thu đủ tiền VÀ (nếu nhận xe theo biên bản) chủ xe đã xác nhận biên bản trả xe.
+const delivery = read('../src/pages/advisor/AdvisorDelivery.tsx');
+assert(delivery.includes('disabled={working || state !== "ready"}'), 'Bàn giao: nút chỉ bấm được khi đủ điều kiện');
 const adminDashboard = read('../src/pages/admin/AdminDashboard.tsx');
 assert(adminDashboard.includes('StatCard') && adminDashboard.includes('variant="segment"'), 'Dashboard Admin: thẻ số liệu + bộ chọn khoảng thời gian');
 const accounts = read('../src/pages/admin/Accounts.tsx');

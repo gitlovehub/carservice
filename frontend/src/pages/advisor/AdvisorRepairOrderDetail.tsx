@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Button, IconButton } from "../../components/ui/Button";
 import { Icon, type IconName } from "../../components/ui/Icon";
@@ -12,7 +12,7 @@ import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import {
   formatVnd, latestQuotation, supplementQuotations, toNumber, workflowApi, type WorkflowOrder,
 } from "../../services/workflowService";
-import { CLOSE_REASONS, OPEN_STATUSES, STEPS, currentStepIndex, hasHandover, nextAction } from "./repairOrderFlow";
+import { CLOSE_REASONS, OPEN_STATUSES, STEPS, currentStepIndex, hasHandover, nextAction, stageRedirect } from "./repairOrderFlow";
 import { card, Notice } from "./WorkflowUI";
 import { errorText, formatDateTime } from "./workflowFormat";
 import { InspectionPanel, PaymentPanel, QuotationPanel, RepairPanel } from "./RepairOrderPanels";
@@ -206,6 +206,7 @@ export default function AdvisorRepairOrderDetail() {
   const id = Number(useParams().orderId);
   const { notify } = useAppFeedback();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [order, setOrder] = useState<WorkflowOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -255,13 +256,15 @@ export default function AdvisorRepairOrderDetail() {
   }, [location.state, notify]);
 
   const refreshAfterAction = useCallback(async (message: string) => {
-    const previousStatus = order?.status;
     const next = await fetchOrder();
+    notify(message, "success");
+    // Bước kế có trang riêng (Báo giá, Tiến độ, Kiểm tra & bàn giao, Thanh toán) → tự sang trang đó.
+    const target = stageRedirect(order, next, location.pathname);
+    if (target) { navigate(target); return; }
     setOrder(next);
     // Phiếu sang trạng thái mới → tự chuyển tới bước đang diễn ra.
-    if (next.status !== previousStatus) setViewStep(null);
-    notify(message, "success");
-  }, [fetchOrder, notify, order?.status]);
+    if (next.status !== order?.status) setViewStep(null);
+  }, [fetchOrder, notify, order, location.pathname, navigate]);
 
   if (loading && !order) return <main className="page-container"><LoadingState label="Đang tải phiếu sửa chữa..."/></main>;
   if (!order) return <main className="page-container"><ErrorState description={error || "Không tìm thấy phiếu."} onRetry={() => void load()}/></main>;
@@ -331,7 +334,7 @@ export default function AdvisorRepairOrderDetail() {
         <div className={visible(4)} data-step="delivery">
           {notYet(4) && <StepPlaceholder>Thu tiền và trả xe sau khi sửa xong. Nếu khách không sửa nữa, dùng "Thao tác khác → Đóng phiếu".</StepPlaceholder>}
           <QualityCheckPanel key={`qc-${order.quality_checked_at ?? ""}-${order.status}`} order={order} onChanged={refreshAfterAction}/>
-          <PaymentPanel key={`payment-${order.invoice?.id ?? 0}-${order.invoice?.payments?.length ?? 0}`} order={order} onChanged={refreshAfterAction}/>
+          <PaymentPanel order={order}/>
           <CheckInPanel type="CHECK_OUT" key={`check-out-${order.status}-${order.handovers?.map(h => `${h.id}:${h.status}`).join(",") ?? ""}`} order={order} onChanged={refreshAfterAction}/>
         </div>
       </div>

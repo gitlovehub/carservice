@@ -2,7 +2,6 @@ import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
 import { IconButton } from "../../components/ui/Button";
-import { buttonClass } from "../../components/ui/buttonClass";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import { Dropdown, type DropdownItem } from "../../components/ui/Dropdown";
 import { Icon, type IconName } from "../../components/ui/Icon";
@@ -14,7 +13,7 @@ import {
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
 import CustomerRequestSummary from "./CustomerRequestSummary";
-import { STEPS, currentStepIndex, nextAction, orderStepPath } from "./repairOrderFlow";
+import { STEPS, currentStepIndex, nextAction, orderStepPath, stagePath } from "./repairOrderFlow";
 import { RangePicker, Track } from "./advisorListKit";
 import { dayTime, rangeDates, vehicleName as vehicleNameOf, type Range, type TrackStep } from "./advisorListFormat";
 import { formatDateTime } from "./workflowFormat";
@@ -225,7 +224,6 @@ function itemRows(order: WorkflowOrder): { rows: ItemRow[]; source: "work" | "qu
 type Tab = "items" | "quote" | "progress" | "notes";
 
 function OrderPreview({ id }: { id: number }) {
-  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("items");
   const detail = useAdminQuery(`order-preview:${id}`, () => workflowApi.order(id));
   const order = detail.data ?? (detail.stale?.id === id ? detail.stale : null);
@@ -243,6 +241,11 @@ function OrderPreview({ id }: { id: number }) {
   const ctaLabel = next.tone === "wait" ? `Xem bước ${STEPS[next.step].label.toLowerCase()}`
     : ["Lập biên bản nhận xe", "Ghi kết quả kiểm tra", "Xử lý báo giá", "Cập nhật sửa chữa", order.invoice ? "Thu tiền & bàn giao" : "Lập hoá đơn"][next.step];
   const finished = next.tone === "done" || next.tone === "closed";
+  const stage = stagePath(order);
+  const stagePage = stage?.split("?")[0] ?? "";
+  const cta = !stage || stagePage.startsWith("/advisor/service-orders") ? { to: orderStepPath(order.id, next.step), label: ctaLabel }
+    : { to: stage, label: ({ "/advisor/reception": "Lập biên bản nhận xe", "/advisor/quotations": "Xem báo giá chờ duyệt", "/advisor/repair-progress": "Cập nhật sửa chữa",
+      "/advisor/payments": order.invoice ? "Thu tiền" : "Lập hoá đơn", "/advisor/delivery": "Kiểm tra & bàn giao" } as Record<string, string>)[stagePage] ?? ctaLabel };
   const TABS: Array<{ id: Tab; label: string; icon: IconName; count?: number }> = [
     { id: "items", label: "Hạng mục sửa chữa", icon: "wrench", count: items.rows.length },
     { id: "quote", label: "Báo giá", icon: "layers" },
@@ -254,14 +257,13 @@ function OrderPreview({ id }: { id: number }) {
     <header className="flex flex-wrap items-start gap-4">
       <span className="adv-ro-doc-icon" aria-hidden="true"><Icon name="clipboard" size={30}/></span>
       <div className="min-w-0 flex-1">
-        <h2 className="text-title tracking-wide text-cs-text">{order.repair_order_code || `Phiếu #${order.id}`}</h2>
+        <h2 className="text-title tracking-wide text-cs-text"><Link className="hover:text-cs-accent-text hover:underline" to={orderStepPath(order.id)} title="Mở phiếu đầy đủ">{order.repair_order_code || `Phiếu #${order.id}`}</Link></h2>
         <p className="mt-0.5 text-small text-cs-text-2">{order.appointment?.appointment_code ? `Tạo từ: Lịch hẹn ${order.appointment.appointment_code}` : "Tạo từ: Tiếp nhận khách vãng lai"}
           {order.flow_type === "QUICK" && <span className="ml-2 rounded-full bg-cs-soft px-2 py-0.5 text-caption font-semibold text-cs-on-soft">Dịch vụ nhanh</span>}</p>
       </div>
       <div className="flex items-center gap-2">
         <StatusBadge domain="repair" status={order.status}/>
         <Dropdown label="Thao tác khác" items={[
-          { label: "Mở phiếu đầy đủ", icon: "clipboard", onSelect: () => navigate(orderStepPath(order.id)) },
           { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
         ]}/>
       </div>
@@ -280,7 +282,6 @@ function OrderPreview({ id }: { id: number }) {
         <p className="flex items-center gap-2"><Icon name="phone" size={16} className="shrink-0 text-cs-muted"/>
           {order.customer?.phone ? <a className="tabular-nums text-cs-text hover:text-cs-accent-text hover:underline" href={`tel:${order.customer.phone}`}>{order.customer.phone}</a> : <span className="text-cs-muted">—</span>}</p>
       </div>
-      <Link className={buttonClass({ variant: "outline", size: "sm" })} to={orderStepPath(order.id, 0)}><Icon name="file" size={16}/>Xem tiếp nhận xe</Link>
     </div>
 
     <div role="tablist" aria-label="Nội dung phiếu" className="adv-ro-tabs">
@@ -342,8 +343,9 @@ function OrderPreview({ id }: { id: number }) {
           : <span className="text-small text-cs-muted">Chưa có báo giá</span>}
       </span>
       <span className="cs-btn-row">
-        <Link className={buttonClass({ variant: finished ? "primary" : "outline" })} to={orderStepPath(order.id)}><Icon name="clipboard" size={16}/>Mở phiếu đầy đủ</Link>
-        {!finished && <Link className="adv-btn-gold" to={orderStepPath(order.id, next.step)}>{ctaLabel}<Icon name="arrow-right" size={18}/></Link>}
+        {/* Một nút vàng đồng: tới đúng trang của việc kế tiếp (Tiếp nhận, Báo giá, Tiến độ, Thanh toán, Bàn giao) hoặc chi tiết phiếu. */}
+        {finished ? <Link className="adv-btn-gold" to={orderStepPath(order.id)}><Icon name="clipboard" size={18}/>Mở phiếu đầy đủ</Link>
+          : <Link className="adv-btn-gold" to={cta.to}>{cta.label}<Icon name="arrow-right" size={18}/></Link>}
       </span>
     </footer>
   </section>;

@@ -37,18 +37,21 @@ html[data-theme="dark"] :is(.adv-dash, .adv-theme) {
 }
 .adv-hero h1 { font-size: clamp(1.4rem, 1.1rem + 1vw, 1.9rem); font-weight: 700; line-height: 1.2; color: #fff7e8; }
 .adv-hero p { color: rgb(255 247 232 / 0.82); }
+/* Nút vàng đồng = nút primary khu cố vấn. Cao 40px như .cs-btn / ô nhập (màn hẹp 44px) để đứng cạnh nhau không lệch. */
 .adv-btn-gold {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 12px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 20px; border-radius: 12px; cursor: pointer;
   background: linear-gradient(135deg, var(--adv-gold-1), var(--adv-gold-2) 60%, var(--adv-gold-3));
   color: #1e1810; font-weight: 700; box-shadow: 0 10px 22px -12px rgb(227 187 111 / 0.9);
 }
 .adv-btn-gold:hover { filter: brightness(1.06); }
+.adv-btn-gold:disabled { cursor: not-allowed; opacity: 0.5; filter: none; }
 .adv-btn-ghost {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 12px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 18px; border-radius: 12px;
   border: 1px solid rgb(255 247 232 / 0.55); color: #fff7e8; font-weight: 600; background: rgb(0 0 0 / 0.15);
 }
 .adv-btn-ghost:hover { background: rgb(255 255 255 / 0.1); }
 :is(.adv-btn-gold, .adv-btn-ghost):focus-visible { outline: 2px solid var(--adv-gold-1); outline-offset: 2px; }
+@media (max-width: 639px) { :is(.adv-btn-gold, .adv-btn-ghost, .adv-ro-range):not(.adv-ro-create) { min-height: 44px; } }
 
 /* Thẻ */
 .adv-card {
@@ -182,7 +185,7 @@ html[data-theme="dark"] .adv-appt { background: rgb(255 255 255 / 0.03); }
 }
 .adv-ro-list-head h2 { font-size: 1.15rem; font-weight: 700; color: #fff7e8; }
 .adv-ro-range {
-  display: flex; flex: 1; min-width: 0; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; border-radius: 12px; cursor: pointer;
+  display: flex; flex: 1; min-width: 0; align-items: center; gap: 10px; min-height: 40px; padding: 0 14px; border-radius: 12px; cursor: pointer;
   border: 1px solid var(--cs-border); background: var(--cs-surface); color: var(--cs-text); font-size: 14px; font-weight: 600;
 }
 .adv-ro-range:hover { border-color: var(--cs-accent); }

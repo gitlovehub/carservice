@@ -26,6 +26,8 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Tổng quan", path: "/advisor", icon: "home", group: "Điều hành" },
     { label: "Lịch hẹn", path: "/advisor/appointments", icon: "calendar", group: "Điều hành" },
     { label: "Tiếp nhận xe", path: "/advisor/reception", icon: "car", group: "Điều hành" },
+    // Mọi biên bản nhận / trả xe ở một chỗ (PO 18/11/2026).
+    { label: "Biên bản giao nhận", path: "/advisor/handovers", icon: "shield", group: "Điều hành" },
     // Nhóm + thứ tự theo mockup PO 17/11/2026. "Đặt lịch hộ" không còn trong menu: mở từ Lịch hẹn ("Tạo lịch hẹn") hoặc Khách hàng.
     { label: "Phiếu sửa chữa", path: "/advisor/service-orders", icon: "clipboard", group: "Quản lý sửa chữa" },
     { label: "Báo giá & phê duyệt", path: "/advisor/quotations", icon: "receipt", group: "Quản lý sửa chữa" },

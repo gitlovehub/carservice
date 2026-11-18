@@ -113,3 +113,46 @@ export function deliveryState(order: WorkflowOrder): "check" | "payment" | "chec
 /** Đường dẫn mở trang chi tiết phiếu tại một bước (`?step=quotation`). */
 export const orderStepPath = (id: number, step?: number) =>
   `/advisor/service-orders/${id}${step === undefined ? "" : `?step=${STEPS[step]?.key ?? ""}`}`;
+
+/**
+ * Trang làm việc đúng cho tình trạng hiện tại của phiếu (PO 18/11: thao tác xong thì tự sang trang của bước kế):
+ * mới nhận xe → chi tiết phiếu (biên bản nhận xe, chẩn đoán); chờ khách duyệt báo giá → Báo giá & phê duyệt; đang sửa / chờ phụ tùng → Tiến độ;
+ * sửa xong → Kiểm tra & bàn giao (kiểm tra) → Thanh toán (lập hoá đơn, thu tiền) → biên bản trả xe (chi tiết phiếu) →
+ * Kiểm tra & bàn giao (bàn giao). Các việc còn lại (chẩn đoán, lập báo giá) làm ở chi tiết phiếu.
+ * Đã bàn giao / đã đóng → null (không tự chuyển).
+ */
+export function stagePath(order: WorkflowOrder): string | null {
+  const id = order.id;
+  switch (order.status) {
+    // Có phiếu rồi thì biên bản nhận xe + chẩn đoán làm ở trang Phiếu sửa chữa (kể cả xe theo lịch hẹn).
+    case "RECEIVED": return orderStepPath(id, hasHandover(order, "CHECK_IN") || !order.requires_check_in ? 1 : 0);
+    case "INSPECTING": return orderStepPath(id, 1);
+    case "QUOTING": return orderStepPath(id, 2);
+    case "WAITING_APPROVAL": {
+      const quotation = latestQuotation(order);
+      return quotation?.status === "SENT" ? `/advisor/quotations?quotation=${quotation.id}` : orderStepPath(id, 2);
+    }
+    case "IN_PROGRESS": {
+      const supplement = supplementQuotations(order).find(q => q.status === "SENT");
+      return supplement ? `/advisor/quotations?quotation=${supplement.id}` : `/advisor/repair-progress?order=${id}`;
+    }
+    case "WAITING_FOR_PARTS": return `/advisor/repair-progress?order=${id}`;
+    case "COMPLETED": {
+      const state = deliveryState(order);
+      if (state === "payment") return `/advisor/payments?order=${id}`;
+      if (state === "checkout") return orderStepPath(id, 4);
+      return `/advisor/delivery?order=${id}`;
+    }
+    default: return null;
+  }
+}
+
+/**
+ * Trang cần chuyển tới sau một thao tác: chỉ khi thao tác đưa phiếu sang bước có trang khác (trước ≠ sau)
+ * và trang đó khác trang đang đứng (`pathname`). Thao tác trong cùng bước (bắt đầu một công việc, lưu nháp…) không chuyển.
+ */
+export function stageRedirect(before: WorkflowOrder | null | undefined, after: WorkflowOrder, pathname: string): string | null {
+  const target = stagePath(after);
+  if (!target || (before && stagePath(before) === target)) return null;
+  return target.split("?")[0] === pathname ? null : target;
+}

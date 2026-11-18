@@ -264,6 +264,24 @@ export async function listRepairOrders(params: RepairOrderListParams, signal?: A
   return { ...result, counts: Array.isArray(result.counts) ? {} : (result.counts ?? {}) };
 }
 
+/** Một dòng ở trang "Biên bản giao nhận": biên bản + phiếu, khách, xe, người lập. */
+export type HandoverListRow = WorkflowHandover & {
+  repair_order_id: number; created_at?: string | null;
+  repair_order?: { id: number; repair_order_code?: string | null; status: string; customer?: { full_name?: string | null; phone?: string | null } | null } | null;
+  vehicle?: { license_plate?: string | null; model?: { name?: string | null; brand?: { name?: string | null } | null } | null } | null;
+  staff?: { full_name?: string | null } | null;
+};
+
+/** GET /api/handovers — danh sách biên bản nhận / trả xe (cố vấn), `counts` theo trạng thái. */
+export async function listHandovers(params: { page?: number; type?: string; status?: string; search?: string; perPage?: number }, signal?: AbortSignal) {
+  const query = new URLSearchParams({ page: String(params.page ?? 1), per_page: String(params.perPage ?? 10) });
+  if (params.type) query.set("type", params.type);
+  if (params.status) query.set("status", params.status);
+  if (params.search?.trim()) query.set("search", params.search.trim());
+  const result = await fetchApi<WorkflowPage<HandoverListRow> & { counts?: Record<string, number> | unknown[] }>(`/handovers?${query}`, { signal });
+  return { ...result, counts: Array.isArray(result.counts) ? {} as Record<string, number> : (result.counts ?? {}) };
+}
+
 /** Index is pagination-based; do not silently assume a single page contains every matching order. */
 export async function listWorkflowOrders(page = 1, status = ""): Promise<WorkflowPage<WorkflowOrder>> {
   const params = new URLSearchParams({ page: String(page) });

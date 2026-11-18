@@ -269,7 +269,6 @@ function VehiclePreview({ id, onEdit, onDelete }: { id: number; onEdit: (v: Vehi
       <div className="flex items-center gap-2">
         <Button variant="outline" icon="edit" onClick={() => onEdit(v)}>Chỉnh sửa</Button>
         <Dropdown label="Thao tác khác" items={[
-          ...(open ? [{ label: `Mở phiếu ${open.repair_order_code}`, icon: "clipboard" as const, onSelect: () => navigate(orderStepPath(open.id)) }] : []),
           { label: "Xem hồ sơ khách", icon: "user", onSelect: () => navigate(`/advisor/customers?customer=${v.customer_id}`) },
           { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
           { type: "separator" },
@@ -333,7 +332,6 @@ function VehiclePreview({ id, onEdit, onDelete }: { id: number; onEdit: (v: Vehi
       <span className="cs-btn-row">
         <Button variant="outline" icon="calendar" onClick={book}>Tạo lịch hẹn</Button>
         {!open && <Link className={buttonClass({ variant: "outline" })} to="/advisor/reception?mode=walk-in"><Icon name="clipboard" size={16}/>Tạo phiếu sửa chữa</Link>}
-        {open && <Link className={buttonClass({ variant: "outline" })} to={orderStepPath(open.id, 2)}><Icon name="receipt" size={16}/>Lập báo giá</Link>}
         {latest && <Link className="adv-btn-gold" to={orderStepPath((open ?? latest).id)}><Icon name="arrow-right" size={18}/>{open ? "Xem phiếu đang sửa" : "Xem chi tiết phiếu gần nhất"}</Link>}
       </span>
     </footer>

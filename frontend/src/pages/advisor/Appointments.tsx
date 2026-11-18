@@ -237,13 +237,14 @@ function Appointments() {
     await run(`email-${id}`, async () => ({ message: await sendAppointmentConfirmationEmail(id) }), "Đã gửi email xác nhận cho khách.");
   }
 
+  // Nút thao tác cỡ md (40px) để cao bằng nút ⋯ đứng cạnh.
   const primaryAction = (a: AppointmentRow) => {
     // Quá hạn: xác nhận / tiếp nhận không còn ý nghĩa → nút chính là "Khách không đến" (huỷ vẫn trong menu ⋯).
-    if (isExpired(a)) return <Button size="sm" variant="danger-outline" icon="ban" loading={busy === `noshow-${a.id}`} onClick={() => void handleNoShow(a)}>Khách không đến</Button>;
-    if (a.status === "PENDING") return <Button size="sm" variant="outline" icon="check" loading={busy === `confirm-${a.id}`} onClick={() => void handleConfirm(a)}>Xác nhận</Button>;
-    if (a.status === "CONFIRMED") return <Button size="sm" variant="primary" icon="car" loading={busy === `checkin-${a.id}`} onClick={() => void handleCheckIn(a)}>Tiếp nhận xe</Button>;
-    if (a.status === "CHECKED_IN") return <Button size="sm" variant="outline" icon="clipboard" onClick={() => navigate(`/advisor/reception?appointment=${a.id}`)}>Tạo / xem phiếu</Button>;
-    return <Button size="sm" variant="ghost" icon="eye" onClick={() => setDetail(a)}>Chi tiết</Button>;
+    if (isExpired(a)) return <Button variant="danger-outline" icon="ban" loading={busy === `noshow-${a.id}`} onClick={() => void handleNoShow(a)}>Khách không đến</Button>;
+    if (a.status === "PENDING") return <Button variant="outline" icon="check" loading={busy === `confirm-${a.id}`} onClick={() => void handleConfirm(a)}>Xác nhận</Button>;
+    if (a.status === "CONFIRMED") return <Button variant="primary" icon="car" loading={busy === `checkin-${a.id}`} onClick={() => void handleCheckIn(a)}>Tiếp nhận xe</Button>;
+    if (a.status === "CHECKED_IN") return <Button variant="outline" icon="clipboard" onClick={() => navigate(`/advisor/reception?appointment=${a.id}`)}>Tạo / xem phiếu</Button>;
+    return <Button variant="ghost" icon="eye" onClick={() => setDetail(a)}>Chi tiết</Button>;
   };
   const menu = (a: AppointmentRow): DropdownItem[] => [
     { label: "Xem chi tiết", icon: "eye", onSelect: () => setDetail(a) },
@@ -354,7 +355,7 @@ function Appointments() {
         ? <><DataTable caption="Danh sách lịch hẹn" columns={columns} rows={rows} rowKey={a => a.id} sort={tableSort.sort} onSort={tableSort.toggle}
           loading={list.loading} error={list.error || undefined} onRetry={list.reload}
           onRowClick={a => setDetail(a)}
-          actions={a => <>{primaryAction(a)}<Dropdown label={`Thao tác lịch ${a.appointment_code}`} items={menu(a)}/></>} actionsWidth="200px"
+          actions={a => <>{primaryAction(a)}<Dropdown label={`Thao tác lịch ${a.appointment_code}`} items={menu(a)}/></>} actionsWidth="230px"
           empty={<EmptyState icon="calendar" title="Không có lịch hẹn" description={emptyText}
             action={filtersActive ? <Button size="sm" variant="outline" icon="refresh" onClick={clearFilters}>Xoá bộ lọc</Button> : undefined}/>}/>
           {/* Chân bảng: tổng số (từ API) bên trái; số dòng/trang + phân trang bên phải, cùng chiều cao. */}

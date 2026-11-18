@@ -516,6 +516,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // Biên bản giao nhận xe (P2: CHECK_IN). Khách xác nhận qua tài khoản hoặc OTP email chủ xe.
         Route::controller(HandoverController::class)->group(function (): void {
+            Route::get('handovers', 'list');
             Route::get('repair-orders/{repairOrder}/handovers', 'index');
             Route::post('repair-orders/{repairOrder}/handovers', 'store');
             Route::patch('handovers/{handover}', 'update');

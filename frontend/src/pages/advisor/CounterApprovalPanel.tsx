@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "../../components/ui/Button";
 import { counterApprovalApi, type OtpSent, type QuotationDecision } from "../../services/evidenceService";
 import { formatVnd, toNumber, type WorkflowQuotation } from "../../services/workflowService";
-import { input, Notice } from "./WorkflowUI";
+import { input, Notice, Req } from "./WorkflowUI";
 import { errorText } from "./workflowFormat";
 
 /**
@@ -61,7 +61,7 @@ export function CounterApprovalPanel({ quotation, onDone }: { quotation: Workflo
     {!sent
       ? <div className="mt-3 flex justify-end"><Button variant="primary" icon="send" loading={working} onClick={() => void sendCode()}>Gửi mã tới email chủ xe</Button></div>
       : <form className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end" onSubmit={event => void verify(event)}>
-        <label className="text-xs font-semibold text-cs-muted">Mã 6 số đã gửi tới {sent.sent_to} (hết hạn {new Date(sent.expires_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })})
+        <label className="text-xs font-semibold text-cs-muted">Mã 6 số đã gửi tới {sent.sent_to} (hết hạn {new Date(sent.expires_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })})<Req/>
           <input className={input} inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} required value={code} onChange={event => setCode(event.target.value.replace(/\D/g, ""))}/>
         </label>
         <div className="flex gap-2">

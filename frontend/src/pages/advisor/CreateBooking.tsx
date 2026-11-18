@@ -12,7 +12,7 @@ import {
 import { foldText } from "../../services/vehicleCatalog";
 import { CustomerVehiclePicker } from "./CustomerVehiclePicker";
 import { emptyPick, pickError, pickPayload, vehicleTitle, type CounterPick } from "./counterForms";
-import { card, Notice, WorkflowTitle } from "./WorkflowUI";
+import { card, Notice, Req, WorkflowTitle } from "./WorkflowUI";
 import { capacityText, errorText } from "./workflowFormat";
 
 /**
@@ -176,11 +176,11 @@ export default function CreateBooking() {
         </section>}
 
         {ready && <section className={card}>
-          <h2 className="text-lg font-bold text-cs-text">Ngày & khung giờ</h2>
+          <h2 className="text-lg font-bold text-cs-text">Ngày & khung giờ<Req/></h2>
           <div className="mt-4 flex flex-wrap items-end gap-3">
             <Field label="Ngày hẹn" required><Input type="date" min={isoDay(0)} value={date} onChange={e => { if (e.target.value) { setDate(e.target.value); setTime(null); } }}/></Field>
-            <Button variant={date === isoDay(0) ? "tonal" : "outline"} size="sm" onClick={() => { setDate(isoDay(0)); setTime(null); }}>Hôm nay</Button>
-            <Button variant={date === isoDay(1) ? "tonal" : "outline"} size="sm" onClick={() => { setDate(isoDay(1)); setTime(null); }}>Ngày mai</Button>
+            <Button variant={date === isoDay(0) ? "tonal" : "outline"} onClick={() => { setDate(isoDay(0)); setTime(null); }}>Hôm nay</Button>
+            <Button variant={date === isoDay(1) ? "tonal" : "outline"} onClick={() => { setDate(isoDay(1)); setTime(null); }}>Ngày mai</Button>
           </div>
           <p className="mt-2 text-caption text-cs-muted">{fmtDay(date)}{slotsFor?.data?.open && slotsFor.data.active ? ` · mở cửa ${slotsFor.data.open}–${slotsFor.data.close} · tối đa ${slotsFor.data.max_slots} xe / khung` : ""}</p>
           {capacityDay?.over_capacity && <div className="mt-3"><Notice>

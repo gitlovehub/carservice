@@ -102,6 +102,21 @@ class VehicleCheckInTest extends TestCase
         $this->assertSame(RepairOrder::INSPECTING, RepairOrder::query()->find($this->orderId)->status);
     }
 
+    public function test_advisor_lists_handovers_with_filters_and_counts(): void
+    {
+        $submitted = $this->submitted();
+        $code = RepairOrder::query()->find($this->orderId)->repair_order_code;
+
+        $this->actingAs($this->advisor)->getJson('/api/handovers')
+            ->assertOk()->assertJsonPath('total', 1)->assertJsonPath('data.0.id', $submitted)
+            ->assertJsonPath('data.0.repair_order.repair_order_code', $code)
+            ->assertJsonPath('counts.SUBMITTED', 1);
+        $this->actingAs($this->advisor)->getJson('/api/handovers?status=CONFIRMED')->assertOk()->assertJsonPath('total', 0)->assertJsonPath('counts.SUBMITTED', 1);
+        $this->actingAs($this->advisor)->getJson('/api/handovers?type=CHECK_OUT')->assertOk()->assertJsonPath('total', 0);
+        $this->actingAs($this->advisor)->getJson('/api/handovers?search='.urlencode($code))->assertOk()->assertJsonPath('total', 1);
+        $this->actingAs($this->owner)->getJson('/api/handovers')->assertForbidden();
+    }
+
     public function test_legacy_orders_without_requirement_are_not_blocked(): void
     {
         RepairOrder::query()->whereKey($this->orderId)->update(['requires_check_in' => false]);

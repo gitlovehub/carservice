@@ -42,6 +42,7 @@ import AdvisorQuotations from "./pages/advisor/AdvisorQuotations";
 import AdvisorRepairProgress from "./pages/advisor/AdvisorRepairProgress";
 import AdvisorParts from "./pages/advisor/AdvisorParts";
 import AdvisorDelivery from "./pages/advisor/AdvisorDelivery";
+import AdvisorHandovers from "./pages/advisor/AdvisorHandovers";
 import AdvisorBilling from "./pages/advisor/AdvisorBilling";
 import AdvisorCreateBooking from "./pages/advisor/CreateBooking";
 import AdvisorDashboard from "./pages/advisor/AdvisorDashboard";
@@ -150,6 +151,7 @@ function App() {
       <Route path="repair-progress" element={<AdvisorRepairProgress/>}/>
       <Route path="parts" element={<AdvisorParts/>}/>
       <Route path="delivery" element={<AdvisorDelivery/>}/>
+      <Route path="handovers" element={<AdvisorHandovers/>}/>
       <Route path="quotation" element={<Navigate to="/advisor/quotations" replace/>}/>
       <Route path="payments" element={<AdvisorBilling/>}/>
       <Route path="profile" element={<AdminProfile area="advisor"/>}/>

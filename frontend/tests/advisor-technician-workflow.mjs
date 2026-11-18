@@ -58,7 +58,10 @@ assert.match(apiRoutes, /Route::get\('advisor\/parts'/);
 const deliveryPage = src('src/pages/advisor/AdvisorDelivery.tsx');
 assert.match(routes, /path="delivery" element=\{<AdvisorDelivery\/>\}/);
 assert.match(deliveryPage, /disabled=\{working \|\| state !== "ready"\}/);
-assert.match(src('src/pages/advisor/RepairOrderPanels.tsx'), /!order\.quality_checked_at \? "Hoàn tất kiểm tra sau sửa chữa/);
+// Thu tiền / bàn giao chỉ làm ở trang Thanh toán / Kiểm tra & bàn giao; chi tiết phiếu chỉ có một nút dẫn tới đó (PO 18/11).
+assert.match(src('src/pages/advisor/repairOrderFlow.ts'), /if \(!order\.quality_checked_at\) return "check";/);
+assert.match(src('src/pages/advisor/RepairOrderPanels.tsx'), /\/advisor\/payments\?order=\$\{order\.id\}/);
+assert.doesNotMatch(src('src/pages/advisor/RepairOrderPanels.tsx'), /"hand-over"|payCash/, 'Chi tiết phiếu không còn nút thu tiền / bàn giao trùng với trang riêng');
 assert.match(apiRoutes, /Route::post\('quality-check', 'qualityCheck'\)/);
 // Thanh toán (mockup 17/11): 4 phương thức thu tại quầy, trừ tiền mặt phải có mã giao dịch.
 const billingPage = src('src/pages/advisor/AdvisorBilling.tsx');

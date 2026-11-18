@@ -16,6 +16,7 @@ import { dayTime, fullDayTime, vehicleName } from "./advisorListFormat";
 import { QualityCheckPanel } from "./QualityCheckPanel";
 import { deliveryState, hasHandover, orderStepPath } from "./repairOrderFlow";
 import { errorText } from "./workflowFormat";
+import { useStageRedirect } from "./useStageRedirect";
 import "./advisorDashboard.css";
 
 /**
@@ -151,6 +152,7 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
   const { confirm, notify } = useAppFeedback();
   const [tab, setTab] = useState<Tab>("photos");
   const [working, setWorking] = useState(false);
+  const redirect = useStageRedirect();
   const detail = useAdminQuery(`delivery-order:${id}`, () => workflowApi.order(id));
   const order = detail.data;
 
@@ -187,7 +189,7 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
       </div>
       <div className="flex items-center gap-2"><StateBadge order={order}/>
         <Dropdown label="Thao tác khác" items={[
-          { label: "Mở bước bàn giao của phiếu", icon: "clipboard", onSelect: () => navigate(step4) },
+          { label: "Mở phiếu đầy đủ", icon: "clipboard", onSelect: () => navigate(orderStepPath(order.id)) },
           { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
         ]}/></div>
     </header>
@@ -216,7 +218,8 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
     ]}/>
 
     <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-      <QualityCheckPanel key={`${order.quality_checked_at ?? ""}`} order={order} onChanged={() => onChanged()}/>
+      {/* Kiểm tra xong mà chưa thu tiền → tự sang trang Thanh toán. */}
+      <QualityCheckPanel key={`${order.quality_checked_at ?? ""}`} order={order} onChanged={async () => { if (!(await redirect(order))) onChanged(); }}/>
       <div className="min-w-0 space-y-4">
         <div role="tablist" aria-label="Nội dung bàn giao" className="adv-ro-tabs adv-ro-tabs-3 grid-cols-2!">
           <button type="button" role="tab" aria-selected={tab === "photos"} className="adv-ro-tab" onClick={() => setTab("photos")}><Icon name="eye" size={18}/><span>Hình ảnh</span></button>
@@ -234,12 +237,10 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
             <Condition ok={!!order.quality_checked_at} label="Kiểm tra sau sửa chữa"
               detail={order.quality_checked_at ? `${order.quality_inspector?.employee?.full_name ?? "Cố vấn"} · ${fullDayTime(order.quality_checked_at)}` : handed ? "Không có — xe bàn giao trước khi có bước kiểm tra." : "Tick đủ checklist bên trái rồi lưu."}/>
             <Condition ok={invoice?.status === "PAID"} wait={!!invoice} label="Thanh toán"
-              detail={!invoice ? "Chưa lập hoá đơn." : invoice.status === "PAID" ? `Đã thu đủ ${formatVnd(invoice.total_amount)}` : `Đã thu ${formatVnd(paid)} / ${formatVnd(invoice.total_amount)}`}
-              action={!handed && <Link className={buttonClass({ variant: "outline", size: "sm" })} to={step4}>{invoice ? "Thu tiền" : "Lập hoá đơn"}</Link>}/>
+              detail={!invoice ? "Chưa lập hoá đơn." : invoice.status === "PAID" ? `Đã thu đủ ${formatVnd(invoice.total_amount)}` : `Đã thu ${formatVnd(paid)} / ${formatVnd(invoice.total_amount)}`}/>
             {order.requires_check_in
               ? <Condition ok={checkoutOk} wait={checkoutSent} label="Chủ xe xác nhận biên bản trả xe"
-                  detail={checkoutOk ? "Chủ xe đã xác nhận nhận lại xe." : checkoutSent ? "Đã gửi — chờ chủ xe xác nhận trong tài khoản hoặc bằng mã email tại quầy." : "Chưa lập biên bản trả xe."}
-                  action={!handed && <Link className={buttonClass({ variant: "outline", size: "sm" })} to={step4}>{checkoutSent ? "Mã email tại quầy" : "Lập biên bản"}</Link>}/>
+                  detail={checkoutOk ? "Chủ xe đã xác nhận nhận lại xe." : checkoutSent ? "Đã gửi — chờ chủ xe xác nhận trong tài khoản hoặc bằng mã email tại quầy." : "Chưa lập biên bản trả xe."}/>
               : <Condition ok label="Biên bản trả xe" detail="Không cần — xe không nhận theo biên bản."/>}
           </ul>
           <p className="mt-2 text-caption text-cs-muted">Chủ xe (hoặc người được uỷ quyền) tự xác nhận nhận xe — nhân viên không tick hay ký thay.</p>
@@ -249,9 +250,12 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
 
     <footer className="adv-ro-footer justify-end!">
       <span className="cs-btn-row">
-        <Link className={buttonClass({ variant: "outline" })} to={step4}><Icon name="receipt" size={16}/>{invoice ? "Hoá đơn & biên bản" : "Lập hoá đơn"}</Link>
-        {!handed && <button type="button" className="adv-btn-gold disabled:cursor-not-allowed disabled:opacity-50" disabled={working || state !== "ready"}
-          title={state !== "ready" ? "Cần đủ: kiểm tra sau sửa, thu đủ tiền, biên bản trả xe chủ xe xác nhận" : undefined} onClick={() => void handOver()}><Icon name="check" size={18}/>Xác nhận bàn giao</button>}
+        {/* Một nút vàng đồng cho việc còn thiếu: thu tiền (trang Thanh toán) → biên bản trả xe (chi tiết phiếu) → bàn giao. */}
+        {state === "payment" && <Link className="adv-btn-gold" to={`/advisor/payments?order=${order.id}`}><Icon name="cash" size={18}/>{invoice ? "Thu tiền" : "Lập hoá đơn & thu tiền"}</Link>}
+        {state === "checkout" && <Link className="adv-btn-gold" to={step4}><Icon name="file" size={18}/>{checkoutSent ? "Chủ xe xác nhận biên bản tại quầy" : "Lập biên bản trả xe"}</Link>}
+        {(state === "check" || state === "ready") && <button type="button" className="adv-btn-gold" disabled={working || state !== "ready"}
+          title={state !== "ready" ? "Tick đủ checklist kiểm tra sau sửa chữa trước" : undefined} onClick={() => void handOver()}><Icon name="check" size={18}/>Xác nhận bàn giao</button>}
+        {handed && <Link className={buttonClass({ variant: "outline" })} to={step4}><Icon name="receipt" size={16}/>Hoá đơn & biên bản</Link>}
       </span>
     </footer>
   </section>;

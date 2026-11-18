@@ -2,18 +2,20 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
 import { Badge } from "../../components/ui/Badge";
-import { Button } from "../../components/ui/Button";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Dropdown } from "../../components/ui/Dropdown";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Icon, type IconName } from "../../components/ui/Icon";
+import { controlClass } from "../../components/ui/fieldContext";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import { formatVnd, listRepairOrders, toNumber, workflowApi, type CounterMethod, type WorkflowOrder } from "../../services/workflowService";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
 import { RangePicker } from "./advisorListKit";
 import { dayTime, fullDayTime, rangeDates, vehicleName, type Range } from "./advisorListFormat";
-import { orderStepPath } from "./repairOrderFlow";
+import { orderStepPath, stagePath } from "./repairOrderFlow";
+import { useStageRedirect } from "./useStageRedirect";
+import { Req } from "./WorkflowUI";
 import { errorText } from "./workflowFormat";
 import "./advisorDashboard.css";
 
@@ -34,6 +36,8 @@ const METHODS: Array<{ id: CounterMethod; label: string; icon: IconName; code?: 
   { id: "EWALLET", label: "Ví điện tử", icon: "coins", code: "Mã giao dịch ví (MoMo, ZaloPay…)" },
 ];
 const METHOD_TEXT: Record<string, string> = { DIRECT: "Tiền mặt", TRANSFER: "Chuyển khoản", CARD: "Thẻ ngân hàng", EWALLET: "Ví điện tử", VNPAY: "VNPay (khách tự trả)", QR: "QR" };
+/** Ô nhập chuẩn (40px, màn hẹp 44px) — cùng chiều cao với nút. */
+const field = `mt-1 tabular-nums ${controlClass}`;
 const PER_PAGE = 8;
 const WIDE = "(min-width: 1280px)";
 
@@ -151,6 +155,7 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
   const [code, setCode] = useState("");
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const redirect = useStageRedirect();
   const detail = useAdminQuery(`billing-order:${id}`, () => workflowApi.order(id));
   const order = detail.data;
 
@@ -194,8 +199,10 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
     setWorking(true); setError("");
     try {
       await workflowApi.payAtCounter(invoice.id, method, amountValue, method === "DIRECT" ? undefined : code.trim());
-      notify(amountValue >= remaining - 0.001 ? "Đã thu đủ tiền. Sang Kiểm tra & bàn giao để trả xe." : "Đã ghi nhận một phần thanh toán.", "success");
-      onChanged();
+      const full = amountValue >= remaining - 0.001;
+      notify(full ? "Đã thu đủ tiền. Chuyển sang bước bàn giao xe." : "Đã ghi nhận một phần thanh toán.", "success");
+      // Thu đủ → tự sang trang của bước kế (kiểm tra & bàn giao, hoặc biên bản trả xe).
+      if (!(full && await redirect(null, order!.id))) onChanged();
     } catch (err) { setError(errorText(err)); }
     finally { setWorking(false); }
   }
@@ -216,7 +223,6 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
       <div className="flex items-center gap-2"><Badge tone={b.tone}>{b.label}</Badge>
         <Dropdown label="Thao tác khác" items={[
           { label: "Mở phiếu đầy đủ", icon: "clipboard", onSelect: () => navigate(orderStepPath(order.id, 4)) },
-          { label: "Kiểm tra & bàn giao", icon: "car", onSelect: () => navigate(`/advisor/delivery?order=${order.id}`) },
           { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
         ]}/></div>
     </header>
@@ -238,7 +244,6 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
     {!invoice ? <div className="adv-notice">
       <Icon name="info" size={18} className="text-cs-accent-text"/>
       <span className="min-w-0 flex-1 text-small">Chưa lập hoá đơn. Hoá đơn tính từ các hạng mục khách đã duyệt (báo giá gốc + phát sinh).</span>
-      {order.status === "COMPLETED" && <Button size="sm" variant="primary" icon="receipt" loading={working} onClick={() => void createInvoice()}>Lập hoá đơn</Button>}
     </div> : <>
       <div role="tablist" aria-label="Nội dung thanh toán" className="adv-ro-tabs adv-ro-tabs-3">
         {TABS.map(t => <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className="adv-ro-tab" onClick={() => setTab(t.id)}><Icon name={t.icon} size={18}/><span>{t.label}</span></button>)}
@@ -300,28 +305,30 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
           </button>)}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-caption font-semibold text-cs-muted">Số tiền thu (₫)
-            <input className="mt-1 block min-h-11 w-full rounded-control border border-cs-border bg-cs-surface px-3 text-small tabular-nums text-cs-text" type="number" min={1} max={remaining} value={amount} onChange={e => setAmountText(e.target.value)}/>
+          <label className="text-caption font-semibold text-cs-muted">Số tiền thu (₫)<Req/>
+            <input className={field} type="number" min={1} max={remaining} required value={amount} onChange={e => setAmountText(e.target.value)}/>
           </label>
           {method === "DIRECT"
             ? <label className="text-caption font-semibold text-cs-muted">Khách đưa (₫, để tính tiền thối)
-              <input className="mt-1 block min-h-11 w-full rounded-control border border-cs-border bg-cs-surface px-3 text-small tabular-nums text-cs-text" type="number" min={0} value={cashGiven} onChange={e => setCashGiven(e.target.value)}/>
+              <input className={field} type="number" min={0} value={cashGiven} onChange={e => setCashGiven(e.target.value)}/>
               {cashGiven && <span className={`mt-1 block text-small ${change >= 0 ? "text-cs-text" : "text-danger"}`}>{change >= 0 ? `Tiền thối lại: ${formatVnd(change)}` : `Khách đưa thiếu ${formatVnd(-change)}`}</span>}
             </label>
-            : <label className="text-caption font-semibold text-cs-muted">{methodDef.code} <span className="text-danger">*</span>
-              <input className="mt-1 block min-h-11 w-full rounded-control border border-cs-border bg-cs-surface px-3 text-small text-cs-text" maxLength={100} value={code} onChange={e => setCode(e.target.value)} placeholder="Bắt buộc để đối soát"/>
+            : <label className="text-caption font-semibold text-cs-muted">{methodDef.code}<Req/>
+              <input className={field} required maxLength={100} value={code} onChange={e => setCode(e.target.value)} placeholder="Bắt buộc để đối soát"/>
             </label>}
         </div>
         {error && <p className="text-small text-danger" role="alert">{error}</p>}
       </section>}
-      {invoice.status === "PAID" && order.status === "COMPLETED" && <div className="adv-notice"><Icon name="check" size={18} className="text-success-fg"/><span className="min-w-0 flex-1 text-small">Đã thu đủ tiền. Bước tiếp theo: kiểm tra sau sửa chữa (nếu chưa) và bàn giao xe.</span>
-        <Link className={buttonClass({ variant: "outline", size: "sm" })} to={`/advisor/delivery?order=${order.id}`}>Kiểm tra & bàn giao</Link></div>}
+      {invoice.status === "PAID" && order.status === "COMPLETED" && <div className="adv-notice"><Icon name="check" size={18} className="text-success-fg"/><span className="min-w-0 flex-1 text-small">Đã thu đủ tiền. Bước tiếp theo: kiểm tra sau sửa chữa (nếu chưa) và bàn giao xe.</span></div>}
     </>}
 
     <footer className="adv-ro-footer justify-end!">
       <span className="cs-btn-row">
         {invoice && <Link className={buttonClass({ variant: "outline" })} to={printPath}><Icon name="printer" size={16}/>In hoá đơn</Link>}
-        {canPay && <button type="button" className="adv-btn-gold disabled:cursor-not-allowed disabled:opacity-50" disabled={working} onClick={() => void pay()}><Icon name="check" size={18}/>Xác nhận thanh toán</button>}
+        {/* Một nút vàng đồng cho việc kế tiếp: lập hoá đơn → thu tiền → sang bàn giao. */}
+        {!invoice && order.status === "COMPLETED" && <button type="button" className="adv-btn-gold" disabled={working} onClick={() => void createInvoice()}><Icon name="receipt" size={18}/>Lập hoá đơn</button>}
+        {canPay && <button type="button" className="adv-btn-gold" disabled={working} onClick={() => void pay()}><Icon name="check" size={18}/>Xác nhận thanh toán</button>}
+        {invoice?.status === "PAID" && order.status === "COMPLETED" && <Link className="adv-btn-gold" to={stagePath(order) ?? `/advisor/delivery?order=${order.id}`}>Kiểm tra & bàn giao<Icon name="arrow-right" size={18}/></Link>}
       </span>
     </footer>
   </section>;

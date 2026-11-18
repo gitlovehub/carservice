@@ -37,7 +37,7 @@ export function fullDayTime(value?: string | null) {
   return Number.isNaN(d.valueOf()) ? value : `${d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })} · ${dayTime(value).split(" · ")[1]}`;
 }
 
-type VehicleLike = { model?: { name?: string; brand?: { name?: string } | null } | null } | null | undefined;
+type VehicleLike = { model?: { name?: string | null; brand?: { name?: string | null } | null } | null } | null | undefined;
 export const vehicleName = (vehicle: VehicleLike) => [vehicle?.model?.brand?.name, vehicle?.model?.name].filter(Boolean).join(" ") || "Chưa rõ dòng xe";
 
 export type TrackStep = { label: string; state: "done" | "active" | "todo" | "closed" | "rejected"; note?: string | null };
