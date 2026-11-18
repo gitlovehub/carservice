@@ -8,7 +8,9 @@ export const addDays = (iso: string, days: number) => { const d = parse(iso); re
 const addMonths = (iso: string, months: number) => { const d = parse(iso); return isoDay(new Date(d.getFullYear(), d.getMonth() + months, 1)); };
 const dm = (iso: string) => { const [, m, d] = iso.split("-"); return `${d}/${m}`; };
 const dmy = (iso: string) => { const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; };
-const WEEKDAYS = ["Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+/** Thứ Hai của tuần chứa ngày `iso` (tuần Thứ Hai → Chủ nhật). */
+export const weekStart = (iso: string) => addDays(iso, -((parse(iso).getDay() + 6) % 7));
+const WEEKDAYS =["Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
 
 export const todayRange = (): TimeRange => { const t = isoDay(); return { mode: "day", anchor: t, from: t, to: t }; };
 
@@ -16,17 +18,17 @@ export const todayRange = (): TimeRange => { const t = isoDay(); return { mode: 
 export function rangeBounds(r: TimeRange): { date_from: string; date_to: string } {
   switch (r.mode) {
     case "day": return { date_from: r.anchor, date_to: r.anchor };
-    case "week": return { date_from: r.anchor, date_to: addDays(r.anchor, 6) };
+    case "week": { const from = weekStart(r.anchor); return { date_from: from, date_to: addDays(from, 6) }; }
     case "month": { const first = addMonths(r.anchor, 0); return { date_from: first, date_to: addDays(addMonths(first, 1), -1) }; }
     case "custom": return r.from <= r.to ? { date_from: r.from, date_to: r.to } : { date_from: r.to, date_to: r.from };
     default: return { date_from: "", date_to: "" };
   }
 }
 
-/** ‹ › : lùi / tiến 1 ngày, 7 ngày hoặc 1 tháng tuỳ chế độ. */
+/** ‹ › : lùi / tiến 1 ngày, 1 tuần hoặc 1 tháng tuỳ chế độ. */
 export function shiftRange(r: TimeRange, dir: -1 | 1): TimeRange {
   if (r.mode === "day") return { ...r, anchor: addDays(r.anchor, dir) };
-  if (r.mode === "week") return { ...r, anchor: addDays(r.anchor, 7 * dir) };
+  if (r.mode === "week") return { ...r, anchor: addDays(weekStart(r.anchor), 7 * dir) };
   if (r.mode === "month") return { ...r, anchor: addMonths(r.anchor, dir) };
   return r;
 }
@@ -34,7 +36,10 @@ export function shiftRange(r: TimeRange, dir: -1 | 1): TimeRange {
 /** Nhãn ở giữa bộ điều hướng. */
 export function rangeLabel(r: TimeRange): string {
   if (r.mode === "day") return `${WEEKDAYS[parse(r.anchor).getDay()]}, ${dmy(r.anchor)}`;
-  if (r.mode === "week") { const to = addDays(r.anchor, 6); return `${dm(r.anchor)} – ${dmy(to)}`; }
+  if (r.mode === "week") {
+    const from = weekStart(r.anchor);
+    return from === weekStart(isoDay()) ? `Tuần này · ${dm(from)} – ${dmy(addDays(from, 6))}` : `${dm(from)} – ${dmy(addDays(from, 6))}`;
+  }
   if (r.mode === "month") { const [y, m] = r.anchor.split("-"); return `Tháng ${Number(m)}/${y}`; }
   return "";
 }

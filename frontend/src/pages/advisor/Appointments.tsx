@@ -148,7 +148,7 @@ function Appointments() {
   const [version, setVersion] = useState(0);
   const term = useDebounced(search.trim(), 350);
   const week = useMemo(() => weekRange(anchor), [anchor]);
-  // Mặc định theo khoảng xem: Ngày / 7 ngày / Tùy chỉnh → giờ hẹn sớm nhất (làm việc theo thứ tự trong ngày);
+  // Mặc định theo khoảng xem: Ngày / Tuần / Tùy chỉnh → giờ hẹn sớm nhất (làm việc theo thứ tự trong ngày);
   // Tháng / Tất cả → giờ hẹn muộn nhất (tra cứu, mới nhất trước). Người dùng đã tự chọn thì giữ lựa chọn đó.
   const [sortChoice, setSortChoice] = useState<SortState | null>(null);
   const defaultSort: SortState = range.mode === "month" || range.mode === "all" ? { key: "time", dir: "desc" } : { key: "time", dir: "asc" };
@@ -314,7 +314,11 @@ function Appointments() {
           <Button variant="outline" icon="chevron-left" onClick={() => setAnchor(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7))}>Tuần trước</Button>
           <span className="px-2 text-small font-semibold tabular-nums text-cs-text">{dmy(week.from)} – {dmy(week.to)}</span>
           <Button variant="outline" iconRight="chevron-right" onClick={() => setAnchor(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7))}>Tuần sau</Button>
-          <Button variant={onThisWeek ? "tonal" : "outline"} onClick={() => setAnchor(new Date())}>Tuần này</Button>
+          {/* Giống nút "Hôm nay": đang xem tuần này → mờ, không bấm được; tuần khác → sáng (vàng) để quay về. */}
+          <button type="button" onClick={() => setAnchor(new Date())} disabled={onThisWeek} title={onThisWeek ? "Đang xem tuần này" : "Quay về tuần này"}
+            className={`inline-flex min-h-10 shrink-0 items-center rounded-control border px-4 text-small font-semibold transition-colors max-sm:min-h-11 ${onThisWeek
+              ? "cursor-not-allowed border-cs-border bg-cs-surface text-cs-muted opacity-60"
+              : "cursor-pointer border-cs-accent bg-cs-accent text-cs-accent-contrast hover:bg-cs-accent-hover"}`}>Tuần này</button>
         </div>}
 
       {view === "list" && availability.data && <SlotNotice data={availability.data} onWeek={() => { setAnchor(new Date(`${slotDay}T00:00:00`)); setView("week"); }}/>}

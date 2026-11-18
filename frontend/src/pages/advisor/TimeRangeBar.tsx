@@ -1,9 +1,9 @@
 import { useRef } from "react";
 import { Icon } from "../../components/ui/Icon";
-import { isTodayRange, isoDay, rangeLabel, shiftRange, todayRange, type RangeMode, type TimeRange } from "./timeRange";
+import { isTodayRange, isoDay, rangeLabel, shiftRange, todayRange, weekStart, type RangeMode, type TimeRange } from "./timeRange";
 
 const MODES: Array<{ id: RangeMode; label: string }> = [
-  { id: "day", label: "Ngày" }, { id: "week", label: "7 ngày" }, { id: "month", label: "Tháng" },
+  { id: "day", label: "Ngày" }, { id: "week", label: "Tuần này" }, { id: "month", label: "Tháng" },
   { id: "custom", label: "Tùy chỉnh" }, { id: "all", label: "Tất cả" },
 ];
 // Mọi control cao 40px (màn hẹp 44px), hover chỉ đổi màu — không dịch chuyển / phóng to.
@@ -12,7 +12,7 @@ const navBtn = "grid min-h-10 w-10 shrink-0 cursor-pointer place-items-center ro
 const dateInput = "min-h-10 rounded-control border border-cs-border bg-cs-surface px-3 text-small tabular-nums text-cs-text transition-colors hover:border-cs-border-strong focus:border-cs-accent focus:outline-none max-sm:min-h-11";
 
 /**
- * Thanh lọc thời gian trang Lịch hẹn: [Ngày | 7 ngày | Tháng | Tùy chỉnh | Tất cả]  ·  [‹] [📅 nhãn] [›] [Hôm nay].
+ * Thanh lọc thời gian trang Lịch hẹn: [Ngày | Tuần này | Tháng | Tùy chỉnh | Tất cả]  ·  [‹] [📅 nhãn] [›] [Hôm nay].
  * Bấm nhãn ở giữa → mở lịch chọn ngày. Tùy chỉnh → hai ô Từ ngày / Đến ngày.
  */
 export function TimeRangeBar({ value, onChange }: { value: TimeRange; onChange: (value: TimeRange) => void }) {
@@ -27,6 +27,8 @@ export function TimeRangeBar({ value, onChange }: { value: TimeRange; onChange: 
       : value.anchor;
     if (mode === "month") onChange({ ...value, mode, anchor: `${start.slice(0, 7)}-01` });
     else if (mode === "custom") onChange({ ...value, mode, from: start, to: start });
+    // "Tuần này": bấm là về tuần hiện tại (Thứ Hai → Chủ nhật), ‹ › để sang tuần khác.
+    else if (mode === "week") onChange({ ...value, mode, anchor: weekStart(today) });
     else onChange({ ...value, mode, anchor: start });
   };
   const navigable = value.mode === "day" || value.mode === "week" || value.mode === "month";
