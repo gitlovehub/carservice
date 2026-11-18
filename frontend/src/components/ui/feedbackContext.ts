@@ -10,6 +10,8 @@ export type ConfirmOptions = {
   checklist?: string[];
   reference?: string;
   phone?: string;
+  /** Nút phụ cạnh nút Gọi (VD "Gửi email xác nhận"): bấm thì đóng hộp (kết quả false) rồi chạy `onSelect`. */
+  extraAction?: { label: string; icon?: IconName; onSelect: () => void };
   /** Icon nút xác nhận. Mặc định với variant danger: "trash" nếu là xóa, ngược lại "x" (hủy/đóng/từ chối). */
   confirmIcon?: IconName;
   /** Icon ở đầu hộp thoại (mặc định theo variant). */

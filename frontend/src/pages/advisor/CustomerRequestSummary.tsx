@@ -10,13 +10,13 @@ export default function CustomerRequestSummary({ request, compact = false }: { r
   const hasItems = packages.length > 0 || services.length > 0;
 
   return <div className="space-y-3 text-sm text-cs-text">
-    {packages.map(pkg => <div key={`package-${pkg.id}`} className="rounded-xl border border-cs-border p-3">
+    {packages.map(pkg => <div key={`package-${pkg.id}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-semibold"><span className="mr-1.5 rounded bg-cs-soft px-1.5 py-0.5 text-[11px] font-bold uppercase text-cs-accent-text">Gói</span>{pkg.name}</p>
         {toNumber(pkg.pivot?.estimated_price) > 0 && <span className="text-xs text-cs-muted">Ước tính {formatVnd(pkg.pivot?.estimated_price)}</span>}
       </div>
       {!compact && (pkg.services?.length || pkg.parts?.length) ? <ul className="mt-2 space-y-0.5 text-xs text-cs-muted">
-        {pkg.services?.map(service => <li key={`s-${service.id}`}>• {service.name}</li>)}
+        {pkg.services?.filter(service => service.name).map(service => <li key={`s-${service.id}`}>• {service.name}</li>)}
         {pkg.parts?.map(part => <li key={`p-${part.id}`}>• {part.name} × {part.pivot?.quantity ?? 1}{part.unit ? ` ${part.unit}` : ""}</li>)}
       </ul> : null}
     </div>)}
@@ -40,10 +40,9 @@ export default function CustomerRequestSummary({ request, compact = false }: { r
 
     {!hasItems && !request.symptom_description && <p className="text-cs-muted">Khách chưa chọn dịch vụ.</p>}
 
-    {request.symptom_description && <div>
-      <p className="text-xs text-cs-muted">Tình trạng khách mô tả</p>
-      <p className="mt-1 whitespace-pre-wrap">{request.symptom_description}</p>
-    </div>}
+    {request.symptom_description && <p className="whitespace-pre-wrap">
+      <span className="text-cs-muted">Tình trạng khách mô tả: </span>{request.symptom_description}
+    </p>}
     {request.note && <p className="whitespace-pre-wrap text-xs text-cs-muted">Ghi chú: {request.note}</p>}
   </div>;
 }

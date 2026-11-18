@@ -46,9 +46,11 @@ const carText = (a: CheckInSource) => {
  * Hộp "Xác minh lịch hẹn với khách" (PENDING → CONFIRMED), dùng chung trang Lịch hẹn và Tiếp nhận.
  * Thông tin cần đọc khi gọi khách tách thành bảng; cảnh báo quá tải (nếu có) hiện riêng.
  */
-export function confirmAppointmentOptions(a: CheckInSource, capacityNote?: string): ConfirmOptions {
+export function confirmAppointmentOptions(a: CheckInSource, capacityNote?: string, onSendEmail?: () => void): ConfirmOptions {
   return {
     title: "Xác minh lịch hẹn với khách", reference: a.appointment_code ?? undefined, phone: a.customer?.phone ?? undefined,
+    // Không gọi được khách → gửi email để khách tự bấm xác nhận.
+    extraAction: onSendEmail ? { label: "Gửi email xác nhận", icon: "mail", onSelect: onSendEmail } : undefined,
     description: "Gọi khách để xác nhận lại lịch dưới đây.\nChỉ xác nhận khi khách đồng ý.",
     details: [
       { label: "Khách hàng", value: a.customer?.full_name || "Khách hàng" },
@@ -57,7 +59,7 @@ export function confirmAppointmentOptions(a: CheckInSource, capacityNote?: strin
     ],
     note: capacityNote,
     confirmText: "Khách đồng ý – Xác nhận", variant: "success", cancelText: "Để sau",
-    checklist: ["Tôi đã liên hệ trực tiếp với khách và xác minh đúng xe, dịch vụ, giờ hẹn.", "Khách đồng ý đến theo lịch này."],
+    checklist: ["Tôi đã xác minh thông tin lịch hẹn với khách hàng.", "Khách đồng ý đến theo lịch này."],
   };
 }
 

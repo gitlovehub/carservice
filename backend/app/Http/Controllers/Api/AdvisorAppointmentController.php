@@ -107,7 +107,8 @@ class AdvisorAppointmentController extends Controller
                 'vehicle.model.brand:id,name',
                 'services:id,name,base_price,estimated_minutes',
                 'packages:id,name,mileage_milestone',
-                'packages.services:id,estimated_minutes',
+                // Cần cả tên: modal Chi tiết lịch hẹn liệt kê dịch vụ trong gói từ dữ liệu danh sách.
+                'packages.services:id,name,estimated_minutes',
                 // Nhân viên xử lý gần nhất.
                 'handledBy:id,email,role', 'handledBy.employee:id,account_id,full_name',
                 // ADV-08: phiếu đã tạo từ lịch (trang Tiếp nhận biết lịch nào đã có phiếu).

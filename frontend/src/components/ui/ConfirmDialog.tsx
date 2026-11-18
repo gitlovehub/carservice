@@ -78,7 +78,15 @@ export function ConfirmDialog({ options, area, onClose }: { options: ConfirmOpti
           </div>)}
         </dl> : null}
         {options.note && <p className="flex items-start gap-2 rounded-card bg-warning-soft px-3 py-2.5 text-caption text-warning"><Icon name="alert" size={15} className="mt-0.5 shrink-0"/>{options.note}</p>}
-        {options.phone &&<a className={buttonClass({ variant: "outline", size: "sm" })} href={`tel:${options.phone.replace(/[^+\d]/g, "")}`}>Gọi {options.phone}</a>}
+        {(options.phone || options.extraAction) && <div className="flex flex-wrap gap-2">
+          {options.phone && <a className={buttonClass({ variant: "outline", size: "sm" })} href={`tel:${options.phone.replace(/[^+\d]/g, "")}`}><Icon name="phone" size={15}/>Gọi {options.phone}</a>}
+          {options.extraAction && <Button variant="outline" size="sm" icon={options.extraAction.icon} onClick={() => {
+            const action = options.extraAction!.onSelect;
+            onClose(false);
+            // Chạy sau khi hộp này đóng hẳn (hàng đợi xác nhận rảnh) để thao tác phụ mở được hộp xác nhận của nó.
+            window.setTimeout(action, 0);
+          }}>{options.extraAction.label}</Button>}
+        </div>}
         {options.checklist?.length ? <div className="space-y-3 rounded-card border border-cs-border bg-cs-surface-2 p-4">
           {options.checklist.map((item, i) => <label key={i} className="flex cursor-pointer items-start gap-3 text-small text-cs-text">
             <input type="checkbox" className="mt-0.5 size-4 shrink-0 cursor-pointer accent-[var(--cs-accent)]" checked={checked[i] || false}

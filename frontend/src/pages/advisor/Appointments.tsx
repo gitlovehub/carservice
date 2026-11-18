@@ -211,7 +211,7 @@ function Appointments() {
       const day = await capacityApi.day(appointment.appointment_date.slice(0, 10));
       if (day?.over_capacity) capacityWarning = `Ngày này đã vượt công suất gara (${capacityText(day.load_minutes, day.capacity_minutes)}). Vẫn xác nhận được nếu khách đồng ý chờ lâu hơn.`;
     } catch { /* Không lấy được công suất thì xác nhận như cũ. */ }
-    const approved = await confirm(confirmAppointmentOptions(appointment, capacityWarning));
+    const approved = await confirm(confirmAppointmentOptions(appointment, capacityWarning, appointment.customer?.email ? () => void handleSendEmail(appointment) : undefined));
     if (approved) await run(`confirm-${appointment.id}`, () => catalogAdminApi.confirmAppointment(appointment.id), "Đã xác nhận lịch hẹn.");
   }
 

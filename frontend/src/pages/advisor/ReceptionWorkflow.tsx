@@ -203,7 +203,7 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
         capacityWarning = `Ngày này đã vượt công suất gara (${capacityText(day.load_minutes, day.capacity_minutes)}).${free ? ` Ngày còn chỗ: ${free}.` : ""} Vẫn xác nhận được nếu khách đồng ý chờ lâu hơn.`;
       }
     } catch { /* Không lấy được công suất thì xác nhận như cũ. */ }
-    const approved = await confirm(confirmAppointmentOptions(selected, capacityWarning));
+    const approved = await confirm(confirmAppointmentOptions(selected, capacityWarning, () => void handleSendEmail()));
     if (!approved) return;
     setWorking(true); setError("");
     try { await confirmPendingAppointment(selected.id); await refresh(`Đã xác nhận lịch hẹn ${selected.appointment_code}. Tiếp nhận xe khi khách đến gara.`); }
