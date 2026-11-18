@@ -29,7 +29,7 @@ class AppointmentEmailConfirmationController extends Controller
     private function page(Request $request, int $id, bool $submit): View
     {
         $appointment = Appointment::query()->find($id);
-        if (! $appointment || ! $request->hasValidSignature()) {
+        if (! $appointment || ! $request->hasValidSignature(false)) {
             return $this->view('expired');
         }
         if (! $this->service->matchesSlot($appointment, (string) $request->query('slot'))) {

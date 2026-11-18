@@ -61,8 +61,10 @@ class AppointmentEmailConfirmationTest extends TestCase
 
     public function test_advisor_sends_mail_with_booked_services_and_customer_confirms_by_button(): void
     {
-        $this->actingAs($this->advisor)->postJson("/api/advisor/appointments/{$this->appointment->id}/send-confirmation-email")
+        // Cố vấn gửi qua proxy frontend (host khác backend) — link trong mail vẫn phải trỏ về APP_URL.
+        $this->actingAs($this->advisor)->postJson("http://localhost:5174/api/advisor/appointments/{$this->appointment->id}/send-confirmation-email")
             ->assertOk()->assertJsonPath('success', true);
+        $this->assertStringStartsWith(rtrim((string) config('app.url'), '/').'/appointments/', $this->sentUrl());
 
         Mail::assertSent(AppointmentConfirmationRequestMail::class, function (AppointmentConfirmationRequestMail $mail) {
             $html = $mail->render();

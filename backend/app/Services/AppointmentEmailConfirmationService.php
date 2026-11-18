@@ -52,10 +52,14 @@ class AppointmentEmailConfirmationService
 
     public function url(Appointment $appointment): string
     {
-        return URL::temporarySignedRoute('appointments.email-confirm', $this->startsAt($appointment), [
+        // Ký đường dẫn tương đối rồi gắn APP_URL (backend): cố vấn gửi mail qua proxy Vite thì host request là frontend,
+        // link sẽ trỏ nhầm sang SPA (404). Chữ ký tương đối cũng không phụ thuộc host khi kiểm tra.
+        $path = URL::temporarySignedRoute('appointments.email-confirm', $this->startsAt($appointment), [
             'appointment' => $appointment->id,
             'slot' => $this->slot($appointment),
-        ]);
+        ], false);
+
+        return rtrim((string) config('app.url'), '/').$path;
     }
 
     /** Link còn đúng ngày giờ hiện tại của lịch không (đổi lịch → link cũ hết hiệu lực). */
