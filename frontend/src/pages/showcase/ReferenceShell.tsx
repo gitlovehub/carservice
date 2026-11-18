@@ -6,6 +6,7 @@ import { useTheme } from '../../contexts/theme';
 import { Icon } from '../../components/ui/Icon';
 import { logout } from '../auth/auth';
 import CustomerNotificationBell from './CustomerNotificationBell';
+import { SITE_LOGO_SRC } from '../../components/common/SiteLogo';
 import Breadcrumb, { type Crumb } from '../../components/Breadcrumb';
 import type { ReactNode } from 'react';
 import { AVATAR_MENU_LINKS, isAccountLinkActive } from '../../layouts/customerAccountNav';
@@ -57,8 +58,7 @@ function FirstVisitIntro() {
   if (phase === 'hidden') return null;
   return createPortal(
     <div className={`v3ref-intro${phase === 'leave' ? ' is-leaving' : ''}`} onClick={() => setPhase('leave')} role="presentation">
-      <div className="v3ref-intro-mark" aria-hidden="true">C</div>
-      <div className="v3ref-intro-text"><strong>CarService</strong><small>Chăm sóc &amp; Bảo dưỡng ô tô</small></div>
+      <img className="v3ref-intro-logo" src={SITE_LOGO_SRC} alt="CarService"/>
       <span className="v3ref-intro-bar" aria-hidden="true"/>
     </div>, document.body);
 }
@@ -95,7 +95,7 @@ export function ReferenceHeader() {
 
   return <><FirstVisitIntro/><header className="v3ref-header" ref={headerRef}>
     <div className="v3ref-nav-wrap">
-      <Link to="/" className="v3ref-logo" aria-label="CarService – Về trang chủ"><span>C</span><strong>CarService<small>Chăm sóc &amp; Bảo dưỡng ô tô</small></strong></Link>
+      <Link to="/" className="v3ref-logo" aria-label="CarService – Về trang chủ"><img className="v3ref-logo-img" src={SITE_LOGO_SRC} alt="CarService"/></Link>
       <nav id="v3ref-navigation" className={mobileOpen ? 'v3ref-menu open' : 'v3ref-menu'} aria-label="Điều hướng CarService">
         {paths.map(item => {
           const current = activeMenu(item.to,location.pathname);
@@ -111,7 +111,10 @@ export function ReferenceHeader() {
         {customer && <CustomerNotificationBell/>}
         {logged ? customer ? <div className="v3ref-account" ref={accountRef}>
           <button type="button" className="v3ref-account-trigger" aria-expanded={accountOpen} aria-haspopup="menu" aria-label="Mở menu tài khoản" onClick={()=>setAccountOpen(v=>!v)}>
-            <span className="v3ref-avatar">{initial}</span>
+            {/* Ảnh đại diện lấy từ phiên (/me); đổi ảnh ở Hồ sơ → sự kiện user-updated làm mới phiên → header cập nhật ngay. */}
+            <span className="v3ref-avatar">{session.account.avatar
+              ? <img src={session.account.avatar} alt="" referrerPolicy="no-referrer" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'inherit'}}/>
+              : initial}</span>
           </button>
           {accountOpen && <div className="v3ref-account-popover" role="menu" aria-label="Menu tài khoản">
             {/* Ai đang đăng nhập (không bấm được) → lối tắt hay dùng (tên trùng sidebar) → Đăng xuất. */}
@@ -132,7 +135,7 @@ export function ReferenceHeader() {
   </header></>;
 }
 export function ReferenceFooter(){return <footer className="v3ref-footer"><div className="v3ref-footer-inner">
-  <div><Link to="/" className="v3ref-footer-brand"><span>C</span> CarService</Link><p>Hệ thống chăm sóc, bảo dưỡng và sửa chữa ô tô minh bạch, thuận tiện.</p><SocialLinks/></div>
+  <div><Link to="/" className="v3ref-footer-brand" aria-label="CarService – Về trang chủ"><img className="v3ref-footer-logo" src={SITE_LOGO_SRC} alt="CarService"/></Link><p>Hệ thống chăm sóc, bảo dưỡng và sửa chữa ô tô minh bạch, thuận tiện.</p><SocialLinks/></div>
   <div><h4>Dịch vụ</h4><Link to="/services/bao-duong-dinh-ky">Bảo dưỡng định kỳ</Link><Link to="/services/gam-phanh">Gầm - Phanh</Link><Link to="/services/dien-dien-lanh">Điện - Điện lạnh</Link><Link to="/services">Tất cả dịch vụ</Link></div>
   <div><h4>Hỗ trợ</h4><Link to="/booking">Hướng dẫn đặt lịch</Link><Link to="/repair-status">Tra cứu tiến độ</Link><Link to="/quotation">Báo giá</Link><Link to="/contact">Liên hệ</Link></div>
   <div><h4>Về CarService</h4><Link to="/about">Giới thiệu</Link><Link to="/services">Dịch vụ</Link><Link to="/customer/service-history">Lịch sử bảo dưỡng</Link><Link to="/contact">Hỗ trợ</Link></div>

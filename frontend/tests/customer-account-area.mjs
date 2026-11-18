@@ -32,7 +32,8 @@ const walk = dir => readdirSync(new URL('../' + dir, import.meta.url)).flatMap(n
 const sources = walk('src').filter(file => /\.(tsx?|css)$/.test(file));
 assert.deepEqual(sources.filter(file => /atelier/i.test(file) || /atelier/i.test(read(file))), [], 'No "atelier" left in file names or code');
 assert.deepEqual(sources.filter(file => /(GARA CỦA TÔI|KHÁCH HÀNG|CARSERVICE) \/ /.test(read(file))), [], 'No decorative breadcrumb eyebrows');
-assert.match(read('src/components/GaragePublic.tsx'), /GARAGE · CHĂM SÓC Ô TÔ/, 'Brand subtitle says GARAGE');
+assert.match(read('src/components/GaragePublic.tsx'), /<SiteLogo/, 'Brand uses the official logo image');
+assert.doesNotMatch(read('src/components/GaragePublic.tsx'), /CHĂM SÓC Ô TÔ/, 'No brand subtitle next to the logo');
 const account = read('src/pages/customer/Account.tsx');
 assert.match(account, /<main className="at-customer-page"><div className="at-customer-container">/, 'Profile uses the shared page container');
 assert.match(account, /<AccountHeader title="Hồ sơ của tôi"/, 'Profile uses the shared page heading');

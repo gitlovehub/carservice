@@ -12,7 +12,7 @@
                 <table role="presentation" width="100%" style="max-width: 560px; background-color: #FFFFFF; border-radius: 16px; border: 1px solid #E1E4E6; overflow: hidden;" cellspacing="0" cellpadding="0">
                     <tr>
                         <td style="background-color: #1F2933; padding: 28px 32px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #FFFFFF;">Car<span style="color: #D6A85F;">Service</span></h1>
+                            @include('emails.partials.logo')
                             <p style="margin: 6px 0 0; font-size: 13px; color: #AEB8C1;">Biên bản {{ $title }}</p>
                         </td>
                     </tr>

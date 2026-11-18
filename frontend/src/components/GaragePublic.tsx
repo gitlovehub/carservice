@@ -8,12 +8,11 @@ import { getRoleManagementPage, getUserDisplayName, logout } from "../pages/auth
 import carArt from "../assets/car-garage.svg";
 import { Button, IconButton } from "./ui/Button";
 import { buttonClass } from "./ui/buttonClass";
+import SiteLogo from "./common/SiteLogo";
 
 export function GarageBrand({ to = "/" }: { to?: string }) {
-  return <Link className="inline-flex min-w-0 shrink items-center gap-2.5 whitespace-nowrap text-xl leading-tight font-bold text-cs-text no-underline" to={to} aria-label="CarService Garage – Trang chủ">
-    <span className="flex size-8 shrink-0 -rotate-6 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white">C</span>
-    {/* Dòng phụ ẩn trên màn hình rất hẹp để header không tràn. */}
-    <span className="min-w-0">CarService<small className="mt-0.5 hidden text-[11px] font-semibold tracking-[0.12em] text-cs-muted min-[420px]:block">GARAGE · CHĂM SÓC Ô TÔ</small></span>
+  return <Link className="inline-flex min-w-0 shrink items-center no-underline" to={to} aria-label="CarService Garage – Trang chủ">
+    <SiteLogo height={44}/>
   </Link>;
 }
 

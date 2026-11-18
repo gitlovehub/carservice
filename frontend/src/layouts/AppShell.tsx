@@ -4,6 +4,7 @@ import { useAuthSession } from "../contexts/authSession";
 import { useTheme } from "../contexts/theme";
 import { getUserDisplayName, getUserInitials, logout } from "../pages/auth/auth";
 import PageTransition from "../components/PageTransition";
+import { SITE_LOGO_SRC } from "../components/common/SiteLogo";
 import { Dropdown, IconButton } from "../components/ui";
 import { Icon } from "../components/ui/Icon";
 import { LABELS } from "../config/labels";
@@ -147,8 +148,9 @@ function WorkLayout({ area }: { area: WorkArea }) {
       <aside id="cs-workspace-sidebar" className="cs-work-sidebar" data-open={mobileOpen} aria-label={roleLabel[area]}>
         <div className="cs-ws-brand">
           <Link to={areaInfo[area].home} onClick={close} aria-label="CarService — Tổng quan">
-            {area === "advisor" ? <AdvisorMark/> : <span className="cs-ws-brand-mark" aria-hidden="true">C</span>}
-            <span className="cs-ws-brand-text">CarService<small>{roleLabel[area]}</small></span>
+            {/* Mở rộng: logo chính thức; thu gọn (sidebar hẹp): biểu tượng vuông. */}
+            <img src={SITE_LOGO_SRC} alt="CarService" className="cs-ws-logo"/>
+            <span className="cs-ws-logo-mark">{area === "advisor" ? <AdvisorMark/> : <span className="cs-ws-brand-mark" aria-hidden="true">C</span>}</span>
           </Link>
           <span className="cs-ws-mobile-only">
             <IconButton ref={closeButtonRef} icon="close" label="Đóng thanh điều hướng" size="sm" onClick={close}/>
@@ -177,7 +179,7 @@ function WorkLayout({ area }: { area: WorkArea }) {
           </div>
         </header>
         <div className="cs-work-content" id="main-content" tabIndex={-1}><PageTransition><Outlet/></PageTransition></div>
-        <WorkFooter area={area}/>
+        <WorkFooter/>
       </div>
     </div>
   </ShellContext.Provider>;
@@ -187,13 +189,13 @@ function WorkLayout({ area }: { area: WorkArea }) {
  * Chân trang khu Admin + Cố vấn: luôn nằm đáy màn hình (nội dung ngắn vẫn cân đối), cuộn theo nội dung khi trang dài.
  * Liên hệ lấy từ Thông tin gara; chưa cấu hình thì không hiện.
  */
-function WorkFooter({ area }: { area: string }) {
+function WorkFooter() {
   const garage = useGarageInfo();
   const year = new Date().getFullYear();
   return <footer className="cs-work-footer">
     <div className="cs-work-footer-inner">
       <p className="cs-work-footer-brand">
-        {area === "advisor" ? <AdvisorMark/> : <span className="cs-ws-brand-mark" aria-hidden="true">C</span>}
+        <img src={SITE_LOGO_SRC} alt="" aria-hidden="true" className="cs-work-footer-logo"/>
         <span>© {year} <b>{garage?.name || "CarService"}</b> · Hệ thống quản lý gara</span>
       </p>
       {(garage?.phone || garage?.email) && <ul className="cs-work-footer-links" aria-label="Liên hệ gara">

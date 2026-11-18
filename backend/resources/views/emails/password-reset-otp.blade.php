@@ -13,10 +13,7 @@
                     <!-- Header -->
                     <tr>
                         <td style="background-color: #1F2933; padding: 28px 32px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #FFFFFF; letter-spacing: 0.5px;">
-                                Car<span style="color: #D6A85F;">Service</span>
-                            </h1>
-                            <p style="margin: 6px 0 0; font-size: 13px; color: #AEB8C1;">Hệ thống chăm sóc & dịch vụ sửa chữa xe</p>
+                            @include('emails.partials.logo')
                         </td>
                     </tr>
 

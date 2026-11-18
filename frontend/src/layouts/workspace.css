@@ -53,6 +53,10 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
   background: var(--cs-accent); color: var(--cs-accent-contrast);
   font-size: 17px; font-weight: 700; transform: rotate(-9deg);
 }
+/* Logo chính thức khi sidebar mở rộng; khi thu gọn chỉ còn biểu tượng vuông. */
+.cs-ws-logo { display: block; height: 46px; width: auto; max-width: 190px; object-fit: contain; }
+.cs-ws-logo-mark { display: none; }
+.cs-work-footer-logo { display: block; height: 24px; width: auto; flex-shrink: 0; }
 .cs-ws-brand-text { min-width: 0; font-size: 19px; font-weight: 700; line-height: 1.1; white-space: nowrap; }
 .cs-ws-brand-text small {
   display: block; margin-top: 2px; font-size:11px; font-weight: 600; letter-spacing: 0.12em;
@@ -108,6 +112,8 @@ html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
 /* Thu gọn (chỉ desktop): còn icon; nhãn vẫn đọc được bởi trình đọc màn hình và hiện làm tooltip (title). */
 @media (min-width: 1024px) {
   .cs-workspace[data-sidebar="collapsed"] .cs-ws-brand { justify-content: center; padding: 0; }
+  .cs-workspace[data-sidebar="collapsed"] .cs-ws-logo { display: none; }
+  .cs-workspace[data-sidebar="collapsed"] .cs-ws-logo-mark { display: inline-flex; }
   .cs-workspace[data-sidebar="collapsed"] :is(.cs-ws-brand-text, .cs-ws-soon) { display: none; }
   .cs-workspace[data-sidebar="collapsed"] .cs-ws-label {
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;

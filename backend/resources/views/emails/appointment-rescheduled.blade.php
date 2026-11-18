@@ -12,7 +12,7 @@
                 <table role="presentation" width="100%" style="max-width: 520px; background-color: #FFFFFF; border-radius: 16px; border: 1px solid #E1E4E6; overflow: hidden;" cellspacing="0" cellpadding="0">
                     <tr>
                         <td style="background-color: #1F2933; padding: 28px 32px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #FFFFFF;">Car<span style="color: #D6A85F;">Service</span></h1>
+                            @include('emails.partials.logo')
                         </td>
                     </tr>
                     <tr>
