@@ -90,6 +90,27 @@ class AppointmentControllerTest extends TestCase
         ]);
     }
 
+    public function test_two_identical_plateless_vehicles_can_book_the_same_slot_when_marked_separate(): void
+    {
+        $customer = $this->createAuthenticatedCustomer();
+        $booking = fn (array $vehicle) => $this->withToken($customer['token'])->postJson('/api/appointments', [
+            'new_vehicle' => ['brand' => 'MG', 'model' => 'G50'] + $vehicle,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '10:00',
+            'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
+        ]);
+
+        $booking([])->assertCreated();
+        // Không đánh dấu xe khác → hiểu là cùng xe chưa biển số → báo trùng, kèm hướng dẫn chọn "Một xe khác".
+        $booking([])->assertUnprocessable()->assertJsonPath('errors.vehicle_id.0', fn ($message) => str_contains($message, 'MG G50') && str_contains($message, 'Một xe khác'));
+        $this->assertSame(1, Vehicle::where('customer_id', $customer['customer']->id)->count());
+
+        // Khách chọn "Một xe khác" → tạo xe thứ hai, đặt cùng khung giờ được.
+        $booking(['separate' => true])->assertCreated();
+        $this->assertSame(2, Vehicle::where('customer_id', $customer['customer']->id)->whereNull('license_plate')->count());
+    }
+
     public function test_new_vehicle_with_catalog_model_keeps_catalog_body_type(): void
     {
         $this->travelTo(now()->startOfDay());
@@ -534,7 +555,8 @@ class AppointmentControllerTest extends TestCase
             'appointment_code' => 'APT-'.uniqid(),
             'customer_id' => $vehicle->customer_id,
             'vehicle_id' => $vehicle->id,
-            'appointment_date' => now()->addDay()->toDateString(),
+            // 2 ngày sau: luôn còn quá 12 tiếng (hạn chót khách tự đổi lịch), không phụ thuộc giờ chạy test.
+            'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => $time.':00',
             'request_type' => 'MAINTENANCE',
             'status' => $status,

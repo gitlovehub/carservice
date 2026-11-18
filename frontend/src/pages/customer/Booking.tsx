@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Button, buttonClass } from "../../components/ui";
+import { Button, Modal, buttonClass } from "../../components/ui";
 import ContactEditModal from "../../components/customer/ContactEditModal";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
@@ -37,6 +37,8 @@ type SavedVehicle = {
   trim_id?: number | null;
   model?: { id?: number; name: string; brand?: { id?: number; name: string } } | null;
   trim?: { id: number; name: string } | null;
+  vin?: string | null;
+  created_at?: string | null;
 };
 
 const MORNING_SLOTS = ["08:00", "09:00", "09:30", "10:30", "11:15"];
@@ -57,79 +59,71 @@ const STATUS_TONE_CLASS: Record<StatusTone, string> = {
 
 type VehicleOption = { id: number | null; name: string; sub: string; brand?: string | null };
 
-/** Xe chưa có biển số cùng dòng xe + phiên bản = cùng một xe → chỉ hiện 1 thẻ (ưu tiên xe đang chọn).
-    Biển số khác nhau mới là các xe khác nhau. */
-function dedupePlatelessVehicles(list: SavedVehicle[], selectedId: number | null): SavedVehicle[] {
-  const keyOf = (v: SavedVehicle) => (v.license_plate?.trim() ? null : `${v.model_id ?? v.model?.id ?? v.model?.name ?? ""}|${v.trim_id ?? v.trim?.id ?? ""}`);
-  const keep = new Map<string, number>();
-  for (const v of list) {
-    const key = keyOf(v);
-    if (key !== null && (!keep.has(key) || v.id === selectedId)) keep.set(key, v.id);
-  }
-  return list.filter((v) => { const key = keyOf(v); return key === null || keep.get(key) === v.id; });
+/** Khóa nhận diện xe chưa biển số: dòng xe + phiên bản (null = xe có biển số, đã phân biệt được). */
+const platelessKey = (v: SavedVehicle) => (v.license_plate?.trim() ? null : `${v.model_id ?? v.model?.id ?? ""}|${v.trim_id ?? v.trim?.id ?? ""}`);
+const dmyDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "");
+
+/** Dòng phụ thẻ xe: biển số; xe chưa biển số trùng dòng + phiên bản với xe khác → thêm số khung (VIN) hoặc ngày thêm xe để phân biệt. */
+function vehicleSub(v: SavedVehicle, all: SavedVehicle[]): string {
+  if (v.license_plate?.trim()) return v.license_plate;
+  const key = platelessKey(v);
+  const twins = all.filter((other) => platelessKey(other) === key).length > 1;
+  if (!twins) return "Chưa có biển số";
+  if (v.vin?.trim()) return `Chưa có biển số · VIN …${v.vin.trim().slice(-6).toUpperCase()}`;
+  return `Chưa có biển số · thêm ${dmyDate(v.created_at)}`;
 }
 
-/** Xe đã lưu dạng slider ngang: không dàn hết ra khi khách có nhiều xe.
-    Thẻ "Xe mới" luôn đứng đầu; xe đang chọn được cuộn vào tầm nhìn. */
-function SavedVehicleSlider({ options, selectedId, onSelect }: { options: VehicleOption[]; selectedId: number | null; onSelect: (id: number | null) => void }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [edge, setEdge] = useState({ start: true, end: true });
+/** Một thẻ xe (dùng ở ô "xe đang chọn" và trong modal). `opt.id === null` = Xe mới. */
+function VehicleCard({ opt, on, onClick, className = "" }: { opt: VehicleOption; on: boolean; onClick: () => void; className?: string }) {
+  return (
+    <button type="button" role="radio" aria-checked={on} onClick={onClick}
+      // Màu theo token theme (cs-*): thẻ còn dùng trong Modal (render ra ngoài khung trang, không nhận lớp đổi màu slate/white của trang).
+      className={`relative flex min-w-0 cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-colors ${on ? "border-[#e11d2e] bg-cs-soft" : "border-cs-border bg-cs-surface hover:border-[#e11d2e]"} ${className}`}>
+      {opt.id === null
+        ? <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${on ? "bg-[#e11d2e] text-white" : "bg-cs-surface-2 text-cs-muted"}`}><Icon name="plus" size={18}/></span>
+        // Xe đã lưu: logo hãng (logo Admin tải lên / có sẵn / chữ cái đầu).
+        : <VehicleBrandLogo brand={opt.brand} size={40} className="rounded-xl"/>}
+      <span className="min-w-0"><span className="block truncate text-sm font-bold text-cs-text">{opt.name}</span><span className="block truncate text-xs text-cs-muted">{opt.sub}</span></span>
+      {on && <span className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-[#e11d2e] text-white shadow"><Icon name="check" size={13}/></span>}
+    </button>
+  );
+}
 
-  const updateEdge = () => {
-    const el = trackRef.current;
-    if (!el) return;
-    setEdge({ start: el.scrollLeft <= 2, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 2 });
-  };
-
-  useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const selected = el.querySelector<HTMLElement>('[aria-checked="true"]');
-    if (selected) el.scrollLeft = Math.max(0, selected.offsetLeft - el.offsetLeft - 10);
-    updateEdge();
-    const ro = new ResizeObserver(updateEdge);
-    ro.observe(el);
-    return () => ro.disconnect();
-    // Chỉ căn xe đang chọn khi mở bước 1 / số xe đổi, không giật khi khách tự cuộn.
-  }, [options.length]);
-
-  const scrollByPage = (dir: 1 | -1) => {
-    const el = trackRef.current;
-    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: "smooth" });
-  };
-
-  const navBtn = "grid size-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 transition disabled:cursor-default disabled:opacity-35 enabled:hover:border-[#e11d2e] enabled:hover:text-[#e11d2e]";
+/** Xe đã lưu: hiện xe đang chọn + nút mở modal danh sách (lưới 4 cột, tìm theo tên / biển số). Thẻ "Xe mới" luôn đứng đầu. */
+function SavedVehiclePicker({ options, selectedId, onSelect }: { options: VehicleOption[]; selectedId: number | null; onSelect: (id: number | null) => void }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const current = options.find((opt) => opt.id === selectedId) ?? options[0];
+  const keyword = search.trim().toLowerCase();
+  const shown = keyword ? options.filter((opt) => opt.id === null || `${opt.name} ${opt.sub}`.toLowerCase().includes(keyword)) : options;
+  const pick = (id: number | null) => { onSelect(id); setOpen(false); setSearch(""); };
 
   return (
     <div className="mb-7">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-slate-900">
-          Xe đã lưu <span className="text-sm font-semibold text-slate-400">({options.length - 1})</span>
-        </h3>
-        {!(edge.start && edge.end) && (
-          <div className="flex gap-2">
-            <button type="button" className={navBtn} onClick={() => scrollByPage(-1)} disabled={edge.start} aria-label="Xe trước"><Icon name="chevron-left" size={16}/></button>
-            <button type="button" className={navBtn} onClick={() => scrollByPage(1)} disabled={edge.end} aria-label="Xe tiếp theo"><Icon name="chevron-right" size={16}/></button>
-          </div>
+      <h3 className="mb-3 border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-slate-900">
+        Xe đã lưu <span className="text-sm font-semibold text-slate-400">({options.length - 1})</span>
+      </h3>
+      {/* Nút cao bằng thẻ xe bên cạnh (cùng hàng, cùng bo góc). */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+        <VehicleCard opt={current} on onClick={() => setOpen(true)} className="sm:max-w-md sm:flex-1"/>
+        <button type="button" onClick={() => setOpen(true)}
+          className="flex min-h-16 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-900 transition-colors hover:border-[#e11d2e] hover:text-[#e11d2e]">
+          <Icon name="car" size={18}/>Chọn xe đã lưu
+        </button>
+      </div>
+      <Modal open={open} onClose={() => setOpen(false)} size="xl" title="Chọn xe" description="Chọn xe đã lưu để đặt lịch, hoặc Xe mới để khai báo hãng, dòng xe.">
+        {options.length > 9 && (
+          <label className="mb-4 flex min-h-11 items-center gap-2 rounded-xl border border-cs-border bg-cs-surface px-3 focus-within:border-[#e11d2e]">
+            <Icon name="search" size={16} className="shrink-0 text-cs-muted"/>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm theo hãng, dòng xe, biển số..." aria-label="Tìm xe"
+              className="min-w-0 flex-1 bg-transparent text-sm text-cs-text outline-none placeholder:text-cs-muted"/>
+          </label>
         )}
-      </div>
-      <div ref={trackRef} onScroll={updateEdge} role="radiogroup" aria-label="Chọn xe"
-        className={`-mx-2.5 flex snap-x snap-mandatory scroll-px-2.5 gap-2.5 overflow-x-auto scroll-smooth px-2.5 pt-2.5 pb-3 scrollbar-none [&::-webkit-scrollbar]:hidden ${edge.end ? "" : "mask-[linear-gradient(90deg,#000_82%,transparent)]"}`}>
-        {options.map((opt) => {
-          const on = selectedId === opt.id;
-          return (
-            <button key={opt.id ?? "new"} type="button" role="radio" aria-checked={on} onClick={() => onSelect(opt.id)}
-              className={`relative flex shrink-0 basis-[calc((100%-0.625rem)/1.5)] snap-start items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition sm:basis-[calc((100%-1.25rem)/2.5)] lg:basis-[calc((100%-1.875rem)/3.5)] ${on ? "border-[#e11d2e] bg-[#fff1f2] shadow-[0_8px_20px_#e11d2e1f] dark:bg-[var(--cs-soft)]" : "border-slate-200 bg-white hover:border-[#e11d2e]"}`}>
-              {opt.id === null
-                ? <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${on ? "bg-[#e11d2e] text-white" : "bg-slate-100 text-slate-500"}`}><Icon name="plus" size={18}/></span>
-                // Xe đã lưu: logo hãng (logo Admin tải lên / có sẵn / chữ cái đầu).
-                : <VehicleBrandLogo brand={opt.brand} size={40} className="rounded-xl"/>}
-              <span className="min-w-0"><span className="block truncate text-sm font-bold text-slate-900">{opt.name}</span><span className="block truncate text-xs text-slate-500">{opt.sub}</span></span>
-              {on && <span className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-[#e11d2e] text-white shadow"><Icon name="check" size={13}/></span>}
-            </button>
-          );
-        })}
-      </div>
+        <div role="radiogroup" aria-label="Chọn xe" className="grid grid-cols-1 gap-3 pt-2 pr-2 sm:grid-cols-2 lg:grid-cols-4">
+          {shown.map((opt) => <VehicleCard key={opt.id ?? "new"} opt={opt} on={selectedId === opt.id} onClick={() => pick(opt.id)}/>)}
+        </div>
+        {keyword && shown.length === 1 && <p className="mt-4 text-center text-sm text-cs-muted">Không tìm thấy xe phù hợp.</p>}
+      </Modal>
     </div>
   );
 }
@@ -290,6 +284,13 @@ export default function Booking() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [savedVehicles, setSavedVehicles] = useState<SavedVehicle[]>([]);
+  // Khách chọn "Một xe khác" khi xe khai báo trùng dòng + phiên bản với xe chưa biển số đã lưu.
+  const [separateVehicle, setSeparateVehicle] = useState(false);
+  // Đặt lịch không hỏi biển số → xe khai báo mới luôn chưa biển; trùng dòng + phiên bản với xe chưa biển đã lưu = có thể là cùng một xe.
+  const platelessTwins = !selectedSavedVehicleId && vehicleSelection.modelId !== null && !vehiclePlate.trim()
+    ? savedVehicles.filter((v) => !v.license_plate?.trim() && (v.model_id ?? v.model?.id) === vehicleSelection.modelId && (v.trim_id ?? v.trim?.id ?? null) === vehicleSelection.trimId)
+    : [];
+  const vehicleName = [vehicleSelection.brandName, vehicleSelection.modelName, vehicleSelection.trimName].filter(Boolean).join(" ");
   const [isLoggedIn] = useState(
     () => Boolean(localStorage.getItem("token")) && localStorage.getItem("isLoggedIn") === "true",
   );
@@ -474,11 +475,13 @@ export default function Booking() {
   const handleSelectionChange = (next: VehicleSelection) => {
     setSelectedSavedVehicleId(null);
     setVehicleSelection(next);
-    setErrors((prev) => ({ ...prev, brand: "", model: "" }));
+    setSeparateVehicle(false);
+    setErrors((prev) => ({ ...prev, brand: "", model: "", twin: "" }));
   };
 
   function fillFromSavedVehicle(v: SavedVehicle) {
     setSelectedSavedVehicleId(v.id);
+    setSeparateVehicle(false);
     setVehicleSelection(selectionFromVehicle(v));
     setVehiclePlate(v.license_plate ? formatLicensePlate(v.license_plate) : "");
     // Điền sẵn odo đã lưu của xe ở bước Dịch vụ; khách sửa nếu đã chạy thêm.
@@ -516,6 +519,8 @@ export default function Booking() {
       newErrors.brand = "Vui lòng chọn hãng xe.";
     } else if (vehicleSelection.modelId === null) {
       newErrors.model = `Vui lòng chọn dòng xe của hãng ${vehicleBrand}.`;
+    } else if (platelessTwins.length > 0 && !separateVehicle) {
+      newErrors.twin = "Chọn xe đã lưu hoặc \"Một xe khác\" để tiếp tục.";
     }
 
     setErrors(newErrors);
@@ -615,6 +620,7 @@ export default function Booking() {
                   model_id: vehicleSelection.modelId,
                   trim_id: vehicleSelection.trimId,
                   license_plate: vehiclePlate.trim() ? vehiclePlate.trim().toUpperCase() : null,
+                  ...(separateVehicle ? { separate: true } : {}),
                 },
               }),
           appointment_date: selectedDate.isoDate,
@@ -769,10 +775,10 @@ export default function Booking() {
                 <StepHeader icon="car" title="Xe của bạn" subtitle="Chọn xe đã lưu hoặc khai báo hãng, dòng xe để gara chuẩn bị đúng phụ tùng."/>
 
                 {savedVehicles.length > 0 && (
-                  <SavedVehicleSlider
+                  <SavedVehiclePicker
                     options={[
                       { id: null, name: "Xe mới", sub: "Chọn hãng, dòng xe bên dưới" },
-                      ...dedupePlatelessVehicles(savedVehicles, selectedSavedVehicleId).map((v) => ({ id: v.id as number | null, brand: v.model?.brand?.name, name: [v.model?.brand?.name, v.model?.name, v.trim?.name].filter(Boolean).join(" ") || "Xe của bạn", sub: v.license_plate || "Chưa có biển số" })),
+                      ...savedVehicles.map((v) => ({ id: v.id as number | null, brand: v.model?.brand?.name, name: [v.model?.brand?.name, v.model?.name, v.trim?.name].filter(Boolean).join(" ") || "Xe của bạn", sub: vehicleSub(v, savedVehicles) })),
                     ]}
                     selectedId={selectedSavedVehicleId}
                     onSelect={handleSelectSavedVehicle}
@@ -791,6 +797,30 @@ export default function Booking() {
                 </div>
                 {/* Không hỏi biển số khi đặt lịch: gara ghi nhận biển số lúc tiếp nhận xe.
                     Xe đã lưu (chọn ở trên) vẫn mang theo biển số của nó. */}
+
+                {/* Khai báo xe mới trùng dòng + phiên bản với xe chưa biển số đã lưu → hỏi: đúng xe đó hay một xe khác. */}
+                {platelessTwins.length > 0 && (
+                  <div role="radiogroup" aria-label="Xe này là xe nào" className={`mt-4 rounded-2xl border p-4 ${errors.twin ? "border-[#e11d2e] bg-cs-soft" : "border-[#e11d2e]/30 bg-cs-soft"}`}>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Bạn đã có {platelessTwins.length > 1 ? `${platelessTwins.length} xe` : "xe"} {vehicleName} chưa có biển số trong hồ sơ. Đây là:
+                    </p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {platelessTwins.map((v) => (
+                        <button key={v.id} type="button" role="radio" aria-checked={false} onClick={() => handleSelectSavedVehicle(v.id)}
+                          className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm transition-colors hover:border-[#e11d2e]">
+                          <b className="block text-slate-900">Xe đã lưu</b>
+                          <span className="text-slate-500">{vehicleSub(v, savedVehicles)}</span>
+                        </button>
+                      ))}
+                      <button type="button" role="radio" aria-checked={separateVehicle} onClick={() => { setSeparateVehicle(true); clearError("twin"); }}
+                        className={`cursor-pointer rounded-xl border px-4 py-3 text-left text-sm transition-colors ${separateVehicle ? "border-[#e11d2e] bg-white ring-1 ring-[#e11d2e]" : "border-slate-200 bg-white hover:border-[#e11d2e]"}`}>
+                        <b className="block text-slate-900">Một xe khác</b>
+                        <span className="text-slate-500">Thêm xe mới vào hồ sơ</span>
+                      </button>
+                    </div>
+                    {errors.twin && <p role="alert" className="mt-2 text-sm font-medium text-[#e11d2e]">{errors.twin}</p>}
+                  </div>
+                )}
 
               </div>
             )}
@@ -897,10 +927,13 @@ export default function Booking() {
                       {slotRow("Buổi chiều", <svg viewBox="0 0 24 24" width="30" height="30" fill="none" strokeLinecap="round" aria-hidden="true"><circle cx="9" cy="9" r="3.5" fill="#fbbf24" stroke="#f59e0b" strokeWidth="1.8"/><path d="M9 2.5v1.5M3.5 9H2M4.8 4.8l1 1M13.2 4.8l-1 1" stroke="#f59e0b" strokeWidth="1.8"/><path d="M8 20h10a3.5 3.5 0 0 0 0-7 5 5 0 0 0-9.6 1.5A3 3 0 0 0 8 20Z" fill="#fb923c" stroke="#f97316" strokeWidth="1.6"/></svg>, bookingSlots.afternoon, "bg-white")}
                     </div>
 
-                    <p className="mt-4 flex items-start gap-2 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
-                      <Icon name="info" size={18}/>
-                      <span>{hours ? (hours.active ? `Ngày này gara nhận lịch từ ${hours.open} đến ${hours.close}.` : "Gara nghỉ ngày này, vui lòng chọn ngày khác.") : sel.dayOfWeek === 0 ? "Chủ nhật chỉ nhận lịch đến 12:00." : "Khung giờ đã qua hoặc ngoài giờ làm việc sẽ không chọn được."}</span>
-                    </p>
+                    {/* Chỉ báo khi gara nghỉ ngày đã chọn; ngày làm việc không cần nhắc giờ (khung ngoài giờ đã tự khóa). */}
+                    {hours && !hours.active && (
+                      <p className="mt-4 flex items-start gap-2 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
+                        <Icon name="info" size={18}/>
+                        <span>Gara nghỉ ngày này, vui lòng chọn ngày khác.</span>
+                      </p>
+                    )}
                     {errors.time && <p className="mt-2 text-[12px] text-red-500">{errors.time}</p>}
                   </div>
 

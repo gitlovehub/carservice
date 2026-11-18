@@ -36,6 +36,8 @@ class StoreAppointmentRequest extends FormRequest
             'new_vehicle.brand' => [Rule::requiredIf($this->needsVehicleNames()), 'nullable', 'string', 'max:100'],
             'new_vehicle.model' => [Rule::requiredIf($this->needsVehicleNames()), 'nullable', 'string', 'max:100'],
             'new_vehicle.license_plate' => ['nullable', 'string', 'max:20'],
+            // Khách xác nhận đây là xe KHÁC (dù trùng dòng xe + phiên bản với xe chưa biển số đã lưu) → luôn tạo xe mới.
+            'new_vehicle.separate' => ['nullable', 'boolean'],
             // Số km khách nhập ở bước Dịch vụ: lưu vào hồ sơ xe (chỉ khi lớn hơn số đang lưu).
             'mileage' => ['nullable', 'integer', 'min:0', 'max:2000000'],
             'appointment_date' => ['required', 'date_format:Y-m-d'],

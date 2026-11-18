@@ -73,6 +73,9 @@ class AppointmentController extends Controller
                     if ($plate === '') {
                         $plate = null;
                     }
+                    // Xe chưa biển số: mặc định dùng lại xe cùng dòng + phiên bản đã lưu (tránh tạo bản trùng);
+                    // khách chọn "Một xe khác" (separate) thì luôn tạo xe mới — VD hai xe mới giống hệt nhau chưa có biển.
+                    $reusePlateless = $plate === null && empty($input['separate']);
 
                     // Biển số đã có: nếu là xe của chính khách (kể cả đã xóa mềm) thì dùng lại,
                     // nếu thuộc khách khác thì từ chối để không đặt lịch trên xe của người khác.
@@ -99,7 +102,7 @@ class AppointmentController extends Controller
                             empty($input['trim_id']) ? null : (int) $input['trim_id'],
                             'new_vehicle.',
                         );
-                        $vehicle = ($plate === null ? $this->findPlatelessVehicle($customer->id, $model->id, $trim?->id) : null)
+                        $vehicle = ($reusePlateless ? $this->findPlatelessVehicle($customer->id, $model->id, $trim?->id) : null)
                             ?? Vehicle::create([
                                 'customer_id' => $customer->id,
                                 'model_id' => $model->id,
@@ -114,7 +117,7 @@ class AppointmentController extends Controller
                             ['brand_id' => $brand->id, 'name' => trim($input['model'])],
                             ['status' => 'ACTIVE']
                         );
-                        $vehicle = ($plate === null ? $this->findPlatelessVehicle($customer->id, $model->id, null) : null)
+                        $vehicle = ($reusePlateless ? $this->findPlatelessVehicle($customer->id, $model->id, null) : null)
                             ?? Vehicle::create([
                                 'customer_id' => $customer->id,
                                 'model_id' => $model->id,
@@ -136,7 +139,7 @@ class AppointmentController extends Controller
                     ->where('appointment_time', $time)
                     ->whereNotIn('status', ['CANCELLED', 'NO_SHOW'])->exists();
                 if ($duplicate) {
-                    throw ValidationException::withMessages(['vehicle_id' => 'Xe đã có lịch hẹn tại khung giờ này.']);
+                    throw ValidationException::withMessages(['vehicle_id' => $this->duplicateSlotMessage($vehicle, $time)]);
                 }
 
                 // Odo chỉ tăng: số khách nhập nhỏ hơn số đã lưu (gõ nhầm) thì giữ nguyên.
@@ -436,6 +439,21 @@ class AppointmentController extends Controller
         }
 
         return $serviceIds !== [] ? 'REPAIR' : 'DIAGNOSIS';
+    }
+
+    /**
+     * Báo trùng lịch. Xe chưa biển số nói rõ xe nào + cách đặt cho một xe khác giống hệt
+     * (hệ thống chỉ phân biệt xe chưa biển số bằng dòng xe + phiên bản).
+     */
+    private function duplicateSlotMessage(Vehicle $vehicle, string $time): string
+    {
+        if (trim((string) $vehicle->license_plate) !== '') {
+            return 'Xe đã có lịch hẹn tại khung giờ này.';
+        }
+        $vehicle->loadMissing(['model.brand', 'trim']);
+        $name = trim(implode(' ', array_filter([$vehicle->model?->brand?->name, $vehicle->model?->name, $vehicle->trim?->name ?? $vehicle->variant]))) ?: 'Xe này';
+
+        return "Bạn đã có lịch cho {$name} (chưa có biển số) lúc ".substr($time, 0, 5).'. Nếu đây là một xe khác, hãy quay lại bước Xe và chọn "Một xe khác".';
     }
 
     /**
