@@ -269,6 +269,9 @@ function Appointments() {
         <span className="flex items-center gap-1.5"><Icon name="clock" size={14} className="text-cs-accent-text"/><b>{hhmm(a.appointment_time)}</b></span>
       </span>
       <OverdueBadge a={a}/>
+      {(a.customer_reschedules ?? 0) > 0 && <span title="Khách tự đổi ngày giờ trên web — xem lịch sử trong trang Tiếp nhận"
+        className="inline-flex items-center gap-1 rounded-full bg-info-soft px-2 py-0.5 text-caption font-semibold text-info-fg">
+        <Icon name="refresh" size={12}/>Khách đổi lịch {a.customer_reschedules} lần</span>}
     </span> },
     { key: "request", header: "Dịch vụ / Yêu cầu", hideOnMobile: true, render: a => { const names = itemNames(a); return <span className="block max-w-60 truncate text-cs-text-2" title={names.join(", ") || a.symptom_description || undefined}>{names[0] ?? (a.symptom_description ? "Kiểm tra theo mô tả" : "Chưa chọn dịch vụ")}{names.length > 1 ? ` +${names.length - 1}` : ""}</span>; } },
     { key: "status", header: "Trạng thái", render: a => <StatusBadge domain="appointment" status={a.status}/> },

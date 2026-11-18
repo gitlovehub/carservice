@@ -16,6 +16,7 @@ use App\Services\AppointmentSlotService;
 use App\Services\CapacityService;
 use App\Services\CounterRecordService;
 use App\Services\CustomerNotifier;
+use App\Services\CustomerReschedulePolicy;
 use App\Support\GarageDay;
 use Carbon\Carbon;
 use Exception;
@@ -199,7 +200,9 @@ class AdvisorAppointmentController extends Controller
             } else {
                 $query->orderBy('appointment_date', 'asc')->orderBy('appointment_time', 'asc');
             }
+            // Số lần khách tự đổi lịch trên web (cố vấn thấy nhãn trên bảng). Thêm sau khi đã đếm theo trạng thái.
             $appointments = $query
+                ->withCount(['activities as customer_reschedules' => fn ($q) => $q->where('action', CustomerReschedulePolicy::ACTION)])
                 ->paginate(min(500, max(1, (int) $request->query('per_page', 15))));
             $appointments->getCollection()->each(fn (Appointment $a) => $this->withEstimates($a));
 

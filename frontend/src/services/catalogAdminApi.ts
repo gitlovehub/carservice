@@ -22,6 +22,8 @@ export type AppointmentRow = {
   end_time?: string;
   /** Thời điểm khách / nhân viên đặt lịch (UTC ISO từ Laravel). */
   created_at?: string;
+  /** Số lần khách tự đổi ngày giờ trên web (danh sách cố vấn). */
+  customer_reschedules?: number;
   estimated_minutes?: number;
   estimated_total?: number;
   request_type: RequestType;

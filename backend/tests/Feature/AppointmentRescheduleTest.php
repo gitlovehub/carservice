@@ -104,6 +104,7 @@ class AppointmentRescheduleTest extends TestCase
         $this->reschedule(['reason_type' => 'OTHER', 'reason' => ''])->assertUnprocessable()->assertJsonValidationErrors('reason');
         $this->reschedule(['reason_type' => 'BAD'])->assertUnprocessable()->assertJsonValidationErrors('reason_type');
         $this->reschedule(['contact_method' => null])->assertUnprocessable()->assertJsonValidationErrors('contact_method');
+        $this->reschedule(['contact_method' => 'SMS'])->assertUnprocessable()->assertJsonValidationErrors('contact_method');
         $this->assertUnchanged();
         Mail::assertNothingSent();
     }
@@ -152,7 +153,9 @@ class AppointmentRescheduleTest extends TestCase
 
     public function test_customer_and_advisor_lists_see_the_new_time(): void
     {
-        $this->reschedule()->assertOk();
+        // Thống nhất qua email cũng hợp lệ.
+        $this->reschedule(['contact_method' => 'EMAIL'])->assertOk();
+        $this->assertSame('EMAIL', $this->appointment->fresh()->activities()->first()->new_values['contact_method']);
 
         // Cố vấn: lọc ngày cũ không còn lịch, ngày mới có; số đếm theo ngày cập nhật.
         $old = $this->actingAs($this->advisor)->getJson("/api/advisor/appointments?date_from={$this->day}&date_to={$this->day}")->assertOk();
@@ -164,6 +167,8 @@ class AppointmentRescheduleTest extends TestCase
         // Khách: không phải xác nhận lại; thấy giờ mới + thông báo đổi lịch + email (kênh sẵn có).
         $this->assertSame('PENDING', $this->appointment->fresh()->status);
         $this->assertSame(1, Notification::query()->where('account_id', $this->customerAccount->id)->where('type', Notification::TYPE_APPOINTMENT_RESCHEDULED)->count());
-        Mail::assertSent(AppointmentRescheduledMail::class, fn ($mail) => $mail->hasTo('khach@example.test'));
+        // Email đổi lịch có ghi rõ xe (tên xe · biển số).
+        $plate = $this->appointment->vehicle->license_plate;
+        Mail::assertSent(AppointmentRescheduledMail::class, fn ($mail) => $mail->hasTo('khach@example.test') && str_contains($mail->render(), 'Xe: <strong') && (! $plate || str_contains($mail->render(), $plate)));
     }
 }

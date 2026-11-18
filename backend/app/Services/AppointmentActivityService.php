@@ -59,7 +59,7 @@ class AppointmentActivityService
     ];
 
     /** Cách cố vấn đã thống nhất giờ mới với khách. */
-    public const CONTACT_METHODS = ['PHONE' => 'Điện thoại', 'IN_PERSON' => 'Trực tiếp tại gara', 'OTHER' => 'Kênh khác'];
+    public const CONTACT_METHODS = ['PHONE' => 'Điện thoại', 'EMAIL' => 'Email', 'IN_PERSON' => 'Trực tiếp tại gara', 'OTHER' => 'Kênh khác'];
 
     /**
      * Cố vấn đổi lịch SAU KHI đã thống nhất với khách (khách không phải xác nhận lại trên web):

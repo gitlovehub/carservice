@@ -20,6 +20,7 @@ import {
 import { AccountCard, AccountPage, FilterBar, FilterSelect, InfoTile, InlineError, ModalFoot, ModalHead } from "./account/AccountKit";
 import { MODAL_CLASS, PRIMARY_RED } from "./account/accountStyles";
 import { useDeepLink } from "./account/useDeepLink";
+import { useGarageInfo } from "../../services/garageService";
 
 const PER_PAGE = 5;
 const canCancel = (a: CustomerAppointment) => ["PENDING", "CONFIRMED"].includes(a.status);
@@ -68,6 +69,7 @@ function DateBlock({ value }: { value: string }) {
 
 export default function Appointments() {
   const { notify } = useAppFeedback();
+  const garage = useGarageInfo();
   const [items, setItems] = useState<CustomerAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -264,6 +266,13 @@ export default function Appointments() {
               {selected.note && <div><p className="text-[13px] font-bold text-cs-muted">Ghi chú</p><p className="mt-1 whitespace-pre-line text-[15px] text-cs-text">{selected.note}</p></div>}
               {selected.status === "CANCELLED" && selected.cancel_reason && <InlineError>Lý do hủy: {selected.cancel_reason}</InlineError>}
 
+              {/* Giới hạn khách tự đổi lịch: còn mấy lần / hạn chót; hết thì hướng dẫn liên hệ gara. */}
+              {canEdit(selected) && selected.reschedule && (selected.reschedule.allowed
+                ? <p className="text-[13px] text-cs-muted">Bạn còn <b className="text-cs-text">{selected.reschedule.left}/{selected.reschedule.limit}</b> lần tự đổi ngày giờ, trước giờ hẹn ít nhất {selected.reschedule.cutoff_hours} tiếng.</p>
+                : <div className="rounded-2xl bg-cs-surface-2 p-3.5 text-[14px] text-cs-text-2">
+                  <p>{selected.reschedule.message}</p>
+                  {garage?.phone && <a href={`tel:${garage.phone.replace(/[^+\d]/g, "")}`} className="mt-1.5 inline-flex items-center gap-1.5 font-semibold text-cs-accent-text hover:underline"><Icon name="phone" size={14}/>Gọi gara {garage.phone}</a>}
+                </div>)}
               {mode === "edit" && (
                 <div className="grid gap-4 rounded-2xl border border-cs-border p-4 sm:grid-cols-2">
                   <label className="flex flex-col gap-1.5"><span className="text-label text-cs-text-2">Ngày hẹn mới</span>
@@ -294,7 +303,7 @@ export default function Appointments() {
             </> : <>
               <Button variant="secondary" onClick={closeModal}>Đóng</Button>
               {canCancel(selected) && <Button variant="danger-outline" icon="x" onClick={() => setMode("cancel")}>Hủy lịch</Button>}
-              {canEdit(selected) && <Button variant="primary" icon="calendar" className={PRIMARY_RED} onClick={() => setMode("edit")}>Đổi ngày giờ</Button>}
+              {canEdit(selected) && selected.reschedule?.allowed !== false && <Button variant="primary" icon="calendar" className={PRIMARY_RED} disabled={detailLoading} onClick={() => setMode("edit")}>Đổi ngày giờ</Button>}
             </>}
           </ModalFoot>
         </Modal>

@@ -4,6 +4,7 @@ import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { adminApi, errorMessage, type HolidayRange } from "../../services/adminApi";
 import { BookingSlotsPanel } from "./BookingSlotsPanel";
+import { ReschedulePolicyPanel } from "./ReschedulePolicyPanel";
 import { Panel } from "./kit/AdminKit";
 import { useAdminQuery } from "./kit/useAdminQuery";
 
@@ -99,6 +100,7 @@ export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: stri
         </div>}
     </Panel>
     <BookingSlotsPanel open={open} close={close}/>
+    <ReschedulePolicyPanel/>
 
     <Modal open={!!form} onClose={() => setForm(null)} dismissible={!saving} title={form?.replaceIds.length ? "Sửa ngày nghỉ" : "Thêm ngày nghỉ"} size="sm"
       footer={<><Button disabled={saving} onClick={() => setForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void save()}>Lưu</Button></>}>

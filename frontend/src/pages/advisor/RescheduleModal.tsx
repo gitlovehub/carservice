@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Modal } from "../../components/ui";
-import { Field, Input, Textarea } from "../../components/ui/Field";
 import { Icon } from "../../components/ui/Icon";
 import { fetchApi } from "../../services/api";
 import { bookingApi, type BookingAvailability } from "../../services/workflowService";
@@ -21,9 +20,11 @@ const REASONS: Array<{ id: ReasonType; label: string }> = [
   { id: "GARAGE_ADJUSTMENT", label: "Gara cần điều chỉnh khung giờ" },
   { id: "OTHER", label: "Lý do khác" },
 ];
-const METHODS = [{ id: "PHONE", label: "Điện thoại" }, { id: "IN_PERSON", label: "Trực tiếp tại gara" }, { id: "OTHER", label: "Kênh khác" }];
+const METHODS = [{ id: "PHONE", label: "Điện thoại" }, { id: "EMAIL", label: "Email" }, { id: "IN_PERSON", label: "Tại gara" }, { id: "OTHER", label: "Kênh khác" }];
 const isoDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const dmy = (iso: string) => { const [y, m, d] = iso.slice(0, 10).split("-"); return `${d}/${m}/${y}`; };
+const WEEKDAYS = ["Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+const weekday = (iso: string) => { const [y, m, d] = iso.slice(0, 10).split("-").map(Number); return WEEKDAYS[new Date(y, m - 1, d).getDay()]; };
 const choice = (on: boolean) => `cursor-pointer rounded-control border px-3 py-2 text-left text-small transition-colors ${on
   ? "border-cs-accent bg-cs-soft text-cs-accent-text"
   : "border-cs-border bg-cs-surface text-cs-text hover:border-cs-border-strong hover:bg-cs-hover"}`;
@@ -49,7 +50,20 @@ export function RescheduleModal<T extends ReschedulableAppointment>({ appointmen
   // Khung giờ của ngày đang chọn (tải lại khi đổi ngày).
   const availability = useAdminQuery(`reschedule-slots:${date}`, () => bookingApi.availability(date));
   const slots: BookingAvailability | null = availability.data ?? null;
-  const changeDate = (value: string) => { setDate(value); setTime(""); };
+  const changeDate = (value: string) => { setDate(value); setTime(""); setTimeOpen(false); };
+  const dateRef = useRef<HTMLInputElement>(null);
+  const openDatePicker = () => { const input = dateRef.current; if (!input) return; try { input.showPicker(); } catch { input.focus(); } };
+  const [timeOpen, setTimeOpen] = useState(false);
+  const timeBoxRef = useRef<HTMLDivElement>(null);
+  // Bấm ra ngoài / Esc → đóng danh sách giờ.
+  useEffect(() => {
+    if (!timeOpen) return;
+    const onDown = (e: MouseEvent) => { if (!timeBoxRef.current?.contains(e.target as Node)) setTimeOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); setTimeOpen(false); } };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey, true);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey, true); };
+  }, [timeOpen]);
 
   const car = [appointment.vehicle?.model?.brand?.name, appointment.vehicle?.model?.name].filter(Boolean).join(" ") || "Chưa rõ dòng xe";
   const noteOk = reasonType !== "OTHER" ? note.trim().length === 0 || note.trim().length >= 5 : note.trim().length >= 5;
@@ -72,79 +86,131 @@ export function RescheduleModal<T extends ReschedulableAppointment>({ appointmen
   }
 
   const closedText = slots?.holiday ? `Gara nghỉ ngày này: ${slots.holiday}.` : slots && !slots.active ? "Gara không làm việc ngày này." : "";
-  return <Modal open onClose={onClose} dismissible={!saving} size="md" title="Đổi lịch hẹn" description={appointment.appointment_code ?? undefined}
+  // Khung giờ cho ô chọn: chỉ khung còn chỗ chọn được; đầy / đã qua / giờ hiện tại hiện mờ (disabled) để cố vấn biết lý do.
+  const slotOptions = (slots?.slots ?? []).map(s => {
+    const isCurrent = date === currentDate && s.time === currentTime;
+    const note = isCurrent ? "Giờ hiện tại" : s.status === "full" ? "Đã đầy" : s.status === "past" ? "Đã qua" : s.status === "closed" ? "Không nhận" : `Còn ${slots!.max_slots - s.booked} chỗ`;
+    return { time: s.time, note, disabled: s.status !== "available" || isCurrent };
+  });
+  const slotHint = availability.loading && !slots ? "Đang tải khung giờ…" : availability.error ? availability.error : closedText
+    || (slots && !slots.slots.length ? "Ngày này chưa có khung giờ đặt lịch." : slots && !slotOptions.some(o => !o.disabled) ? "Ngày này đã kín khung giờ." : "");
+  const control = "flex min-h-11 w-full items-center gap-2.5 rounded-control border border-cs-border bg-cs-surface px-3.5 text-small text-cs-text transition-colors hover:border-cs-border-strong focus-within:border-cs-accent";
+
+  return <Modal open onClose={onClose} dismissible={!saving} size="lg"
+    title={<span className="flex items-center gap-3.5">
+      <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-cs-soft text-cs-accent-text" aria-hidden="true"><Icon name="calendar" size={24}/></span>
+      <span className="min-w-0"><span className="block">Đổi lịch hẹn</span>
+        {appointment.appointment_code && <span className="block text-small font-normal text-cs-muted">{appointment.appointment_code}</span>}</span>
+    </span>}
     footer={<>
       <Button variant="secondary" disabled={saving} onClick={onClose}>Hủy</Button>
-      <Button variant="primary" icon="calendar" loading={saving} loadingText="Đang lưu..." disabled={!canSave} onClick={() => void save()}>Lưu lịch hẹn mới</Button>
+      <Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." disabled={!canSave} onClick={() => void save()}>Lưu lịch hẹn mới</Button>
     </>}>
     <div className="space-y-5">
-      {/* Lịch hiện tại */}
-      <section className="rounded-card bg-cs-surface-2 p-3.5 text-small">
-        <p className="mb-2 text-caption font-bold uppercase tracking-wide text-cs-muted">Lịch hiện tại</p>
-        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5">
-          <dt className="text-cs-muted">Khách hàng</dt>
-          <dd className="truncate text-right font-semibold text-cs-text">{appointment.customer?.full_name || "—"}
-            {appointment.customer?.phone && <> · <a className="text-cs-accent-text hover:underline" href={`tel:${appointment.customer.phone.replace(/[^+\d]/g, "")}`}>{appointment.customer.phone}</a></>}</dd>
-          <dt className="text-cs-muted">Xe</dt>
-          <dd className="truncate text-right font-semibold text-cs-text">{car} · {appointment.vehicle?.license_plate || "xxx.xx"}</dd>
-          <dt className="text-cs-muted">Giờ hẹn</dt>
-          <dd className="text-right font-semibold tabular-nums text-cs-text">{currentTime} · {dmy(currentDate)}</dd>
-        </dl>
-      </section>
-
-      {/* Lịch mới */}
-      <section className="space-y-3">
-        <p className="text-caption font-bold uppercase tracking-wide text-cs-accent-text">Lịch mới</p>
-        <Field label="Ngày hẹn mới" required>
-          <Input type="date" min={isoDay()} value={date} onChange={e => e.target.value && changeDate(e.target.value)}/>
-        </Field>
-        <div>
-          <p className="mb-2 text-small font-semibold text-cs-text">Giờ hẹn mới <span className="text-danger-fg">*</span></p>
-          {availability.loading && !slots ? <p className="text-small text-cs-muted">Đang tải khung giờ…</p>
-            : availability.error ? <p className="text-small text-danger-fg">{availability.error}</p>
-            : closedText ? <p className="text-small text-cs-muted">{closedText}</p>
-            : !slots?.slots.length ? <p className="text-small text-cs-muted">Ngày này chưa có khung giờ đặt lịch.</p>
-            : <div role="radiogroup" aria-label="Khung giờ" className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-              {slots.slots.map(s => {
-                const isCurrent = date === currentDate && s.time === currentTime;
-                const disabled = s.status !== "available" || isCurrent;
-                return <button key={s.time} type="button" role="radio" aria-checked={time === s.time} disabled={disabled} onClick={() => setTime(s.time)}
-                  title={isCurrent ? "Giờ hiện tại của lịch" : s.status === "full" ? "Đã đầy" : s.status === "past" ? "Đã qua" : s.status === "closed" ? "Không nhận" : `Còn ${slots.max_slots - s.booked} chỗ`}
-                  className={`min-h-10 rounded-control border text-small font-semibold tabular-nums transition-colors ${time === s.time
-                    ? "border-cs-accent bg-cs-accent text-cs-accent-contrast"
-                    : disabled ? "cursor-not-allowed border-cs-border text-cs-muted line-through opacity-50"
-                    : "cursor-pointer border-cs-border bg-cs-surface text-cs-text hover:border-cs-accent hover:bg-cs-hover"}`}>{s.time}</button>;
-              })}
-            </div>}
+      {/* Lịch hiện tại: 3 cột Khách hàng · Xe · Thời gian hẹn */}
+      <section className="rounded-card border border-cs-border bg-cs-surface-2 p-4">
+        <span className="inline-flex rounded-full bg-cs-soft px-3 py-1 text-small font-semibold text-cs-accent-text">Lịch hiện tại</span>
+        <div className="mt-3 grid gap-4 sm:grid-cols-3 sm:divide-x sm:divide-cs-border">
+          <div className="flex min-w-0 gap-2.5">
+            <Icon name="user" size={18} className="mt-0.5 shrink-0 text-cs-muted"/>
+            <div className="min-w-0"><p className="text-caption text-cs-muted">Khách hàng</p>
+              <p className="truncate font-semibold text-cs-text">{appointment.customer?.full_name || "—"}</p>
+              {appointment.customer?.phone && <a className="text-small tabular-nums text-cs-text-2 hover:text-cs-accent-text" href={`tel:${appointment.customer.phone.replace(/[^+\d]/g, "")}`}>{appointment.customer.phone}</a>}</div>
+          </div>
+          <div className="flex min-w-0 gap-2.5 sm:pl-4">
+            <Icon name="car" size={18} className="mt-0.5 shrink-0 text-cs-muted"/>
+            <div className="min-w-0"><p className="text-caption text-cs-muted">Xe</p>
+              <p className="truncate font-semibold text-cs-text">{car}</p>
+              <p className="text-small tabular-nums text-cs-text-2">{appointment.vehicle?.license_plate || "xxx.xx"}</p></div>
+          </div>
+          <div className="flex min-w-0 gap-2.5 sm:pl-4">
+            <Icon name="calendar" size={18} className="mt-0.5 shrink-0 text-cs-muted"/>
+            <div className="min-w-0"><p className="text-caption text-cs-muted">Thời gian hẹn</p>
+              <p className="font-semibold tabular-nums text-cs-text">{currentTime} · {dmy(currentDate)}</p></div>
+          </div>
         </div>
       </section>
 
-      {/* Lý do */}
-      <section className="space-y-2">
+      {/* Lịch mới: ngày + giờ cùng hàng */}
+      <section className="space-y-3 border-t border-cs-border pt-5">
+        <p className="text-base font-bold text-cs-accent-text">Lịch mới</p>
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          {/* Ngày: hiện "Thứ Năm, 19/11/2026" (dd/mm/yyyy, không theo định dạng trình duyệt); bấm mở lịch chọn ngày. */}
+          <div>
+            <span className="mb-1.5 block text-small font-semibold text-cs-text">Ngày hẹn mới <span className="text-danger-fg">*</span></span>
+            <span className="relative block">
+              <button type="button" onClick={openDatePicker} className={`${control} cursor-pointer text-left`}>
+                <Icon name="calendar" size={17} className="shrink-0 text-cs-muted"/>
+                <span className="min-w-0 flex-1 truncate tabular-nums">{weekday(date)}, {dmy(date)}</span>
+                <Icon name="chevron-down" size={16} className="shrink-0 text-cs-muted"/>
+              </button>
+              <input ref={dateRef} type="date" tabIndex={-1} aria-hidden="true" min={isoDay()} value={date} onChange={e => e.target.value && changeDate(e.target.value)}
+                className="pointer-events-none absolute bottom-0 left-4 h-px w-px opacity-0"/>
+            </span>
+          </div>
+          {/* Giờ: danh sách tự vẽ theo màu giao diện (ô chọn gốc của trình duyệt nền trắng, khó đọc ở chế độ tối). */}
+          <div ref={timeBoxRef} className="relative">
+            <span className="mb-1.5 block text-small font-semibold text-cs-text">Giờ hẹn mới <span className="text-danger-fg">*</span></span>
+            <button type="button" aria-haspopup="listbox" aria-expanded={timeOpen} disabled={!slotOptions.length} onClick={() => setTimeOpen(v => !v)}
+              className={`${control} cursor-pointer text-left disabled:cursor-not-allowed disabled:opacity-60`}>
+              <Icon name="clock" size={17} className="shrink-0 text-cs-muted"/>
+              <span className={`min-w-0 flex-1 truncate tabular-nums ${time ? "font-semibold text-cs-text" : "text-cs-muted"}`}>{time || (slotOptions.length ? "Chọn khung giờ" : "Không có khung giờ")}</span>
+              <Icon name="chevron-down" size={16} className={`shrink-0 text-cs-muted transition-transform ${timeOpen ? "rotate-180" : ""}`}/>
+            </button>
+            {timeOpen && <ul role="listbox" aria-label="Khung giờ" className="absolute inset-x-0 top-full z-20 mt-1.5 max-h-64 overflow-y-auto rounded-card border border-cs-border bg-cs-surface p-1 shadow-overlay">
+              {slotOptions.map(o => <li key={o.time} role="option" aria-selected={time === o.time} aria-disabled={o.disabled}>
+                <button type="button" disabled={o.disabled} onClick={() => { setTime(o.time); setTimeOpen(false); }}
+                  className={`flex w-full items-center justify-between gap-3 rounded-control px-3 py-2 text-left text-small transition-colors ${time === o.time
+                    ? "bg-cs-soft font-semibold text-cs-accent-text"
+                    : o.disabled ? "cursor-not-allowed text-cs-muted opacity-55" : "cursor-pointer text-cs-text hover:bg-cs-hover"}`}>
+                  <b className="tabular-nums">{o.time}</b><span className="text-caption text-cs-muted">{o.note}</span>
+                </button>
+              </li>)}
+            </ul>}
+            {slotHint && <span className="mt-1.5 block text-caption text-cs-muted">{slotHint}</span>}
+          </div>
+        </div>
+      </section>
+
+      {/* Lý do thay đổi */}
+      <section className="space-y-2.5">
         <p className="text-small font-semibold text-cs-text">Lý do thay đổi <span className="text-danger-fg">*</span></p>
-        <div role="radiogroup" aria-label="Lý do thay đổi" className="grid gap-2 sm:grid-cols-3">
-          {REASONS.map(r => <button key={r.id} type="button" role="radio" aria-checked={reasonType === r.id} onClick={() => setReasonType(r.id)} className={choice(reasonType === r.id)}>{r.label}</button>)}
+        <div role="radiogroup" aria-label="Lý do thay đổi" className="grid gap-2.5 sm:grid-cols-[auto_minmax(0,1.3fr)_auto]">
+          {REASONS.map(r => <button key={r.id} type="button" role="radio" aria-checked={reasonType === r.id} onClick={() => setReasonType(r.id)}
+            className={`${choice(reasonType === r.id)} flex min-h-11 items-center gap-2.5 px-4`}>
+            <span className={`grid size-4 shrink-0 place-items-center rounded-full border-2 ${reasonType === r.id ? "border-cs-accent" : "border-cs-border-strong"}`} aria-hidden="true">
+              {reasonType === r.id && <span className="size-2 rounded-full bg-cs-accent"/>}
+            </span>{r.label}</button>)}
         </div>
-        <Textarea rows={2} maxLength={200} value={note} onChange={e => setNote(e.target.value)} aria-label="Ghi chú lý do"
-          placeholder={reasonType === "OTHER" ? "Nhập lý do (bắt buộc, ít nhất 5 ký tự)" : "Ghi chú thêm (không bắt buộc) — khách sẽ nhận qua email"}/>
+        <div className="relative rounded-control border border-cs-border bg-cs-surface transition-colors focus-within:border-cs-accent hover:border-cs-border-strong">
+          <Icon name="edit" size={16} className="pointer-events-none absolute left-3.5 top-3.5 text-cs-muted"/>
+          <textarea rows={2} maxLength={200} value={note} onChange={e => setNote(e.target.value)} aria-label="Ghi chú lý do"
+            placeholder={reasonType === "OTHER" ? "Nhập lý do (bắt buộc, ít nhất 5 ký tự)" : "Ghi chú thêm (không bắt buộc)"}
+            className="block w-full resize-none bg-transparent py-3 pl-10 pr-3.5 text-small text-cs-text outline-none placeholder:text-cs-muted"/>
+          <span className="block px-3.5 pb-2 text-right text-caption tabular-nums text-cs-muted">{note.length}/200</span>
+        </div>
         {!noteOk && <p className="text-caption text-danger-fg">Ghi chú cần ít nhất 5 ký tự.</p>}
       </section>
 
-      {/* Xác nhận liên hệ */}
-      <section className="space-y-2">
+      {/* Xác nhận với khách */}
+      <section className="space-y-2.5">
         <p className="text-small font-semibold text-cs-text">Xác nhận với khách <span className="text-danger-fg">*</span></p>
-        <div role="radiogroup" aria-label="Xác nhận với khách" className="grid gap-2 sm:grid-cols-2">
-          <button type="button" role="radio" aria-checked={contact === "agreed"} onClick={() => setContact("agreed")} className={`${choice(contact === "agreed")} flex items-center gap-2`}>
-            <Icon name="check" size={15}/>Đã liên hệ và khách đồng ý</button>
-          <button type="button" role="radio" aria-checked={contact === "not_reached"} onClick={() => setContact("not_reached")} className={`${choice(contact === "not_reached")} flex items-center gap-2`}>
-            <Icon name="phone" size={15}/>Chưa liên hệ được khách</button>
+        <div role="radiogroup" aria-label="Xác nhận với khách" className="grid gap-2.5 sm:grid-cols-2">
+          <button type="button" role="radio" aria-checked={contact === "agreed"} onClick={() => setContact("agreed")} className={`${choice(contact === "agreed")} flex min-h-12 items-center gap-2.5 px-4`}>
+            <span className={`grid size-5 shrink-0 place-items-center rounded-full ${contact === "agreed" ? "bg-cs-accent text-cs-accent-contrast" : "border-2 border-cs-border-strong"}`} aria-hidden="true">
+              {contact === "agreed" && <Icon name="check" size={12}/>}</span>Đã liên hệ và khách đồng ý</button>
+          <button type="button" role="radio" aria-checked={contact === "not_reached"} onClick={() => setContact("not_reached")} className={`${choice(contact === "not_reached")} flex min-h-12 items-center gap-2.5 px-4`}>
+            <Icon name="phone" size={17} className="shrink-0"/>Chưa liên hệ được khách</button>
         </div>
-        {contact === "agreed" && <label className="flex flex-wrap items-center gap-2 text-small text-cs-muted">Đã thống nhất qua
-          <select value={method} onChange={e => setMethod(e.target.value)}
-            className="min-h-9 cursor-pointer rounded-control border border-cs-border bg-cs-surface px-2.5 text-small font-semibold text-cs-text transition-colors hover:border-cs-border-strong focus:border-cs-accent focus:outline-none">
-            {METHODS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-          </select>
-        </label>}
+        {contact === "agreed" && <div className="flex flex-wrap items-center gap-2 text-small text-cs-muted">
+          <span id="contact-method-label">Đã thống nhất qua</span>
+          <span role="radiogroup" aria-labelledby="contact-method-label" className="flex flex-wrap gap-1.5">
+            {METHODS.map(m => <button key={m.id} type="button" role="radio" aria-checked={method === m.id} onClick={() => setMethod(m.id)}
+              className={`min-h-8 cursor-pointer rounded-full border px-3 text-small font-semibold transition-colors ${method === m.id
+                ? "border-cs-accent bg-cs-soft text-cs-accent-text"
+                : "border-cs-border bg-cs-surface text-cs-text-2 hover:border-cs-border-strong hover:bg-cs-hover hover:text-cs-text"}`}>{m.label}</button>)}
+          </span>
+        </div>}
         {contact === "not_reached" && <p className="flex items-start gap-2 rounded-card bg-warning-soft px-3 py-2.5 text-caption text-warning-fg">
           <Icon name="alert" size={15} className="mt-0.5 shrink-0"/>Lịch cũ được giữ nguyên. Hãy liên hệ khách và thống nhất giờ mới trước khi lưu.</p>}
       </section>

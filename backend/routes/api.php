@@ -408,6 +408,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::put('/admin/working-hours/{id}', [WorkingHoursController::class, 'update']);
         Route::put('/admin/booking-slots', [WorkingHoursController::class, 'updateBookingSlots']);
+        // Giới hạn khách tự đổi lịch trên web (số lần / hạn chót trước giờ hẹn).
+        Route::get('/admin/reschedule-policy', [WorkingHoursController::class, 'reschedulePolicy']);
+        Route::put('/admin/reschedule-policy', [WorkingHoursController::class, 'updateReschedulePolicy']);
     });
 
     /*

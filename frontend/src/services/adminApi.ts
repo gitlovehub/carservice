@@ -82,6 +82,7 @@ export type InvoiceList = Paged<AdminInvoice, { total: number; open: number; deb
 
 /* ---------------------------------------------------------- Khung giờ đặt lịch */
 export type BookingSlots = { morning: string[]; afternoon: string[] };
+export type ReschedulePolicy = { limit: number; cutoff_hours: number };
 
 /* ------------------------------------------------------------------ Đánh giá */
 /** Khách đánh giá GA-RA sau một lần bảo dưỡng / sửa chữa (gắn với phiếu sửa chữa). */
@@ -174,6 +175,9 @@ export const adminApi = {
 
   bookingSlots: (signal?: AbortSignal) => fetchApi<{ data: BookingSlots }>("/booking-slots", { signal }).then(r => r.data),
   saveBookingSlots: (body: BookingSlots) => send<Message<BookingSlots>>("/admin/booking-slots", "PUT", body),
+  /** Giới hạn khách tự đổi lịch trên web: số lần tối đa mỗi lịch, hạn chót (giờ trước giờ hẹn). */
+  reschedulePolicy: (signal?: AbortSignal) => fetchApi<{ data: ReschedulePolicy }>("/admin/reschedule-policy", { signal }).then(r => r.data),
+  saveReschedulePolicy: (body: ReschedulePolicy) => send<Message<ReschedulePolicy>>("/admin/reschedule-policy", "PUT", body),
 
   reviews: (params: Params, signal?: AbortSignal) => fetchApi<ReviewList>(`/admin/reviews${query(params)}`, { signal }),
   replyReview: (id: number, reply: string) => send<Message<AdminReview>>(`/admin/reviews/${id}/reply`, "POST", { reply }),

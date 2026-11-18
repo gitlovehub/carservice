@@ -43,6 +43,8 @@ export type CustomerAppointment = {
   vehicle?: CustomerVehicle | null;
   services?: { id: number; name: string; base_price?: string | number; estimated_minutes?: number }[];
   packages?: { id: number; name: string; mileage_milestone?: number }[];
+  /** Chỉ có ở chi tiết: khách còn tự đổi lịch được không (tối đa N lần, trước giờ hẹn ≥ H giờ). */
+  reschedule?: { limit: number; cutoff_hours: number; used: number; left: number; deadline: string; allowed: boolean; message: string | null };
 };
 
 export type Pagination = {

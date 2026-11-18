@@ -11,6 +11,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
 use App\Services\AppointmentSlotService;
+use App\Services\CustomerReschedulePolicy;
 use App\Support\VehicleCatalogSelection;
 use Carbon\Carbon;
 use Exception;
@@ -272,6 +273,8 @@ class AppointmentController extends Controller
         }
 
         $this->authorize('view', $appointment);
+        // Giao diện khách biết còn tự đổi được mấy lần / tới khi nào (hết thì hiện "Liên hệ gara").
+        $appointment->setAttribute('reschedule', app(CustomerReschedulePolicy::class)->state($appointment));
 
         return response()->json([
             'success' => true,
@@ -311,7 +314,7 @@ class AppointmentController extends Controller
 
             $validated = $request->validated();
 
-            DB::transaction(function () use ($appointment, $validated, $customer) {
+            DB::transaction(function () use ($appointment, $validated, $customer, $request) {
                 // Khóa lịch hẹn để hai lần đổi giờ đồng thời không cùng lọt qua kiểm tra slot.
                 $appointment = Appointment::whereKey($appointment->id)->lockForUpdate()->firstOrFail();
 
@@ -331,6 +334,13 @@ class AppointmentController extends Controller
                     || isset($validated['appointment_date'])
                     || isset($validated['appointment_time']);
 
+                // Đổi NGÀY / GIỜ (không tính đổi xe / dịch vụ): áp giới hạn số lần + hạn chót, ghi lịch sử.
+                $old = ['appointment_date' => Carbon::parse($appointment->appointment_date)->toDateString(), 'appointment_time' => substr((string) $appointment->appointment_time, 0, 8)];
+                $timeChanged = $date !== $old['appointment_date'] || $time !== $old['appointment_time'];
+                if ($timeChanged) {
+                    app(CustomerReschedulePolicy::class)->assertAllowed($appointment);
+                }
+
                 if ($slotChanged) {
                     $this->assertSlotIsBookable($date, $time, $vehicleId, $appointment->id);
                 }
@@ -348,6 +358,10 @@ class AppointmentController extends Controller
                         $validated['service_ids'] ?? $appointment->services()->pluck('services.id')->all(),
                         $validated['package_ids'] ?? $appointment->packages()->pluck('maintenance_packages.id')->all(),
                     );
+                }
+
+                if ($timeChanged) {
+                    app(CustomerReschedulePolicy::class)->record($appointment->fresh(), $request->user(), $old);
                 }
             });
 

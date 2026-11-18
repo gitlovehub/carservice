@@ -79,6 +79,35 @@ class WorkingHoursController extends Controller
         return response()->json(['data' => GarageSetting::bookingSlots()]);
     }
 
+    /** GET /admin/reschedule-policy — giới hạn khách tự đổi lịch: số lần tối đa mỗi lịch, hạn chót (giờ trước giờ hẹn). */
+    public function reschedulePolicy(): JsonResponse
+    {
+        return response()->json(['data' => GarageSetting::reschedulePolicy()]);
+    }
+
+    /** PUT /admin/reschedule-policy — admin chỉnh giới hạn khách tự đổi lịch. */
+    public function updateReschedulePolicy(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'limit' => ['required', 'integer', 'min:0', 'max:10'],
+            'cutoff_hours' => ['required', 'integer', 'min:0', 'max:168'],
+        ], [
+            'limit.*' => 'Số lần tự đổi phải từ 0 đến 10 (0 = khách không tự đổi được).',
+            'cutoff_hours.*' => 'Hạn chót phải từ 0 đến 168 giờ (7 ngày).',
+        ]);
+        $setting = GarageSetting::current() ?? new GarageSetting(['name' => 'CarService']);
+        $setting->fill([
+            'customer_reschedule_limit' => $data['limit'],
+            'customer_reschedule_cutoff_hours' => $data['cutoff_hours'],
+            'updated_by_account_id' => $request->user()->id,
+        ])->save();
+
+        return response()->json([
+            'message' => "Đã lưu: khách tự đổi tối đa {$data['limit']} lần, trước giờ hẹn ít nhất {$data['cutoff_hours']} giờ.",
+            'data' => GarageSetting::reschedulePolicy(),
+        ]);
+    }
+
     /** PUT /admin/booking-slots — admin sửa khung giờ đặt lịch buổi sáng / chiều. */
     public function updateBookingSlots(Request $request): JsonResponse
     {

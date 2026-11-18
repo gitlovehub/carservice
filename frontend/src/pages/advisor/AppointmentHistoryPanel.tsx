@@ -10,10 +10,11 @@ const ACTION_TEXT: Record<string, string> = {
   "appointment.confirmed_by_customer": "Khách xác nhận qua email",
   "appointment.checked_in": "Tiếp nhận xe",
   "appointment.rescheduled": "Đổi lịch",
+  "appointment.rescheduled_by_customer": "Khách tự đổi lịch",
   "appointment.cancelled": "Hủy lịch",
   "appointment.no_show": "Khách không đến",
 };
-const CONTACT_TEXT: Record<string, string> = { PHONE: "điện thoại", IN_PERSON: "trực tiếp tại gara", OTHER: "kênh khác" };
+const CONTACT_TEXT: Record<string, string> = { PHONE: "điện thoại", EMAIL: "email", IN_PERSON: "trực tiếp tại gara", OTHER: "kênh khác" };
 
 /**
  * Ai xử lý lịch hẹn (nhiều cố vấn): người xử lý gần nhất + lịch sử từng thao tác.
@@ -34,7 +35,7 @@ export function AppointmentHistoryPanel({ appointment, onChanged }: { appointmen
       onDone={(message, updated) => { setOpen(false); onChanged((updated as WorkflowAppointment | undefined) ?? appointment, message); }}/>}
     {!!appointment.activities?.length && <ol className="mt-4 space-y-1.5 text-xs">{appointment.activities.map(item => <li key={item.id} className="text-cs-text">
       <span className="text-cs-muted">{new Date(item.created_at).toLocaleString("vi-VN")}</span> · <strong>{name(item.account)}</strong> · {ACTION_TEXT[item.action] ?? item.action}
-      {item.action === "appointment.rescheduled" && item.old_values && item.new_values ? ` (${String(item.old_values.appointment_time ?? "").slice(0, 5)} ${item.old_values.appointment_date ?? ""} → ${String(item.new_values.appointment_time ?? "").slice(0, 5)} ${item.new_values.appointment_date ?? ""})` : ""}
+      {(item.action === "appointment.rescheduled" || item.action === "appointment.rescheduled_by_customer") && item.old_values && item.new_values ? ` (${String(item.old_values.appointment_time ?? "").slice(0, 5)} ${item.old_values.appointment_date ?? ""} → ${String(item.new_values.appointment_time ?? "").slice(0, 5)} ${item.new_values.appointment_date ?? ""})` : ""}
       {item.reason ? ` — ${item.reason}` : ""}
       {item.action === "appointment.rescheduled" && item.new_values?.contact_method ? ` · khách đồng ý qua ${CONTACT_TEXT[item.new_values.contact_method] ?? item.new_values.contact_method}` : ""}
     </li>)}</ol>}
