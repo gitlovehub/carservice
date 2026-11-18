@@ -11,7 +11,7 @@
             <td align="center">
                 <table role="presentation" width="100%" style="max-width: 560px; background-color: #FFFFFF; border-radius: 16px; border: 1px solid #E1E4E6; overflow: hidden;" cellspacing="0" cellpadding="0">
                     <tr>
-                        <td style="background-color: #1F2933; padding: 28px 32px; text-align: center;">
+                        <td style="background-color: #0F1115; border-bottom: 3px solid #E11D2E; padding: 28px 32px; text-align: center;">
                             @include('emails.partials.logo')
                         </td>
                     </tr>
@@ -25,7 +25,7 @@
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top: 28px;">
                                 <tr>
                                     <td align="center">
-                                        <a href="{{ $confirmUrl }}" style="display: inline-block; padding: 13px 28px; border-radius: 10px; background-color: #D6A85F; color: #1F2933; font-size: 15px; font-weight: 700; text-decoration: none;">Xác nhận lịch hẹn</a>
+                                        @include('emails.partials.neon-button', ['href' => $confirmUrl, 'label' => 'Xác nhận lịch hẹn'])
                                     </td>
                                 </tr>
                             </table>

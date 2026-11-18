@@ -11,7 +11,7 @@
             <td align="center">
                 <table role="presentation" width="100%" style="max-width: 520px; background-color: #FFFFFF; border-radius: 16px; border: 1px solid #E1E4E6; overflow: hidden;" cellspacing="0" cellpadding="0">
                     <tr>
-                        <td style="background-color: #1F2933; padding: 28px 32px; text-align: center;">
+                        <td style="background-color: #0F1115; border-bottom: 3px solid #E11D2E; padding: 28px 32px; text-align: center;">
                             @include('emails.partials.logo')
                         </td>
                     </tr>

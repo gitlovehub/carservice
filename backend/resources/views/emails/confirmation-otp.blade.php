@@ -11,7 +11,7 @@
             <td align="center">
                 <table role="presentation" width="100%" style="max-width: 560px; background-color: #FFFFFF; border-radius: 16px; border: 1px solid #E1E4E6; overflow: hidden;" cellspacing="0" cellpadding="0">
                     <tr>
-                        <td style="background-color: #1F2933; padding: 28px 32px; text-align: center;">
+                        <td style="background-color: #0F1115; border-bottom: 3px solid #E11D2E; padding: 28px 32px; text-align: center;">
                             @include('emails.partials.logo')
                             <p style="margin: 6px 0 0; font-size: 13px; color: #AEB8C1;">Xác nhận báo giá sửa chữa</p>
                         </td>
@@ -36,8 +36,8 @@
                             </table>
                             <p style="margin: 16px 0 0; font-size: 14px; text-align: right;">Tổng tiền đồng ý: <strong>{{ number_format($approvedTotal, 0, ',', '.') }} ₫</strong></p>
 
-                            <div style="background-color: #F4F6F8; border: 2px dashed #D6A85F; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0 0;">
-                                <div style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #1F2933; font-family: 'Courier New', Courier, monospace;">{{ $otp }}</div>
+                            <div style="background-color: #FEF2F3; border: 2px dashed #E11D2E; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0 0;">
+                                <div style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #C8102E; font-family: 'Courier New', Courier, monospace;">{{ $otp }}</div>
                                 <p style="margin: 8px 0 0; font-size: 12px; color: #7B8794;">Mã có hiệu lực trong <strong>{{ $ttlMinutes }} phút</strong> và chỉ dùng một lần.</p>
                             </div>
                             <p style="margin: 20px 0 0; font-size: 13px; line-height: 1.5; color: #7B8794;">

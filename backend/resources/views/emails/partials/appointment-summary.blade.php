@@ -11,7 +11,7 @@
     @foreach ($items as $item)
     <tr>
         <td style="padding: 8px 0; border-top: 1px solid #E1E4E6; vertical-align: top;">
-            <span style="display: inline-block; padding: 1px 6px; margin-right: 6px; border-radius: 4px; background: #F6EBD9; color: #8A6326; font-size: 11px; font-weight: 700;">{{ $item['tag'] }}</span>
+            <span style="display: inline-block; padding: 1px 6px; margin-right: 6px; border-radius: 4px; background: #FDE8EA; color: #B4141F; font-size: 11px; font-weight: 700;">{{ $item['tag'] }}</span>
             <span style="color: #20252B; font-weight: 600;">{{ $item['name'] }}</span>
             @if (count($item['includes']))
             <div style="margin-top: 4px; font-size: 12px; color: #7B8794;">Gồm: {{ implode(', ', $item['includes']) }}</div>
