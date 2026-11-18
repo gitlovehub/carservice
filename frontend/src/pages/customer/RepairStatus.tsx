@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLiveRefresh } from "../../services/liveSync";
 import { Link } from "react-router-dom";
 import {
   formatDate,
@@ -144,6 +145,8 @@ function CustomerPickupBlock({ orderId }: { orderId: number }) {
     return () => { active = false; };
   }, [orderId, reloadKey]);
 
+  useLiveRefresh(() => setReloadKey(key => key + 1));
+
   async function act(task: () => Promise<unknown>) {
     setWorking(true); setError("");
     try { await task(); setReloadKey(key => key + 1); return true; }
@@ -226,9 +229,9 @@ export default function RepairStatus() {
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
 
+  useLiveRefresh(() => setReload(n => n + 1));
   useEffect(() => {
     let active = true;
-    setLoading(true);
     getMyRepairOrders()
       .then(data => { if (active) { setOrders(data); setError(""); } })
       .catch((err: unknown) => { if (active) setError(err instanceof Error ? err.message : "Không thể tải tiến độ xe."); })

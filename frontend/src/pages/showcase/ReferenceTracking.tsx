@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useLiveRefresh } from '../../services/liveSync';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuthSession } from '../../contexts/authSession';
 import { ApiClientError, fetchApi } from '../../services/api';
@@ -255,6 +256,8 @@ function MemberTracking() {
     const timer = window.setInterval(() => { if (document.visibilityState === 'visible') setTick(t => t + 1); }, REFRESH_MS);
     return () => window.clearInterval(timer);
   }, []);
+  // Gara cập nhật tiến độ / báo giá / biên bản → tải lại ngay (đồng bộ nhanh), không đợi chu kỳ 60 giây.
+  useLiveRefresh(() => setTick(t => t + 1));
   useEffect(() => {
     let alive = true;
     getMyAppointments({ page: 1, perPage: 100 })

@@ -201,7 +201,7 @@ function Appointments() {
   async function run(key: string, task: () => Promise<{ message?: string }>, fallback: string, after?: () => void) {
     setBusy(key);
     try { const response = await task(); notify(response?.message || fallback, "success"); after?.(); reload(); }
-    catch (err) { notify(errorText(err), "error"); }
+    catch (err) { notify(errorText(err), "error"); reload(); } // lịch có thể vừa đổi phía khách (xác nhận qua email, tự hủy…)
     finally { setBusy(null); }
   }
 

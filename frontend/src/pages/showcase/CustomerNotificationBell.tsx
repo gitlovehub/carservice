@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLiveRefresh } from '../../services/liveSync';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/ui/Icon';
 import {
@@ -62,6 +63,8 @@ export default function CustomerNotificationBell() {
     const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, REFRESH_MS);
     return () => window.clearInterval(timer);
   }, [refresh]);
+  // Có thông báo mới / đọc ở trang Hồ sơ → số chuông cập nhật ngay.
+  useLiveRefresh(() => void refresh());
   useEffect(() => { setOpen(false); }, [location.pathname]);
   useEffect(() => {
     if (!open) return;

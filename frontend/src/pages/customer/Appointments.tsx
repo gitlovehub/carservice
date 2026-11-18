@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLiveRefresh } from "../../services/liveSync";
 import { Link } from "react-router-dom";
 import { Button, EmptyState, ErrorState, LoadingState, Modal, Pagination, buttonClass } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
@@ -98,6 +99,7 @@ export default function Appointments() {
     return () => { active = false; };
   }, [reloadKey]);
   const reloadList = () => { setLoading(true); setError(""); setReloadKey((k) => k + 1); };
+  useLiveRefresh(() => setReloadKey((k) => k + 1)); // gara xác nhận / đổi / hủy lịch → cập nhật ngay, không nháy
 
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase();

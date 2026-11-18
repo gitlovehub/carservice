@@ -1,4 +1,5 @@
 import { Modal } from "../../components/ui";
+import { useLiveRefresh } from "../../services/liveSync";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Button, IconButton, KmInput, Pagination, StatusBadge } from "../../components/ui";
 import { useEffect, useState } from "react";
@@ -116,8 +117,8 @@ function Cars() {
 
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
-  const loadVehicles = async () => {
-    setLoading(true);
+  const loadVehicles = async (silent = false) => {
+    if (!silent) setLoading(true);
     setError("");
     try {
       // Lịch sử sửa chữa chỉ để hiện ngày bảo dưỡng — lỗi thì vẫn hiện danh sách xe.
@@ -135,6 +136,7 @@ function Cars() {
   useEffect(() => {
     void loadVehicles();
   }, []);
+  useLiveRefresh(() => void loadVehicles(true));
 
   const handleAddVehicle = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

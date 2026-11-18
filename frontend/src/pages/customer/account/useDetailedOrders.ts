@@ -3,6 +3,7 @@ import {
   formatDate, formatMoney, getMyBillingOrders, paymentMethodLabel, paymentStatusLabel,
   type CustomerQuotation, type CustomerRepairOrder,
 } from "../../../services/customerApi";
+import { useLiveRefresh } from "../../../services/liveSync";
 
 /**
  * Dữ liệu + quy tắc nghiệp vụ dùng chung cho 3 trang Báo giá / Hóa đơn / Thanh toán.
@@ -43,6 +44,8 @@ export function useDetailedOrders() {
 
   // Bấm "Thử lại" hoặc vừa gửi phản hồi báo giá: tải lại ngay (giữ dữ liệu cũ trên màn hình nếu đã có).
   const reload = useCallback(() => { if (readCache() === null) setLoading(true); setError(""); setVersion((v) => v + 1); }, []);
+  // Gara vừa gửi báo giá / lập hóa đơn / nhận tiền… → tự tải lại ngầm.
+  useLiveRefresh(() => setVersion((v) => v + 1));
   return { orders, loading, error, reload };
 }
 

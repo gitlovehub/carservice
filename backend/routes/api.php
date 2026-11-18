@@ -124,6 +124,17 @@ Route::controller(VnpayController::class)->prefix('payments/vnpay')->group(funct
 
 Route::middleware('auth:sanctum')->group(function (): void {
 
+    // Realtime: dấu thời gian thay đổi (dự phòng hỏi định kỳ) + cấu hình WebSocket Reverb cho trình duyệt (khóa app là công khai).
+    Route::get('live', fn () => response()->json([
+        'stamp' => \App\Support\LiveStamp::current(),
+        'realtime' => config('broadcasting.default') === 'reverb' ? [
+            'key' => config('broadcasting.connections.reverb.key'),
+            'host' => config('broadcasting.connections.reverb.options.host'),
+            'port' => (int) config('broadcasting.connections.reverb.options.port'),
+            'scheme' => config('broadcasting.connections.reverb.options.scheme'),
+        ] : null,
+    ]))->name('live');
+
     /*
     |--------------------------------------------------------------------------
     | Auth

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PropsWithChildren } from "react";
 import { fetchApi } from "../services/api";
+import { startLiveSync } from "../services/liveSync";
 import type { AuthUserInfo } from "../pages/auth/auth";
 import { AuthContext, type SessionState } from "./authSession";
 
@@ -48,6 +49,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       });
     return () => { active = false; };
   }, [revision]);
+
+  // Đã đăng nhập → bật đồng bộ nhanh (services/liveSync.ts): dữ liệu đổi ở đâu, trang đang mở tự cập nhật.
+  const liveAccountId = session.status === "authenticated" ? session.account.id : null;
+  const liveRole = session.status === "authenticated" ? session.account.role : null;
+  useEffect(() => liveAccountId === null || liveRole === null ? undefined : startLiveSync({ id: Number(liveAccountId), role: String(liveRole) }), [liveAccountId, liveRole]);
 
   const value = useMemo(() => session, [session]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

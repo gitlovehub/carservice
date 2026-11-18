@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Notification;
+use App\Support\LiveStamp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -33,6 +34,7 @@ class CustomerNotificationController extends Controller
             ->where('channel', 'WEB')
             ->whereNull('read_at')
             ->update(['read_at' => now(), 'status' => 'READ']);
+        LiveStamp::mark([$request->user()->id]); // cập nhật hàng loạt không phát sự kiện model → báo realtime thủ công
 
         return response()->json(['success' => true, 'data' => ['updated' => $updated]]);
     }
@@ -44,6 +46,7 @@ class CustomerNotificationController extends Controller
             ->where('account_id', $request->user()->id)
             ->where('channel', 'WEB')
             ->delete();
+        LiveStamp::mark([$request->user()->id]);
 
         return response()->json(['success' => true, 'message' => 'Đã xóa toàn bộ thông báo.', 'data' => ['deleted' => $deleted]]);
     }

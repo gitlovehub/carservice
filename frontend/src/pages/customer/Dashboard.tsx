@@ -1,4 +1,5 @@
 import { KmInput } from "../../components/ui";
+import { useLiveRefresh } from "../../services/liveSync";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Link, useNavigate } from "react-router-dom";
@@ -69,6 +70,7 @@ function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  useLiveRefresh(() => setReloadKey((k) => k + 1));
 
   const [vehicles, setVehicles] = useState<CustomerVehicle[]>([]);
   const [appointments, setAppointments] = useState<CustomerAppointment[]>([]);
@@ -98,7 +100,7 @@ function CustomerDashboard() {
     let active = true;
 
     const load = async () => {
-      setLoading(true);
+      // Lần đầu loading đã là true; các lần tải lại (Làm mới / dữ liệu đổi) làm ngầm, giữ nội dung cũ trên màn hình.
       setLoadError("");
 
       const [profile, vehicleRes, appointmentRes, orderRes] = await Promise.allSettled([

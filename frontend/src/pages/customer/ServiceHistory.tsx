@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLiveRefresh } from "../../services/liveSync";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button, EmptyState, ErrorState, LoadingState, Pagination, buttonClass } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
@@ -48,6 +49,7 @@ export default function ServiceHistory() {
     return () => { active = false; };
   }, [reload]);
   const reloadAll = () => { setLoading(true); setReviewsLoading(true); setError(""); setReload((n) => n + 1); };
+  useLiveRefresh(() => setReload((n) => n + 1));
 
   const reviewsByOrder = useMemo(() => new Map(reviews.map((review) => [Number(review.repair_order_id), review])), [reviews]);
   const vehicles = useMemo(() => [...new Map(orders.map((order) => [order.vehicle_id, `${getVehicleName(order.vehicle)}${order.vehicle?.license_plate ? ` · ${order.vehicle.license_plate}` : ""}`])).entries()], [orders]);
