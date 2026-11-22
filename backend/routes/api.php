@@ -157,6 +157,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
             'customers/{customerId}/vehicles',
             [VehicleController::class, 'byCustomer']
         );
+
+        Route::post(
+            'quotations/{quotation}/respond',
+            [QuotationController::class, 'respond']
+        );
     });
 
     /*
@@ -271,7 +276,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
             Route::prefix('quotations/{quotation}')->group(function (): void {
                 Route::post('send', 'send');
-                Route::post('respond', 'respond');
             });
         });
 
