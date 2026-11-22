@@ -138,6 +138,48 @@ class RepairFlowTest extends TestCase
         );
     }
 
+    public function test_advisor_can_record_customer_response_at_the_counter(): void
+    {
+        $quotation = $this->sendQuotation();
+
+        $this->actingAs($this->advisor)
+            ->postJson("/api/quotations/{$quotation->id}/respond", [
+                'responses' => $quotation->items
+                    ->map(fn ($item) => ['item_id' => $item->id, 'is_approved' => false])
+                    ->all(),
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', Quotation::REJECTED);
+    }
+
+    public function test_admin_can_record_customer_response_at_the_counter(): void
+    {
+        $quotation = $this->sendQuotation();
+        $admin = Account::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->postJson("/api/quotations/{$quotation->id}/respond", [
+                'responses' => $quotation->items
+                    ->map(fn ($item) => ['item_id' => $item->id, 'is_approved' => true])
+                    ->all(),
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', Quotation::APPROVED);
+    }
+
+    public function test_technician_cannot_record_customer_response_at_the_counter(): void
+    {
+        $quotation = $this->sendQuotation();
+
+        $this->actingAs($this->technicianAccount)
+            ->postJson("/api/quotations/{$quotation->id}/respond", [
+                'responses' => $quotation->items
+                    ->map(fn ($item) => ['item_id' => $item->id, 'is_approved' => true])
+                    ->all(),
+            ])
+            ->assertForbidden();
+    }
+
     public function test_customer_partial_approval_creates_work_items_only_for_approved_services(): void
     {
         $quotation = $this->sendQuotation();

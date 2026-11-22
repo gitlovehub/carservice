@@ -8,6 +8,7 @@ use App\Models\RepairOrder;
 use App\Services\RepairOrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class QuotationController extends Controller
 {
@@ -54,7 +55,13 @@ class QuotationController extends Controller
 
         $data = $request->validate([
             'responses' => ['required', 'array', 'min:1'],
-            'responses.*.item_id' => ['required', 'integer', 'exists:quotation_items,id'],
+            'responses.*.item_id' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('quotation_items', 'id')
+                    ->where(fn ($query) => $query->where('quotation_id', $quotation->id)),
+            ],
             'responses.*.is_approved' => ['required', 'boolean'],
         ]);
 
