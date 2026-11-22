@@ -102,7 +102,7 @@ export type AdminAuditLog = { id: number; at: string | null; actor: string; role
 
 /* -------------------------------------------------------------- Khách hàng */
 export type AdminCustomer = {
-  id: number; name: string; phone: string | null; email: string | null; city: string | null; vehicles_count: number; visits: number;
+  id: number; name: string; phone: string | null; email: string | null; email_verified?: boolean; city: string | null; vehicles_count: number; visits: number;
   last_visit: string | null; total_spent: number; has_account: boolean; locked: boolean;
 };
 export type AdminCustomerDetail = AdminCustomer & {
@@ -148,7 +148,7 @@ export type PartPayload = {
   status: "ACTIVE" | "INACTIVE"; min_quantity: number; compat_model_ids: number[];
 };
 export type PartList = Paged<AdminPart, { total: number; active: number; low: number; out: number; stock_value: number }> & { categories: string[]; units: string[] };
-export type StockMove = { id: number; at: string | null; type: "IN" | "OUT"; sku: string | null; name: string | null; unit: string | null; quantity: number; ref: string; note: string | null; by: string };
+export type StockMove = { id: number; at: string | null; type: "IN" | "OUT"; sku: string | null; name: string | null; unit: string | null; quantity: number; repair_order_id?: number | null; ref: string; note: string | null; by: string };
 
 /* -------------------------------------------------------------- Ngày nghỉ */
 export type HolidayRange = { ids: number[]; from: string; to: string; reason: string | null; days: number };

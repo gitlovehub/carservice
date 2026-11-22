@@ -8,6 +8,7 @@ import { SearchableSelect } from "../../components/vehicle/SearchableSelect";
 import { openPartRequests, workflowApi, type CatalogPart, type PartRequestRow, type ShortagePartInput, type WorkflowOrder } from "../../services/workflowService";
 import { Notice } from "./WorkflowUI";
 import { errorText } from "./workflowFormat";
+import { useFieldErrors } from "../../components/ui/useFieldErrors";
 
 /**
  * Phụ tùng thiếu (P6 + ADV-01 / D-020).
@@ -48,12 +49,12 @@ function usePartCatalog(enabled: boolean) {
 type Line = { key: number; partId: number | null; quantity: number; note: string };
 const blankLine = (): Line => ({ key: Date.now() + Math.random(), partId: null, quantity: 1, note: "" });
 
-function ShortageLine({ line, parts, catalog, onChange, onRemove }: {
-  line: Line; parts: CatalogPart[]; catalog: ReturnType<typeof usePartCatalog>; onChange: (patch: Partial<Line>) => void; onRemove?: () => void;
+function ShortageLine({ line, parts, catalog, onChange, onRemove, error }: {
+  line: Line; parts: CatalogPart[]; catalog: ReturnType<typeof usePartCatalog>; onChange: (patch: Partial<Line>) => void; onRemove?: () => void; error?: string;
 }) {
   const part = parts.find(p => p.id === line.partId);
   return <div className="grid gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-3 sm:grid-cols-[minmax(0,1fr)_128px_auto] sm:items-end">
-    <SearchableSelect label="Phụ tùng thiếu" placeholder="Tìm tên hoặc mã phụ tùng…" required loading={catalog.loading} loadError={catalog.error} onRetry={catalog.retry}
+    <SearchableSelect label="Phụ tùng thiếu" placeholder="Tìm tên hoặc mã phụ tùng…" required error={error} loading={catalog.loading} loadError={catalog.error} onRetry={catalog.retry}
       options={parts.map(p => ({ value: p.id, label: p.name, hint: `${p.sku} · tồn ${p.inventory?.quantity ?? 0}${p.unit ? ` ${p.unit}` : ""}` }))}
       value={line.partId} onChange={option => onChange({ partId: option?.value ?? null })}/>
     <Field label="Số lượng" required><QuantityStepper label="Số lượng thiếu" size="md" className="w-full" min={1} max={999} unit={part?.unit ?? undefined} value={line.quantity} onChange={v => onChange({ quantity: v ?? 1 })}/></Field>
@@ -73,12 +74,13 @@ export function PartRequestsPanel({ order, onChanged }: { order: WorkflowOrder; 
   const [withdraw, setWithdraw] = useState<{ id: number; reason: string } | null>(null);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const fieldErrors = useFieldErrors();
   if (!rows.length && !canReport) return null;
 
   async function run(task: () => Promise<unknown>, message: string, after?: () => void) {
     setWorking(true); setError("");
     try { await task(); after?.(); await onChanged(message); }
-    catch (err) { setError(errorText(err)); }
+    catch (err) { fieldErrors.showApi(err); }
     finally { setWorking(false); }
   }
 
@@ -96,26 +98,30 @@ export function PartRequestsPanel({ order, onChanged }: { order: WorkflowOrder; 
         <span className="font-semibold text-cs-text">{row.part?.name ?? `Phụ tùng #${row.part_id}`} × {row.quantity}{row.part?.unit ? ` ${row.part.unit}` : ""}</span>
         {statusBadge(row)}
       </div>
-      <p className="mt-1 text-xs text-cs-muted">{row.request_note ? `Lý do: ${row.request_note}` : row.quotation_item_id ? "Tự tạo: khách đã duyệt nhưng kho không đủ hàng." : ""}{row.cancel_reason ? ` · Hủy: ${row.cancel_reason}` : ""}</p>
+      <p className="mt-1 text-xs text-cs-muted font-medium">{row.request_note ? `Lý do: ${row.request_note}` : row.quotation_item_id ? "Tự tạo: khách đã duyệt nhưng kho không đủ hàng." : ""}{row.cancel_reason ? ` · Hủy: ${row.cancel_reason}` : ""}</p>
       {row.status === "REQUESTED" && (withdraw?.id === row.id
-        ? <form className="mt-2 flex flex-wrap items-end gap-2" onSubmit={e => { e.preventDefault(); void run(() => workflowApi.cancelPartRequest(row.id, withdraw.reason.trim()), "Đã rút lại báo thiếu phụ tùng.", () => setWithdraw(null)); }}>
-          <Field label="Lý do rút lại" required className="min-w-56 flex-1"><Input minLength={5} maxLength={1000} required value={withdraw.reason} onChange={e => setWithdraw({ id: row.id, reason: e.target.value })} placeholder="Ví dụ: khách tự mua phụ tùng"/></Field>
-          <Button variant="secondary" disabled={working} onClick={() => setWithdraw(null)}>Đóng</Button>
-          <Button type="submit" variant="danger-outline" icon="x" loading={working} disabled={withdraw.reason.trim().length < 5}>Rút lại</Button>
+        ? <form noValidate className="mt-2 flex flex-wrap items-start gap-2" onSubmit={e => {
+            e.preventDefault();
+            if (fieldErrors.show(withdraw.reason.trim().length < 5 ? { withdraw: "Ghi lý do rút lại (ít nhất 5 ký tự)." } : {})) return;
+            void run(() => workflowApi.cancelPartRequest(row.id, withdraw.reason.trim()), "Đã rút lại báo thiếu phụ tùng.", () => setWithdraw(null));
+          }}>
+          <Field label="Lý do rút lại" required error={fieldErrors.errors.withdraw} className="min-w-56 flex-1"><Input minLength={5} maxLength={1000} required value={withdraw.reason} onChange={e => { setWithdraw({ id: row.id, reason: e.target.value }); fieldErrors.clear("withdraw"); }} placeholder="Ví dụ: khách tự mua phụ tùng"/></Field>
+          <Button variant="secondary" className="mt-6" disabled={working} onClick={() => { setWithdraw(null); fieldErrors.clear("withdraw"); }}>Đóng</Button>
+          <Button type="submit" variant="danger-outline" icon="x" className="mt-6" loading={working}>Rút lại</Button>
         </form>
         : <Button size="sm" variant="ghost" tone="danger" icon="x" className="mt-1" disabled={working} onClick={() => setWithdraw({ id: row.id, reason: "" })}>Rút lại báo thiếu</Button>)}
     </li>)}</ul>}
 
-    {reporting && <form className="mt-3 space-y-3" onSubmit={e => {
+    {reporting && <form noValidate className="mt-3 space-y-3" onSubmit={e => {
       e.preventDefault();
       const [input] = toInput([line]);
-      if (!input) { setError("Chọn phụ tùng thiếu."); return; }
+      if (fieldErrors.show(input ? {} : { part: "Chọn phụ tùng thiếu." })) return;
       void run(() => workflowApi.reportPartShortage(order.id, input), "Đã báo thiếu phụ tùng cho kho.", () => setReporting(false));
     }}>
-      <ShortageLine line={line} parts={catalog.parts} catalog={catalog} onChange={patch => setLine(previous => ({ ...previous, ...patch }))}/>
+      <ShortageLine line={line} parts={catalog.parts} catalog={catalog} error={fieldErrors.errors.part} onChange={patch => { fieldErrors.clear("part"); setLine(previous => ({ ...previous, ...patch })); }}/>
       <div className="cs-btn-row cs-btn-row-end">
-        <Button size="sm" variant="secondary" disabled={working} onClick={() => setReporting(false)}>Huỷ</Button>
-        <Button type="submit" size="sm" variant="primary" icon="send" loading={working} disabled={!line.partId}>Gửi kho</Button>
+        <Button size="sm" variant="secondary" disabled={working} onClick={() => { setReporting(false); fieldErrors.clear("part"); }}>Huỷ</Button>
+        <Button type="submit" size="sm" variant="primary" icon="send" loading={working}>Gửi kho</Button>
       </div>
     </form>}
   </div>;
@@ -136,6 +142,7 @@ export function WaitForPartsModal({ order, open, onClose, onDone }: { order: Wor
   const [note, setNote] = useState("");
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const fieldErrors = useFieldErrors();
 
   const removeLine = (key: number) => {
     if (lines.length > 1) setLines(previous => previous.filter(l => l.key !== key));
@@ -144,13 +151,14 @@ export function WaitForPartsModal({ order, open, onClose, onDone }: { order: Wor
 
   async function submit() {
     const parts = showLines ? toInput(lines) : [];
-    if (needsLines && !parts.length) { setError("Chọn ít nhất một phụ tùng đang thiếu."); return; }
-    setWorking(true); setError("");
+    setError("");
+    if (fieldErrors.show(needsLines && !parts.length ? { [`line.${lines[0].key}`]: "Chọn ít nhất một phụ tùng đang thiếu." } : {})) return;
+    setWorking(true);
     try {
       await workflowApi.waitForParts(order.id, parts, note.trim() || undefined);
       onClose();
       await onDone("Phiếu chuyển sang chờ phụ tùng. Kho sẽ đặt hàng và cập nhật ngày dự kiến.");
-    } catch (err) { setError(errorText(err)); }
+    } catch (err) { fieldErrors.showApi(err); }
     finally { setWorking(false); }
   }
 
@@ -167,8 +175,8 @@ export function WaitForPartsModal({ order, open, onClose, onDone }: { order: Wor
             <span className="font-medium text-cs-text">{row.part?.name} × {row.quantity}</span>{statusBadge(row)}
           </li>)}</ul>
         </div>}
-      {showLines && lines.map(line => <ShortageLine key={line.key} line={line} parts={catalog.parts} catalog={catalog}
-        onChange={patch => setLines(previous => previous.map(l => l.key === line.key ? { ...l, ...patch } : l))}
+      {showLines && lines.map(line => <ShortageLine key={line.key} line={line} parts={catalog.parts} catalog={catalog} error={fieldErrors.errors[`line.${line.key}`]}
+        onChange={patch => { fieldErrors.clear(`line.${line.key}`); setLines(previous => previous.map(l => l.key === line.key ? { ...l, ...patch } : l)); }}
         onRemove={lines.length > 1 || !needsLines ? () => removeLine(line.key) : undefined}/>)}
       {showLines
         ? <Button size="sm" variant="tonal" icon="plus" onClick={() => setLines(previous => [...previous, blankLine()])}>Thêm phụ tùng</Button>

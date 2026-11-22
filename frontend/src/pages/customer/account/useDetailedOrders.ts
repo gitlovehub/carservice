@@ -80,6 +80,16 @@ export function quotationRows(orders: CustomerRepairOrder[]): QuotationRow[] {
 export const awaitsResponse = (quotation: CustomerQuotation) => quotation.status === "SENT";
 
 /** Tổng tiền các hạng mục được chọn (chưa gồm giảm trừ). */
+/**
+ * " lần N" khi phiếu có từ 2 báo giá cùng loại trở lên (gara báo giá lại); chỉ một báo giá thì không ghi gì.
+ * Báo giá gốc và báo giá phát sinh đánh số riêng.
+ */
+export function quotationRoundLabel(order: { quotations?: Array<{ id: number; type?: string | null }> }, quotation: { id: number; type?: string | null }): string {
+  const sameType = (order.quotations ?? []).filter((q) => (q.type ?? "INITIAL") === (quotation.type ?? "INITIAL")).sort((a, b) => a.id - b.id);
+  if (sameType.length < 2) return "";
+  return ` lần ${sameType.findIndex((q) => q.id === quotation.id) + 1}`;
+}
+
 export function selectedItemsTotal(quotation: CustomerQuotation, selected: Record<number, boolean>): number {
   return (quotation.items ?? []).reduce((sum, item) => sum + (selected[item.id] ? Number(item.amount) : 0), 0);
 }

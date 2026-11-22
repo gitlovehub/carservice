@@ -37,7 +37,6 @@ class PublicRepairLookupTest extends TestCase
             'advisor_id' => Employee::factory()->create()->id,
             'status' => RepairOrder::IN_PROGRESS,
             'received_at' => now()->subHours(3),
-            'note' => 'Ghi chú nội bộ',
         ] + $extra);
     }
 
@@ -52,9 +51,8 @@ class PublicRepairLookupTest extends TestCase
             ->assertJsonPath('data.vehicle.license_plate', '30A-***.45')
             ->assertJsonPath('data.work_progress.total', 0);
 
-        // Không lộ giá, ghi chú, thông tin khách.
+        // Không lộ giá, thông tin khách.
         $json = json_encode($response->json());
-        $this->assertStringNotContainsString('Ghi chú nội bộ', $json);
         $this->assertStringNotContainsString('0912', $json);
         $response->assertJsonMissingPath('data.customer')->assertJsonMissingPath('data.invoice')->assertJsonMissingPath('data.quotations');
     }

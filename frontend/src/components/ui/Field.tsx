@@ -2,6 +2,7 @@ import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode, 
 import { LABELS } from "../../config/labels";
 import { Icon } from "./Icon";
 import { FieldContext, controlClass, useFieldControl } from "./fieldContext";
+import { focusIfFirstInvalid, isFormControl, validityMessage } from "./formValidation";
 
 type FieldProps = {
   label: ReactNode;
@@ -13,21 +14,38 @@ type FieldProps = {
   children: ReactNode;
 };
 
-/** Nhãn + ô nhập + gợi ý + lỗi. Ô nhập bên trong (<Input>/<Select>/<Textarea>) tự nhận id và aria. */
+/** Dòng lỗi đỏ ngay dưới ô nhập (dùng khi ô không nằm trong <Field>). */
+export function FieldError({ children, className = "" }: { children?: ReactNode; className?: string }) {
+  return children ? <p className={`text-caption font-medium text-danger ${className}`} role="alert">{children}</p> : null;
+}
+
+/**
+ * Nhãn + ô nhập + gợi ý + lỗi. Ô nhập bên trong (<Input>/<Select>/<Textarea>) tự nhận id và aria.
+ * Lỗi kiểm tra của trình duyệt (required, pattern...) cũng hiện ngay dưới ô, viền đỏ; sửa ô là hết lỗi.
+ */
 export function Field({ label, hint, error, required, optional, className = "", children }: FieldProps) {
   const id = useId();
+  const [browserError, setBrowserError] = useState("");
+  const shownError = error || browserError;
   const hintId = hint ? `${id}-hint` : undefined;
-  const errorId = error ? `${id}-error` : undefined;
+  const errorId = shownError ? `${id}-error` : undefined;
   const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
-  return <FieldContext.Provider value={{ id, "aria-describedby": describedBy, "aria-invalid": error ? true : undefined, required }}>
-    <div className={`flex flex-col gap-1.5 ${className}`}>
+  return <FieldContext.Provider value={{ id, "aria-describedby": describedBy, "aria-invalid": shownError ? true : undefined, required }}>
+    <div data-field="" className={`flex flex-col gap-1.5 ${className}`}
+      onInvalidCapture={event => {
+        if (!isFormControl(event.target)) return;
+        event.preventDefault();
+        setBrowserError(validityMessage(event.target));
+        focusIfFirstInvalid(event.target);
+      }}
+      onInputCapture={() => setBrowserError("")} onChangeCapture={() => setBrowserError("")}>
       <label htmlFor={id} className="text-label text-cs-text-2">
         {label}
         {required && <span className="ml-0.5 text-danger" aria-hidden="true">*</span>}
         {optional && <span className="ml-1 font-normal normal-case tracking-normal text-cs-muted">({LABELS.form.optional})</span>}
       </label>
       {children}
-      {error ? <p id={errorId} className="text-caption text-danger" role="alert">{error}</p>
+      {shownError ? <p id={errorId} className="text-caption font-medium text-danger" role="alert">{shownError}</p>
         : hint ? <p id={hintId} className="text-caption text-cs-muted">{hint}</p> : null}
     </div>
   </FieldContext.Provider>;

@@ -2,9 +2,9 @@ import { LABELS } from "../../config/labels";
 import { IconButton } from "./Button";
 import { buttonClass } from "./buttonClass";
 
-/** Dãy số trang rút gọn: 1 … 4 5 6 … 20. */
+/** Dãy số trang rút gọn: 1 … 4 5 6 … 20. Tối đa 5 nút số để thanh phân trang không xuống dòng trong khung hẹp. */
 function pageItems(page: number, total: number): (number | "gap")[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
   const pages = new Set([1, total, page - 1, page, page + 1].filter(p => p >= 1 && p <= total));
   const sorted = [...pages].sort((a, b) => a - b);
   return sorted.flatMap((p, i) => (i > 0 && p - sorted[i - 1] > 1 ? ["gap" as const, p] : [p]));

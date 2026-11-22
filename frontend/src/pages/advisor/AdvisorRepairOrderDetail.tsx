@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
-import { Button, IconButton } from "../../components/ui/Button";
+import { Button } from "../../components/ui/Button";
+import { useLiveRefresh } from "../../services/liveSync";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Dropdown } from "../../components/ui/Dropdown";
@@ -10,17 +11,18 @@ import { Field, Select, Textarea } from "../../components/ui/Field";
 import { ErrorState, LoadingState } from "../../components/ui/States";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import {
-  formatVnd, latestQuotation, supplementQuotations, toNumber, workflowApi, type WorkflowOrder,
+  formatVnd, latestQuotation, staysOvernight, supplementQuotations, toNumber, workflowApi, type WorkflowOrder,
 } from "../../services/workflowService";
 import { CLOSE_REASONS, OPEN_STATUSES, STEPS, currentStepIndex, hasHandover, nextAction, stageRedirect } from "./repairOrderFlow";
 import { card, Notice } from "./WorkflowUI";
 import { errorText, formatDateTime } from "./workflowFormat";
 import { InspectionPanel, PaymentPanel, QuotationPanel, RepairPanel } from "./RepairOrderPanels";
-import CustomerRequestSummary from "./CustomerRequestSummary";
+import { ReceptionNotes } from "./ReceptionFields";
 import { CheckInPanel } from "./CheckInPanel";
 import { SupplementPanel } from "./SupplementPanel";
 import { QuickServicePanel } from "./QuickServicePanel";
 import { QualityCheckPanel } from "./QualityCheckPanel";
+import { useFieldErrors } from "../../components/ui/useFieldErrors";
 
 /**
  * Chi tiết phiếu sửa chữa (cố vấn) — bố cục theo bước.
@@ -107,6 +109,7 @@ function OrderSidebar({ order }: { order: WorkflowOrder }) {
           <p className="truncate text-small text-cs-muted">{vehicleTitle(order)}{order.vehicle?.year ? ` · ${order.vehicle.year}` : ""}</p>
         </div>
       </div>
+      {staysOvernight(order) && <p className="mt-3 flex items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-caption font-semibold text-warning-fg"><Icon name="moon" size={14}/>Xe lưu xưởng qua đêm</p>}
       {order.booked_vehicle && order.booked_vehicle.id !== order.vehicle?.id && <p className="mt-3 rounded-lg bg-cs-surface-2 px-3 py-2 text-caption text-cs-text-2">
         Khách đặt lịch cho xe {order.booked_vehicle.license_plate}, mang tới xe khác{order.vehicle_change_reason ? `: ${order.vehicle_change_reason}` : "."}
       </p>}
@@ -139,26 +142,18 @@ function OrderSidebar({ order }: { order: WorkflowOrder }) {
         {index < shownHistory.length - 1 && <span className="absolute bottom-0 left-1 top-3 w-0.5 bg-cs-border" aria-hidden="true"/>}
         <span className={`absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full ${index === 0 ? "bg-cs-accent" : "bg-cs-border-strong"}`} aria-hidden="true"/>
         <div className="flex flex-wrap items-center gap-2"><StatusBadge domain="repair" status={item.status || ""}/><span className="text-caption text-cs-muted">{formatDateTime(item.created_at)}</span></div>
-        {item.note && <p className="mt-1 text-caption text-cs-text-2">{item.note}</p>}
+        {item.note && <p className="mt-1 text-caption text-cs-text-2 font-medium">{item.note}</p>}
       </li>)}</ol> : <p className="mt-2 text-small text-cs-muted">Chưa có lịch sử.</p>}
       {history.length > 4 && <Button size="sm" variant="ghost" className="mt-3" onClick={() => setShowAllHistory(value => !value)}>{showAllHistory ? "Thu gọn" : `Xem tất cả (${history.length})`}</Button>}
     </section>
   </aside>;
 }
 
-/** Thông tin lúc tạo phiếu: số km, tình trạng ban đầu, yêu cầu khi đặt lịch. */
+/** Thông tin lúc tạo phiếu: thông số xe, khách yêu cầu, tình trạng xe. */
 function ReceptionSummary({ order }: { order: WorkflowOrder }) {
   return <section className={card}>
-    <h2 className="text-lg font-bold text-cs-text">Phiếu tiếp nhận</h2>
-    <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-      <div><dt className="text-caption text-cs-muted">Số km khi nhận</dt><dd className="mt-1 text-small font-semibold text-cs-text">{order.mileage_received == null ? "—" : `${order.mileage_received.toLocaleString("vi-VN")} km`}</dd></div>
-      <div><dt className="text-caption text-cs-muted">Tình trạng ban đầu</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{order.initial_condition || "Chưa ghi"}</dd></div>
-      {order.note && <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Ghi chú tiếp nhận</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{order.note}</dd></div>}
-    </dl>
-    {order.appointment && <div className="mt-5 border-t border-cs-border pt-4">
-      <p className="mb-3 text-caption font-semibold text-cs-muted">Khách yêu cầu khi đặt lịch</p>
-      <CustomerRequestSummary request={order.appointment}/>
-    </div>}
+    <h2 className="mb-4 text-lg font-bold text-cs-text">Phiếu tiếp nhận</h2>
+    <ReceptionNotes order={order}/>
   </section>;
 }
 
@@ -175,15 +170,17 @@ function CloseOrderModal({ order, open, initialReason, onClose, onGoToCheckout, 
   const [error, setError] = useState("");
   // Xe đã nhận theo biên bản → phải có biên bản trả xe được chủ xe xác nhận trước khi đóng (backend cũng chặn).
   const needsCheckout = !!order.requires_check_in && hasHandover(order, "CHECK_IN") && !hasHandover(order, "CHECK_OUT");
+  const fieldErrors = useFieldErrors();
 
   async function submit() {
-    if (note.trim().length < 5) { setError("Ghi rõ lý do đóng phiếu (ít nhất 5 ký tự)."); return; }
-    setWorking(true); setError("");
+    setError("");
+    if (fieldErrors.show(note.trim().length < 5 ? { note: "Ghi rõ lý do đóng phiếu (ít nhất 5 ký tự)." } : {})) return;
+    setWorking(true);
     try {
       await workflowApi.close(order.id, reason, note.trim());
       onClose();
       await onClosed("Đã đóng phiếu sửa chữa.");
-    } catch (err) { setError(errorText(err)); }
+    } catch (err) { fieldErrors.showApi(err, { close_reason: "reason", note: "note" }); }
     finally { setWorking(false); }
   }
 
@@ -196,8 +193,8 @@ function CloseOrderModal({ order, open, initialReason, onClose, onGoToCheckout, 
       ? <Notice>Xe đã được nhận theo biên bản. Trước khi đóng phiếu cần lập <strong>biên bản trả xe</strong> và chủ xe (hoặc người được ủy quyền) xác nhận đã nhận lại xe.</Notice>
       : <div className="space-y-4">
         {error && <Notice tone="error">{error}</Notice>}
-        <Field label="Lý do" required><Select value={reason} onChange={event => setReason(event.target.value)}>{CLOSE_REASONS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</Select></Field>
-        <Field label="Ghi chú cho khách" required hint="Khách nhận được thông báo kèm nội dung này."><Textarea rows={3} maxLength={1000} value={note} onChange={event => setNote(event.target.value)} placeholder="Ví dụ: Khách quyết định không sửa, đã nhận lại xe."/></Field>
+        <Field label="Lý do" required error={fieldErrors.errors.reason}><Select value={reason} onChange={event => { setReason(event.target.value); fieldErrors.clear("reason"); }}>{CLOSE_REASONS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</Select></Field>
+        <Field label="Ghi chú cho khách" required error={fieldErrors.errors.note} hint="Khách nhận được thông báo kèm nội dung này."><Textarea rows={3} maxLength={1000} value={note} onChange={event => { setNote(event.target.value); fieldErrors.clear("note"); }} placeholder="Ví dụ: Khách quyết định không sửa, đã nhận lại xe."/></Field>
       </div>}
   </Modal>;
 }
@@ -239,6 +236,9 @@ export default function AdvisorRepairOrderDetail() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [fetchOrder]);
+
+  // Realtime: khách xác nhận biên bản / duyệt báo giá, KTV cập nhật công việc → tải lại ngầm (thay nút "Làm mới").
+  useLiveRefresh(() => { fetchOrder().then(setOrder).catch(() => undefined); });
 
   // "In hoá đơn" từ trang Thanh toán (`?print=1`): mở hộp thoại in một lần sau khi tải xong phiếu.
   const printed = useRef(false);
@@ -286,11 +286,10 @@ export default function AdvisorRepairOrderDetail() {
           <StatusBadge domain="repair" status={order.status}/>
           {order.flow_type === "QUICK" && <span className="rounded-full bg-cs-soft px-2.5 py-0.5 text-caption font-semibold text-cs-on-soft">Dịch vụ nhanh</span>}
         </div>
-        <p className="mt-1 text-small text-cs-muted">{order.customer?.full_name || "Khách hàng"} · {order.vehicle?.license_plate || "—"} · {vehicleTitle(order)}</p>
+        <p className="mt-1 text-small text-cs-muted">{order.customer?.full_name || "Khách hàng"} · {order.vehicle?.license_plate || "xxx.xx"} · {vehicleTitle(order)}</p>
       </div>
       <div className="cs-btn-row print:hidden">
-        <IconButton icon="refresh" label="Làm mới" disabled={loading} onClick={() => void load()}/>
-        <Button variant="outline" icon="printer" onClick={() => window.print()}>In phiếu</Button>
+       <Button variant="outline" icon="printer" onClick={() => window.print()}>In phiếu</Button>
         <Dropdown label="Thao tác khác" items={[
           { label: "Đóng phiếu (khách không sửa nữa)", icon: "ban", danger: true, disabled: !canClose, onSelect: () => openClose() },
         ]}/>

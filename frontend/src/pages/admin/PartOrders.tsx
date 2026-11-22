@@ -1,8 +1,9 @@
+import { useFieldErrors } from "../../components/ui/useFieldErrors";
 import { useMemo, useState } from "react";
 import { Button, DataTable, EmptyState, Field, Input, SearchInput, type Column } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
-import { adminApi, errorMessage, fmtDateTime, type AdminPartRequest } from "../../services/adminApi";
+import { adminApi, fmtDateTime, type AdminPartRequest } from "../../services/adminApi";
 import { ClearFilters, FilterSelect, Pill, SplitView, Toolbar } from "./kit/AdminKit";
 import { num, type Tone } from "./kit/format";
 
@@ -52,16 +53,24 @@ function RequestCard({ request, stock, onChanged }: { request: AdminPartRequest;
   const [supplier, setSupplier] = useState(request.supplier_note ?? "");
   const [cancelReason, setCancelReason] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
-  const [error, setError] = useState("");
+  const fieldErrors = useFieldErrors();
   const { confirm } = useAppFeedback();
   const order = request.repair_order;
   const unit = request.part?.unit ?? "";
 
   async function run(task: () => Promise<unknown>, message: string) {
-    setWorking(true); setError("");
+    setWorking(true);
     try { await task(); onChanged(message); }
-    catch (err) { setError(errorMessage(err, "Không cập nhật được yêu cầu.")); }
+    catch (err) { fieldErrors.showApi(err, { eta_date: "eta", supplier_note: "supplier", reason: "reason", cancel_reason: "reason" }); }
     finally { setWorking(false); }
+  }
+  function saveOrder() {
+    if (fieldErrors.show(eta ? {} : { eta: "Chọn ngày dự kiến về." })) return;
+    void run(() => adminApi.orderPartRequest(request.id, { eta_date: eta, supplier_note: supplier.trim() || null }), request.status === "ORDERED" ? "Đã cập nhật ngày dự kiến về." : "Đã ghi đặt hàng.");
+  }
+  function cancelRequest(reason: string) {
+    if (fieldErrors.show(reason.trim().length < 5 ? { reason: "Ghi lý do huỷ (ít nhất 5 ký tự)." } : {})) return;
+    void run(() => adminApi.cancelPartRequest(request.id, reason.trim()), "Đã huỷ yêu cầu phụ tùng.");
   }
   async function receive(alreadyInStock: boolean) {
     const ok = await confirm(alreadyInStock ? {
@@ -84,14 +93,13 @@ function RequestCard({ request, stock, onChanged }: { request: AdminPartRequest;
       </div>
       <b className="tabular-nums text-cs-text">× {num(request.quantity)} {unit}</b>
     </div>
-    <p className="mt-2 text-small text-cs-text-2">{request.request_note ?? (request.quotation_item_id ? "Khách đã duyệt báo giá nhưng kho không đủ hàng." : "—")}</p>
-    {request.status === "ORDERED" && <p className="mt-1 text-caption text-cs-muted">Đã đặt {fmtDateTime(request.ordered_at)}{request.supplier_note ? ` · ${request.supplier_note}` : ""}</p>}
-    {error && <p role="alert" className="mt-2 rounded-control bg-danger-soft p-2 text-small text-danger-fg">{error}</p>}
+    <p className="mt-2 text-small text-cs-text-2 font-medium">{request.request_note ?? (request.quotation_item_id ? "Khách đã duyệt báo giá nhưng kho không đủ hàng." : "—")}</p>
+    {request.status === "ORDERED" && <p className="mt-1 text-caption text-cs-muted">Đã đặt {fmtDateTime(request.ordered_at)}{request.supplier_note ? <> · <span className="font-medium">{request.supplier_note}</span></> : ""}</p>}
 
     <div className="mt-3 grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)]">
-      <Field label="Ngày dự kiến về"><Input type="date" min={today()} value={eta} onChange={e => setEta(e.target.value)}/></Field>
-      <Field label="Nhà cung cấp"><Input maxLength={1000} value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Không bắt buộc"/></Field>
-      <Button variant="outline" icon="calendar" className="sm:col-span-2 sm:justify-self-end" disabled={working || !eta} onClick={() => void run(() => adminApi.orderPartRequest(request.id, { eta_date: eta, supplier_note: supplier.trim() || null }), request.status === "ORDERED" ? "Đã cập nhật ngày dự kiến về." : "Đã ghi đặt hàng.")}>
+      <Field label="Ngày dự kiến về" required error={fieldErrors.errors.eta}><Input type="date" min={today()} value={eta} onChange={e => { setEta(e.target.value); fieldErrors.clear("eta"); }}/></Field>
+      <Field label="Nhà cung cấp" error={fieldErrors.errors.supplier}><Input maxLength={1000} value={supplier} onChange={e => { setSupplier(e.target.value); fieldErrors.clear("supplier"); }} placeholder="Không bắt buộc"/></Field>
+      <Button variant="outline" icon="calendar" className="sm:col-span-2 sm:justify-self-end" disabled={working} onClick={saveOrder}>
         {request.status === "ORDERED" ? "Cập nhật" : "Đã đặt hàng"}
       </Button>
     </div>
@@ -101,10 +109,10 @@ function RequestCard({ request, stock, onChanged }: { request: AdminPartRequest;
       <span className="flex-1"/>
       {cancelReason === null
         ? <Button variant="ghost" size="sm" tone="danger" icon="x" disabled={working} onClick={() => setCancelReason("")}>Huỷ yêu cầu</Button>
-        : <span className="flex w-full flex-wrap items-end gap-2">
-          <Field label="Lý do huỷ" className="min-w-48 flex-1"><Input minLength={5} maxLength={1000} value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="VD: khách tự mua, ngừng sản xuất"/></Field>
-          <Button size="sm" disabled={working} onClick={() => setCancelReason(null)}>Đóng</Button>
-          <Button size="sm" variant="danger-outline" icon="x" disabled={working || cancelReason.trim().length < 5} onClick={() => void run(() => adminApi.cancelPartRequest(request.id, cancelReason.trim()), "Đã huỷ yêu cầu phụ tùng.")}>Huỷ yêu cầu</Button>
+        : <span className="flex w-full flex-wrap items-start gap-2">
+          <Field label="Lý do huỷ" required error={fieldErrors.errors.reason} className="min-w-48 flex-1"><Input minLength={5} maxLength={1000} value={cancelReason} onChange={e => { setCancelReason(e.target.value); fieldErrors.clear("reason"); }} placeholder="VD: khách tự mua, ngừng sản xuất"/></Field>
+          <Button size="sm" className="mt-6" disabled={working} onClick={() => { setCancelReason(null); fieldErrors.clear("reason"); }}>Đóng</Button>
+          <Button size="sm" variant="danger-outline" icon="x" className="mt-6" disabled={working} onClick={() => cancelRequest(cancelReason)}>Huỷ yêu cầu</Button>
         </span>}
     </div>
   </li>;

@@ -113,7 +113,7 @@ export default function ChatWidget() {
               title="Cuộc trò chuyện mới"
               className="cursor-pointer rounded-lg px-2 py-1 text-xs text-slate-300 transition hover:bg-white/10 hover:text-white"
             >
-              Làm mới
+              Trò chuyện mới
             </button>
             <button
               type="button"

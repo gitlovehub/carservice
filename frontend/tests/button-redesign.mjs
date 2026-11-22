@@ -62,7 +62,8 @@ for (const file of walk(pagesDir)) {
 }
 
 // 4. Ánh xạ chính theo màn hình.
-const quotation = read('../src/pages/customer/Quotation.tsx');
+// Nút duyệt nằm trong modal dùng chung (QuotationDetailModal).
+const quotation = read('../src/pages/customer/QuotationDetailModal.tsx');
 assert(quotation.includes('variant="success" size="lg" icon="check"') && quotation.includes('variant="danger-outline" icon="x"'), 'Báo giá: Đồng ý = success lg, Từ chối = danger-outline X');
 const booking = read('../src/pages/customer/Booking.tsx');
 assert(booking.includes('icon="arrow-left"') && booking.includes('"arrow-right"') && booking.includes('size="lg"'), 'Đặt lịch: Quay lại + mũi tên, Tiếp tục primary lg');

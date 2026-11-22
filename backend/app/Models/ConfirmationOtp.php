@@ -22,6 +22,8 @@ class ConfirmationOtp extends Model
 
     public const PURPOSE_CHECK_OUT = 'CHECK_OUT';
 
+    public const PURPOSE_EMAIL_VERIFICATION = 'EMAIL_VERIFICATION';
+
     public const TTL_MINUTES = 10;
 
     public const MAX_ATTEMPTS = 5;

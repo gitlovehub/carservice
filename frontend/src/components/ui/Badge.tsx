@@ -11,9 +11,9 @@ const toneClass: Record<StatusTone, string> = {
 };
 
 /** Nhãn nhỏ có màu theo ý nghĩa. Màu luôn đi kèm chữ, không dùng màu làm tín hiệu duy nhất. */
-export function Badge({ tone = "neutral", children, className = "", status }: { tone?: StatusTone; children: ReactNode; className?: string; status?: string }) {
+export function Badge({ tone = "neutral", children, className = "", status, dot = true }: { tone?: StatusTone; children: ReactNode; className?: string; status?: string; dot?: boolean }) {
   return <span data-status={status} className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-caption font-semibold ${toneClass[tone]} ${className}`}>
-    <span className="size-1.5 shrink-0 rounded-full bg-current opacity-70" aria-hidden="true"/>
+    {dot && <span className="size-1.5 shrink-0 rounded-full bg-current opacity-70" aria-hidden="true"/>}
     {children}
   </span>;
 }

@@ -2,15 +2,20 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
 import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { buttonClass } from "../../components/ui/buttonClass";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Dropdown } from "../../components/ui/Dropdown";
 import { Icon, type IconName } from "../../components/ui/Icon";
-import { PhotoUploader } from "../../components/evidence/PhotoUploader";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
-import { listHandovers, type HandoverListRow } from "../../services/workflowService";
+import { listHandovers, workflowApi, type HandoverListRow } from "../../services/workflowService";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
 import { dayTime, fullDayTime, vehicleName } from "./advisorListFormat";
-import { HandoverSummary } from "./CheckInPanel";
+import { HandoverSummary, HandoverViewModal } from "./CheckInPanel";
+import { printHandover } from "./handoverPrint";
+import { errorText } from "./workflowFormat";
+import { OpenOrderButton } from "./advisorListKit";
 import { orderStepPath } from "./repairOrderFlow";
 import "./advisorDashboard.css";
 
@@ -67,10 +72,19 @@ export default function AdvisorHandovers() {
     Object.entries(changes).forEach(([key, value]) => value ? next.set(key, value) : next.delete(key));
     setParams(next, { replace: true });
   };
+  // Bấm thẻ: chọn biên bản (khung xem nhanh màn rộng) + mở modal xem biên bản (cùng modal trang chi tiết phiếu).
+  const [viewing, setViewing] = useState<HandoverListRow | null>(null);
   const open = (h: HandoverListRow) => {
     if (window.matchMedia(WIDE).matches) setParam({ handover: String(h.id) });
-    else navigate(handoverPath(h));
+    setViewing(h);
   };
+  const { notify } = useAppFeedback();
+  async function print(h: HandoverListRow) {
+    try {
+      const order = await workflowApi.order(h.repair_order_id);
+      if (!await printHandover(order, h)) notify("Trình duyệt chặn cửa sổ in. Cho phép pop-up với trang này rồi bấm lại.", "error");
+    } catch (err) { notify(errorText(err), "error"); }
+  }
 
   return <main className="page-container adv-theme space-y-5">
     <h1 className="sr-only">Biên bản giao nhận</h1>
@@ -94,11 +108,11 @@ export default function AdvisorHandovers() {
                 trigger={props => <button type="button" {...props} className="adv-ro-range"><Icon name="filter" size={17} className="text-cs-accent-text"/><span className="min-w-0 flex-1 truncate text-left">{TYPES.find(t => t.id === type)?.label}</span><Icon name="chevron-down" size={16}/></button>}/>
             </div>
             <div className="min-w-0 flex-1 [&>span]:w-full">
-              <Dropdown label="Trạng thái biên bản" items={[{ status: "" as const, label: "Mọi trạng thái" }, ...STATS].map(s => ({ label: s.label, icon: s.status === status ? "check" : undefined, onSelect: () => { setParam({ status: s.status || null, handover: null }); setPage(1); } }))}
-                trigger={props => <button type="button" {...props} className="adv-ro-range"><span className="min-w-0 flex-1 truncate text-left">{status ? STATUS_BADGE[status].label : "Mọi trạng thái"}</span><Icon name="chevron-down" size={16}/></button>}/>
+              <Dropdown label="Trạng thái biên bản" items={[{ status: "" as const, label: "Tất cả" }, ...STATS].map(s => ({ label: s.label, icon: s.status === status ? "check" : undefined, onSelect: () => { setParam({ status: s.status || null, handover: null }); setPage(1); } }))}
+                trigger={props => <button type="button" {...props} className="adv-ro-range"><span className="min-w-0 flex-1 truncate text-left">{status ? STATUS_BADGE[status].label : "Tất cả"}</span><Icon name="chevron-down" size={16}/></button>}/>
             </div>
           </div>
-          <SearchInput value={search} onChange={v => { setSearch(v); setPage(1); setParam({ handover: null }); }} placeholder="Mã phiếu, biển số, tên khách, SĐT, người giao…" className="adv-ro-search"/>
+          <SearchInput value={search} onChange={v => { setSearch(v); setPage(1); setParam({ handover: null }); }} placeholder="Mã phiếu, biển số, tên xe, tên khách, SĐT…" className="adv-ro-search"/>
         </div>
         <div className="flex-1 space-y-2.5 px-4 pb-4">
           {list.loading && !result ? <LoadingState compact label="Đang tải biên bản..."/>
@@ -128,30 +142,38 @@ export default function AdvisorHandovers() {
       </section>
 
       <div className="adv-ro-preview">
-        {selected ? <HandoverPreview key={selected.id} handover={selected}/>
+        {selected ? <HandoverPreview key={selected.id} handover={selected} onPrint={() => void print(selected)}/>
           : <section className="adv-card grid min-h-[320px] place-items-center p-8 text-center text-small text-cs-muted">Chọn một biên bản ở danh sách để xem nhanh.</section>}
       </div>
     </div>
+    {viewing && <HandoverViewModal code={viewing.repair_order?.repair_order_code} handover={viewing} onClose={() => setViewing(null)} onPrint={() => void print(viewing)}
+      extra={(() => { const a = handoverAction(viewing); return <Button variant="outline" icon={a.icon} onClick={() => navigate(handoverPath(viewing))}>{a.label}</Button>; })()}/>}
   </main>;
 }
 
-function HandoverPreview({ handover: h }: { handover: HandoverListRow }) {
-  const confirmation = h.confirmations?.[0];
-  const action = h.status === "DRAFT" ? { label: "Tiếp tục lập biên bản", icon: "edit" as const }
+/** Việc tiếp theo với biên bản — mở đúng bước trong phiếu sửa chữa. */
+function handoverAction(h: HandoverListRow) {
+  return h.status === "DRAFT" ? { label: "Tiếp tục lập biên bản", icon: "edit" as const }
     : h.status === "SUBMITTED" ? { label: "Khách xác nhận tại quầy", icon: "mail" as const }
     : { label: "Xem trong phiếu sửa chữa", icon: "clipboard" as const };
+}
+
+/** Khung xem nhanh — cùng kiểu modal xem biên bản (đầu: ô biểu tượng + vạch + mã · trạng thái; thân: HandoverSummary; chân: việc tiếp theo + In). */
+function HandoverPreview({ handover: h, onPrint }: { handover: HandoverListRow; onPrint: () => void }) {
+  const action = handoverAction(h);
 
   return <section className="adv-card adv-ro-detail" aria-label={`Biên bản ${typeText(h.type).toLowerCase()} ${h.repair_order?.repair_order_code ?? ""}`}>
-    <header className="flex flex-wrap items-start gap-4">
-      <span className="adv-ro-doc-icon" aria-hidden="true"><Icon name="file" size={30}/></span>
+    <header className="adv-hv-head relative -mx-5.5 -mt-5.5 flex flex-wrap items-center gap-4 rounded-t-[18px] px-5.5 py-4 max-sm:-mx-4 max-sm:-mt-4 max-sm:px-4">
+      <span className="adv-hv-tile" aria-hidden="true"><Icon name="car" size={30}/></span>
+      <span className="adv-hv-rule" aria-hidden="true"/>
       <div className="min-w-0 flex-1">
-        <h2 className="text-title text-cs-text">Biên bản {typeText(h.type).toLowerCase()}</h2>
-        <p className="mt-0.5 flex flex-wrap gap-x-6 gap-y-1 text-small text-cs-text-2">
-          <span>Phiếu sửa chữa: <Link className="font-semibold text-cs-text hover:text-cs-accent-text hover:underline" to={orderStepPath(h.repair_order_id)}>{h.repair_order?.repair_order_code ?? `#${h.repair_order_id}`}</Link></span>
-          <span>Lập lúc: <span className="tabular-nums">{fullDayTime(h.created_at)}</span>{h.staff?.full_name ? ` · ${h.staff.full_name}` : ""}</span>
+        <h2 className="text-[1.45rem] font-bold leading-tight text-cs-text">Biên bản {typeText(h.type).toLowerCase()}</h2>
+        <p className="mt-1 text-small text-cs-text-2">
+          Phiếu <Link className="adv-hv-code font-semibold text-cs-text hover:text-cs-accent-text hover:underline" to={orderStepPath(h.repair_order_id)}>{h.repair_order?.repair_order_code ?? `#${h.repair_order_id}`}</Link>
         </p>
+        <p className="mt-0.5 text-caption text-cs-muted">Lập lúc <span className="tabular-nums">{fullDayTime(h.created_at)}</span>{h.staff?.full_name ? ` · ${h.staff.full_name}` : ""}</p>
       </div>
-      <Badge tone={STATUS_BADGE[h.status].tone}>{STATUS_BADGE[h.status].label}</Badge>
+      <div className="flex flex-wrap items-center gap-2"><Badge tone={STATUS_BADGE[h.status].tone}>{STATUS_BADGE[h.status].label}</Badge><OpenOrderButton id={h.repair_order_id}/></div>
     </header>
 
     <div className="adv-ro-vehicle">
@@ -167,13 +189,12 @@ function HandoverPreview({ handover: h }: { handover: HandoverListRow }) {
       </div>
     </div>
 
+    {/* Cùng nội dung với modal xem biên bản (gồm xác nhận, lý do hủy, ảnh). */}
     <HandoverSummary handover={h}/>
-    {confirmation && <p className="text-caption text-cs-muted">Khách xác nhận {confirmation.method === "ACCOUNT" ? "trong tài khoản" : "bằng mã email tại quầy"} lúc {fullDayTime(confirmation.confirmed_at)}{confirmation.comment ? ` · "${confirmation.comment}"` : ""}.</p>}
-    {h.status === "VOID" && h.void_reason && <p className="adv-notice text-small"><Icon name="info" size={18} className="shrink-0 text-danger"/><span className="min-w-0 flex-1">Lý do hủy: {h.void_reason}</span></p>}
-    <PhotoUploader type="handover" id={h.id} readOnly title="Ảnh tình trạng xe"/>
 
-    <footer className="adv-ro-footer justify-end!">
-      <Link className="adv-btn-gold" to={handoverPath(h)}><Icon name={action.icon} size={18}/>{action.label}<Icon name="arrow-right" size={18}/></Link>
+    <footer className="adv-ro-footer justify-end! gap-3">
+      <Link className={`${buttonClass({ variant: "outline" })}`} to={handoverPath(h)}><Icon name={action.icon} size={18}/>{action.label}</Link>
+      <button type="button" className="adv-btn-gold" onClick={onPrint}><Icon name="printer" size={18}/>In biên bản</button>
     </footer>
   </section>;
 }

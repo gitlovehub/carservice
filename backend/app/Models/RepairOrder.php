@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'repair_order_code', 'appointment_id', 'customer_id', 'vehicle_id', 'advisor_id',
-    'mileage_received', 'initial_condition', 'status', 'received_at', 'completed_at',
-    'handed_over_at', 'closed_at', 'close_reason', 'note',
+    'mileage_received', 'initial_condition', 'customer_request', 'status', 'received_at', 'completed_at',
+    'handed_over_at', 'closed_at', 'close_reason',
     'booked_vehicle_id', 'vehicle_change_reason', 'source', 'requires_check_in',
     'flow_type', 'estimated_ready_at',
     'quality_check', 'quality_checked_at', 'quality_checked_by',

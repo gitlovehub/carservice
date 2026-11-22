@@ -6,6 +6,8 @@ import {
   catalogAdminApi, money, type AdminService, type ServiceCategory, type ServiceLevel, type ServicePayload,
 } from "../../../services/catalogAdminApi";
 import { ServiceStepsEditor } from "../ServiceStepsEditor";
+import { useFieldErrors, type FieldErrors } from "../../../components/ui/useFieldErrors";
+import { FieldError } from "../../../components/ui/Field";
 
 const LEVEL_TEXT: Record<ServiceLevel, string> = { QUICK: "Nhanh (không cần chẩn đoán)", STANDARD: "Tiêu chuẩn", MAJOR: "Sửa lớn" };
 
@@ -25,7 +27,8 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
   const [form, setForm] = useState<Form>(() => toForm(service, defaultCategoryId));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const set = (patch: Partial<Form>) => { setForm(f => ({ ...f, ...patch })); setError(""); };
+  const fieldErrors = useFieldErrors();
+  const set = (patch: Partial<Form>) => { setForm(f => ({ ...f, ...patch })); setError(""); fieldErrors.clear(...Object.keys(patch)); };
 
   // Ảnh minh họa: chọn file → xem trước → tải lên sau khi lưu thông tin dịch vụ.
   const [savedImage, setSavedImage] = useState<string | null>(service?.image_url ?? null);
@@ -37,9 +40,10 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
   const pickImage = (input: HTMLInputElement) => {
     const file = input.files?.[0];
     if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { setError("Chỉ nhận ảnh JPG, PNG hoặc WebP."); input.value = ""; return; }
-    if (file.size > 4 * 1024 * 1024) { setError("Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn."); input.value = ""; return; }
-    setError(""); setImageFile(file);
+    setError("");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { fieldErrors.show({ image: "Chỉ nhận ảnh JPG, PNG hoặc WebP." }); input.value = ""; return; }
+    if (file.size > 4 * 1024 * 1024) { fieldErrors.show({ image: "Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn." }); input.value = ""; return; }
+    fieldErrors.clear("image"); setImageFile(file);
   };
 
   const removeSavedImage = async () => {
@@ -51,7 +55,7 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
       notify(res.message, "success");
       onSaved(res.data);
     } catch (e) {
-      setError(errorMessage(e, "Không xóa được ảnh dịch vụ."));
+      fieldErrors.showApi(e);
     } finally {
       setSaving(false);
     }
@@ -60,9 +64,12 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
   const submit = async () => {
     const price = Number(form.base_price);
     const minutes = form.estimated_minutes ? Number(form.estimated_minutes) : null;
-    if (!form.name.trim()) return setError("Nhập tên dịch vụ.");
-    if (form.base_price === "" || !Number.isFinite(price) || price < 0) return setError("Giá cơ bản phải là số không âm.");
-    if (minutes !== null && (!Number.isInteger(minutes) || minutes <= 0)) return setError("Thời gian ước tính phải là số phút lớn hơn 0.");
+    const problems: FieldErrors = {};
+    if (!form.name.trim()) problems.name = "Nhập tên dịch vụ.";
+    if (form.base_price === "" || !Number.isFinite(price) || price < 0) problems.base_price = "Giá cơ bản phải là số không âm.";
+    if (minutes !== null && (!Number.isInteger(minutes) || minutes <= 0)) problems.estimated_minutes = "Thời gian ước tính phải là số phút lớn hơn 0.";
+    setError("");
+    if (fieldErrors.show(problems)) return;
     const payload: ServicePayload = {
       name: form.name.trim(), category_id: form.category_id ? Number(form.category_id) : null, description: form.description.trim() || null,
       base_price: price, estimated_minutes: minutes, status: form.status ? "ACTIVE" : "INACTIVE", is_visible: form.is_visible,
@@ -88,7 +95,7 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
       notify(service ? `Đã cập nhật dịch vụ “${payload.name}” (${money(price)}).` : `Đã thêm dịch vụ “${payload.name}” (${money(price)}).`, "success");
       onSaved(saved);
     } catch (e) {
-      setError(errorMessage(e, "Không lưu được dịch vụ."));
+      fieldErrors.showApi(e, { name: "name", category_id: "category_id", description: "description", base_price: "base_price", estimated_minutes: "estimated_minutes", service_level: "service_level", image: "image" });
     } finally {
       setSaving(false);
     }
@@ -100,21 +107,21 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
       <Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void submit()}>Lưu dịch vụ</Button>
     </>}>
     <div className="grid gap-4 sm:grid-cols-2">
-      <Field label="Tên dịch vụ" required className="sm:col-span-2"><Input value={form.name} maxLength={150} onChange={e => set({ name: e.target.value })}/></Field>
-      <Field label="Danh mục">
+      <Field label="Tên dịch vụ" required error={fieldErrors.errors.name} className="sm:col-span-2"><Input value={form.name} maxLength={150} onChange={e => set({ name: e.target.value })}/></Field>
+      <Field label="Danh mục" error={fieldErrors.errors.category_id}>
         <Select value={form.category_id} onChange={e => set({ category_id: e.target.value })}>
           <option value="">Chưa phân loại</option>
           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </Select>
       </Field>
-      <Field label="Mức dịch vụ">
+      <Field label="Mức dịch vụ" error={fieldErrors.errors.service_level}>
         <Select value={form.service_level} onChange={e => set({ service_level: e.target.value as ServiceLevel })}>
           {(Object.keys(LEVEL_TEXT) as ServiceLevel[]).map(l => <option key={l} value={l}>{LEVEL_TEXT[l]}</option>)}
         </Select>
       </Field>
-      <Field label="Giá cơ bản (₫)" required><Input type="number" min={0} step={1000} value={form.base_price} onChange={e => set({ base_price: e.target.value })}/></Field>
-      <Field label="Thời gian ước tính (phút)" hint="Tự cập nhật theo tổng bước chuẩn nếu có."><Input type="number" min={1} value={form.estimated_minutes} onChange={e => set({ estimated_minutes: e.target.value })}/></Field>
-      <Field label="Mô tả ngắn" optional className="sm:col-span-2"><Textarea value={form.description} maxLength={1000} onChange={e => set({ description: e.target.value })} placeholder="Hiện dưới tên dịch vụ, ví dụ: Thay dầu và lọc dầu động cơ."/></Field>
+      <Field label="Giá cơ bản (₫)" required error={fieldErrors.errors.base_price}><Input type="number" min={0} step={1000} value={form.base_price} onChange={e => set({ base_price: e.target.value })}/></Field>
+      <Field label="Thời gian ước tính (phút)" error={fieldErrors.errors.estimated_minutes} hint="Tự cập nhật theo tổng bước chuẩn nếu có."><Input type="number" min={1} value={form.estimated_minutes} onChange={e => set({ estimated_minutes: e.target.value })}/></Field>
+      <Field label="Mô tả ngắn" optional error={fieldErrors.errors.description} className="sm:col-span-2"><Textarea value={form.description} maxLength={1000} onChange={e => set({ description: e.target.value })} placeholder="Hiện dưới tên dịch vụ, ví dụ: Thay dầu và lọc dầu động cơ."/></Field>
       <div className="flex items-start gap-3 rounded-control border border-cs-border bg-cs-surface-2 p-3 sm:col-span-2">
         {imagePreview || savedImage
           ? <img src={imagePreview ?? savedImage ?? undefined} alt="Xem trước ảnh dịch vụ" className="h-24 w-32 shrink-0 rounded-lg border border-cs-border bg-cs-surface object-cover"/>
@@ -122,9 +129,10 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
         <div className="min-w-0 flex-1">
           <p className="text-small font-semibold text-cs-text">Ảnh minh họa <span className="font-normal text-cs-muted">(không bắt buộc)</span></p>
           <p className="mt-0.5 text-caption text-cs-muted">Hiện trên trang Dịch vụ của khách. JPG, PNG, WebP · tối đa 4 MB · nên dùng ảnh ngang 4:3.</p>
-          <input aria-label="Chọn ảnh dịch vụ" type="file" accept="image/jpeg,image/png,image/webp" disabled={saving}
+          <input aria-label="Chọn ảnh dịch vụ" aria-invalid={!!fieldErrors.errors.image || undefined} type="file" accept="image/jpeg,image/png,image/webp" disabled={saving}
             className="mt-2 block w-full cursor-pointer text-small text-cs-text file:mr-3 file:rounded-lg file:border-0 file:bg-cs-soft file:px-3 file:py-1.5 file:font-semibold file:text-cs-accent-text"
             onChange={e => pickImage(e.currentTarget)}/>
+          <FieldError className="mt-1">{fieldErrors.errors.image}</FieldError>
           {imageFile && <button type="button" className="mt-2 text-caption font-semibold text-cs-muted underline" disabled={saving} onClick={() => setImageFile(null)}>Bỏ ảnh vừa chọn</button>}
           {!imageFile && savedImage && <button type="button" className="mt-2 text-caption font-semibold text-danger-fg underline" disabled={saving} onClick={() => void removeSavedImage()}>Xóa ảnh hiện tại</button>}
         </div>
@@ -157,7 +165,7 @@ export function ServiceDetailModal({ service, onClose, onMinutes }: { service: A
         <div><dt className="text-caption text-cs-muted">Mức dịch vụ</dt><dd>{LEVEL_TEXT[service.service_level ?? "STANDARD"]}</dd></div>
         <div><dt className="text-caption text-cs-muted">Trong gói bảo dưỡng</dt><dd>{service.active_packages_count ?? 0} gói</dd></div>
       </dl>
-      {service.description && <p className="text-cs-text-2">{service.description}</p>}
+      {service.description && <p className="text-cs-text-2 font-medium">{service.description}</p>}
       <ServiceStepsEditor serviceId={service.id} onSaved={onMinutes}/>
     </div>}
   </Modal>;

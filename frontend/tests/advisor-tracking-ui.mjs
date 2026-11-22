@@ -16,7 +16,8 @@ assert.match(reschedule, /\/advisor\/appointments\/\$\{appointment\.id\}\/resche
 assert.match(reschedule, /customer_agreed: true/, 'Only saves after the customer agreed');
 assert.match(reschedule, /contact === "agreed"/, 'Save is blocked until "Đã liên hệ và khách đồng ý"');
 assert.match(reschedule, /expected_date: currentDate/, 'Sends the time the advisor saw (stale-update guard)');
-assert.match(reception, /<AppointmentHistoryPanel /, 'Reception shows history + reschedule');
+assert.match(reception, /<AppointmentReschedulePanel /, 'Reception shows reschedule');
+assert.match(reception, /<AppointmentTimeline /, 'Reception shows history timeline');
 assert.match(admin, /\/admin\/advisor-activity/, 'Admin activity page reads the API');
 // Trang hoạt động cố vấn nằm trong Nhật ký hệ thống (tab "Hoạt động cố vấn"), menu trỏ tới /admin/audit-logs.
 assert.match(nav, /\/admin\/audit-logs/, 'Admin menu links the audit log page');

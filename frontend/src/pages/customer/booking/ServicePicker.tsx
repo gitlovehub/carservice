@@ -187,15 +187,15 @@ export default function ServicePicker({
   return (
     <div>
       {/* Đồng bộ với bước "Ngày giờ": tiêu đề có vạch đỏ + khung rounded-2xl có viền. */}
-      <h3 className="mb-3 border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-slate-900">
-        Số km hiện tại <span className="text-sm font-normal text-slate-400">(không bắt buộc)</span>
+      <h3 className="mb-3 border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-cs-text">
+        Số km hiện tại <span className="text-sm font-normal text-cs-muted">(không bắt buộc)</span>
       </h3>
-      <div className="mb-7 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-gradient-to-r from-[#fff4ec] to-white p-3 sm:flex-row sm:items-center sm:gap-4 dark:from-[#3a2a22] dark:to-transparent">
+      <div className="mb-7 flex flex-col gap-3 rounded-2xl border border-cs-border bg-cs-soft p-3 sm:flex-row sm:items-center sm:gap-4 dark:from-[#3a2a22] dark:to-transparent">
         <div className="flex min-w-0 flex-1 items-center gap-3 px-1">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-[#e11d2e] shadow-sm"><Icon name="gauge" size={20}/></span>
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-cs-surface text-[#e11d2e] shadow-sm"><Icon name="gauge" size={20}/></span>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-900">Odo trên đồng hồ xe</p>
-            <p className="text-xs text-slate-500">Dùng để gợi ý gói bảo dưỡng phù hợp với mốc km.</p>
+            <p className="text-sm font-bold text-cs-text">Odo trên đồng hồ xe</p>
+            <p className="text-xs text-cs-muted">Dùng để gợi ý gói bảo dưỡng phù hợp với mốc km.</p>
           </div>
         </div>
         <KmInput id="vehicleMileage" label="Số km hiện tại" value={mileage} onChange={onMileageChange} placeholder="VD: 5.000"
@@ -203,16 +203,16 @@ export default function ServicePicker({
       </div>
 
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-slate-900">Dịch vụ đã chọn</h3>
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${selectedItems.length ? "bg-[#e11d2e] text-white" : "bg-slate-100 text-slate-500"}`}>{selectedItems.length} mục</span>
+        <h3 className="border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-cs-text">Dịch vụ đã chọn</h3>
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${selectedItems.length ? "bg-[#e11d2e] text-white" : "bg-cs-surface-2 text-cs-muted"}`}>{selectedItems.length} mục</span>
       </div>
       <div>
         {selectedItems.length === 0 ? (
-          <div className="px-4 py-5 text-sm text-slate-500">
+          <div className="px-4 py-5 text-sm text-cs-muted">
             Chưa chọn dịch vụ nào. Bấm “Thêm dịch vụ” để chọn dịch vụ lẻ hoặc gói bảo dưỡng.
           </div>
         ) : (
-          <ul className="divide-y divide-slate-200">
+          <ul className="divide-y divide-cs-border">
             {selectedItems.map((item) => (
               <li key={item.key}
                 role="button" tabIndex={0} title="Bấm để xem / đổi trong danh sách dịch vụ"
@@ -225,17 +225,17 @@ export default function ServicePicker({
                     <Icon name={iconOf(item.icon, item.type === "package" ? "layers" : "wrench")} size={18}/>
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-900">
+                    <p className="text-sm font-bold text-cs-text">
                       {item.type === "package" && (
                         <span className="mr-1.5 rounded bg-[var(--cs-soft,#fff1f1)] px-1.5 py-0.5 text-[11px] font-bold uppercase text-cs-accent-text">Gói</span>
                       )}
                       {item.name}
                     </p>
-                    {item.summary && <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{item.summary}</p>}
+                    {item.summary && <p className="mt-0.5 line-clamp-1 text-xs text-cs-muted">{item.summary}</p>}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
-                  <span className="text-sm font-bold text-slate-900">{formatCatalogPrice(item.price)}</span>
+                  <span className="text-sm font-bold text-cs-text">{formatCatalogPrice(item.price)}</span>
                   <button type="button" onClick={(event) => { event.stopPropagation(); toggle(item); }} onKeyDown={(event) => event.stopPropagation()} aria-label={`Xóa ${item.name}`}
                     className="rounded-lg px-2 py-1 text-xs font-bold text-cs-accent-text hover:bg-[var(--cs-soft,#fff1f1)]">
                     Xóa
@@ -246,7 +246,7 @@ export default function ServicePicker({
           </ul>
         )}
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2 border-t border-cs-border px-4 py-3">
           <button ref={openButtonRef} type="button" onClick={openDrawer} className={buttonClass({ variant: "primary" })} disabled={loading} aria-haspopup="dialog">
             <i className="fa-solid fa-plus text-xs"></i> {loading ? "Đang tải dịch vụ..." : "Thêm dịch vụ"}
           </button>
@@ -262,7 +262,7 @@ export default function ServicePicker({
 
       {showSymptom && (
         <div className="mt-7">
-          <label htmlFor="symptomDescription" className="mb-3 block border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-slate-900">
+          <label htmlFor="symptomDescription" className="mb-3 block border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-cs-text">
             Tình trạng xe
           </label>
           <textarea
@@ -272,7 +272,7 @@ export default function ServicePicker({
             value={symptom}
             onChange={(event) => onSymptomChange(event.target.value)}
             placeholder="VD: Phanh kêu khi dừng, điều hòa không mát..."
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:bg-white"
+            className="w-full rounded-2xl border border-cs-border bg-cs-surface-2 px-4 py-2.5 text-sm focus:bg-cs-surface"
           />
           <p className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
             <Icon name="info" size={18}/>Gara sẽ kiểm tra và báo giá trước khi làm.

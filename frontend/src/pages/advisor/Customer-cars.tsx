@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, EmptyState, ErrorState, KmInput, LoadingState, Modal, Pagination, SearchInput } from "../../components/ui";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Dropdown } from "../../components/ui/Dropdown";
-import { Field, Input, Select, Textarea } from "../../components/ui/Field";
+import { Field, Input, Select, Textarea, FieldError } from "../../components/ui/Field";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
@@ -18,8 +18,11 @@ import { customerDirectoryApi, formatVnd, type VehicleDetail, type VehicleRow, t
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
 import { vehicleTitle } from "./counterForms";
+import { PreviewDrawer } from "./advisorListKit";
+import { useNarrowDrawer } from "./useNarrowDrawer";
 import { orderStepPath } from "./repairOrderFlow";
 import { errorText } from "./workflowFormat";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 import "./advisorDashboard.css";
 
 /**
@@ -68,9 +71,9 @@ export default function CustomerCars() {
   const [editing, setEditing] = useState<VehicleRow | "new" | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState("");
+  const fieldErrors = useFieldErrors();
   const [saving, setSaving] = useState(false);
   const [version, setVersion] = useState(0);
-  const previewRef = useRef<HTMLDivElement>(null);
   const term = useDebounced(search.trim(), 350);
 
   useEffect(() => {
@@ -93,10 +96,9 @@ export default function CustomerCars() {
     setParams(next, { replace: true });
   };
   const pickSegment = (next: VehicleSegment | null) => { setParam({ segment: next, vehicle: null }); setPage(1); };
-  const select = (v: VehicleRow) => {
-    setParam({ vehicle: String(v.id) });
-    if (!window.matchMedia("(min-width: 1280px)").matches) window.setTimeout(() => previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-  };
+  // Màn rộng: khung bên phải; màn hẹp: ngăn kéo xem nhanh (cùng cách các trang danh sách khác).
+  const drawer = useNarrowDrawer();
+  const select = (v: VehicleRow) => { setParam({ vehicle: String(v.id) }); drawer.show(); };
 
   function loadCustomers() {
     if (customerOptions) return;
@@ -110,14 +112,18 @@ export default function CustomerCars() {
     setEditing(target);
     setForm(target === "new" ? { ...emptyForm, customerId, customerLabel: owner ? owner.full_name : "" } : formFrom(target));
     setFormError("");
+    fieldErrors.reset();
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!editing) return;
-    if (!form.customerId) return setFormError("Chọn chủ xe.");
-    if (!form.selection.modelId) return setFormError("Chọn hãng và dòng xe.");
-    setSaving(true); setFormError("");
+    const problems: FieldErrors = {};
+    if (!form.customerId) problems.customer = "Chọn chủ xe.";
+    if (!form.selection.modelId) problems.model = "Chọn hãng và dòng xe.";
+    setFormError("");
+    if (fieldErrors.show(problems) || !form.customerId || !form.selection.modelId) return;
+    setSaving(true);
     const payload = {
       customer_id: form.customerId, model_id: form.selection.modelId, trim_id: form.selection.trimId,
       license_plate: form.plate.trim().toUpperCase() || null, year: form.year ? Number(form.year) : null,
@@ -128,7 +134,9 @@ export default function CustomerCars() {
       else { await updateAdvisorVehicle(editing.id, payload); notify("Đã cập nhật xe.", "success"); }
       setEditing(null);
       setVersion(v => v + 1);
-    } catch (err) { setFormError(errorText(err)); }
+    } catch (err) {
+      fieldErrors.showApi(err, { customer_id: "customer", model_id: "model", trim_id: "model", license_plate: "plate", year: "year", mileage: "mileage", vin: "vin", note: "note" });
+    }
     finally { setSaving(false); }
   }
 
@@ -196,10 +204,12 @@ export default function CustomerCars() {
         </div>}
       </section>
 
-      <div ref={previewRef} className="adv-ro-preview adv-ro-preview-always">
+      <div className="adv-ro-preview">
         {selectedId ? <VehiclePreview key={`${selectedId}-${version}`} id={selectedId} onEdit={openForm} onDelete={v => void remove(v)}/>
           : <section className="adv-card grid min-h-[320px] place-items-center p-8 text-center text-small text-cs-muted">Chọn một xe ở danh sách.</section>}
       </div>
+      {selectedId && <PreviewDrawer open={drawer.open} onClose={drawer.close} title="Hồ sơ xe">
+        <VehiclePreview key={`d-${selectedId}-${version}`} id={selectedId} onEdit={v => { drawer.close(); openForm(v); }} onDelete={v => { drawer.close(); void remove(v); }}/></PreviewDrawer>}
     </div>
 
     {editing && <Modal open onClose={() => setEditing(null)} dismissible={!saving} size="lg"
@@ -208,18 +218,21 @@ export default function CustomerCars() {
         <Button variant="secondary" disabled={saving} onClick={() => setEditing(null)}>Huỷ</Button>
         <Button type="submit" form="advisor-vehicle-form" variant="primary" icon="check" loading={saving}>{editing === "new" ? "Thêm xe" : "Lưu"}</Button>
       </>}>
-      <form id="advisor-vehicle-form" onSubmit={submit} className="space-y-4">
-        <SearchableSelect label="Chủ xe" required placeholder="Tìm tên hoặc SĐT khách…" value={form.customerId}
+      <form id="advisor-vehicle-form" noValidate onSubmit={submit} className="space-y-4">
+        <SearchableSelect label="Chủ xe" required error={fieldErrors.errors.customer} placeholder="Tìm tên hoặc SĐT khách…" value={form.customerId}
           options={customerOptions ?? []} loading={customerOptions === null} fallbackLabel={form.customerLabel}
-          onChange={option => setForm({ ...form, customerId: option?.value ?? null, customerLabel: option?.label ?? "" })}/>
-        <VehicleSelector value={form.selection} onChange={selection => setForm({ ...form, selection })}/>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Field label="Biển số" optional><Input value={form.plate} maxLength={20} className="uppercase" placeholder="VD: 51K-123.45" onChange={e => setForm({ ...form, plate: e.target.value })}/></Field>
-          <Field label="Năm sản xuất" optional><Input inputMode="numeric" maxLength={4} value={form.year} placeholder="VD: 2020" onChange={e => setForm({ ...form, year: e.target.value.replace(/\D/g, "") })}/></Field>
-          <Field label="Số km (ODO)" optional><KmInput label="Số km (ODO)" value={form.mileage} onChange={mileage => setForm({ ...form, mileage })}/></Field>
+          onChange={option => { setForm({ ...form, customerId: option?.value ?? null, customerLabel: option?.label ?? "" }); fieldErrors.clear("customer"); }}/>
+        <div role="group" aria-label="Hãng và dòng xe" aria-invalid={!!fieldErrors.errors.model || undefined} className={fieldErrors.errors.model ? "rounded-xl border border-danger p-3" : undefined}>
+          <VehicleSelector value={form.selection} onChange={selection => { setForm({ ...form, selection }); fieldErrors.clear("model"); }}/>
+          <FieldError className="mt-1.5">{fieldErrors.errors.model}</FieldError>
         </div>
-        <Field label="Số khung (VIN)" optional><Input value={form.vin} maxLength={50} className="uppercase" onChange={e => setForm({ ...form, vin: e.target.value })}/></Field>
-        <Field label="Ghi chú" optional><Textarea rows={2} value={form.note} onChange={e => setForm({ ...form, note: e.target.value })}/></Field>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Biển số" optional error={fieldErrors.errors.plate}><Input value={form.plate} maxLength={20} className="uppercase" placeholder="VD: 51K-123.45" onChange={e => { setForm({ ...form, plate: e.target.value }); fieldErrors.clear("plate"); }}/></Field>
+          <Field label="Năm sản xuất" optional error={fieldErrors.errors.year}><Input inputMode="numeric" maxLength={4} value={form.year} placeholder="VD: 2020" onChange={e => { setForm({ ...form, year: e.target.value.replace(/\D/g, "") }); fieldErrors.clear("year"); }}/></Field>
+          <Field label="Số km (ODO)" optional error={fieldErrors.errors.mileage}><KmInput label="Số km (ODO)" value={form.mileage} onChange={mileage => { setForm({ ...form, mileage }); fieldErrors.clear("mileage"); }}/></Field>
+        </div>
+        <Field label="Số khung (VIN)" optional error={fieldErrors.errors.vin}><Input value={form.vin} maxLength={50} className="uppercase" onChange={e => { setForm({ ...form, vin: e.target.value }); fieldErrors.clear("vin"); }}/></Field>
+        <Field label="Ghi chú" optional error={fieldErrors.errors.note}><Textarea rows={2} value={form.note} onChange={e => { setForm({ ...form, note: e.target.value }); fieldErrors.clear("note"); }}/></Field>
         {formError && <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-small text-danger-fg">{formError}</p>}
       </form>
     </Modal>}
@@ -270,7 +283,6 @@ function VehiclePreview({ id, onEdit, onDelete }: { id: number; onEdit: (v: Vehi
         <Button variant="outline" icon="edit" onClick={() => onEdit(v)}>Chỉnh sửa</Button>
         <Dropdown label="Thao tác khác" items={[
           { label: "Xem hồ sơ khách", icon: "user", onSelect: () => navigate(`/advisor/customers?customer=${v.customer_id}`) },
-          { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
           { type: "separator" },
           { label: open ? "Xoá xe (đang ở xưởng — không xoá được)" : "Xoá xe", icon: "trash", danger: true, disabled: !!open, onSelect: () => onDelete(v) },
         ]}/>
@@ -323,7 +335,7 @@ function VehiclePreview({ id, onEdit, onDelete }: { id: number; onEdit: (v: Vehi
         : <p className="text-small text-cs-muted">Chưa có ảnh — ảnh được chụp trong các lần sửa tại gara.</p>)}
 
       {tab === "notes" && <div className="rounded-xl border border-cs-border p-4 text-small">
-        <p className="whitespace-pre-wrap text-cs-text">{v.note || "Chưa có ghi chú cho xe này."}</p>
+        <p className="whitespace-pre-wrap text-cs-text font-medium">{v.note || "Chưa có ghi chú cho xe này."}</p>
         <button type="button" className={`${buttonClass({ variant: "ghost", size: "sm" })} mt-3`} onClick={() => onEdit(v)}><Icon name="edit" size={15}/>Sửa ghi chú</button>
       </div>}
     </div>

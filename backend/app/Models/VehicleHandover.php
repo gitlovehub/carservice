@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /** Biên bản giao nhận xe. Nội dung chỉ sửa được ở DRAFT; SUBMITTED/CONFIRMED đã khóa. */
@@ -15,8 +18,12 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
     'pickup_authorization_id', 'staff_employee_id', 'compared_handover_id', 'snapshot', 'snapshot_sha256',
     'submitted_at', 'confirmed_at', 'void_reason',
 ])]
+#[Hidden(['person_id_last4', 'snapshot'])]
 class VehicleHandover extends Model
 {
+    /** @var list<string> */
+    protected $appends = ['has_person_id'];
+
     public const TYPE_CHECK_IN = 'CHECK_IN';
 
     public const TYPE_CHECK_OUT = 'CHECK_OUT';
@@ -41,6 +48,12 @@ class VehicleHandover extends Model
             'submitted_at' => 'datetime',
             'confirmed_at' => 'datetime',
         ];
+    }
+
+    /** Cho giao diện biết đã ghi giấy tờ mà không lộ 4 số cuối. */
+    protected function hasPersonId(): Attribute
+    {
+        return Attribute::get(fn (): bool => ! empty($this->attributes['person_id_last4'] ?? null));
     }
 
     public function repairOrder(): BelongsTo
@@ -82,6 +95,12 @@ class VehicleHandover extends Model
     public function confirmations(): MorphMany
     {
         return $this->morphMany(CustomerConfirmation::class, 'confirmable');
+    }
+
+    /** Yêu cầu ngoại lệ gần nhất (chủ xe mất email, admin duyệt). */
+    public function latestException(): HasOne
+    {
+        return $this->hasOne(HandoverException::class)->latestOfMany();
     }
 
     public function isEditable(): bool

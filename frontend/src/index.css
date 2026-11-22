@@ -192,6 +192,11 @@ textarea:not([aria-invalid="true"]):focus,
 select:not([aria-invalid="true"]):focus {
   border-color: var(--cs-focus) !important;
 }
+input[aria-invalid="true"],
+textarea[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border-color: var(--cs-danger) !important;
+}
 
 @layer base {
   a {

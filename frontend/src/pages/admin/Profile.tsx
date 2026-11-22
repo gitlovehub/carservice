@@ -7,6 +7,7 @@ import { fetchApi } from "../../services/api";
 import { errorMessage, fmtDate } from "../../services/adminApi";
 import { getUserInitials } from "../auth/auth";
 import { AdminPage, Panel, Pill } from "./kit/AdminKit";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 
 type Me = {
   id: number; email: string; role: string; status: string; avatar: string | null; created_at: string | null;
@@ -62,6 +63,8 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
   const [changing, setChanging] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const profileErrors = useFieldErrors();
+  const passwordErrors = useFieldErrors();
 
   useEffect(() => {
     let active = true;
@@ -72,14 +75,17 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
   }, [reload]);
 
   const name = me?.employee?.full_name || me?.email || "";
-  const startEdit = () => { setProfileError(""); setDraft({ name: me?.employee?.full_name ?? "", phone: me?.employee?.phone ?? "" }); };
+  const startEdit = () => { setProfileError(""); profileErrors.reset(); setDraft({ name: me?.employee?.full_name ?? "", phone: me?.employee?.phone ?? "" }); };
 
   const saveProfile = async (event: FormEvent) => {
     event.preventDefault();
     if (!draft) return;
-    if (!draft.name.trim()) return setProfileError("Nhập họ và tên.");
-    if (draft.phone.trim() && !PHONE.test(draft.phone.trim())) return setProfileError("Số điện thoại gồm 10–11 số, bắt đầu bằng 0.");
-    setSaving(true); setProfileError("");
+    const problems: FieldErrors = {};
+    if (!draft.name.trim()) problems.name = "Nhập họ và tên.";
+    if (draft.phone.trim() && !PHONE.test(draft.phone.trim())) problems.phone = "Số điện thoại gồm 10–11 số, bắt đầu bằng 0.";
+    setProfileError("");
+    if (profileErrors.show(problems)) return;
+    setSaving(true);
     try {
       const response = await fetchApi<{ account: Me }>("/me/profile", {
         method: "PATCH", body: JSON.stringify({ full_name: draft.name.trim(), phone: draft.phone.trim() || null }),
@@ -90,7 +96,7 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
       setDraft(null);
       notify("Đã cập nhật hồ sơ của bạn.", "success");
     } catch (error) {
-      setProfileError(errorMessage(error, "Không lưu được hồ sơ.")); // fetchApi đã đưa lỗi validate đầu tiên vào message
+      profileErrors.showApi(error, { full_name: "name", phone: "phone" });
     } finally {
       setSaving(false);
     }
@@ -127,10 +133,15 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
   const changePassword = async (event: FormEvent) => {
     event.preventDefault();
     const { current, next, confirm } = passwords;
-    if (!current || !next || !confirm) return setPasswordError("Nhập đủ mật khẩu hiện tại, mật khẩu mới và xác nhận.");
-    if (next.length < 8 || !/[a-z]/.test(next) || !/[A-Z]/.test(next) || !/\d/.test(next)) return setPasswordError("Mật khẩu mới tối thiểu 8 ký tự, gồm chữ thường, chữ hoa và chữ số.");
-    if (next !== confirm) return setPasswordError("Xác nhận mật khẩu mới không khớp.");
-    setChanging(true); setPasswordError("");
+    const problems: FieldErrors = {};
+    if (!current) problems.current = "Nhập mật khẩu hiện tại.";
+    if (!next) problems.next = "Nhập mật khẩu mới.";
+    else if (next.length < 8 || !/[a-z]/.test(next) || !/[A-Z]/.test(next) || !/\d/.test(next)) problems.next = "Tối thiểu 8 ký tự, gồm chữ thường, chữ hoa và chữ số.";
+    if (!confirm) problems.confirm = "Nhập lại mật khẩu mới.";
+    else if (next !== confirm) problems.confirm = "Xác nhận mật khẩu mới không khớp.";
+    setPasswordError("");
+    if (passwordErrors.show(problems)) return;
+    setChanging(true);
     try {
       await fetchApi("/me/change-password", {
         method: "POST", body: JSON.stringify({ current_password: current, new_password: next, new_password_confirmation: confirm }),
@@ -138,7 +149,7 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
       setPasswords(emptyPasswords);
       notify("Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới.", "success");
     } catch (error) {
-      setPasswordError(errorMessage(error, "Không đổi được mật khẩu."));
+      passwordErrors.showApi(error, { current_password: "current", new_password: "next", new_password_confirmation: "confirm" });
     } finally {
       setChanging(false);
     }
@@ -150,7 +161,7 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
     </div>
   </AdminPage>;
 
-  const setPw = (patch: Partial<Passwords>) => { setPasswords(p => ({ ...p, ...patch })); setPasswordError(""); };
+  const setPw = (patch: Partial<Passwords>) => { setPasswords(p => ({ ...p, ...patch })); setPasswordError(""); passwordErrors.clear(...Object.keys(patch)); };
 
   return <AdminPage title="Hồ sơ của bạn" description={copy.description} demo={false}>
     <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
@@ -187,15 +198,15 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
         {/* Thông tin cá nhân */}
         <Panel title="Thông tin cá nhân" icon="user"
           action={!draft && <Button size="sm" variant="outline" icon="edit" onClick={startEdit}>Sửa</Button>}>
-          <form onSubmit={event => void saveProfile(event)} className="flex flex-col gap-4">
+          <form noValidate onSubmit={event => void saveProfile(event)} className="flex flex-col gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Họ và tên" required={!!draft}>
+              <Field label="Họ và tên" required={!!draft} error={profileErrors.errors.name}>
                 <Input value={draft ? draft.name : me.employee?.full_name ?? ""} disabled={!draft || saving} maxLength={100}
-                  onChange={e => { setDraft(d => d && { ...d, name: e.target.value }); setProfileError(""); }}/>
+                  onChange={e => { setDraft(d => d && { ...d, name: e.target.value }); setProfileError(""); profileErrors.clear("name"); }}/>
               </Field>
-              <Field label="Số điện thoại" optional={!!draft}>
+              <Field label="Số điện thoại" optional={!!draft} error={profileErrors.errors.phone}>
                 <Input inputMode="tel" value={draft ? draft.phone : me.employee?.phone ?? ""} disabled={!draft || saving} maxLength={11} placeholder={draft ? "VD: 0901234567" : undefined}
-                  onChange={e => { setDraft(d => d && { ...d, phone: e.target.value }); setProfileError(""); }}/>
+                  onChange={e => { setDraft(d => d && { ...d, phone: e.target.value }); setProfileError(""); profileErrors.clear("phone"); }}/>
               </Field>
               <Field label="Email đăng nhập" hint="Email dùng để đăng nhập nên không đổi tại đây." className="sm:col-span-2">
                 <Input type="email" value={me.email} disabled/>
@@ -203,7 +214,7 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
             </div>
             {profileError && <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-fg">{profileError}</p>}
             {draft && <div className="flex flex-wrap justify-end gap-2 border-t border-cs-border pt-4">
-              <Button type="button" disabled={saving} onClick={() => { setDraft(null); setProfileError(""); }}>Huỷ</Button>
+              <Button type="button" disabled={saving} onClick={() => { setDraft(null); setProfileError(""); profileErrors.reset(); }}>Huỷ</Button>
               <Button type="submit" variant="primary" icon="check" loading={saving} loadingText="Đang lưu...">Lưu thay đổi</Button>
             </div>}
           </form>
@@ -211,15 +222,15 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
 
         {/* Đổi mật khẩu */}
         <Panel title="Đổi mật khẩu" icon="lock">
-          <form onSubmit={event => void changePassword(event)} className="flex flex-col gap-4">
+          <form noValidate onSubmit={event => void changePassword(event)} className="flex flex-col gap-4">
             <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Mật khẩu hiện tại" required>
+              <Field label="Mật khẩu hiện tại" required error={passwordErrors.errors.current}>
                 <PasswordInput autoComplete="current-password" value={passwords.current} disabled={changing} onChange={e => setPw({ current: e.target.value })}/>
               </Field>
-              <Field label="Mật khẩu mới" required>
+              <Field label="Mật khẩu mới" required error={passwordErrors.errors.next}>
                 <PasswordInput autoComplete="new-password" value={passwords.next} disabled={changing} onChange={e => setPw({ next: e.target.value })}/>
               </Field>
-              <Field label="Nhập lại mật khẩu mới" required>
+              <Field label="Nhập lại mật khẩu mới" required error={passwordErrors.errors.confirm}>
                 <PasswordInput autoComplete="new-password" value={passwords.confirm} disabled={changing} onChange={e => setPw({ confirm: e.target.value })}/>
               </Field>
             </div>
@@ -229,8 +240,7 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
               {/* Không nhớ mật khẩu hiện tại → đặt lại qua OTP email (trang Quên mật khẩu dùng chung), xong quay về đây. */}
               <Link to="/forgot-password" state={{ from: { pathname: copy.path, search: "", hash: "" } }}
                 className="text-small font-semibold text-cs-muted no-underline hover:text-cs-accent-text hover:underline">Quên mật khẩu hiện tại? Đặt lại qua email</Link>
-              <Button type="submit" variant="primary" icon="key" loading={changing} loadingText="Đang đổi..."
-                disabled={!passwords.current || !passwords.next || !passwords.confirm}>Đổi mật khẩu</Button>
+              <Button type="submit" variant="primary" icon="key" loading={changing} loadingText="Đang đổi...">Đổi mật khẩu</Button>
             </div>
           </form>
         </Panel>

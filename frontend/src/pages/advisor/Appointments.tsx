@@ -15,6 +15,7 @@ import { TimeRangeBar } from "./TimeRangeBar";
 import { isTodayRange, rangeBounds, todayRange, type TimeRange } from "./timeRange";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
+import { OpenOrderButton } from "./advisorListKit";
 import CustomerRequestSummary from "./CustomerRequestSummary";
 import { capacityText, checkInConfirmOptions, confirmAppointmentOptions, errorText, sendEmailConfirmOptions } from "./workflowFormat";
 import { sendAppointmentConfirmationEmail } from "../../services/workflowService";
@@ -239,6 +240,7 @@ function Appointments() {
 
   // Nút thao tác cỡ md (40px) để cao bằng nút ⋯ đứng cạnh.
   const primaryAction = (a: AppointmentRow) => {
+    if (a.repair_order) return <OpenOrderButton id={a.repair_order.id} size="md"/>;
     // Quá hạn: xác nhận / tiếp nhận không còn ý nghĩa → nút chính là "Khách không đến" (huỷ vẫn trong menu ⋯).
     if (isExpired(a)) return <Button variant="danger-outline" icon="ban" loading={busy === `noshow-${a.id}`} onClick={() => void handleNoShow(a)}>Khách không đến</Button>;
     if (a.status === "PENDING") return <Button variant="outline" icon="check" loading={busy === `confirm-${a.id}`} onClick={() => void handleConfirm(a)}>Xác nhận</Button>;
@@ -383,6 +385,7 @@ function Appointments() {
     {detail && <Modal open onClose={() => setDetail(null)} size="lg" title="Chi tiết lịch hẹn" description={detail.appointment_code}
       footer={<>
         <Button variant="secondary" onClick={() => setDetail(null)}>Đóng</Button>
+        {detail.repair_order && <OpenOrderButton id={detail.repair_order.id} size="md"/>}
         {/* Chi tiết chỉ để xem + liên hệ khách (gọi / email). Thao tác đổi trạng thái (Xác nhận, Tiếp nhận…) chỉ ở cột Thao tác của bảng. */}
         {detail.customer?.phone && <a href={`tel:${detail.customer.phone.replace(/[^+\d]/g, "")}`} className={buttonClass({ variant: "outline" })}><Icon name="phone" size={16}/>Gọi {detail.customer.phone}</a>}
         {detail.status === "PENDING" && !isOverdue(detail) && <Button variant="outline" icon="mail" loading={busy === `email-${detail.id}`} onClick={() => { const a = detail; setDetail(null); void handleSendEmail(a); }}>Gửi email xác nhận</Button>}

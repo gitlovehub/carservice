@@ -100,14 +100,14 @@ function SavedVehiclePicker({ options, selectedId, onSelect }: { options: Vehicl
 
   return (
     <div className="mb-7">
-      <h3 className="mb-3 border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-slate-900">
-        Xe đã lưu <span className="text-sm font-semibold text-slate-400">({options.length - 1})</span>
+      <h3 className="mb-3 border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-cs-text">
+        Xe đã lưu <span className="text-sm font-semibold text-cs-muted">({options.length - 1})</span>
       </h3>
       {/* Nút cao bằng thẻ xe bên cạnh (cùng hàng, cùng bo góc). */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
         <VehicleCard opt={current} on onClick={() => setOpen(true)} className="sm:max-w-md sm:flex-1"/>
         <button type="button" onClick={() => setOpen(true)}
-          className="flex min-h-16 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-900 transition-colors hover:border-[#e11d2e] hover:text-[#e11d2e]">
+          className="flex min-h-16 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-cs-border bg-cs-surface px-6 text-sm font-bold text-cs-text transition-colors hover:border-[#e11d2e] hover:text-[#e11d2e]">
           <Icon name="car" size={18}/>Chọn xe đã lưu
         </button>
       </div>
@@ -130,12 +130,12 @@ function SavedVehiclePicker({ options, selectedId, onSelect }: { options: Vehicl
 
 function StepHeader({ icon, title, subtitle, image }: { icon: IconName; title: string; subtitle: string; image?: string }) {
   return (
-    <div className="relative -mx-[18px] -mt-[18px] mb-6 flex items-center gap-4 overflow-hidden rounded-t-[19px] border-b border-slate-200 bg-gradient-to-r from-[#fff1f2] via-[#ffe8eb] to-[#fff5f6] px-[18px] py-5 sm:-mx-6 sm:-mt-6 sm:px-6 dark:from-[#1b1d21] dark:via-[#1b1d21] dark:to-[#2a1418]">
+    <div className="relative -mx-[18px] -mt-[18px] mb-6 flex items-center gap-4 overflow-hidden rounded-t-[19px] border-b border-cs-border bg-gradient-to-r from-[#fff1f2] via-[#ffe8eb] to-[#fff5f6] px-[18px] py-5 sm:-mx-6 sm:-mt-6 sm:px-6 dark:from-[#1b1d21] dark:via-[#1b1d21] dark:to-[#2a1418]">
       {image && <img src={image} alt="" aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[45%] object-cover object-[70%_55%] opacity-40 [mask-image:linear-gradient(90deg,transparent,#000_55%)] sm:block dark:opacity-60"/>}
       <span className="relative z-10 grid size-14 shrink-0 place-items-center rounded-2xl bg-white/85 text-[#e11d2e] shadow-sm dark:bg-[#4a1219] dark:text-white"><Icon name={icon} size={28}/></span>
       <div className="relative z-10 min-w-0">
-        <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">{title}</h2>
-        <p className="mt-0.5 text-sm text-slate-600">{subtitle}</p>
+        <h2 className="text-xl font-extrabold text-cs-text sm:text-2xl">{title}</h2>
+        <p className="mt-0.5 text-sm text-cs-text-2">{subtitle}</p>
       </div>
     </div>
   );
@@ -279,7 +279,6 @@ export default function Booking() {
   const [bookingCode, setBookingCode] = useState<string>("");
   const [bookingStatus, setBookingStatus] = useState<string>("PENDING");
   const [submitting, setSubmitting] = useState(false);
-  const [submissionError, setSubmissionError] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -580,7 +579,6 @@ export default function Booking() {
     if (currentStep === BOOKING_STEPS.length) {
       // Đã đăng nhập: mở modal xem lại + 2 ô đồng ý trước khi gửi; chưa đăng nhập / nhân viên xử lý như cũ.
       if (isLoggedIn && !isStaffAccount) {
-        setSubmissionError("");
         setReviewOpen(true);
       } else {
         void completeBooking();
@@ -598,12 +596,11 @@ export default function Booking() {
       return;
     }
     if (isStaffAccount) {
-      setSubmissionError("Tài khoản nhân viên không đặt lịch ở trang này. Vui lòng dùng chức năng tạo lịch hẹn trong khu quản lý.");
+      notify("Tài khoản nhân viên không đặt lịch ở trang này. Vui lòng dùng chức năng tạo lịch hẹn trong khu quản lý.", "error");
       return;
     }
 
     setSubmitting(true);
-    setSubmissionError("");
 
     const selectedDate = upcomingDates[selectedDateIndex] || upcomingDates[0];
     const serviceIds = selectedItems.filter((item) => item.type === "service").map((item) => item.id);
@@ -651,7 +648,7 @@ export default function Booking() {
         confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
       }, 150);
     } catch (err) {
-      setSubmissionError(err instanceof Error ? err.message : "Không thể gửi lịch hẹn. Vui lòng thử lại.");
+      notify(err instanceof Error ? err.message : "Không thể gửi lịch hẹn. Vui lòng thử lại.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -693,7 +690,7 @@ export default function Booking() {
   const showSummary = currentStep >= 2 && currentStep <= BOOKING_STEPS.length && currentStep !== 3;
 
   return (
-    <div className="min-h-screen bg-[var(--cs-bg,#f7f7f6)] [&_button:not(:disabled)]:cursor-pointer [&_a]:cursor-pointer text-[var(--cs-text,#191919)] [&_.bg-white]:bg-[var(--cs-surface,#fff)] [&_.bg-slate-50]:bg-[var(--cs-bg,#f7f7f6)] [&_.bg-slate-100]:bg-[var(--cs-surface-2,#f1f1ef)] [&_.text-slate-900]:text-[var(--cs-text,#191919)] [&_.text-slate-800]:text-[var(--cs-text,#191919)] [&_.text-slate-700]:text-[var(--cs-text,#191919)] [&_.text-slate-600]:text-[var(--cs-muted,#757575)] [&_.text-slate-500]:text-[var(--cs-muted,#757575)] [&_.border-slate-200]:border-[var(--cs-border,#e9e9e6)] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-50 [&_input]:accent-[#cf2935] [&_input]:focus-visible:outline-[#cf2935] [&_select]:focus-visible:outline-[#cf2935] [&_textarea]:focus-visible:outline-[#cf2935] antialiased font-sans flex flex-col justify-between selection:bg-[#1F2933] selection:text-white">
+    <div className="min-h-screen bg-[var(--cs-bg,#f7f7f6)] [&_button:not(:disabled)]:cursor-pointer [&_a]:cursor-pointer text-[var(--cs-text,#191919)] [&_.bg-cs-surface]:bg-[var(--cs-surface,#fff)] [&_.bg-cs-surface-2]:bg-[var(--cs-bg,#f7f7f6)] [&_.bg-cs-surface-2]:bg-[var(--cs-surface-2,#f1f1ef)] [&_.text-cs-text]:text-[var(--cs-text,#191919)] [&_.text-cs-text]:text-[var(--cs-text,#191919)] [&_.text-cs-text-2]:text-[var(--cs-text,#191919)] [&_.text-cs-text-2]:text-[var(--cs-muted,#757575)] [&_.text-cs-muted]:text-[var(--cs-muted,#757575)] [&_.border-cs-border]:border-[var(--cs-border,#e9e9e6)] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-50 [&_input]:accent-[#cf2935] [&_input]:focus-visible:outline-[#cf2935] [&_select]:focus-visible:outline-[#cf2935] [&_textarea]:focus-visible:outline-[#cf2935] antialiased font-sans flex flex-col justify-between selection:bg-[#1F2933] selection:text-white">
       {/* Banner đầu trang — cùng kiểu Dịch vụ / Về chúng tôi / Liên hệ (breadcrumb + tiêu đề có chữ đỏ). */}
       <ReferenceBanner title="Đặt lịch tại" highlight="CarService" crumb="Đặt lịch" image="banner-booking.webp" position="right center"
         subtitle={`Chọn xe, dịch vụ và khung giờ phù hợp — gara xác nhận lịch cho bạn, chỉ làm những gì bạn đồng ý.${garagePhone ? ` Hỗ trợ: ${garagePhone}.` : ""}`}/>
@@ -727,7 +724,7 @@ export default function Booking() {
         )}
 
         {/* Thanh tiến trình — tông đỏ của web: đã xong = đỏ ✓, đang làm = đỏ có viền hồng, chưa tới = xám. */}
-        <ol className="mb-6 grid grid-cols-4 gap-2 rounded-[19px] border border-slate-200 bg-white p-3 sm:p-4">
+        <ol className="mb-6 grid grid-cols-4 gap-2 rounded-[19px] border border-cs-border bg-cs-surface p-3 sm:p-4">
           {BOOKING_STEPS.map((label, index) => {
             const step = index + 1;
             const isDone = currentStep > step;
@@ -753,12 +750,12 @@ export default function Booking() {
                         ? "bg-[#e11d2e] text-white"
                         : isCurrent
                           ? "bg-[#e11d2e] text-white ring-4 ring-[#fde0e4] dark:ring-[#4a1219]"
-                          : "bg-slate-100 text-slate-500"
+                          : "bg-cs-surface-2 text-cs-muted"
                     }`}
                   >
                     {isDone ? <Icon name="check" size={16}/> : step}
                   </span>
-                  <span className={`text-xs sm:text-sm ${isCurrent ? "font-extrabold text-[#e11d2e] dark:text-[var(--cs-accent-text)]" : isDone ? "font-bold text-slate-800" : "font-medium text-slate-500"}`}>
+                  <span className={`text-xs sm:text-sm ${isCurrent ? "font-extrabold text-[#e11d2e] dark:text-[var(--cs-accent-text)]" : isDone ? "font-bold text-cs-text" : "font-medium text-cs-muted"}`}>
                     {label}
                   </span>
                 </button>
@@ -768,7 +765,7 @@ export default function Booking() {
         </ol>
 
         <div className={`grid grid-cols-1 items-start gap-6 ${showSummary ? "lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]" : ""}`}>
-          <div className="min-w-0 rounded-[19px] border border-slate-200/90 bg-white p-[18px] sm:p-6">
+          <div className="min-w-0 rounded-[19px] border border-slate-200/90 bg-cs-surface p-[18px] sm:p-6">
             {/* BƯỚC 1: XE — cùng phong cách các bước sau: đầu thẻ + tiêu đề có vạch đỏ; xe đã lưu dạng thẻ chọn. */}
             {currentStep === 1 && (
               <div>
@@ -785,10 +782,10 @@ export default function Booking() {
                   />
                 )}
 
-                <h3 className="mb-3 border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-slate-900">
+                <h3 className="mb-3 border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-cs-text">
                   Thông tin xe
                 </h3>
-                <div className="rounded-2xl border border-slate-200 p-4">
+                {/* Không viền khung quanh hãng / dòng / phiên bản (PO 18/11). */}<div>
                   <VehicleSelector
                     value={vehicleSelection}
                     errors={{ brand: errors.brand || undefined, model: errors.model || undefined }}
@@ -801,21 +798,21 @@ export default function Booking() {
                 {/* Khai báo xe mới trùng dòng + phiên bản với xe chưa biển số đã lưu → hỏi: đúng xe đó hay một xe khác. */}
                 {platelessTwins.length > 0 && (
                   <div role="radiogroup" aria-label="Xe này là xe nào" className={`mt-4 rounded-2xl border p-4 ${errors.twin ? "border-[#e11d2e] bg-cs-soft" : "border-[#e11d2e]/30 bg-cs-soft"}`}>
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p className="text-sm font-semibold text-cs-text">
                       Bạn đã có {platelessTwins.length > 1 ? `${platelessTwins.length} xe` : "xe"} {vehicleName} chưa có biển số trong hồ sơ. Đây là:
                     </p>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       {platelessTwins.map((v) => (
                         <button key={v.id} type="button" role="radio" aria-checked={false} onClick={() => handleSelectSavedVehicle(v.id)}
-                          className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm transition-colors hover:border-[#e11d2e]">
-                          <b className="block text-slate-900">Xe đã lưu</b>
-                          <span className="text-slate-500">{vehicleSub(v, savedVehicles)}</span>
+                          className="cursor-pointer rounded-xl border border-cs-border bg-cs-surface px-4 py-3 text-left text-sm transition-colors hover:border-[#e11d2e]">
+                          <b className="block text-cs-text">Xe đã lưu</b>
+                          <span className="text-cs-muted">{vehicleSub(v, savedVehicles)}</span>
                         </button>
                       ))}
                       <button type="button" role="radio" aria-checked={separateVehicle} onClick={() => { setSeparateVehicle(true); clearError("twin"); }}
-                        className={`cursor-pointer rounded-xl border px-4 py-3 text-left text-sm transition-colors ${separateVehicle ? "border-[#e11d2e] bg-white ring-1 ring-[#e11d2e]" : "border-slate-200 bg-white hover:border-[#e11d2e]"}`}>
-                        <b className="block text-slate-900">Một xe khác</b>
-                        <span className="text-slate-500">Thêm xe mới vào hồ sơ</span>
+                        className={`cursor-pointer rounded-xl border px-4 py-3 text-left text-sm transition-colors ${separateVehicle ? "border-[#e11d2e] bg-cs-surface ring-1 ring-[#e11d2e]" : "border-cs-border bg-cs-surface hover:border-[#e11d2e]"}`}>
+                        <b className="block text-cs-text">Một xe khác</b>
+                        <span className="text-cs-muted">Thêm xe mới vào hồ sơ</span>
                       </button>
                     </div>
                     {errors.twin && <p role="alert" className="mt-2 text-sm font-medium text-[#e11d2e]">{errors.twin}</p>}
@@ -859,10 +856,10 @@ export default function Booking() {
               const timeValid = Boolean(selectedTime) && !isSlotUnavailable(selectedTime);
               const range = (slots: string[]) => (slots.length ? `${slots[0]} – ${slots[slots.length - 1]}` : "");
               const slotRow = (label: string, icon: ReactNode, slots: string[], tone: string) => slots.length > 0 && (
-                <div className={`flex flex-col gap-3 rounded-2xl border border-slate-200 p-3 sm:flex-row sm:items-center sm:gap-4 ${tone}`}>
+                <div className={`flex flex-col gap-3 rounded-2xl border border-cs-border p-3 sm:flex-row sm:items-center sm:gap-4 ${tone}`}>
                   <div className="flex min-w-[150px] items-center gap-3 px-1">
                     {icon}
-                    <div><p className="text-sm font-bold text-slate-900">{label}</p><p className="text-xs text-slate-500">{range(slots)}</p></div>
+                    <div><p className="text-sm font-bold text-cs-text">{label}</p><p className="text-xs text-cs-muted">{range(slots)}</p></div>
                   </div>
                   <div className="grid flex-1 grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
                     {slots.map((slotTime) => {
@@ -873,11 +870,11 @@ export default function Booking() {
                           title={off ? "Khung giờ đã qua hoặc gara không phục vụ" : undefined}
                           onClick={() => { setSelectedTime(slotTime); clearError("time"); }}
                           className={`relative rounded-xl border px-2 py-2.5 text-sm font-bold transition ${
-                            off ? "border-slate-200 bg-slate-100 text-slate-400 line-through"
+                            off ? "border-cs-border bg-cs-surface-2 text-cs-muted line-through"
                               : on ? "border-[#e11d2e] bg-[#e11d2e] text-white shadow-[0_6px_16px_#e11d2e40]"
-                                : "border-slate-200 bg-white text-slate-800 hover:border-[#e11d2e] hover:text-[#e11d2e]"}`}>
+                                : "border-cs-border bg-cs-surface text-cs-text hover:border-[#e11d2e] hover:text-[#e11d2e]"}`}>
                           {slotTime}
-                          {on && <span className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-white text-[#e11d2e] shadow"><Icon name="check" size={12}/></span>}
+                          {on && <span className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-cs-surface text-[#e11d2e] shadow"><Icon name="check" size={12}/></span>}
                         </button>
                       );
                     })}
@@ -893,11 +890,11 @@ export default function Booking() {
                   <div className="min-w-0">
                     {/* Chọn ngày */}
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                      <h3 className="border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-slate-900">Chọn ngày</h3>
+                      <h3 className="border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-cs-text">Chọn ngày</h3>
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600"><Icon name="calendar" size={16}/>Tháng {sel.isoDate.slice(5, 7)}/{sel.isoDate.slice(0, 4)}</span>
-                        <button type="button" onClick={() => scrollDays(-1)} aria-label="Ngày trước" className="grid size-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-[#e11d2e] hover:text-[#e11d2e]"><Icon name="chevron-left" size={16}/></button>
-                        <button type="button" onClick={() => scrollDays(1)} aria-label="Ngày sau" className="grid size-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-[#e11d2e] hover:text-[#e11d2e]"><Icon name="chevron-right" size={16}/></button>
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-cs-text-2"><Icon name="calendar" size={16}/>Tháng {sel.isoDate.slice(5, 7)}/{sel.isoDate.slice(0, 4)}</span>
+                        <button type="button" onClick={() => scrollDays(-1)} aria-label="Ngày trước" className="grid size-9 place-items-center rounded-xl border border-cs-border bg-cs-surface text-cs-text-2 hover:border-[#e11d2e] hover:text-[#e11d2e]"><Icon name="chevron-left" size={16}/></button>
+                        <button type="button" onClick={() => scrollDays(1)} aria-label="Ngày sau" className="grid size-9 place-items-center rounded-xl border border-cs-border bg-cs-surface text-cs-text-2 hover:border-[#e11d2e] hover:text-[#e11d2e]"><Icon name="chevron-right" size={16}/></button>
                       </div>
                     </div>
                     <div ref={dayStripRef} className="-mx-1 mb-7 flex snap-x gap-2.5 overflow-x-auto px-1 pt-2 pb-2 [scrollbar-width:none]">
@@ -909,22 +906,22 @@ export default function Booking() {
                           <button key={d.index} type="button" onClick={() => handleDateSelect(d.index)} aria-pressed={isSelected}
                             className={`relative w-[92px] shrink-0 snap-start rounded-2xl border px-2 py-3 text-center transition ${
                               isSelected ? "border-[#e11d2e] bg-[#e11d2e] text-white shadow-[0_8px_20px_#e11d2e40]"
-                                : "border-slate-200 bg-white text-slate-800 hover:border-[#e11d2e]"}`}>
-                            <span className={`block text-xs font-semibold ${isSelected ? "text-white/90" : "text-slate-600"}`}>{d.dayName}</span>
+                                : "border-cs-border bg-cs-surface text-cs-text hover:border-[#e11d2e]"}`}>
+                            <span className={`block text-xs font-semibold ${isSelected ? "text-white/90" : "text-cs-text-2"}`}>{d.dayName}</span>
                             <span className="mt-1 block text-lg font-extrabold">{d.dayFormatted}</span>
                             {/* Dòng dưới: trạng thái làm việc theo Giờ làm việc admin cấu hình (không lặp lại tên thứ). */}
                             <span className={`mt-0.5 block text-[11px] font-semibold ${isSelected ? "text-white/90" : closed ? "text-[#e11d2e]" : "text-emerald-600 dark:text-emerald-400"}`}>{closed ? "Nghỉ" : "Làm việc"}</span>
-                            {isSelected && <span className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-white text-[#e11d2e] shadow"><Icon name="check" size={14}/></span>}
+                            {isSelected && <span className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-cs-surface text-[#e11d2e] shadow"><Icon name="check" size={14}/></span>}
                           </button>
                         );
                       })}
                     </div>
 
                     {/* Chọn giờ */}
-                    <h3 className="mb-3 border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-slate-900">Chọn giờ</h3>
+                    <h3 className="mb-3 border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-cs-text">Chọn giờ</h3>
                     <div className="space-y-3">
                       {slotRow("Buổi sáng", <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="#fbbf24"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>, bookingSlots.morning, "bg-gradient-to-r from-[#fff4ec] to-white dark:from-[#3a2a22] dark:to-transparent")}
-                      {slotRow("Buổi chiều", <svg viewBox="0 0 24 24" width="30" height="30" fill="none" strokeLinecap="round" aria-hidden="true"><circle cx="9" cy="9" r="3.5" fill="#fbbf24" stroke="#f59e0b" strokeWidth="1.8"/><path d="M9 2.5v1.5M3.5 9H2M4.8 4.8l1 1M13.2 4.8l-1 1" stroke="#f59e0b" strokeWidth="1.8"/><path d="M8 20h10a3.5 3.5 0 0 0 0-7 5 5 0 0 0-9.6 1.5A3 3 0 0 0 8 20Z" fill="#fb923c" stroke="#f97316" strokeWidth="1.6"/></svg>, bookingSlots.afternoon, "bg-white")}
+                      {slotRow("Buổi chiều", <svg viewBox="0 0 24 24" width="30" height="30" fill="none" strokeLinecap="round" aria-hidden="true"><circle cx="9" cy="9" r="3.5" fill="#fbbf24" stroke="#f59e0b" strokeWidth="1.8"/><path d="M9 2.5v1.5M3.5 9H2M4.8 4.8l1 1M13.2 4.8l-1 1" stroke="#f59e0b" strokeWidth="1.8"/><path d="M8 20h10a3.5 3.5 0 0 0 0-7 5 5 0 0 0-9.6 1.5A3 3 0 0 0 8 20Z" fill="#fb923c" stroke="#f97316" strokeWidth="1.6"/></svg>, bookingSlots.afternoon, "bg-cs-surface")}
                     </div>
 
                     {/* Chỉ báo khi gara nghỉ ngày đã chọn; ngày làm việc không cần nhắc giờ (khung ngoài giờ đã tự khóa). */}
@@ -938,21 +935,21 @@ export default function Booking() {
                   </div>
 
                   {/* Thông tin đã chọn */}
-                  <aside className="h-fit rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <h3 className="mb-3 flex items-center gap-2 border-b border-slate-200 pb-3 text-base font-extrabold text-slate-900"><span className="text-[#e11d2e]"><Icon name="calendar" size={20}/></span>Thông tin đã chọn</h3>
-                    <div className="flex items-center gap-3 border-b border-slate-200 py-3">
-                      <span className="grid size-10 place-items-center rounded-xl bg-white text-slate-600"><Icon name="calendar" size={18}/></span>
-                      <div><p className="text-xs text-slate-500">Ngày hẹn</p><p className="text-sm font-extrabold text-slate-900">{WEEKDAY_FULL[sel.dayOfWeek]}, {sel.isoDate.split("-").reverse().join("/")}</p></div>
+                  <aside className="h-fit rounded-2xl border border-cs-border bg-cs-surface-2 p-4">
+                    <h3 className="mb-3 flex items-center gap-2 border-b border-cs-border pb-3 text-base font-extrabold text-cs-text"><span className="text-[#e11d2e]"><Icon name="calendar" size={20}/></span>Thông tin đã chọn</h3>
+                    <div className="flex items-center gap-3 border-b border-cs-border py-3">
+                      <span className="grid size-10 place-items-center rounded-xl bg-cs-surface text-cs-text-2"><Icon name="calendar" size={18}/></span>
+                      <div><p className="text-xs text-cs-muted">Ngày hẹn</p><p className="text-sm font-extrabold text-cs-text">{WEEKDAY_FULL[sel.dayOfWeek]}, {sel.isoDate.split("-").reverse().join("/")}</p></div>
                     </div>
-                    <div className="flex items-center gap-3 border-b border-slate-200 py-3">
-                      <span className="grid size-10 place-items-center rounded-xl bg-white text-slate-600"><Icon name="clock" size={18}/></span>
-                      <div><p className="text-xs text-slate-500">Giờ hẹn</p><p className="text-sm font-extrabold text-slate-900">{selectedTime || "Chưa chọn"}</p></div>
+                    <div className="flex items-center gap-3 border-b border-cs-border py-3">
+                      <span className="grid size-10 place-items-center rounded-xl bg-cs-surface text-cs-text-2"><Icon name="clock" size={18}/></span>
+                      <div><p className="text-xs text-cs-muted">Giờ hẹn</p><p className="text-sm font-extrabold text-cs-text">{selectedTime || "Chưa chọn"}</p></div>
                     </div>
-                    <div className={`mt-3 flex items-start gap-3 rounded-xl border p-3 ${timeValid ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10" : "border-slate-200 bg-white"}`}>
-                      <span className={`grid size-8 shrink-0 place-items-center rounded-full ${timeValid ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}><Icon name={timeValid ? "check" : "clock"} size={16}/></span>
+                    <div className={`mt-3 flex items-start gap-3 rounded-xl border p-3 ${timeValid ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10" : "border-cs-border bg-cs-surface"}`}>
+                      <span className={`grid size-8 shrink-0 place-items-center rounded-full ${timeValid ? "bg-emerald-500 text-white" : "bg-slate-200 text-cs-muted"}`}><Icon name={timeValid ? "check" : "clock"} size={16}/></span>
                       <div>
-                        <p className={`text-sm font-bold ${timeValid ? "text-emerald-800 dark:text-emerald-300" : "text-slate-700"}`}>{timeValid ? "Khung giờ hợp lệ" : "Chưa chọn giờ"}</p>
-                        <p className={`text-xs ${timeValid ? "text-emerald-700 dark:text-emerald-300/80" : "text-slate-500"}`}>{timeValid ? "Gara sẽ xác nhận lịch sau khi bạn gửi yêu cầu." : "Chọn một khung giờ còn trống ở bên trái."}</p>
+                        <p className={`text-sm font-bold ${timeValid ? "text-emerald-800 dark:text-emerald-300" : "text-cs-text-2"}`}>{timeValid ? "Khung giờ hợp lệ" : "Chưa chọn giờ"}</p>
+                        <p className={`text-xs ${timeValid ? "text-emerald-700 dark:text-emerald-300/80" : "text-cs-muted"}`}>{timeValid ? "Gara sẽ xác nhận lịch sau khi bạn gửi yêu cầu." : "Chọn một khung giờ còn trống ở bên trái."}</p>
                       </div>
                     </div>
                   </aside>
@@ -967,8 +964,8 @@ export default function Booking() {
                 <div className="relative -mx-[18px] -mt-[18px] mb-6 flex items-center gap-4 overflow-hidden rounded-t-[19px] bg-gradient-to-r from-[#fff1f2] via-[#ffe8eb] to-[#fff5f6] px-[18px] py-5 sm:-mx-6 sm:-mt-6 sm:px-6 dark:from-[var(--cs-soft)] dark:via-[var(--cs-soft)] dark:to-[var(--cs-surface)]">
                   <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white/80 text-[#d71327] shadow-sm dark:bg-[var(--cs-surface)]"><Icon name="calendar" size={28}/></span>
                   <div className="relative z-10 min-w-0">
-                    <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">Xác nhận đặt lịch</h2>
-                    <p className="mt-0.5 text-sm text-slate-600">Vui lòng kiểm tra lại thông tin trước khi xác nhận.</p>
+                    <h2 className="text-xl font-extrabold text-cs-text sm:text-2xl">Xác nhận đặt lịch</h2>
+                    <p className="mt-0.5 text-sm text-cs-text-2">Vui lòng kiểm tra lại thông tin trước khi xác nhận.</p>
                   </div>
                   {/* Minh hoạ lịch mờ ở góc phải. */}
                   <svg className="pointer-events-none absolute -right-2 -bottom-4 hidden h-28 w-28 rotate-6 text-[#d71327] opacity-25 sm:block" viewBox="0 0 64 64" fill="none" aria-hidden="true">
@@ -981,15 +978,15 @@ export default function Booking() {
                 {isLoggedIn ? (
                   <section className="mb-6">
                     <div className="mb-2 flex items-center justify-between">
-                      <h3 className="text-base font-bold text-slate-900">Thông tin của bạn</h3>
+                      <h3 className="text-base font-bold text-cs-text">Thông tin của bạn</h3>
                       <button type="button" onClick={() => setContactModalOpen(true)} className="inline-flex items-center gap-1.5 text-sm font-bold text-cs-accent-text hover:underline">
                         <Icon name="edit" size={16}/>Cập nhật
                       </button>
                     </div>
-                    <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5">
+                    <div className="flex items-center gap-4 rounded-xl border border-cs-border bg-cs-surface-2 px-4 py-3.5">
                       <div className="min-w-0 text-sm">
-                        <p className="font-bold text-slate-900">{contact.name || "Chưa có tên"}</p>
-                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-600">
+                        <p className="font-bold text-cs-text">{contact.name || "Chưa có tên"}</p>
+                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-cs-text-2">
                           <span className="inline-flex items-center gap-1.5"><span className="text-[#d71327] dark:text-[var(--cs-accent-text)]"><Icon name="phone" size={15}/></span>{contact.phone || "Chưa có số điện thoại"}</span>
                           {contact.email && <><span className="text-slate-300" aria-hidden="true">|</span>
                           <span className="inline-flex min-w-0 items-center gap-1.5"><span className="text-[#d71327] dark:text-[var(--cs-accent-text)]"><Icon name="mail" size={15}/></span><span className="truncate">{contact.email}</span></span></>}
@@ -1011,15 +1008,15 @@ export default function Booking() {
                 )}
 
                 <section className="mb-6">
-                  <h3 className="mb-2 text-base font-bold text-slate-900">Địa chỉ mang xe đến</h3>
-                  <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5">
+                  <h3 className="mb-2 text-base font-bold text-cs-text">Địa chỉ mang xe đến</h3>
+                  <div className="flex flex-wrap items-center gap-4 rounded-xl border border-cs-border bg-cs-surface-2 px-4 py-3.5">
                     <div className="min-w-0 flex-1 text-sm">
-                      {garageInfo?.name && <p className="font-bold text-slate-900">{garageInfo.name}</p>}
-                      <p className="text-slate-600">{garageAddress ?? "Gara sẽ xác nhận địa điểm khi liên hệ lại với bạn."}</p>
+                      {garageInfo?.name && <p className="font-bold text-cs-text">{garageInfo.name}</p>}
+                      <p className="text-cs-text-2">{garageAddress ?? "Gara sẽ xác nhận địa điểm khi liên hệ lại với bạn."}</p>
                     </div>
                     {garageMapUrl && (
                       <a href={garageMapUrl} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#f5c6cd] bg-white px-4 py-2 text-sm font-bold text-[#c10d22] transition hover:bg-[#fff1f2] dark:border-[var(--cs-border)] dark:bg-[var(--cs-surface)] dark:text-[var(--cs-accent-text)]">
+                        className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#f5c6cd] bg-cs-surface px-4 py-2 text-sm font-bold text-[#c10d22] transition hover:bg-[#fff1f2] dark:border-[var(--cs-border)] dark:bg-[var(--cs-surface)] dark:text-[var(--cs-accent-text)]">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2Z"/><path d="M9 4v14M15 6v14"/></svg>
                         Xem bản đồ
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
@@ -1029,8 +1026,8 @@ export default function Booking() {
                 </section>
 
                 <section>
-                  <label htmlFor="customerNotes" className="mb-2 block text-base font-bold text-slate-900">
-                    Ghi chú <span className="text-sm font-normal text-slate-400">(không bắt buộc)</span>
+                  <label htmlFor="customerNotes" className="mb-2 block text-base font-bold text-cs-text">
+                    Ghi chú <span className="text-sm font-normal text-cs-muted">(không bắt buộc)</span>
                   </label>
                   <textarea
                     id="customerNotes"
@@ -1039,15 +1036,10 @@ export default function Booking() {
                     value={customerNotes}
                     onChange={(e) => setCustomerNotes(e.target.value)}
                     placeholder="Ví dụ: Gọi trước khi nhận xe, yêu cầu đặc biệt,..."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:bg-white"
+                    className="w-full rounded-xl border border-cs-border bg-cs-surface-2 px-4 py-2.5 text-sm focus:bg-cs-surface"
                   />
                 </section>
 
-                {submissionError && (
-                  <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                    {submissionError}
-                  </p>
-                )}
               </div>
             )}
 
@@ -1069,41 +1061,41 @@ export default function Booking() {
                       <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
                     </span>
                   </div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">Đặt lịch thành công!</h2>
-                  <p className="mt-1.5 text-sm text-slate-500 sm:text-base">Gara sẽ xác nhận lịch hẹn của bạn trong thời gian sớm nhất.</p>
+                  <h2 className="text-2xl font-extrabold text-cs-text sm:text-3xl">Đặt lịch thành công!</h2>
+                  <p className="mt-1.5 text-sm text-cs-muted sm:text-base">Gara sẽ xác nhận lịch hẹn của bạn trong thời gian sớm nhất.</p>
 
-                  <div className="mx-auto mt-7 max-w-4xl overflow-hidden rounded-2xl border border-slate-200 text-left">
-                    <div className="flex flex-wrap items-center gap-4 border-b border-slate-200 px-5 py-4">
+                  <div className="mx-auto mt-7 max-w-4xl overflow-hidden rounded-2xl border border-cs-border text-left">
+                    <div className="flex flex-wrap items-center gap-4 border-b border-cs-border px-5 py-4">
                       <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-[#fde8eb] text-[#e11d2e] dark:bg-[var(--cs-soft)] dark:text-[var(--cs-accent-text)]"><Icon name="calendar" size={26}/></span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-slate-500">Mã lịch hẹn</p>
+                        <p className="text-sm text-cs-muted">Mã lịch hẹn</p>
                         <p className="text-lg font-extrabold tracking-wide break-all text-[#e11d2e] sm:text-xl dark:text-[var(--cs-accent-text)]">{bookingCode}</p>
                       </div>
                       <span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ${STATUS_TONE_CLASS[status.tone]}`}>
                         <Icon name="clock" size={17}/>{status.label}
                       </span>
                     </div>
-                    <div className="grid border-b border-slate-200 sm:grid-cols-2">
-                      <div className="flex items-center gap-4 px-5 py-4 max-sm:border-b max-sm:border-slate-200 sm:border-r sm:border-slate-200">
+                    <div className="grid border-b border-cs-border sm:grid-cols-2">
+                      <div className="flex items-center gap-4 px-5 py-4 max-sm:border-b max-sm:border-cs-border sm:border-r sm:border-cs-border">
                         <VehicleBrandLogo brand={vehicleBrand} size={40} className="rounded-xl"/>
-                        <div className="min-w-0"><p className="text-sm text-slate-500">Xe sử dụng</p><p className="truncate text-base font-extrabold text-slate-900 sm:text-lg">{vehicleLabel}</p></div>
+                        <div className="min-w-0"><p className="text-sm text-cs-muted">Xe sử dụng</p><p className="truncate text-base font-extrabold text-cs-text sm:text-lg">{vehicleLabel}</p></div>
                       </div>
                       <div className="flex items-center gap-4 px-5 py-4">
-                        <span className="text-slate-600"><Icon name="calendar" size={28}/></span>
-                        <div className="min-w-0"><p className="text-sm text-slate-500">Thời gian hẹn</p><p className="text-base font-extrabold text-slate-900 sm:text-lg">{timeLabel}</p></div>
+                        <span className="text-cs-text-2"><Icon name="calendar" size={28}/></span>
+                        <div className="min-w-0"><p className="text-sm text-cs-muted">Thời gian hẹn</p><p className="text-base font-extrabold text-cs-text sm:text-lg">{timeLabel}</p></div>
                       </div>
                     </div>
                     <div className="flex items-start gap-4 px-5 py-4">
-                      <span className="mt-1 text-slate-600"><Icon name="wrench" size={26}/></span>
+                      <span className="mt-1 text-cs-text-2"><Icon name="wrench" size={26}/></span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-slate-500">Dịch vụ đã chọn</p>
+                        <p className="text-sm text-cs-muted">Dịch vụ đã chọn</p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {shown.map((name) => (
-                            <span key={name} className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3.5 py-1.5 text-sm font-medium text-slate-800">
+                            <span key={name} className="inline-flex items-center gap-2 rounded-full bg-cs-surface-2 px-3.5 py-1.5 text-sm font-medium text-cs-text">
                               <span className="text-[#e11d2e] dark:text-[var(--cs-accent-text)]"><Icon name="check" size={15}/></span>{name}
                             </span>
                           ))}
-                          {more > 0 && <span className="inline-flex items-center rounded-full bg-slate-100 px-3.5 py-1.5 text-sm font-medium text-slate-700">+{more} dịch vụ khác</span>}
+                          {more > 0 && <span className="inline-flex items-center rounded-full bg-cs-surface-2 px-3.5 py-1.5 text-sm font-medium text-cs-text-2">+{more} dịch vụ khác</span>}
                         </div>
                       </div>
                     </div>
@@ -1119,7 +1111,7 @@ export default function Booking() {
             })()}
 
             {currentStep <= BOOKING_STEPS.length && (
-              <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
+              <div className="mt-8 flex items-center justify-between border-t border-cs-border pt-6">
                 {currentStep > 1 ? (
                   <Button variant="secondary" icon="arrow-left" onClick={() => goToStep(currentStep - 1)}>Quay lại</Button>
                 ) : (
@@ -1154,7 +1146,7 @@ export default function Booking() {
               garageAddress={garageAddress}
               notes={customerNotes}
               submitting={submitting}
-              error={submissionError}
+              error=""
               onClose={() => setReviewOpen(false)}
               onConfirm={() => void completeBooking()}
             />
@@ -1173,9 +1165,12 @@ export default function Booking() {
         {/* Bên dưới khung đặt lịch: quy trình 7 bước + câu hỏi thường gặp (dùng chung với Trang chủ). Ẩn ở màn hình thành công.
             v3ref-home: dùng đúng bố cục quy trình 7 cột (trải hết chiều ngang) như ở Trang chủ. */}
         {currentStep !== SUCCESS_STEP && (
-          <div className="v3ref v3ref-home mt-12 bg-transparent! [&_.v3ref-faq]:max-w-none!">
-            <ProcessSteps/>
-            <HomeFaq/>
+          // v3ref-shell bọc ngoài: nhận đúng quy tắc chế độ tối của Trang chủ (chữ tiêu đề, thẻ câu hỏi) — trước đây tối vẫn nền trắng.
+          <div className="v3ref-shell bg-transparent! text-inherit">
+            <div className="v3ref v3ref-home mt-12 bg-transparent! [&_.v3ref-faq]:max-w-none!">
+              <ProcessSteps/>
+              <HomeFaq/>
+            </div>
           </div>
         )}
       </main>

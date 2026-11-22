@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
 import { Badge } from "../../components/ui/Badge";
 import { buttonClass } from "../../components/ui/buttonClass";
@@ -11,12 +11,15 @@ import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import { formatVnd, listRepairOrders, toNumber, workflowApi, type CounterMethod, type WorkflowOrder } from "../../services/workflowService";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
-import { RangePicker } from "./advisorListKit";
+import { OpenOrderButton, PreviewDrawer, RangePicker } from "./advisorListKit";
+import { useNarrowDrawer } from "./useNarrowDrawer";
 import { dayTime, fullDayTime, rangeDates, vehicleName, type Range } from "./advisorListFormat";
 import { orderStepPath, stagePath } from "./repairOrderFlow";
 import { useStageRedirect } from "./useStageRedirect";
 import { Req } from "./WorkflowUI";
 import { errorText } from "./workflowFormat";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
+import { FieldError } from "../../components/ui/Field";
 import "./advisorDashboard.css";
 
 /**
@@ -31,15 +34,17 @@ const FILTERS: Array<{ id: Filter; label: string }> = [
 ];
 const METHODS: Array<{ id: CounterMethod; label: string; icon: IconName; code?: string }> = [
   { id: "DIRECT", label: "Tiền mặt", icon: "cash" },
-  { id: "TRANSFER", label: "Chuyển khoản", icon: "bank", code: "Mã giao dịch chuyển khoản (trên sao kê / app ngân hàng)" },
+  { id: "TRANSFER", label: "Chuyển khoản", icon: "bank", code: "Mã giao dịch chuyển khoản" },
   { id: "CARD", label: "Thẻ ngân hàng", icon: "card", code: "Mã chuẩn chi trên hoá đơn máy POS" },
   { id: "EWALLET", label: "Ví điện tử", icon: "coins", code: "Mã giao dịch ví (MoMo, ZaloPay…)" },
 ];
 const METHOD_TEXT: Record<string, string> = { DIRECT: "Tiền mặt", TRANSFER: "Chuyển khoản", CARD: "Thẻ ngân hàng", EWALLET: "Ví điện tử", VNPAY: "VNPay (khách tự trả)", QR: "QR" };
 /** Ô nhập chuẩn (40px, màn hẹp 44px) — cùng chiều cao với nút. */
 const field = `mt-1 tabular-nums ${controlClass}`;
+/** Số tiền hiển thị có dấu chấm ngăn nghìn (190.000), lưu dạng chuỗi chữ số. */
+const money = (digits: string) => digits ? Number(digits).toLocaleString("vi-VN") : "";
+const digitsOnly = (text: string) => text.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 12);
 const PER_PAGE = 8;
-const WIDE = "(min-width: 1280px)";
 
 function billingBadge(order: WorkflowOrder): { tone: "warning" | "info" | "success" | "neutral"; label: string } {
   const invoice = order.invoice;
@@ -50,7 +55,6 @@ function billingBadge(order: WorkflowOrder): { tone: "warning" | "info" | "succe
 }
 
 export default function AdvisorBilling() {
-  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const filter = FILTERS.find(f => f.id === params.get("filter"))?.id ?? "unpaid";
   const selectedParam = Number(params.get("order")) || null;
@@ -77,10 +81,9 @@ export default function AdvisorBilling() {
     setParams(next, { replace: true });
   };
   const selectFilter = (id: Filter) => { setParam({ filter: id === "unpaid" ? null : id, order: null }); setPage(1); };
-  const open = (o: WorkflowOrder) => {
-    if (window.matchMedia(WIDE).matches) setParam({ order: String(o.id) });
-    else navigate(orderStepPath(o.id, 4));
-  };
+  // Màn rộng: khung bên phải; màn hẹp: ngăn kéo xem nhanh (cùng cách các trang danh sách khác).
+  const drawer = useNarrowDrawer();
+  const open = (o: WorkflowOrder) => { setParam({ order: String(o.id) }); drawer.show(); };
   const stats: Array<{ label: string; icon: IconName; value: string; filter?: Filter; tone?: "success" }> = [
     { label: "Chờ thanh toán", icon: "receipt", value: summary ? String(summary.unpaid) : "–", filter: "unpaid" },
     { label: "Đã thanh toán", icon: "check", value: summary ? String(summary.paid) : "–", filter: "paid", tone: "success" },
@@ -107,7 +110,7 @@ export default function AdvisorBilling() {
         <header className="adv-ro-list-head"><h2>Danh sách phiếu thanh toán</h2></header>
         <div className="space-y-3 p-4">
           <div className="flex items-center gap-2">
-            <RangePicker label="Khoảng ngày nhận xe" anyLabel="Mọi ngày" value={range} onChange={r => { setRange(r); setPage(1); setParam({ order: null }); }}/>
+            <RangePicker label="Khoảng ngày nhận xe" anyLabel="Tất cả" value={range} onChange={r => { setRange(r); setPage(1); setParam({ order: null }); }}/>
             <div className="min-w-0 flex-1 [&>span]:w-full">
               <Dropdown label="Trạng thái thanh toán" items={FILTERS.map(f => ({ label: f.label, icon: f.id === filter ? "check" : undefined, onSelect: () => selectFilter(f.id) }))}
                 trigger={props => <button type="button" {...props} className="adv-ro-range"><span className="min-w-0 flex-1 truncate text-left">{FILTERS.find(f => f.id === filter)?.label}</span><Icon name="chevron-down" size={16}/></button>}/>
@@ -139,6 +142,8 @@ export default function AdvisorBilling() {
         {selectedId ? <BillingPreview key={`${selectedId}-${version}`} id={selectedId} onChanged={() => setVersion(v => v + 1)}/>
           : <section className="adv-card grid min-h-[320px] place-items-center p-8 text-center text-small text-cs-muted">Chọn một phiếu ở danh sách.</section>}
       </div>
+      {selectedId && <PreviewDrawer open={drawer.open} onClose={drawer.close} title="Thanh toán phiếu sửa chữa">
+        <BillingPreview key={`d-${selectedId}-${version}`} id={selectedId} onChanged={() => setVersion(v => v + 1)}/></PreviewDrawer>}
     </div>
   </main>;
 }
@@ -146,11 +151,12 @@ export default function AdvisorBilling() {
 type Tab = "detail" | "history" | "invoice";
 
 function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }) {
-  const navigate = useNavigate();
   const { confirm, notify } = useAppFeedback();
   const [tab, setTab] = useState<Tab>("detail");
   const [method, setMethod] = useState<CounterMethod>("DIRECT");
-  const [amountText, setAmountText] = useState<string | null>(null);
+  // Mặc định thu đủ số còn lại (ô khoá, tránh gõ nhầm); bấm "Thu một phần" mới nhập số tiền khác.
+  const [partial, setPartial] = useState(false);
+  const [amountText, setAmountText] = useState("");
   const [cashGiven, setCashGiven] = useState("");
   const [code, setCode] = useState("");
   const [working, setWorking] = useState(false);
@@ -158,6 +164,7 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
   const redirect = useStageRedirect();
   const detail = useAdminQuery(`billing-order:${id}`, () => workflowApi.order(id));
   const order = detail.data;
+  const fieldErrors = useFieldErrors();
 
   if (!order) return <section className="adv-card min-h-[420px] p-6">
     {detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact label="Đang tải phiếu..."/>}
@@ -170,8 +177,7 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
   const payments = invoice?.payments ?? [];
   const paid = payments.filter(p => p.status === "SUCCESS").reduce((s, p) => s + toNumber(p.amount), 0);
   const remaining = Math.max(0, toNumber(invoice?.total_amount) - paid);
-  const amount = amountText ?? String(remaining);
-  const amountValue = toNumber(amount);
+  const amountValue = partial ? toNumber(amountText) : remaining;
   const change = toNumber(cashGiven) - amountValue;
   const canPay = !!invoice && invoice.status !== "PAID" && remaining > 0;
   const methodDef = METHODS.find(m => m.id === method)!;
@@ -187,9 +193,13 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
 
   async function pay() {
     if (!invoice) return;
-    if (!(amountValue > 0) || amountValue > remaining + 0.001) { setError(`Số tiền thu phải lớn hơn 0 và không quá ${formatVnd(remaining)}.`); return; }
-    if (method !== "DIRECT" && !code.trim()) { setError(`Nhập ${methodDef.code?.toLowerCase()}.`); return; }
-    if (method === "DIRECT" && cashGiven && change < 0) { setError(`Khách đưa thiếu ${formatVnd(-change)}.`); return; }
+    const problems: FieldErrors = {};
+    if (partial && !amountText) problems.amount = "Nhập số tiền thu một phần.";
+    else if (!(amountValue > 0) || amountValue > remaining + 0.001) problems.amount = `Số tiền thu phải lớn hơn 0 và không quá ${formatVnd(remaining)}.`;
+    if (method !== "DIRECT" && !code.trim()) problems.code = `Nhập ${methodDef.code?.toLowerCase()}.`;
+    if (method === "DIRECT" && cashGiven && change < 0) problems.cash = `Khách đưa thiếu ${formatVnd(-change)}.`;
+    setError("");
+    if (fieldErrors.show(problems)) return;
     if (!await confirm({
       title: "Xác nhận thanh toán", reference: invoice.invoice_code,
       description: `Ghi nhận khách đã trả ${formatVnd(amountValue)} bằng ${methodDef.label.toLowerCase()}${method !== "DIRECT" ? ` (mã ${code.trim()})` : ""}.${method === "DIRECT" && change > 0 ? ` Trả lại khách ${formatVnd(change)}.` : ""}`,
@@ -203,7 +213,7 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
       notify(full ? "Đã thu đủ tiền. Chuyển sang bước bàn giao xe." : "Đã ghi nhận một phần thanh toán.", "success");
       // Thu đủ → tự sang trang của bước kế (kiểm tra & bàn giao, hoặc biên bản trả xe).
       if (!(full && await redirect(null, order!.id))) onChanged();
-    } catch (err) { setError(errorText(err)); }
+    } catch (err) { fieldErrors.showApi(err, { amount: "amount", transaction_code: "code" }); }
     finally { setWorking(false); }
   }
 
@@ -214,17 +224,17 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
   ];
 
   return <section className="adv-card adv-ro-detail" aria-label={`Thanh toán ${order.repair_order_code ?? ""}`}>
-    <header className="flex flex-wrap items-start gap-4">
-      <span className="adv-ro-doc-icon" aria-hidden="true"><Icon name="receipt" size={30}/></span>
+    {/* Đầu khung cùng kiểu các trang khác (Báo giá, Biên bản, Kiểm tra & bàn giao): ô biểu tượng + vạch vàng + ánh nền. */}
+    <header className="adv-hv-head relative -mx-5.5 -mt-5.5 flex flex-wrap items-center gap-4 rounded-t-[18px] px-5.5 py-4 max-sm:-mx-4 max-sm:-mt-4 max-sm:px-4">
+      <span className="adv-hv-tile" aria-hidden="true"><Icon name="cash" size={30}/></span>
+      <span className="adv-hv-rule" aria-hidden="true"/>
       <div className="min-w-0 flex-1">
-        <h2 className="text-title text-cs-text">Thanh toán phiếu sửa chữa</h2>
-        <p className="mt-0.5 text-small text-cs-text-2">Mã phiếu: <Link className="font-semibold text-cs-text hover:text-cs-accent-text hover:underline" to={orderStepPath(order.id)}>{order.repair_order_code}</Link></p>
+        <h2 className="text-[1.45rem] font-bold leading-tight text-cs-text">Thanh toán phiếu sửa chữa</h2>
+        <p className="mt-1 text-small text-cs-text-2">Phiếu <Link className="adv-hv-code font-semibold text-cs-text hover:text-cs-accent-text hover:underline" to={orderStepPath(order.id)}>{order.repair_order_code}</Link>
+          {invoice?.invoice_code && <><span className="px-2 text-cs-muted">·</span>Hoá đơn {invoice.invoice_code}</>}</p>
+        <p className="mt-0.5 text-caption text-cs-muted">Hoàn thành sửa chữa <span className="tabular-nums">{fullDayTime(order.completed_at)}</span></p>
       </div>
-      <div className="flex items-center gap-2"><Badge tone={b.tone}>{b.label}</Badge>
-        <Dropdown label="Thao tác khác" items={[
-          { label: "Mở phiếu đầy đủ", icon: "clipboard", onSelect: () => navigate(orderStepPath(order.id, 4)) },
-          { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
-        ]}/></div>
+      <div className="flex flex-wrap items-center gap-2"><Badge tone={b.tone}>{b.label}</Badge><OpenOrderButton id={order.id} step={4}/></div>
     </header>
 
     <div className="adv-ro-vehicle">
@@ -237,8 +247,6 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
         <p className="flex items-center gap-2 text-cs-text"><Icon name="user" size={16} className="shrink-0 text-cs-muted"/><span className="truncate font-semibold">{order.customer?.full_name || "—"}</span></p>
         <p className="flex items-center gap-2"><Icon name="phone" size={16} className="shrink-0 text-cs-muted"/>{order.customer?.phone ? <a className="tabular-nums text-cs-text hover:underline" href={`tel:${order.customer.phone}`}>{order.customer.phone}</a> : "—"}</p>
       </div>
-      <p className="flex items-center gap-3 text-small"><Icon name="calendar" size={22} className="shrink-0 text-cs-muted"/>
-        <span><span className="block text-caption text-cs-muted">Ngày hoàn thành</span><b className="tabular-nums text-cs-text">{fullDayTime(order.completed_at)}</b></span></p>
     </div>
 
     {!invoice ? <div className="adv-notice">
@@ -253,7 +261,7 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
         <div className="overflow-x-auto rounded-xl border border-cs-border"><table className="w-full min-w-[560px] text-small">
           <thead className="bg-cs-surface-2 text-left text-cs-text-2"><tr>
             <th className="w-12 px-3 py-2.5 text-center font-semibold">STT</th><th className="px-3 py-2.5 font-semibold">Hạng mục</th>
-            <th className="px-3 py-2.5 font-semibold">Loại</th><th className="px-3 py-2.5 text-center font-semibold">SL</th><th className="px-3 py-2.5 text-right font-semibold">Thành tiền</th>
+            <th className="px-3 py-2.5 font-semibold">Loại</th><th className="px-3 py-2.5 text-center font-semibold">Số lượng</th><th className="px-3 py-2.5 text-right font-semibold">Thành tiền</th>
           </tr></thead>
           <tbody className="divide-y divide-cs-border">{items.map((i, index) => <tr key={i.id} className="text-cs-text">
             <td className="px-3 py-2.5 text-center tabular-nums">{index + 1}</td>
@@ -300,21 +308,33 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
       {canPay && <section className="space-y-3" aria-label="Phương thức thanh toán">
         <h3 className="adv-section-title">Phương thức thanh toán</h3>
         <div role="radiogroup" aria-label="Phương thức thanh toán" className="adv-pay-methods">
-          {METHODS.map(m => <button key={m.id} type="button" role="radio" aria-checked={method === m.id} className="adv-pay-method" onClick={() => { setMethod(m.id); setError(""); }}>
+          {METHODS.map(m => <button key={m.id} type="button" role="radio" aria-checked={method === m.id} className="adv-pay-method" onClick={() => { setMethod(m.id); setError(""); fieldErrors.reset(); }}>
             <span className="adv-pay-radio" aria-hidden="true"/><Icon name={m.icon} size={18}/><span>{m.label}</span>
           </button>)}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-caption font-semibold text-cs-muted">Số tiền thu (₫)<Req/>
-            <input className={field} type="number" min={1} max={remaining} required value={amount} onChange={e => setAmountText(e.target.value)}/>
-          </label>
+          {/* Số tiền thu: mặc định khoá ở số còn lại; "Thu một phần" mở ô nhập (có dấu chấm ngăn nghìn). */}
+          <div className="text-caption font-semibold text-cs-muted">
+            <span className="flex items-center justify-between gap-2">Số tiền thu (₫)
+              <button type="button" className="text-caption font-semibold text-cs-accent-text hover:underline" onClick={() => { setPartial(p => !p); setAmountText(""); setError(""); fieldErrors.clear("amount"); }}>
+                {partial ? "Thu đủ số còn lại" : "Thu một phần"}</button></span>
+            {partial
+              ? <><input className={`${field} tabular-nums`} inputMode="numeric" required autoFocus aria-invalid={!!fieldErrors.errors.amount || undefined} value={money(amountText)} placeholder={`Tối đa ${money(String(remaining))}`}
+                  onChange={e => { setAmountText(digitsOnly(e.target.value)); setError(""); fieldErrors.clear("amount"); }} aria-label="Số tiền thu một phần"/>
+                <FieldError className="mt-1">{fieldErrors.errors.amount}</FieldError>
+                <span className="mt-1 block text-small font-normal text-cs-text-2">Còn lại sau lần thu này: <b className="tabular-nums text-cs-text">{formatVnd(Math.max(0, remaining - amountValue))}</b></span></>
+              : <span className="mt-1.5 flex min-h-10 items-center justify-between gap-3 rounded-control border border-cs-border bg-cs-surface-2 px-3.5" aria-live="polite">
+                  <b className="text-lg tabular-nums text-cs-text">{formatVnd(remaining)}</b><span className="text-caption font-normal text-cs-muted">Thu đủ số còn lại</span></span>}
+            {!partial && <FieldError className="mt-1">{fieldErrors.errors.amount}</FieldError>}
+          </div>
           {method === "DIRECT"
             ? <label className="text-caption font-semibold text-cs-muted">Khách đưa (₫, để tính tiền thối)
-              <input className={field} type="number" min={0} value={cashGiven} onChange={e => setCashGiven(e.target.value)}/>
+              <input className={`${field} tabular-nums`} inputMode="numeric" aria-invalid={!!fieldErrors.errors.cash || undefined} value={money(cashGiven)} placeholder="0" onChange={e => { setCashGiven(digitsOnly(e.target.value)); fieldErrors.clear("cash"); }}/>
               {cashGiven && <span className={`mt-1 block text-small ${change >= 0 ? "text-cs-text" : "text-danger"}`}>{change >= 0 ? `Tiền thối lại: ${formatVnd(change)}` : `Khách đưa thiếu ${formatVnd(-change)}`}</span>}
             </label>
             : <label className="text-caption font-semibold text-cs-muted">{methodDef.code}<Req/>
-              <input className={field} required maxLength={100} value={code} onChange={e => setCode(e.target.value)} placeholder="Bắt buộc để đối soát"/>
+              <input className={field} required maxLength={100} aria-invalid={!!fieldErrors.errors.code || undefined} value={code} onChange={e => { setCode(e.target.value); fieldErrors.clear("code"); }} placeholder="Bắt buộc để đối soát"/>
+              <FieldError className="mt-1">{fieldErrors.errors.code}</FieldError>
             </label>}
         </div>
         {error && <p className="text-small text-danger" role="alert">{error}</p>}

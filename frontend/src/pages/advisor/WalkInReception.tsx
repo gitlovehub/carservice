@@ -1,14 +1,13 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
-import { Field, Textarea } from "../../components/ui/Field";
-import { KmInput } from "../../components/ui/QuantityStepper";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { receiveWalkIn, type CounterVehicle } from "../../services/workflowService";
 import { CustomerVehiclePicker } from "./CustomerVehiclePicker";
-import { emptyPick, pickError, pickPayload, type CounterPick } from "./counterForms";
+import { emptyPick, emptyReceptionDraft, PICK_API_FIELDS, pickPayload, pickProblems, RECEPTION_API_FIELDS, receptionPayload, receptionProblems, type CounterPick } from "./counterForms";
+import { ReceptionFields } from "./ReceptionFields";
 import { card, Notice } from "./WorkflowUI";
-import { errorText } from "./workflowFormat";
+import { useFieldErrors } from "../../components/ui/useFieldErrors";
 
 /**
  * ADV-02 — Tiếp nhận khách vãng lai (không đặt lịch): chọn / tạo khách + xe (CustomerVehiclePicker),
@@ -19,52 +18,48 @@ export function WalkInReception() {
   const { confirm } = useAppFeedback();
   const [pick, setPick] = useState<CounterPick>(emptyPick);
   const [ownVehicles, setOwnVehicles] = useState<CounterVehicle[]>([]);
-  const [mileage, setMileage] = useState("");
-  const [condition, setCondition] = useState("");
-  const [note, setNote] = useState("");
+  const [reception, setReception] = useState(emptyReceptionDraft);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const fieldErrors = useFieldErrors();
+  const isNewVehicle = pick.vehicleId === "new";
+  const chosenVehicle = isNewVehicle ? null : ownVehicles.find(v => v.id === pick.vehicleId) ?? null;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (working) return;
-    const invalid = pickError(pick);
-    if (invalid) { setError(invalid); return; }
+    const pickIssues = pickProblems(pick, true);
+    if (Object.keys(pickIssues).length) { setError(""); fieldErrors.show(pickIssues); return; }
     const busy = pick.vehicleId !== "new" ? ownVehicles.find(v => v.id === pick.vehicleId)?.open_repair_order_code : null;
-    if (busy) { setError(`Xe này đang có phiếu ${busy} chưa kết thúc — mở phiếu đó thay vì tạo phiếu mới.`); return; }
-    if (mileage.trim() && !/^\d+$/.test(mileage.trim())) { setError("Số km phải là số nguyên không âm."); return; }
+    if (busy) { fieldErrors.general(`Xe này đang có phiếu ${busy} chưa kết thúc — mở phiếu đó thay vì tạo phiếu mới.`); return; }
+    setError("");
+    if (fieldErrors.show(receptionProblems(reception, chosenVehicle, isNewVehicle))) return;
 
     const who = pick.customer === "new" ? pick.newCustomer.name.trim() : pick.customer?.full_name;
     const plate = pick.vehicleId === "new" ? pick.newVehicle.plate.trim().toUpperCase() : ownVehicles.find(v => v.id === pick.vehicleId)?.license_plate;
     const approved = await confirm({
       title: "Tạo phiếu tiếp nhận khách vãng lai",
-      description: `Tạo phiếu sửa chữa cho ${who} · xe ${plate || "—"}.${pick.customer === "new" ? " Hồ sơ khách mới được tạo cùng lúc." : ""}${pick.vehicleId === "new" ? " Xe mới được thêm vào hồ sơ khách." : ""} Bước tiếp theo: lập biên bản nhận xe để khách xác nhận.`,
-      confirmText: "Tạo phiếu", checklist: ["Khách và xe đang có mặt tại gara.", "Đã đối chiếu biển số với xe thực tế."],
+      description: `Tạo phiếu sửa chữa cho ${who} · xe ${plate || "xxx.xx"}.${pick.customer === "new" ? " Hồ sơ khách mới được tạo cùng lúc." : ""}${pick.vehicleId === "new" ? " Xe mới được thêm vào hồ sơ khách." : ""} Bước tiếp theo: lập biên bản nhận xe để khách xác nhận.`,
+      confirmText: "Tạo phiếu", checklist: ["Khách và xe đang có mặt tại gara.", "Đã đối chiếu ODO và số VIN với xe thực tế."],
     });
     if (!approved) return;
     setWorking(true); setError("");
     try {
       const order = await receiveWalkIn({
         ...pickPayload(pick),
-        ...(mileage.trim() ? { mileage_received: Number(mileage) } : {}),
-        ...(condition.trim() ? { initial_condition: condition.trim() } : {}),
-        ...(note.trim() ? { note: note.trim() } : {}),
+        ...receptionPayload(reception, chosenVehicle, isNewVehicle),
       });
       navigate(`/advisor/service-orders/${order.id}`, { state: { success: "Đã tạo phiếu tiếp nhận khách vãng lai. Lập biên bản nhận xe để khách xác nhận." } });
-    } catch (err) { setError(errorText(err)); }
+    } catch (err) { fieldErrors.showApi(err, { ...PICK_API_FIELDS, ...RECEPTION_API_FIELDS }); }
     finally { setWorking(false); }
   }
 
-  return <form onSubmit={event => void submit(event)} className="mx-auto max-w-3xl space-y-5" data-testid="walk-in">
+  return <form noValidate onSubmit={event => void submit(event)} className="mx-auto max-w-3xl space-y-5" data-testid="walk-in">
     {error && <Notice tone="error">{error}</Notice>}
-    <CustomerVehiclePicker value={pick} onChange={setPick} blockBusyVehicles onVehiclesLoaded={setOwnVehicles}/>
+    <CustomerVehiclePicker value={pick} onChange={setPick} blockBusyVehicles onVehiclesLoaded={setOwnVehicles} errors={fieldErrors.errors} onClearError={fieldErrors.clear}/>
     {pick.customer !== null && pick.vehicleId !== null && <section className={card}>
       <h2 className="text-lg font-bold text-cs-text">Tiếp nhận</h2>
-      <div className="mt-4 grid gap-4">
-        <Field label="Số km hiện tại" optional><KmInput label="Số km hiện tại" value={mileage} onChange={setMileage}/></Field>
-        <Field label="Khách mô tả tình trạng / yêu cầu" hint="Chỉ ghi lời khách kể. Hiện trạng xe (trầy, móp, phụ kiện) ghi ở biên bản nhận xe ngay sau bước này."><Textarea rows={3} maxLength={2000} value={condition} onChange={e => setCondition(e.target.value)} placeholder="VD: thay dầu; xe kêu khi phanh"/></Field>
-        <Field label="Ghi chú nội bộ" optional><Textarea rows={2} maxLength={2000} value={note} onChange={e => setNote(e.target.value)}/></Field>
-      </div>
+      <div className="mt-4"><ReceptionFields value={reception} onChange={setReception} errors={fieldErrors.errors} onClearError={key => fieldErrors.clear(key)} vehicle={chosenVehicle} isNewVehicle={isNewVehicle} hasBooking={false}/></div>
       <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
         <p className="mr-auto text-caption text-cs-muted">Phiếu tạo ở trạng thái Đã tiếp nhận · nguồn: khách vãng lai.</p>
         <Button type="submit" variant="primary" iconRight="arrow-right" loading={working} loadingText="Đang tạo phiếu...">Tạo phiếu tiếp nhận</Button>

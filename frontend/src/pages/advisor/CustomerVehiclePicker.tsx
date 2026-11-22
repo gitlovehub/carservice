@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/Button";
-import { SearchInput } from "../../components/ui/Field";
+import { FieldError, SearchInput } from "../../components/ui/Field";
 import { Icon } from "../../components/ui/Icon";
 import { counterCustomerVehicles, searchCounter, type CounterCustomer, type CounterVehicle } from "../../services/workflowService";
 import { useDebounced } from "../admin/kit/useDebounced";
@@ -17,8 +17,10 @@ import { errorText } from "./workflowFormat";
 type SearchResult = { key: string; customers: CounterCustomer[]; vehicles: CounterVehicle[]; error?: string };
 type VehiclesResult = { customerId: number; list: CounterVehicle[]; error?: string };
 
-export function CustomerVehiclePicker({ value, onChange, blockBusyVehicles = false, onVehiclesLoaded }: {
+export function CustomerVehiclePicker({ value, onChange, blockBusyVehicles = false, onVehiclesLoaded, errors = {}, onClearError }: {
   value: CounterPick; onChange: (next: CounterPick) => void; blockBusyVehicles?: boolean;
+  /** Lỗi theo ô (pickProblems) và cách xoá lỗi khi người dùng sửa ô. */
+  errors?: Record<string, string>; onClearError?: (...keys: string[]) => void;
   /** Danh sách xe của khách đã chọn (để nơi gọi biết dòng xe / xe đang bận). */
   onVehiclesLoaded?: (list: CounterVehicle[]) => void;
 }) {
@@ -53,9 +55,12 @@ export function CustomerVehiclePicker({ value, onChange, blockBusyVehicles = fal
   const ownVehicles = (customerId !== null && vehicles?.customerId === customerId ? vehicles.list : [])
     .map(v => blockBusyVehicles ? v : { ...v, open_repair_order_code: null });
 
-  const pick = (next: NonNullable<CounterPick["customer"]>, vehicleId: number | null = null) =>
+  const pick = (next: NonNullable<CounterPick["customer"]>, vehicleId: number | null = null) => {
+    onClearError?.("customer", "vehicle");
     onChange({ ...value, customer: next, vehicleId, newVehicle: emptyVehicleDraft });
+  };
   function startNew() {
+    onClearError?.("customer", "vehicle");
     const digits = query.replace(/[^\d+]/g, "");
     const looksLikePlate = /\d/.test(query) && /[A-Za-z]/.test(query);
     onChange({
@@ -64,7 +69,7 @@ export function CustomerVehiclePicker({ value, onChange, blockBusyVehicles = fal
       newVehicle: { ...emptyVehicleDraft, plate: looksLikePlate ? query.trim().toUpperCase() : "" },
     });
   }
-  const reset = () => { onChange({ customer: null, vehicleId: null, newCustomer: emptyCustomerDraft, newVehicle: emptyVehicleDraft }); setVehicles(null); };
+  const reset = () => { onClearError?.("customer", "vehicle", "newName", "newPhone", "newEmail", "vehicleModel", "vehiclePlate", "vehicleYear", "vehicleVin"); onChange({ customer: null, vehicleId: null, newCustomer: emptyCustomerDraft, newVehicle: emptyVehicleDraft }); setVehicles(null); };
 
   const results = found?.key === term ? found : null;
   const hasResults = !!results && (results.customers.length > 0 || results.vehicles.length > 0);
@@ -74,10 +79,11 @@ export function CustomerVehiclePicker({ value, onChange, blockBusyVehicles = fal
       <h2 className="text-lg font-bold text-cs-text">Khách hàng</h2>
       {customer === null ? <>
         <p className="mt-1 text-small text-cs-muted">Tìm khách cũ theo số điện thoại, tên hoặc biển số xe. Không có thì thêm khách mới.</p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <SearchInput value={query} onChange={setQuery} placeholder="SĐT, tên khách hoặc biển số…" label="Tìm khách hàng" className="min-w-64 flex-1"/>
+        <div role="group" aria-label="Chọn khách hàng" aria-invalid={!!errors.customer || undefined} className={`mt-4 flex flex-wrap gap-3 ${errors.customer ? "rounded-xl border border-danger p-2" : ""}`}>
+          <SearchInput value={query} onChange={next => { setQuery(next); onClearError?.("customer"); }} placeholder="SĐT, tên khách hoặc biển số…" label="Tìm khách hàng" className="min-w-64 flex-1"/>
           <Button variant="tonal" icon="plus" onClick={startNew}>Khách mới</Button>
         </div>
+        <FieldError className="mt-1.5">{errors.customer}</FieldError>
         {term.length >= 2 && <div className="mt-3" aria-live="polite">
           {searching ? <p className="text-small text-cs-muted">Đang tìm…</p>
             : results?.error ? <Notice tone="error">{results.error}</Notice>
@@ -100,7 +106,7 @@ export function CustomerVehiclePicker({ value, onChange, blockBusyVehicles = fal
             </ul>}
         </div>}
       </> : customer === "new" ? <div className="mt-4 space-y-3">
-        <NewCustomerFields value={value.newCustomer} onChange={newCustomer => onChange({ ...value, newCustomer })}/>
+        <NewCustomerFields value={value.newCustomer} errors={errors} onClearError={key => onClearError?.(key)} onChange={newCustomer => onChange({ ...value, newCustomer })}/>
         <Button size="sm" variant="ghost" icon="arrow-left" onClick={reset}>Tìm khách có sẵn</Button>
       </div> : <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-cs-surface-2 px-4 py-3">
         <Icon name="user" size={18} className="text-cs-muted"/>
@@ -111,10 +117,10 @@ export function CustomerVehiclePicker({ value, onChange, blockBusyVehicles = fal
 
     {customer !== null && <section className={card}>
       <h2 className="text-lg font-bold text-cs-text">Xe</h2>
-      {customer === "new" ? <div className="mt-4"><NewVehicleFields value={value.newVehicle} onChange={newVehicle => onChange({ ...value, newVehicle })}/></div> : <div className="mt-4">
+      {customer === "new" ? <div className="mt-4"><NewVehicleFields atReception={blockBusyVehicles} value={value.newVehicle} errors={errors} onClearError={key => onClearError?.(key)} onChange={newVehicle => onChange({ ...value, newVehicle })}/></div> : <div className="mt-4">
         {vehiclesLoading ? <p className="text-small text-cs-muted">Đang tải xe của khách…</p>
           : vehicles?.error ? <Notice tone="error">{vehicles.error}</Notice>
-          : <VehicleChoiceList name="counter-vehicle" vehicles={ownVehicles} value={value.vehicleId} onChange={vehicleId => onChange({ ...value, vehicleId })}
+          : <VehicleChoiceList atReception={blockBusyVehicles} name="counter-vehicle" errors={errors} onClearError={key => onClearError?.(key)} vehicles={ownVehicles} value={value.vehicleId} onChange={vehicleId => onChange({ ...value, vehicleId })}
             newVehicle={value.newVehicle} onNewVehicleChange={newVehicle => onChange({ ...value, newVehicle })}/>}
       </div>}
     </section>}

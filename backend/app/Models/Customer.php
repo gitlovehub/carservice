@@ -21,6 +21,21 @@ class Customer extends Model
      */
     public const LOYAL_MIN_VISITS = 3;
 
+    protected function casts(): array
+    {
+        return ['email_verified_at' => 'datetime'];
+    }
+
+    /** Email được phép nhận mã xác nhận: email hồ sơ đã xác minh, hoặc email đăng nhập đã xác thực. */
+    public function confirmationEmail(): ?string
+    {
+        if ($this->email && $this->email_verified_at) {
+            return $this->email;
+        }
+
+        return $this->account?->email_verified_at ? $this->account->email : null;
+    }
+
     public function invoices(): HasManyThrough
     {
         return $this->hasManyThrough(Invoice::class, RepairOrder::class);

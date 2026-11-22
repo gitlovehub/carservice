@@ -1,133 +1,118 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { useLiveRefresh } from "../../services/liveSync";
-import { Link } from "react-router-dom";
-import {
-  formatDate,
-  formatDateTime,
-  getMyRepairOrders,
-  getMyRepairOrderDetail,
-  getVehicleName,
-  repairStatusLabel,
-  type CustomerRepairOrder,
-} from "../../services/customerApi";
-import { StatusBadge } from "../../components/ui/Badge";
+import { formatDate, formatDateTime, type CustomerRepairOrder } from "../../services/customerApi";
+import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { Icon, type IconName } from "../../components/ui/Icon";
+import { controlClass } from "../../components/ui/fieldContext";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
-import { HandoverSummary } from "../advisor/CheckInPanel";
+import { HandoverViewModal } from "../advisor/CheckInPanel";
+import { comparedCheckIn, type CheckInRef } from "../advisor/handoverText";
 import { handoverApi, pickupAuthorizationApi } from "../../services/evidenceService";
 import type { PickupAuthorization, WorkflowHandover } from "../../services/workflowService";
 
-// Presentation stages follow the GARAGE timeline, mapped to the actual Laravel
-// repair-order state machine. No demo statuses are sent to the backend.
-const stages = [
-  { status: "RECEIVED", label: "Đã tiếp nhận", color: "blue" },
-  { status: "INSPECTING", label: "Đang chẩn đoán", color: "blue" },
-  { status: "WAITING_APPROVAL", label: "Chờ khách duyệt", color: "amber" },
-  { status: "IN_PROGRESS", label: "Đang sửa chữa", color: "blue" },
-  { status: "COMPLETED", label: "Sẵn sàng bàn giao", color: "green" },
-  { status: "HANDED_OVER", label: "Đã bàn giao", color: "green" },
-  { status: "CLOSED", label: "Đã đóng phiếu", color: "muted" },
-] as const;
+/**
+ * Giấy tờ của một phiếu sửa chữa phía khách (PO 18/11/2026): biên bản nhận / trả xe (xem & tự xác nhận),
+ * kết quả chẩn đoán (kèm ảnh), ủy quyền nhận xe. Hiện ngay trong chi tiết phiếu ở "Tra cứu tiến độ" (/repair-status) —
+ * trang riêng /customer/repair-status/manage cũ (lặp tiến độ, nhật ký) chỉ còn chuyển hướng về đó.
+ */
 
-function stageIndex(status: string): number {
-  if (status === "QUOTING") return 1;
-  if (status === "WAITING_FOR_PARTS" || status === "REVIEW_TEST") return 3;
-  return stages.findIndex(stage => stage.status === status);
+function Card({ id, title, icon, badge, children }: { id?: string; title: string; icon: IconName; badge?: ReactNode; children: ReactNode }) {
+  return <section id={id} aria-label={title} className="scroll-mt-24 rounded-2xl border border-cs-border bg-cs-surface p-5">
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <h3 className="flex items-center gap-2 text-base font-extrabold text-cs-text"><span className="text-cs-accent-text"><Icon name={icon} size={18}/></span>{title}</h3>
+      {badge}
+    </div>
+    {children}
+  </section>;
 }
 
-// Màu theo token trạng thái (đổi theo sáng/tối), cùng bảng màu với StatusBadge.
-const statusColorClasses: Record<"blue" | "amber" | "green" | "muted", string> = {
-  blue: "bg-info-soft text-info-fg",
-  amber: "bg-warning-soft text-warning-fg",
-  green: "bg-success-soft text-success-fg",
-  muted: "bg-neutral-soft text-neutral-fg",
+/** Biên bản nhận / trả xe gara gửi: xem lại và tự xác nhận trong tài khoản (P2). Biên bản chờ xác nhận mở sẵn, đã xác nhận thu gọn. */
+function CustomerHandoverBlock({ handovers, code, onConfirmed }: { handovers: WorkflowHandover[]; code?: string | null; onConfirmed: () => void }) {
+  const shown = handovers.filter(h => h.status === "SUBMITTED" || h.status === "CONFIRMED");
+  const waiting = shown.some(h => h.status === "SUBMITTED");
+  if (!shown.length) return null;
+  return <Card id="bien-ban" title="Biên bản giao nhận xe" icon="file" badge={waiting ? <Badge tone="warning">Chờ bạn xác nhận</Badge> : <Badge tone="success">Đã xác nhận</Badge>}>
+    <div className="space-y-3">{shown.map(h => <HandoverItem key={h.id} handover={h} checkIn={comparedCheckIn(h, handovers)} code={code} onConfirmed={onConfirmed}/>)}</div>
+  </Card>;
+}
+
+/**
+ * Một biên bản phía khách: dòng gọn + nút "Xem biên bản" mở modal (cùng modal khu cố vấn, tông đỏ của khách, sáng / tối theo theme).
+ * Biên bản chờ xác nhận: khung nổi bật; modal có ô ghi chú + "Xác nhận đúng tình trạng". Vào từ thông báo (#bien-ban) → tự mở.
+ */
+function HandoverItem({ handover, checkIn, code, onConfirmed }: { handover: WorkflowHandover; checkIn: CheckInRef | null; code?: string | null; onConfirmed: () => void }) {
+  const { hash } = useLocation();
+  const waiting = handover.status === "SUBMITTED";
+  const [open, setOpen] = useState(waiting && hash === "#bien-ban");
+  const [comment, setComment] = useState("");
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
+  const noun = handover.type === "CHECK_OUT" ? "trả xe" : "nhận xe";
+  const confirmation = handover.confirmations?.[0];
+
+  function confirm() {
+    setWorking(true); setError("");
+    handoverApi.confirmAsCustomer(handover.id, comment.trim() || undefined).then(() => { setOpen(false); onConfirmed(); })
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Không xác nhận được."))
+      .finally(() => setWorking(false));
+  }
+
+  return <>
+    <div className={`flex flex-wrap items-center gap-3 rounded-xl p-4 ${waiting ? "border-2 border-warning/60 bg-warning-soft/30" : "border border-cs-border"}`}>
+      <span className={`grid size-9 shrink-0 place-items-center rounded-full ${waiting ? "bg-warning-soft text-warning-fg" : "bg-success-soft text-success-fg"}`}><Icon name={waiting ? "info" : "check"} size={16}/></span>
+      <span className="min-w-0 flex-1 text-sm"><b className="block text-cs-text">Biên bản {noun}</b>
+        <span className="text-xs text-cs-muted">{waiting
+          ? `Chờ bạn xác nhận — kiểm tra số km, tình trạng xe, tài sản và ảnh lúc ${handover.type === "CHECK_OUT" ? "nhận lại xe" : "giao xe cho gara"}.`
+          : `Bạn đã xác nhận${confirmation ? ` lúc ${formatDateTime(confirmation.confirmed_at)}` : ""}.`}</span></span>
+      <Button size="sm" variant={waiting ? "primary" : "outline"} icon="eye" onClick={() => setOpen(true)}>{waiting ? "Xem & xác nhận biên bản" : "Xem biên bản"}</Button>
+    </div>
+
+    {open && <HandoverViewModal code={code} handover={handover} checkIn={checkIn} onClose={() => setOpen(false)} dismissible={!working}
+      statusText={waiting ? "Chờ bạn xác nhận" : handover.status === "CONFIRMED" ? "Bạn đã xác nhận" : undefined}
+      footer={waiting
+        ? <><p className="mr-auto text-xs text-cs-muted">Thấy sai? Liên hệ gara để lập lại biên bản trước khi xác nhận.</p>
+          <Button variant="secondary" disabled={working} onClick={() => setOpen(false)}>Để sau</Button>
+          <Button variant="primary" icon="check" loading={working} onClick={confirm}>Xác nhận đúng tình trạng</Button></>
+        : <Button variant="secondary" onClick={() => setOpen(false)}>Đóng</Button>}>
+      {waiting && <div className="mt-5 space-y-2 border-t border-cs-border pt-4">
+        <label className="block text-xs font-semibold text-cs-muted">Ghi chú cho gara (không bắt buộc)
+          <textarea className={`mt-1.5 ${controlClass}`} rows={2} maxLength={1000} value={comment} onChange={event => setComment(event.target.value)} placeholder="VD: Đúng tình trạng, lưu ý vết xước cửa sau đã có từ trước"/></label>
+        {error && <p role="alert" className="text-sm font-semibold text-cs-danger">{error}</p>}
+      </div>}
+    </HandoverViewModal>}
+  </>;
+}
+
+const INSPECTION_TEXT: Record<string, { label: string; tone: "success" | "warning" | "danger" }> = {
+  PASSED: { label: "Đạt", tone: "success" }, NORMAL: { label: "Bình thường", tone: "success" },
+  WARNING: { label: "Cần lưu ý", tone: "warning" }, NEEDS_SERVICE: { label: "Cần bảo dưỡng", tone: "warning" },
+  FAILED: { label: "Không đạt", tone: "danger" }, NEEDS_REPLACEMENT: { label: "Cần thay thế", tone: "danger" },
 };
 
-function formatEventTime(date?: string | null) {
-  if (!date) return "";
-  const parsed = new Date(date);
-  return Number.isNaN(parsed.getTime()) ? "" : formatDateTime(parsed);
-}
-
-function TrackingCard({ order }: { order: CustomerRepairOrder }) {
-  const [detail, setDetail] = useState<CustomerRepairOrder | null>(null);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const [historyError, setHistoryError] = useState(false);
-  const [detailKey, setDetailKey] = useState(0);
-  useEffect(() => {
-    let active = true;
-    setLoadingHistory(true);
-    setHistoryError(false);
-    getMyRepairOrderDetail(order.id)
-      .then(data => { if (active) setDetail(data); })
-      .catch(() => { if (active) setHistoryError(true); })
-      .finally(() => { if (active) setLoadingHistory(false); });
-    return () => { active = false; };
-  }, [order.id, detailKey]);
-
-  const status = detail?.status ?? order.status;
-  const current = stageIndex(status);
-  const history = (detail?.statusHistory ?? detail?.status_history ?? [])
-    .slice()
-    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))
-    .slice(0, 5);
-  const recordedStatuses = new Set(history.map(item => item.status));
-  const isEarlyClosed = status === "CLOSED" && !recordedStatuses.has("COMPLETED") && !recordedStatuses.has("HANDED_OVER");
-
-  return (
-    <article className="mb-5 rounded-[18px] border bg-[var(--cs-surface,#fff)] border-[var(--cs-border,#e9e9e6)] p-5 sm:p-7">
-      <div className="flex flex-wrap items-center justify-between gap-5 border-b border-[var(--cs-border,#e9e9e6)] pb-6 [&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:tracking-normal">
-        <div>
-          <p className="mb-2 text-[13px] font-extrabold tracking-[0.11em] text-cs-accent-text">{order.repair_order_code}</p>
-          <h2>{getVehicleName(order.vehicle)}</h2>
-          <p className="mt-1 text-[13px] text-[var(--cs-muted,#757575)]">
-            {order.vehicle?.license_plate ?? "Chưa có biển số"}
-            {order.received_at ? ` · Tiếp nhận ${formatEventTime(order.received_at)}` : ""}
-            {detail?.estimated_ready_at && ["IN_PROGRESS", "WAITING_FOR_PARTS"].includes(status) ? ` · Dự kiến xong ${formatEventTime(detail.estimated_ready_at)}` : ""}
-          </p>
-        </div>
-        <StatusBadge domain="repair" status={status} audience="customer"/>
-      </div>
-      <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12 [&_h3]:mb-5 [&_h3]:text-[17px] [&_h3]:font-extrabold">
-        <section aria-label="Tiến độ công việc">
-          <h3>Tiến độ công việc</h3>
-          {status === "WAITING_FOR_PARTS" && <p className="mb-5 rounded-lg border-l-[3px] border-[#cf2935] bg-[var(--cs-soft,#fff1f1)] px-3.5 py-3 text-xs leading-6">Đang tạm dừng do chờ phụ tùng. Gara sẽ tiếp tục khi có vật tư.</p>}
-          {status === "QUOTING" && <p className="mb-5 rounded-lg border-l-[3px] border-[#cf2935] bg-[var(--cs-soft,#fff1f1)] px-3.5 py-3 text-xs leading-6">Gara đang lập báo giá để bạn xem xét.</p>}
-          <ol className="m-0 list-none p-0">
-            {stages.map((stage, index) => {
-              const isCurrent = stage.status === status || (status === "QUOTING" && stage.status === "INSPECTING") ||
-                ((status === "WAITING_FOR_PARTS" || status === "REVIEW_TEST") && stage.status === "IN_PROGRESS");
-              const isPast = current > index && !(isEarlyClosed && index > 0) && !["CLOSED"].includes(status);
-              const isVisible = isCurrent || isPast;
-              return <li key={stage.status} className={`relative min-h-11 border-l border-[var(--cs-border,#e9e9e6)] pb-5 pl-7 last:border-l-transparent before:absolute before:left-[-6px] before:top-1 before:size-3 before:rounded-full before:border-2 before:border-[#cf2935] before:bg-[var(--cs-surface,#fff)] ${isVisible ? "before:bg-[#cf2935]" : "opacity-50"} [&_small]:mt-2 [&_small]:block [&_small]:text-xs [&_small]:text-[var(--cs-muted,#757575)]`}>
-                <span className={`inline-flex w-fit max-w-full items-center rounded-full px-3 py-1.5 text-xs font-extrabold leading-5 ${statusColorClasses[stage.color]}`}>{stage.label}</span>
-                {isCurrent && <small>{status === "WAITING_FOR_PARTS" ? "Đang chờ phụ tùng" : status === "REVIEW_TEST" ? "Đang kiểm tra lại" : "Đang ở bước này"}</small>}
-              </li>;
-            })}
-          </ol>
-        </section>
-        <section aria-label="Nhật ký gần đây" >
-          <h3>Nhật ký gần đây</h3>
-          {loadingHistory && <p className="text-sm leading-relaxed text-[var(--cs-muted,#757575)]">Đang tải nhật ký...</p>}
-          {!loadingHistory && historyError && <p className="text-sm leading-relaxed text-[var(--cs-muted,#757575)]">Chưa tải được nhật ký. Vui lòng thử tải lại trang.</p>}
-          {!loadingHistory && !historyError && history.length === 0 && <p className="text-sm leading-relaxed text-[var(--cs-muted,#757575)]">Chưa có cập nhật mới.</p>}
-          {!loadingHistory && !historyError && history.map(event => <div className="mb-3 flex flex-col gap-1.5 border-b border-[var(--cs-border,#e9e9e6)] py-1 pb-4 last:border-0 [&_strong]:break-words [&_strong]:text-[13px] [&_strong]:leading-6 [&_span]:text-xs [&_span]:text-[var(--cs-muted,#757575)]" key={event.id}>
-            <strong>{event.note?.trim() || repairStatusLabel[event.status] || "Cập nhật trạng thái phiếu"}</strong>
-            <span>{formatEventTime(event.created_at)}</span>
-          </div>)}
-          {!loadingHistory && !historyError && !history.length && (detail?.note || order.note) &&
-            <p className="text-sm leading-relaxed text-[var(--cs-muted,#757575)]">{detail?.note || order.note}</p>}
-        </section>
-      </div>
-      {!!detail?.part_requests?.some(r => ["REQUESTED", "ORDERED"].includes(r.status)) && <section aria-label="Phụ tùng đang chờ" className="mt-6 border-t border-[var(--cs-border,#e9e9e6)] pt-6 text-sm">
-        <h3 className="text-[17px] font-extrabold">Phụ tùng đang chờ</h3>
-        <ul className="mt-2">{detail.part_requests.filter(r => ["REQUESTED", "ORDERED"].includes(r.status)).map(r => <li key={r.id}>• {r.part?.name ?? "Phụ tùng"} × {r.quantity} · {r.eta_date ? `dự kiến về ${formatDate(r.eta_date)}` : "gara đang đặt hàng"}</li>)}</ul>
-      </section>}
-      {!!detail?.inspections?.[0]?.inspected_at && <CustomerDiagnosisBlock inspection={detail.inspections[0]}/>}
-      {!!detail?.handovers?.length && <CustomerHandoverBlock handovers={detail.handovers} onConfirmed={() => setDetailKey(key => key + 1)}/>}
-      {detail && !["HANDED_OVER", "CLOSED"].includes(status) && <CustomerPickupBlock orderId={order.id}/>}
-    </article>
-  );
+/** Kết quả chẩn đoán gara ghi nhận (P3): khách xem trước khi duyệt báo giá. */
+function CustomerDiagnosisBlock({ inspection }: { inspection: NonNullable<CustomerRepairOrder["inspections"]>[number] }) {
+  return <Card title="Kết quả chẩn đoán" icon="search">
+    {inspection.diagnosis && <p className="whitespace-pre-wrap rounded-xl bg-cs-surface-2 px-4 py-3 text-sm text-cs-text">{inspection.diagnosis}</p>}
+    {!!inspection.items?.length && <ul className="mt-3 divide-y divide-cs-border rounded-xl border border-cs-border">{inspection.items.map(item => {
+      const result = INSPECTION_TEXT[item.condition_status ?? ""];
+      return <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-sm">
+        <span className="min-w-0"><span className="font-semibold text-cs-text">{item.item_name}</span>{item.condition_description ? <span className="block text-xs text-cs-muted font-medium">{item.condition_description}</span> : null}</span>
+        {result ? <Badge tone={result.tone}>{result.label}</Badge> : <span className="text-xs text-cs-muted">{item.condition_status ?? "—"}</span>}
+      </li>;
+    })}</ul>}
+    {!!inspection.recommendations?.length && <div className="mt-4">
+      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-cs-muted">Gara đề xuất</p>
+      <ul className="grid gap-2 sm:grid-cols-2">{inspection.recommendations.map(rec => <li key={rec.id} className="flex items-center gap-2.5 rounded-xl border border-cs-border px-3 py-2 text-sm">
+        <span className="text-cs-accent-text"><Icon name={rec.item_type === "PART" ? "box" : "wrench"} size={16}/></span>
+        <span className="min-w-0 flex-1 truncate text-cs-text">{rec.part?.name || rec.service?.name || "—"}</span>
+        <span className="text-xs text-cs-muted">× {rec.quantity ?? 1}</span>
+      </li>)}</ul>
+      <p className="mt-2 text-xs text-cs-muted">Đề xuất chỉ được làm khi bạn đồng ý trong báo giá.</p>
+    </div>}
+    <div className="mt-4"><PhotoUploader type="inspection" id={inspection.id} readOnly title="Ảnh chẩn đoán"/></div>
+  </Card>;
 }
 
 /** Ủy quyền nhận xe (P4, N9): chủ xe khai báo trước người được nhận xe thay; gara đối chiếu 4 số cuối giấy tờ. */
@@ -144,7 +129,6 @@ function CustomerPickupBlock({ orderId }: { orderId: number }) {
     pickupAuthorizationApi.list(orderId).then(list => { if (active) setItems(list); }).catch(() => undefined);
     return () => { active = false; };
   }, [orderId, reloadKey]);
-
   useLiveRefresh(() => setReloadKey(key => key + 1));
 
   async function act(task: () => Promise<unknown>) {
@@ -154,101 +138,52 @@ function CustomerPickupBlock({ orderId }: { orderId: number }) {
     finally { setWorking(false); }
   }
   const active = items.filter(item => item.status === "ACTIVE");
-  const muted = "text-[var(--cs-muted,#757575)]";
-  const field = "mt-1 w-full rounded-xl border border-[var(--cs-border,#e9e9e6)] bg-transparent p-2.5 text-sm";
+  const label = "flex flex-col gap-1.5 text-xs font-semibold text-cs-muted";
+  const req = <span className="text-danger">*</span>;
 
-  return <section aria-label="Ủy quyền nhận xe" className="mt-6 border-t border-[var(--cs-border,#e9e9e6)] pt-6 text-sm">
-    <h3 className="text-[17px] font-extrabold">Ủy quyền nhận xe</h3>
-    <p className={`mt-1 text-xs ${muted}`}>Nhờ người khác nhận xe? Khai báo trước tại đây. Gara chỉ giao xe khi người nhận có tên trong danh sách, khớp 4 số cuối giấy tờ, và bạn xác nhận biên bản trả xe.</p>
-    {active.length > 0 && <ul className="mt-3 divide-y divide-[var(--cs-border,#e9e9e6)]">{active.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
-      <span>{item.full_name} · {item.phone} · giấy tờ ••••{item.id_last4}{item.valid_until ? ` · đến ${formatDateTime(item.valid_until)}` : ""}</span>
-      <Button size="sm" variant="danger-outline" disabled={working} onClick={() => void act(() => pickupAuthorizationApi.revoke(item.id))}>Thu hồi</Button>
+  return <Card title="Ủy quyền nhận xe" icon="users" badge={active.length ? <Badge tone="info">{active.length} người</Badge> : undefined}>
+    <p className="text-sm text-cs-muted">Nhờ người khác nhận xe? Khai báo trước tại đây. Gara chỉ giao xe khi người nhận có tên trong danh sách và khớp 4 số cuối giấy tờ.</p>
+    {active.length > 0 && <ul className="mt-3 divide-y divide-cs-border rounded-xl border border-cs-border">{active.map(item => <li key={item.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
+      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-cs-soft text-cs-accent-text"><Icon name="user" size={15}/></span>
+      <span className="min-w-0 flex-1"><b className="block text-cs-text">{item.full_name}</b>
+        <span className="text-xs text-cs-muted">{item.phone} · đã khai báo giấy tờ{item.valid_until ? ` · hiệu lực đến ${formatDateTime(item.valid_until)}` : ""}</span></span>
+      <Button variant="danger-outline" icon="x" disabled={working} onClick={() => void act(() => pickupAuthorizationApi.revoke(item.id))}>Thu hồi</Button>
     </li>)}</ul>}
-    {error && <p role="alert" className="mt-2 text-sm font-semibold text-cs-danger">{error}</p>}
-    {!open ? <div className="mt-3"><Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Thêm người được ủy quyền</Button></div>
-      : <form className="mt-3 grid gap-3 sm:grid-cols-2" onSubmit={event => {
+    {error && <p role="alert" className="mt-3 text-sm font-semibold text-cs-danger">{error}</p>}
+    {!open ? <div className="mt-4"><Button variant="secondary" icon="plus" onClick={() => setOpen(true)}>Thêm người được ủy quyền</Button></div>
+      : <form className="mt-4 grid gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-4 sm:grid-cols-2" onSubmit={event => {
         event.preventDefault();
         void act(() => pickupAuthorizationApi.create(orderId, { ...form, valid_until: form.valid_until ? new Date(form.valid_until).toISOString() : null }))
           .then(ok => { if (ok) { setOpen(false); setForm({ full_name: "", phone: "", id_last4: "", valid_until: "" }); } });
       }}>
-        <label className={`text-xs font-semibold ${muted}`}>Họ tên<input className={field} required maxLength={150} value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })}/></label>
-        <label className={`text-xs font-semibold ${muted}`}>Số điện thoại<input className={field} required inputMode="tel" maxLength={20} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}/></label>
-        <label className={`text-xs font-semibold ${muted}`}>4 số cuối CCCD / giấy tờ<input className={field} required inputMode="numeric" pattern="\d{4}" maxLength={4} value={form.id_last4} onChange={e => setForm({ ...form, id_last4: e.target.value.replace(/\D/g, "") })}/></label>
-        <label className={`text-xs font-semibold ${muted}`}>Hiệu lực đến (không bắt buộc)<input className={field} type="datetime-local" value={form.valid_until} onChange={e => setForm({ ...form, valid_until: e.target.value })}/></label>
-        <div className="flex gap-2 sm:col-span-2"><Button size="sm" variant="secondary" onClick={() => setOpen(false)}>Hủy</Button><Button type="submit" size="sm" variant="primary" loading={working}>Lưu ủy quyền</Button></div>
+        <label className={label}><span>Họ tên {req}</span><input className={controlClass} required maxLength={150} value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })}/></label>
+        <label className={label}><span>Số điện thoại {req}</span><input className={controlClass} required inputMode="tel" maxLength={20} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}/></label>
+        <label className={label}><span>4 số cuối CCCD / giấy tờ {req}</span><input className={controlClass} required inputMode="numeric" pattern="\d{4}" maxLength={4} value={form.id_last4} onChange={e => setForm({ ...form, id_last4: e.target.value.replace(/\D/g, "") })}/></label>
+        <label className={label}><span>Hiệu lực đến <span className="font-normal">(không bắt buộc)</span></span><input className={controlClass} type="datetime-local" value={form.valid_until} onChange={e => setForm({ ...form, valid_until: e.target.value })}/></label>
+        <div className="flex justify-end gap-2 sm:col-span-2"><Button variant="secondary" onClick={() => setOpen(false)}>Hủy</Button><Button type="submit" variant="primary" icon="check" loading={working}>Lưu ủy quyền</Button></div>
       </form>}
-  </section>;
+  </Card>;
 }
 
-const INSPECTION_TEXT: Record<string, string> = { PASSED: "Đạt", WARNING: "Cần lưu ý", FAILED: "Không đạt", NORMAL: "Bình thường", NEEDS_SERVICE: "Cần bảo dưỡng", NEEDS_REPLACEMENT: "Cần thay thế" };
-
-/** Kết quả chẩn đoán gara ghi nhận (P3): khách xem trước khi duyệt báo giá. */
-function CustomerDiagnosisBlock({ inspection }: { inspection: NonNullable<CustomerRepairOrder["inspections"]>[number] }) {
-  return <section aria-label="Kết quả chẩn đoán" className="mt-6 border-t border-[var(--cs-border,#e9e9e6)] pt-6 text-sm">
-    <h3 className="text-[17px] font-extrabold">Kết quả chẩn đoán</h3>
-    {inspection.diagnosis && <p className="mt-2 whitespace-pre-wrap">{inspection.diagnosis}</p>}
-    {!!inspection.items?.length && <ul className="mt-3 divide-y divide-[var(--cs-border,#e9e9e6)]">{inspection.items.map(item => <li key={item.id} className="flex flex-wrap justify-between gap-3 py-2">
-      <span>{item.item_name}{item.condition_description ? <span className="text-[var(--cs-muted,#757575)]"> · {item.condition_description}</span> : null}</span>
-      <strong className="text-xs">{INSPECTION_TEXT[item.condition_status ?? ""] ?? item.condition_status ?? "—"}</strong>
-    </li>)}</ul>}
-    {!!inspection.recommendations?.length && <><p className="mt-3 text-xs font-bold text-[var(--cs-muted,#757575)]">Gara đề xuất</p>
-      <ul className="mt-1">{inspection.recommendations.map(rec => <li key={rec.id}>• {rec.item_type === "PART" ? "Phụ tùng" : "Dịch vụ"}: {rec.part?.name || rec.service?.name || "—"} × {rec.quantity ?? 1}</li>)}</ul></>}
-    <PhotoUploader type="inspection" id={inspection.id} readOnly title="Ảnh chẩn đoán"/>
-  </section>;
+/** Phần giấy tờ trong chi tiết phiếu (Tra cứu tiến độ): phụ tùng chờ, biên bản, chẩn đoán, ủy quyền nhận xe. */
+export function OrderPaperwork({ order, onChanged }: { order: CustomerRepairOrder; onChanged: () => void }) {
+  const waitingParts = (order.part_requests ?? []).filter(r => ["REQUESTED", "ORDERED"].includes(r.status));
+  const finished = ["HANDED_OVER", "CLOSED"].includes(order.status);
+  return <>
+    {!!order.handovers?.length && <CustomerHandoverBlock handovers={order.handovers} code={order.repair_order_code} onConfirmed={onChanged}/>}
+    {waitingParts.length > 0 && <Card title="Phụ tùng đang chờ" icon="box">
+      <ul className="divide-y divide-cs-border rounded-xl border border-cs-border">{waitingParts.map(r => <li key={r.id} className="flex flex-wrap justify-between gap-3 px-4 py-2.5 text-sm">
+        <span className="text-cs-text">{r.part?.name ?? "Phụ tùng"} × {r.quantity}</span>
+        <span className="text-xs text-cs-muted">{r.eta_date ? `Dự kiến về ${formatDate(r.eta_date)}` : "Gara đang đặt hàng"}</span>
+      </li>)}</ul>
+    </Card>}
+    {!!order.inspections?.[0]?.inspected_at && <CustomerDiagnosisBlock inspection={order.inspections[0]}/>}
+    {!finished && <CustomerPickupBlock orderId={order.id}/>}
+  </>;
 }
 
-/** Biên bản nhận xe gara gửi khách: xem và tự xác nhận trong tài khoản (P2). */
-function CustomerHandoverBlock({ handovers, onConfirmed }: { handovers: WorkflowHandover[]; onConfirmed: () => void }) {
-  const [comment, setComment] = useState("");
-  const [working, setWorking] = useState(false);
-  const [error, setError] = useState("");
-  return <section aria-label="Biên bản nhận xe" className="mt-6 border-t border-[var(--cs-border,#e9e9e6)] pt-6">
-    {handovers.map(handover => <div key={handover.id} className="mb-4">
-      <h3 className="text-[17px] font-extrabold">Biên bản {handover.type === "CHECK_OUT" ? "trả xe" : "nhận xe"} · {handover.status === "CONFIRMED" ? "Bạn đã xác nhận" : "Chờ bạn xác nhận"}</h3>
-      <HandoverSummary handover={handover}/>
-      <PhotoUploader type="handover" id={handover.id} readOnly title="Ảnh tình trạng xe"/>
-      {handover.status === "SUBMITTED" && <form className="mt-4 space-y-3" onSubmit={event => {
-        event.preventDefault(); setWorking(true); setError("");
-        handoverApi.confirmAsCustomer(handover.id, comment.trim() || undefined).then(onConfirmed)
-          .catch((err: unknown) => setError(err instanceof Error ? err.message : "Không xác nhận được."))
-          .finally(() => setWorking(false));
-      }}>
-        <p className="text-sm text-[var(--cs-muted,#757575)]">Kiểm tra số km, tình trạng và ảnh. Chỉ xác nhận nếu đúng với xe của bạn khi giao cho gara.</p>
-        <label className="block text-xs font-semibold text-[var(--cs-muted,#757575)]">Ghi chú (không bắt buộc)<textarea className="mt-2 w-full rounded-xl border border-[var(--cs-border,#e9e9e6)] bg-transparent p-3 text-sm" rows={2} maxLength={1000} value={comment} onChange={event => setComment(event.target.value)}/></label>
-        {error && <p role="alert" className="text-sm font-semibold text-cs-danger">{error}</p>}
-        <Button type="submit" variant="primary" loading={working}>Xác nhận đúng tình trạng</Button>
-      </form>}
-      {handover.confirmations?.[0] && <p className="mt-3 text-xs text-[var(--cs-muted,#757575)]">Đã xác nhận lúc {formatDateTime(handover.confirmations[0].confirmed_at)}.</p>}
-    </div>)}
-  </section>;
-}
-
+/** Link cũ /customer/repair-status/manage → Tra cứu tiến độ (giữ ?orderId= và #bien-ban). */
 export default function RepairStatus() {
-  const [orders, setOrders] = useState<CustomerRepairOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [reload, setReload] = useState(0);
-
-  useLiveRefresh(() => setReload(n => n + 1));
-  useEffect(() => {
-    let active = true;
-    getMyRepairOrders()
-      .then(data => { if (active) { setOrders(data); setError(""); } })
-      .catch((err: unknown) => { if (active) setError(err instanceof Error ? err.message : "Không thể tải tiến độ xe."); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [reload]);
-
-  return <section className="min-h-[calc(100dvh-180px)] px-5 py-12 sm:px-6 sm:pb-16 bg-[var(--cs-bg,#f7f7f6)] text-[var(--cs-text,#191919)] ">
-    <div className="mx-auto w-full max-w-[1200px]">
-      <header className="mb-7 flex flex-wrap items-end justify-between gap-5 [&_h1]:text-[clamp(29px,4vw,46px)] [&_h1]:font-extrabold [&_h1]:tracking-normal [&_h1]:leading-[1.16] [&_p:not(:first-child)]:mt-2.5 [&_p:not(:first-child)]:text-sm [&_p:not(:first-child)]:text-[var(--cs-muted,#757575)]"><div>
-        <h1>Hành trình sửa chữa</h1>
-        <p>Biết xe đang ở công đoạn nào và công việc tiếp theo là gì.</p>
-      </div></header>
-      {loading && <div className="my-4 rounded-[18px] border bg-[var(--cs-surface,#fff)] border-[var(--cs-border,#e9e9e6)] px-5 py-12 text-center text-[var(--cs-muted,#757575)] [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-extrabold [&_h2]:text-[var(--cs-text,#191919)] [&_a]:mt-5">Đang tải hành trình sửa chữa...</div>}
-      {error && <div role="alert" className="my-3.5 flex items-center justify-between gap-4 rounded-xl border border-[#426c4d] bg-[#20362a] px-4 py-3 text-[#b8eac3] [&_button]:cursor-pointer [&_button]:rounded-lg [&_button]:border [&_button]:border-current [&_button]:px-3 [&_button]:py-1.5 border-[#a64753] bg-[#45272d] text-[#ffb1b9]"><span>{error}</span><button type="button" onClick={() => setReload(x => x + 1)}>Thử lại</button></div>}
-      {!loading && !error && orders.length === 0 && <div className="my-4 rounded-[18px] border bg-[var(--cs-surface,#fff)] border-[var(--cs-border,#e9e9e6)] px-5 py-12 text-center text-[var(--cs-muted,#757575)] [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-extrabold [&_h2]:text-[var(--cs-text,#191919)] [&_a]:mt-5"><h2>Chưa có phiếu sửa chữa</h2><p>Khi gara tiếp nhận xe, trạng thái công việc sẽ xuất hiện tại đây.</p><Link to="/customer/appointments" className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#cf2935] bg-[#cf2935] px-5 py-3 text-[13px] font-extrabold text-white transition-colors hover:bg-[#af1f2b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935]">Xem lịch hẹn của tôi</Link></div>}
-      {!loading && !error && orders.map(order => <TrackingCard key={order.id} order={order} />)}
-    </div>
-  </section>;
+  const { search, hash } = useLocation();
+  return <Navigate to={`/repair-status${search}${hash || "#bien-ban"}`} replace/>;
 }

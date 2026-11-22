@@ -1,8 +1,8 @@
+import { useFieldErrors } from "../../components/ui/useFieldErrors";
 import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { formatVnd, workflowApi, type CatalogService, type WorkflowOrder } from "../../services/workflowService";
 import { card, Notice } from "./WorkflowUI";
-import { errorText } from "./workflowFormat";
 
 /**
  * Dịch vụ nhanh (P5): chọn dịch vụ mức "Nhanh" → gửi khách báo giá niêm yết, bỏ bước chẩn đoán.
@@ -15,6 +15,7 @@ export function QuickServicePanel({ order, onChanged }: { order: WorkflowOrder; 
   const [selected, setSelected] = useState<number[]>([]);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const fieldErrors = useFieldErrors();
 
   useEffect(() => {
     if (!visible) return;
@@ -29,7 +30,7 @@ export function QuickServicePanel({ order, onChanged }: { order: WorkflowOrder; 
   async function submit() {
     setWorking(true); setError("");
     try { await workflowApi.quickQuotation(order.id, selected); await onChanged("Đã gửi báo giá dịch vụ nhanh. Chờ khách duyệt giá."); }
-    catch (err) { setError(errorText(err)); }
+    catch (err) { fieldErrors.showApi(err); }
     finally { setWorking(false); }
   }
 

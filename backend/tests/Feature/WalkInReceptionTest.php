@@ -34,7 +34,64 @@ class WalkInReceptionTest extends TestCase
 
     private function receive(array $payload)
     {
-        return $this->actingAs($this->advisor)->postJson('/api/repair-orders', $payload);
+        if (isset($payload['vehicle'])) {
+            $payload['vehicle'] += ['year' => 2020, 'vin' => fake()->unique()->numerify('WBA##############')];
+        }
+
+        return $this->actingAs($this->advisor)->postJson('/api/repair-orders', $payload + ['mileage_received' => 1000]);
+    }
+
+    public function test_reception_requires_odo_and_completes_missing_year_and_vin(): void
+    {
+        $customer = Customer::factory()->create();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer->id, 'year' => null, 'vin' => null]);
+        $payload = ['customer_id' => $customer->id, 'vehicle_id' => $vehicle->id, 'mileage_received' => 61000];
+
+        $this->actingAs($this->advisor)->postJson('/api/repair-orders', array_diff_key($payload, ['mileage_received' => 1]))
+            ->assertUnprocessable()->assertJsonValidationErrors('mileage_received');
+        $this->actingAs($this->advisor)->postJson('/api/repair-orders', $payload)
+            ->assertUnprocessable()->assertJsonValidationErrors(['vehicle_year', 'vehicle_vin']);
+        $this->actingAs($this->advisor)->postJson('/api/repair-orders', [...$payload, 'vehicle_year' => 2019, 'vehicle_vin' => 'ABCDEFGHI12345678'])
+            ->assertUnprocessable()->assertJsonValidationErrors('vehicle_vin');
+        $this->assertDatabaseCount('repair_orders', 0);
+
+        $this->actingAs($this->advisor)->postJson('/api/repair-orders', [...$payload, 'vehicle_year' => 2019, 'vehicle_vin' => ' wba12345678901234 ', 'customer_request' => 'Khách báo phanh kêu'])
+            ->assertCreated()->assertJsonPath('customer_request', 'Khách báo phanh kêu');
+        $this->assertDatabaseHas('vehicles', ['id' => $vehicle->id, 'year' => 2019, 'vin' => 'WBA12345678901234']);
+    }
+
+    public function test_reception_never_overwrites_recorded_year_or_vin(): void
+    {
+        $customer = Customer::factory()->create();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer->id, 'year' => 2018, 'vin' => 'WBA00000000000001']);
+
+        $this->receive(['customer_id' => $customer->id, 'vehicle_id' => $vehicle->id, 'vehicle_year' => 2024, 'vehicle_vin' => 'WBA00000000000002'])->assertCreated();
+
+        $this->assertDatabaseHas('vehicles', ['id' => $vehicle->id, 'year' => 2018, 'vin' => 'WBA00000000000001']);
+    }
+
+    public function test_vin_accepts_old_short_frame_numbers_but_rejects_invalid_ones(): void
+    {
+        $customer = Customer::factory()->create();
+        $payload = fn (string $vin) => ['customer_id' => $customer->id, 'vehicle' => ['model_id' => $this->model->id, 'vin' => $vin]];
+
+        foreach (['AB123', 'ABC-12345', 'WBAI2345678901234'] as $invalid) {
+            $this->receive($payload($invalid))->assertUnprocessable()->assertJsonValidationErrors('vehicle.vin');
+        }
+
+        $this->receive($payload('kf80123456'))->assertCreated();
+        $this->assertDatabaseHas('vehicles', ['customer_id' => $customer->id, 'vin' => 'KF80123456']);
+    }
+
+    public function test_new_vehicle_needs_year_and_vin_but_not_a_plate(): void
+    {
+        $customer = Customer::factory()->create();
+        $this->actingAs($this->advisor)->postJson('/api/repair-orders', ['customer_id' => $customer->id, 'mileage_received' => 10, 'vehicle' => ['model_id' => $this->model->id]])
+            ->assertUnprocessable()->assertJsonValidationErrors(['vehicle.year', 'vehicle.vin']);
+
+        $id = $this->receive(['customer_id' => $customer->id, 'vehicle' => ['model_id' => $this->model->id]])->assertCreated()->json('id');
+
+        $this->assertNull(RepairOrder::query()->findOrFail($id)->vehicle->license_plate);
     }
 
     public function test_new_walk_in_customer_and_vehicle_are_created_with_the_order(): void

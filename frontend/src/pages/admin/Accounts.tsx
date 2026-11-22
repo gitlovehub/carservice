@@ -8,6 +8,7 @@ import { AdminPage, ClearFilters, FilterSelect, Person, Pill, Tabs, Toggle, Tool
 import type { Tone } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 
 const roleInfo: Record<AccountRole, { label: string; tone: Tone }> = {
   ADMIN: { label: "Quản trị", tone: "brand" },
@@ -47,6 +48,7 @@ export default function Accounts() {
       notify(errorMessage(error), "error");
     }
   };
+  const fieldErrors = useFieldErrors();
   const resetPassword = async (account: AdminAccount) => {
     if (!await confirm({ title: `Gửi email đặt lại mật khẩu?`, description: `Mã OTP (hiệu lực 5 phút) sẽ được gửi tới ${account.email}. Người dùng nhập mã ở trang Quên mật khẩu để đặt mật khẩu mới.`, confirmText: "Gửi email", variant: "info", confirmIcon: "send" })) return;
     try {
@@ -57,16 +59,20 @@ export default function Accounts() {
   };
   const create = async () => {
     if (!draft) return;
-    if (!draft.email.includes("@") || !draft.name.trim()) return setFormError("Nhập email và họ tên.");
-    if (draft.phone.trim() && !/^0\d{9,10}$/.test(draft.phone.trim())) return setFormError("Số điện thoại không hợp lệ.");
-    setSaving(true); setFormError("");
+    const problems: FieldErrors = {};
+    if (!/^\S+@\S+\.\S+$/.test(draft.email.trim())) problems.email = "Nhập email hợp lệ.";
+    if (!draft.name.trim()) problems.name = "Nhập họ tên.";
+    if (draft.phone.trim() && !/^0\d{9,10}$/.test(draft.phone.trim())) problems.phone = "Số điện thoại gồm 10–11 số, bắt đầu bằng 0.";
+    setFormError("");
+    if (fieldErrors.show(problems)) return;
+    setSaving(true);
     try {
       const response = await adminApi.createAccount({ email: draft.email.trim(), name: draft.name.trim(), phone: draft.phone.trim() || null, role: draft.role, send_invite: draft.sendInvite });
       notify(response.message, "success");
       setDraft(null);
       list.reload();
     } catch (error) {
-      setFormError(errorMessage(error, "Không tạo được tài khoản."));
+      fieldErrors.showApi(error, { email: "email", name: "name", phone: "phone", role: "role" });
     } finally {
       setSaving(false);
     }
@@ -83,7 +89,7 @@ export default function Accounts() {
   ];
 
   return <AdminPage title="Tài khoản" description="Quản lý đăng nhập và trạng thái tài khoản" demo={false}
-    actions={<Button variant="primary" icon="plus" onClick={() => { setFormError(""); setDraft(emptyDraft); }}>Tạo tài khoản</Button>}>
+    actions={<Button variant="primary" icon="plus" onClick={() => { setFormError(""); fieldErrors.reset(); setDraft(emptyDraft); }}>Tạo tài khoản</Button>}>
     <div className="mb-4">
       <Tabs label="Lọc theo vai trò" value={tab} onChange={id => { setTab(id); setPage(1); }} items={([
         ["all", "Tất cả"], ["ADMIN", "Quản trị"], ["ADVISOR", "Cố vấn dịch vụ"], ["TECHNICIAN", "Kỹ thuật viên"], ["CUSTOMER", "Khách hàng"],
@@ -112,10 +118,10 @@ export default function Accounts() {
       description="Tạo kèm hồ sơ nhân viên. Mật khẩu do người dùng tự đặt qua email OTP."
       footer={<><Button disabled={saving} onClick={() => setDraft(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang tạo..." onClick={() => void create()}>Tạo tài khoản</Button></>}>
       {draft && <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Email" required className="sm:col-span-2"><Input type="email" value={draft.email} onChange={e => setDraft({ ...draft, email: e.target.value })}/></Field>
-        <Field label="Họ tên" required><Input value={draft.name} maxLength={100} onChange={e => setDraft({ ...draft, name: e.target.value })}/></Field>
-        <Field label="Số điện thoại" optional><Input inputMode="tel" maxLength={11} value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })}/></Field>
-        <Field label="Vai trò" required className="sm:col-span-2"><Select value={draft.role} onChange={e => setDraft({ ...draft, role: e.target.value as Draft["role"] })}>
+        <Field label="Email" required error={fieldErrors.errors.email} className="sm:col-span-2"><Input type="email" value={draft.email} onChange={e => { setDraft({ ...draft, email: e.target.value }); fieldErrors.clear("email"); }}/></Field>
+        <Field label="Họ tên" required error={fieldErrors.errors.name}><Input value={draft.name} maxLength={100} onChange={e => { setDraft({ ...draft, name: e.target.value }); fieldErrors.clear("name"); }}/></Field>
+        <Field label="Số điện thoại" optional error={fieldErrors.errors.phone}><Input inputMode="tel" maxLength={11} value={draft.phone} onChange={e => { setDraft({ ...draft, phone: e.target.value }); fieldErrors.clear("phone"); }}/></Field>
+        <Field label="Vai trò" required error={fieldErrors.errors.role} className="sm:col-span-2"><Select value={draft.role} onChange={e => { setDraft({ ...draft, role: e.target.value as Draft["role"] }); fieldErrors.clear("role"); }}>
           <option value="ADVISOR">Cố vấn dịch vụ</option><option value="TECHNICIAN">Kỹ thuật viên</option><option value="ADMIN">Quản trị</option>
         </Select></Field>
         <label className="flex items-center gap-3 text-small text-cs-text sm:col-span-2">

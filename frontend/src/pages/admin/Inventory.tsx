@@ -13,6 +13,8 @@ import { PartOrders } from "./PartOrders";
 import { num, vnd, type Tone } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
+import { FieldError } from "../../components/ui/Field";
 
 type Tab = "catalog" | "stock" | "orders" | "moves";
 type StatusFilter = "all" | "ACTIVE" | "INACTIVE" | "low" | "out";
@@ -32,7 +34,7 @@ function PartName({ part }: { part: AdminPart }) {
   return <span className="flex min-w-0 items-center gap-3">
     {part.image_url ? <img className="size-12 shrink-0 rounded-control border border-cs-border object-cover" src={part.image_url} alt={`Ảnh ${part.name}`}/>
       : <span className="grid size-12 shrink-0 place-items-center rounded-control bg-cs-surface-2 text-cs-muted" aria-hidden="true"><Icon name="box" size={20}/></span>}
-    <span className="min-w-0"><b className="block text-cs-text">{part.name}</b>{part.description && <span className="block truncate text-caption text-cs-muted">{part.description}</span>}</span>
+    <span className="min-w-0"><b className="block text-cs-text">{part.name}</b>{part.description && <span className="block truncate text-caption text-cs-muted font-medium">{part.description}</span>}</span>
   </span>;
 }
 
@@ -70,9 +72,12 @@ export default function Inventory() {
   const summary = result?.summary;
   const units = [...new Set([...(result?.units ?? []), ...DEFAULT_UNITS])];
 
+  const partErrors = useFieldErrors();
+  const stockErrors = useFieldErrors();
+  const patchPart = (patch: Partial<Editing>) => { partErrors.clear(...Object.keys(patch)); setEditing(current => current && { ...current, ...patch }); };
   const switchTab = (id: Tab) => { setParams(id === "catalog" ? {} : { tab: id }, { replace: true }); setStatus("all"); setPage(1); setEditing(null); };
   const startEdit = (part: AdminPart | null) => {
-    setFormError(""); setCompatPick(emptySelection); setImageFile(null); setImagePreview(null);
+    setFormError(""); partErrors.reset(); setCompatPick(emptySelection); setImageFile(null); setImagePreview(null);
     setEditing(part ? { ...part, description: part.description ?? "" } : { ...blankPart });
   };
   // Revoke browser object URLs to avoid leaking memory while the editor stays open.
@@ -89,19 +94,23 @@ export default function Inventory() {
       const response = await adminApi.deletePartImage(editing.id);
       setEditing(prev => prev ? { ...prev, image_url: response.data.image_url } : prev);
       setImageFile(null); notify(response.message, "success"); parts.reload();
-    } catch (error) { setFormError(errorMessage(error, "Không thể xóa ảnh phụ tùng.")); }
+    } catch (error) { partErrors.showApi(error); }
     finally { setSaving(false); }
   };
 
   const saveEdit = async () => {
     if (!editing) return;
-    if (!editing.sku.trim() || !editing.name.trim()) return setFormError("Nhập SKU và tên phụ tùng.");
-    if (editing.price < editing.cost) return setFormError("Giá bán không được thấp hơn giá vốn.");
+    const problems: FieldErrors = {};
+    if (!editing.sku.trim()) problems.sku = "Nhập mã SKU.";
+    if (!editing.name.trim()) problems.name = "Nhập tên phụ tùng.";
+    if (editing.price < editing.cost) problems.price = "Giá bán không được thấp hơn giá vốn.";
+    setFormError("");
+    if (partErrors.show(problems)) return;
     const body: PartPayload = {
       sku: editing.sku.trim(), name: editing.name.trim(), category: editing.category?.trim() || null, unit: editing.unit, cost_price: editing.cost, sell_price: editing.price,
       description: editing.description?.trim() || null, status: editing.status, min_quantity: editing.min, compat_model_ids: editing.compat.map(c => c.id),
     };
-    setSaving(true); setFormError("");
+    setSaving(true);
     try {
       const response = editing.id ? await adminApi.updatePart(editing.id, body) : await adminApi.createPart(body);
       if (imageFile) {
@@ -118,27 +127,32 @@ export default function Inventory() {
       setImageFile(null); setImagePreview(null); setEditing(null);
       parts.reload();
     } catch (error) {
-      setFormError(errorMessage(error, "Không lưu được phụ tùng."));
+      partErrors.showApi(error, { sku: "sku", name: "name", category: "category", unit: "unit", cost_price: "cost", sell_price: "price", description: "description", min_quantity: "min", image: "image" });
     } finally {
       setSaving(false);
     }
   };
 
   const saveStock = async () => {
-    if (!stockForm?.partId || stockForm.qty < 1) return setFormError("Chọn phụ tùng và nhập số lượng.");
-    setSaving(true); setFormError("");
+    if (!stockForm) return;
+    const problems: FieldErrors = {};
+    if (!stockForm.partId) problems.part = "Chọn phụ tùng.";
+    if (stockForm.qty < 1) problems.qty = "Nhập số lượng lớn hơn 0.";
+    setFormError("");
+    if (stockErrors.show(problems) || !stockForm.partId) return;
+    setSaving(true);
     try {
       const response = await adminApi.adjustStock(stockForm.partId, { type: stockForm.type, quantity: stockForm.qty, note: stockForm.note.trim() || null });
       notify(response.message, "success");
       setStockForm(null);
       parts.reload(); moves.reload(); partOptions.reload(); setRequestsVersion(n => n + 1);
     } catch (error) {
-      setFormError(errorMessage(error, "Không cập nhật được tồn kho."));
+      stockErrors.showApi(error, { quantity: "qty", note: "note" });
     } finally {
       setSaving(false);
     }
   };
-  const openStock = (type: "IN" | "OUT", part?: AdminPart) => { setFormError(""); setStockForm({ type, partId: part?.id ?? null, qty: part && type === "IN" ? Math.max(1, part.min - part.stock) : 1, note: "" }); };
+  const openStock = (type: "IN" | "OUT", part?: AdminPart) => { setFormError(""); stockErrors.reset(); setStockForm({ type, partId: part?.id ?? null, qty: part && type === "IN" ? Math.max(1, part.min - part.stock) : 1, note: "" }); };
 
   const filters = <Toolbar>
     <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); setMovePage(1); }} placeholder={tab === "moves" ? "Tìm phụ tùng, mã phiếu, ghi chú…" : "Tìm theo SKU, tên phụ tùng…"}/>
@@ -185,13 +199,13 @@ export default function Inventory() {
     { key: "type", sortKey: "type", header: "Loại", render: m => <Pill tone={moveInfo[m.type].tone}>{moveInfo[m.type].label}</Pill> },
     { key: "part", header: "Phụ tùng", primary: true, render: m => <span><b className="text-cs-text">{m.name ?? "—"}</b><span className="block text-caption text-cs-muted">{m.sku}</span></span> },
     { key: "qty", sortKey: "qty", header: "Số lượng", align: "right", render: m => <b className={`tabular-nums ${m.type === "IN" ? "text-success-fg" : "text-danger-fg"}`}>{m.type === "IN" ? "+" : "−"}{num(m.quantity)}{m.unit ? ` ${m.unit}` : ""}</b> },
-    { key: "ref", header: "Chứng từ", render: m => <span><span className="font-medium">{m.ref}</span>{m.note && <span className="block text-caption text-cs-muted">{m.note}</span>}</span> },
+    { key: "ref", header: "Chứng từ", render: m => <span><span className="font-medium">{m.ref}</span>{m.note && <span className="block text-caption text-cs-muted font-medium">{m.note}</span>}</span> },
     { key: "by", header: "Người thực hiện", hideOnMobile: true, render: m => m.by },
   ];
 
   const editPane = editing && <div className="flex flex-col gap-4">
-    <Field label="SKU" required hint="Chữ, số, dấu chấm, gạch ngang."><Input value={editing.sku} maxLength={50} className="uppercase" onChange={e => setEditing({ ...editing, sku: e.target.value })}/></Field>
-    <Field label="Tên phụ tùng" required><Input value={editing.name} maxLength={150} onChange={e => setEditing({ ...editing, name: e.target.value })}/></Field>
+    <Field label="SKU" required error={partErrors.errors.sku} hint="Chữ, số, dấu chấm, gạch ngang."><Input value={editing.sku} maxLength={50} className="uppercase" onChange={e => patchPart({ sku: e.target.value })}/></Field>
+    <Field label="Tên phụ tùng" required error={partErrors.errors.name}><Input value={editing.name} maxLength={150} onChange={e => patchPart({ name: e.target.value })}/></Field>
     <div className="rounded-xl border border-cs-border bg-cs-surface-2 p-3">
       <div className="mb-3 flex items-start gap-3">
         {imagePreview || editing.image_url ? <img src={imagePreview ?? editing.image_url ?? undefined} alt="Xem trước ảnh phụ tùng" className="h-28 w-32 rounded-lg border border-cs-border bg-cs-surface object-cover"/>
@@ -202,25 +216,26 @@ export default function Inventory() {
           {editing.image_url && !imageFile && <button type="button" className="mt-2 text-caption font-semibold text-danger-fg underline" disabled={saving} onClick={() => void removeSavedImage()}>Xóa ảnh hiện tại</button>}
         </div>
       </div>
-      <input aria-label="Chọn ảnh phụ tùng" type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} className="block w-full cursor-pointer text-small text-cs-text file:mr-3 file:rounded-lg file:border-0 file:bg-cs-soft file:px-3 file:py-2 file:font-semibold file:text-cs-accent-text" onChange={event => {
+      <input aria-label="Chọn ảnh phụ tùng" aria-invalid={!!partErrors.errors.image || undefined} type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} className="block w-full cursor-pointer text-small text-cs-text file:mr-3 file:rounded-lg file:border-0 file:bg-cs-soft file:px-3 file:py-2 file:font-semibold file:text-cs-accent-text" onChange={event => {
         const file = event.currentTarget.files?.[0];
         if (!file) return;
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { setFormError("Chỉ nhận ảnh JPG, PNG hoặc WebP."); event.currentTarget.value = ""; return; }
-        if (file.size > 4 * 1024 * 1024) { setFormError("Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn."); event.currentTarget.value = ""; return; }
-        setFormError(""); setImageFile(file);
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { partErrors.show({ image: "Chỉ nhận ảnh JPG, PNG hoặc WebP." }); event.currentTarget.value = ""; return; }
+        if (file.size > 4 * 1024 * 1024) { partErrors.show({ image: "Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn." }); event.currentTarget.value = ""; return; }
+        setFormError(""); partErrors.clear("image"); setImageFile(file);
       }}/>
+      <FieldError className="mt-1">{partErrors.errors.image}</FieldError>
     </div>
     <div className="grid grid-cols-2 gap-3">
-      <Field label="Danh mục"><Input list="part-categories" value={editing.category ?? ""} maxLength={100} placeholder="VD: Phanh" onChange={e => setEditing({ ...editing, category: e.target.value })}/></Field>
+      <Field label="Danh mục" error={partErrors.errors.category}><Input list="part-categories" value={editing.category ?? ""} maxLength={100} placeholder="VD: Phanh" onChange={e => patchPart({ category: e.target.value })}/></Field>
       <datalist id="part-categories">{(result?.categories ?? []).map(c => <option key={c} value={c}/>)}</datalist>
-      <Field label="Đơn vị" required><Select value={editing.unit} onChange={e => setEditing({ ...editing, unit: e.target.value })}>{(units.includes(editing.unit) ? units : [...units, editing.unit]).map(u => <option key={u}>{u}</option>)}</Select></Field>
-      <Field label="Giá vốn (₫)" required><Input inputMode="numeric" value={num(editing.cost)} onChange={e => setEditing({ ...editing, cost: Number(e.target.value.replace(/\D/g, "")) || 0 })}/></Field>
-      <Field label="Giá bán (₫)" required><Input inputMode="numeric" value={num(editing.price)} onChange={e => setEditing({ ...editing, price: Number(e.target.value.replace(/\D/g, "")) || 0 })}/></Field>
-      <Field label="Tồn tối thiểu"><QuantityStepper label="Tồn tối thiểu" size="md" className="w-full" min={0} max={99999} unit={editing.unit} value={editing.min} onChange={v => setEditing({ ...editing, min: v ?? 0 })}/></Field>
+      <Field label="Đơn vị" required error={partErrors.errors.unit}><Select value={editing.unit} onChange={e => patchPart({ unit: e.target.value })}>{(units.includes(editing.unit) ? units : [...units, editing.unit]).map(u => <option key={u}>{u}</option>)}</Select></Field>
+      <Field label="Giá vốn (₫)" required error={partErrors.errors.cost}><Input inputMode="numeric" value={num(editing.cost)} onChange={e => { partErrors.clear("price"); patchPart({ cost: Number(e.target.value.replace(/\D/g, "")) || 0 }); }}/></Field>
+      <Field label="Giá bán (₫)" required error={partErrors.errors.price}><Input inputMode="numeric" value={num(editing.price)} onChange={e => patchPart({ price: Number(e.target.value.replace(/\D/g, "")) || 0 })}/></Field>
+      <Field label="Tồn tối thiểu" error={partErrors.errors.min}><QuantityStepper label="Tồn tối thiểu" size="md" className="w-full" min={0} max={99999} unit={editing.unit} value={editing.min} onChange={v => patchPart({ min: v ?? 0 })}/></Field>
       <Field label="Trạng thái"><Select value={editing.status} onChange={e => setEditing({ ...editing, status: e.target.value as Editing["status"] })}><option value="ACTIVE">Đang áp dụng</option><option value="INACTIVE">Ngừng</option></Select></Field>
     </div>
     {editing.id > 0 && <p className="rounded-control bg-cs-surface-2 px-3 py-2 text-small text-cs-text-2">Tồn hiện tại: <b className="tabular-nums text-cs-text">{num(editing.stock)} {editing.unit}</b> — nhập / xuất ở tab Tồn kho.</p>}
-    <Field label="Mô tả" hint={`${(editing.description ?? "").length}/500`}><Textarea maxLength={500} value={editing.description ?? ""} onChange={e => setEditing({ ...editing, description: e.target.value })}/></Field>
+    <Field label="Mô tả" error={partErrors.errors.description} hint={`${(editing.description ?? "").length}/500`}><Textarea maxLength={500} value={editing.description ?? ""} onChange={e => patchPart({ description: e.target.value })}/></Field>
     <div>
       <p className="mb-2 flex items-center gap-2 text-small font-semibold text-cs-text"><Icon name="car" size={17} className="text-cs-muted"/>Xe tương thích</p>
       <div className="mb-3 flex flex-wrap gap-2">
@@ -285,17 +300,17 @@ export default function Inventory() {
     <Modal open={!!stockForm} onClose={() => setStockForm(null)} dismissible={!saving} title={stockForm?.type === "IN" ? "Nhập kho" : "Xuất kho"}
       footer={<><Button disabled={saving} onClick={() => setStockForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void saveStock()}>Xác nhận</Button></>}>
       {stockForm && <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
-        <SearchableSelect label="Phụ tùng" placeholder="Tìm SKU, tên phụ tùng…" required loading={partOptions.loading} loadError={partOptions.error} onRetry={partOptions.reload}
+        <SearchableSelect label="Phụ tùng" placeholder="Tìm SKU, tên phụ tùng…" required error={stockErrors.errors.part} loading={partOptions.loading} loadError={partOptions.error} onRetry={partOptions.reload}
           options={(partOptions.data?.data ?? []).map(p => ({ value: p.id, label: `${p.sku} — ${p.name}`, hint: `tồn ${num(p.stock)}` }))}
-          value={stockForm.partId} onChange={option => setStockForm({ ...stockForm, partId: option?.value ?? null })}/>
-        <Field label="Số lượng" required hint={stockForm.type === "OUT" && selectedStockPart ? `Tối đa ${num(selectedStockPart.stock)}` : undefined}>
-          <QuantityStepper label="Số lượng" size="md" className="w-full" min={1} max={stockForm.type === "OUT" && selectedStockPart ? Math.max(1, selectedStockPart.stock) : 99999} value={stockForm.qty || 1} onChange={v => setStockForm({ ...stockForm, qty: v ?? 1 })}/>
+          value={stockForm.partId} onChange={option => { stockErrors.clear("part"); setStockForm({ ...stockForm, partId: option?.value ?? null }); }}/>
+        <Field label="Số lượng" required error={stockErrors.errors.qty} hint={stockForm.type === "OUT" && selectedStockPart ? `Tối đa ${num(selectedStockPart.stock)}` : undefined}>
+          <QuantityStepper label="Số lượng" size="md" className="w-full" min={1} max={stockForm.type === "OUT" && selectedStockPart ? Math.max(1, selectedStockPart.stock) : 99999} value={stockForm.qty || 1} onChange={v => { stockErrors.clear("qty"); setStockForm({ ...stockForm, qty: v ?? 1 }); }}/>
         </Field>
         {stockForm.type === "IN" && selectedStockPart && selectedStockPart.requested > 0 && <div role="note" className="rounded-control border border-warning/40 bg-warning-soft p-3 text-small text-warning-fg sm:col-span-2">
           Phụ tùng này đang có <b>{num(selectedStockPart.requested)} {selectedStockPart.unit}</b> chờ về cho phiếu sửa chữa. Nếu đây là hàng đặt cho phiếu, hãy nhập ở tab <b>Cần đặt hàng</b> (bấm "Hàng đã về") để không cộng kho hai lần và khách được báo.
           <Button size="sm" variant="outline" className="mt-2" onClick={() => { setStockForm(null); switchTab("orders"); }}>Mở Cần đặt hàng</Button>
         </div>}
-        <Field label={stockForm.type === "IN" ? "Nhà cung cấp / ghi chú" : "Lý do xuất"} optional className="sm:col-span-2"><Input value={stockForm.note} maxLength={255} onChange={e => setStockForm({ ...stockForm, note: e.target.value })}/></Field>
+        <Field label={stockForm.type === "IN" ? "Nhà cung cấp / ghi chú" : "Lý do xuất"} optional error={stockErrors.errors.note} className="sm:col-span-2"><Input value={stockForm.note} maxLength={255} onChange={e => { stockErrors.clear("note"); setStockForm({ ...stockForm, note: e.target.value }); }}/></Field>
         {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
       </div>}
     </Modal>

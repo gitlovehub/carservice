@@ -8,7 +8,9 @@ export type IconName = ShellNavItem["icon"] | "sun" | "moon" | "crown" | "menu" 
   | "phone" | "mail" | "pin" | "trend-up" | "trend-down" | "coins" | "x-circle" | "upload" | "drag" | "list"
   | "bank" | "qr" | "reply" | "eye-off" | "bell"
   // Danh mục dịch vụ / loại yêu cầu.
-  | "minus" | "sort" | "sort-asc" | "sort-desc" | "engine" | "snowflake" | "tire" | "bolt" | "disc" | "droplet" | "sparkle" | "battery" | "tools" | "gauge" | "ban" | "coffee";
+  | "minus" | "sort" | "sort-asc" | "sort-desc" | "engine" | "snowflake" | "tire" | "bolt" | "disc" | "droplet" | "sparkle" | "battery" | "tools" | "gauge" | "ban" | "coffee"
+  // Biên bản giao nhận.
+  | "diamond" | "fuel" | "seat" | "image";
 type Props = { name: IconName; size?: number; className?: string };
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-6h6v6"/></>,
@@ -100,6 +102,10 @@ const paths: Record<IconName, ReactNode> = {
   gauge: <><path d="M4 18a8 8 0 1 1 16 0"/><path d="m12 14 4-5"/><circle cx="12" cy="14" r="1.2"/></>,
   ban: <><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></>,
   coffee: <><path d="M4 9h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M12 3v3"/></>,
+  diamond: <><path d="M6 4h12l3.5 5L12 21 2.5 9z"/><path d="M2.5 9h19M9.5 4 8 9l4 12 4-12-1.5-5"/></>,
+  fuel: <><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M6.5 8h5"/><path d="M14 11h1.5a1.5 1.5 0 0 1 1.5 1.5V17a1.5 1.5 0 0 0 3 0V8.5L17 6"/></>,
+  seat: <><path d="M7 4h7a2 2 0 0 1 2 2v7H8a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1z"/><path d="M5 13h13a2 2 0 0 1 2 2v1H6a2 2 0 0 1-2-2zM8 16v4M17 16v4"/></>,
+  image: <><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="m21 16-5-5-9 9"/></>,
 };
 export function Icon({ name, size = 18, className }: Props) {
   return <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;

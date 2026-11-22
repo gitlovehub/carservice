@@ -127,7 +127,12 @@ class RepairOrderController extends Controller
             ->when($filters['delivery'] ?? null, fn ($q, string $key) => $scopes[$key]($q))
             ->when($filters['billing'] ?? null, fn ($q, string $key) => $billingScopes[$key]($q))
             ->when($request->boolean('with_delivery') || $request->boolean('with_billing'), fn ($q) => $q->with('invoice:id,repair_order_id,status,total_amount')
-                ->withExists(['handovers as check_out_confirmed' => fn ($h) => $h->where('type', VehicleHandover::TYPE_CHECK_OUT)->where('status', VehicleHandover::STATUS_CONFIRMED)]))
+                ->withExists(['handovers as check_out_confirmed' => fn ($h) => $h->where('type', VehicleHandover::TYPE_CHECK_OUT)->where('status', VehicleHandover::STATUS_CONFIRMED)])
+                ->addSelect(['check_out_status' => VehicleHandover::query()->select('status')
+                    ->whereColumn('vehicle_handovers.repair_order_id', 'repair_orders.id')
+                    ->where('type', VehicleHandover::TYPE_CHECK_OUT)
+                    ->where('status', '!=', VehicleHandover::STATUS_VOID)
+                    ->latest('id')->limit(1)]))
             ->when($filters['completed_on'] ?? null, fn ($q, string $day) => $completedToday($q, $day))
             ->when($filters['ready_on'] ?? null, fn ($q, string $day) => $readyToday($q, $day))
             ->when($request->boolean('with_progress'), fn ($q) => $q->withCount([
@@ -184,10 +189,10 @@ class RepairOrderController extends Controller
             'qualityInspector:id,email', 'qualityInspector.employee:id,account_id,full_name',
             // Ai thu từng khoản tại quầy (trang Thanh toán → Lịch sử thanh toán).
             'invoice.payments.collector:id,email', 'invoice.payments.collector.employee:id,account_id,full_name',
-            'assignments.technician.employee', 'inspections.items', 'inspections.recordedBy', 'inspections.recommendations.service', 'inspections.recommendations.part',
+            'assignments.technician.employee', 'inspections.items', 'inspections.recordedBy', 'inspections.recommendations.service', 'inspections.recommendations.part', 'inspections.recommendations.addedBy.employee:id,account_id,full_name',
             'quotations.items', 'workItems.technician', 'workItems.service', 'usedParts.part', 'invoice.items', 'invoice.payments',
             // Biên bản giao nhận xe (P2) + xác nhận của khách.
-            'handovers.checklistItems', 'handovers.confirmations', 'pickupAuthorizations', 'partRequests.part',
+            'handovers.checklistItems', 'handovers.confirmations', 'handovers.latestException', 'pickupAuthorizations', 'partRequests.part',
             // P3: lịch sử từng lần khách duyệt / từ chối, kèm phương thức xác nhận.
             'quotations.items.responses.confirmation:id,method,confirmed_at,witness_employee_id',
             // Yêu cầu khách chọn khi đặt lịch, dùng để điền sẵn đề xuất ở bước kiểm tra.
@@ -197,6 +202,11 @@ class RepairOrderController extends Controller
             'appointment.packages.services:id,name',
             'appointment.packages.parts:id,name,unit',
         ]);
+        // Cho cố vấn biết chủ xe đã có kênh nhận mã xác nhận chưa, không trả kèm dữ liệu tài khoản.
+        if ($customer = $repairOrder->customer) {
+            $customer->setAttribute('email_verified', $customer->confirmationEmail() !== null);
+            $customer->unsetRelation('account');
+        }
 
         return response()->json($repairOrder);
     }
@@ -206,18 +216,18 @@ class RepairOrderController extends Controller
         $this->authorize('create', RepairOrder::class);
 
         // ADV-02/03: khách vãng lai mới (`customer{}`, chỉ khi không có lịch hẹn) / xe chưa có trong hệ thống (`vehicle{}`).
-        $rules = CounterRecordService::rules();
+        $rules = [...CounterRecordService::rules(), ...CounterRecordService::receptionRules()];
         $rules['customer'][] = 'prohibited_unless:appointment_id,null';
+        $request->merge(CounterRecordService::normalizedVins($request->all()));
         $data = $request->validate([
             'appointment_id' => ['nullable', 'integer', 'exists:appointments,id'],
             ...$rules,
-            'mileage_received' => ['nullable', 'integer', 'min:0'],
             'initial_condition' => ['nullable', 'string'],
-            'note' => ['nullable', 'string'],
             // Bắt buộc khi xe mang tới khác xe trong lịch hẹn (RepairOrderService::receive).
             'vehicle_change_reason' => ['nullable', 'string', 'max:500'],
         ], [
             ...CounterRecordService::messages(),
+            ...CounterRecordService::receptionMessages(),
             'customer.prohibited_unless' => 'Khách có lịch hẹn thì dùng hồ sơ khách của lịch hẹn.',
         ]);
 
@@ -227,9 +237,12 @@ class RepairOrderController extends Controller
             return response()->json(['message' => 'Tài khoản chưa gắn với hồ sơ nhân viên.'], 403);
         }
 
-        $ro = DB::transaction(fn () => $this->service->receive(
-            $this->counterRecords->resolve($data, $data['mileage_received'] ?? null), $advisor
-        ));
+        $ro = DB::transaction(function () use ($data, $advisor): RepairOrder {
+            $order = $this->service->receive($this->counterRecords->resolve($data, $data['mileage_received']), $advisor);
+            $this->counterRecords->completeVehicleProfile((int) $order->vehicle_id, $data);
+
+            return $order;
+        });
 
         return response()->json($ro, 201);
     }

@@ -8,6 +8,7 @@ import { AdminPage, ClearFilters, FilterSelect, Person, Pill, StatCard, Toggle, 
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
 import { usePaged } from "./kit/usePaged";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 
 const roleLabel: Record<StaffRole, string> = { ADVISOR: "Cố vấn dịch vụ", TECHNICIAN: "Kỹ thuật viên" };
 const SPECIALTIES = ["Bảo dưỡng tổng quát", "Động cơ", "Gầm - Phanh - Lốp", "Điện - Điều hòa", "Hộp số", "Đồng sơn"];
@@ -32,9 +33,12 @@ export default function Staff() {
   const result = list.data ?? list.stale;
   const { pageRows, pagination } = usePaged(result?.data ?? [], 10);
 
+  const fieldErrors = useFieldErrors();
+  const setField = (patch: Partial<Draft>) => { fieldErrors.clear(...Object.keys(patch)); setDraft(current => current && { ...current, ...patch }); };
   const open = (person: AdminStaff | null) => {
     setEditing(person);
     setFormError("");
+    fieldErrors.reset();
     setDraft(person ? {
       name: person.name, email: person.email ?? "", phone: person.phone ?? "", role: person.role,
       specialty: person.specialty ?? SPECIALTIES[0], status: person.status, sendInvite: false,
@@ -48,8 +52,13 @@ export default function Staff() {
 
   const save = async () => {
     if (!draft) return;
-    if (!draft.name.trim() || !draft.email.trim() || !/^0\d{9,10}$/.test(draft.phone.trim())) return setFormError("Nhập họ tên, email và số điện thoại hợp lệ.");
-    setSaving(true); setFormError("");
+    const problems: FieldErrors = {};
+    if (!draft.name.trim()) problems.name = "Nhập họ tên.";
+    if (!/^\S+@\S+\.\S+$/.test(draft.email.trim())) problems.email = "Nhập email hợp lệ.";
+    if (!/^0\d{9,10}$/.test(draft.phone.trim())) problems.phone = "Số điện thoại gồm 10–11 số, bắt đầu bằng 0.";
+    setFormError("");
+    if (fieldErrors.show(problems)) return;
+    setSaving(true);
     try {
       const response = editing
         ? await adminApi.updateStaff(editing.id, payload(draft))
@@ -58,7 +67,7 @@ export default function Staff() {
       setDraft(null);
       list.reload();
     } catch (error) {
-      setFormError(errorMessage(error, "Không lưu được nhân viên."));
+      fieldErrors.showApi(error, { name: "name", full_name: "name", email: "email", phone: "phone", role: "role", specialty: "specialty" });
     } finally {
       setSaving(false);
     }
@@ -116,13 +125,13 @@ export default function Staff() {
     <Modal open={draft !== null} onClose={() => setDraft(null)} dismissible={!saving} title={editing ? "Sửa nhân viên" : "Thêm nhân viên"}
       footer={<><Button disabled={saving} onClick={() => setDraft(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void save()}>Lưu</Button></>}>
       {draft && <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Họ tên" required className="sm:col-span-2"><Input value={draft.name} maxLength={100} onChange={e => setDraft({ ...draft, name: e.target.value })}/></Field>
-        <Field label="Email" required hint="Dùng để đăng nhập."><Input type="email" value={draft.email} onChange={e => setDraft({ ...draft, email: e.target.value })}/></Field>
-        <Field label="Số điện thoại" required><Input inputMode="tel" maxLength={11} value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })}/></Field>
-        <Field label="Vai trò" required><Select value={draft.role} onChange={e => setDraft({ ...draft, role: e.target.value as StaffRole })}>
+        <Field label="Họ tên" required error={fieldErrors.errors.name} className="sm:col-span-2"><Input value={draft.name} maxLength={100} onChange={e => setField({ name: e.target.value })}/></Field>
+        <Field label="Email" required error={fieldErrors.errors.email} hint="Dùng để đăng nhập."><Input type="email" value={draft.email} onChange={e => setField({ email: e.target.value })}/></Field>
+        <Field label="Số điện thoại" required error={fieldErrors.errors.phone}><Input inputMode="tel" maxLength={11} value={draft.phone} onChange={e => setField({ phone: e.target.value })}/></Field>
+        <Field label="Vai trò" required error={fieldErrors.errors.role}><Select value={draft.role} onChange={e => setField({ role: e.target.value as StaffRole })}>
           <option value="ADVISOR">Cố vấn dịch vụ</option><option value="TECHNICIAN">Kỹ thuật viên</option>
         </Select></Field>
-        {draft.role === "TECHNICIAN" && <Field label="Chuyên môn"><Select value={draft.specialty} onChange={e => setDraft({ ...draft, specialty: e.target.value })}>
+        {draft.role === "TECHNICIAN" && <Field label="Chuyên môn" error={fieldErrors.errors.specialty}><Select value={draft.specialty} onChange={e => setField({ specialty: e.target.value })}>
           {specialtyOptions.map(s => <option key={s}>{s}</option>)}
         </Select></Field>}
         <div className="flex items-center gap-3 sm:col-span-2">

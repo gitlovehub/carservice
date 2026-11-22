@@ -4,7 +4,8 @@ import { Icon } from "../../components/ui/Icon";
 import { fetchApi } from "../../services/api";
 import { bookingApi, type BookingAvailability } from "../../services/workflowService";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
-import { errorText } from "./workflowFormat";
+import { useFieldErrors } from "../../components/ui/useFieldErrors";
+import { FieldError } from "../../components/ui/Field";
 
 /** Tối thiểu cần để đổi lịch — dùng được cho cả AppointmentRow (Lịch hẹn) và WorkflowAppointment (Tiếp nhận). */
 export type ReschedulableAppointment = {
@@ -54,6 +55,7 @@ export function RescheduleModal<T extends ReschedulableAppointment>({ appointmen
   const dateRef = useRef<HTMLInputElement>(null);
   const openDatePicker = () => { const input = dateRef.current; if (!input) return; try { input.showPicker(); } catch { input.focus(); } };
   const [timeOpen, setTimeOpen] = useState(false);
+  const fieldErrors = useFieldErrors();
   const timeBoxRef = useRef<HTMLDivElement>(null);
   // Bấm ra ngoài / Esc → đóng danh sách giờ.
   useEffect(() => {
@@ -67,11 +69,20 @@ export function RescheduleModal<T extends ReschedulableAppointment>({ appointmen
 
   const car = [appointment.vehicle?.model?.brand?.name, appointment.vehicle?.model?.name].filter(Boolean).join(" ") || "Chưa rõ dòng xe";
   const noteOk = reasonType !== "OTHER" ? note.trim().length === 0 || note.trim().length >= 5 : note.trim().length >= 5;
-  const canSave = !!time && noteOk && contact === "agreed" && !saving;
+  // Lỗi tự hết ngay khi ô đã hợp lệ.
+  const timeError = time ? undefined : fieldErrors.errors.time;
+  const noteError = noteOk ? undefined : fieldErrors.errors.note;
+  const contactError = contact === "agreed" ? undefined : fieldErrors.errors.contact;
 
   async function save() {
-    if (!canSave) return;
-    setSaving(true); setError("");
+    if (saving) return;
+    setError("");
+    if (fieldErrors.show({
+      ...(time ? {} : { time: "Chọn khung giờ hẹn mới." }),
+      ...(noteOk ? {} : { note: reasonType === "OTHER" ? "Nhập lý do (ít nhất 5 ký tự)." : "Ghi chú cần ít nhất 5 ký tự." }),
+      ...(contact === "agreed" ? {} : { contact: "Cần liên hệ và được khách đồng ý trước khi đổi lịch." }),
+    })) return;
+    setSaving(true);
     try {
       const response = await fetchApi<{ message?: string; data?: unknown }>(`/advisor/appointments/${appointment.id}/reschedule`, {
         method: "POST",
@@ -81,7 +92,9 @@ export function RescheduleModal<T extends ReschedulableAppointment>({ appointmen
         }),
       });
       onDone(`Đã đổi lịch sang ${time} ngày ${dmy(date)} và báo khách.`, response.data);
-    } catch (err) { setError(errorText(err)); }
+    } catch (err) {
+      fieldErrors.showApi(err, { appointment_date: "time", appointment_time: "time", reason: "note", customer_agreed: "contact" });
+    }
     finally { setSaving(false); }
   }
 
@@ -104,7 +117,7 @@ export function RescheduleModal<T extends ReschedulableAppointment>({ appointmen
     </span>}
     footer={<>
       <Button variant="secondary" disabled={saving} onClick={onClose}>Hủy</Button>
-      <Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." disabled={!canSave} onClick={() => void save()}>Lưu lịch hẹn mới</Button>
+      <Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void save()}>Lưu lịch hẹn mới</Button>
     </>}>
     <div className="space-y-5">
       {/* Lịch hiện tại: 3 cột Khách hàng · Xe · Thời gian hẹn */}
@@ -151,8 +164,8 @@ export function RescheduleModal<T extends ReschedulableAppointment>({ appointmen
           {/* Giờ: danh sách tự vẽ theo màu giao diện (ô chọn gốc của trình duyệt nền trắng, khó đọc ở chế độ tối). */}
           <div ref={timeBoxRef} className="relative">
             <span className="mb-1.5 block text-small font-semibold text-cs-text">Giờ hẹn mới <span className="text-danger-fg">*</span></span>
-            <button type="button" aria-haspopup="listbox" aria-expanded={timeOpen} disabled={!slotOptions.length} onClick={() => setTimeOpen(v => !v)}
-              className={`${control} cursor-pointer text-left disabled:cursor-not-allowed disabled:opacity-60`}>
+            <button type="button" aria-haspopup="listbox" aria-expanded={timeOpen} aria-invalid={!!timeError || undefined} disabled={!slotOptions.length} onClick={() => setTimeOpen(v => !v)}
+              className={`${control} cursor-pointer text-left disabled:cursor-not-allowed disabled:opacity-60 ${timeError ? "border-danger! hover:border-danger!" : ""}`}>
               <Icon name="clock" size={17} className="shrink-0 text-cs-muted"/>
               <span className={`min-w-0 flex-1 truncate tabular-nums ${time ? "font-semibold text-cs-text" : "text-cs-muted"}`}>{time || (slotOptions.length ? "Chọn khung giờ" : "Không có khung giờ")}</span>
               <Icon name="chevron-down" size={16} className={`shrink-0 text-cs-muted transition-transform ${timeOpen ? "rotate-180" : ""}`}/>
@@ -167,6 +180,7 @@ export function RescheduleModal<T extends ReschedulableAppointment>({ appointmen
                 </button>
               </li>)}
             </ul>}
+            <FieldError className="mt-1.5">{timeError}</FieldError>
             {slotHint && <span className="mt-1.5 block text-caption text-cs-muted">{slotHint}</span>}
           </div>
         </div>
@@ -182,26 +196,27 @@ export function RescheduleModal<T extends ReschedulableAppointment>({ appointmen
               {reasonType === r.id && <span className="size-2 rounded-full bg-cs-accent"/>}
             </span>{r.label}</button>)}
         </div>
-        <div className="relative rounded-control border border-cs-border bg-cs-surface transition-colors focus-within:border-cs-accent hover:border-cs-border-strong">
+        <div className={`relative rounded-control border bg-cs-surface transition-colors ${noteError ? "border-danger" : "border-cs-border focus-within:border-cs-accent hover:border-cs-border-strong"}`}>
           <Icon name="edit" size={16} className="pointer-events-none absolute left-3.5 top-3.5 text-cs-muted"/>
-          <textarea rows={2} maxLength={200} value={note} onChange={e => setNote(e.target.value)} aria-label="Ghi chú lý do"
+          <textarea rows={2} maxLength={200} value={note} onChange={e => setNote(e.target.value)} aria-label="Ghi chú lý do" aria-invalid={!!noteError || undefined}
             placeholder={reasonType === "OTHER" ? "Nhập lý do (bắt buộc, ít nhất 5 ký tự)" : "Ghi chú thêm (không bắt buộc)"}
             className="block w-full resize-none bg-transparent py-3 pl-10 pr-3.5 text-small text-cs-text outline-none placeholder:text-cs-muted"/>
           <span className="block px-3.5 pb-2 text-right text-caption tabular-nums text-cs-muted">{note.length}/200</span>
         </div>
-        {!noteOk && <p className="text-caption text-danger-fg">Ghi chú cần ít nhất 5 ký tự.</p>}
+        <FieldError>{noteError}</FieldError>
       </section>
 
       {/* Xác nhận với khách */}
       <section className="space-y-2.5">
         <p className="text-small font-semibold text-cs-text">Xác nhận với khách <span className="text-danger-fg">*</span></p>
-        <div role="radiogroup" aria-label="Xác nhận với khách" className="grid gap-2.5 sm:grid-cols-2">
+        <div role="radiogroup" aria-label="Xác nhận với khách" aria-invalid={!!contactError || undefined} className={`grid gap-2.5 sm:grid-cols-2 ${contactError ? "rounded-card border border-danger p-2" : ""}`}>
           <button type="button" role="radio" aria-checked={contact === "agreed"} onClick={() => setContact("agreed")} className={`${choice(contact === "agreed")} flex min-h-12 items-center gap-2.5 px-4`}>
             <span className={`grid size-5 shrink-0 place-items-center rounded-full ${contact === "agreed" ? "bg-cs-accent text-cs-accent-contrast" : "border-2 border-cs-border-strong"}`} aria-hidden="true">
               {contact === "agreed" && <Icon name="check" size={12}/>}</span>Đã liên hệ và khách đồng ý</button>
           <button type="button" role="radio" aria-checked={contact === "not_reached"} onClick={() => setContact("not_reached")} className={`${choice(contact === "not_reached")} flex min-h-12 items-center gap-2.5 px-4`}>
             <Icon name="phone" size={17} className="shrink-0"/>Chưa liên hệ được khách</button>
         </div>
+        <FieldError>{contactError}</FieldError>
         {contact === "agreed" && <div className="flex flex-wrap items-center gap-2 text-small text-cs-muted">
           <span id="contact-method-label">Đã thống nhất qua</span>
           <span role="radiogroup" aria-labelledby="contact-method-label" className="flex flex-wrap gap-1.5">

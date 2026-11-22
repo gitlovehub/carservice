@@ -22,6 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/*',
             // Link xác nhận lịch từ email: chữ ký trong URL là quyền truy cập, khách không có phiên đăng nhập.
             'appointments/*/email-confirm',
+            // Link duyệt báo giá từ email: cùng lý do (URL có chữ ký, hết hạn, gắn đúng nội dung báo giá).
+            'quotations/*/email-review',
+            // Link ủy quyền nhận xe từ email: URL có chữ ký, hết hạn, dùng một lần.
+            'repair-orders/*/pickup-authorization',
         ]);
         $middleware->alias([
             'role' => EnsureAccountRole::class,

@@ -40,6 +40,11 @@ Không có.
 - Rời P1 khi P1D-03 VERIFIED và PO nghiệm thu P1.
 
 
+## Cập nhật 22/11/2026 (nhánh `v3-advisor`)
+
+- Xong **ADV-19** (D-026..028). Đang ở **ADV-QA**: còn bấm thao tác trên giao diện cho các nhánh ngoài Tiếp nhận + Phát sinh.
+- Mới nhất: backend 408/408, smoke 30/30, tsc + ESLint + build đạt. DB dev đã migrate tới `2026_11_22_045143` (đã xóa `repair_orders.note`). Thay đổi từ 18/11 vẫn chưa commit — PO tự commit.
+
 ## Cập nhật 16/11/2026 (nhánh `v3-advisor`)
 
 - Bước cuối: làm lại khu **cố vấn** + hoàn thiện luồng (D-020..022). Xong: ADV-06 (chi tiết phiếu theo bước), ADV-01 (Chờ phụ tùng: cố vấn báo thiếu, Admin đặt/nhận), ADV-02/03 (khách vãng lai, xe chưa có trong hệ thống), ADV-04 (Đặt lịch hộ + kiểm khung giờ khi cố vấn đặt/đổi lịch). ADV-07 (danh sách phiếu dạng bảng + tìm kiếm + chip đếm), ADV-10 (Tổng quan cố vấn theo mockup PO), ADV-08 (Lịch hẹn + Tiếp nhận theo mockup PO), ADV-09 (Khách hàng / Xe khách hàng). Tiếp theo ADV-QA.

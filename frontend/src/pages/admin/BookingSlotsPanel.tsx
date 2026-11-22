@@ -5,6 +5,7 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { adminApi, errorMessage, type BookingSlots } from "../../services/adminApi";
 import { Panel } from "./kit/AdminKit";
 import { useAdminQuery } from "./kit/useAdminQuery";
+import { FieldError } from "../../components/ui/Field";
 
 type Period = keyof BookingSlots;
 const PERIODS: Array<{ id: Period; label: string; icon: IconName; hint: string; min: string; max: string }> = [
@@ -114,12 +115,12 @@ export function BookingSlotsPanel({ open = "07:30", close = "17:30" }: { open?: 
             {!draft[p.id].length && <li className="py-1.5 text-small text-cs-muted">Chưa có khung giờ — buổi này không nhận lịch.</li>}
           </ul>
           <div className="mt-3 flex gap-2">
-            <Input type="time" step={300} min={p.min} max={p.max} value={adding[p.id]} aria-label={`Thêm giờ ${p.label.toLowerCase()}`}
-              onChange={e => setAdding(current => ({ ...current, [p.id]: e.target.value }))}
+            <Input type="time" step={300} min={p.min} max={p.max} value={adding[p.id]} aria-label={`Thêm giờ ${p.label.toLowerCase()}`} aria-invalid={!!errors[p.id] || undefined}
+              onChange={e => { setAdding(current => ({ ...current, [p.id]: e.target.value })); setErrors(current => ({ ...current, [p.id]: "" })); }}
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); add(p.id); } }}/>
-            <Button variant="tonal" icon="plus" disabled={!adding[p.id]} onClick={() => add(p.id)}>Thêm</Button>
+            <Button variant="tonal" icon="plus" onClick={() => add(p.id)}>Thêm</Button>
           </div>
-          {errors[p.id] && <p role="alert" className="mt-2 text-caption text-danger-fg">{errors[p.id]}</p>}
+          <FieldError className="mt-2">{errors[p.id]}</FieldError>
         </section>)}
         {errors.form && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{errors.form}</p>}
       </div>}

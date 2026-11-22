@@ -28,24 +28,24 @@ export default function BookingSummary({ vehicleLabel, items, hasSymptom, timeLa
       className="overflow-hidden rounded-[19px] border border-[var(--cs-border,#e9e9e6)] bg-[var(--cs-surface,#fff)] lg:sticky lg:top-[106px]"
     >
       <div className="px-5 pt-1.5">
-        <div className="flex items-center gap-3 border-b border-slate-200 py-3.5">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600"><Icon name="car" size={18}/></span>
-          <div className="min-w-0"><p className="text-xs text-slate-500">Xe</p><p className="truncate text-sm font-bold text-slate-900">{vehicleLabel}</p></div>
+        <div className="flex items-center gap-3 border-b border-cs-border py-3.5">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-cs-surface-2 text-cs-text-2"><Icon name="car" size={18}/></span>
+          <div className="min-w-0"><p className="text-xs text-cs-muted">Xe</p><p className="truncate text-sm font-bold text-cs-text">{vehicleLabel}</p></div>
         </div>
         {timeLabel && (
-          <div className="flex items-center gap-3 border-b border-slate-200 py-3.5">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600"><Icon name="clock" size={18}/></span>
-            <div className="min-w-0"><p className="text-xs text-slate-500">Thời gian</p><p className="text-sm font-bold text-slate-900">{timeLabel}</p></div>
+          <div className="flex items-center gap-3 border-b border-cs-border py-3.5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-cs-surface-2 text-cs-text-2"><Icon name="clock" size={18}/></span>
+            <div className="min-w-0"><p className="text-xs text-cs-muted">Thời gian</p><p className="text-sm font-bold text-cs-text">{timeLabel}</p></div>
           </div>
         )}
 
         <div className="py-3.5">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs text-slate-500">Dịch vụ</p>
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${count ? "bg-[#e11d2e] text-white" : "bg-slate-100 text-slate-500"}`}>{count} mục</span>
+            <p className="text-xs text-cs-muted">Dịch vụ</p>
+            <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${count ? "bg-[#e11d2e] text-white" : "bg-cs-surface-2 text-cs-muted"}`}>{count} mục</span>
           </div>
           {count === 0 ? (
-            <p className="rounded-xl border border-dashed border-slate-200 px-3 py-3 text-center text-sm text-slate-500">Chưa chọn dịch vụ.</p>
+            <p className="rounded-xl border border-dashed border-cs-border px-3 py-3 text-center text-sm text-cs-muted">Chưa chọn dịch vụ.</p>
           ) : (
             <ul className="space-y-2">
               {items.map((item) => (
@@ -53,15 +53,15 @@ export default function BookingSummary({ vehicleLabel, items, hasSymptom, timeLa
                   <span className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg ${item.type === "package" ? "bg-[#e11d2e] text-white" : "bg-[#fde8eb] text-[#e11d2e] dark:bg-[var(--cs-soft)] dark:text-[var(--cs-accent-text)]"}`}>
                     <Icon name={iconOf(item)} size={14}/>
                   </span>
-                  <span className="min-w-0 flex-1 text-sm leading-snug text-slate-800">{item.name}</span>
-                  <span className="shrink-0 text-xs font-semibold text-slate-600">{formatCatalogPrice(item.price).replace("Từ ", "")}</span>
+                  <span className="min-w-0 flex-1 text-sm leading-snug text-cs-text">{item.name}</span>
+                  <span className="shrink-0 text-xs font-semibold text-cs-text-2">{formatCatalogPrice(item.price).replace("Từ ", "")}</span>
                 </li>
               ))}
               {hasSymptom && (
                 <li className="flex items-start gap-2.5">
                   <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"><Icon name="search" size={14}/></span>
-                  <span className="min-w-0 flex-1 text-sm leading-snug text-slate-800">Kiểm tra theo tình trạng xe</span>
-                  <span className="shrink-0 text-xs font-semibold text-slate-600">Báo giá sau</span>
+                  <span className="min-w-0 flex-1 text-sm leading-snug text-cs-text">Kiểm tra theo tình trạng xe</span>
+                  <span className="shrink-0 text-xs font-semibold text-cs-text-2">Báo giá sau</span>
                 </li>
               )}
             </ul>
@@ -70,14 +70,14 @@ export default function BookingSummary({ vehicleLabel, items, hasSymptom, timeLa
       </div>
 
       {(pricedTotal > 0 || hasUnpricedItem) && (
-        <div className="mx-5 rounded-2xl bg-slate-50 px-4 py-3">
+        <div className="mx-5 rounded-2xl bg-cs-surface-2 px-4 py-3">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-xs font-semibold text-slate-500">Tạm tính</span>
+            <span className="text-xs font-semibold text-cs-muted">Tạm tính</span>
             <span className="text-right text-lg font-extrabold text-[#e11d2e] dark:text-[var(--cs-accent-text)]">
               {pricedTotal > 0 ? `Từ ${Math.round(pricedTotal).toLocaleString("vi-VN")} đ` : "Báo giá tại garage"}
             </span>
           </div>
-          {duration && <p className="mt-1 flex items-center justify-end gap-1 text-xs text-slate-500"><span className="text-[#e11d2e] dark:text-[var(--cs-accent-text)]"><Icon name="clock" size={12}/></span>Dự kiến {duration}</p>}
+          {duration && <p className="mt-1 flex items-center justify-end gap-1 text-xs text-cs-muted"><span className="text-[#e11d2e] dark:text-[var(--cs-accent-text)]"><Icon name="clock" size={12}/></span>Dự kiến {duration}</p>}
         </div>
       )}
 

@@ -244,7 +244,10 @@ function Account() {
         if (errorData.errors.new_password_confirmation) {
           backendErrors.confirmPassword = errorData.errors.new_password_confirmation[0];
         }
-        setPasswordErrors(backendErrors);
+        if (Object.keys(backendErrors).length) {
+          setPasswordErrors(backendErrors);
+          return;
+        }
       }
       const message =
         errorData?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại.";
@@ -438,7 +441,7 @@ function Account() {
               </button>
             </div>
 
-            <form onSubmit={handleSavePassword} className="space-y-4 px-6 pb-6 pt-5">
+            <form noValidate onSubmit={handleSavePassword} className="space-y-4 px-6 pb-6 pt-5">
               {/* Current Password */}
               <div>
                 <label className="block text-xs font-semibold text-[#1F2933]">
@@ -461,6 +464,7 @@ function Account() {
                       }
                     }}
                     placeholder="Nhập mật khẩu hiện tại"
+                    aria-invalid={!!passwordErrors.currentPassword || undefined}
                     className={`w-full rounded-xl border px-3.5 py-2.5 pr-10 text-xs text-[#20252B] transition focus:outline-none ${
                       passwordErrors.currentPassword
                         ? "border-rose-400 bg-rose-50/30 focus:border-rose-500"
@@ -505,6 +509,7 @@ function Account() {
                       }
                     }}
                     placeholder="Tối thiểu 8 ký tự, có hoa, thường và số"
+                    aria-invalid={!!passwordErrors.newPassword || undefined}
                     className={`w-full rounded-xl border px-3.5 py-2.5 pr-10 text-xs text-[#20252B] transition focus:outline-none ${
                       passwordErrors.newPassword
                         ? "border-rose-400 bg-rose-50/30 focus:border-rose-500"
@@ -552,6 +557,7 @@ function Account() {
                       }
                     }}
                     placeholder="Nhập lại mật khẩu mới"
+                    aria-invalid={!!passwordErrors.confirmPassword || undefined}
                     className={`w-full rounded-xl border px-3.5 py-2.5 pr-10 text-xs text-[#20252B] transition focus:outline-none ${
                       passwordErrors.confirmPassword
                         ? "border-rose-400 bg-rose-50/30 focus:border-rose-500"

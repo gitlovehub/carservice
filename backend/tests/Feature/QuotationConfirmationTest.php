@@ -221,7 +221,11 @@ class QuotationConfirmationTest extends TestCase
     public function test_otp_requires_owner_email_and_sent_quotation(): void
     {
         $this->customer->update(['email' => null]);
-        $this->customerAccount->update(['email' => 'account@example.test']);
+        $this->customerAccount->update(['email' => 'account@example.test', 'email_verified_at' => null]);
+        $this->actingAs($this->advisor)->postJson("/api/quotations/{$this->quotation->id}/otp", ['responses' => $this->responses()])
+            ->assertUnprocessable()->assertJsonValidationErrors('email');
+
+        $this->customerAccount->update(['email_verified_at' => now()]);
         $this->actingAs($this->advisor)->postJson("/api/quotations/{$this->quotation->id}/otp", ['responses' => $this->responses()])
             ->assertOk()->assertJsonPath('sent_to', 'ac*****@example.test');
 

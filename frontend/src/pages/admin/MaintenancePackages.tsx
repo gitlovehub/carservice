@@ -166,7 +166,7 @@ function PackageDetail({ p, onEdit }: { p: AdminPackage; onEdit: () => void }) {
         <dd className={`mt-1 truncate text-subheading font-bold tabular-nums ${t.brand ? "text-cs-accent-text" : "text-cs-text"}`}>{t.value}</dd>
       </div>)}
     </dl>
-    {p.description && <p className="mt-4 rounded-control bg-cs-surface-2 px-3 py-2.5 text-small text-cs-text-2">{p.description}</p>}
+    {p.description && <p className="mt-4 rounded-control bg-cs-surface-2 px-3 py-2.5 text-small text-cs-text-2 font-medium">{p.description}</p>}
 
     <section className="mt-5" aria-label="Dịch vụ trong gói">
       <h3 className="mb-2 flex items-center gap-2 border-b-2 border-cs-accent pb-2 text-subheading font-semibold text-cs-accent-text">
@@ -192,7 +192,7 @@ function PackageDetail({ p, onEdit }: { p: AdminPackage; onEdit: () => void }) {
       </h3>
       {p.parts.length ? <table className="w-full text-small">
         <thead><tr className="bg-cs-surface-2 text-left text-caption text-cs-text-2">
-          <th className="w-8 px-2 py-2 font-semibold">#</th><th className="px-2 py-2 font-semibold">Tên phụ tùng</th><th className="px-2 py-2 text-center font-semibold">SL</th>
+          <th className="w-8 px-2 py-2 font-semibold">#</th><th className="px-2 py-2 font-semibold">Tên phụ tùng</th><th className="px-2 py-2 text-center font-semibold">Số lượng</th>
           <th className="px-2 py-2 text-right font-semibold">Đơn giá</th><th className="px-2 py-2 text-right font-semibold">Thành tiền</th>
         </tr></thead>
         <tbody>{p.parts.map((x, i) => {

@@ -83,6 +83,9 @@ export type QuotationItem = {
   unit_price: number | string;
   amount: number | string;
   is_approved?: boolean | null;
+  /** Hạng mục bắt buộc: từ chối = từ chối toàn bộ báo giá (PO 19/11). */
+  is_required?: boolean;
+  required_reason?: string | null;
 };
 
 export type CustomerQuotation = {
@@ -92,6 +95,8 @@ export type CustomerQuotation = {
   /** P3: SUPPLEMENT = phát sinh khi đang sửa (cộng thêm, không thay thế báo giá gốc). */
   type?: "INITIAL" | "SUPPLEMENT";
   reason?: string | null;
+  /** Gara báo trước xe phải lưu xưởng qua đêm (không tính phí). */
+  stays_overnight?: boolean;
   version: number;
   subtotal: number | string;
   discount_amount: number | string;
@@ -128,7 +133,6 @@ export type CustomerRepairOrder = {
   received_at?: string | null;
   completed_at?: string | null;
   handed_over_at?: string | null;
-  note?: string | null;
   vehicle?: CustomerVehicle | null;
   statusHistory?: { id: number; status: string; note?: string | null; created_at?: string | null }[];
   status_history?: { id: number; status: string; note?: string | null; created_at?: string | null }[];
@@ -143,6 +147,8 @@ export type CustomerRepairOrder = {
     services?: { id: number; name: string }[]; packages?: { id: number; name: string }[];
   } | null;
   initial_condition?: string | null;
+  /** Lời khách kể / yêu cầu thêm tại quầy. */
+  customer_request?: string | null;
   invoice?: {
     id: number;
     invoice_code: string;

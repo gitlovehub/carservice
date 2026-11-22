@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\CapacityController;
 use App\Http\Controllers\Api\ChatbotController;
 use App\Http\Controllers\Api\ContactMessageController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\CustomerEmailVerificationController;
 use App\Http\Controllers\Api\CustomerHandoverController;
 use App\Http\Controllers\Api\CustomerNotificationController;
 use App\Http\Controllers\Api\CustomerPickupAuthorizationController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\CustomerReviewController;
 use App\Http\Controllers\Api\GarageSettingController;
 use App\Http\Controllers\Api\HandoverController;
+use App\Http\Controllers\Api\HandoverExceptionController;
 use App\Http\Controllers\Api\HomeStatsController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
@@ -47,6 +49,7 @@ use App\Http\Controllers\Api\VnpayController;
 use App\Http\Controllers\Api\WorkingHoursController;
 use App\Http\Controllers\Api\WorkItemController;
 use App\Models\Account;
+use App\Support\LiveStamp;
 use Illuminate\Support\Facades\Route;
 
 // Public part catalog images are streamed via Laravel: no symlink required.
@@ -126,7 +129,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // Realtime: dấu thời gian thay đổi (dự phòng hỏi định kỳ) + cấu hình WebSocket Reverb cho trình duyệt (khóa app là công khai).
     Route::get('live', fn () => response()->json([
-        'stamp' => \App\Support\LiveStamp::current(),
+        'stamp' => LiveStamp::current(),
         'realtime' => config('broadcasting.default') === 'reverb' ? [
             'key' => config('broadcasting.connections.reverb.key'),
             'host' => config('broadcasting.connections.reverb.options.host'),
@@ -282,6 +285,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Customer CRUD
         Route::apiResource('customers', CustomerController::class)
             ->only(['index', 'store', 'show', 'update']);
+        Route::post('customers/{customer}/email-verification', [CustomerEmailVerificationController::class, 'send'])
+            ->whereNumber('customer')->middleware('throttle:5,1');
+        Route::post('customers/{customer}/email-verification/verify', [CustomerEmailVerificationController::class, 'verify'])
+            ->whereNumber('customer')->middleware('throttle:10,1');
 
         // Vehicle CRUD
         Route::apiResource('vehicles', VehicleController::class)
@@ -307,6 +314,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
             'customers/{customer}',
             [CustomerController::class, 'destroy']
         );
+
+        // Ngoại lệ xác nhận biên bản khi chủ xe mất email: chỉ admin xem giấy tờ và duyệt.
+        Route::controller(HandoverExceptionController::class)->prefix('admin/handover-exceptions')->group(function (): void {
+            Route::get('/', 'index');
+            Route::get('{exception}/files/{kind}', 'file')->whereIn('kind', ['id-document', 'registration']);
+            Route::post('{exception}/approve', 'approve');
+            Route::post('{exception}/reject', 'reject');
+        });
 
         // Thông tin gara: tên, liên hệ, địa chỉ (chọn từ gợi ý bản đồ).
         Route::put('admin/garage-settings', [GarageSettingController::class, 'update']);
@@ -470,6 +485,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // Tải ảnh bằng chứng lên disk private (D-007).
         Route::post('media', [MediaController::class, 'store'])->middleware('throttle:60,1');
+        Route::delete('media/{media}', [MediaController::class, 'destroy'])->middleware('throttle:60,1');
 
         Route::controller(RepairOrderController::class)->group(function (): void {
 
@@ -510,6 +526,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
             // Phản hồi báo giá chỉ do khách thực hiện: POST /me/quotations/{id}/respond
             // (CustomerRepairOrderController). Không có route nào cho nhân viên duyệt thay khách.
             Route::prefix('quotations/{quotation}')->group(function (): void {
+                // Sửa báo giá nháp (modal "Sửa báo giá" ở chi tiết phiếu + trang Báo giá & phê duyệt).
+                Route::put('/', 'update');
                 Route::post('send', 'send');
             });
         });
@@ -525,6 +543,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('handovers/{handover}/otp', 'requestOtp')->middleware('throttle:5,1');
             Route::post('handovers/{handover}/verify-otp', 'verifyOtp')->middleware('throttle:10,1');
         });
+        Route::post('handovers/{handover}/exception', [HandoverExceptionController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('repair-orders/{repairOrder}/pickup-authorization-link', [HandoverController::class, 'sendPickupAuthorizationLink'])->middleware('throttle:3,1');
 
         // Khách duyệt tại quầy: OTP gửi email chủ xe, gắn với đúng lựa chọn từng dòng (D-005, D-008).
         Route::controller(QuotationConfirmationController::class)->prefix('quotations/{quotation}')->group(function (): void {

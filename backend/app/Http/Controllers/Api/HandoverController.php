@@ -8,6 +8,7 @@ use App\Models\RepairOrder;
 use App\Models\VehicleHandover;
 use App\Services\ConfirmationService;
 use App\Services\HandoverService;
+use App\Services\PickupAuthorizationLinkService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -37,12 +38,18 @@ class HandoverController extends Controller
 
         $base = VehicleHandover::query()
             ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
+            // Mã phiếu, người giao, tên / SĐT khách, biển số, hãng / dòng xe. Nhiều từ ("Bentley Bentayga", "Tèo VF") → mỗi từ khớp một trường.
             ->when(trim((string) ($filters['search'] ?? '')), function ($q, $search) {
-                $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $search).'%';
-                $q->where(fn ($w) => $w->where('person_name', 'like', $like)
-                    ->orWhereHas('repairOrder', fn ($o) => $o->where('repair_order_code', 'like', $like)
-                        ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', $like)->orWhere('phone', 'like', $like)))
-                    ->orWhereHas('vehicle', fn ($v) => $v->where('license_plate', 'like', $like)));
+                $terms = preg_split('/\s+/u', $search, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                foreach (array_slice($terms, 0, 5) as $term) {
+                    $like = '%'.addcslashes($term, '%_\\').'%';
+                    $q->where(fn ($w) => $w->where('person_name', 'like', $like)
+                        ->orWhereHas('repairOrder', fn ($o) => $o->where('repair_order_code', 'like', $like)
+                            ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', $like)->orWhere('phone', 'like', $like)))
+                        ->orWhereHas('vehicle', fn ($v) => $v->where('license_plate', 'like', $like))
+                        ->orWhereHas('vehicle.model', fn ($m) => $m->where('name', 'like', $like))
+                        ->orWhereHas('vehicle.model.brand', fn ($b) => $b->where('name', 'like', $like)));
+                }
             });
 
         $counts = (clone $base)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
@@ -56,6 +63,8 @@ class HandoverController extends Controller
                 'staff:id,full_name',
                 'checklistItems',
                 'confirmations',
+                'comparedHandover:id,mileage,fuel_level,general_condition,valuables_note',
+                'comparedHandover.checklistItems',
             ])
             ->latest('id')
             ->paginate($filters['per_page'] ?? 10);
@@ -124,6 +133,14 @@ class HandoverController extends Controller
         $data = $request->validate(['code' => ['required', 'string', 'regex:/^\d{6}$/']]);
 
         return response()->json($this->confirmations->verifyHandoverOtp($handover, $data['code'], $request->user()->employee, $request));
+    }
+
+    /** Gửi link để chủ xe tự khai người được ủy quyền nhận xe (khách không có tài khoản vẫn dùng được). */
+    public function sendPickupAuthorizationLink(Request $request, RepairOrder $repairOrder, PickupAuthorizationLinkService $links): JsonResponse
+    {
+        abort_unless(Gate::allows('update', $repairOrder), 403);
+
+        return response()->json(['message' => 'Đã gửi link ủy quyền tới email chủ xe.', 'sent_to' => $links->send($repairOrder, $request->user())]);
     }
 
     /** @return array<string, array<int, mixed>> */

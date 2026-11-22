@@ -149,7 +149,7 @@ function CustomerUpdates({ now }: { now: Date }) {
   const items = query.data ?? query.stale;
   const open = (u: CustomerUpdate) => navigate(["PENDING", "CONFIRMED"].includes(u.appointment.status)
     ? `/advisor/reception?appointment=${u.appointment.id}` : "/advisor/appointments");
-  return <Panel title="Cập nhật từ khách" icon="bell" action={<button type="button" onClick={query.reload} className="inline-flex cursor-pointer items-center gap-1 text-caption font-semibold text-cs-text-2 hover:text-cs-accent-text"><Icon name="refresh" size={14}/>Làm mới</button>}>
+  return <Panel title="Cập nhật từ khách" icon="bell">
     {!items ? (query.error ? <ErrorState compact description={query.error} onRetry={query.reload}/> : <LoadingState compact/>)
       : !items.length ? <EmptyState compact icon="bell" title="Chưa có cập nhật" description="Khi khách đặt, đổi, xác nhận hoặc hủy lịch, thông tin sẽ hiện ở đây."/>
       : <ul className="space-y-0.5 px-2 pb-3">

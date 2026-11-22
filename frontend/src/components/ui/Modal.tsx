@@ -133,7 +133,10 @@ export function Modal({ size = "md", bare = false, ...props }: OverlayProps & { 
 }
 
 /** Ngăn kéo trượt từ cạnh màn hình: chọn nhanh, xem chi tiết, bộ lọc nâng cao. */
-export function Drawer({ side = "right", width = "md", ...props }: OverlayProps & { side?: "left" | "right"; width?: "sm" | "md" | "lg" }) {
+export function Drawer({ side = "right", width = "md", hideHeader = false, ...props }: OverlayProps & { side?: "left" | "right"; width?: "sm" | "md" | "lg";
+  /** Nội dung đã có tiêu đề riêng: ẩn thanh tiêu đề, chỉ giữ nút đóng nổi ở góc (`title` thành aria-label). */
+  hideHeader?: boolean;
+}) {
   const { open, onClose, title, description, children, footer, dismissible = true, className = "" } = props;
   const area = useOverlayArea();
   const { panelRef, rendered, state } = useOverlay(props);
@@ -143,10 +146,12 @@ export function Drawer({ side = "right", width = "md", ...props }: OverlayProps 
   return createPortal(
     <div className="cs-overlay cs-feedback-layer fixed inset-0 z-[300]" data-area={area} data-state={state}>
       <div className="cs-overlay-backdrop absolute inset-0 bg-cs-overlay" aria-hidden="true" onMouseDown={() => { if (dismissible && open) onClose(); }}/>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={description ? descId : undefined} tabIndex={-1} data-side={side}
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label={hideHeader && typeof title === "string" ? title : undefined} aria-labelledby={hideHeader ? undefined : titleId} aria-describedby={!hideHeader && description ? descId : undefined} tabIndex={-1} data-side={side}
         className={`cs-drawer-panel absolute inset-y-0 ${side === "right" ? "right-0 sm:rounded-l-panel" : "left-0 sm:rounded-r-panel"} flex h-dvh w-full ${widthClass} flex-col overflow-hidden bg-cs-surface text-cs-text shadow-overlay outline-none ${className}`}>
         <div className="pt-[env(safe-area-inset-top)]"/>
-        <OverlayHeader titleId={titleId} descId={descId} title={title} description={description} onClose={onClose} dismissible={dismissible}/>
+        {hideHeader
+          ? <IconButton icon="close" label={LABELS.action.close} variant="outline" size="sm" disabled={!dismissible} onClick={onClose} className="absolute right-7 top-[calc(env(safe-area-inset-top)+1.75rem)] z-20"/>
+          : <OverlayHeader titleId={titleId} descId={descId} title={title} description={description} onClose={onClose} dismissible={dismissible}/>}
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">{children}</div>
         {footer && <footer className="cs-btn-row cs-btn-row-end shrink-0 border-t border-cs-border bg-cs-surface px-5 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))]">{footer}</footer>}
       </div>

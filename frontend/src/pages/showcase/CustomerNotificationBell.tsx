@@ -117,9 +117,7 @@ export default function CustomerNotificationBell() {
     {open && <section className="v3ref-notification-panel" role="dialog" aria-label="Thông báo CarService">
       <div className="v3ref-notification-panel-heading">
         <div><strong>Thông báo</strong><small>{unread > 0 ? `${unread} thông báo chưa đọc` : 'Cập nhật mới nhất từ gara'}</small></div>
-        {unread > 0
-          ? <button type="button" onClick={() => void readAll()}>Đánh dấu đã đọc hết</button>
-          : <button type="button" onClick={() => void refresh()} disabled={loading}>Làm mới</button>}
+        {unread > 0 && <button type="button" onClick={() => void readAll()}>Đánh dấu đã đọc hết</button>}
       </div>
       {loading && items.length === 0 ? <p className="v3ref-notification-empty">Đang tải thông báo...</p>
         : error && items.length === 0 ? <p className="v3ref-notification-error" role="alert">{error} <button type="button" onClick={() => void refresh()}>Thử lại</button></p>

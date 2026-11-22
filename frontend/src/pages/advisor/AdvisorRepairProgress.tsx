@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import { Button, IconButton } from "../../components/ui/Button";
@@ -13,6 +13,9 @@ import { formatVnd, listRepairOrders, openPartRequests, workflowApi, type Workfl
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
 import { dayTime, fullDayTime, vehicleName } from "./advisorListFormat";
+import { OpenOrderButton, PreviewDrawer } from "./advisorListKit";
+import { ReceptionNotes } from "./ReceptionFields";
+import { useNarrowDrawer } from "./useNarrowDrawer";
 import { WaitForPartsModal } from "./PartRequestsPanel";
 import { orderStepPath, stagePath } from "./repairOrderFlow";
 import { useStageRedirect } from "./useStageRedirect";
@@ -43,7 +46,6 @@ const STATS: Array<{ filter: Filter; label: string; icon: IconName; tone?: "succ
   { filter: "ready_today", label: "Dự kiến xong hôm nay", icon: "calendar" },
 ];
 const PER_PAGE = 8;
-const WIDE = "(min-width: 1280px)";
 const ACTIVE = ["IN_PROGRESS", "WAITING_FOR_PARTS"];
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
@@ -60,7 +62,6 @@ function ProgressBar({ percent, label }: { percent: number | null; label: string
 }
 
 export default function AdvisorRepairProgress() {
-  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const filter = FILTERS.find(f => f.id === params.get("filter"))?.id ?? "active";
   const selectedParam = Number(params.get("order")) || null;
@@ -91,10 +92,9 @@ export default function AdvisorRepairProgress() {
     setParams(next, { replace: true });
   };
   const selectFilter = (id: Filter) => { setParam({ filter: id === "active" ? null : id, order: null }); setPage(1); };
-  const open = (o: WorkflowOrder) => {
-    if (window.matchMedia(WIDE).matches) setParam({ order: String(o.id) });
-    else navigate(orderStepPath(o.id, 3));
-  };
+  // Màn rộng: khung bên phải; màn hẹp: ngăn kéo xem nhanh (cùng cách các trang danh sách khác).
+  const drawer = useNarrowDrawer();
+  const open = (o: WorkflowOrder) => { setParam({ order: String(o.id) }); drawer.show(); };
   const options: DropdownItem[] = [
     { label: "Dự kiến xong sớm nhất trước", icon: sort === "ready" ? "check" : "clock", onSelect: () => { setSort("ready"); setPage(1); } },
     { label: "Mới nhận xe gần nhất trước", icon: sort === "created" ? "check" : "calendar", onSelect: () => { setSort("created"); setPage(1); } },
@@ -154,6 +154,8 @@ export default function AdvisorRepairProgress() {
         {selectedId ? <ProgressPreview key={`${selectedId}-${version}`} id={selectedId} onChanged={() => setVersion(v => v + 1)}/>
           : <section className="adv-card grid min-h-[320px] place-items-center p-8 text-center text-small text-cs-muted">Chọn một phiếu ở danh sách để xem tiến độ.</section>}
       </div>
+      {selectedId && <PreviewDrawer open={drawer.open} onClose={drawer.close} title="Tiến độ sửa chữa">
+        <ProgressPreview key={`d-${selectedId}-${version}`} id={selectedId} onChanged={() => setVersion(v => v + 1)}/></PreviewDrawer>}
     </div>
   </main>;
 }
@@ -248,15 +250,16 @@ function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void 
     : null;
 
   return <section className="adv-card adv-ro-detail" aria-label={`Tiến độ phiếu ${order.repair_order_code ?? ""}`}>
-    <header className="flex flex-wrap items-start gap-4">
-      <span className="adv-ro-doc-icon" aria-hidden="true"><Icon name="clipboard" size={30}/></span>
+    {/* Đầu khung cùng kiểu các trang khác (Phiếu, Báo giá, Thanh toán, Biên bản): ô biểu tượng + vạch vàng + ánh nền. */}
+    <header className="adv-hv-head relative -mx-5.5 -mt-5.5 flex flex-wrap items-center gap-4 rounded-t-[18px] px-5.5 py-4 max-sm:-mx-4 max-sm:-mt-4 max-sm:px-4">
+      <span className="adv-hv-tile" aria-hidden="true"><Icon name="wrench" size={30}/></span>
+      <span className="adv-hv-rule" aria-hidden="true"/>
       <div className="min-w-0 flex-1">
-        <h2 className="text-title tracking-wide text-cs-text">{order.repair_order_code || `Phiếu #${order.id}`}</h2>
-        <p className="mt-0.5 flex flex-wrap gap-x-6 gap-y-1 text-small text-cs-text-2">
-          <span>{order.appointment?.appointment_code ? `Tạo từ: Lịch hẹn ${order.appointment.appointment_code}` : "Tạo từ: Khách vãng lai"}</span>
-          <span>Khách hàng: <b className="text-cs-text">{order.customer?.full_name || "—"}</b></span>
-        </p>
+        <h2 className="text-[1.45rem] font-bold leading-tight tracking-wide text-cs-text"><Link className="adv-hv-code hover:text-cs-accent-text hover:underline" to={orderStepPath(order.id)} title="Mở phiếu đầy đủ">{order.repair_order_code || `Phiếu #${order.id}`}</Link></h2>
+        <p className="mt-1 text-small text-cs-text-2">Khách hàng <b className="text-cs-text">{order.customer?.full_name || "—"}</b></p>
+        <p className="mt-0.5 text-caption text-cs-muted">{order.appointment?.appointment_code ? `Tạo từ lịch hẹn ${order.appointment.appointment_code}` : "Tạo từ khách vãng lai"}</p>
       </div>
+      <div className="flex flex-wrap items-center gap-2"><StatusBadge domain="repair" status={order.status}/><OpenOrderButton id={order.id}/></div>
     </header>
 
     <div className="adv-prog-top">
@@ -347,13 +350,15 @@ function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void 
         {(order.handovers ?? []).filter(h => h.type === "CHECK_IN" && h.status !== "DRAFT" && h.status !== "VOID").map(h => <PhotoUploader key={h.id} type="handover" id={h.id} readOnly title="Ảnh tình trạng xe lúc nhận"/>)}
       </div>}
 
-      {tab === "notes" && <dl className="grid gap-4 sm:grid-cols-2">
-        <div><dt className="text-caption text-cs-muted">Tình trạng lúc nhận</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{order.initial_condition || "Chưa ghi"}</dd></div>
-        <div><dt className="text-caption text-cs-muted">Kết luận chẩn đoán</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.diagnosis || "Chưa ghi"}</dd></div>
-        {order.note && <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Ghi chú tiếp nhận</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{order.note}</dd></div>}
-        {notesFromHistory.length > 0 && <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Ghi chú khi đổi trạng thái</dt>
-          <dd><ul className="mt-1 space-y-1.5">{notesFromHistory.map(h => <li key={h.id} className="flex flex-wrap items-center gap-2 text-small text-cs-text"><StatusBadge domain="repair" status={h.status || ""}/><span className="tabular-nums text-caption text-cs-muted">{dayTime(h.created_at)}</span>{h.note}</li>)}</ul></dd></div>}
-      </dl>}
+      {tab === "notes" && <div className="space-y-4">
+        <ReceptionNotes order={order}/>
+        <dl className="grid gap-4">
+          <div><dt className="text-caption text-cs-muted">Kết quả kiểm tra</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.condition_description || "Chưa ghi"}</dd></div>
+          <div><dt className="text-caption text-cs-muted">Kết luận chẩn đoán</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.diagnosis || "Chưa ghi"}</dd></div>
+          {notesFromHistory.length > 0 && <div><dt className="text-caption text-cs-muted">Ghi chú khi đổi trạng thái</dt>
+            <dd><ul className="mt-1 space-y-1.5">{notesFromHistory.map(h => <li key={h.id} className="flex flex-wrap items-center gap-2 text-small text-cs-text"><StatusBadge domain="repair" status={h.status || ""}/><span className="tabular-nums text-caption text-cs-muted">{dayTime(h.created_at)}</span><span className="font-medium">{h.note}</span></li>)}</ul></dd></div>}
+        </dl>
+      </div>}
     </div>
 
     <footer className="adv-ro-footer !justify-end">

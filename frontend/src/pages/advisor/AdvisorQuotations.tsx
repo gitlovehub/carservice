@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import { buttonClass } from "../../components/ui/buttonClass";
@@ -8,15 +8,17 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import {
-  formatVnd, listQuotations, listRepairOrders, toNumber, workflowApi,
+  CONFIRMATION_METHOD_TEXT, formatVnd, listQuotations, listRepairOrders, toNumber, workflowApi,
   type QuotationListRow, type WorkflowOrder, type WorkflowQuotation,
 } from "../../services/workflowService";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
-import { RangePicker, Track } from "./advisorListKit";
+import { OpenOrderButton, PreviewDrawer, RangePicker, Track } from "./advisorListKit";
 import { dayTime, fullDayTime, rangeDates, vehicleName, type Range, type TrackStep } from "./advisorListFormat";
 import { orderStepPath, stagePath } from "./repairOrderFlow";
-import { errorText } from "./workflowFormat";
+import { QuotationEditModal } from "./QuotationEditModal";
+import { SendQuotationModal } from "./SendQuotationModal";
+import { RequiredMark } from "./RepairOrderPanels";
 import "./advisorDashboard.css";
 
 /**
@@ -60,7 +62,6 @@ const QuoteBadge = ({ status }: { status: string }) => {
 };
 
 export default function AdvisorQuotations() {
-  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const filter = FILTERS.find(f => f.id === params.get("status"))?.id ?? "all";
   const selectedParam = Number(params.get("quotation")) || null;
@@ -90,9 +91,12 @@ export default function AdvisorQuotations() {
     setParams(next, { replace: true });
   };
   const selectFilter = (id: Filter) => { setParam({ status: id === "all" ? null : id, quotation: null }); setPage(1); };
+  // Màn rộng: khung xem nhanh bên phải. Màn hẹp: ngăn kéo trượt từ phải sang với cùng nội dung chi tiết.
+  const [drawerRow, setDrawerRow] = useState<QuotationListRow | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const open = (row: QuotationListRow) => {
     if (window.matchMedia(WIDE).matches) setParam({ quotation: String(row.id) });
-    else navigate(orderStepPath(row.repair_order_id, 2));
+    else { setDrawerRow(row); setDrawerOpen(true); }
   };
 
   return <main className="page-container adv-theme space-y-5">
@@ -113,7 +117,7 @@ export default function AdvisorQuotations() {
         <header className="adv-ro-list-head"><h2>Danh sách báo giá</h2></header>
         <div className="space-y-3 p-4">
           <div className="flex items-center gap-2">
-            <RangePicker label="Khoảng ngày lập báo giá" anyLabel="Mọi ngày lập" value={range} onChange={r => { setRange(r); setPage(1); setParam({ quotation: null }); }}/>
+            <RangePicker label="Khoảng ngày lập báo giá" anyLabel="Tất cả" value={range} onChange={r => { setRange(r); setPage(1); setParam({ quotation: null }); }}/>
             <div className="min-w-0 flex-1 [&>span]:w-full">
               <Dropdown label="Trạng thái báo giá" items={FILTERS.map(f => ({ label: `${f.label}${result ? ` (${countOf(f.id)})` : ""}`, icon: f.id === filter ? "check" : undefined, onSelect: () => selectFilter(f.id) }))}
                 trigger={props => <button type="button" {...props} className="adv-ro-range"><span className="min-w-0 flex-1 truncate text-left">{FILTERS.find(f => f.id === filter)?.label}</span><Icon name="chevron-down" size={16}/></button>}/>
@@ -149,6 +153,9 @@ export default function AdvisorQuotations() {
           : <section className="adv-card grid min-h-[320px] place-items-center p-8 text-center text-small text-cs-muted">Chọn một báo giá ở danh sách để xem nhanh.</section>}
       </div>
     </div>
+    {drawerRow && <PreviewDrawer open={drawerOpen} title={`Báo giá ${drawerRow.quotation_code ?? ""}`} onClose={() => setDrawerOpen(false)}>
+      <QuotationPreview key={`${drawerRow.id}-${version}`} row={drawerRow} onChanged={() => setVersion(v => v + 1)}/>
+    </PreviewDrawer>}
   </main>;
 }
 
@@ -185,9 +192,10 @@ function quotationTrack(order: WorkflowOrder, q: WorkflowQuotation): TrackStep[]
 type Tab = "items" | "history" | "notes";
 
 function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged: () => void }) {
-  const { confirm, notify } = useAppFeedback();
+  const { notify } = useAppFeedback();
   const [tab, setTab] = useState<Tab>("items");
   const [sending, setSending] = useState(false);
+  const [editing, setEditing] = useState(false);
   const detail = useAdminQuery(`quotation-order:${row.repair_order_id}`, () => workflowApi.order(row.repair_order_id));
   const order = detail.data;
   const q = order?.quotations?.find(item => item.id === row.id);
@@ -202,6 +210,8 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
   const partTotal = items.filter(i => i.item_type === "PART").reduce((sum, i) => sum + toNumber(i.amount), 0);
   const responded = items.some(i => i.is_approved != null);
   const approvedTotal = items.filter(i => i.is_approved).reduce((sum, i) => sum + toNumber(i.amount), 0);
+  // Tiền khách đồng ý sau giảm giá (giảm giá chỉ trừ khi có ít nhất một hạng mục được đồng ý, không âm).
+  const approvedNet = approvedTotal > 0 ? Math.max(0, approvedTotal - toNumber(q.discount_amount)) : 0;
   const inspection = order.inspections?.[0];
   const notes = [
     q.reason && `Lý do phát sinh: ${q.reason}`,
@@ -215,13 +225,6 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
   const groups = [...responses.reduce((map, r) => map.set(r.confirmation?.id ?? -r.id, [...(map.get(r.confirmation?.id ?? -r.id) ?? []), r]), new Map<number, typeof responses>()).values()]
     .sort((a, b) => (b[0].confirmation?.confirmed_at ?? b[0].created_at ?? "").localeCompare(a[0].confirmation?.confirmed_at ?? a[0].created_at ?? ""));
 
-  async function send() {
-    if (!q || !await confirm({ title: "Gửi báo giá cho khách", reference: q.quotation_code, description: `Khách sẽ thấy báo giá ${formatVnd(q.total_amount)} trong tài khoản và duyệt từng hạng mục.`, confirmText: "Gửi báo giá" })) return;
-    setSending(true);
-    try { await workflowApi.sendQuotation(q.id); notify("Đã gửi báo giá cho khách. Đang chờ khách duyệt.", "success"); onChanged(); }
-    catch (err) { notify(errorText(err), "error"); }
-    finally { setSending(false); }
-  }
 
   const TABS: Array<{ id: Tab; label: string; icon: IconName }> = [
     { id: "items", label: "Chi tiết báo giá", icon: "layers" },
@@ -230,22 +233,20 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
   ];
 
   return <section className="adv-card adv-ro-detail" aria-label={`Báo giá ${q.quotation_code ?? ""}`}>
-    <header className="flex flex-wrap items-start gap-4">
-      <span className="adv-ro-doc-icon" aria-hidden="true"><Icon name="receipt" size={30}/></span>
+    {/* Đầu khung cùng kiểu modal biên bản / trang Biên bản / Kiểm tra & bàn giao: ô biểu tượng + vạch vàng + ánh nền. */}
+    <header className="adv-hv-head relative -mx-5.5 -mt-5.5 flex flex-wrap items-center gap-4 rounded-t-[18px] px-5.5 py-4 max-sm:-mx-4 max-sm:-mt-4 max-sm:px-4">
+      <span className="adv-hv-tile" aria-hidden="true"><Icon name="receipt" size={30}/></span>
+      <span className="adv-hv-rule" aria-hidden="true"/>
       <div className="min-w-0 flex-1">
-        <h2 className="text-title tracking-wide text-cs-text">Báo giá: {q.quotation_code || `#${q.id}`}
+        <h2 className="text-[1.45rem] font-bold leading-tight tracking-wide text-cs-text">Báo giá <span className="adv-hv-code">{q.quotation_code || `#${q.id}`}</span>
           {q.type === "SUPPLEMENT" && <Badge tone="info" className="ml-2 align-middle">Phát sinh</Badge>}</h2>
-        <p className="mt-0.5 flex flex-wrap gap-x-8 gap-y-1 text-small text-cs-text-2">
-          <span>Phiếu sửa chữa: <Link className="font-semibold text-cs-text hover:text-cs-accent-text hover:underline" to={orderStepPath(order.id)}>{order.repair_order_code}</Link></span>
-          <span>Ngày lập: <span className="tabular-nums">{fullDayTime(q.created_at)}</span></span>
-          {q.version && q.version > 1 && <span>Lần báo giá thứ {q.version}</span>}
-        </p>
+        <p className="mt-1 text-small text-cs-text-2">Phiếu <Link className="adv-hv-code font-semibold text-cs-text hover:text-cs-accent-text hover:underline" to={orderStepPath(order.id)}>{order.repair_order_code}</Link>
+          {q.version && q.version > 1 && <><span className="px-2 text-cs-muted">·</span>Lần báo giá thứ {q.version}</>}</p>
+        <p className="mt-0.5 text-caption text-cs-muted">Lập lúc <span className="tabular-nums">{fullDayTime(q.created_at)}</span></p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <QuoteBadge status={q.status}/>
-        <Dropdown label="Thao tác khác" items={[
-          { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
-        ]}/>
+        <OpenOrderButton id={order.id}/>
       </div>
     </header>
 
@@ -278,14 +279,14 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
               <th className="w-12 px-3 py-2.5 text-center font-semibold">STT</th>
               <th className="px-3 py-2.5 font-semibold">Hạng mục / Phụ tùng</th>
               <th className="px-3 py-2.5 font-semibold">Loại</th>
-              <th className="px-3 py-2.5 text-center font-semibold">SL</th>
+              <th className="px-3 py-2.5 text-center font-semibold">Số lượng</th>
               <th className="px-3 py-2.5 text-right font-semibold">Đơn giá</th>
               <th className="px-3 py-2.5 text-right font-semibold">Thành tiền</th>
               {responded && <th className="px-3 py-2.5 font-semibold">Khách</th>}
             </tr></thead>
             <tbody className="divide-y divide-cs-border">{items.map((item, index) => <tr key={item.id} className={item.is_approved === false ? "text-cs-muted" : "text-cs-text"}>
               <td className="px-3 py-2.5 text-center tabular-nums">{index + 1}</td>
-              <td className="px-3 py-2.5 font-medium">{item.description || "Hạng mục"}</td>
+              <td className="px-3 py-2.5 font-medium">{item.description || "Hạng mục"}<RequiredMark item={item}/></td>
               <td className="px-3 py-2.5">{item.item_type === "PART"
                 ? <span className="adv-kind" data-kind="part"><Icon name="box" size={14}/>Phụ tùng</span>
                 : <span className="adv-kind" data-kind="service"><Icon name="wrench" size={14}/>Dịch vụ</span>}</td>
@@ -300,15 +301,20 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.9fr)]">
           <div className="rounded-xl border border-cs-border p-4">
             <p className="flex items-center gap-2 text-small font-semibold text-cs-text"><Icon name="clipboard" size={16} className="text-cs-muted"/>Ghi chú:</p>
-            {notes.length ? <ul className="mt-2 list-disc space-y-1 pl-5 text-small text-cs-text-2">{notes.slice(0, 4).map(n => <li key={n}>{n}</li>)}</ul>
+            {notes.length ? <ul className="mt-2 list-disc space-y-1 pl-5 text-small font-medium text-cs-text-2">{notes.slice(0, 4).map(n => <li key={n}>{n}</li>)}</ul>
               : <p className="mt-2 text-small text-cs-muted">Không có ghi chú.</p>}
           </div>
           <dl className="adv-quote-total">
             <div><dt>Tổng tiền dịch vụ</dt><dd>{formatVnd(serviceTotal)}</dd></div>
             <div><dt>Tổng tiền phụ tùng</dt><dd>{formatVnd(partTotal)}</dd></div>
             {toNumber(q.discount_amount) > 0 && <div><dt>Giảm giá</dt><dd>−{formatVnd(q.discount_amount)}</dd></div>}
-            <div className="adv-quote-grand"><dt>Tổng chi phí dự kiến</dt><dd>{formatVnd(q.total_amount)}</dd></div>
-            {responded && <div><dt>Khách đồng ý</dt><dd className="text-success-fg">{formatVnd(approvedTotal)}</dd></div>}
+            {/* Khách đã trả lời → số nổi bật là tiền các hạng mục khách đồng ý; tổng báo giá gốc giữ để đối chiếu. */}
+            {responded
+              ? <>
+                <div><dt>Tổng báo giá</dt><dd className="text-cs-text-2">{formatVnd(q.total_amount)}</dd></div>
+                <div className="adv-quote-grand"><dt>Khách đồng ý</dt><dd>{formatVnd(approvedNet)}</dd></div>
+              </>
+              : <div className="adv-quote-grand"><dt>Tổng chi phí dự kiến</dt><dd>{formatVnd(q.total_amount)}</dd></div>}
           </dl>
         </div>
       </div>}
@@ -317,7 +323,7 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
         const c = group[0].confirmation;
         return <li key={c?.id ?? group[0].id} className="rounded-xl border border-cs-border p-4">
           <p className="flex flex-wrap items-center gap-2 text-small"><Icon name={c?.method === "EMAIL_OTP" ? "mail" : "user"} size={16} className="text-cs-accent-text"/>
-            <b className="text-cs-text">{c?.method === "EMAIL_OTP" ? "Khách xác nhận tại quầy bằng mã email" : "Khách tự duyệt trong tài khoản"}</b>
+            <b className="text-cs-text">{CONFIRMATION_METHOD_TEXT[c?.method ?? "ACCOUNT"]}</b>
             <span className="tabular-nums text-cs-muted">{c?.confirmed_at || group[0].created_at ? new Date((c?.confirmed_at ?? group[0].created_at)!).toLocaleString("vi-VN") : ""}</span></p>
           <ul className="mt-2 flex flex-wrap gap-2">{group.map(r => <li key={r.id}><Badge tone={r.decision === "APPROVED" ? "success" : "danger"}>{r.decision === "APPROVED" ? "Đồng ý" : "Từ chối"} · {r.label}</Badge></li>)}</ul>
         </li>;
@@ -326,8 +332,9 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
 
       {tab === "notes" && <dl className="grid gap-4 sm:grid-cols-2">
         {q.reason && <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Lý do báo giá phát sinh</dt><dd className="mt-1 text-small text-cs-text">{q.reason}</dd></div>}
-        <div><dt className="text-caption text-cs-muted">Kết luận chẩn đoán</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.diagnosis || "Chưa ghi"}</dd></div>
-        <div><dt className="text-caption text-cs-muted">Tình trạng xe</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.condition_description || order.initial_condition || "Chưa ghi"}</dd></div>
+        <div><dt className="text-caption text-cs-muted">Tình trạng xe khi nhận</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text font-medium">{order.initial_condition || "Chưa ghi"}</dd></div>
+        <div><dt className="text-caption text-cs-muted">Kết quả kiểm tra</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text font-medium">{inspection?.condition_description || "Chưa ghi"}</dd></div>
+        <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Kết luận chẩn đoán</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.diagnosis || "Chưa ghi"}</dd></div>
         {q.valid_until && <div><dt className="text-caption text-cs-muted">Hiệu lực đến</dt><dd className="mt-1 text-small text-cs-text">{new Date(q.valid_until).toLocaleDateString("vi-VN")}</dd></div>}
         {(inspection?.recommendations ?? []).some(r => r.note) && <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Ghi chú đề xuất</dt>
           <dd><ul className="mt-1 list-disc space-y-1 pl-5 text-small text-cs-text">{inspection!.recommendations!.filter(r => r.note).map(r => <li key={r.id}>{r.service?.name || r.part?.name}: {r.note}</li>)}</ul></dd></div>}
@@ -338,11 +345,12 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
       <span className="min-w-0 flex-1">Chỉ khách được đồng ý hoặc từ chối từng hạng mục — trong tài khoản, hoặc tại quầy bằng mã gửi email chủ xe.</span></p>}
 
     <footer className="adv-ro-footer">
-      <span className="text-small text-cs-text-2">Tổng chi phí dự kiến: <b className="ml-1 text-xl tabular-nums text-danger">{formatVnd(q.total_amount)}</b></span>
+      <span className="text-small text-cs-text-2">{responded ? "Khách đồng ý" : "Tổng chi phí dự kiến"}: <b className="ml-1 text-xl tabular-nums text-danger">{formatVnd(responded ? approvedNet : q.total_amount)}</b>
+        {responded && approvedNet !== toNumber(q.total_amount) && <span className="ml-2 text-caption text-cs-muted line-through tabular-nums">{formatVnd(q.total_amount)}</span>}</span>
       <span className="cs-btn-row">
         {q.status === "DRAFT" && <>
-          <Link className={buttonClass({ variant: "outline" })} to={quotationPath}><Icon name="edit" size={16}/>Điều chỉnh báo giá</Link>
-          <button type="button" className="adv-btn-gold" disabled={sending} aria-busy={sending || undefined} onClick={() => void send()}><Icon name="send" size={18}/>{sending ? "Đang gửi..." : "Gửi cho khách"}</button>
+          <button type="button" className={buttonClass({ variant: "outline", className: "h-11" })} onClick={() => setEditing(true)}><Icon name="edit" size={16}/>Sửa báo giá</button>
+          <button type="button" className="adv-btn-gold h-11" onClick={() => setSending(true)}><Icon name="send" size={18}/>Gửi cho khách</button>
         </>}
         {q.status === "SENT" && <Link className="adv-btn-gold" to={quotationPath}><Icon name="mail" size={18}/>Khách xác nhận tại quầy</Link>}
         {q.status === "REJECTED" && order.status === "WAITING_APPROVAL" && <Link className="adv-btn-gold" to={quotationPath}><Icon name="edit" size={18}/>Lập báo giá mới</Link>}
@@ -351,5 +359,10 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
         {(q.status === "CANCELLED" || (q.status === "REJECTED" && order.status !== "WAITING_APPROVAL")) && <Link className="adv-btn-gold" to={orderStepPath(order.id)}><Icon name="clipboard" size={18}/>Mở phiếu</Link>}
       </span>
     </footer>
+    {/* Sửa nhanh báo giá nháp ngay tại đây (cùng modal với chi tiết phiếu). */}
+    {sending && <SendQuotationModal order={order} quotation={q} onClose={() => setSending(false)}
+      onSent={message => { notify(message, "success"); detail.reload(); onChanged(); }}/>}
+    {editing && <QuotationEditModal order={order} quotation={q} onClose={() => setEditing(false)}
+      onSaved={message => { notify(message, "success"); detail.reload(); onChanged(); }}/>}
   </section>;
 }

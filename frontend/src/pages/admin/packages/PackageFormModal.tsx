@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Field, Icon, IconButton, Input, KmInput, Modal, QuantityStepper, SearchInput, Select, Switch, Textarea } from "../../../components/ui";
 import { useAppFeedback } from "../../../components/ui/feedbackContext";
-import { adminApi, errorMessage, type AdminPart } from "../../../services/adminApi";
+import { adminApi, type AdminPart } from "../../../services/adminApi";
 import {
   catalogAdminApi, money, type AdminPackage, type AdminService, type CatalogBrand, type CatalogModel, type PackagePayload,
 } from "../../../services/catalogAdminApi";
 import { useDebounced } from "../kit/useDebounced";
+import { useFieldErrors, type FieldErrors } from "../../../components/ui/useFieldErrors";
+import { FieldError } from "../../../components/ui/Field";
 
 type PartLine = { part_id: number; name: string; sku: string; price: number; quantity: number };
 
@@ -31,6 +33,7 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
   const [partResults, setPartResults] = useState<AdminPart[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const fieldErrors = useFieldErrors();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -63,10 +66,14 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
   const submit = async () => {
     const kmN = km ? Number(km) : null;
     const monthsN = months ? Number(months) : null;
-    if (!name.trim()) return setError("Nhập tên gói.");
-    if ((kmN !== null && (!Number.isInteger(kmN) || kmN <= 0)) || (monthsN !== null && (!Number.isInteger(monthsN) || monthsN <= 0))) return setError("Mốc km và mốc tháng phải là số nguyên lớn hơn 0.");
-    if (brandId && !modelId) return setError("Chọn dòng xe, hoặc để “Dùng chung mọi dòng xe”.");
-    if (!Object.keys(picked).length) return setError("Chọn ít nhất một dịch vụ trong gói.");
+    const problems: FieldErrors = {};
+    if (!name.trim()) problems.name = "Nhập tên gói.";
+    if (brandId && !modelId) problems.model = "Chọn dòng xe, hoặc để “Dùng chung mọi dòng xe”.";
+    if (kmN !== null && (!Number.isInteger(kmN) || kmN <= 0)) problems.km = "Mốc km phải là số nguyên lớn hơn 0.";
+    if (monthsN !== null && (!Number.isInteger(monthsN) || monthsN <= 0)) problems.months = "Mốc tháng phải là số nguyên lớn hơn 0.";
+    if (!Object.keys(picked).length) problems.services = "Chọn ít nhất một dịch vụ trong gói.";
+    setError("");
+    if (fieldErrors.show(problems)) return;
     const payload: PackagePayload = {
       name: name.trim(), vehicle_model_id: modelId ? Number(modelId) : null, mileage_milestone: kmN, month_milestone: monthsN,
       description: description.trim() || null, status: active ? "ACTIVE" : "INACTIVE",
@@ -80,7 +87,7 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
       notify(`${pkg ? "Đã cập nhật" : "Đã tạo"} gói “${payload.name}”: ${payload.services.length} dịch vụ, ${payload.parts.length} phụ tùng, ước tính ${money(res.data.price)}.`, "success");
       onSaved(res.data);
     } catch (e) {
-      setError(errorMessage(e, "Không lưu được gói bảo dưỡng."));
+      fieldErrors.showApi(e, { name: "name", vehicle_model_id: "model", mileage_milestone: "km", month_milestone: "months", description: "description", services: "services" });
     } finally {
       setSaving(false);
     }
@@ -95,22 +102,22 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
       <Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void submit()}>{pkg ? "Lưu thay đổi" : "Tạo gói"}</Button>
     </>}>
     <div className="grid gap-4 md:grid-cols-2">
-      <Field label="Tên gói" required className="md:col-span-2"><Input value={name} maxLength={150} placeholder="Ví dụ: Bảo dưỡng 10.000 km – Toyota Vios" onChange={e => setName(e.target.value)}/></Field>
+      <Field label="Tên gói" required error={fieldErrors.errors.name} className="md:col-span-2"><Input value={name} maxLength={150} placeholder="Ví dụ: Bảo dưỡng 10.000 km – Toyota Vios" onChange={e => { setName(e.target.value); fieldErrors.clear("name"); }}/></Field>
       <Field label="Hãng xe">
-        <Select value={brandId} onChange={e => { setBrandId(e.target.value); setModelId(""); setModels([]); }}>
+        <Select value={brandId} onChange={e => { setBrandId(e.target.value); setModelId(""); setModels([]); fieldErrors.clear("model"); }}>
           <option value="">Dùng chung mọi dòng xe</option>
           {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </Select>
       </Field>
-      <Field label="Dòng xe" required={Boolean(brandId)}>
-        <Select value={modelId} disabled={!brandId} onChange={e => setModelId(e.target.value)}>
+      <Field label="Dòng xe" required={Boolean(brandId)} error={fieldErrors.errors.model}>
+        <Select value={modelId} disabled={!brandId} onChange={e => { setModelId(e.target.value); fieldErrors.clear("model"); }}>
           <option value="">{brandId ? "Chọn dòng xe" : "—"}</option>
           {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
         </Select>
       </Field>
-      <Field label="Mốc km"><KmInput label="Mốc km" value={km} placeholder="Ví dụ: 10.000" onChange={setKm}/></Field>
-      <Field label="Mốc tháng"><QuantityStepper label="Mốc tháng" size="md" className="w-full" unit="tháng" min={1} max={240} allowEmpty placeholder="Ví dụ: 6" value={months === "" ? null : Number(months)} onChange={v => setMonths(v === null ? "" : String(v))}/></Field>
-      <Field label="Mô tả" optional className="md:col-span-2"><Textarea rows={2} value={description} maxLength={1000} onChange={e => setDescription(e.target.value)}/></Field>
+      <Field label="Mốc km" error={fieldErrors.errors.km}><KmInput label="Mốc km" value={km} placeholder="Ví dụ: 10.000" onChange={value => { setKm(value); fieldErrors.clear("km"); }}/></Field>
+      <Field label="Mốc tháng" error={fieldErrors.errors.months}><QuantityStepper label="Mốc tháng" size="md" className="w-full" unit="tháng" min={1} max={240} allowEmpty placeholder="Ví dụ: 6" value={months === "" ? null : Number(months)} onChange={v => { setMonths(v === null ? "" : String(v)); fieldErrors.clear("months"); }}/></Field>
+      <Field label="Mô tả" optional error={fieldErrors.errors.description} className="md:col-span-2"><Textarea rows={2} value={description} maxLength={1000} onChange={e => { setDescription(e.target.value); fieldErrors.clear("description"); }}/></Field>
       <div className="flex items-center gap-3 rounded-control border border-cs-border px-3 py-2.5 md:col-span-2">
         <span className="min-w-0 flex-1"><span className="block text-small font-medium">Đang áp dụng</span><span className="block text-caption text-cs-muted">Tắt = tạm ngừng: khách không chọn được gói khi đặt lịch.</span></span>
         <Switch checked={active} onChange={setActive} label="Gói đang áp dụng"/>
@@ -122,12 +129,12 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
           <span className="text-caption text-cs-muted">{money(serviceTotal)}</span>
         </div>
         <SearchInput className="sm:max-w-none" value={serviceSearch} onChange={setServiceSearch} placeholder="Lọc dịch vụ theo tên hoặc danh mục…" label="Lọc dịch vụ"/>
-        <ul className="max-h-56 overflow-y-auto rounded-control border border-cs-border p-1">
+        <ul aria-invalid={!!fieldErrors.errors.services || undefined} className={`max-h-56 overflow-y-auto rounded-control border p-1 ${fieldErrors.errors.services ? "border-danger" : "border-cs-border"}`}>
           {shownServices.map(s => {
             const on = picked[s.id] !== undefined;
             return <li key={s.id} className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-small ${on ? "bg-cs-soft" : "hover:bg-cs-hover"}`}>
               <input type="checkbox" id={`pkg-s-${s.id}`} className="size-4 cursor-pointer accent-[var(--cs-accent)]" checked={on}
-                onChange={() => setPicked(p => { const next = { ...p }; if (on) delete next[s.id]; else next[s.id] = 1; return next; })}/>
+                onChange={() => { fieldErrors.clear("services"); setPicked(p => { const next = { ...p }; if (on) delete next[s.id]; else next[s.id] = 1; return next; }); }}/>
               <label htmlFor={`pkg-s-${s.id}`} className="min-w-0 flex-1 cursor-pointer"><span className="block truncate">{s.name}</span>
                 <span className="block text-caption text-cs-muted">{s.category ?? "Chưa phân loại"}{s.estimated_minutes ? ` · ${s.estimated_minutes} phút` : ""}</span></label>
               {on && qty(picked[s.id], n => setPicked(p => ({ ...p, [s.id]: n })), `Số lượng ${s.name}`)}
@@ -138,6 +145,7 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
             </li>;
           })}
         </ul>
+        <FieldError>{fieldErrors.errors.services}</FieldError>
       </section>
 
       <section className="flex flex-col gap-2 md:col-span-2" aria-label="Phụ tùng đi kèm">

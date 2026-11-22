@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFieldControl } from "./fieldContext";
 import { Icon } from "./Icon";
 
 const fmt = new Intl.NumberFormat("vi-VN");
@@ -8,10 +9,12 @@ const fmt = new Intl.NumberFormat("vi-VN");
  * Độ rộng cố định, không giãn theo hàng. Gõ trực tiếp được (số km hiện dấu chấm ngăn cách hàng nghìn).
  * `value = null` khi cho phép bỏ trống (allowEmpty), ví dụ mốc km không bắt buộc.
  */
-export function QuantityStepper({ value, onChange, label, min = 1, max = 999, step = 1, unit, allowEmpty = false, placeholder, size = "sm", className = "", disabled = false, id }: {
+export function QuantityStepper({ value, onChange, label, min = 1, max = 999, step = 1, unit, allowEmpty = false, placeholder, size = "sm", className = "", disabled = false, id, invalid = false }: {
   value: number | null; onChange: (value: number | null) => void; label: string;
-  min?: number; max?: number; step?: number; unit?: string; allowEmpty?: boolean; placeholder?: string; size?: "sm" | "md"; className?: string; disabled?: boolean; id?: string;
+  min?: number; max?: number; step?: number; unit?: string; allowEmpty?: boolean; placeholder?: string; size?: "sm" | "md"; className?: string; disabled?: boolean; id?: string; invalid?: boolean;
 }) {
+  const field = useFieldControl();
+  const hasError = invalid || !!field?.["aria-invalid"];
   // Đang gõ: giữ bản nháp; không gõ: hiển thị theo `value` (đã định dạng).
   const [draft, setDraft] = useState<string | null>(null);
   const text = draft ?? (value === null ? "" : fmt.format(value));
@@ -33,10 +36,10 @@ export function QuantityStepper({ value, onChange, label, min = 1, max = 999, st
   const h = size === "md" ? "h-10 max-sm:h-11" : "h-8";
   const btn = `grid ${size === "md" ? "w-10" : "w-8"} h-full shrink-0 cursor-pointer place-items-center text-cs-text-2 transition-colors hover:bg-cs-hover hover:text-cs-text disabled:cursor-not-allowed disabled:opacity-40`;
   const width = className.includes("w-") ? "" : unit ? "w-[168px]" : "w-[104px]";
-  return <div role="group" aria-label={label} className={`inline-flex ${h} ${width} shrink-0 items-center overflow-hidden rounded-control border border-cs-border bg-cs-surface focus-within:border-cs-accent ${className}`}>
+  return <div role="group" aria-label={label} className={`inline-flex ${h} ${width} shrink-0 items-center overflow-hidden rounded-control border bg-cs-surface ${hasError ? "border-danger focus-within:border-danger" : "border-cs-border focus-within:border-cs-accent"} ${className}`}>
     <button type="button" className={btn} aria-label={`Giảm ${label}${step > 1 ? ` ${fmt.format(step)}` : ""}`} disabled={disabled || (value !== null && value <= min)} onClick={() => bump(-1)}><Icon name="minus" size={14}/></button>
     <span className="flex h-full min-w-0 flex-1 items-center border-x border-cs-border">
-      <input id={id} type="text" inputMode="numeric" aria-label={label} value={text} placeholder={placeholder} disabled={disabled}
+      <input id={id} type="text" inputMode="numeric" aria-label={label} aria-invalid={hasError || undefined} value={text} placeholder={placeholder} disabled={disabled}
         onChange={e => setText(e.target.value.replace(/[^\d.]/g, ""))} onBlur={e => commit(e.target.value)}
         onKeyDown={e => {
           if (e.key === "Enter") commit((e.target as HTMLInputElement).value);
@@ -55,12 +58,12 @@ export function QuantityStepper({ value, onChange, label, min = 1, max = 999, st
  * Không ghi chữ "km" trong ô (PO 18/11) — đơn vị nằm ở nhãn ("Số km…").
  * Giá trị dạng chuỗi số ("" = chưa nhập) để thay trực tiếp các ô <input type="number"> cũ.
  */
-export function KmInput({ value, onChange, label, placeholder = "Ví dụ: 35.000", disabled, id, className = "w-full", size = "md", max = 2_000_000 }: {
+export function KmInput({ value, onChange, label, placeholder = "Ví dụ: 35.000", disabled, id, className = "w-full", size = "md", max = 2_000_000, invalid }: {
   value: string | number | null | undefined; onChange: (value: string) => void; label: string;
-  placeholder?: string; disabled?: boolean; id?: string; className?: string; size?: "sm" | "md"; max?: number;
+  placeholder?: string; disabled?: boolean; id?: string; className?: string; size?: "sm" | "md"; max?: number; invalid?: boolean;
 }) {
   const n = value === null || value === undefined || value === "" ? null : Number(value);
   return <QuantityStepper id={id} label={label} value={n !== null && Number.isFinite(n) ? n : null} min={0} max={max} step={1000} allowEmpty
-    placeholder={placeholder} disabled={disabled} size={size} className={className}
+    placeholder={placeholder} disabled={disabled} size={size} className={className} invalid={invalid}
     onChange={v => onChange(v === null ? "" : String(v))}/>;
 }

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
 import { Badge } from "../../components/ui/Badge";
 import { buttonClass } from "../../components/ui/buttonClass";
@@ -11,10 +11,14 @@ import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import { formatVnd, listRepairOrders, toNumber, workflowApi, type DeliveryState, type WorkflowOrder } from "../../services/workflowService";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
-import { Track } from "./advisorListKit";
+import { OpenOrderButton, PreviewDrawer, Track } from "./advisorListKit";
+import { useNarrowDrawer } from "./useNarrowDrawer";
 import { dayTime, fullDayTime, vehicleName } from "./advisorListFormat";
 import { QualityCheckPanel } from "./QualityCheckPanel";
-import { deliveryState, hasHandover, orderStepPath } from "./repairOrderFlow";
+import { HandoverEditor, HandoverViewModal } from "./CheckInPanel";
+import { comparedCheckIn } from "./handoverText";
+import { printHandover } from "./handoverPrint";
+import { checkoutStage, deliveryState, hasHandover, orderStepPath } from "./repairOrderFlow";
 import { errorText } from "./workflowFormat";
 import { useStageRedirect } from "./useStageRedirect";
 import "./advisorDashboard.css";
@@ -30,7 +34,7 @@ const FILTERS: Array<{ id: Filter; label: string }> = [
   { id: "waiting", label: "Tất cả xe chờ bàn giao" },
   { id: "check", label: "Chờ kiểm tra" },
   { id: "payment", label: "Chờ thanh toán" },
-  { id: "checkout", label: "Chờ khách xác nhận biên bản" },
+  { id: "checkout", label: "Chờ biên bản trả xe" },
   { id: "ready", label: "Đủ điều kiện bàn giao" },
   { id: "late", label: "Trễ hẹn" },
   { id: "handed_today", label: "Đã bàn giao hôm nay" },
@@ -45,17 +49,23 @@ const STATS: Array<{ filter: DeliveryState; label: string; icon: IconName; tone?
 const STATE_BADGE: Record<ReturnType<typeof deliveryState>, { tone: "warning" | "info" | "success" | "neutral"; label: string }> = {
   check: { tone: "warning", label: "Chờ kiểm tra" },
   payment: { tone: "warning", label: "Chờ thanh toán" },
-  checkout: { tone: "info", label: "Chờ khách xác nhận" },
+  checkout: { tone: "warning", label: "Chờ lập biên bản" },
   ready: { tone: "success", label: "Đủ điều kiện" },
   done: { tone: "success", label: "Đã bàn giao" },
   other: { tone: "neutral", label: "Chưa sửa xong" },
 };
 const PER_PAGE = 8;
-const WIDE = "(min-width: 1280px)";
-const StateBadge = ({ order }: { order: WorkflowOrder }) => { const b = STATE_BADGE[deliveryState(order)]; return <Badge tone={b.tone}>{b.label}</Badge>; };
+/** Nhãn bàn giao; ở bước biên bản trả xe thì nói rõ đang nháp hay đã gửi chủ xe. */
+function deliveryBadge(order: WorkflowOrder) {
+  const state = deliveryState(order);
+  if (state !== "checkout") return STATE_BADGE[state];
+  const stage = checkoutStage(order);
+  return stage === "sent" ? { tone: "info" as const, label: "Chờ khách xác nhận" }
+    : stage === "draft" ? { tone: "warning" as const, label: "Chờ hoàn tất biên bản" } : STATE_BADGE.checkout;
+}
+const StateBadge = ({ order }: { order: WorkflowOrder }) => { const b = deliveryBadge(order); return <Badge tone={b.tone}>{b.label}</Badge>; };
 
 export default function AdvisorDelivery() {
-  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const filter = FILTERS.find(f => f.id === params.get("filter"))?.id ?? "waiting";
   const selectedParam = Number(params.get("order")) || null;
@@ -81,10 +91,9 @@ export default function AdvisorDelivery() {
     setParams(next, { replace: true });
   };
   const selectFilter = (id: Filter) => { setParam({ filter: id === "waiting" ? null : id, order: null }); setPage(1); };
-  const open = (o: WorkflowOrder) => {
-    if (window.matchMedia(WIDE).matches) setParam({ order: String(o.id) });
-    else navigate(orderStepPath(o.id, 4));
-  };
+  // Màn rộng: khung bên phải; màn hẹp: ngăn kéo xem nhanh (cùng cách các trang danh sách khác).
+  const drawer = useNarrowDrawer();
+  const open = (o: WorkflowOrder) => { setParam({ order: String(o.id) }); drawer.show(); };
 
   return <main className="page-container adv-theme space-y-5">
     <h1 className="sr-only">Kiểm tra & bàn giao</h1>
@@ -132,29 +141,33 @@ export default function AdvisorDelivery() {
         {selectedId ? <DeliveryPreview key={`${selectedId}-${version}`} id={selectedId} onChanged={() => setVersion(v => v + 1)}/>
           : <section className="adv-card grid min-h-[320px] place-items-center p-8 text-center text-small text-cs-muted">Chọn một xe ở danh sách.</section>}
       </div>
+      {selectedId && <PreviewDrawer open={drawer.open} onClose={drawer.close} title="Kiểm tra & bàn giao xe">
+        <DeliveryPreview key={`d-${selectedId}-${version}`} id={selectedId} onChanged={() => setVersion(v => v + 1)}/></PreviewDrawer>}
     </div>
   </main>;
 }
 
-function Condition({ ok, wait, label, detail, action }: { ok: boolean; wait?: boolean; label: string; detail?: ReactNode; action?: ReactNode }) {
+function Condition({ ok, wait, label, detail, action, view }: { ok: boolean; wait?: boolean; label: string; detail?: ReactNode; action?: ReactNode; view?: ReactNode }) {
   return <li className="flex flex-wrap items-center gap-3 py-2.5">
     <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${ok ? "bg-success-solid text-on-solid" : wait ? "bg-warning-soft text-warning-fg" : "border border-cs-border-strong text-cs-muted"}`} aria-hidden="true">
       <Icon name={ok ? "check" : wait ? "clock" : "minus"} size={13}/></span>
     <span className="min-w-0 flex-1"><b className="block text-small text-cs-text">{label}</b>{detail && <span className="block text-caption text-cs-text-2">{detail}</span>}</span>
     {!ok && action}
+    {view}
   </li>;
 }
 
 type Tab = "photos" | "notes";
 
 function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void }) {
-  const navigate = useNavigate();
   const { confirm, notify } = useAppFeedback();
   const [tab, setTab] = useState<Tab>("photos");
   const [working, setWorking] = useState(false);
+  const [viewing, setViewing] = useState(false);
+  const [editingCheckout, setEditingCheckout] = useState(false);
   const redirect = useStageRedirect();
   const detail = useAdminQuery(`delivery-order:${id}`, () => workflowApi.order(id));
-  const order = detail.data;
+  const order = detail.data ?? (detail.error ? null : detail.stale);
 
   if (!order) return <section className="adv-card min-h-[420px] p-6">
     {detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact label="Đang tải phiếu..."/>}
@@ -165,11 +178,17 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
   const paid = invoice?.payments?.filter(p => p.status === "SUCCESS").reduce((sum, p) => sum + toNumber(p.amount), 0) ?? 0;
   const checkoutOk = hasHandover(order, "CHECK_OUT");
   const checkoutSent = hasHandover(order, "CHECK_OUT", "SUBMITTED");
+  const checkoutDraft = checkoutStage(order) === "draft";
   const handed = order.status === "HANDED_OVER";
   const history = [...(order.status_history ?? [])].reverse();
   const at = (s: string) => history.find(h => h.status === s)?.created_at;
   const step4 = orderStepPath(order.id, 4);
-  const notes = [order.quality_check?.note && `Kiểm tra sau sửa: ${order.quality_check.note}`, order.note && `Tiếp nhận: ${order.note}`,
+  // Biên bản trả xe gần nhất (bỏ bản đã hủy) — xem bằng cùng modal với chi tiết phiếu / trang Biên bản.
+  const checkout = [...(order.handovers ?? [])].reverse().find(h => h.type === "CHECK_OUT" && h.status !== "VOID") ?? null;
+  async function print() {
+    if (order && checkout && !await printHandover(order, checkout)) notify("Trình duyệt chặn cửa sổ in. Cho phép pop-up với trang này rồi bấm lại.", "error");
+  }
+  const notes = [order.quality_check?.note && `Kiểm tra sau sửa: ${order.quality_check.note}`,
     ...(order.status_history ?? []).filter(h => h.note && ["COMPLETED", "HANDED_OVER"].includes(h.status ?? "")).map(h => `${dayTime(h.created_at)} · ${h.note}`)].filter((n): n is string => !!n);
 
   async function handOver() {
@@ -181,17 +200,16 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
   }
 
   return <section className="adv-card adv-ro-detail" aria-label={`Bàn giao ${order.repair_order_code ?? ""}`}>
-    <header className="flex flex-wrap items-start gap-4">
-      <span className="adv-ro-doc-icon" aria-hidden="true"><Icon name="car" size={30}/></span>
+    {/* Đầu khung cùng kiểu modal xem biên bản: ô biểu tượng + vạch vàng + ánh nền. */}
+    <header className="adv-hv-head relative -mx-5.5 -mt-5.5 flex flex-wrap items-center gap-4 rounded-t-[18px] px-5.5 py-4 max-sm:-mx-4 max-sm:-mt-4 max-sm:px-4">
+      <span className="adv-hv-tile" aria-hidden="true"><Icon name="car" size={30}/></span>
+      <span className="adv-hv-rule" aria-hidden="true"/>
       <div className="min-w-0 flex-1">
-        <h2 className="text-title text-cs-text">Kiểm tra & bàn giao xe</h2>
-        <p className="mt-0.5 text-small text-cs-text-2">Phiếu sửa chữa: <Link className="font-semibold text-cs-text hover:text-cs-accent-text hover:underline" to={orderStepPath(order.id)}>{order.repair_order_code}</Link></p>
+        <h2 className="text-[1.45rem] font-bold leading-tight text-cs-text">Kiểm tra & bàn giao xe</h2>
+        <p className="mt-1 text-small text-cs-text-2">Phiếu <Link className="adv-hv-code font-semibold text-cs-text hover:text-cs-accent-text hover:underline" to={orderStepPath(order.id)}>{order.repair_order_code}</Link></p>
+        <p className="mt-0.5 text-caption text-cs-muted">{handed ? "Đã bàn giao" : "Hoàn thành sửa chữa"} <span className="tabular-nums">{fullDayTime(handed ? order.handed_over_at : order.completed_at ?? at("COMPLETED"))}</span></p>
       </div>
-      <div className="flex items-center gap-2"><StateBadge order={order}/>
-        <Dropdown label="Thao tác khác" items={[
-          { label: "Mở phiếu đầy đủ", icon: "clipboard", onSelect: () => navigate(orderStepPath(order.id)) },
-          { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
-        ]}/></div>
+      <div className="flex flex-wrap items-center gap-2"><StateBadge order={order}/><OpenOrderButton id={order.id}/></div>
     </header>
 
     <div className="adv-ro-vehicle">
@@ -205,15 +223,13 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
         <p className="flex items-center gap-2"><Icon name="phone" size={16} className="shrink-0 text-cs-muted"/>
           {order.customer?.phone ? <a className="tabular-nums text-cs-text hover:underline" href={`tel:${order.customer.phone}`}>{order.customer.phone}</a> : "—"}</p>
       </div>
-      <p className="flex items-center gap-3 text-small"><Icon name="calendar" size={22} className="shrink-0 text-cs-muted"/>
-        <span><span className="block text-caption text-cs-muted">{handed ? "Đã bàn giao" : "Hoàn thành sửa chữa"}</span><b className="tabular-nums text-cs-text">{fullDayTime(handed ? order.handed_over_at : order.completed_at ?? at("COMPLETED"))}</b></span></p>
     </div>
 
     <Track label="Tiến trình phiếu" steps={[
       { label: "Tiếp nhận xe", state: "done", note: dayTime(order.received_at) },
       { label: "Báo giá & phê duyệt", state: "done", note: at("WAITING_APPROVAL") ? dayTime(at("WAITING_APPROVAL")) : null },
       { label: "Sửa chữa", state: "done", note: dayTime(order.completed_at ?? at("COMPLETED")) },
-      handed ? { label: "Kiểm tra & bàn giao", state: "done", note: dayTime(order.handed_over_at) } : { label: "Kiểm tra & bàn giao", state: "active", note: STATE_BADGE[state].label },
+      handed ? { label: "Kiểm tra & bàn giao", state: "done", note: dayTime(order.handed_over_at) } : { label: "Kiểm tra & bàn giao", state: "active", note: deliveryBadge(order).label },
       { label: "Hoàn tất", state: handed ? "done" : "todo" },
     ]}/>
 
@@ -227,7 +243,7 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
         </div>
         <div role="tabpanel" className="min-h-[120px]">
           {tab === "photos" ? <PhotoUploader type="repair_order" id={order.id} readOnly={order.status !== "COMPLETED"} title="Ảnh xe sau sửa chữa"/>
-            : notes.length ? <ul className="list-disc space-y-1 pl-5 text-small text-cs-text">{notes.map(n => <li key={n}>{n}</li>)}</ul>
+            : notes.length ? <ul className="list-disc space-y-1 pl-5 text-small font-medium text-cs-text">{notes.map(n => <li key={n}>{n}</li>)}</ul>
             : <p className="text-small text-cs-muted">Không có ghi chú.</p>}
         </div>
 
@@ -240,7 +256,8 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
               detail={!invoice ? "Chưa lập hoá đơn." : invoice.status === "PAID" ? `Đã thu đủ ${formatVnd(invoice.total_amount)}` : `Đã thu ${formatVnd(paid)} / ${formatVnd(invoice.total_amount)}`}/>
             {order.requires_check_in
               ? <Condition ok={checkoutOk} wait={checkoutSent} label="Chủ xe xác nhận biên bản trả xe"
-                  detail={checkoutOk ? "Chủ xe đã xác nhận nhận lại xe." : checkoutSent ? "Đã gửi — chờ chủ xe xác nhận trong tài khoản hoặc bằng mã email tại quầy." : "Chưa lập biên bản trả xe."}/>
+                  detail={checkoutOk ? "Chủ xe đã xác nhận nhận lại xe." : checkoutSent ? "Đã gửi — chờ chủ xe xác nhận trong tài khoản hoặc bằng mã email tại quầy." : checkoutDraft ? "Đang là bản nháp, chưa gửi chủ xe." : "Chưa lập biên bản trả xe."}
+                  view={checkout && <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} onClick={() => setViewing(true)}><Icon name="eye" size={15}/>Xem biên bản</button>}/>
               : <Condition ok label="Biên bản trả xe" detail="Không cần — xe không nhận theo biên bản."/>}
           </ul>
           <p className="mt-2 text-caption text-cs-muted">Chủ xe (hoặc người được uỷ quyền) tự xác nhận nhận xe — nhân viên không tick hay ký thay.</p>
@@ -252,11 +269,17 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
       <span className="cs-btn-row">
         {/* Một nút vàng đồng cho việc còn thiếu: thu tiền (trang Thanh toán) → biên bản trả xe (chi tiết phiếu) → bàn giao. */}
         {state === "payment" && <Link className="adv-btn-gold" to={`/advisor/payments?order=${order.id}`}><Icon name="cash" size={18}/>{invoice ? "Thu tiền" : "Lập hoá đơn & thu tiền"}</Link>}
-        {state === "checkout" && <Link className="adv-btn-gold" to={step4}><Icon name="file" size={18}/>{checkoutSent ? "Chủ xe xác nhận biên bản tại quầy" : "Lập biên bản trả xe"}</Link>}
+        {state === "checkout" && checkoutSent && <Link className="adv-btn-gold" to={step4}><Icon name="file" size={18}/>Chủ xe xác nhận biên bản tại quầy</Link>}
+        {state === "checkout" && !checkoutSent && <button type="button" className="adv-btn-gold" onClick={() => setEditingCheckout(true)}><Icon name={checkoutDraft ? "edit" : "file"} size={18}/>{checkoutDraft ? "Tiếp tục lập biên bản" : "Lập biên bản trả xe"}</button>}
         {(state === "check" || state === "ready") && <button type="button" className="adv-btn-gold" disabled={working || state !== "ready"}
           title={state !== "ready" ? "Tick đủ checklist kiểm tra sau sửa chữa trước" : undefined} onClick={() => void handOver()}><Icon name="check" size={18}/>Xác nhận bàn giao</button>}
         {handed && <Link className={buttonClass({ variant: "outline" })} to={step4}><Icon name="receipt" size={16}/>Hoá đơn & biên bản</Link>}
       </span>
     </footer>
+    {editingCheckout && <HandoverEditor order={order} handover={checkout} type="CHECK_OUT"
+      onClose={() => { setEditingCheckout(false); onChanged(); }}
+      onChanged={async message => { notify(message, "success"); detail.reload(); }}/>}
+    {viewing && checkout && <HandoverViewModal code={order.repair_order_code} handover={checkout} checkIn={comparedCheckIn(checkout, order.handovers)} onClose={() => setViewing(false)} onPrint={() => void print()}
+      extra={<Link className={buttonClass({ variant: "outline" })} to={step4}><Icon name="clipboard" size={16}/>Mở trong phiếu</Link>}/>}
   </section>;
 }

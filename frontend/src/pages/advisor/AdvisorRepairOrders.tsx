@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
 import { IconButton } from "../../components/ui/Button";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
@@ -12,9 +12,10 @@ import {
 } from "../../services/workflowService";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
-import CustomerRequestSummary from "./CustomerRequestSummary";
+import { ReceptionNotes } from "./ReceptionFields";
 import { STEPS, currentStepIndex, nextAction, orderStepPath, stagePath } from "./repairOrderFlow";
-import { RangePicker, Track } from "./advisorListKit";
+import { OpenOrderButton, PreviewDrawer, RangePicker, Track } from "./advisorListKit";
+import { useNarrowDrawer } from "./useNarrowDrawer";
 import { dayTime, rangeDates, vehicleName as vehicleNameOf, type Range, type TrackStep } from "./advisorListFormat";
 import { formatDateTime } from "./workflowFormat";
 import "./advisorDashboard.css";
@@ -53,11 +54,9 @@ const STATS: Array<{ group: Group; label: string; icon: IconName; tone?: "succes
 ];
 
 const PER_PAGE = 8;
-const WIDE = "(min-width: 1280px)";
 const vehicleName = (o: WorkflowOrder) => vehicleNameOf(o.vehicle);
 
 export default function AdvisorRepairOrders() {
-  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const groupParam = params.get("group");
   const group = GROUPS.find(g => g.id === (LEGACY_GROUP[groupParam ?? ""] ?? groupParam))?.id ?? groupOf(params.get("status"));
@@ -89,10 +88,9 @@ export default function AdvisorRepairOrders() {
   const selectGroup = (id: Group) => { setParam({ group: id === "open" ? null : id, status: null, order: null }); setPage(1); };
   const filtersActive = search !== "" || mine || group !== "open" || range !== "any";
   const clearFilters = () => { setSearch(""); setMine(false); setRange("any"); selectGroup("open"); };
-  const openOrder = (order: WorkflowOrder) => {
-    if (window.matchMedia(WIDE).matches) setParam({ order: String(order.id) });
-    else navigate(orderStepPath(order.id));
-  };
+  // Màn rộng: chọn phiếu ở khung bên phải; màn hẹp: mở ngăn kéo xem nhanh (cùng cách các trang danh sách khác).
+  const drawer = useNarrowDrawer();
+  const openOrder = (order: WorkflowOrder) => { setParam({ order: String(order.id) }); drawer.show(); };
 
   const filterItems: DropdownItem[] = [
     ...GROUPS.map(g => ({ label: `${g.label}${result ? ` (${countOf(g.id)})` : ""}`, icon: g.id === group ? "check" as const : undefined, onSelect: () => selectGroup(g.id) })),
@@ -117,7 +115,7 @@ export default function AdvisorRepairOrders() {
         <header className="adv-ro-list-head"><h2>Danh sách phiếu sửa chữa</h2></header>
         <div className="space-y-3 p-4">
           <div className="flex items-center gap-2">
-            <RangePicker label="Khoảng ngày nhận xe" anyLabel="Mọi ngày nhận xe" value={range} onChange={r => { setRange(r); setPage(1); setParam({ order: null }); }}/>
+            <RangePicker label="Khoảng ngày nhận xe" anyLabel="Tất cả" value={range} onChange={r => { setRange(r); setPage(1); setParam({ order: null }); }}/>
             <Dropdown label="Lọc phiếu" items={filterItems}
               trigger={props => <IconButton {...props} icon="filter" label="Lọc theo trạng thái" className={group !== "open" || mine ? "adv-ro-filter-on" : ""}/>}/>
           </div>
@@ -154,6 +152,7 @@ export default function AdvisorRepairOrders() {
         {selectedId ? <OrderPreview key={selectedId} id={selectedId}/>
           : <section className="adv-card grid min-h-[320px] place-items-center p-8 text-center text-small text-cs-muted">Chọn một phiếu ở danh sách để xem nhanh.</section>}
       </div>
+      {selectedId && <PreviewDrawer open={drawer.open} onClose={drawer.close} title="Chi tiết phiếu sửa chữa"><OrderPreview key={`d-${selectedId}`} id={selectedId}/></PreviewDrawer>}
     </div>
   </main>;
 }
@@ -254,18 +253,19 @@ function OrderPreview({ id }: { id: number }) {
   ];
 
   return <section className="adv-card adv-ro-detail" aria-label={`Phiếu ${order.repair_order_code ?? ""}`}>
-    <header className="flex flex-wrap items-start gap-4">
-      <span className="adv-ro-doc-icon" aria-hidden="true"><Icon name="clipboard" size={30}/></span>
+    {/* Đầu khung cùng kiểu các trang khác: ô biểu tượng + vạch vàng + ánh nền. */}
+    <header className="adv-hv-head relative -mx-5.5 -mt-5.5 flex flex-wrap items-center gap-4 rounded-t-[18px] px-5.5 py-4 max-sm:-mx-4 max-sm:-mt-4 max-sm:px-4">
+      <span className="adv-hv-tile" aria-hidden="true"><Icon name="clipboard" size={30}/></span>
+      <span className="adv-hv-rule" aria-hidden="true"/>
       <div className="min-w-0 flex-1">
-        <h2 className="text-title tracking-wide text-cs-text"><Link className="hover:text-cs-accent-text hover:underline" to={orderStepPath(order.id)} title="Mở phiếu đầy đủ">{order.repair_order_code || `Phiếu #${order.id}`}</Link></h2>
-        <p className="mt-0.5 text-small text-cs-text-2">{order.appointment?.appointment_code ? `Tạo từ: Lịch hẹn ${order.appointment.appointment_code}` : "Tạo từ: Tiếp nhận khách vãng lai"}
+        <h2 className="text-[1.45rem] font-bold leading-tight tracking-wide text-cs-text"><Link className="adv-hv-code hover:text-cs-accent-text hover:underline" to={orderStepPath(order.id)} title="Mở phiếu đầy đủ">{order.repair_order_code || `Phiếu #${order.id}`}</Link></h2>
+        <p className="mt-1 text-small text-cs-text-2">Khách hàng <b className="text-cs-text">{order.customer?.full_name || "—"}</b>
           {order.flow_type === "QUICK" && <span className="ml-2 rounded-full bg-cs-soft px-2 py-0.5 text-caption font-semibold text-cs-on-soft">Dịch vụ nhanh</span>}</p>
+        <p className="mt-0.5 text-caption text-cs-muted">{order.appointment?.appointment_code ? `Tạo từ lịch hẹn ${order.appointment.appointment_code}` : "Tạo từ khách vãng lai"}</p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <StatusBadge domain="repair" status={order.status}/>
-        <Dropdown label="Thao tác khác" items={[
-          { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
-        ]}/>
+        <OpenOrderButton id={order.id}/>
       </div>
     </header>
 
@@ -322,16 +322,10 @@ function OrderPreview({ id }: { id: number }) {
         {index < all.length - 1 && <span className="absolute bottom-0 left-[5px] top-3 w-0.5 bg-cs-border" aria-hidden="true"/>}
         <span className={`absolute left-0 top-1.5 h-3 w-3 rounded-full ${index === 0 ? "bg-cs-accent" : "bg-cs-border-strong"}`} aria-hidden="true"/>
         <div className="flex flex-wrap items-center gap-2"><StatusBadge domain="repair" status={h.status || ""}/><span className="text-caption tabular-nums text-cs-muted">{formatDateTime(h.created_at)}</span></div>
-        {h.note && <p className="mt-1 text-caption text-cs-text-2">{h.note}</p>}
+        {h.note && <p className="mt-1 text-caption text-cs-text-2 font-medium">{h.note}</p>}
       </li>)}</ol> : <p className="text-small text-cs-muted">Chưa có lịch sử.</p>)}
 
-      {tab === "notes" && <dl className="grid gap-4 sm:grid-cols-2">
-        <div><dt className="text-caption text-cs-muted">Số km khi nhận</dt><dd className="mt-1 text-small font-semibold text-cs-text">{order.mileage_received == null ? "—" : `${order.mileage_received.toLocaleString("vi-VN")} km`}</dd></div>
-        <div><dt className="text-caption text-cs-muted">Tình trạng ban đầu</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{order.initial_condition || "Chưa ghi"}</dd></div>
-        {order.note && <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Ghi chú tiếp nhận</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{order.note}</dd></div>}
-        {order.vehicle_change_reason && <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Lý do đổi xe so với lịch hẹn</dt><dd className="mt-1 text-small text-cs-text">{order.vehicle_change_reason}</dd></div>}
-        {order.appointment && <div className="sm:col-span-2"><dt className="mb-2 text-caption text-cs-muted">Khách yêu cầu khi đặt lịch</dt><dd><CustomerRequestSummary request={order.appointment}/></dd></div>}
-      </dl>}
+      {tab === "notes" && <ReceptionNotes order={order}/>}
     </div>
 
     {next.text && <p className="adv-notice text-small"><Icon name={next.tone === "wait" ? "clock" : next.tone === "action" ? "arrow-right" : "info"} size={18} className="shrink-0 text-cs-accent-text"/><span className="min-w-0 flex-1">{next.text}</span></p>}

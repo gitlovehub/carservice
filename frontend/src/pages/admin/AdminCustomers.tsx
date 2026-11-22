@@ -10,6 +10,9 @@ import { AdminPage, ClearFilters, FilterSelect, InfoList, PaneSection, Person, P
 import { vnd } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
+import { OwnerEmailVerify } from "../advisor/OwnerEmailVerify";
+import { FieldError } from "../../components/ui/Field";
 
 type CarFilter = "all" | "has" | "none";
 type Draft = { name: string; phone: string; email: string; address: string };
@@ -43,6 +46,9 @@ export default function AdminCustomers() {
     { key: "spent", header: "Tổng chi tiêu", align: "right", render: c => <b className="whitespace-nowrap tabular-nums">{vnd(c.total_spent)}</b> },
   ];
 
+  const customerErrors = useFieldErrors();
+  const vehicleErrors = useFieldErrors();
+
   const toggleLock = async (customer: AdminCustomer) => {
     if (!customer.locked && !await confirm({ title: `Khóa khách hàng ${customer.name}?`, description: "Khách sẽ không đăng nhập và đặt lịch online được, mọi phiên đăng nhập bị thu hồi. Lịch sử sửa chữa vẫn được giữ nguyên.", confirmText: "Khóa khách hàng", variant: "danger", confirmIcon: "lock", phone: customer.phone ?? undefined })) return;
     try {
@@ -57,8 +63,13 @@ export default function AdminCustomers() {
   const saveCustomer = async () => {
     if (!form) return;
     const { draft } = form;
-    if (!draft.name.trim() || !/^0\d{9,10}$/.test(draft.phone.trim())) return setFormError("Nhập họ tên và số điện thoại hợp lệ (10–11 số, bắt đầu bằng 0).");
-    setSaving(true); setFormError("");
+    const problems: FieldErrors = {};
+    if (!draft.name.trim()) problems.name = "Nhập họ tên.";
+    if (!/^0\d{9,10}$/.test(draft.phone.trim())) problems.phone = "Số điện thoại gồm 10–11 số, bắt đầu bằng 0.";
+    if (draft.email.trim() && !/^\S+@\S+\.\S+$/.test(draft.email.trim())) problems.email = "Email không hợp lệ.";
+    setFormError("");
+    if (customerErrors.show(problems)) return;
+    setSaving(true);
     const body = { full_name: draft.name.trim(), phone: draft.phone.trim(), email: draft.email.trim() || null, address: draft.address.trim() || null };
     try {
       const response = form.id === null ? await adminApi.createCustomer(body) : await adminApi.updateCustomer(form.id, body);
@@ -67,7 +78,7 @@ export default function AdminCustomers() {
       setSelectedId(response.data.id);
       refresh();
     } catch (error) {
-      setFormError(errorMessage(error, "Không lưu được khách hàng."));
+      customerErrors.showApi(error, { full_name: "name", phone: "phone", email: "email" });
     } finally {
       setSaving(false);
     }
@@ -76,16 +87,21 @@ export default function AdminCustomers() {
   const saveVehicle = async () => {
     if (!vehicleForm || selectedId === null) return;
     const odo = vehicleForm.mileage.trim();
-    if (vehicleForm.selection.modelId === null) return setFormError("Chọn hãng và dòng xe.");
-    if (odo && (!/^\d+$/.test(odo) || Number(odo) > 9_999_999)) return setFormError("ODO phải là số km (số nguyên không âm).");
-    setSaving(true); setFormError("");
+    const problems: FieldErrors = {};
+    if (vehicleForm.selection.modelId === null) problems.model = "Chọn hãng và dòng xe.";
+    if (odo && (!/^\d+$/.test(odo) || Number(odo) > 9_999_999)) problems.mileage = "ODO phải là số km (số nguyên không âm).";
+    const year = vehicleForm.year.trim();
+    if (year && (!/^\d{4}$/.test(year) || Number(year) < 1990 || Number(year) > new Date().getFullYear() + 1)) problems.year = "Năm sản xuất không hợp lệ.";
+    setFormError("");
+    if (vehicleErrors.show(problems) || vehicleForm.selection.modelId === null) return;
+    setSaving(true);
     try {
       await adminApi.addVehicle({ customer_id: selectedId, model_id: vehicleForm.selection.modelId, trim_id: vehicleForm.selection.trimId, mileage: odo ? Number(odo) : null, year: vehicleForm.year ? Number(vehicleForm.year) : null });
       notify("Đã thêm xe cho khách hàng.", "success");
       setVehicleForm(null);
       refresh();
     } catch (error) {
-      setFormError(errorMessage(error, "Không thêm được xe."));
+      vehicleErrors.showApi(error, { model_id: "model", trim_id: "model", mileage: "mileage", year: "year" });
     } finally {
       setSaving(false);
     }
@@ -104,12 +120,12 @@ export default function AdminCustomers() {
           : <Button variant="outline" size="sm" icon="lock" onClick={() => void toggleLock(selected)}>Khóa khách hàng</Button>}
       </div>}
       <PaneSection title="Thông tin liên hệ" icon="user" action={<Button variant="ghost" size="sm" icon="edit"
-        onClick={() => { setFormError(""); setForm({ id: selected.id, draft: { name: selected.name, phone: selected.phone ?? "", email: selected.email ?? "", address: selected.address ?? "" } }); }}>Chỉnh sửa</Button>}>
+        onClick={() => { setFormError(""); customerErrors.reset(); setForm({ id: selected.id, draft: { name: selected.name, phone: selected.phone ?? "", email: selected.email ?? "", address: selected.address ?? "" } }); }}>Chỉnh sửa</Button>}>
         <InfoList items={[{ icon: "phone", value: selected.phone ?? "—" }, { icon: "mail", value: selected.email ?? "—" },
           { label: "Khách từ", value: fmtDate(selected.created_at) }, { label: "Số lần sửa", value: `${selected.visits} lần · ${vnd(selected.total_spent)}` }]}/>
       </PaneSection>
       <PaneSection title={`Danh sách xe (${selected.vehicles.length})`} icon="car" action={<Button variant="ghost" size="sm" icon="plus"
-        onClick={() => { setFormError(""); setVehicleForm({ selection: emptySelection, mileage: "", year: "" }); }}>Thêm xe</Button>}>
+        onClick={() => { setFormError(""); vehicleErrors.reset(); setVehicleForm({ selection: emptySelection, mileage: "", year: "" }); }}>Thêm xe</Button>}>
         {selected.vehicles.length ? <ul className="flex flex-col gap-2">
           {selected.vehicles.map(v => <li key={v.id} className="flex items-center gap-3 rounded-control border border-cs-border p-3">
             <span className="grid size-11 shrink-0 place-items-center rounded-control bg-cs-surface-2 text-cs-accent-text"><Icon name="car" size={24}/></span>
@@ -139,10 +155,10 @@ export default function AdminCustomers() {
       </PaneSection>}
     </>;
 
-  const setDraft = (patch: Partial<Draft>) => setForm(current => current && { ...current, draft: { ...current.draft, ...patch } });
+  const setDraft = (patch: Partial<Draft>) => { customerErrors.clear(...Object.keys(patch)); setForm(current => current && { ...current, draft: { ...current.draft, ...patch } }); };
 
   return <AdminPage title="Khách hàng" description="Hồ sơ khách và xe đã đăng ký" demo={false}
-    actions={<Button variant="primary" icon="plus" onClick={() => { setFormError(""); setForm({ id: null, draft: emptyDraft }); }}>Thêm khách hàng</Button>}>
+    actions={<Button variant="primary" icon="plus" onClick={() => { setFormError(""); customerErrors.reset(); setForm({ id: null, draft: emptyDraft }); }}>Thêm khách hàng</Button>}>
     <SplitView paneOpen={selectedId !== null} onClose={() => setSelectedId(null)} paneTitle="Hồ sơ khách hàng" pane={pane}
       list={<>
         <Toolbar>
@@ -160,19 +176,26 @@ export default function AdminCustomers() {
       description={form?.id ? undefined : "Hồ sơ khách tại quầy (khách tự tạo tài khoản khi đăng ký online)."}
       footer={<><Button disabled={saving} onClick={() => setForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void saveCustomer()}>Lưu</Button></>}>
       {form && <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Họ tên" required className="sm:col-span-2"><Input value={form.draft.name} maxLength={100} onChange={e => setDraft({ name: e.target.value })}/></Field>
-        <Field label="Số điện thoại" required><Input inputMode="tel" value={form.draft.phone} maxLength={11} onChange={e => setDraft({ phone: e.target.value })}/></Field>
-        <Field label="Email" optional><Input type="email" value={form.draft.email} onChange={e => setDraft({ email: e.target.value })}/></Field>        {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
+        <Field label="Họ tên" required error={customerErrors.errors.name} className="sm:col-span-2"><Input value={form.draft.name} maxLength={100} onChange={e => setDraft({ name: e.target.value })}/></Field>
+        <Field label="Số điện thoại" required error={customerErrors.errors.phone}><Input inputMode="tel" value={form.draft.phone} maxLength={11} onChange={e => setDraft({ phone: e.target.value })}/></Field>
+        {form.id !== null && selected?.email_verified
+          ? <div className="sm:col-span-2"><OwnerEmailVerify customerId={form.id} currentEmail={selected.email ?? ""} title={`Email đã xác minh: ${selected.email ?? ""}`}
+              description="Chỉ đổi khi chủ xe yêu cầu. Mã gửi tới email mới, email cũ sẽ nhận thông báo." actionLabel="Gửi mã tới email mới" clearEmail
+              onVerified={() => { notify("Đã đổi email chủ xe.", "success"); setForm(null); refresh(); }}/></div>
+          : <Field label="Email" optional error={customerErrors.errors.email}><Input type="email" value={form.draft.email} onChange={e => setDraft({ email: e.target.value })}/></Field>}        {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
       </div>}
     </Modal>
 
     <Modal open={vehicleForm !== null} onClose={() => setVehicleForm(null)} dismissible={!saving} title="Thêm xe cho khách" description={selected?.name}
       footer={<><Button disabled={saving} onClick={() => setVehicleForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void saveVehicle()}>Lưu xe</Button></>}>
       {vehicleForm && <div className="flex flex-col gap-4">
-        <VehicleSelector columns={1} value={vehicleForm.selection} disabled={saving} onChange={selection => setVehicleForm(current => current && { ...current, selection })}/>
+        <div role="group" aria-label="Hãng và dòng xe" aria-invalid={!!vehicleErrors.errors.model || undefined} className={vehicleErrors.errors.model ? "rounded-control border border-danger p-3" : undefined}>
+          <VehicleSelector columns={1} value={vehicleForm.selection} disabled={saving} onChange={selection => { vehicleErrors.clear("model"); setVehicleForm(current => current && { ...current, selection }); }}/>
+          <FieldError className="mt-1.5">{vehicleErrors.errors.model}</FieldError>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="ODO hiện tại (km)" optional><Input type="number" inputMode="numeric" min={0} step={1} value={vehicleForm.mileage} placeholder="VD: 45000" onChange={e => setVehicleForm(current => current && { ...current, mileage: e.target.value })}/></Field>
-          <Field label="Năm sản xuất" optional><Input type="number" min={1990} max={new Date().getFullYear() + 1} value={vehicleForm.year} onChange={e => setVehicleForm(current => current && { ...current, year: e.target.value })}/></Field>
+          <Field label="ODO hiện tại (km)" optional error={vehicleErrors.errors.mileage}><Input type="number" inputMode="numeric" min={0} step={1} value={vehicleForm.mileage} placeholder="VD: 45000" onChange={e => { vehicleErrors.clear("mileage"); setVehicleForm(current => current && { ...current, mileage: e.target.value }); }}/></Field>
+          <Field label="Năm sản xuất" optional error={vehicleErrors.errors.year}><Input type="number" min={1990} max={new Date().getFullYear() + 1} value={vehicleForm.year} onChange={e => { vehicleErrors.clear("year"); setVehicleForm(current => current && { ...current, year: e.target.value }); }}/></Field>
         </div>
         {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg">{formError}</p>}
       </div>}

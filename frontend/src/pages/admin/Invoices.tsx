@@ -104,7 +104,7 @@ export default function Invoices() {
         <table className="w-full text-small">
           <tbody>
             {selected.lines.map((l, i) => <tr key={`${l.name}-${i}`} className="border-b border-cs-border last:border-0">
-              <td className="py-2 pr-2 text-cs-text">{l.name}<span className="block text-caption text-cs-muted">{l.type === "PART" ? "Phụ tùng" : "Dịch vụ"} · SL {l.quantity} × {vnd(l.price)}</span></td>
+              <td className="py-2 pr-2 text-cs-text">{l.name}<span className="block text-caption text-cs-muted">{l.type === "PART" ? "Phụ tùng" : "Dịch vụ"} · Số lượng {l.quantity} ×{vnd(l.price)}</span></td>
               <td className="py-2 text-right tabular-nums">{vnd(l.amount)}</td>
             </tr>)}
           </tbody>

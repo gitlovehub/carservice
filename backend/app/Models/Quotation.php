@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 #[Fillable([
     'quotation_code', 'repair_order_id', 'advisor_id', 'version', 'subtotal',
     'discount_amount', 'total_amount', 'status', 'valid_until', 'customer_response_at',
-    'type', 'parent_quotation_id', 'reason',
+    'type', 'parent_quotation_id', 'reason', 'stays_overnight',
 ])]
 class Quotation extends Model
 {
@@ -41,6 +41,7 @@ class Quotation extends Model
             'total_amount' => 'decimal:2',
             'valid_until' => 'datetime',
             'customer_response_at' => 'datetime',
+            'stays_overnight' => 'boolean',
         ];
     }
 

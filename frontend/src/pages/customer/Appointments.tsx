@@ -18,10 +18,14 @@ import {
   updateAppointment,
   type CustomerAppointment,
 } from "../../services/customerApi";
+import { TimeRangeBar } from "../advisor/TimeRangeBar";
+import { rangeBounds, todayRange, type TimeRange } from "../advisor/timeRange";
 import { AccountCard, AccountPage, FilterBar, FilterSelect, InfoTile, InlineError, ModalFoot, ModalHead } from "./account/AccountKit";
 import { MODAL_CLASS, PRIMARY_RED } from "./account/accountStyles";
 import { useDeepLink } from "./account/useDeepLink";
 import { useGarageInfo } from "../../services/garageService";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
+import { FieldError } from "../../components/ui/Field";
 
 const PER_PAGE = 5;
 const canCancel = (a: CustomerAppointment) => ["PENDING", "CONFIRMED"].includes(a.status);
@@ -35,11 +39,13 @@ const TABS: { id: Tab; label: string; accept: (a: CustomerAppointment) => boolea
   { id: "cancelled", label: "Đã hủy", accept: (a) => ["CANCELLED", "NO_SHOW"].includes(a.status) },
 ];
 
-type SortKey = "date_desc" | "date_asc" | "created_desc";
+// Cùng bộ sắp xếp với trang Lịch hẹn của cố vấn.
+type SortKey = "date_desc" | "date_asc" | "created_desc" | "created_asc";
 const SORTS: { id: SortKey; label: string }[] = [
-  { id: "date_desc", label: "Ngày hẹn: mới nhất" },
-  { id: "date_asc", label: "Ngày hẹn: sớm nhất" },
-  { id: "created_desc", label: "Vừa đặt gần đây" },
+  { id: "date_asc", label: "Ngày hẹn sớm nhất" },
+  { id: "date_desc", label: "Ngày hẹn muộn nhất" },
+  { id: "created_desc", label: "Mới đặt gần đây" },
+  { id: "created_asc", label: "Đặt lâu nhất" },
 ];
 /** Mốc thời gian của lịch hẹn (ngày + giờ) để sắp xếp. */
 const appointmentTime = (a: CustomerAppointment) => new Date(`${a.appointment_date?.slice(0, 10)}T${(a.appointment_time ?? "00:00").slice(0, 5)}:00`).getTime() || 0;
@@ -79,11 +85,20 @@ export default function Appointments() {
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<SortKey>("date_desc");
+  // Lọc thời gian giống trang Lịch hẹn của cố vấn (Ngày / Tuần này / Tháng / Tùy chỉnh / Tất cả); khách mặc định xem tất cả.
+  const [range, setRange] = useState<TimeRange>(() => ({ ...todayRange(), mode: "all" }));
+  const bounds = rangeBounds(range);
+  const inRange = useCallback((a: CustomerAppointment) => {
+    const day = a.appointment_date?.slice(0, 10) ?? "";
+    return !bounds.date_from || (day >= bounds.date_from && day <= bounds.date_to);
+  }, [bounds.date_from, bounds.date_to]);
 
   /** Lịch hẹn khách bấm mở; `detail` = bản chi tiết đã tải (GET /appointments/{id}) của lịch đang mở. */
   const [opened, setOpened] = useState<CustomerAppointment | null>(null);
   const [detail, setDetail] = useState<CustomerAppointment | null>(null);
   const [modalError, setModalError] = useState("");
+  const fieldErrors = useFieldErrors();
+  const { reset: resetFieldErrors } = fieldErrors;
   const [mode, setMode] = useState<"view" | "edit" | "cancel">("view");
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
@@ -104,12 +119,13 @@ export default function Appointments() {
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase();
     const accept = TABS.find((t) => t.id === tab)?.accept ?? (() => true);
-    const list = items.filter(accept).filter((a) => !q || [a.appointment_code, a.vehicle?.license_plate, getVehicleName(a.vehicle), servicesText(a)]
+    const list = items.filter(inRange).filter(accept).filter((a) => !q || [a.appointment_code, a.vehicle?.license_plate, getVehicleName(a.vehicle), servicesText(a)]
       .some((v) => String(v ?? "").toLowerCase().includes(q)));
     return list.sort((a, b) => sort === "date_asc" ? appointmentTime(a) - appointmentTime(b)
       : sort === "created_desc" ? b.id - a.id
+      : sort === "created_asc" ? a.id - b.id
       : appointmentTime(b) - appointmentTime(a));
-  }, [items, tab, keyword, sort]);
+  }, [items, tab, keyword, sort, inRange]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const currentPage = Math.min(page, totalPages);
@@ -143,22 +159,26 @@ export default function Appointments() {
     setMode(nextMode);
     setCancelReason("");
     setModalError("");
-  }, []);
+    resetFieldErrors();
+  }, [resetFieldErrors]);
 
-  const closeModal = () => { setOpened(null); setDetail(null); setMode("view"); setModalError(""); clearLink(); };
+  const closeModal = () => { setOpened(null); setDetail(null); setMode("view"); setModalError(""); fieldErrors.reset(); clearLink(); };
 
   const handleSaveEdit = async () => {
     if (!selected) return;
-    if (!editDate || !editTime) { setModalError("Vui lòng chọn ngày và giờ hẹn."); return; }
-    setSaving(true);
+    const problems: FieldErrors = {};
+    if (!editDate) problems.date = "Vui lòng chọn ngày hẹn.";
+    if (!editTime) problems.time = "Vui lòng chọn giờ hẹn.";
     setModalError("");
+    if (fieldErrors.show(problems)) return;
+    setSaving(true);
     try {
       await updateAppointment(selected.id, { appointment_date: editDate, appointment_time: editTime });
       notify(`Đã đổi lịch hẹn ${selected.appointment_code} sang ${editTime} ngày ${formatDate(editDate)}.`, "success");
       closeModal();
       reloadList();
     } catch (e) {
-      setModalError(errorText(e, "Không thể cập nhật lịch hẹn."));
+      fieldErrors.showApi(e, { appointment_date: "date", appointment_time: "time" });
     } finally {
       setSaving(false);
     }
@@ -174,14 +194,14 @@ export default function Appointments() {
       closeModal();
       reloadList();
     } catch (e) {
-      setModalError(errorText(e, "Không thể hủy lịch hẹn."));
+      notify(errorText(e, "Không thể hủy lịch hẹn."), "error");
     } finally {
       setSaving(false);
     }
   };
 
   const todayISO = new Date().toISOString().slice(0, 10);
-  const count = (id: Tab) => items.filter(TABS.find((t) => t.id === id)!.accept).length;
+  const count = (id: Tab) => items.filter(inRange).filter(TABS.find((t) => t.id === id)!.accept).length;
 
   return (
     <AccountPage
@@ -198,6 +218,8 @@ export default function Appointments() {
           </button>
         ))}
       </div>
+
+      <TimeRangeBar value={range} onChange={(value) => { setRange(value); setPage(1); }}/>
 
       <FilterBar search={keyword} onSearch={(v) => { setKeyword(v); setPage(1); }} placeholder="Tìm mã lịch hẹn, dịch vụ, biển số…" count={loading ? undefined : `${filtered.length} lịch hẹn`}>
         <FilterSelect label="Sắp xếp lịch hẹn" value={sort} onChange={(v) => { setSort(v as SortKey); setPage(1); }}>
@@ -264,8 +286,8 @@ export default function Appointments() {
                 <p className="text-[13px] font-bold text-cs-muted">Dịch vụ / gói đã chọn</p>
                 <p className="mt-1 text-[15px] text-cs-text">{servicesText(selected)}</p>
               </div>
-              {selected.symptom_description && <div><p className="text-[13px] font-bold text-cs-muted">Mô tả tình trạng</p><p className="mt-1 whitespace-pre-line text-[15px] text-cs-text">{selected.symptom_description}</p></div>}
-              {selected.note && <div><p className="text-[13px] font-bold text-cs-muted">Ghi chú</p><p className="mt-1 whitespace-pre-line text-[15px] text-cs-text">{selected.note}</p></div>}
+              {selected.symptom_description && <div><p className="text-[13px] font-bold text-cs-muted">Mô tả tình trạng</p><p className="mt-1 whitespace-pre-line text-[15px] text-cs-text font-medium">{selected.symptom_description}</p></div>}
+              {selected.note && <div><p className="text-[13px] font-bold text-cs-muted">Ghi chú</p><p className="mt-1 whitespace-pre-line text-[15px] text-cs-text font-medium">{selected.note}</p></div>}
               {selected.status === "CANCELLED" && selected.cancel_reason && <InlineError>Lý do hủy: {selected.cancel_reason}</InlineError>}
 
               {/* Giới hạn khách tự đổi lịch: còn mấy lần / hạn chót; hết thì hướng dẫn liên hệ gara. */}
@@ -278,9 +300,11 @@ export default function Appointments() {
               {mode === "edit" && (
                 <div className="grid gap-4 rounded-2xl border border-cs-border p-4 sm:grid-cols-2">
                   <label className="flex flex-col gap-1.5"><span className="text-label text-cs-text-2">Ngày hẹn mới</span>
-                    <input type="date" min={todayISO} value={editDate} onChange={(e) => setEditDate(e.target.value)} className={controlClass}/></label>
+                    <input type="date" min={todayISO} aria-invalid={!!fieldErrors.errors.date || undefined} value={editDate} onChange={(e) => { setEditDate(e.target.value); fieldErrors.clear("date"); }} className={controlClass}/>
+                    <FieldError>{fieldErrors.errors.date}</FieldError></label>
                   <label className="flex flex-col gap-1.5"><span className="text-label text-cs-text-2">Giờ hẹn mới</span>
-                    <input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} className={controlClass}/></label>
+                    <input type="time" aria-invalid={!!fieldErrors.errors.time || undefined} value={editTime} onChange={(e) => { setEditTime(e.target.value); fieldErrors.clear("time"); }} className={controlClass}/>
+                    <FieldError>{fieldErrors.errors.time}</FieldError></label>
                 </div>
               )}
               {mode === "cancel" && (

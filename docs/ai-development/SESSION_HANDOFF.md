@@ -3,6 +3,22 @@
 > Chế độ: **AUTONOMOUS DONE MODE** (D-015) — tự triển khai + tự commit từng chức năng; không push.
 > Cập nhật: 10/11/2026 — góp ý PO đợt 3 trang Admin (xong). Tiếp theo: client → cố vấn (B-05 để lúc làm cố vấn).
 
+## ADV-19 — Tiếp nhận, ghi chú, phát sinh, qua đêm (22/11/2026, `v3-advisor`, chưa commit) — VERIFIED
+
+- Chi tiết ở MASTER_TASK_LIST ADV-19, quyết định D-026..028. Hai lỗ hổng của ADV-QA đợt 1 bên dưới đã xử lý.
+- PO chỉnh thêm 22/11: xóa hẳn `repair_orders.note` (DB dev đã migrate tới `2026_11_22_045143`, có file sao lưu, xem D-028; **deploy sẽ xóa cột này trên production, cần sao lưu trước**), VIN nhận 6–17 ký tự hợp lệ, tag Gói / Dịch vụ sau tên, góc vuông, tone trạng thái, khối ghi chú chỉ đậm tiêu đề.
+- Nút primary **Chi tiết phiếu** (`OpenOrderButton` trong `advisorListKit.tsx`): khung xem nhanh Phiếu, Báo giá, Tiến độ, Kiểm tra & bàn giao, Thanh toán, Biên bản; Phụ tùng (yêu cầu + lịch sử xuất nhập); Khách hàng (lịch sử + đánh giá); Lịch hẹn đã có phiếu. Backend 409/409.
+- Phiếu cũ: `initial_condition` có thể đang chứa lời khách (form cũ ghi lẫn) nên hiện dưới "Tình trạng xe khi nhận"; không tự chuyển dữ liệu vì không phân biệt được.
+- **Tiếp theo**: bấm thao tác trên giao diện cho các nhánh còn lại của ADV-QA.
+
+## ADV-QA — đợt 1 (22/11/2026, `v3-advisor`, chưa commit) — IN_PROGRESS
+
+- Môi trường: SQLite QA riêng + storage riêng + `MAIL_MAILER=log`, queue sync; không ghi vào `carservice_db`, không gửi email thật. Muốn PHP nhận `LARAVEL_STORAGE_PATH` phải chạy với `-d variables_order=EGPCS`.
+- Đạt qua API: luồng chính, vãng lai, dịch vụ nhanh, từ chối toàn bộ, từ chối một phần, phát sinh (chỉ dịch vụ), chờ phụ tùng, đổi xe, ủy quyền nhận xe. Trình duyệt chỉ đọc 30 trang × 2 khổ màn hình không có lỗi; chưa bấm thao tác từng nút trên giao diện.
+- **Lỗ hổng cần PO quyết**: đang sửa mà phát hiện phụ tùng mới thì không lập được báo giá phát sinh cho phụ tùng đó: `addInspectionRecommendation` chặn thêm đề xuất sau khi bắt đầu sửa, còn `addQuotationItems` bắt buộc phụ tùng phải có trong đề xuất. `SupplementalQuotationTest` không phát hiện vì tạo đề xuất thẳng trong DB.
+- **Cần PO định nghĩa**: "xe qua đêm" chưa có nghiệp vụ; `services.requires_vehicle_stay` chỉ được lưu, không có logic hay giao diện dùng.
+- Lượt chạy đầu ghi 4 dòng lỗi nghiệp vụ vào `backend/storage/logs/laravel.log` thật (09:25–09:27); 4 ảnh thử đã chuyển khỏi storage thật.
+
 ## ADV-17 — Xe của khách hàng theo mockup PO (17/11/2026, `v3-advisor`, chưa commit) — VERIFIED
 
 - Chi tiết ở MASTER_TASK_LIST ADV-17. "Xe bảo dưỡng định kỳ" = xe từng đặt gói bảo dưỡng tại gara (dữ liệu thật); hệ thống chưa có "đến hạn bảo dưỡng".

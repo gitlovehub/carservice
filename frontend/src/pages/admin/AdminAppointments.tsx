@@ -334,7 +334,7 @@ function AppointmentDetail({ a }: { a: AppointmentRow }) {
       </dl>
     </PaneSection>
     <PaneSection title="Mô tả triệu chứng / yêu cầu" icon="file">
-      <p className="whitespace-pre-wrap rounded-control bg-cs-surface-2 px-3 py-2.5 text-small text-cs-text-2">{a.symptom_description || a.note || "Khách không ghi mô tả."}</p>
+      <p className="whitespace-pre-wrap rounded-control bg-cs-surface-2 px-3 py-2.5 text-small text-cs-text-2 font-medium">{a.symptom_description || a.note || "Khách không ghi mô tả."}</p>
     </PaneSection>
     <PaneSection title="Danh sách dịch vụ (dự kiến)" icon="wrench">
       {lines.length ? <div className="overflow-hidden rounded-control border border-cs-border">
@@ -342,7 +342,7 @@ function AppointmentDetail({ a }: { a: AppointmentRow }) {
           <thead><tr className="bg-cs-surface-2 text-left text-caption text-cs-muted"><th className="px-3 py-2 font-semibold">Dịch vụ</th><th className="px-3 py-2 text-right font-semibold">Đơn giá</th></tr></thead>
           <tbody>
             {lines.map(l => <tr key={l.key} className="border-t border-cs-border">
-              <td className="px-3 py-2 text-cs-text">{l.name}{l.note && <span className="block text-caption text-cs-muted">{l.note}</span>}</td>
+              <td className="px-3 py-2 text-cs-text">{l.name}{l.note && <span className="block text-caption text-cs-muted font-medium">{l.note}</span>}</td>
               <td className="px-3 py-2 text-right tabular-nums">{money(l.price)}</td>
             </tr>)}
           </tbody>

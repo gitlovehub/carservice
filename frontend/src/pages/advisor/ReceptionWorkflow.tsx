@@ -1,29 +1,33 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { DayFilter } from "./DayFilter";
+import { RangePicker } from "./advisorListKit";
+import { RANGES, rangeDates, type Range } from "./advisorListFormat";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Button } from "../../components/ui/Button";
-import { Field, Input, Textarea } from "../../components/ui/Field";
+import { Button, IconButton } from "../../components/ui/Button";
+import { Field, Input } from "../../components/ui/Field";
 import { Icon, type IconName } from "../../components/ui/Icon";
-import { KmInput } from "../../components/ui/QuantityStepper";
-import { LoadingState, EmptyState, ErrorState, Pagination } from "../../components/ui";
+import { LoadingState, EmptyState, ErrorState, Pagination, SearchInput } from "../../components/ui";
+import { useDebounced } from "../admin/kit/useDebounced";
 import { StatusBadge } from "../../components/ui/Badge";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import { catalogAdminApi, dmy, hhmm, type AppointmentRow } from "../../services/catalogAdminApi";
 import {
-  advisorAppointment, capacityApi, checkInConfirmedAppointment, confirmPendingAppointment, counterCustomerVehicles, receiveRepairOrder, sendAppointmentConfirmationEmail, workflowApi,
-  type CatalogService, type CounterVehicle, type WorkflowAppointment,
+  advisorAppointment, capacityApi, checkInConfirmedAppointment, confirmPendingAppointment, counterCustomerVehicles, receiveRepairOrder, sendAppointmentConfirmationEmail,
+  type CounterVehicle, type WorkflowAppointment,
 } from "../../services/workflowService";
-import { FilterSelect } from "../admin/kit/AdminKit";
+import { Dropdown, type DropdownItem } from "../../components/ui/Dropdown";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
-import { AppointmentHistoryPanel } from "./AppointmentHistoryPanel";
+import { AppointmentReschedulePanel, AppointmentTimeline } from "./AppointmentHistoryPanel";
 import { CapacityWeek } from "./CapacityWeek";
-import { VehicleChoiceList } from "./CounterFields";
-import { emptyVehicleDraft, toNewVehicle, vehicleDraftError, type NewVehicleDraft } from "./counterForms";
+import { NewVehicleFields, VehicleChoiceList } from "./CounterFields";
+import { Modal } from "../../components/ui/Modal";
+import { emptyReceptionDraft, emptyVehicleDraft, RECEPTION_API_FIELDS, receptionPayload, receptionProblems, toNewVehicle, vehicleDraftProblems, type NewVehicleDraft } from "./counterForms";
 import CustomerRequestSummary from "./CustomerRequestSummary";
+import { ReceptionFields } from "./ReceptionFields";
 import { WalkInReception } from "./WalkInReception";
 import { Notice } from "./WorkflowUI";
 import { capacityText, checkInConfirmOptions, confirmAppointmentOptions, errorText, formatSlot, isTodayIso, sendEmailConfirmOptions } from "./workflowFormat";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 import "./advisorDashboard.css";
 
 /**
@@ -35,9 +39,19 @@ import "./advisorDashboard.css";
  * Phiếu được tạo ở bước 2 vì ảnh / biên bản gắn với phiếu. Khách vãng lai: nút ở danh sách (?mode=walk-in).
  */
 
-const isoDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const initials = (name?: string | null) => (name ?? "?").trim().split(/\s+/).slice(-2).map(w => w[0]).join("").toUpperCase();
 const PER_PAGE = 6;
+const SCOPES: Array<{ value: "todo" | "all"; label: string }> = [
+  { value: "todo", label: "Chưa lập phiếu" },
+  { value: "all", label: "Gồm cả lịch đã có phiếu" },
+];
+type QueueStatus = "" | "PENDING" | "CONFIRMED" | "CHECKED_IN";
+const QUEUE_STATUSES: Array<{ value: QueueStatus; label: string }> = [
+  { value: "", label: "Tất cả" },
+  { value: "PENDING", label: "Chờ xác nhận" },
+  { value: "CONFIRMED", label: "Chờ xe đến" },
+  { value: "CHECKED_IN", label: "Xe đã đến" },
+];
 const STEPS: Array<{ icon: IconName; title: string; desc: string }> = [
   { icon: "calendar", title: "Chọn lịch hẹn", desc: "Xác nhận lịch, khách đến gara" },
   { icon: "car", title: "Kiểm tra & ghi nhận", desc: "Xe thực tế, tình trạng, hình ảnh" },
@@ -66,22 +80,27 @@ function Stepper({ current }: { current: number }) {
 function AppointmentQueue({ selectedId, onSelect, onWalkIn, walkIn, version }: {
   selectedId: number; onSelect: (id: number) => void; onWalkIn: () => void; walkIn: boolean; version: number;
 }) {
-  const [date, setDate] = useState(isoDay());
-  const [serviceId, setServiceId] = useState("all");
+  const [range, setRange] = useState<Range>("today");
+  const [status, setStatus] = useState<QueueStatus>("");
   const [scope, setScope] = useState<"todo" | "all">("todo");
+  const [search, setSearch] = useState("");
+  const term = useDebounced(search.trim(), 350);
   const [page, setPage] = useState(1);
-  const [services, setServices] = useState<CatalogService[]>([]);
-  useEffect(() => {
-    let active = true;
-    workflowApi.services().then(list => { if (active) setServices(list); }).catch(() => undefined);
-    return () => { active = false; };
-  }, []);
-  const params = { date, service_id: serviceId, per_page: 200, v: version };
+  const filtersActive = status !== "" || scope !== "todo";
+  const clearFilters = () => { setStatus(""); setScope("todo"); setPage(1); };
+  const filterItems: DropdownItem[] = [
+    ...QUEUE_STATUSES.map(o => ({ label: o.label, icon: o.value === status ? "check" as const : undefined, onSelect: () => { setStatus(o.value); setPage(1); } })),
+    { type: "separator" },
+    ...SCOPES.map(o => ({ label: o.label, icon: o.value === scope ? "check" as const : undefined, onSelect: () => { setScope(o.value); setPage(1); } })),
+    ...(filtersActive ? [{ type: "separator" as const }, { label: "Xoá bộ lọc", icon: "x" as const, onSelect: clearFilters }] : []),
+  ];
+  const { from, to } = rangeDates(range);
+  const params = { date_from: from, date_to: to, search: term, statuses: status || "PENDING,CONFIRMED,CHECKED_IN", per_page: 500, v: version };
   const list = useAdminQuery(`reception-queue:${JSON.stringify(params)}`, signal => catalogAdminApi.appointments(params, signal));
   const all = ((list.data ?? list.stale)?.data ?? [])
-    .filter(a => ["PENDING", "CONFIRMED", "CHECKED_IN"].includes(a.status))
+    .filter(a => (status ? [status] : ["PENDING", "CONFIRMED", "CHECKED_IN"]).includes(a.status))
     .filter(a => scope === "all" || !a.repair_order)
-    .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time));
+    .sort((a, b) => a.appointment_date.localeCompare(b.appointment_date) || a.appointment_time.localeCompare(b.appointment_time));
   const pages = Math.max(1, Math.ceil(all.length / PER_PAGE));
   const shown = all.slice((Math.min(page, pages) - 1) * PER_PAGE, Math.min(page, pages) * PER_PAGE);
 
@@ -90,15 +109,22 @@ function AppointmentQueue({ selectedId, onSelect, onWalkIn, walkIn, version }: {
       <div className="min-w-0 flex-1"><p className="adv-section-title whitespace-nowrap">Cần tiếp nhận <span className="rounded-full bg-cs-accent px-2 py-0.5 text-caption font-bold text-cs-accent-contrast">{all.length}</span></p><p className="truncate text-caption text-cs-muted">Chọn một lịch để tiếp nhận xe.</p></div>
       <Button size="sm" variant={walkIn ? "primary" : "outline"} icon="user" onClick={onWalkIn}>Khách vãng lai</Button>
     </header>
-    <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
-      <DayFilter className="w-full" value={date} onChange={value => { setDate(value); setPage(1); }}/>
-      <FilterSelect label="Dịch vụ" value={serviceId} onChange={v => { setServiceId(v); setPage(1); }} options={[{ value: "all", label: "Tất cả" }, ...services.map(s => ({ value: String(s.id), label: s.name }))]}/>
-      <FilterSelect label="Hiện" value={scope} onChange={v => { setScope(v); setPage(1); }} options={[{ value: "todo", label: "Chưa lập phiếu" }, { value: "all", label: "Tất cả" }]}/>
+    <div className="space-y-3 px-4 pt-3">
+      <div className="flex items-center gap-2">
+        <RangePicker label="Khoảng ngày hẹn" anyLabel="Tất cả" value={range} onChange={r => { setRange(r); setPage(1); }}/>
+        <Dropdown label="Lọc lịch hẹn" items={filterItems}
+          trigger={props => <IconButton {...props} icon="filter" label="Lọc theo trạng thái" className={filtersActive ? "adv-ro-filter-on" : ""}/>}/>
+      </div>
+      <SearchInput value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Mã lịch, biển số, tên khách, SĐT…" className="adv-ro-search"/>
+      {filtersActive && <p className="flex flex-wrap items-center gap-2 text-caption text-cs-text-2">
+        Đang lọc: <b className="text-cs-text">{QUEUE_STATUSES.find(o => o.value === status)?.label}</b><span>· {SCOPES.find(o => o.value === scope)?.label}</span>
+        <button type="button" className="font-semibold text-cs-accent-text hover:underline" onClick={clearFilters}>Bỏ lọc</button>
+      </p>}
     </div>
     <div className="flex-1 space-y-2.5 p-4">
       {list.loading && !list.stale ? <LoadingState compact/>
         : list.error ? <ErrorState compact description={list.error} onRetry={list.reload}/>
-        : !shown.length ? <EmptyState compact icon="calendar" title="Không có lịch cần tiếp nhận" description={`Ngày ${dmy(date)} không còn lịch chờ. Khách đến không hẹn → "Khách vãng lai".`}/>
+        : !shown.length ? <EmptyState compact icon="calendar" title={term ? "Không tìm thấy lịch phù hợp" : "Không có lịch cần tiếp nhận"} description={term ? "Thử tìm theo biển số, SĐT hoặc mã lịch khác." : range === "any" ? "Không còn lịch chờ tiếp nhận." : `${RANGES.find(r => r.id === range)?.label ?? ""} không còn lịch chờ.`}/>
         : shown.map(a => { const label = queueLabel(a); return <button key={a.id} type="button" className="adv-appt" aria-current={selectedId === a.id} onClick={() => onSelect(a.id)}>
           <span className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-2 text-small font-bold tabular-nums text-cs-text"><Icon name="clock" size={15} className="text-cs-accent-text"/>{hhmm(a.appointment_time)} <span className="font-normal text-cs-muted">· {dmy(a.appointment_date)}</span></span>
@@ -134,12 +160,23 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
   const [vehicleChoice, setVehicleChoice] = useState<number | "new" | null>(null);
   const [newVehicle, setNewVehicle] = useState<NewVehicleDraft>(emptyVehicleDraft);
   const [changeReason, setChangeReason] = useState("");
-  const [mileage, setMileage] = useState("");
-  const [condition, setCondition] = useState("");
-  const [note, setNote] = useState("");
+  const [newVehicleOpen, setNewVehicleOpen] = useState(false);
+  const [draftVehicle, setDraftVehicle] = useState<NewVehicleDraft>(emptyVehicleDraft);
+  const draftErrors = useFieldErrors();
+  const resetVehicle = () => { setVehicleChoice(null); setChangeReason(""); };
+  const openNewVehicle = () => { setDraftVehicle(newVehicle); draftErrors.reset(); setNewVehicleOpen(true); };
+  const saveNewVehicle = () => {
+    if (draftErrors.show(vehicleDraftProblems(draftVehicle, true))) return;
+    setNewVehicle(draftVehicle); setVehicleChoice("new"); setNewVehicleOpen(false);
+  };
+  const [reception, setReception] = useState(emptyReceptionDraft);
   const bookedVehicleId = selected ? (selected.vehicle?.id ?? selected.vehicle_id ?? null) : null;
   const chosenVehicle = vehicleChoice ?? bookedVehicleId;
   const vehicleChanged = chosenVehicle === "new" || (chosenVehicle != null && bookedVehicleId != null && chosenVehicle !== bookedVehicleId);
+  const isNewVehicle = chosenVehicle === "new";
+  // Hồ sơ xe đang chọn: biết còn thiếu năm / VIN để hỏi đúng ô.
+  const chosenRecord = isNewVehicle ? null
+    : vehicles.find(v => v.id === chosenVehicle) ?? (chosenVehicle === bookedVehicleId ? selected?.vehicle ?? null : null);
 
   const load = useCallback(() => advisorAppointment(id), [id]);
   // Lịch đã có phiếu → biên bản nhận xe, chẩn đoán… làm ở trang Phiếu sửa chữa (PO 18/11): tự chuyển sang phiếu.
@@ -182,7 +219,7 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
     if (!approved) return;
     setWorking(true); setError("");
     try { await refresh(await sendAppointmentConfirmationEmail(selected.id)); }
-    catch (err) { setError(errorText(err)); }
+    catch (err) { fieldErrors.showApi(err); }
     finally { setWorking(false); }
   }
 
@@ -201,7 +238,7 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
     if (!approved) return;
     setWorking(true); setError("");
     try { await confirmPendingAppointment(selected.id); await refresh(`Đã xác nhận lịch hẹn ${selected.appointment_code}. Tiếp nhận xe khi khách đến gara.`); }
-    catch (err) { setError(errorText(err)); }
+    catch (err) { fieldErrors.showApi(err); }
     finally { setWorking(false); }
   }
 
@@ -211,22 +248,28 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
     if (!approved) return;
     setWorking(true); setError("");
     try { await checkInConfirmedAppointment(selected.id); await refresh("Khách đã đến. Kiểm tra xe thực tế rồi tạo phiếu để lập biên bản nhận xe."); }
-    catch (err) { setError(errorText(err)); }
+    catch (err) { fieldErrors.showApi(err); }
     finally { setWorking(false); }
   }
+
+  const fieldErrors = useFieldErrors();
 
   async function submitReceive(event: FormEvent) {
     event.preventDefault();
     if (!selected || selected.status !== "CHECKED_IN" || working) return;
     const customerId = selected.customer?.id ?? selected.customer_id;
-    if (!customerId || !chosenVehicle) { setError("Không xác định được khách hàng hoặc xe trong lịch hẹn."); return; }
-    if (chosenVehicle === "new") { const message = vehicleDraftError(newVehicle); if (message) { setError(message); return; } }
-    if (vehicleChanged && changeReason.trim().length < 5) { setError("Xe mang tới khác xe trong lịch hẹn: nhập lý do đổi xe (ít nhất 5 ký tự)."); return; }
-    if (mileage.trim() && !/^\d+$/.test(mileage.trim())) { setError("Số km phải là số nguyên không âm."); return; }
+    if (!customerId || !chosenVehicle) { fieldErrors.general("Không xác định được khách hàng hoặc xe trong lịch hẹn."); return; }
+    if (chosenVehicle === "new" && Object.keys(vehicleDraftProblems(newVehicle, true)).length) {
+      setDraftVehicle(newVehicle); setNewVehicleOpen(true); draftErrors.show(vehicleDraftProblems(newVehicle, true)); return;
+    }
+    const problems: FieldErrors = receptionProblems(reception, chosenRecord, isNewVehicle);
+    if (vehicleChanged && changeReason.trim().length < 5) problems.changeReason = "Nhập lý do đổi xe (ít nhất 5 ký tự).";
+    setError("");
+    if (fieldErrors.show(problems)) return;
     const approved = await confirm({
       title: "Xác nhận tạo phiếu sửa chữa", reference: selected.appointment_code,
       description: "Tạo phiếu sửa chữa cho xe khách mang tới. Mỗi lịch hẹn chỉ được có một phiếu. Bước tiếp theo: lập biên bản nhận xe (ảnh, vị trí hư hỏng, chìa khóa, giấy tờ) và gửi chủ xe xác nhận.",
-      confirmText: "Tạo phiếu sửa chữa", checklist: ["Đã đối chiếu xe thực tế với biển số và lịch hẹn."],
+      confirmText: "Tạo phiếu sửa chữa", checklist: ["Đã đối chiếu xe thực tế, ODO và số VIN với lịch hẹn."],
     });
     if (!approved) return;
     setWorking(true); setError("");
@@ -234,15 +277,15 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
       const result = await receiveRepairOrder({
         appointment_id: selected.id, customer_id: customerId,
         ...(chosenVehicle === "new" ? { vehicle: toNewVehicle(newVehicle) } : { vehicle_id: chosenVehicle }),
-        ...(mileage.trim() ? { mileage_received: Number(mileage) } : {}),
-        ...(condition.trim() ? { initial_condition: condition.trim() } : {}),
-        ...(note.trim() ? { note: note.trim() } : {}),
+        ...receptionPayload(reception, chosenRecord, isNewVehicle),
         ...(vehicleChanged ? { vehicle_change_reason: changeReason.trim() } : {}),
       });
       onChanged();
       // Có phiếu → sang trang Phiếu sửa chữa để lập biên bản nhận xe, chẩn đoán, báo giá.
       openOrder(result.order.id, result.existing ? "Lịch đã có phiếu, không tạo trùng." : "Đã tạo phiếu. Lập biên bản nhận xe (ảnh, hư hỏng, chìa khóa, giấy tờ) rồi gửi chủ xe xác nhận.");
-    } catch (err) { setError(errorText(err)); }
+    } catch (err) {
+      fieldErrors.showApi(err, { vehicle_change_reason: "changeReason", ...RECEPTION_API_FIELDS });
+    }
     finally { setWorking(false); }
   }
 
@@ -296,29 +339,53 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
       <Button variant="primary" icon="car" loading={working} loadingText="Đang tiếp nhận..." onClick={() => void handleCheckIn()}>Khách đã đến</Button>
     </section>}
 
-    {selected.status === "CHECKED_IN" && <form onSubmit={event => void submitReceive(event)} className="space-y-4 border-t border-cs-border pt-5">
+    {selected.status === "CHECKED_IN" && <form noValidate onSubmit={event => void submitReceive(event)} className="space-y-4 border-t border-cs-border pt-5">
       <p className="adv-section-title"><Icon name="car" size={17} className="text-cs-accent-text"/>Kiểm tra xe thực tế</p>
-      <div>
-        <p className="mb-2 text-sm font-semibold text-cs-text">Xe thực tế mang tới</p>
-        <VehicleChoiceList name="received-vehicle" vehicles={vehicles} value={chosenVehicle} onChange={setVehicleChoice} bookedVehicleId={bookedVehicleId}
-          newVehicle={newVehicle} onNewVehicleChange={setNewVehicle} newLabel="Xe khác, chưa có trong hệ thống"/>
-      </div>
-      {vehicleChanged && <Field label="Lý do đổi xe" required hint="Được ghi vết trong lịch sử phiếu."><Input minLength={5} maxLength={500} value={changeReason} onChange={e => setChangeReason(e.target.value)} placeholder="Ví dụ: xe đặt lịch đang đi công tác, khách mang xe còn lại"/></Field>}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Số km khi tiếp nhận" optional><KmInput label="Số km khi tiếp nhận" value={mileage} onChange={setMileage}/></Field>
-        <Field label="Ghi chú tiếp nhận" optional><Input maxLength={500} value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú nội bộ"/></Field>
-      </div>
-      <Field label="Khách mô tả tình trạng / yêu cầu" hint="Hiện trạng xe (trầy, móp, phụ kiện, ảnh) ghi ở biên bản nhận xe ngay sau khi tạo phiếu."><Textarea rows={2} maxLength={2000} value={condition} onChange={e => setCondition(e.target.value)}/></Field>
+      {/* Mặc định nhận đúng xe trong lịch hẹn; khách mang xe khác mới mở danh sách chọn (PO 18/11). */}
+      {chosenVehicle === "new"
+        ? <div className="flex flex-wrap items-center gap-3 rounded-xl border border-cs-accent p-3">
+          <VehicleBrandLogo brand={newVehicle.selection.brandName} size={36}/>
+          <div className="min-w-0 flex-1"><b className="block text-cs-text">{newVehicle.plate.trim().toUpperCase() || "xxx.xx"}</b>
+            <span className="block truncate text-caption text-cs-text-2">{[newVehicle.selection.brandName, newVehicle.selection.modelName, newVehicle.selection.trimName, newVehicle.year.trim()].filter(Boolean).join(" · ")} · xe mới, lưu khi tạo phiếu</span></div>
+          <Button type="button" size="sm" variant="outline" icon="edit" onClick={() => openNewVehicle()}>Sửa</Button>
+          <Button type="button" size="sm" variant="ghost" icon="x" onClick={resetVehicle}>Bỏ</Button>
+        </div>
+        // Lịch không gắn xe: chọn trong xe đã có của khách.
+        : bookedVehicleId == null && <div>
+          <p className="mb-2 text-sm font-semibold text-cs-text">Chọn xe khách mang tới</p>
+          <VehicleChoiceList name="received-vehicle" vehicles={vehicles} value={chosenVehicle} onChange={setVehicleChoice} bookedVehicleId={bookedVehicleId}
+            newVehicle={newVehicle} onNewVehicleChange={setNewVehicle} allowNew={false}/>
+        </div>}
+      {chosenVehicle !== "new" && <div className="flex flex-wrap gap-2">
+        <Button type="button" size="sm" variant="outline" icon="plus" onClick={() => openNewVehicle()}>Xe khác, chưa có trong hệ thống</Button>
+      </div>}
+      {vehicleChanged && <Field label="Lý do đổi xe" required error={fieldErrors.errors.changeReason} hint="Được ghi vết trong lịch sử phiếu."><Input minLength={5} maxLength={500} value={changeReason} onChange={e => { setChangeReason(e.target.value); fieldErrors.clear("changeReason"); }} placeholder="Ví dụ: xe đặt lịch đang đi công tác, khách mang xe còn lại"/></Field>}
+      <ReceptionFields value={reception} onChange={setReception} errors={fieldErrors.errors} onClearError={key => fieldErrors.clear(key)} vehicle={chosenRecord} isNewVehicle={isNewVehicle} hasBooking/>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-cs-border pt-4">
         <p className="text-caption text-cs-muted">Mỗi lịch hẹn chỉ được có một phiếu sửa chữa.</p>
         <button type="submit" className="adv-btn-gold" disabled={working} aria-busy={working || undefined}>{working ? "Đang tạo phiếu..." : "Tạo phiếu sửa chữa & lập biên bản"}<Icon name="arrow-right" size={18}/></button>
       </div>
     </form>}
+    {/* Ngoài <form> tạo phiếu: Enter trong modal không gửi nhầm form. */}
+    <Modal size="xl" open={newVehicleOpen} onClose={() => setNewVehicleOpen(false)} title="Xe chưa có trong hệ thống" description="Xe được lưu vào hồ sơ khách khi tạo phiếu sửa chữa."
+      footer={<>
+        <Button type="button" variant="ghost" onClick={() => setNewVehicleOpen(false)}>Huỷ</Button>
+        <Button type="button" variant="primary" icon="check" onClick={saveNewVehicle}>Dùng xe này</Button>
+      </>}>
+      {/* Cao tối thiểu đủ cho danh sách hãng / dòng xe sổ xuống, không bị thân modal cắt. */}
+      <form className="min-h-[26rem] space-y-3 max-sm:min-h-0" onSubmit={e => { e.preventDefault(); saveNewVehicle(); }}>
+        <NewVehicleFields atReception value={draftVehicle} onChange={setDraftVehicle} errors={draftErrors.errors} onClearError={draftErrors.clear}/>
+      </form>
+    </Modal>
 
-    <details className="border-t border-cs-border pt-5">
-      <summary className="adv-section-title cursor-pointer"><Icon name="history" size={17} className="text-cs-accent-text"/>Đổi lịch & lịch sử xác nhận</summary>
-      <div className="mt-4"><AppointmentHistoryPanel key={`history-${selected.id}-${selected.appointment_date}-${selected.appointment_time}-${selected.status}`} appointment={selected} onChanged={(_updated, text) => { void refresh(text); }}/></div>
-    </details>
+    <section className="border-t border-cs-border pt-5">
+      <p className="adv-section-title"><Icon name="calendar" size={17} className="text-cs-accent-text"/>Đổi lịch hẹn</p>
+      <div className="mt-4"><AppointmentReschedulePanel key={`reschedule-${selected.id}-${selected.appointment_date}-${selected.appointment_time}-${selected.status}`} appointment={selected} onChanged={(_updated, text) => { void refresh(text); }}/></div>
+    </section>
+    <section className="border-t border-cs-border pt-5">
+      <p className="adv-section-title"><Icon name="history" size={17} className="text-cs-accent-text"/>Lịch sử lịch hẹn</p>
+      <div className="mt-4"><AppointmentTimeline appointment={selected}/></div>
+    </section>
 
     <div className="flex justify-start pt-1"><Button variant="outline" icon="arrow-left" onClick={onBack}>Quay lại danh sách</Button></div>
   </div>;

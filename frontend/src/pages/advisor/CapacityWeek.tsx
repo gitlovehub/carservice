@@ -58,7 +58,6 @@ export function CapacityWeek() {
   return <section className="border-t border-cs-border" data-testid="capacity-week">
     <button type="button" className="flex w-full cursor-pointer items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-cs-hover"
       aria-expanded={open} aria-controls="capacity-week-list" onClick={() => setOpen(v => !v)}>
-      <span className="adv-page-icon !h-11 !w-11 !rounded-xl" aria-hidden="true"><Icon name="calendar" size={20}/></span>
       <span className="min-w-0 flex-1">
         <b className="block text-small text-cs-text">Tải gara 7 ngày tới</b>
         <span className="block truncate text-caption text-cs-muted" title={basis}>Giờ công đã kín lịch / tổng giờ công trong ngày</span>

@@ -1,3 +1,4 @@
+import { apiFieldErrors } from "../../components/ui/formValidation";
 import { KmInput } from "../../components/ui";
 import { useLiveRefresh } from "../../services/liveSync";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -25,6 +26,7 @@ import {
   type CustomerRepairOrder,
   type CustomerVehicle,
 } from "../../services/customerApi";
+import { FieldError } from "../../components/ui/Field";
 
 
 /* Bước hiển thị trên timeline và vị trí hiện tại theo trạng thái phiếu sửa chữa */
@@ -244,7 +246,9 @@ function CustomerDashboard() {
       setShowOdoModal(false);
       showToast(`Đã cập nhật số ODO thành ${mileage.toLocaleString("vi-VN")} km.`, "success");
     } catch (err) {
-      setOdoError(errorText(err, "Không thể cập nhật số ODO."));
+      const mileageError = apiFieldErrors(err).mileage;
+      if (mileageError) setOdoError(mileageError);
+      else showToast(errorText(err, "Không thể cập nhật số ODO."), "error");
     } finally {
       setOdoSaving(false);
     }
@@ -801,7 +805,7 @@ function CustomerDashboard() {
                         <thead className="border-b border-slate-200 bg-cs-surface-2 font-bold text-slate-500">
                           <tr>
                             <th className="px-3 py-2.5">Nội dung</th>
-                            <th className="px-3 py-2.5 text-center">SL</th>
+                            <th className="px-3 py-2.5 text-center">Số lượng</th>
                             <th className="px-3 py-2.5 text-right">Đơn giá</th>
                             <th className="px-3 py-2.5 text-right">Thành tiền</th>
                           </tr>
@@ -843,12 +847,6 @@ function CustomerDashboard() {
                   <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-slate-500">
                     Phiếu này chưa có hóa đơn.
                   </p>
-                )}
-
-                {selectedOrder?.note && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-700">
-                    <strong>Ghi chú:</strong> {selectedOrder.note}
-                  </div>
                 )}
               </div>
             )}
@@ -911,14 +909,9 @@ function CustomerDashboard() {
                 <label className="mb-1 block text-xs font-bold text-slate-700">
                   Số km hiện tại trên đồng hồ
                 </label>
-                <KmInput label="Số km hiện tại trên đồng hồ" value={odoValue} onChange={setOdoValue} placeholder="Ví dụ: 41.500" className="w-full !h-11 !rounded-xl"/>
+                <KmInput label="Số km hiện tại trên đồng hồ" invalid={!!odoError} value={odoValue} onChange={value => { setOdoValue(value); setOdoError(""); }} placeholder="Ví dụ: 41.500" className="w-full !h-11 !rounded-xl"/>
+                <FieldError className="mt-1">{odoError}</FieldError>
               </div>
-
-              {odoError && (
-                <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
-                  {odoError}
-                </p>
-              )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button

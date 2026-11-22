@@ -1,4 +1,11 @@
+import { Badge } from "../../components/ui/Badge";
 import { formatVnd, toNumber, type CustomerRequest } from "../../services/workflowService";
+
+/** Tag phân loại hạng mục khách chọn, cùng kiểu nhãn trạng thái: Gói (vàng đồng) / Dịch vụ (xanh). */
+function ItemTag({ kind }: { kind: "package" | "service" }) {
+  // `!`: khung .cs-info-panel ép chữ bên trong theo màu khung, tag phải giữ màu riêng.
+  return <Badge dot={false} tone={kind === "package" ? "accent" : "info"} className={`rounded-[4px]! ${kind === "package" ? "text-cs-accent-text!" : "text-info-fg!"}`}>{kind === "package" ? "Gói" : "Dịch vụ"}</Badge>;
+}
 
 /**
  * Những gì khách chọn khi đặt lịch: gói (kèm nội dung), dịch vụ lẻ, mô tả tình trạng.
@@ -11,8 +18,8 @@ export default function CustomerRequestSummary({ request, compact = false }: { r
 
   return <div className="space-y-3 text-sm text-cs-text">
     {packages.map(pkg => <div key={`package-${pkg.id}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-semibold"><span className="mr-1.5 rounded bg-cs-soft px-1.5 py-0.5 text-[11px] font-bold uppercase text-cs-accent-text">Gói</span>{pkg.name}</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="flex flex-wrap items-center gap-2 font-semibold">{pkg.name}<ItemTag kind="package"/></p>
         {toNumber(pkg.pivot?.estimated_price) > 0 && <span className="text-xs text-cs-muted">Ước tính {formatVnd(pkg.pivot?.estimated_price)}</span>}
       </div>
       {!compact && (pkg.services?.length || pkg.parts?.length) ? <ul className="mt-2 space-y-0.5 text-xs text-cs-muted">
@@ -21,9 +28,9 @@ export default function CustomerRequestSummary({ request, compact = false }: { r
       </ul> : null}
     </div>)}
 
-    {services.length > 0 && <ul className="space-y-1">
-      {services.map(service => <li key={`service-${service.id}`} className="flex flex-wrap justify-between gap-2">
-        <span>• {service.name}</span>
+    {services.length > 0 && <ul className="space-y-1.5">
+      {services.map(service => <li key={`service-${service.id}`} className="flex flex-wrap items-center justify-between gap-2">
+        <span className="flex flex-wrap items-center gap-2 font-semibold">{service.name}<ItemTag kind="service"/></span>
         {toNumber(service.pivot?.estimated_price) > 0 && <span className="text-xs text-cs-muted">Ước tính {formatVnd(service.pivot?.estimated_price)}</span>}
       </li>)}
     </ul>}
@@ -40,9 +47,9 @@ export default function CustomerRequestSummary({ request, compact = false }: { r
 
     {!hasItems && !request.symptom_description && <p className="text-cs-muted">Khách chưa chọn dịch vụ.</p>}
 
-    {request.symptom_description && <p className="whitespace-pre-wrap">
-      <span className="text-cs-muted">Tình trạng khách mô tả: </span>{request.symptom_description}
+    {request.symptom_description && <p className="whitespace-pre-wrap font-normal">
+      <b className="font-semibold">Khách mô tả: </b>{request.symptom_description}
     </p>}
-    {request.note && <p className="whitespace-pre-wrap text-xs text-cs-muted">Ghi chú: {request.note}</p>}
+    {request.note && <p className="whitespace-pre-wrap font-normal"><b className="font-semibold">Ghi chú khi đặt lịch: </b>{request.note}</p>}
   </div>;
 }

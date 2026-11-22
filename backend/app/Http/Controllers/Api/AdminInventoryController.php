@@ -261,6 +261,7 @@ class AdminInventoryController extends Controller
                 'name' => $t->inventory?->part?->name,
                 'unit' => $t->inventory?->part?->unit,
                 'quantity' => (int) $t->quantity,
+                'repair_order_id' => $t->repairOrder?->id,
                 'ref' => $t->repairOrder?->repair_order_code ?? ($t->transaction_type === InventoryTransaction::TYPE_IN ? 'Phiếu nhập #'.$t->id : 'Phiếu xuất #'.$t->id),
                 'note' => $t->note,
                 'by' => $t->createdBy?->employee?->full_name ?? $t->createdBy?->email ?? $t->repairOrder?->advisor?->full_name ?? 'Kho',

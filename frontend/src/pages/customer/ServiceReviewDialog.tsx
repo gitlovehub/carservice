@@ -7,6 +7,8 @@ import { formatDate, getMyRepairOrderDetail, getVehicleName, submitReview, type 
 import { MAX_SUGGESTIONS, buildSuggestions, composeComment, serviceNamesOf } from "./reviewSuggestions";
 import { InlineError, ModalFoot, ModalHead } from "./account/AccountKit";
 import { MODAL_CLASS, PRIMARY_RED } from "./account/accountStyles";
+import { useFieldErrors } from "../../components/ui/useFieldErrors";
+import { FieldError } from "../../components/ui/Field";
 
 type Props = {
   order: CustomerRepairOrder;
@@ -30,6 +32,7 @@ export default function ServiceReviewDialog({ order, review, onClose, onReviewed
   const [serviceNames, setServiceNames] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const fieldErrors = useFieldErrors();
   const canSubmit = !review && order.status === "HANDED_OVER";
 
   // Dịch vụ / gói của đúng phiếu (danh sách phiếu không kèm) → gợi ý sát với lần bảo dưỡng; lỗi thì dùng gợi ý chung.
@@ -52,9 +55,9 @@ export default function ServiceReviewDialog({ order, review, onClose, onReviewed
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit || sending) return;
-    if (overall < 1) { setError("Vui lòng chọn số sao đánh giá."); return; }
-    setSending(true);
     setError("");
+    if (fieldErrors.show(overall < 1 ? { rating: "Vui lòng chọn số sao đánh giá." } : {})) return;
+    setSending(true);
     try {
       const response = await submitReview({
         repair_order_id: order.id,
@@ -65,9 +68,7 @@ export default function ServiceReviewDialog({ order, review, onClose, onReviewed
       if (!response?.data?.id) throw new Error("Hệ thống chưa xác nhận đã lưu đánh giá. Vui lòng tải lại trang trước khi gửi lại.");
       onReviewed(response.data as CustomerReview);
     } catch (cause: unknown) {
-      const apiError = cause as { data?: { message?: string; errors?: Record<string, string[]> }; message?: string };
-      const validation = Object.values(apiError?.data?.errors ?? {}).flat()[0];
-      setError(validation || apiError?.data?.message || apiError?.message || "Không thể gửi đánh giá. Vui lòng thử lại.");
+      fieldErrors.showApi(cause, { overall_rating: "rating", comment: "comment" });
     } finally {
       setSending(false);
     }
@@ -106,12 +107,13 @@ export default function ServiceReviewDialog({ order, review, onClose, onReviewed
           </>
         ) : canSubmit ? (
           <form id="service-review-form" onSubmit={send} className="space-y-5">
-            <div className="flex flex-col items-center gap-2 rounded-2xl bg-cs-surface-2 px-4 py-5 text-center">
+            <div role="group" aria-label="Chấm sao" aria-invalid={!!fieldErrors.errors.rating || undefined} className={`flex flex-col items-center gap-2 rounded-2xl border bg-cs-surface-2 px-4 py-5 text-center ${fieldErrors.errors.rating ? "border-danger" : "border-transparent"}`}>
               <p className="text-[15px] font-bold text-cs-text">Bạn hài lòng với lần bảo dưỡng này thế nào?</p>
-              <RatingInput label="Số sao đánh giá" value={overall} onPreview={setPreview} onChange={(value) => { setOverall(value); setError(""); }}/>
+              <RatingInput label="Số sao đánh giá" value={overall} onPreview={setPreview} onChange={(value) => { setOverall(value); setError(""); fieldErrors.clear("rating"); }}/>
               <p className={`min-h-6 text-[15px] font-bold transition-colors duration-200 ${preview || overall ? "text-warning-fg" : "text-cs-muted"}`} aria-live="polite">
                 {scoreLabels[preview || overall] || "Chạm vào sao để chấm điểm"}
               </p>
+              <FieldError>{fieldErrors.errors.rating}</FieldError>
             </div>
 
             <div className="space-y-2.5">
@@ -138,8 +140,9 @@ export default function ServiceReviewDialog({ order, review, onClose, onReviewed
                 <span>Viết thêm <span className="font-normal text-cs-muted">(không bắt buộc)</span></span>
                 <span className="text-xs font-normal text-cs-muted">{finalComment.length}/1000</span>
               </span>
-              <textarea value={comment} onChange={(event) => setComment(event.target.value)} maxLength={Math.max(0, 1000 - chipsLength)} rows={3}
+              <textarea value={comment} aria-invalid={!!fieldErrors.errors.comment || undefined} onChange={(event) => { setComment(event.target.value); fieldErrors.clear("comment"); }} maxLength={Math.max(0, 1000 - chipsLength)} rows={3}
                 placeholder="Chia sẻ thêm trải nghiệm của bạn…" className={`${controlClass} resize-none`}/>
+              <FieldError>{fieldErrors.errors.comment}</FieldError>
             </label>
             {error && <InlineError>{error}</InlineError>}
           </form>
@@ -151,7 +154,7 @@ export default function ServiceReviewDialog({ order, review, onClose, onReviewed
       <ModalFoot>
         {canSubmit ? <>
           <Button variant="secondary" onClick={onClose} disabled={sending}>Để sau</Button>
-          <Button type="submit" form="service-review-form" variant="primary" icon="send" className={PRIMARY_RED} loading={sending} loadingText="Đang gửi..." disabled={overall < 1}>Gửi đánh giá</Button>
+          <Button type="submit" form="service-review-form" variant="primary" icon="send" className={PRIMARY_RED} loading={sending} loadingText="Đang gửi...">Gửi đánh giá</Button>
         </> : <Button variant="secondary" onClick={onClose}>Đóng</Button>}
       </ModalFoot>
     </Modal>

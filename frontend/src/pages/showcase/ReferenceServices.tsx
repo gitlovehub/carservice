@@ -21,7 +21,7 @@ const PAGE_SIZE=6;
 const ALL='Tất cả dịch vụ';
 /** Khoảng giá (theo giá "Từ" của dịch vụ). */
 const PRICE_RANGES:{value:string;label:string;min?:number;max?:number}[]=[
- {value:'',label:'Mọi mức giá'},
+ {value:'',label:'Tất cả'},
  {value:'lt300',label:'Dưới 300.000₫',max:300000},
  {value:'300-500',label:'300.000₫ – 500.000₫',min:300000,max:500000},
  {value:'500-1000',label:'500.000₫ – 1.000.000₫',min:500000,max:1000000},
@@ -110,11 +110,10 @@ export default function ReferenceServices(){
    {!loading&&!error&&filtered.length>0&&<small className="v3ref-sv-count">Hiển thị {(page-1)*PAGE_SIZE+1}–{Math.min(page*PAGE_SIZE,filtered.length)} / {filtered.length} dịch vụ</small>}
   </div>
  {loading?<p className="v3ref-empty">Đang tải danh mục dịch vụ…</p>:error?<div className="v3ref-empty" role="alert">{error}<br/><button onClick={()=>setRetry(v=>v+1)}>Thử tải lại</button></div>:filtered.length===0?<p className="v3ref-empty">Không có dịch vụ phù hợp với bộ lọc.</p>:<div className="v3ref-service-grid">{shown.map(service=>{
-  // Cùng cách hoạt động với trang chi tiết nhóm dịch vụ: tick chọn (lưu lại) → thanh "Đặt lịch" ở đáy.
+  // Không còn ô tick (PO 18/11): bấm "Đặt lịch" để thêm dịch vụ vào lựa chọn rồi sang đặt lịch.
   const on=picks.ids.includes(service.id);
   return <article className={`v3ref-service-card ${on?'ring-2 ring-[#e11d2e]':''}`} key={service.id}><ServicePhoto service={service}/><div className="v3ref-card-body">
-   <div className="flex items-start justify-between gap-3"><h3>{service.name}</h3>
-    <input type="checkbox" checked={on} onChange={()=>toggle(service.id)} aria-label={`Chọn ${service.name}`} className="mt-1 size-5 shrink-0 cursor-pointer accent-[#e11d2e]"/></div>
+   <h3>{service.name}</h3>
    <p>{service.description||'Tư vấn và thực hiện theo tình trạng thực tế của xe.'}</p>
    <div className="v3ref-card-bottom"><strong>{money(service.base_price??service.estimated_price)}</strong>
     {/* Đặt lịch ngay dịch vụ này: thêm vào lựa chọn rồi sang đặt lịch cùng các dịch vụ đã chọn khác. */}

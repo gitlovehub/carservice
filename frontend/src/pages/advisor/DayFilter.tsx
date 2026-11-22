@@ -18,7 +18,7 @@ function dayName(iso: string) {
 /**
  * Lọc ngày: ‹ ngày trước | ngày đang xem (bấm để mở lịch chọn ngày bất kỳ) | ngày sau ›.
  * Giữa hiện "Hôm qua / Hôm nay / Ngày mai" hoặc thứ trong tuần kèm ngày.
- * `allowAll`: value "" = mọi ngày (giữa hiện "Mọi ngày", ‹ › bắt đầu từ hôm nay); có nút × để quay về mọi ngày.
+ * `allowAll`: value "" = mọi ngày (giữa hiện "Tất cả", ‹ › bắt đầu từ hôm nay); có nút × để quay về mọi ngày.
  */
 export function DayFilter({ value, onChange, allowAll = false, className = "" }: { value: string; onChange: (value: string) => void; allowAll?: boolean; className?: string }) {
   const pickerRef = useRef<HTMLInputElement>(null);
@@ -38,7 +38,7 @@ export function DayFilter({ value, onChange, allowAll = false, className = "" }:
         <Icon name="calendar" size={15} className="shrink-0 text-cs-accent-text"/>
         {value
           ? <span className="truncate"><b className="text-cs-text">{dayName(value)}</b><span className="text-cs-muted"> · {dmy(value)}</span></span>
-          : <b className="truncate text-cs-text">Mọi ngày</b>}
+          : <b className="truncate text-cs-text">Tất cả</b>}
       </button>
       <input ref={pickerRef} type="date" tabIndex={-1} aria-hidden="true" value={value} onChange={e => e.target.value && onChange(e.target.value)}
         className="pointer-events-none absolute bottom-0 left-1/2 h-px w-px opacity-0"/>

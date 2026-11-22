@@ -83,7 +83,7 @@ export default function RepairOrders() {
             const label = { REQUESTED: "Cần đặt hàng", ORDERED: overdue ? "Quá hạn" : "Đã đặt", RECEIVED: "Đã về", CANCELLED: "Đã huỷ" }[r.status];
             const tone = r.status === "REQUESTED" ? "text-warning-fg" : overdue ? "text-danger-fg" : r.status === "RECEIVED" ? "text-success-fg" : r.status === "ORDERED" ? "text-info-fg" : "text-cs-muted";
             return <li key={r.id} className="flex items-start gap-3">
-              <span className="min-w-0 flex-1 text-cs-text">{r.part ?? "—"} × {r.quantity}{r.unit ? ` ${r.unit}` : ""}{r.note && <span className="block text-caption text-cs-muted">{r.note}</span>}</span>
+              <span className="min-w-0 flex-1 text-cs-text">{r.part ?? "—"} × {r.quantity}{r.unit ? ` ${r.unit}` : ""}{r.note && <span className="block text-caption text-cs-muted font-medium">{r.note}</span>}</span>
               <span className={`whitespace-nowrap text-caption font-semibold ${tone}`}>{label}{r.eta_date && ["ORDERED"].includes(r.status) ? ` · ${fmtDate(r.eta_date)}` : ""}</span>
             </li>;
           })}
@@ -96,7 +96,7 @@ export default function RepairOrders() {
             <span className={`absolute -left-[27px] top-1 size-3 rounded-full border-2 border-cs-accent ${i === selected.timeline.length - 1 ? "bg-cs-accent" : "bg-cs-surface"}`}/>
             <p className="font-semibold text-cs-text">{getStatus("repair", t.status, "staff").label}</p>
             <p className="text-caption text-cs-muted">{fmtDateTime(t.at)} · {t.by}</p>
-            {t.note && <p className="text-caption text-cs-text-2">{t.note}</p>}
+            {t.note && <p className="text-caption text-cs-text-2 font-medium">{t.note}</p>}
           </li>)}
         </ol>
       </PaneSection>

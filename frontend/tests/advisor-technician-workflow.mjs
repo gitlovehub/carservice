@@ -33,7 +33,10 @@ assert.match(reception, /Tạo phiếu sửa chữa/);
 // ADV-07 + mockup 17/11: danh sách thẻ dùng API có lọc nhiều trạng thái + tìm kiếm + số đếm; khung xem nhanh mở đúng bước chi tiết.
 assert.match(orders, /listRepairOrders\(query, signal\)/);
 assert.match(orders, /onClick=\{\(\) => openOrder\(o\)\}/);
-assert.match(orders, /navigate\(orderStepPath\(order\.id\)\)/);
+// PO 20/11: màn hẹp mở ngăn kéo xem nhanh (không chuyển trang); khung xem nhanh vẫn có link tới đúng bước chi tiết.
+assert.match(orders, /drawer\.show\(\)/);
+assert.match(orders, /<PreviewDrawer /);
+assert.match(orders, /orderStepPath\(order\.id/);
 assert.match(src('src/pages/advisor/repairOrderFlow.ts'), /\/advisor\/service-orders\/\$\{id\}/);
 assert.match(detail, /searchParams\.get\("step"\)/);
 // Báo giá & phê duyệt (mockup 17/11): danh sách GET /quotations; nhân viên không duyệt thay khách (D-008).

@@ -44,7 +44,7 @@ class QuickServiceFlowTest extends TestCase
         $this->oilChange = Service::factory()->create(['name' => 'Thay dầu', 'base_price' => 250000, 'estimated_minutes' => 30, 'status' => 'ACTIVE', 'service_level' => 'QUICK']);
         $this->engineRepair = Service::factory()->create(['name' => 'Đại tu máy', 'base_price' => 9000000, 'status' => 'ACTIVE']);
 
-        $this->orderId = $this->actingAs($this->advisor)->postJson('/api/repair-orders', ['customer_id' => $customer->id, 'vehicle_id' => $vehicle->id])->assertCreated()->json('id');
+        $this->orderId = $this->actingAs($this->advisor)->postJson('/api/repair-orders', ['customer_id' => $customer->id, 'vehicle_id' => $vehicle->id, 'mileage_received' => 1000])->assertCreated()->json('id');
         $this->checkInId = $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->orderId}/handovers", [
             'type' => 'CHECK_IN', 'person_name' => 'Chủ xe', 'person_relation' => 'OWNER',
             'items' => [['category' => 'EXTERIOR', 'label' => 'Tổng quan', 'condition' => 'OK']],

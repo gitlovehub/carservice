@@ -2,7 +2,7 @@
 
 export type Range = "any" | "today" | "7d" | "week" | "month";
 export const RANGES: Array<{ id: Range; label: string }> = [
-  { id: "any", label: "Mọi ngày" },
+  { id: "any", label: "Tất cả" },
   { id: "today", label: "Hôm nay" },
   { id: "7d", label: "7 ngày qua" },
   { id: "week", label: "Tuần này" },

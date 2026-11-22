@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useLiveRefresh } from "../../services/liveSync";
 import { Link } from "react-router-dom";
 import { getAdvisorAppointments } from "../../services/advisorAppointmentService";
 import { listWorkflowOrders, type WorkflowOrder } from "../../services/workflowService";
-import { Button, Card, EmptyState, ErrorState, LoadingState, PageHeader, StatusBadge, buttonClass } from "../../components/ui";
+import { Card, EmptyState, ErrorState, LoadingState, PageHeader, StatusBadge, buttonClass } from "../../components/ui";
 import { Icon, type IconName } from "../../components/ui/Icon";
 
 /**
@@ -171,6 +172,7 @@ const adminUtilities: Array<{ to: string; label: string; icon: IconName }> = [
 export default function WorkspaceDashboard({ role }: { role: Mode }) {
   const [reloadKey, setReloadKey] = useState(0);
   const retry = () => setReloadKey(key => key + 1);
+  useLiveRefresh(retry); // realtime thay nút "Làm mới"
   const today = isoToday();
   const advisor = role === "advisor";
 
@@ -198,7 +200,6 @@ export default function WorkspaceDashboard({ role }: { role: Mode }) {
       title="Tổng quan"
       description={advisor ? "Công việc cần xử lý trong ngày: lịch hẹn, tiếp nhận xe và phiếu sửa chữa." : "Tình hình lịch hẹn và lối tắt tới các danh mục quản trị."}
       actions={<>
-        <Button variant="outline" icon="refresh" onClick={retry}>Làm mới</Button>
         {advisor
           ? <Link className={buttonClass({ variant: "primary" })} to="/advisor/reception"><Icon name="car" size={16}/>Tiếp nhận xe</Link>
           : <Link className={buttonClass({ variant: "primary" })} to="/admin/appointments"><Icon name="calendar" size={16}/>Quản lý lịch hẹn</Link>}

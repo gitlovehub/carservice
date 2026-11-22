@@ -26,12 +26,16 @@ export const mediaApi = {
     if (meta.position_code) form.append("position_code", meta.position_code);
     return (await apiClient.post<MediaItem>("/media", form, { timeout: 60000 })).data;
   },
+  /** Xoá ảnh chụp nhầm — máy chủ chặn khi chứng từ đã khoá / khách đã xác nhận. */
+  remove: async (mediaId: number) => { await apiClient.delete(`/media/${mediaId}`); },
   /** Ảnh nằm sau API có kiểm quyền: tải blob kèm token rồi hiển thị bằng object URL. */
   blob: async (id: number) => (await apiClient.get<Blob>(`/media/${id}`, { responseType: "blob" })).data,
 };
 
 export type HandoverInput = Omit<WorkflowHandover, "id" | "type" | "status" | "checklist_items" | "confirmations" | "submitted_at" | "confirmed_at" | "void_reason"> & {
   items: HandoverChecklistItem[];
+  /** Chỉ gửi lên để đối chiếu, API không bao giờ trả lại. */
+  person_id_last4?: string | null;
 };
 
 /** Biên bản giao nhận xe (P2). Khách xác nhận trong tài khoản hoặc OTP email chủ xe tại quầy. */
@@ -45,6 +49,43 @@ export const handoverApi = {
   verifyOtp: async (id: number, code: string) => (await apiClient.post<WorkflowHandover>(`/handovers/${id}/verify-otp`, { code })).data,
   /** Khách tự xác nhận (ACCOUNT). */
   confirmAsCustomer: async (id: number, comment?: string) => (await apiClient.post<WorkflowHandover>(`/me/handovers/${id}/confirm`, { comment })).data,
+  /** Gửi link để chủ xe tự khai người được ủy quyền, không cần tài khoản. */
+  sendPickupLink: async (orderId: number) => (await apiClient.post<{ sent_to: string }>(`/repair-orders/${orderId}/pickup-authorization-link`)).data,
+};
+
+/** Xác minh email chủ xe bằng mã; email đã xác minh chỉ admin được đổi. */
+export const ownerEmailApi = {
+  send: async (customerId: number, email: string) => (await apiClient.post<{ sent_to: string; expires_at: string }>(`/customers/${customerId}/email-verification`, { email })).data,
+  verify: async (customerId: number, email: string, code: string) => (await apiClient.post<{ email: string }>(`/customers/${customerId}/email-verification/verify`, { email, code })).data,
+};
+
+export type HandoverExceptionRow = {
+  id: number; status: "PENDING" | "APPROVED" | "REJECTED"; reason: string; decision_note?: string | null; created_at: string; decided_at?: string | null;
+  /** false: ảnh giấy tờ đã quá 90 ngày kể từ khi xử lý. */
+  documents_available: boolean;
+  handover?: {
+    id: number; type: "CHECK_IN" | "CHECK_OUT"; status: string; person_name: string;
+    repair_order?: { repair_order_code?: string | null; customer?: { full_name?: string | null; phone?: string | null } | null } | null;
+    vehicle?: { license_plate?: string | null; model?: { name?: string | null; brand?: { name?: string | null } | null } | null } | null;
+  } | null;
+  requested_by?: { email?: string; employee?: { full_name?: string } | null } | null;
+  decided_by?: { email?: string; employee?: { full_name?: string } | null } | null;
+};
+
+/** Ngoại lệ khi chủ xe mất email: cố vấn lập yêu cầu kèm ảnh giấy tờ, admin duyệt. */
+export const handoverExceptionApi = {
+  request: async (handoverId: number, input: { reason: string; idDocument: File; registration: File }) => {
+    const body = new FormData();
+    body.append("reason", input.reason);
+    body.append("id_document", input.idDocument);
+    body.append("registration", input.registration);
+    return (await apiClient.post(`/handovers/${handoverId}/exception`, body)).data;
+  },
+  list: async (status: HandoverExceptionRow["status"], signal?: AbortSignal) =>
+    (await apiClient.get<{ data: HandoverExceptionRow[] }>("/admin/handover-exceptions", { params: { status }, signal })).data.data,
+  file: async (id: number, kind: "id-document" | "registration") => (await apiClient.get<Blob>(`/admin/handover-exceptions/${id}/files/${kind}`, { responseType: "blob" })).data,
+  approve: async (id: number, note: string) => (await apiClient.post(`/admin/handover-exceptions/${id}/approve`, { note })).data,
+  reject: async (id: number, note: string) => (await apiClient.post(`/admin/handover-exceptions/${id}/reject`, { note })).data,
 };
 
 /** Ủy quyền nhận xe (P4, N9) — chỉ chủ xe, trong tài khoản của mình. */

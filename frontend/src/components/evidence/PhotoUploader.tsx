@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/Button";
+import { Icon } from "../ui/Icon";
+import { useAppFeedback } from "../ui/feedbackContext";
 import { formatDateTime } from "../../services/customerApi";
 import { compressImage, mediaApi, VEHICLE_POSITIONS, type MediaAttachableType, type MediaItem } from "../../services/evidenceService";
 
@@ -11,6 +13,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
   type: MediaAttachableType; id: number; readOnly?: boolean; title?: string; positions?: Record<string, string>;
   positionValue?: string; onPositionChange?: (value: string) => void;
 }) {
+  const { confirm } = useAppFeedback();
   const [position, setPosition] = useState(positions ? Object.keys(positions)[0] : "");
   const activePosition = positionValue ?? position;
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -62,6 +65,19 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
     }
   }
 
+  async function remove(item: MediaItem) {
+    const where = item.position_code ? (positions?.[item.position_code] ?? VEHICLE_POSITIONS[item.position_code] ?? item.position_code) : "";
+    if (!await confirm({ title: "Xoá ảnh này?", description: `Ảnh${where ? ` vị trí ${where}` : ""} sẽ bị xoá khỏi chứng từ, không khôi phục được.`, confirmText: "Xoá ảnh", variant: "danger", confirmIcon: "trash" })) return;
+    setBusy(true); setError("");
+    try {
+      await mediaApi.remove(item.id);
+      if (urlsRef.current[item.id]) { URL.revokeObjectURL(urlsRef.current[item.id]); delete urlsRef.current[item.id]; setUrls({ ...urlsRef.current }); }
+      setItems(list => list.filter(x => x.id !== item.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không xoá được ảnh.");
+    } finally { setBusy(false); }
+  }
+
   return <div className="mt-4" data-testid="photo-uploader">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <p className="text-xs font-bold text-cs-muted">{title} ({items.length})</p>
@@ -73,7 +89,9 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
     </div>
     {error && <p className="mt-2 text-xs font-semibold text-cs-danger" role="alert">{error}</p>}
     {items.length > 0
-      ? <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">{items.map(item => <li key={item.id} className="overflow-hidden rounded-lg border border-cs-border bg-cs-surface-2">
+      ? <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">{items.map(item => <li key={item.id} className="relative overflow-hidden rounded-lg border border-cs-border bg-cs-surface-2">
+        {!readOnly && <button type="button" onClick={() => void remove(item)} disabled={busy} aria-label="Xoá ảnh" title="Xoá ảnh"
+          className="absolute right-1 top-1 z-10 grid size-7 cursor-pointer place-items-center rounded-full bg-black/65 text-white transition-colors hover:bg-danger disabled:opacity-50"><Icon name="x" size={15}/></button>}
         {urls[item.id]
           ? <a href={urls[item.id]} target="_blank" rel="noreferrer"><img src={urls[item.id]} alt={item.caption || item.position_code || `Ảnh #${item.id}`} className="aspect-square w-full object-cover"/></a>
           : <div className="aspect-square w-full animate-pulse"/>}

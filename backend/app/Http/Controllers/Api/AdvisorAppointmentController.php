@@ -187,6 +187,11 @@ class AdvisorAppointmentController extends Controller
             if ($request->filled('status')) {
                 $query->where('status', $request->query('status'));
             }
+            // Nhiều trạng thái (?statuses=PENDING,CONFIRMED,CHECKED_IN) — trang Tiếp nhận xe lọc ở máy chủ để "Tất cả" không bị cắt bởi per_page.
+            if ($request->filled('statuses')) {
+                $statuses = array_values(array_filter(array_map('trim', explode(',', (string) $request->query('statuses')))));
+                $query->whereIn('status', array_slice($statuses, 0, 10));
+            }
 
             // Có ?sort= (bảng Admin): sắp theo cột được chọn, mặc định mới tạo lên đầu.
             // Không có (màn hình Cố vấn): giữ thứ tự theo ngày giờ hẹn tăng dần.

@@ -18,7 +18,7 @@ assert.match(appointment, /getMyAppointments\(/);
 assert.match(appointment, /await updateAppointment\(/);
 assert.match(appointment, /await cancelAppointment\(/);
 assert.doesNotMatch(appointment, /<table/);
-const tracking = read('pages/customer/RepairStatus.tsx');
+const tracking = read('pages/showcase/ReferenceTracking.tsx');
 assert.match(tracking, /getMyRepairOrders\(/);
 assert.doesNotMatch(tracking, /SC-001|Honda City/);
 const booking = read('pages/customer/Booking.tsx');

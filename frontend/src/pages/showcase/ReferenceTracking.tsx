@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { useLiveRefresh } from '../../services/liveSync';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { OrderPaperwork } from '../customer/RepairStatus';
+import { QuotationDetailModal } from '../customer/QuotationDetailModal';
+import { quotationRoundLabel } from '../customer/account/useDetailedOrders';
 import { useAuthSession } from '../../contexts/authSession';
 import { ApiClientError, fetchApi } from '../../services/api';
 import { StatusBadge } from '../../components/ui/Badge';
@@ -22,7 +25,6 @@ import { foldVi } from './serviceDisplay';
 type AppointmentLink = CustomerRepairOrder & { appointment_id?: number | null };
 type Tone = 'warning' | 'info' | 'success' | 'neutral';
 
-const REFRESH_MS = 60_000;
 
 const STAGES: { label: string; icon: IconName; statuses: string[] }[] = [
   { label: 'Tiếp nhận', icon: 'car', statuses: ['RECEIVED'] },
@@ -65,8 +67,8 @@ function nextStep(o: CustomerRepairOrder): { tone: Tone; icon: IconName; title: 
   };
   if (o.handovers?.some(h => h.status === 'SUBMITTED')) return {
     tone: 'warning', icon: 'clipboard', title: 'Biên bản giao nhận chờ bạn xác nhận',
-    text: 'Kiểm tra ảnh và tình trạng xe gara đã ghi nhận, rồi xác nhận biên bản.',
-    action: { label: 'Xem & xác nhận biên bản', to: '/customer/repair-status/manage' },
+    // Không thêm nút ở đây: nút "Xem & xác nhận biên bản" (mở modal) nằm ở mục Biên bản giao nhận bên dưới — tránh 2 nút trùng.
+    text: 'Bấm “Xem & xác nhận biên bản” ở mục Biên bản giao nhận bên dưới, kiểm tra ảnh và tình trạng xe rồi xác nhận.',
   };
   if (o.status === 'COMPLETED') {
     const unpaid = o.invoice && ['UNPAID', 'PARTIALLY_PAID'].includes(o.invoice.status);
@@ -87,7 +89,7 @@ function nextStep(o: CustomerRepairOrder): { tone: Tone; icon: IconName; title: 
     tone: 'success', icon: 'star', title: 'Đã bàn giao xe', text: 'Cảm ơn bạn đã tin tưởng CarService. Dành một phút đánh giá để gara phục vụ tốt hơn nhé.',
     action: { label: 'Đánh giá dịch vụ', to: `/customer/service-history?review=${o.id}` },
   };
-  if (o.status === 'CLOSED') return { tone: 'neutral', icon: 'info', title: 'Phiếu đã đóng', text: o.note || 'Phiếu sửa chữa này đã kết thúc.' };
+  if (o.status === 'CLOSED') return { tone: 'neutral', icon: 'info', title: 'Phiếu đã đóng', text: 'Phiếu sửa chữa này đã kết thúc.' };
   if (['INSPECTING', 'QUOTING'].includes(o.status)) return {
     tone: 'info', icon: 'search', title: o.status === 'QUOTING' ? 'Gara đang lập báo giá' : 'Kỹ thuật viên đang kiểm tra xe',
     text: 'Bạn sẽ nhận thông báo ngay khi có báo giá để xem và duyệt.',
@@ -138,15 +140,24 @@ function Section({ title, icon, children, aside }: { title: string; icon: IconNa
   </section>;
 }
 
-function OrderDetail({ order, appointmentCode, loading }: { order: CustomerRepairOrder; appointmentCode?: string; loading: boolean }) {
+function OrderDetail({ order, appointmentCode, loading, onChanged }: { order: CustomerRepairOrder; appointmentCode?: string; loading: boolean; onChanged: () => void }) {
+  const { hash } = useLocation();
+  // "Xem & xác nhận biên bản" (#bien-ban) → cuộn tới đúng khung biên bản khi chi tiết đã tải.
+  const hasHandovers = !!order.handovers?.length;
+  useEffect(() => {
+    if (!hash || !hasHandovers) return;
+    document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [hash, hasHandovers, order.id]);
   const step = nextStep(order);
   const works = worksOf(order);
   const doneWorks = works.filter(w => w.status === 'COMPLETED').length;
   const percent = works.length ? Math.round((doneWorks / works.length) * 100) : 0;
   const quote = order.quotations?.slice().sort((a, b) => b.id - a.id).find(q => !['CANCELLED', 'REJECTED', 'DRAFT'].includes(q.status));
   const history = historyOf(order).reverse();
+  const [quoteOpen, setQuoteOpen] = useState(false);
 
   return <div className="space-y-5">
+    {quoteOpen && quote && <QuotationDetailModal key={quote.id} row={{ quotation: quote, order }} onClose={() => setQuoteOpen(false)} onResponded={onChanged}/>}
     {/* Đầu khung: xe + mã + trạng thái */}
     <div className="rounded-2xl border border-cs-border bg-cs-surface p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -204,10 +215,11 @@ function OrderDetail({ order, appointmentCode, loading }: { order: CustomerRepai
           <div className="mt-2"><StatusBadge domain="invoice" status={order.invoice.status} audience="customer"/></div>
           <Link to="/invoices" className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-cs-accent-text no-underline hover:underline">Xem hóa đơn<Icon name="arrow" size={14}/></Link>
         </> : quote ? <>
-          <p className="text-sm text-cs-muted">Báo giá v{quote.version}</p>
+          <p className="text-sm text-cs-muted">Báo giá{quotationRoundLabel(order, quote)}</p>
           <p className="mt-1 text-2xl font-extrabold text-cs-accent-text">{money(quote.total_amount)}</p>
           <div className="mt-2"><StatusBadge domain="quotation" status={quote.status} audience="customer"/></div>
-          <Link to="/quotation" className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-cs-accent-text no-underline hover:underline">Xem báo giá<Icon name="arrow" size={14}/></Link>
+          {/* Mở modal chi tiết / duyệt ngay tại đây (cùng modal trang Báo giá), không chuyển trang. */}
+          <button type="button" onClick={() => setQuoteOpen(true)} className="-mx-2.5 mt-3 inline-flex min-h-9 cursor-pointer items-center rounded-[10px] px-2.5 text-sm font-bold text-cs-accent-text transition-colors hover:bg-cs-soft focus-visible:bg-cs-soft">{quote.status === 'SENT' ? 'Xem và duyệt báo giá' : 'Xem báo giá'}</button>
         </> : <p className="text-sm text-cs-muted">Chưa có báo giá. Gara gửi báo giá sau khi kiểm tra xe.</p>}
         <p className="mt-4 border-t border-cs-border pt-3 text-xs text-cs-muted">Chi phí thực tế theo hóa đơn và các hạng mục bạn đã duyệt.</p>
       </Section>
@@ -224,8 +236,10 @@ function OrderDetail({ order, appointmentCode, loading }: { order: CustomerRepai
         </ol>}
     </Section>
 
+    {/* Biên bản, chẩn đoán, ủy quyền nhận xe — trước đây ở trang riêng /customer/repair-status/manage. */}
+    <OrderPaperwork order={order} onChanged={onChanged}/>
+
     <div className="flex flex-wrap gap-3">
-      <Link to="/customer/repair-status/manage" className="inline-flex items-center gap-2 rounded-xl border border-cs-border bg-cs-surface px-4 py-2.5 text-sm font-bold text-cs-text no-underline transition hover:border-[#e11d2e] hover:text-cs-accent-text"><Icon name="file" size={16}/>Biên bản, ảnh & chẩn đoán</Link>
       <Link to="/customer/service-history" className="inline-flex items-center gap-2 rounded-xl border border-cs-border bg-cs-surface px-4 py-2.5 text-sm font-bold text-cs-text no-underline transition hover:border-[#e11d2e] hover:text-cs-accent-text"><Icon name="clock" size={16}/>Lịch sử bảo dưỡng</Link>
       <Link to="/contact" className="inline-flex items-center gap-2 rounded-xl border border-cs-border bg-cs-surface px-4 py-2.5 text-sm font-bold text-cs-text no-underline transition hover:border-[#e11d2e] hover:text-cs-accent-text"><Icon name="phone" size={16}/>Liên hệ gara</Link>
     </div>
@@ -244,7 +258,7 @@ function MemberTracking() {
   const [tab, setTab] = useState<'active' | 'done' | null>(null);
   const [search, setSearch] = useState('');
 
-  // Danh sách phiếu: tải lần đầu, khi bấm "Làm mới" và tự động mỗi 60 giây (chỉ khi tab trình duyệt đang mở).
+  // Danh sách phiếu: tải lần đầu, khi bấm "Thử lại" (lỗi) và mỗi khi gara cập nhật (realtime bên dưới).
   useEffect(() => {
     let alive = true;
     getMyRepairOrders()
@@ -252,11 +266,7 @@ function MemberTracking() {
       .catch(e => { if (alive) setList(prev => ({ ...prev, loading: false, error: e instanceof Error ? e.message : 'Không tải được phiếu sửa chữa.' })); });
     return () => { alive = false; };
   }, [tick]);
-  useEffect(() => {
-    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') setTick(t => t + 1); }, REFRESH_MS);
-    return () => window.clearInterval(timer);
-  }, []);
-  // Gara cập nhật tiến độ / báo giá / biên bản → tải lại ngay (đồng bộ nhanh), không đợi chu kỳ 60 giây.
+  // Gara cập nhật tiến độ / báo giá / biên bản → tải lại ngay (WebSocket; mất kết nối thì liveSync tự hỏi định kỳ).
   useLiveRefresh(() => setTick(t => t + 1));
   useEffect(() => {
     let alive = true;
@@ -322,10 +332,9 @@ function MemberTracking() {
               className="min-w-0 flex-1 rounded-none! border-0! bg-transparent! py-2.5 text-sm text-cs-text shadow-none! outline-none! placeholder:text-cs-muted"/>
           </label>
           <div className="ml-auto flex items-center gap-2 text-xs text-cs-muted">
-            {list.updatedAt && <span>Cập nhật lúc {formatTime(list.updatedAt)}</span>}
-            <button type="button" onClick={refresh} className="inline-flex items-center gap-1.5 rounded-lg border border-cs-border bg-cs-surface px-3 py-2 font-bold text-cs-text transition hover:border-[#e11d2e] hover:text-cs-accent-text" aria-label="Làm mới tiến độ">
-              <Icon name="refresh" size={14}/>Làm mới
-            </button>
+            {/* Realtime (WebSocket, có dự phòng hỏi định kỳ) → không cần nút "Làm mới"; chỉ báo dữ liệu đang tự cập nhật. */}
+            {list.updatedAt && <span className="inline-flex items-center gap-1.5" title="Gara cập nhật là trang tự đổi, không cần tải lại">
+              <span className="size-2 rounded-full bg-emerald-500" aria-hidden="true"/>Tự cập nhật · lúc {formatTime(list.updatedAt)}</span>}
           </div>
         </div>
         {list.error && <p className="mb-4 rounded-xl bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200" role="alert">Chưa làm mới được: {list.error}</p>}
@@ -353,7 +362,7 @@ function MemberTracking() {
           </div>
 
           {/* Chi tiết phiếu đang chọn */}
-          {shown ? <OrderDetail order={shown} appointmentCode={appointmentCodes[(shown as AppointmentLink).appointment_id ?? 0]} loading={detail?.id !== shown.id}/>
+          {shown ? <OrderDetail order={shown} appointmentCode={appointmentCodes[(shown as AppointmentLink).appointment_id ?? 0]} loading={detail?.id !== shown.id} onChanged={refresh}/>
             : <div className="rounded-2xl border border-dashed border-cs-border p-10 text-center text-sm text-cs-muted">Chọn một phiếu để xem tiến độ.</div>}
         </div>
       </>}
@@ -469,7 +478,7 @@ export default function ReferenceTracking() {
   const session = useAuthSession();
   const member = session.status === 'authenticated' && session.account.role === 'CUSTOMER';
   return <main className="v3ref">
-    <ReferenceBanner title="Tiến độ" highlight="sửa chữa" crumb="Tra cứu tiến độ"
+    <ReferenceBanner title="Tra cứu" highlight="tiến độ" crumb="Tra cứu tiến độ"
       subtitle={member ? 'Theo dõi xe của bạn đang ở bước nào, việc cần bạn duyệt và thời gian dự kiến hoàn thành — cập nhật trực tiếp từ gara.' : 'Nhập mã phiếu hoặc mã lịch hẹn cùng 4 số cuối điện thoại để xem xe đang ở bước nào — không cần đăng nhập.'}
       image="banner-service-progress.webp" position="right center"/>
     {session.status === 'checking'

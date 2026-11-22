@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import { FeedbackProvider } from "./components/ui/FeedbackProvider";
+import { FormValidationHost } from "./components/ui/FormValidationHost";
 import ChatWidget from "./components/ChatWidget";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -62,6 +63,7 @@ import AdminRepairOrders from "./pages/admin/RepairOrders";
 import AdminInvoices from "./pages/admin/Invoices";
 import AdminReviews from "./pages/admin/Reviews";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
+import AdminHandoverExceptions from "./pages/admin/HandoverExceptions";
 import AdminContactMessages from "./pages/admin/ContactMessages";
 import AdminGarageSettings from "./pages/admin/GarageSettings";
 import AdminMaintenancePackages from "./pages/admin/MaintenancePackages";
@@ -182,9 +184,10 @@ function App() {
       {/* Hãng & dòng xe: trang thật dùng API /api/admin/vehicle-{brands,models,trims} (không dùng mock). */}
       <Route path="vehicle-brands" element={<AdminVehicleCatalog/>}/>
       <Route path="audit-logs" element={<AdminAuditLogs/>}/>
+      <Route path="handover-exceptions" element={<AdminHandoverExceptions/>}/>
       <Route path="contact-messages" element={<AdminContactMessages/>}/>
     </Route>
 
-  </Routes><ScrollToTopButton/><ChatWidget/></FeedbackProvider></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;
+  </Routes><ScrollToTopButton/><ChatWidget/></FeedbackProvider><FormValidationHost/></AppErrorBoundary></AuthProvider></ThemeProvider></BrowserRouter>;
 }
 export default App;

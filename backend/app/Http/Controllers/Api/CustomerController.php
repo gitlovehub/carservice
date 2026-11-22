@@ -10,6 +10,7 @@ use App\Models\Vehicle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class CustomerController extends Controller
 {
@@ -163,6 +164,8 @@ class CustomerController extends Controller
             ->pluck('repair_order_code', 'vehicle_id');
         $customer->vehicles->each(fn (Vehicle $vehicle) => $vehicle->setAttribute('open_repair_order_code', $openOrders[$vehicle->id] ?? null));
         $this->decorate($customer);
+        $customer->setAttribute('email_verified', $customer->confirmationEmail() !== null);
+        $customer->unsetRelation('account');
         // Lịch hẹn đã qua / đã xử lý gần nhất (tab Lịch hẹn).
         $customer->setAttribute('past_appointments', $customer->appointments()
             ->where(fn ($q) => $q->whereDate('appointment_date', '<', today())->orWhereNotIn('status', ['PENDING', 'CONFIRMED']))
@@ -222,6 +225,14 @@ class CustomerController extends Controller
                 'max:255',
             ],
         ]);
+
+        // Email nhận mã xác nhận không đổi qua form thường: email đã xác minh phải đi qua luồng xác minh, chỉ admin được đổi.
+        if (array_key_exists('email', $validated) && mb_strtolower((string) $validated['email']) !== mb_strtolower((string) $customer->email)) {
+            if ($customer->confirmationEmail()) {
+                throw ValidationException::withMessages(['email' => 'Email đã xác minh không đổi được ở đây. Quản trị viên đổi bằng mã gửi tới email mới.']);
+            }
+            $customer->forceFill(['email_verified_at' => null]);
+        }
 
         $customer->update($validated);
 
@@ -334,6 +345,10 @@ class CustomerController extends Controller
                 'max:255',
             ],
         ]);
+
+        if (array_key_exists('email', $validated) && mb_strtolower((string) $validated['email']) !== mb_strtolower((string) $customer->email)) {
+            $customer->forceFill(['email_verified_at' => null]);
+        }
 
         $customer->update($validated);
 

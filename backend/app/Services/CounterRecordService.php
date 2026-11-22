@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Vehicle;
 use App\Support\VehicleCatalogSelection;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Hồ sơ tạo tại quầy (ADV-02/03/04): khách mới (`customer{}`) và xe chưa có trong hệ thống (`vehicle{}`)
@@ -14,6 +15,9 @@ use Illuminate\Validation\Rule;
  */
 class CounterRecordService
 {
+    /** VIN chuẩn 17 ký tự (không có I, O, Q) hoặc số khung xe đời cũ 6–16 chữ và số. */
+    private const VIN_PATTERN = '/^(?:[A-HJ-NPR-Z0-9]{17}|[A-Z0-9]{6,16})$/';
+
     /**
      * Luật validate dùng chung (nơi gọi tự thêm điều kiện riêng, ví dụ cấm khách mới khi đã có lịch hẹn).
      *
@@ -34,6 +38,97 @@ class CounterRecordService
             'vehicle.license_plate' => ['required_with:vehicle', 'string', 'max:20', Rule::unique('vehicles', 'license_plate')],
             'vehicle.year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 1)],
         ];
+    }
+
+    /**
+     * Luật riêng khi tiếp nhận xe: bắt buộc ODO, năm sản xuất, VIN; biển số không bắt buộc.
+     * Xe có sẵn còn thiếu năm / VIN thì gửi `vehicle_year`, `vehicle_vin` để bổ sung vào hồ sơ.
+     *
+     * @return array<string, mixed>
+     */
+    public static function receptionRules(): array
+    {
+        $maxYear = date('Y') + 1;
+
+        return [
+            'mileage_received' => ['required', 'integer', 'min:0'],
+            'vehicle.license_plate' => ['nullable', 'string', 'max:20', Rule::unique('vehicles', 'license_plate')],
+            'vehicle.year' => ['required_with:vehicle', 'integer', 'min:1900', "max:{$maxYear}"],
+            'vehicle.vin' => ['required_with:vehicle', 'string', 'regex:'.self::VIN_PATTERN, Rule::unique('vehicles', 'vin')],
+            'vehicle_year' => ['nullable', 'integer', 'min:1900', "max:{$maxYear}"],
+            'vehicle_vin' => ['nullable', 'string', 'regex:'.self::VIN_PATTERN, Rule::unique('vehicles', 'vin')],
+            'customer_request' => ['nullable', 'string', 'max:2000'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public static function receptionMessages(): array
+    {
+        $vinFormat = 'Số VIN gồm 6–17 chữ và số (đủ 17 ký tự thì không có I, O, Q).';
+        $vinTaken = 'Số VIN đã thuộc một xe khác trong hệ thống.';
+
+        return [
+            'mileage_received.required' => 'Nhập số ODO khi tiếp nhận xe.',
+            'vehicle.year.required_with' => 'Nhập năm sản xuất của xe.',
+            'vehicle.vin.required_with' => 'Nhập số VIN của xe.',
+            'vehicle.vin.regex' => $vinFormat,
+            'vehicle.vin.unique' => $vinTaken,
+            'vehicle_vin.regex' => $vinFormat,
+            'vehicle_vin.unique' => $vinTaken,
+        ];
+    }
+
+    /**
+     * VIN viết hoa, bỏ khoảng trắng trước khi kiểm tra trùng.
+     *
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    public static function normalizedVins(array $input): array
+    {
+        $normalized = [];
+        if (is_string($input['vehicle_vin'] ?? null)) {
+            $normalized['vehicle_vin'] = self::normalizeVin($input['vehicle_vin']);
+        }
+        if (is_array($input['vehicle'] ?? null) && is_string($input['vehicle']['vin'] ?? null)) {
+            $normalized['vehicle'] = [...$input['vehicle'], 'vin' => self::normalizeVin($input['vehicle']['vin'])];
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Bổ sung năm / VIN còn thiếu của xe, không ghi đè dữ liệu đã có. Gọi trong transaction tiếp nhận.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws ValidationException
+     */
+    public function completeVehicleProfile(int $vehicleId, array $data): void
+    {
+        $vehicle = Vehicle::query()->lockForUpdate()->findOrFail($vehicleId);
+        $missing = [];
+        if (empty($vehicle->year)) {
+            $vehicle->year = $data['vehicle_year'] ?? null;
+            if (empty($vehicle->year)) {
+                $missing['vehicle_year'] = 'Xe chưa có năm sản xuất: nhập để lưu vào hồ sơ.';
+            }
+        }
+        if (trim((string) $vehicle->vin) === '') {
+            $vehicle->vin = $data['vehicle_vin'] ?? null;
+            if (empty($vehicle->vin)) {
+                $missing['vehicle_vin'] = 'Xe chưa có số VIN: nhập để lưu vào hồ sơ.';
+            }
+        }
+        if ($missing !== []) {
+            throw ValidationException::withMessages($missing);
+        }
+        $vehicle->save();
+    }
+
+    private static function normalizeVin(string $vin): string
+    {
+        return mb_strtoupper((string) preg_replace('/\s+/', '', $vin));
     }
 
     /** @return array<string, string> */
@@ -69,7 +164,8 @@ class CounterRecordService
             ], allowHidden: true);
             $data['vehicle_id'] = Vehicle::query()->create($catalog + [
                 'customer_id' => $data['customer_id'],
-                'license_plate' => mb_strtoupper(trim($data['vehicle']['license_plate'])),
+                'license_plate' => filled($data['vehicle']['license_plate'] ?? null) ? mb_strtoupper(trim($data['vehicle']['license_plate'])) : null,
+                'vin' => $data['vehicle']['vin'] ?? null,
                 'year' => $data['vehicle']['year'] ?? null,
                 'mileage' => $mileage,
             ])->id;

@@ -109,15 +109,33 @@ class MediaService
         });
     }
 
-    /** Chứng từ khách đã xác nhận thì bị khóa: không thêm ảnh sau khi xác nhận. */
-    private function assertNotConfirmed(Model $attachable): void
+    /**
+     * Xoá ảnh chụp nhầm — cùng điều kiện khoá với thêm ảnh: biên bản đã gửi / chứng từ khách đã xác nhận thì không xoá
+     * (ảnh đã là bằng chứng trong snapshot khách xem).
+     */
+    public function delete(MediaAttachment $media): void
     {
-        // Biên bản đã gửi khách thì ảnh đã nằm trong snapshot: không thêm nữa.
+        $attachable = $media->attachable;
+        abort_if($attachable === null, 404);
+        $this->assertNotConfirmed($attachable, 'xoá');
+
+        DB::transaction(function () use ($media): void {
+            $disk = $media->disk;
+            $path = $media->path;
+            $media->delete();
+            DB::afterCommit(fn () => Storage::disk($disk)->delete($path));
+        });
+    }
+
+    /** Chứng từ khách đã xác nhận thì bị khóa: không thêm / xoá ảnh sau khi xác nhận. */
+    private function assertNotConfirmed(Model $attachable, string $verb = 'thêm'): void
+    {
+        // Biên bản đã gửi khách thì ảnh đã nằm trong snapshot: không thêm / xoá nữa.
         if ($attachable instanceof VehicleHandover && ! $attachable->isEditable()) {
-            throw ValidationException::withMessages(['attachable_id' => 'Biên bản đã khóa, không thể thêm ảnh.']);
+            throw ValidationException::withMessages(['attachable_id' => "Biên bản đã khóa, không thể {$verb} ảnh."]);
         }
         if (method_exists($attachable, 'confirmations') && $attachable->confirmations()->exists()) {
-            throw ValidationException::withMessages(['attachable_id' => 'Chứng từ đã được khách xác nhận, không thể thêm ảnh.']);
+            throw ValidationException::withMessages(['attachable_id' => "Chứng từ đã được khách xác nhận, không thể {$verb} ảnh."]);
         }
     }
 

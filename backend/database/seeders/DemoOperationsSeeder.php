@@ -305,7 +305,6 @@ class DemoOperationsSeeder extends Seeder
             'handed_over_at' => $times[RepairOrder::HANDED_OVER] ?? null,
             'closed_at' => $times[RepairOrder::CLOSED] ?? null,
             'close_reason' => $target === RepairOrder::CLOSED ? 'CUSTOMER_DECLINED_QUOTE' : null,
-            'note' => $appointment->symptom_description,
             'created_at' => $received,
             'updated_at' => end($history)[1],
         ]);

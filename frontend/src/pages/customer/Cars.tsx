@@ -751,7 +751,7 @@ function VehicleDetailModal({ vehicle, orders, onClose, onEdit, onNoteSaved }: {
                     </div>
                   </div>
                 ) : (
-                  <p className={`min-h-[88px] whitespace-pre-line rounded-xl border border-cs-border px-4 py-3 text-[14px] ${vehicle.note ? "text-cs-text" : "text-cs-muted"}`}>{vehicle.note || "Chưa có ghi chú nào."}</p>
+                  <p className={`min-h-[88px] whitespace-pre-line rounded-xl border border-cs-border px-4 py-3 text-[14px] ${vehicle.note ? "text-cs-text" : "text-cs-muted"} font-medium`}>{vehicle.note || "Chưa có ghi chú nào."}</p>
                 )}
               </section>
             </>}

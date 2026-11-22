@@ -133,6 +133,31 @@ class MediaApiTest extends TestCase
         $this->actingAs($this->otherCustomer)->getJson($query)->assertForbidden();
     }
 
+    public function test_advisor_deletes_photo_but_customer_cannot(): void
+    {
+        $id = $this->upload()->json('id');
+        $path = MediaAttachment::query()->findOrFail($id)->path;
+
+        $this->actingAs($this->owner)->deleteJson("/api/media/{$id}")->assertForbidden();
+        $this->actingAs($this->advisor)->deleteJson("/api/media/{$id}")->assertOk();
+
+        $this->assertNull(MediaAttachment::query()->find($id));
+        Storage::disk('local')->assertMissing($path);
+    }
+
+    public function test_cannot_delete_photo_after_customer_confirmed_document(): void
+    {
+        $id = $this->upload(['attachable_type' => 'quotation', 'attachable_id' => $this->quotation->id])->json('id');
+        CustomerConfirmation::query()->create([
+            'confirmable_type' => Quotation::class, 'confirmable_id' => $this->quotation->id,
+            'customer_id' => $this->order->customer_id, 'method' => CustomerConfirmation::METHOD_ACCOUNT,
+            'content_sha256' => str_repeat('d', 64), 'confirmed_at' => now(),
+        ]);
+
+        $this->actingAs($this->advisor)->deleteJson("/api/media/{$id}")->assertUnprocessable()->assertJsonValidationErrors('attachable_id');
+        $this->assertNotNull(MediaAttachment::query()->find($id));
+    }
+
     public function test_guest_cannot_view(): void
     {
         $id = $this->upload()->json('id');

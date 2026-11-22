@@ -8,6 +8,7 @@ use App\Models\Employee;
 use App\Models\Invoice;
 use App\Models\RepairOrder;
 use App\Models\Vehicle;
+use App\Models\VehicleHandover;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -64,6 +65,20 @@ class QualityCheckDeliveryTest extends TestCase
     {
         $order = $this->order('RO-IP', RepairOrder::IN_PROGRESS);
         $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$order->id}/quality-check", ['items' => array_keys(RepairOrder::QUALITY_CHECK_ITEMS)])->assertUnprocessable();
+    }
+
+    public function test_delivery_list_reports_latest_active_check_out_status(): void
+    {
+        $order = $this->order('RO-OUT', attributes: ['quality_checked_at' => now(), 'requires_check_in' => true]);
+        $base = [
+            'repair_order_id' => $order->id, 'vehicle_id' => $order->vehicle_id, 'type' => VehicleHandover::TYPE_CHECK_OUT,
+            'staff_employee_id' => Employee::factory()->create()->id, 'person_name' => 'Chủ xe', 'person_relation' => 'OWNER',
+        ];
+        VehicleHandover::query()->create([...$base, 'status' => VehicleHandover::STATUS_DRAFT]);
+        VehicleHandover::query()->create([...$base, 'status' => VehicleHandover::STATUS_VOID]);
+
+        $this->actingAs($this->advisor)->getJson('/api/repair-orders?with_delivery=1&status=COMPLETED')->assertOk()
+            ->assertJsonPath('data.0.check_out_status', VehicleHandover::STATUS_DRAFT);
     }
 
     public function test_delivery_list_groups_orders_by_hand_over_readiness(): void

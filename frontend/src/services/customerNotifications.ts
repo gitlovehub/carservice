@@ -72,7 +72,7 @@ export function notificationTarget(item: CustomerNotification): NotificationTarg
       case "QUOTATION_SENT": return { to: `/quotation?order=${order}`, action: "Xem và duyệt báo giá", icon: "dollar" };
       case "INVOICE_ISSUED": return { to: `/invoices?order=${order}`, action: "Xem hóa đơn", icon: "receipt" };
       case "PAYMENT_RECEIVED": return { to: `/invoices?order=${order}`, action: "Xem hóa đơn", icon: "card" };
-      case "HANDOVER_SUBMITTED": return { to: `/repair-status?orderId=${order}`, action: "Xem và xác nhận biên bản", icon: "file" };
+      case "HANDOVER_SUBMITTED": return { to: `/repair-status?orderId=${order}#bien-ban`, action: "Xem và xác nhận biên bản", icon: "file" };
       case "REVIEW_INVITE": return { to: `/customer/service-history?review=${order}`, action: "Đánh giá ngay", icon: "star" };
       case "REVIEW_REPLIED": return { to: `/customer/service-history?review=${order}`, action: "Xem phản hồi", icon: "star" };
       case "PART_ARRIVED":

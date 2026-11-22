@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Button, Drawer, Field, Icon, IconButton, Input, type IconName } from "../../../components/ui";
 import { useAppFeedback } from "../../../components/ui/feedbackContext";
-import { errorMessage } from "../../../services/adminApi";
 import { catalogAdminApi, CATEGORY_TONE, type ServiceCategory } from "../../../services/catalogAdminApi";
 import { Pill } from "../kit/AdminKit";
+import { useFieldErrors } from "../../../components/ui/useFieldErrors";
 
 /** Tên dễ hiểu cho từng icon (hiện dưới ô trong lưới chọn icon). */
 const ICON_LABEL: Record<string, string> = {
@@ -27,20 +27,22 @@ export function CategoryDrawer({ open, categories, icons, total, uncategorized, 
   const [editing, setEditing] = useState<Editing | null>(null);
   const [busy, setBusy] = useState<"save" | "delete" | null>(null);
   const [error, setError] = useState("");
+  const fieldErrors = useFieldErrors();
 
   const current = editing?.id != null ? categories.find(c => c.id === editing.id) ?? null : null;
   const isNew = editing !== null && editing.id === null;
   const dirty = editing !== null && (isNew ? editing.name.trim() !== "" : !!current && (editing.name.trim() !== current.name || editing.icon !== current.icon));
   const iconList = icons.length ? icons : Object.keys(ICON_LABEL);
 
-  const edit = (c: ServiceCategory | null) => { setError(""); setEditing(c ? { id: c.id, name: c.name, icon: c.icon } : { id: null, name: "", icon: "wrench" }); };
-  const back = () => { setError(""); setEditing(null); };
-  const set = (patch: Partial<Editing>) => { setEditing(e => e && { ...e, ...patch }); setError(""); };
+  const edit = (c: ServiceCategory | null) => { setError(""); fieldErrors.reset(); setEditing(c ? { id: c.id, name: c.name, icon: c.icon } : { id: null, name: "", icon: "wrench" }); };
+  const back = () => { setError(""); fieldErrors.reset(); setEditing(null); };
+  const set = (patch: Partial<Editing>) => { setEditing(e => e && { ...e, ...patch }); setError(""); fieldErrors.clear(...Object.keys(patch)); };
 
   const save = async () => {
     if (!editing) return;
-    if (!editing.name.trim()) return setError("Nhập tên danh mục.");
-    setBusy("save"); setError("");
+    setError("");
+    if (fieldErrors.show(editing.name.trim() ? {} : { name: "Nhập tên danh mục." })) return;
+    setBusy("save");
     try {
       const body = { name: editing.name.trim(), icon: editing.icon };
       const res = editing.id === null ? await catalogAdminApi.createCategory(body) : await catalogAdminApi.updateCategory(editing.id, body);
@@ -48,7 +50,7 @@ export function CategoryDrawer({ open, categories, icons, total, uncategorized, 
       onChanged();
       setEditing(null);
     } catch (e) {
-      setError(errorMessage(e, "Không lưu được danh mục."));
+      fieldErrors.showApi(e, { name: "name" });
     } finally {
       setBusy(null);
     }
@@ -65,7 +67,7 @@ export function CategoryDrawer({ open, categories, icons, total, uncategorized, 
       onChanged();
       setEditing(null);
     } catch (e) {
-      setError(errorMessage(e, "Không xoá được danh mục."));
+      fieldErrors.showApi(e);
     } finally {
       setBusy(null);
     }
@@ -99,7 +101,7 @@ export function CategoryDrawer({ open, categories, icons, total, uncategorized, 
       <h3 className="text-subheading font-semibold">{isNew ? "Danh mục mới" : "Sửa danh mục"}</h3>
       {current && <span className="text-caption text-cs-muted">{current.services_count} dịch vụ · {current.active_services_count} đang áp dụng</span>}
     </div>
-    <Field label="Tên danh mục" required>
+    <Field label="Tên danh mục" required error={fieldErrors.errors.name}>
       <Input value={editing.name} maxLength={100} placeholder="Ví dụ: Lốp – mâm" onChange={e => set({ name: e.target.value })}/>
     </Field>
     <fieldset className="flex flex-col gap-2">
@@ -135,7 +137,7 @@ export function CategoryDrawer({ open, categories, icons, total, uncategorized, 
     ? <>
       {current && <Button variant="danger-outline" icon="trash" className="mr-auto" disabled={current.services_count > 0 || busy !== null} loading={busy === "delete"} onClick={() => void remove()}>Xoá</Button>}
       <Button disabled={busy !== null} onClick={back}>Huỷ</Button>
-      <Button variant="primary" icon={isNew ? "plus" : "check"} disabled={!dirty || busy !== null} loading={busy === "save"} loadingText="Đang lưu..."
+      <Button variant="primary" icon={isNew ? "plus" : "check"} disabled={(!isNew && !dirty) || busy !== null} loading={busy === "save"} loadingText="Đang lưu..."
         onClick={() => void save()}>{isNew ? "Thêm danh mục" : "Lưu thay đổi"}</Button>
     </>
     : <>

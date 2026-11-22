@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Mail\ConfirmationOtpMail;
+use App\Mail\CustomerEmailChangedMail;
+use App\Mail\CustomerEmailVerificationMail;
 use App\Mail\HandoverOtpMail;
 use App\Models\Account;
+use App\Models\AuditLog;
 use App\Models\ConfirmationOtp;
 use App\Models\Customer;
 use App\Models\CustomerConfirmation;
@@ -18,8 +21,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * Xác nhận của khách (D-005, D-008). Hai đường duy nhất:
@@ -65,6 +70,8 @@ class ConfirmationService
                 'quantity' => (string) $item->quantity,
                 'unit_price' => (string) $item->unit_price,
                 'amount' => (string) $item->amount,
+                // Khách xác nhận cả việc hạng mục là bắt buộc (và lý do) — chỉ thêm khóa khi bắt buộc để hash các báo giá cũ không đổi.
+                ...($item->is_required ? ['is_required' => true, 'required_reason' => (string) $item->required_reason] : []),
             ])->values()->all(),
             'decisions' => $decisions,
         ]);
@@ -73,11 +80,30 @@ class ConfirmationService
     /** Khách tự phản hồi trong tài khoản: ghi phản hồi (logic cũ) + bằng chứng ACCOUNT. */
     public function respondViaAccount(Quotation $quotation, array $responses, Request $request): Quotation
     {
+        $responses = $this->repairOrders->normalizeResponses($quotation, $responses);
         $hash = $this->quotationContentHash($quotation, $responses);
 
         return DB::transaction(function () use ($quotation, $responses, $request, $hash): Quotation {
             $result = $this->repairOrders->recordCustomerResponse($quotation, $responses);
             $confirmation = $this->record($quotation, $quotation->repairOrder->customer_id, CustomerConfirmation::METHOD_ACCOUNT, $hash, $request);
+            $this->recordItemHistory($responses, $confirmation);
+
+            return $result;
+        });
+    }
+
+    /**
+     * Khách tự duyệt qua link có chữ ký trong email (không đăng nhập): ghi phản hồi như tài khoản + bằng chứng EMAIL_LINK.
+     * Link chỉ tới được email chủ xe — chữ ký URL là quyền truy cập (QuotationEmailReviewService).
+     */
+    public function respondViaEmailLink(Quotation $quotation, array $responses, Request $request): Quotation
+    {
+        $responses = $this->repairOrders->normalizeResponses($quotation, $responses);
+        $hash = $this->quotationContentHash($quotation, $responses);
+
+        return DB::transaction(function () use ($quotation, $responses, $request, $hash): Quotation {
+            $result = $this->repairOrders->recordCustomerResponse($quotation, $responses);
+            $confirmation = $this->record($quotation, $quotation->repairOrder->customer_id, CustomerConfirmation::METHOD_EMAIL_LINK, $hash, $request);
             $this->recordItemHistory($responses, $confirmation);
 
             return $result;
@@ -91,6 +117,8 @@ class ConfirmationService
             throw ValidationException::withMessages(['quotation' => 'Chỉ gửi OTP cho báo giá đang chờ khách duyệt.']);
         }
         $quotation->loadMissing('items', 'repairOrder.customer.account');
+        // Mã OTP gắn với lựa chọn đã chuẩn hoá (từ chối mục bắt buộc = từ chối toàn bộ) — email cho khách thấy đúng kết quả.
+        $responses = $this->repairOrders->normalizeResponses($quotation, $responses);
         $decisions = collect($responses)->mapWithKeys(fn ($r) => [(int) $r['item_id'] => (bool) $r['is_approved']])->all();
 
         return $this->issueOtp(
@@ -103,6 +131,7 @@ class ConfirmationService
     /** Khách đọc OTP cho cố vấn tại quầy → ghi phản hồi + bằng chứng EMAIL_OTP (nhân viên chứng kiến). */
     public function verifyQuotationOtp(Quotation $quotation, string $code, array $responses, ?Employee $witness, Request $request): Quotation
     {
+        $responses = $this->repairOrders->normalizeResponses($quotation, $responses);
         $otp = $this->checkOtp($quotation, ConfirmationOtp::PURPOSE_QUOTATION_RESPONSE,
             $this->quotationContentHash($quotation->fresh('items'), $responses), $code, 'responses');
 
@@ -120,6 +149,22 @@ class ConfirmationService
     public function recordAccountAction(Model $confirmable, int $customerId, array $content, Request $request): CustomerConfirmation
     {
         return $this->record($confirmable, $customerId, CustomerConfirmation::METHOD_ACCOUNT, $this->hash($content), $request);
+    }
+
+    /** Chủ xe tự khai qua link có chữ ký gửi tới email đã xác minh (vd. ủy quyền nhận xe): ghi bằng chứng EMAIL_LINK. */
+    public function recordEmailLinkAction(Model $confirmable, int $customerId, array $content, Request $request): CustomerConfirmation
+    {
+        return $this->record($confirmable, $customerId, CustomerConfirmation::METHOD_EMAIL_LINK, $this->hash($content), $request);
+    }
+
+    /** Admin duyệt ngoại lệ khi chủ xe mất email và đã đến trực tiếp với giấy tờ. Gọi trong transaction. */
+    public function confirmHandoverByException(VehicleHandover $handover, ?Employee $admin, string $note, Request $request): VehicleHandover
+    {
+        $locked = VehicleHandover::query()->lockForUpdate()->findOrFail($handover->id);
+        $this->assertHandoverAwaitingConfirmation($locked);
+        $this->record($locked, $locked->repairOrder->customer_id, CustomerConfirmation::METHOD_ADMIN_EXCEPTION, $locked->snapshot_sha256, $request, null, $admin, $note);
+
+        return $this->markHandoverConfirmed($locked);
     }
 
     /** Lịch sử từng lần khách quyết định từng dòng, gắn với bằng chứng xác nhận (P3). */
@@ -208,16 +253,89 @@ class ConfirmationService
 
     /*
     |--------------------------------------------------------------------------
+    | Xác minh email chủ xe
+    |--------------------------------------------------------------------------
+    */
+
+    /** Gửi mã tới email cần xác minh. Email đã xác minh chỉ admin được đổi. */
+    public function requestCustomerEmailOtp(Customer $customer, string $email, Account $requestedBy): ConfirmationOtp
+    {
+        $email = mb_strtolower(trim($email));
+        $this->assertEmailChangeAllowed($customer, $email, $requestedBy);
+
+        return $this->issueOtp(
+            $customer, $customer, ConfirmationOtp::PURPOSE_EMAIL_VERIFICATION, $this->customerEmailHash($customer, $email), $requestedBy,
+            fn (string $code) => new CustomerEmailVerificationMail($code, $customer->full_name, ConfirmationOtp::TTL_MINUTES),
+            $email,
+        );
+    }
+
+    /** Khách đọc đúng mã → email thành email nhận xác nhận; ghi nhật ký và báo về email cũ nếu có đổi. */
+    public function verifyCustomerEmailOtp(Customer $customer, string $email, string $code, Account $actor, Request $request): Customer
+    {
+        $email = mb_strtolower(trim($email));
+        $this->assertEmailChangeAllowed($customer, $email, $actor);
+        $previous = $customer->confirmationEmail();
+        $otp = $this->checkOtp($customer, ConfirmationOtp::PURPOSE_EMAIL_VERIFICATION, $this->customerEmailHash($customer, $email), $code, 'email');
+
+        DB::transaction(function () use ($otp, $customer, $email, $previous, $actor, $request): void {
+            $this->consumeOtp($otp);
+            $customer->forceFill(['email' => $email, 'email_verified_at' => now()])->save();
+            AuditLog::query()->create([
+                'account_id' => $actor->id,
+                'action' => 'customer.email_verified',
+                'auditable_type' => Customer::class,
+                'auditable_id' => $customer->id,
+                'old_values' => $previous ? ['email' => $previous] : null,
+                'new_values' => ['email' => $email],
+                'ip_address' => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 1000),
+            ]);
+        });
+
+        if ($previous && mb_strtolower($previous) !== $email) {
+            try {
+                Mail::to($previous)->send(new CustomerEmailChangedMail($customer->full_name, $email));
+            } catch (Throwable $e) {
+                Log::warning('Không gửi được email báo đổi email chủ xe', ['customer_id' => $customer->id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return $customer->fresh();
+    }
+
+    private function assertEmailChangeAllowed(Customer $customer, string $email, Account $actor): void
+    {
+        $current = $customer->confirmationEmail();
+        if ($current && mb_strtolower($current) !== $email && $actor->role !== Account::ROLE_ADMIN) {
+            throw ValidationException::withMessages(['email' => 'Email đã xác minh chỉ quản trị viên được đổi.']);
+        }
+        if (Customer::query()->whereKeyNot($customer->id)->whereRaw('LOWER(email) = ?', [$email])->exists()) {
+            throw ValidationException::withMessages(['email' => 'Email đã thuộc hồ sơ khách khác.']);
+        }
+    }
+
+    private function customerEmailHash(Customer $customer, string $email): string
+    {
+        return $this->hash(['customer_id' => $customer->id, 'email' => $email]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Lõi OTP + bằng chứng
     |--------------------------------------------------------------------------
     */
 
-    /** @param  callable(string): Mailable  $mail */
-    private function issueOtp(Model $target, Customer $customer, string $purpose, string $hash, Account $requestedBy, callable $mail): ConfirmationOtp
+    /**
+     * Mã chỉ gửi tới email đã xác minh; riêng bước xác minh email thì gửi tới email đang cần xác minh ($sendTo).
+     *
+     * @param  callable(string): Mailable  $mail
+     */
+    private function issueOtp(Model $target, Customer $customer, string $purpose, string $hash, Account $requestedBy, callable $mail, ?string $sendTo = null): ConfirmationOtp
     {
-        $email = $customer->email ?: $customer->account?->email;
+        $email = $sendTo ?? $customer->confirmationEmail();
         if (! $email) {
-            throw ValidationException::withMessages(['email' => 'Chủ xe chưa có email để nhận OTP. Hướng dẫn khách tự xác nhận trong tài khoản.']);
+            throw ValidationException::withMessages(['email' => 'Chủ xe chưa có email đã xác minh. Xác minh email của chủ xe trước khi gửi mã.']);
         }
 
         $code = (string) random_int(100000, 999999);

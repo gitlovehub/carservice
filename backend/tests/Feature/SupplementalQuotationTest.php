@@ -15,6 +15,7 @@ use App\Models\Service;
 use App\Models\Vehicle;
 use App\Models\WorkItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /** P3-B — báo giá phát sinh: cộng thêm vào báo giá gốc, khách duyệt từng dòng, chỉ dòng được duyệt vào hóa đơn. */
@@ -174,6 +175,33 @@ class SupplementalQuotationTest extends TestCase
         $supplement = collect($response->json('quotations'))->firstWhere('id', $id);
         $this->assertSame('SUPPLEMENT', $supplement['type']);
         $this->assertNotEmpty($supplement['reason']);
+    }
+
+    public function test_supplement_can_add_a_part_found_during_repair_but_not_a_discontinued_one(): void
+    {
+        $found = Part::query()->create(['sku' => 'GK-1', 'name' => 'Gioăng nắp máy', 'unit' => 'Cái', 'sell_price' => 90000, 'status' => 'ACTIVE']);
+        $discontinued = Part::query()->create(['sku' => 'OLD-1', 'name' => 'Phụ tùng cũ', 'unit' => 'Cái', 'sell_price' => 10000, 'status' => 'INACTIVE']);
+        $payload = fn (Part $part) => ['type' => 'SUPPLEMENT', 'reason' => 'Gioăng rách khi tháo máy', 'items' => [['item_type' => 'PART', 'part_id' => $part->id, 'quantity' => 1]]];
+
+        $this->quote($payload($discontinued))->assertUnprocessable();
+        $id = $this->quote($payload($found))->assertCreated()->json('id');
+        $this->sendAndRespond($id, fn () => true);
+
+        $this->assertSame(0, InspectionRecommendation::query()->where('part_id', $found->id)->count());
+    }
+
+    public function test_customer_sees_overnight_stay_on_quotation(): void
+    {
+        $id = $this->quote([
+            'type' => 'SUPPLEMENT', 'reason' => 'Phải chờ keo khô qua đêm', 'stays_overnight' => true,
+            'items' => [['item_type' => 'SERVICE', 'service_id' => $this->extraService->id, 'quantity' => 1]],
+        ])->assertCreated()->assertJsonPath('stays_overnight', true)->json('id');
+        $this->actingAs($this->advisor)->postJson("/api/quotations/{$id}/send")->assertOk();
+
+        $detail = $this->actingAs($this->customerAccount)->getJson("/api/me/repair-orders/{$this->order->id}")->assertOk();
+
+        $this->assertTrue(collect($detail->json('quotations'))->firstWhere('id', $id)['stays_overnight']);
+        $this->assertFalse(Schema::hasColumn('repair_orders', 'note'));
     }
 
     public function test_supplement_not_allowed_before_repair_starts(): void

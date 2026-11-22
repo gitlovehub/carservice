@@ -1,11 +1,29 @@
+import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { buttonClass } from "../../components/ui/buttonClass";
 import { Dropdown } from "../../components/ui/Dropdown";
 import { Icon } from "../../components/ui/Icon";
+import { Drawer } from "../../components/ui/Modal";
 import { RANGES, dmy, rangeDates, type Range, type TrackStep } from "./advisorListFormat";
+import { orderStepPath } from "./repairOrderFlow";
 
 /**
  * Component dùng chung của các trang danh sách + xem nhanh khu cố vấn (Phiếu sửa chữa, Báo giá & phê duyệt).
  * Hàm định dạng nằm ở `advisorListFormat.ts`.
  */
+
+/**
+ * Ngăn kéo xem nhanh trên màn hẹp (trượt từ phải) — cùng nội dung khung xem nhanh màn rộng.
+ * Dùng với useNarrowDrawer(); khung màn rộng (.adv-ro-preview) tự ẩn khi hẹp nên không hiện trùng.
+ */
+export function PreviewDrawer({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+  return <Drawer open={open} side="right" width="lg" title={title} onClose={onClose} hideHeader className="adv-theme adv-preview-drawer">{children}</Drawer>;
+}
+
+/** Nút mở trang chi tiết phiếu sửa chữa — dùng chung ở mọi màn hình có thông tin phiếu. `step`: mở đúng bước. */
+export function OpenOrderButton({ id, step, size = "sm" }: { id: number; step?: number; size?: "sm" | "md" }) {
+  return <Link to={orderStepPath(id, step)} onClick={event => event.stopPropagation()} className={`${buttonClass({ variant: "primary", size })} whitespace-nowrap`}><Icon name="clipboard" size={15}/>Chi tiết phiếu</Link>;
+}
 
 /** Nút chọn khoảng ngày (menu preset). `anyLabel` = nhãn khi không lọc ngày. */
 export function RangePicker({ value, onChange, label, anyLabel }: { value: Range; onChange: (range: Range) => void; label: string; anyLabel: string }) {

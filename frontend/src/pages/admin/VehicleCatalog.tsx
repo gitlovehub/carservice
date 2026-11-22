@@ -8,6 +8,7 @@ import { fmtDate, fmtDateTime } from "../../services/adminApi";
 import {
   adminVehicleCatalogApi, brandLogoUrl, loadBrandLogos, type AdminLevel, type CatalogBrand, type CatalogModel, type CatalogStatus, type CatalogTrim, type Paginated,
 } from "../../services/vehicleCatalog";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 
 type Row = CatalogBrand | CatalogModel | CatalogTrim;
 type Filters = { search: string; status: "" | CatalogStatus; brandId: number | null; modelId: number | null; page: number };
@@ -90,7 +91,7 @@ function BrandLogoField({ form, busy, error, onLink, onProcess }: {
     : form.id === null ? "Bắt buộc — chưa có logo" : "Chưa có logo tải lên — đang dùng logo có sẵn hoặc chữ cái đầu";
 
   // Bắt buộc khi thêm hãng mới; hãng có sẵn (nhập từ CSV) chưa có logo vẫn sửa / ẩn được.
-  return <Field label="Logo hãng" required={form.id === null} hint="Tải ảnh lên, dán link hoặc dán ảnh (Ctrl+V) — PNG, JPG, WebP… tối đa 5MB. Hệ thống tự tách nền thành PNG trong suốt và cắt gọn vào khung vuông.">
+  return <Field label="Logo hãng" required={form.id === null} error={error} hint="Tải ảnh lên, dán link hoặc dán ảnh (Ctrl+V) — PNG, JPG, WebP… tối đa 5MB. Hệ thống tự tách nền thành PNG trong suốt và cắt gọn vào khung vuông.">
     <div className="flex flex-col gap-3"
       onDragOver={event => event.preventDefault()}
       onDrop={event => { event.preventDefault(); pickFile(event.dataTransfer.files[0]); }}>
@@ -119,7 +120,6 @@ function BrandLogoField({ form, busy, error, onLink, onProcess }: {
         <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,image/avif" hidden
           onChange={event => { pickFile(event.target.files?.[0]); event.target.value = ""; }}/>
       </div>
-      {error && <p role="alert" className="rounded-control bg-danger-soft p-2.5 text-small text-danger-fg">{error}</p>}
     </div>
   </Field>;
 }
@@ -132,6 +132,7 @@ export default function VehicleCatalog() {
   const [reload, setReload] = useState(0);
   const [form, setForm] = useState<FormState | null>(null);
   const [formError, setFormError] = useState("");
+  const fieldErrors = useFieldErrors();
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [logoBusy, setLogoBusy] = useState(false);
@@ -163,6 +164,7 @@ export default function VehicleCatalog() {
 
   const openForm = (row?: Row) => {
     setFormError("");
+    fieldErrors.reset();
     setLogoError("");
     if (row) {
       setForm({ id: row.id, name: row.name, status: row.status ?? "ACTIVE", brandId: null, modelId: null, bodyType: (row as CatalogModel).body_type ?? "",
@@ -194,13 +196,16 @@ export default function VehicleCatalog() {
     event.preventDefault();
     if (!form) return;
     const name = form.name.trim();
-    if (!name) return setFormError("Vui lòng nhập tên.");
-    if (form.id === null && level === "models" && !form.brandId) return setFormError("Vui lòng chọn hãng xe.");
-    if (form.id === null && level === "trims" && !form.modelId) return setFormError("Vui lòng chọn dòng xe.");
-    if (level === "brands" && form.logoLink.trim() && !form.logoPng) return setFormError("Bấm “Xử lý link” để xem trước logo, hoặc xóa link.");
+    const problems: FieldErrors = {};
+    if (!name) problems.name = "Vui lòng nhập tên.";
+    if (form.id === null && level !== "brands" && !form.brandId) problems.brand = "Vui lòng chọn hãng xe.";
+    if (form.id === null && level === "trims" && !form.modelId) problems.model = "Vui lòng chọn dòng xe.";
+    if (level === "brands" && form.logoLink.trim() && !form.logoPng) problems.logo = "Bấm “Xử lý link” để xem trước logo, hoặc xóa link.";
+    else if (level === "brands" && form.id === null && !form.logoPng) problems.logo = "Vui lòng tải lên hoặc dán link logo hãng.";
+    setFormError("");
+    if (fieldErrors.show(problems)) return;
 
     const body: Record<string, unknown> = { name, status: form.status };
-    if (level === "brands" && form.id === null && !form.logoPng) return setFormError("Vui lòng tải lên hoặc dán link logo hãng.");
     if (level === "brands" && form.logoPng) body.logo_png = form.logoPng;
     if (level === "models") body.body_type = form.bodyType || null;
     if (form.id === null && level === "models") body.brand_id = form.brandId;
@@ -218,7 +223,7 @@ export default function VehicleCatalog() {
       setForm(null);
       setReload(n => n + 1);
     } catch (error) {
-      setFormError(errorText(error, "Không lưu được."));
+      fieldErrors.showApi(error, { name: "name", brand_id: "brand", model_id: "model", logo_png: "logo", body_type: "bodyType" });
     } finally {
       setSaving(false);
     }
@@ -365,23 +370,23 @@ export default function VehicleCatalog() {
         <Button variant="secondary" disabled={saving} onClick={() => setForm(null)}>Hủy</Button>
         <Button type="submit" form="vehicle-catalog-form" variant="primary" icon="check" loading={saving} loadingText="Đang lưu...">Lưu</Button>
       </>}>
-      {form && <form id="vehicle-catalog-form" onSubmit={event => void submit(event)} className="flex flex-col gap-4">
-        {form.id === null && level !== "brands" && <SearchableSelect label="Hãng xe" placeholder="Chọn hãng xe…" required renderIcon={brandIcon}
+      {form && <form id="vehicle-catalog-form" noValidate onSubmit={event => void submit(event)} className="flex flex-col gap-4">
+        {form.id === null && level !== "brands" && <SearchableSelect label="Hãng xe" placeholder="Chọn hãng xe…" required error={fieldErrors.errors.brand} renderIcon={brandIcon}
           options={brandOptions.options} loading={brandOptions.loading} value={form.brandId}
-          onChange={option => setForm(current => current && { ...current, brandId: option?.value ?? null, modelId: null })}/>}
-        {form.id === null && level === "trims" && <SearchableSelect label="Dòng xe" placeholder="Chọn dòng xe…" required
+          onChange={option => { fieldErrors.clear("brand", "model"); setForm(current => current && { ...current, brandId: option?.value ?? null, modelId: null }); }}/>}
+        {form.id === null && level === "trims" && <SearchableSelect label="Dòng xe" placeholder="Chọn dòng xe…" required error={fieldErrors.errors.model}
           options={formModelOptions.options} loading={formModelOptions.loading} value={form.modelId}
           disabled={form.brandId === null} disabledHint="Chọn hãng xe trước."
-          onChange={option => setForm(current => current && { ...current, modelId: option?.value ?? null })}/>}
-        <Field label={`Tên ${LEVELS[level].noun}`} required hint="Không trùng tên trong cùng cấp cha (không phân biệt hoa/thường).">
+          onChange={option => { fieldErrors.clear("model"); setForm(current => current && { ...current, modelId: option?.value ?? null }); }}/>}
+        <Field label={`Tên ${LEVELS[level].noun}`} required error={fieldErrors.errors.name} hint="Không trùng tên trong cùng cấp cha (không phân biệt hoa/thường).">
           <Input value={form.name} maxLength={level === "trims" ? 150 : 100} autoFocus
-            onChange={event => setForm(current => current && { ...current, name: event.target.value })}/>
+            onChange={event => { fieldErrors.clear("name"); setForm(current => current && { ...current, name: event.target.value }); }}/>
         </Field>
-        {level === "brands" && <BrandLogoField form={form} busy={logoBusy} error={logoError}
-          onLink={link => setForm(current => current && { ...current, logoLink: link, logoPng: null })}
-          onProcess={file => void processLogo(file)}/>}
-        {level === "models" && <Field label="Kiểu dáng" optional>
-          <Select value={form.bodyType} onChange={event => setForm(current => current && { ...current, bodyType: event.target.value })}>
+        {level === "brands" && <BrandLogoField form={form} busy={logoBusy} error={logoError || fieldErrors.errors.logo}
+          onLink={link => { setLogoError(""); fieldErrors.clear("logo"); setForm(current => current && { ...current, logoLink: link, logoPng: null }); }}
+          onProcess={file => { fieldErrors.clear("logo"); void processLogo(file); }}/>}
+        {level === "models" && <Field label="Kiểu dáng" optional error={fieldErrors.errors.bodyType}>
+          <Select value={form.bodyType} onChange={event => { fieldErrors.clear("bodyType"); setForm(current => current && { ...current, bodyType: event.target.value }); }}>
             <option value="">Chưa phân loại</option>
             {Object.entries(BODY_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </Select>

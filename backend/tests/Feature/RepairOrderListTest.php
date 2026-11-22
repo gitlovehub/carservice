@@ -109,6 +109,8 @@ class RepairOrderListTest extends TestCase
         $this->travelTo(Carbon::parse('2026-11-16 22:30:00', 'UTC'));
         RepairOrder::query()->where('repair_order_code', 'RO-A')->firstOrFail()
             ->update(['received_at' => Carbon::parse('2026-11-16 23:00:00', 'UTC'), 'estimated_ready_at' => Carbon::parse('2026-11-17 09:00:00', 'UTC')]);
+        // Các phiếu khác nhận "N ngày trước ngày chạy test" — chạy gần 17/11 thì có thể rơi vào 17/11; đưa ra xa để test không phụ thuộc ngày chạy.
+        RepairOrder::query()->where('repair_order_code', '!=', 'RO-A')->update(['received_at' => Carbon::parse('2026-10-01 02:00:00', 'UTC')]);
 
         $this->assertSame('2026-11-17', GarageDay::today());
         $this->assertSame(['RO-A'], $this->codes('?from=2026-11-17&to=2026-11-17'));

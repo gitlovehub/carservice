@@ -1,29 +1,42 @@
 import { useState, type ReactNode } from "react";
 import { Button } from "../../components/ui/Button";
-import { Field, Input } from "../../components/ui/Field";
+import { Field, FieldError, Input } from "../../components/ui/Field";
 import { Icon } from "../../components/ui/Icon";
 import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import type { CounterVehicle } from "../../services/workflowService";
-import { vehicleTitle, type NewCustomerDraft, type NewVehicleDraft } from "./counterForms";
+import { formatLicensePlate } from "../../services/licensePlate";
+import { formatVin, vehicleTitle, type NewCustomerDraft, type NewVehicleDraft } from "./counterForms";
 
-/** Ô nhập xe chưa có trong hệ thống (ADV-03): hãng → dòng → phiên bản, biển số, năm. */
-export function NewVehicleFields({ value, onChange }: { value: NewVehicleDraft; onChange: (next: NewVehicleDraft) => void }) {
+/**
+ * Ô nhập xe chưa có trong hệ thống (ADV-03): hãng → dòng → phiên bản, biển số, năm.
+ * `atReception`: tiếp nhận xe bắt buộc năm + VIN, biển số không bắt buộc (PO 22/11/2026).
+ */
+export function NewVehicleFields({ value, onChange, errors = {}, onClearError, atReception = false }: {
+  value: NewVehicleDraft; onChange: (next: NewVehicleDraft) => void; errors?: Record<string, string>; onClearError?: (key: string) => void; atReception?: boolean;
+}) {
   return <div className="space-y-3">
-    <VehicleSelector value={value.selection} onChange={selection => onChange({ ...value, selection })}/>
-    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px]">
-      <Field label="Biển số" required><Input value={value.plate} maxLength={20} className="uppercase" placeholder="VD: 51K-123.45" onChange={e => onChange({ ...value, plate: e.target.value })}/></Field>
-      <Field label="Năm sản xuất" optional><Input inputMode="numeric" maxLength={4} value={value.year} placeholder="VD: 2020" onChange={e => onChange({ ...value, year: e.target.value.replace(/\D/g, "") })}/></Field>
+    <div role="group" aria-label="Hãng và dòng xe" aria-invalid={!!errors.vehicleModel || undefined} className={errors.vehicleModel ? "rounded-xl border border-danger p-3" : undefined}>
+      <VehicleSelector value={value.selection} onChange={selection => { onChange({ ...value, selection }); onClearError?.("vehicleModel"); }}/>
+      <FieldError className="mt-1.5">{errors.vehicleModel}</FieldError>
+    </div>
+    {/* Cùng lưới 3 cột với Hãng / Dòng / Phiên bản → 5 ô thẳng cột, đều nhau. */}
+    <div className="grid gap-4 sm:grid-cols-3">
+      <Field label="Biển số" required={!atReception} optional={atReception} error={errors.vehiclePlate}><Input value={value.plate} maxLength={12} className="uppercase" placeholder="VD: 51K-123.45" onChange={e => { onChange({ ...value, plate: formatLicensePlate(e.target.value) }); onClearError?.("vehiclePlate"); }}/></Field>
+      <Field label="Năm sản xuất" required={atReception} optional={!atReception} error={errors.vehicleYear}><Input inputMode="numeric" maxLength={4} value={value.year} placeholder="VD: 2020" onChange={e => { onChange({ ...value, year: e.target.value.replace(/\D/g, "") }); onClearError?.("vehicleYear"); }}/></Field>
+      {atReception && <Field label="Số VIN" required error={errors.vehicleVin}><Input value={value.vin} maxLength={17} className="uppercase" placeholder="6–17 ký tự" onChange={e => { onChange({ ...value, vin: formatVin(e.target.value) }); onClearError?.("vehicleVin"); }}/></Field>}
     </div>
   </div>;
 }
 
 /** Ô nhập khách vãng lai mới (ADV-02). */
-export function NewCustomerFields({ value, onChange }: { value: NewCustomerDraft; onChange: (next: NewCustomerDraft) => void }) {
+export function NewCustomerFields({ value, onChange, errors = {}, onClearError }: {
+  value: NewCustomerDraft; onChange: (next: NewCustomerDraft) => void; errors?: Record<string, string>; onClearError?: (key: string) => void;
+}) {
   return <div className="grid gap-3 sm:grid-cols-2">
-    <Field label="Họ tên khách" required><Input value={value.name} maxLength={100} onChange={e => onChange({ ...value, name: e.target.value })}/></Field>
-    <Field label="Số điện thoại" required><Input inputMode="tel" value={value.phone} maxLength={20} onChange={e => onChange({ ...value, phone: e.target.value })}/></Field>
-    <Field label="Email" optional hint="Dùng để khách nhận mã xác nhận biên bản / báo giá tại quầy." className="sm:col-span-2"><Input type="email" value={value.email} maxLength={150} onChange={e => onChange({ ...value, email: e.target.value })}/></Field>
+    <Field label="Họ tên khách" required error={errors.newName}><Input value={value.name} maxLength={100} onChange={e => { onChange({ ...value, name: e.target.value }); onClearError?.("newName"); }}/></Field>
+    <Field label="Số điện thoại" required error={errors.newPhone}><Input inputMode="tel" value={value.phone} maxLength={20} onChange={e => { onChange({ ...value, phone: e.target.value }); onClearError?.("newPhone"); }}/></Field>
+    <Field label="Email" optional error={errors.newEmail} hint="Dùng để khách nhận mã xác nhận biên bản / báo giá tại quầy." className="sm:col-span-2"><Input type="email" value={value.email} maxLength={150} onChange={e => { onChange({ ...value, email: e.target.value }); onClearError?.("newEmail"); }}/></Field>
   </div>;
 }
 
@@ -48,9 +61,12 @@ const VISIBLE = 6;
  * Chọn xe khách mang tới (ADV-02/03): xe có sẵn của khách (xe đang có phiếu chưa xong bị khóa),
  * hoặc "xe chưa có trong hệ thống" → nhập hãng / dòng / biển số. Danh sách dài thu gọn còn 6 xe.
  */
-export function VehicleChoiceList({ name, vehicles, value, onChange, newVehicle, onNewVehicleChange, bookedVehicleId, newLabel = "Xe chưa có trong hệ thống" }: {
+export function VehicleChoiceList({ name, vehicles, value, onChange, newVehicle, onNewVehicleChange, bookedVehicleId, newLabel = "Xe chưa có trong hệ thống", allowNew = true, errors = {}, onClearError, atReception = false }: {
+  errors?: Record<string, string>; onClearError?: (key: string) => void; atReception?: boolean;
   name: string; vehicles: CounterVehicle[]; value: number | "new" | null; onChange: (next: number | "new") => void;
   newVehicle: NewVehicleDraft; onNewVehicleChange: (next: NewVehicleDraft) => void; bookedVehicleId?: number | null; newLabel?: string;
+  /** false: chỉ chọn xe đã có (xe mới nhập ở nơi khác, ví dụ modal trang Tiếp nhận). */
+  allowNew?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   // Xe đang chọn / xe đặt lịch luôn hiện trong phần thu gọn.
@@ -60,14 +76,15 @@ export function VehicleChoiceList({ name, vehicles, value, onChange, newVehicle,
   const shown = expanded ? [...pinned, ...rest] : [...pinned, ...rest].slice(0, Math.max(VISIBLE, pinned.length));
   const hidden = vehicles.length - shown.length;
 
-  return <div className="space-y-2" role="radiogroup" aria-label="Xe khách mang tới">
-    {shown.map(v => <ChoiceCard key={v.id} name={name} checked={value === v.id} disabled={!!v.open_repair_order_code} onSelect={() => onChange(v.id)}
+  return <div className={`space-y-2 ${errors.vehicle ? "rounded-xl border border-danger p-2" : ""}`} role="radiogroup" aria-label="Xe khách mang tới" aria-invalid={!!errors.vehicle || undefined}>
+    <FieldError>{errors.vehicle}</FieldError>
+    {shown.map(v => <ChoiceCard key={v.id} name={name} checked={value === v.id} disabled={!!v.open_repair_order_code} onSelect={() => { onChange(v.id); onClearError?.("vehicle"); }}
       icon={<VehicleBrandLogo brand={v.model?.brand?.name} size={36}/>}
       title={v.license_plate || "xxx.xx"}
       subtitle={[vehicleTitle(v), v.year ? String(v.year) : "", v.id === bookedVehicleId ? "xe đặt lịch" : "", v.open_repair_order_code ? `đang có phiếu ${v.open_repair_order_code}` : ""].filter(Boolean).join(" · ")}/>)}
     {hidden > 0 && <Button size="sm" variant="ghost" icon="chevron-down" onClick={() => setExpanded(true)}>Xem thêm {hidden} xe</Button>}
-    <ChoiceCard name={name} dashed checked={value === "new"} onSelect={() => onChange("new")}
-      icon={<span className="grid size-9 place-items-center rounded-full bg-cs-surface-2 text-cs-muted"><Icon name="plus" size={18}/></span>} title={newLabel}/>
-    {value === "new" && <div className="rounded-xl border border-cs-border p-4"><NewVehicleFields value={newVehicle} onChange={onNewVehicleChange}/></div>}
+    {allowNew && <ChoiceCard name={name} dashed checked={value === "new"} onSelect={() => { onChange("new"); onClearError?.("vehicle"); }}
+      icon={<span className="grid size-9 place-items-center rounded-full bg-cs-surface-2 text-cs-muted"><Icon name="plus" size={18}/></span>} title={newLabel}/>}
+    {allowNew && value === "new" && <div className="rounded-xl border border-cs-border p-4"><NewVehicleFields value={newVehicle} onChange={onNewVehicleChange} errors={errors} onClearError={onClearError} atReception={atReception}/></div>}
   </div>;
 }

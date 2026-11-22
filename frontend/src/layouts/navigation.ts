@@ -43,6 +43,7 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Lịch hẹn", path: "/admin/appointments", icon: "calendar", group: "Điều hành" },
     { label: "Phiếu sửa chữa", path: "/admin/repair-orders", icon: "clipboard", group: "Điều hành" },
     { label: "Hoá đơn & thanh toán", path: "/admin/invoices", icon: "dollar", group: "Điều hành" },
+    { label: "Duyệt ngoại lệ biên bản", path: "/admin/handover-exceptions", icon: "shield", group: "Điều hành" },
     { label: "Báo cáo", path: "/admin/reports", icon: "chart", group: "Điều hành" },
     { label: "Khách hàng", path: "/admin/customers", icon: "users", group: "Con người" },
     { label: "Nhân sự", path: "/admin/staff", icon: "id-card", group: "Con người" },

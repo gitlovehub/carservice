@@ -19,6 +19,7 @@ class CustomerFactory extends Factory
             'full_name' => $name,
             'phone' => VietnameseData::phone(),
             'email' => VietnameseData::email($name),
+            'email_verified_at' => now(),
             'address' => VietnameseData::address(),
         ];
     }
@@ -28,6 +29,7 @@ class CustomerFactory extends Factory
         return $this->state(fn () => [
             'account_id' => null,
             'email' => null,
+            'email_verified_at' => null,
         ]);
     }
 }

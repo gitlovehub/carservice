@@ -113,7 +113,7 @@ class AdvisorBookingTest extends TestCase
 
         Employee::factory()->create(['account_id' => $this->advisor->id]);
         $orderId = $this->actingAs($this->advisor)->postJson('/api/repair-orders', [
-            'appointment_id' => $id, 'customer_id' => $appointment->customer_id, 'vehicle_id' => $appointment->vehicle_id,
+            'appointment_id' => $id, 'customer_id' => $appointment->customer_id, 'vehicle_id' => $appointment->vehicle_id, 'mileage_received' => 1000,
         ])->assertCreated()->json('id');
 
         $this->actingAs($this->advisor)->getJson("/api/advisor/appointments/{$id}")->assertOk()->assertJsonPath('data.repair_order.id', $orderId);

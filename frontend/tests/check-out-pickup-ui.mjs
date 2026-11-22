@@ -11,7 +11,7 @@ const customer = read('src/pages/customer/RepairStatus.tsx');
 assert.match(detail, /<CheckInPanel type="CHECK_OUT"/, 'Order detail shows the check-out record');
 assert.match(panel, /filter\(\(\[value\]\) => !isOut \|\| value !== "OTHER"\)/, 'Check-out recipient cannot be an unauthorized other person');
 assert.match(panel, /activeAuthorizations/, 'Authorized recipient is picked from owner-declared authorizations');
-assert.match(panel, /Khác lúc nhận xe/, 'Discrepancies against check-in are shown');
+assert.match(panel, /Thay đổi so với lúc nhận/, 'Discrepancies against check-in are shown');
 assert.match(evidence, /\/me\/repair-orders\/\$\{orderId\}\/pickup-authorizations/, 'Owner declares authorizations from their account');
 assert.match(evidence, /apiClient\.delete<PickupAuthorization>\(`\/me\/pickup-authorizations\/\$\{id\}`\)/, 'Owner can revoke');
 assert.match(customer, /<CustomerPickupBlock /, 'Customer page has the pickup authorization block');

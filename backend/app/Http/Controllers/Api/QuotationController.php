@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Quotation;
 use App\Models\RepairOrder;
+use App\Services\QuotationEmailReviewService;
 use App\Services\RepairOrderService;
 use App\Support\GarageDay;
 use Illuminate\Http\JsonResponse;
@@ -65,6 +66,12 @@ class QuotationController extends Controller
         return response()->json([...$page->toArray(), 'counts' => $counts]);
     }
 
+    /** Hạng mục bắt buộc (PO 19/11): đánh dấu thì phải có lý do để khách hiểu vì sao không bỏ được. */
+    private const REQUIRED_RULES = [
+        'items.*.is_required' => ['nullable', 'boolean'],
+        'items.*.required_reason' => ['nullable', 'string', 'max:255', 'required_if_accepted:items.*.is_required'],
+    ];
+
     public function store(Request $request, RepairOrder $repairOrder): JsonResponse
     {
         $this->authorize('create', Quotation::class);
@@ -80,16 +87,18 @@ class QuotationController extends Controller
             'items.*.description' => ['nullable', 'string'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            ...self::REQUIRED_RULES,
             // P3: SUPPLEMENT = phát sinh khi đang sửa (bắt buộc lý do).
             'type' => ['nullable', 'string', 'in:'.Quotation::TYPE_INITIAL.','.Quotation::TYPE_SUPPLEMENT],
             'reason' => ['nullable', 'string', 'max:1000', 'required_if:type,'.Quotation::TYPE_SUPPLEMENT],
+            'stays_overnight' => ['sometimes', 'boolean'],
         ]);
 
         $advisor = $request->user()->employee;
 
         $quotation = $this->service->createQuotation(
             $repairOrder, $advisor, $data['items'], $data['discount_amount'] ?? 0, $data['valid_until'] ?? null,
-            $data['type'] ?? Quotation::TYPE_INITIAL, $data['reason'] ?? null,
+            $data['type'] ?? Quotation::TYPE_INITIAL, $data['reason'] ?? null, (bool) ($data['stays_overnight'] ?? false),
         );
 
         return response()->json($quotation, 201);
@@ -110,13 +119,40 @@ class QuotationController extends Controller
         return response()->json($this->service->createQuickQuotation($repairOrder, $advisor, $data['service_ids'], $request->user()), 201);
     }
 
-    public function send(Request $request, Quotation $quotation): JsonResponse
+    /** PUT /quotations/{id} — sửa báo giá nháp (thay dòng + giảm giá). Đã gửi khách thì không sửa. */
+    public function update(Request $request, Quotation $quotation): JsonResponse
+    {
+        $this->authorize('update', $quotation);
+        $data = $request->validate([
+            'discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.item_type' => ['required', 'string', 'in:SERVICE,PART'],
+            'items.*.service_id' => ['nullable', 'integer', 'exists:services,id', 'required_if:items.*.item_type,SERVICE'],
+            'items.*.part_id' => ['nullable', 'integer', 'exists:parts,id', 'required_if:items.*.item_type,PART'],
+            'items.*.description' => ['nullable', 'string'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            ...self::REQUIRED_RULES,
+            'stays_overnight' => ['sometimes', 'boolean'],
+        ]);
+        $advisor = $request->user()->employee;
+        abort_if($advisor === null, 403);
+
+        return response()->json($this->service->updateDraftQuotation(
+            $quotation, $advisor, $data['items'], (float) ($data['discount_amount'] ?? 0),
+            array_key_exists('stays_overnight', $data) ? (bool) $data['stays_overnight'] : null,
+        ));
+    }
+
+    public function send(Request $request, Quotation $quotation, QuotationEmailReviewService $emailReview): JsonResponse
     {
         $this->authorize('update', $quotation);
 
         $quotation = $this->service->sendQuotation($quotation, $request->user());
+        // Khách đã đồng ý nhận báo giá qua email lúc đặt lịch → gửi mail kèm link duyệt (không cần đăng nhập).
+        $emailedTo = $emailReview->sendIfConsented($quotation);
 
-        return response()->json($quotation);
+        return response()->json([...$quotation->toArray(), 'emailed_to' => $emailedTo]);
     }
 
     // Không có hành động "respond" cho nhân viên: khách tự duyệt qua

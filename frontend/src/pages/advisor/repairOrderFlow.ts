@@ -110,6 +110,14 @@ export function deliveryState(order: WorkflowOrder): "check" | "payment" | "chec
   return "ready";
 }
 
+/** Biên bản trả xe đang ở đâu: chưa lập, nháp, đã gửi chủ xe hay đã xác nhận (đọc được cả ở danh sách lẫn chi tiết). */
+export function checkoutStage(order: WorkflowOrder): "none" | "draft" | "sent" | "confirmed" {
+  const status = order.handovers
+    ? [...order.handovers].reverse().find(h => h.type === "CHECK_OUT" && h.status !== "VOID")?.status
+    : order.check_out_status;
+  return status === "DRAFT" ? "draft" : status === "SUBMITTED" ? "sent" : status === "CONFIRMED" ? "confirmed" : "none";
+}
+
 /** Đường dẫn mở trang chi tiết phiếu tại một bước (`?step=quotation`). */
 export const orderStepPath = (id: number, step?: number) =>
   `/advisor/service-orders/${id}${step === undefined ? "" : `?step=${STEPS[step]?.key ?? ""}`}`;

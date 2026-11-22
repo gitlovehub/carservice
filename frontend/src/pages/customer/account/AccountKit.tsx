@@ -257,7 +257,7 @@ export function LineItemsTable({ items, total, discount, totalLabel = "Tổng c�
         <thead className="bg-cs-surface-2 text-[12px] font-bold uppercase tracking-[0.06em] text-cs-muted">
           <tr>
             <th className="px-4 py-3">Hạng mục</th>
-            <th className="px-4 py-3 text-center">SL</th>
+            <th className="px-4 py-3 text-center">Số lượng</th>
             <th className="px-4 py-3 text-right">Đơn giá</th>
             <th className="px-4 py-3 text-right">Thành tiền</th>
           </tr>

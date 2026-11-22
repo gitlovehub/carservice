@@ -7,7 +7,7 @@ const workflow = read('src/services/workflowService.ts');
 const panels = read('src/pages/advisor/RepairOrderPanels.tsx');
 const supplement = read('src/pages/advisor/SupplementPanel.tsx');
 const detail = read('src/pages/advisor/AdvisorRepairOrderDetail.tsx');
-const customerQuote = read('src/pages/customer/Quotation.tsx');
+const customerQuote = read('src/pages/customer/Quotation.tsx') + read('src/pages/customer/QuotationDetailModal.tsx');
 const status = read('src/pages/customer/RepairStatus.tsx');
 
 assert.match(workflow, /filter\(q => \(q\.type \?\? "INITIAL"\) === "INITIAL"\)/, 'latestQuotation must ignore supplements (matches backend)');

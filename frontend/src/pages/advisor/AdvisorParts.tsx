@@ -15,9 +15,11 @@ import type { VehicleSelection } from "../../services/vehicleCatalog";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
 import { dayTime, fullDayTime } from "./advisorListFormat";
+import { OpenOrderButton } from "./advisorListKit";
 import { orderStepPath } from "./repairOrderFlow";
 import { Notice } from "./WorkflowUI";
 import { errorText } from "./workflowFormat";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 import "./advisorDashboard.css";
 
 /**
@@ -174,13 +176,16 @@ function PartPreview({ part, onReport, onHistory }: { part: AdvisorPart; onRepor
     <Icon name={icon} size={22} className="shrink-0 text-cs-muted"/><span><span className="block text-caption text-cs-muted">{label}</span><b className="text-cs-text">{value}</b></span>
   </div>;
   return <section className="adv-card adv-ro-detail" aria-label={`Phụ tùng ${part.name}`}>
-    <header className="flex items-start gap-4">
-      <PartThumb part={part} size={88}/>
+    {/* Đầu khung cùng kiểu các trang khác (ánh vàng + vạch dọc); ô biểu tượng là ảnh phụ tùng. */}
+    <header className="adv-hv-head relative -mx-5.5 -mt-5.5 flex flex-wrap items-center gap-4 rounded-t-[18px] px-5.5 py-4 max-sm:-mx-4 max-sm:-mt-4 max-sm:px-4">
+      <PartThumb part={part} size={64}/>
+      <span className="adv-hv-rule" aria-hidden="true"/>
       <div className="min-w-0 flex-1">
-        <h2 className="text-subheading font-bold text-cs-text">{part.name}</h2>
-        <p className="text-small text-cs-text-2">SKU: <span className="tabular-nums">{part.sku}</span></p>
-        <Badge tone={LEVEL_BADGE[part.level].tone} className="mt-2">{LEVEL_BADGE[part.level].label}</Badge>
+        <h2 className="text-[1.45rem] font-bold leading-tight text-cs-text">{part.name}</h2>
+        <p className="mt-1 text-small text-cs-text-2">SKU <span className="font-semibold tabular-nums text-cs-text">{part.sku}</span>{part.category && <><span className="px-2 text-cs-muted">·</span>{part.category}</>}</p>
+        <p className="mt-0.5 text-caption text-cs-muted">Tồn kho {part.stock} {part.unit} · tối thiểu {part.min} {part.unit}</p>
       </div>
+      <Badge tone={LEVEL_BADGE[part.level].tone}>{LEVEL_BADGE[part.level].label}</Badge>
     </header>
     <div className="adv-ro-vehicle grid-cols-2! gap-4">
       {fact("tag", "Danh mục", part.category || "—")}
@@ -192,7 +197,7 @@ function PartPreview({ part, onReport, onHistory }: { part: AdvisorPart; onRepor
       <h3 className="adv-section-title">Thông tin bổ sung</h3>
       <div className="flex gap-3"><dt className="w-28 shrink-0 text-cs-muted">Giá bán</dt><dd className="font-semibold tabular-nums text-cs-text">{formatVnd(part.price)}</dd></div>
       <div className="flex gap-3"><dt className="w-28 shrink-0 text-cs-muted">Dòng xe tương thích</dt><dd className="text-cs-text">{part.compat.length ? part.compat.map(c => c.name).join(", ") : "Chưa khai báo"}</dd></div>
-      <div className="flex gap-3"><dt className="w-28 shrink-0 text-cs-muted">Mô tả</dt><dd className="whitespace-pre-wrap text-cs-text">{part.description || "—"}</dd></div>
+      <div className="flex gap-3"><dt className="w-28 shrink-0 text-cs-muted">Mô tả</dt><dd className="whitespace-pre-wrap text-cs-text font-medium">{part.description || "—"}</dd></div>
       <div className="flex gap-3"><dt className="w-28 shrink-0 text-cs-muted">Cập nhật tồn</dt><dd className="tabular-nums text-cs-text-2">{fullDayTime(part.updated_at)}</dd></div>
     </dl>
     <p className="text-caption text-cs-muted">Nhập kho, điều chỉnh tồn do kho (Admin) thực hiện. Xuất kho cho xe làm trong phiếu sửa chữa.</p>
@@ -240,9 +245,12 @@ function RequestsTab({ version, onChanged }: { version: number; onChanged: () =>
           <span className="block text-caption text-cs-text-2">
             {r.repair_order ? <Link className="font-semibold text-cs-accent-text hover:underline" to={orderStepPath(r.repair_order.id, 3)}>{r.repair_order.repair_order_code}</Link> : "—"}
             {r.repair_order?.vehicle?.license_plate ? ` · ${r.repair_order.vehicle.license_plate}` : ""} · báo bởi {r.created_by?.employee?.full_name || r.created_by?.email || "hệ thống"} · {dayTime(r.created_at)}</span>
-          {(r.request_note || r.supplier_note) && <span className="block text-caption text-cs-muted">{r.request_note}{r.supplier_note ? ` · Kho: ${r.supplier_note}` : ""}</span>}
+          {(r.request_note || r.supplier_note) && <span className="block text-caption text-cs-muted font-medium">{r.request_note}{r.supplier_note ? ` · Kho: ${r.supplier_note}` : ""}</span>}
         </span>
-        {r.status === "REQUESTED" && <Button size="sm" variant="outline" icon="x" onClick={() => { setCancelling(r); setReason(""); }}>Rút lại</Button>}
+        <span className="flex flex-wrap items-center justify-end gap-2">
+          {r.repair_order && <OpenOrderButton id={r.repair_order.id} step={3}/>}
+          {r.status === "REQUESTED" && <Button size="sm" variant="outline" icon="x" onClick={() => { setCancelling(r); setReason(""); }}>Rút lại</Button>}
+        </span>
       </li>; })}</ul>}
     {result && result.last_page > 1 && <Pagination page={result.current_page} totalPages={result.last_page} totalItems={result.total} pageSize={10} disabled={list.loading} onChange={setPage}/>}
     {cancelling && <Modal open onClose={() => setCancelling(null)} dismissible={!working} size="sm" title="Rút lại báo thiếu phụ tùng"
@@ -269,18 +277,19 @@ function MovesTab({ search, onSearch }: { search: string; onSearch: (value: stri
     </div>
     {list.loading && !result ? <LoadingState compact/> : list.error ? <ErrorState compact description={list.error} onRetry={list.reload}/>
       : !result?.data.length ? <EmptyState compact icon="history" title="Chưa có giao dịch phù hợp"/>
-      : <div className="overflow-x-auto rounded-xl border border-cs-border"><table className="w-full min-w-[680px] text-small">
+      : <div className="overflow-x-auto rounded-xl border border-cs-border"><table className="w-full min-w-[820px] text-small">
         <thead className="bg-cs-surface-2 text-left text-cs-text-2"><tr>
           <th className="px-3 py-2.5 font-semibold">Thời gian</th><th className="px-3 py-2.5 font-semibold">Loại</th><th className="px-3 py-2.5 font-semibold">Phụ tùng</th>
-          <th className="px-3 py-2.5 text-right font-semibold">SL</th><th className="px-3 py-2.5 font-semibold">Chứng từ</th><th className="px-3 py-2.5 font-semibold">Người làm</th>
+          <th className="px-3 py-2.5 text-right font-semibold">Số lượng</th><th className="px-3 py-2.5 font-semibold">Chứng từ</th><th className="px-3 py-2.5 font-semibold">Người làm</th><th className="px-3 py-2.5"><span className="sr-only">Mở phiếu</span></th>
         </tr></thead>
         <tbody className="divide-y divide-cs-border">{result.data.map(m => <tr key={m.id} className="text-cs-text">
           <td className="whitespace-nowrap px-3 py-2.5 tabular-nums text-cs-text-2">{fullDayTime(m.at)}</td>
           <td className="px-3 py-2.5"><Badge tone={m.type === "IN" ? "success" : "warning"}>{m.type === "IN" ? "Nhập" : "Xuất"}</Badge></td>
-          <td className="px-3 py-2.5"><span className="font-medium">{m.name}</span> <span className="text-caption text-cs-muted">{m.sku}</span>{m.note && <span className="block text-caption text-cs-muted">{m.note}</span>}</td>
+          <td className="px-3 py-2.5"><span className="font-medium">{m.name}</span> <span className="text-caption text-cs-muted">{m.sku}</span>{m.note && <span className="block text-caption text-cs-muted font-medium">{m.note}</span>}</td>
           <td className={`whitespace-nowrap px-3 py-2.5 text-right font-semibold tabular-nums ${m.type === "IN" ? "text-success-fg" : "text-cs-text"}`}>{m.type === "IN" ? "+" : "−"}{m.quantity} {m.unit}</td>
           <td className="whitespace-nowrap px-3 py-2.5">{m.ref}</td>
           <td className="px-3 py-2.5 text-cs-text-2">{m.by}</td>
+          <td className="px-3 py-2 text-right">{m.repair_order_id && <OpenOrderButton id={m.repair_order_id} step={3}/>}</td>
         </tr>)}</tbody>
       </table></div>}
     {result && result.meta.last_page > 1 && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={12} disabled={list.loading} onChange={setPage}/>}
@@ -298,17 +307,22 @@ function ReportShortageModal({ preset, onClose, onDone }: { preset?: AdvisorPart
   const [note, setNote] = useState("");
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const fieldErrors = useFieldErrors();
 
   async function submit() {
     const qty = Number(quantity);
-    if (!orderId || !partId) { setError("Chọn phiếu sửa chữa và phụ tùng."); return; }
-    if (!Number.isSafeInteger(qty) || qty < 1) { setError("Số lượng phải là số nguyên dương."); return; }
-    setWorking(true); setError("");
+    const problems: FieldErrors = {};
+    if (!orderId) problems.order = "Chọn phiếu sửa chữa.";
+    if (!partId) problems.part = "Chọn phụ tùng.";
+    if (!Number.isSafeInteger(qty) || qty < 1) problems.quantity = "Số lượng phải là số nguyên dương.";
+    setError("");
+    if (fieldErrors.show(problems)) return;
+    setWorking(true);
     try {
       await workflowApi.reportPartShortage(Number(orderId), { part_id: Number(partId), quantity: qty, ...(note.trim() ? { note: note.trim() } : {}) });
       notify("Đã báo thiếu phụ tùng. Kho sẽ đặt hàng và cập nhật ngày về.", "success");
       onDone();
-    } catch (err) { setError(errorText(err)); }
+    } catch (err) { fieldErrors.showApi(err, { part_id: "part", quantity: "quantity", note: "note" }); }
     finally { setWorking(false); }
   }
 
@@ -318,21 +332,21 @@ function ReportShortageModal({ preset, onClose, onDone }: { preset?: AdvisorPart
     footer={<><Button variant="secondary" disabled={working} onClick={onClose}>Huỷ</Button><Button variant="primary" icon="send" loading={working} onClick={() => void submit()}>Gửi kho</Button></>}>
     <div className="space-y-4">
       {error && <Notice tone="error">{error}</Notice>}
-      <Field label="Phiếu sửa chữa" required hint={orders.loading ? "Đang tải phiếu…" : !orderRows.length ? "Không có phiếu đang sửa / chờ phụ tùng." : undefined}>
-        <Select value={orderId} onChange={e => setOrderId(e.target.value)} disabled={orders.loading}>
+      <Field label="Phiếu sửa chữa" required error={fieldErrors.errors.order} hint={orders.loading ? "Đang tải phiếu…" : !orderRows.length ? "Không có phiếu đang sửa / chờ phụ tùng." : undefined}>
+        <Select value={orderId} onChange={e => { setOrderId(e.target.value); fieldErrors.clear("order"); }} disabled={orders.loading}>
           <option value="">— Chọn phiếu —</option>
           {orderRows.map(o => <option key={o.id} value={o.id}>{o.repair_order_code} · {o.vehicle?.license_plate || "xxx.xx"} · {o.customer?.full_name}</option>)}
         </Select>
       </Field>
-      <Field label="Phụ tùng" required>
+      <Field label="Phụ tùng" required error={fieldErrors.errors.part}>
         {preset ? <Input value={`${preset.sku} · ${preset.name} (tồn ${preset.stock})`} disabled/>
-          : <Select value={partId} onChange={e => setPartId(e.target.value)} disabled={catalog.loading}>
+          : <Select value={partId} onChange={e => { setPartId(e.target.value); fieldErrors.clear("part"); }} disabled={catalog.loading}>
             <option value="">{catalog.loading ? "Đang tải…" : "— Chọn phụ tùng —"}</option>
             {(catalog.data ?? []).map(p => <option key={p.id} value={p.id}>{p.sku} · {p.name} (tồn {p.inventory?.quantity ?? 0})</option>)}
           </Select>}
       </Field>
-      <Field label="Số lượng" required><Input type="number" min={1} max={999} value={quantity} onChange={e => setQuantity(e.target.value)} className="w-32"/></Field>
-      <Field label="Lý do / ghi chú cho kho" optional><Textarea rows={2} maxLength={500} value={note} onChange={e => setNote(e.target.value)} placeholder="Ví dụ: má phanh mòn hết, cần hàng chính hãng"/></Field>
+      <Field label="Số lượng" required error={fieldErrors.errors.quantity}><Input type="number" min={1} max={999} value={quantity} onChange={e => { setQuantity(e.target.value); fieldErrors.clear("quantity"); }} className="w-32"/></Field>
+      <Field label="Lý do / ghi chú cho kho" optional error={fieldErrors.errors.note}><Textarea rows={2} maxLength={500} value={note} onChange={e => { setNote(e.target.value); fieldErrors.clear("note"); }} placeholder="Ví dụ: má phanh mòn hết, cần hàng chính hãng"/></Field>
     </div>
   </Modal>;
 }

@@ -1,7 +1,7 @@
 import { mediaApi, VEHICLE_POSITIONS } from "../../services/evidenceService";
 import { formatGarageAddress, garageApi, type GarageInfo } from "../../services/garageService";
 import type { WorkflowHandover, WorkflowOrder } from "../../services/workflowService";
-import { CATEGORY_TEXT, CONDITION_TEXT, FUEL_TEXT, RELATION_TEXT } from "./handoverText";
+import { CATEGORY_TEXT, comparedCheckIn, CONDITION_TEXT, confirmationText, findBefore, FUEL_TEXT, RELATION_TEXT } from "./handoverText";
 
 /**
  * Mẫu in A4 biên bản nhận / trả xe (PO 18/11/2026): nền trắng, logo CarService, khách + xe, tình trạng, ảnh minh chứng,
@@ -45,6 +45,11 @@ export function handoverHtml(order: WorkflowOrder, h: WorkflowHandover, garage: 
   const cond = (c: string) => `<span class="${FLAGGED.includes(c) ? "bad" : "ok"}">${esc(CONDITION_TEXT[c as keyof typeof CONDITION_TEXT] ?? c)}</span>`;
   const row = (label: string, value: unknown) => `<tr><th>${esc(label)}</th><td>${esc(value || "—")}</td></tr>`;
   const logo = `${window.location.origin}/brand/carservice-logo.png`;
+  const compare = comparedCheckIn(h, order.handovers);
+  const beforeCell = (i: (typeof items)[number]) => {
+    const prior = findBefore(compare, i);
+    return `<td>${prior ? `${cond(prior.condition)}${prior.quantity ? ` × ${esc(prior.quantity)}` : ""}${prior.note ? `<br>${esc(prior.note)}` : ""}` : "Không có"}</td>`;
+  };
 
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${esc(title)} · ${esc(order.repair_order_code)}</title>
 <style>
@@ -61,7 +66,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:5px 7px;border:1px solid
 .kv th{width:38%;background:#faf6ee;font-weight:600}
 .list thead th{background:#faf6ee;font-size:11px;text-transform:uppercase}
 .c{text-align:center}.ok{color:#1d6b3a;font-weight:600}.bad{color:#b3261e;font-weight:700}
-.note{padding:7px 9px;border:1px solid #d6d6d6;border-radius:4px;min-height:32px;white-space:pre-wrap}
+.note{font-weight:500;padding:7px 9px;border:1px solid #d6d6d6;border-radius:4px;min-height:32px;white-space:pre-wrap}
 .photos{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.photos figure{margin:0;border:1px solid #d6d6d6;break-inside:avoid}
 .photos img{display:block;width:100%;height:95px;object-fit:cover}.photos figcaption{padding:2px 4px;font-size:10.5px;color:#444}
 .econfirm{margin-top:10px;padding:7px 9px;border-left:3px solid #1d6b3a;background:#f1f8f3;font-size:11.5px}
@@ -83,25 +88,27 @@ table{width:100%;border-collapse:collapse}th,td{padding:5px 7px;border:1px solid
 <div><h2>Xe</h2><table class="kv">${row("Dòng xe", car)}${row("Biển số", vehicle?.license_plate)}${row("Năm sản xuất", vehicle?.year)}</table></div>
 </div>
 <div class="cols">
-<div><h2>Thông tin ${isOut ? "trả" : "tiếp nhận"}</h2><table class="kv">${row("Số km (ODO)", h.mileage != null ? `${h.mileage.toLocaleString("vi-VN")} km` : "")}${row("Nhiên liệu", FUEL_TEXT[h.fuel_level ?? ""])}</table></div>
-<div><h2>Người ${isOut ? "nhận" : "giao"} xe</h2><table class="kv">${row("Họ tên", h.person_name)}${row("Quan hệ", RELATION_TEXT[h.person_relation])}${row("Điện thoại", h.person_phone)}${h.person_id_last4 ? row("4 số cuối giấy tờ", h.person_id_last4) : ""}</table></div>
+<div><h2>Thông tin ${isOut ? "trả" : "tiếp nhận"}</h2><table class="kv">${row("Số km (ODO)", h.mileage != null ? `${h.mileage.toLocaleString("vi-VN")} km` : "")}${row("Nhiên liệu", FUEL_TEXT[h.fuel_level ?? ""])}${compare ? `${row("Số km lúc nhận", compare.mileage != null ? `${compare.mileage.toLocaleString("vi-VN")} km` : "")}${row("Nhiên liệu lúc nhận", FUEL_TEXT[compare.fuel_level ?? ""])}` : ""}</table></div>
+<div><h2>Người ${isOut ? "nhận" : "giao"} xe</h2><table class="kv">${row("Họ tên", h.person_name)}${row("Quan hệ", RELATION_TEXT[h.person_relation])}${row("Điện thoại", h.person_phone)}${h.has_person_id ? row("Giấy tờ tùy thân", h.person_relation === "AUTHORIZED" ? "Đã đối chiếu" : "Đã ghi nhận") : ""}</table></div>
 </div>
 
 <h2>Tình trạng xe</h2>
-<table class="list"><thead><tr><th style="width:26%">Vị trí</th><th style="width:18%">Tình trạng</th><th>Mô tả</th></tr></thead><tbody>
-${condition.map(i => `<tr><td>${esc(i.label)}</td><td>${cond(i.condition)}</td><td>${esc(i.note || "")}${i.is_discrepancy ? ` <span class="bad">(khác lúc nhận xe)</span>` : ""}</td></tr>`).join("") || `<tr><td colspan="3" class="c">Không ghi nhận</td></tr>`}
+<table class="list"><thead><tr><th style="width:22%">Vị trí</th>${compare ? `<th style="width:24%">Lúc nhận</th>` : ""}<th style="width:18%">${compare ? "Lúc trả" : "Tình trạng"}</th><th>Mô tả</th></tr></thead><tbody>
+${condition.map(i => `<tr><td>${esc(i.label)}</td>${compare ? beforeCell(i) : ""}<td>${cond(i.condition)}</td><td>${esc(i.note || "")}${i.is_discrepancy ? ` <span class="bad">(thay đổi so với lúc nhận)</span>` : ""}</td></tr>`).join("") || `<tr><td colspan="${compare ? 4 : 3}" class="c">Không ghi nhận</td></tr>`}
 </tbody></table>
-${h.general_condition ? `<p style="margin:6px 0 0"><b>Tình trạng chung:</b></p><div class="note">${esc(h.general_condition)}</div>` : ""}
+${compare?.general_condition ? `<p style="margin:6px 0 0"><b>Tình trạng xe khi nhận:</b></p><div class="note">${esc(compare.general_condition)}</div>` : ""}
+${h.general_condition ? `<p style="margin:6px 0 0"><b>Tình trạng xe ${h.type === "CHECK_OUT" ? "khi trả" : "khi nhận"}:</b></p><div class="note">${esc(h.general_condition)}</div>` : ""}
 
 <h2>Tài sản bàn giao</h2>
-<table class="list"><thead><tr><th style="width:5%" class="c">#</th><th>Hạng mục</th><th style="width:15%">Nhóm</th><th style="width:14%">Tình trạng</th><th style="width:8%" class="c">SL</th><th style="width:26%">Ghi chú</th></tr></thead><tbody>
-${assets.map((i, n) => `<tr><td class="c">${n + 1}</td><td>${esc(i.label)}</td><td>${esc(CATEGORY_TEXT[i.category])}</td><td>${cond(i.condition)}</td><td class="c">${esc(i.quantity ?? "")}</td><td>${esc(i.note || "")}</td></tr>`).join("") || `<tr><td colspan="6" class="c">Không có</td></tr>`}
+<table class="list"><thead><tr><th style="width:5%" class="c">#</th><th>Hạng mục</th><th style="width:15%">Nhóm</th>${compare ? `<th style="width:16%">Lúc nhận</th>` : ""}<th style="width:14%">${compare ? "Lúc trả" : "Tình trạng"}</th><th style="width:8%" class="c">Số lượng</th><th style="width:26%">Ghi chú</th></tr></thead><tbody>
+${assets.map((i, n) => `<tr><td class="c">${n + 1}</td><td>${esc(i.label)}</td><td>${esc(CATEGORY_TEXT[i.category])}</td>${compare ? beforeCell(i) : ""}<td>${cond(i.condition)}</td><td class="c">${esc(i.quantity ?? "")}</td><td>${esc(i.note || "")}</td></tr>`).join("") || `<tr><td colspan="${compare ? 7 : 6}" class="c">Không có</td></tr>`}
 </tbody></table>
-<p style="margin:6px 0 0"><b>Đồ có giá trị khách để lại trong xe:</b></p><div class="note">${esc(h.valuables_note || "Không có")}</div>
+${compare ? `<p style="margin:6px 0 0"><b>Đồ có giá trị lúc nhận:</b></p><div class="note">${esc(compare.valuables_note || "Không có")}</div>` : ""}
+<p style="margin:6px 0 0"><b>Đồ có giá trị ${compare ? "lúc trả" : "khách để lại trong xe"}:</b></p><div class="note">${esc(h.valuables_note || "Không có")}</div>
 
 ${images.length ? `<h2>Ảnh minh chứng</h2><div class="photos">${images.map(p => `<figure><img src="${p.src}" alt=""><figcaption>${esc(p.caption)}</figcaption></figure>`).join("")}</div>` : ""}
 
-${confirmation ? `<div class="econfirm">Chủ xe đã xác nhận điện tử ${confirmation.method === "ACCOUNT" ? "trong tài khoản CarService" : "bằng mã gửi email chủ xe tại quầy"} lúc <b>${esc(dateTime(confirmation.confirmed_at))}</b>${confirmation.comment ? ` — “${esc(confirmation.comment)}”` : ""}.</div>` : ""}
+${confirmation ? `<div class="econfirm">Chủ xe đã xác nhận ${esc(confirmationText(confirmation.method))} lúc <b>${esc(dateTime(confirmation.confirmed_at))}</b>${confirmation.comment ? ` — “${esc(confirmation.comment)}”` : ""}.</div>` : ""}
 
 <div class="sign">
 <div><b>${isOut ? "NGƯỜI NHẬN XE" : "KHÁCH HÀNG – NGƯỜI GIAO XE"}</b><i>(Ký, ghi rõ họ tên)</i><div class="line"></div><div class="name">${esc(h.person_name)}</div></div>

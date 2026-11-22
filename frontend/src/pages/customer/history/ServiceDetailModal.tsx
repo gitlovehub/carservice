@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button, ErrorState, IconButton, LoadingState, Modal } from "../../../components/ui";
-import { Badge, StatusBadge } from "../../../components/ui/Badge";
+import { StatusBadge } from "../../../components/ui/Badge";
 import { Icon, type IconName } from "../../../components/ui/Icon";
 import { VehicleBrandLogo } from "../../../components/vehicle/VehicleBrandLogo";
 import { formatGarageAddress, useGarageInfo, type GarageInfo } from "../../../services/garageService";
@@ -92,7 +92,7 @@ table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border-bottom:1p
 <div style="text-align:right"><h1>HÓA ĐƠN</h1><div><b>${esc(invoice.invoice_code)}</b></div><div class="muted">Ngày: ${esc(formatDate(order.completed_at ?? order.received_at))}</div></div></div>
 <div class="grid"><div><span class="muted">Phiếu sửa chữa:</span> <b>${esc(order.repair_order_code)}</b></div><div><span class="muted">Xe:</span> <b>${esc([vehicle?.model?.brand?.name, vehicle?.model?.name, vehicle?.trim?.name].filter(Boolean).join(" "))}</b></div>
 <div><span class="muted">Biển số:</span> <b>${esc(vehicle?.license_plate || "—")}</b></div><div><span class="muted">Số km:</span> <b>${esc(order.mileage_received != null ? `${Number(order.mileage_received).toLocaleString("vi-VN")} km` : "—")}</b></div></div>
-<table><thead><tr><th>Hạng mục</th><th class="c">SL</th><th class="r">Đơn giá</th><th class="r">Thành tiền</th></tr></thead><tbody>${rows}</tbody>
+<table><thead><tr><th>Hạng mục</th><th class="c">Số lượng</th><th class="r">Đơn giá</th><th class="r">Thành tiền</th></tr></thead><tbody>${rows}</tbody>
 <tfoot>${discount > 0 ? `<tr><td colspan="3" class="r">Giảm trừ</td><td class="r">-${esc(formatMoney(discount))}</td></tr>` : ""}<tr class="total"><td colspan="3" class="r">Tổng thanh toán</td><td class="r">${esc(formatMoney(invoice.total_amount))}</td></tr></tfoot></table>
 <p class="muted" style="margin-top:24px">Trạng thái: ${esc(getStatus("invoice", invoice.status, "customer").label)}</p>
 <script>window.onload=function(){window.print()}</script></body></html>`;
@@ -218,26 +218,26 @@ export default function ServiceDetailModal({ orderId, onClose }: { orderId: numb
                     {data.bookedNames.length > 0 && <Row icon="layers" label="Dịch vụ / gói đã đặt"><div className="flex flex-wrap gap-1.5">{data.bookedNames.map((n) => <Chip key={n}>{n}</Chip>)}</div></Row>}
                     <Row icon="wrench" label="Kỹ thuật viên" inline>{data.technicians.join(", ") || "—"}</Row>
                     <Row icon="phone" label="Cố vấn" inline>{order.advisor?.full_name || "—"}</Row>
-                    <Row icon="file" label="Ghi chú tiếp nhận">
-                      {order.note || order.appointment?.symptom_description
-                        ? <p className="rounded-lg bg-cs-surface-2 px-3 py-2 font-normal text-cs-muted">{order.note || order.appointment?.symptom_description}</p> : "—"}
+                    <Row icon="file" label="Yêu cầu của bạn">
+                      {order.customer_request || order.appointment?.symptom_description
+                        ? <p className="whitespace-pre-wrap rounded-lg bg-cs-surface-2 px-3 py-2 font-medium text-cs-muted">{[order.appointment?.symptom_description, order.customer_request].filter(Boolean).join("\n")}</p> : "—"}
                     </Row>
                   </Panel>
 
                   <Panel icon="car" title={<>Tình trạng xe <span className="text-[14px] font-semibold text-cs-muted">(khi tiếp nhận)</span></>}>
                     <Row icon="gauge" label="Số ODO" inline>{order.mileage_received != null ? `${Number(order.mileage_received).toLocaleString("vi-VN")} km` : (data.checkIn?.mileage != null ? `${Number(data.checkIn.mileage).toLocaleString("vi-VN")} km` : "—")}</Row>
-                    <Row icon="calendar" label="Tình trạng chung">
-                      {data.checkIn?.general_condition || order.initial_condition || data.inspection?.condition_description
-                        ? <span className="font-normal">{data.checkIn?.general_condition || order.initial_condition || data.inspection?.condition_description}</span>
-                        : <Badge tone="success">Bình thường</Badge>}
+                    <Row icon="calendar" label="Tình trạng khi nhận">
+                      {data.checkIn?.general_condition || order.initial_condition
+                        ? <span className="font-medium">{data.checkIn?.general_condition || order.initial_condition}</span>
+                        : <span className="font-normal text-cs-muted">Chưa ghi</span>}
                     </Row>
                     {data.checkIn?.fuel_level && <Row icon="droplet" label="Mức nhiên liệu" inline>{data.checkIn.fuel_level}</Row>}
-                    <Row icon="alert" label="Vấn đề khách yêu cầu"><span className="font-normal">{order.appointment?.symptom_description || requestTypeLabel[order.appointment?.request_type ?? ""] || "—"}</span></Row>
                   </Panel>
 
                   <Panel icon="shield" title="Kết quả sau dịch vụ">
-                    <Row icon="check" label="Tình trạng xe" inline><StatusBadge domain="repair" status={order.status} audience="customer"/></Row>
-                    {data.inspection?.diagnosis && <Row icon="search" label="Chẩn đoán"><span className="font-normal">{data.inspection.diagnosis}</span></Row>}
+                    <Row icon="check" label="Trạng thái sửa chữa" inline><StatusBadge domain="repair" status={order.status} audience="customer"/></Row>
+                    {data.inspection?.condition_description && <Row icon="clipboard" label="Kết quả kiểm tra"><span className="whitespace-pre-wrap font-normal">{data.inspection.condition_description}</span></Row>}
+                    {data.inspection?.diagnosis && <Row icon="search" label="Kết luận chẩn đoán"><span className="font-normal">{data.inspection.diagnosis}</span></Row>}
                     {data.findings.length > 0 && (
                       <Row icon="list" label="Hạng mục kiểm tra">
                         <ul className="space-y-1 font-normal">{data.findings.slice(0, 5).map((f) => <li key={f.id}>{f.item_name}: <ConditionText status={f.condition_status}/></li>)}</ul>
@@ -348,7 +348,7 @@ export default function ServiceDetailModal({ orderId, onClose }: { orderId: numb
                         <StatusBadge domain="repair" status={h.status} audience="customer"/>
                         <time className="text-[13px] text-cs-muted">{dateTime(h.created_at)}</time>
                       </div>
-                      {h.note && <p className="mt-1 text-[14px] text-cs-text">{h.note}</p>}
+                      {h.note && <p className="mt-1 text-[14px] text-cs-text font-medium">{h.note}</p>}
                     </li>
                   ))}
                 </ol>

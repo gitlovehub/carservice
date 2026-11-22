@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
-import { Field, Input, SearchInput, Textarea } from "../../components/ui/Field";
+import { Field, Input, SearchInput, Textarea, FieldError } from "../../components/ui/Field";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
@@ -11,9 +11,10 @@ import {
 } from "../../services/workflowService";
 import { foldText } from "../../services/vehicleCatalog";
 import { CustomerVehiclePicker } from "./CustomerVehiclePicker";
-import { emptyPick, pickError, pickPayload, vehicleTitle, type CounterPick } from "./counterForms";
+import { emptyPick, PICK_API_FIELDS, pickPayload, pickProblems, vehicleTitle, type CounterPick } from "./counterForms";
 import { card, Notice, Req, WorkflowTitle } from "./WorkflowUI";
 import { capacityText, errorText } from "./workflowFormat";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 
 /**
  * ADV-04 — Cố vấn đặt lịch hộ (khách gọi điện / nhắn tin): khách + xe (có sẵn hoặc mới), dịch vụ / gói, ngày + khung giờ.
@@ -31,6 +32,7 @@ export default function CreateBooking() {
   const navigate = useNavigate();
   const location = useLocation();
   const { confirm, notify } = useAppFeedback();
+  const fieldErrors = useFieldErrors();
   // Mở từ trang Khách hàng ("Đặt lịch hộ") → chọn sẵn khách.
   const [pick, setPick] = useState<CounterPick>(() => {
     const preset = (location.state as { customer?: CounterCustomer } | null)?.customer;
@@ -44,7 +46,6 @@ export default function CreateBooking() {
   const [packages, setPackages] = useState<{ modelId: number | null; list: BookingPackage[] } | null>(null);
   const [packageId, setPackageId] = useState<number | null>(null);
   const [symptom, setSymptom] = useState("");
-  const [note, setNote] = useState("");
   const [date, setDate] = useState(isoDay(1));
   const [time, setTime] = useState<string | null>(null);
   const [availability, setAvailability] = useState<AvailabilityResult | null>(null);
@@ -100,13 +101,19 @@ export default function CreateBooking() {
   const vehicleBrand = pick.vehicleId === "new" ? pick.newVehicle.selection.brandName : ownVehicles.find(x => x.id === pick.vehicleId)?.model?.brand?.name;
   const customerName = pick.customer === "new" ? pick.newCustomer.name.trim() || "Khách mới" : pick.customer?.full_name;
 
+  const hasContent = !!selectedPackage || chosenServices.length > 0 || symptom.trim().length >= 5;
+  const timeError = time ? undefined : fieldErrors.errors.time;
+  const contentError = hasContent ? undefined : fieldErrors.errors.content;
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (working) return;
-    const invalid = pickError(pick);
-    if (invalid) { setError(invalid); return; }
-    if (!time) { setError("Chọn khung giờ hẹn."); return; }
-    if (!selectedPackage && !chosenServices.length && symptom.trim().length < 5) { setError("Chọn dịch vụ / gói, hoặc ghi tình trạng khách mô tả (ít nhất 5 ký tự) để gara kiểm tra."); return; }
+    setError("");
+    const problems: FieldErrors = pickProblems(pick);
+    if (Object.keys(problems).length) { fieldErrors.show(problems); return; }
+    if (!hasContent) problems.content = "Chọn dịch vụ / gói, hoặc ghi tình trạng khách mô tả (ít nhất 5 ký tự).";
+    if (!time) problems.time = "Chọn khung giờ hẹn.";
+    if (fieldErrors.show(problems) || !time) return;
     const approved = await confirm({
       title: "Đặt lịch hộ khách", reference: `${fmtDay(date)} · ${time}`,
       description: `Tạo lịch cho ${customerName} · ${vehicleLabel ?? "—"}. Lịch ở trạng thái Chờ xác nhận; bước tiếp theo là xác nhận lại với khách.${capacityDay?.over_capacity ? " Lưu ý: ngày này đã vượt công suất gara." : ""}`,
@@ -121,21 +128,20 @@ export default function CreateBooking() {
         ...(serviceIds.length ? { service_ids: serviceIds } : {}),
         ...(selectedPackage ? { package_ids: [selectedPackage.id] } : {}),
         ...(symptom.trim() ? { symptom_description: symptom.trim() } : {}),
-        ...(note.trim() ? { note: note.trim() } : {}),
       });
       notify(`Đã đặt lịch ${appointment.appointment_code ?? ""} cho khách. Xác nhận lịch với khách để hoàn tất.`, "success");
       navigate(`/advisor/reception?appointment=${appointment.id}`);
-    } catch (err) { setError(errorText(err)); }
+    } catch (err) { fieldErrors.showApi(err, { ...PICK_API_FIELDS, appointment_time: "time", symptom_description: "content" }); }
     finally { setWorking(false); }
   }
 
   const ready = pick.customer !== null && pick.vehicleId !== null;
   return <main className="page-container">
     <WorkflowTitle title="Đặt lịch hộ" sub="Khách gọi điện hoặc nhắn tin: chọn khách và xe, nội dung cần làm, rồi chọn khung giờ còn chỗ."/>
-    <form onSubmit={event => void submit(event)} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]" data-testid="create-booking">
+    <form noValidate onSubmit={event => void submit(event)} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]" data-testid="create-booking">
       <div className="min-w-0 space-y-5">
         {error && <Notice tone="error">{error}</Notice>}
-        <CustomerVehiclePicker value={pick} onChange={setPick} onVehiclesLoaded={setOwnVehicles}/>
+        <CustomerVehiclePicker value={pick} onChange={setPick} onVehiclesLoaded={setOwnVehicles} errors={fieldErrors.errors} onClearError={fieldErrors.clear}/>
 
         {ready && <section className={card}>
           <h2 className="text-lg font-bold text-cs-text">Nội dung cần làm</h2>
@@ -170,8 +176,7 @@ export default function CreateBooking() {
             </div>
           </div>
           <div className="mt-4 grid gap-4">
-            <Field label="Khách mô tả tình trạng" optional><Textarea rows={3} maxLength={5000} value={symptom} onChange={e => setSymptom(e.target.value)} placeholder="VD: xe kêu khi phanh, đèn check engine sáng"/></Field>
-            <Field label="Ghi chú nội bộ" optional><Input maxLength={500} value={note} onChange={e => setNote(e.target.value)} placeholder="VD: khách gọi lúc 9h, muốn chờ lấy xe trong ngày"/></Field>
+            <Field label="Khách mô tả tình trạng" optional error={contentError}><Textarea rows={3} maxLength={5000} value={symptom} onChange={e => setSymptom(e.target.value)} placeholder="VD: xe kêu khi phanh, đèn check engine sáng"/></Field>
           </div>
         </section>}
 
@@ -187,7 +192,8 @@ export default function CreateBooking() {
             Ngày này đã vượt công suất gara ({capacityText(capacityDay.load_minutes, capacityDay.capacity_minutes)}). Vẫn đặt được nếu khách chấp nhận chờ lâu hơn.
             {!!capacityDay.suggestions?.length && <span className="mt-2 flex flex-wrap gap-2">{capacityDay.suggestions.slice(0, 3).map(s => <Button key={s.date} size="sm" variant="outline" onClick={() => { setDate(s.date.slice(0, 10)); setTime(null); }}>{new Date(s.date).toLocaleDateString("vi-VN")}</Button>)}</span>}
           </Notice></div>}
-          <div className="mt-4" aria-live="polite">
+          <div className={`mt-4 ${timeError ? "rounded-xl border border-danger p-3" : ""}`} role="group" aria-label="Khung giờ hẹn" aria-invalid={!!timeError || undefined} aria-live="polite">
+            <FieldError className="mb-2">{timeError}</FieldError>
             {!slotsFor ? <p className="text-small text-cs-muted">Đang tải khung giờ…</p>
               : slotsFor.error ? <Notice tone="error">{slotsFor.error}</Notice>
               : slotsFor.data?.holiday ? <Notice tone="error">Gara nghỉ ngày này: {slotsFor.data.holiday}. Chọn ngày khác.</Notice>

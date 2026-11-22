@@ -6,6 +6,8 @@ import {
   catalogAdminApi, isoDate, money, type AdminService, type AppointmentRow,
 } from "../../../services/catalogAdminApi";
 import { useDebounced } from "../kit/useDebounced";
+import { useFieldErrors, type FieldErrors } from "../../../components/ui/useFieldErrors";
+import { FieldError } from "../../../components/ui/Field";
 
 type Customer = { id: number; full_name: string; phone: string | null; email: string | null };
 type VehicleOption = { id: number; license_plate: string | null; model?: { name: string; brand?: { name: string } | null } | null };
@@ -29,6 +31,7 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
   const [symptom, setSymptom] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const fieldErrors = useFieldErrors();
 
   useEffect(() => {
     if (!open) return;
@@ -50,6 +53,7 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
   const chooseCustomer = (c: Customer) => {
     setCustomer(c);
     setVehicleId("");
+    fieldErrors.clear("customer", "vehicle");
     catalogAdminApi.customerVehicles(c.id).then(list => {
       setVehicles(list);
       if (list.length === 1) setVehicleId(String(list[0].id));
@@ -59,16 +63,19 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
   const total = useMemo(() => services.filter(s => picked.includes(s.id)).reduce((sum, s) => sum + Number(s.base_price), 0), [services, picked]);
   const reset = () => {
     setSearch(""); setCustomers([]); setCustomer(null); setVehicles([]); setVehicleId(""); setTime("");
-    setPicked([]); setSymptom(""); setError("");
+    setPicked([]); setSymptom(""); setError(""); fieldErrors.reset();
   };
   const close = () => { if (!saving) { reset(); onClose(); } };
 
   const submit = async () => {
-    if (!customer) return setError("Chọn khách hàng.");
-    if (!vehicleId) return setError("Chọn xe của khách.");
-    if (!time) return setError("Chọn giờ hẹn.");
-    setSaving(true);
+    const problems: FieldErrors = {};
+    if (!customer) problems.customer = "Chọn khách hàng.";
+    if (!vehicleId) problems.vehicle = "Chọn xe của khách.";
+    if (!date) problems.date = "Chọn ngày hẹn.";
+    if (!time) problems.time = "Chọn giờ hẹn.";
     setError("");
+    if (fieldErrors.show(problems) || !customer) return;
+    setSaving(true);
     try {
       const res = await catalogAdminApi.createAppointment({
         customer_id: customer.id, vehicle_id: Number(vehicleId), appointment_date: date, appointment_time: time,
@@ -80,7 +87,7 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
       reset();
       onCreated(res.data);
     } catch (e) {
-      setError(errorMessage(e, "Không tạo được lịch hẹn."));
+      fieldErrors.showApi(e, { customer_id: "customer", vehicle_id: "vehicle", appointment_date: "date", appointment_time: "time", symptom_description: "symptom" });
     } finally {
       setSaving(false);
     }
@@ -101,7 +108,10 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
             <span className="text-caption text-cs-muted">{customer.phone ?? "—"}{customer.email ? ` · ${customer.email}` : ""}</span></span>
           <Button size="sm" variant="ghost" onClick={() => { setCustomer(null); setVehicles([]); setVehicleId(""); }}>Đổi</Button>
         </div> : <>
-          <SearchInput className="sm:max-w-none" value={search} onChange={setSearch} placeholder="Gõ tên hoặc số điện thoại (từ 2 ký tự)…" label="Tìm khách hàng"/>
+          <div role="group" aria-label="Chọn khách hàng" aria-invalid={!!fieldErrors.errors.customer || undefined} className={fieldErrors.errors.customer ? "rounded-control border border-danger" : undefined}>
+            <SearchInput className="sm:max-w-none" value={search} onChange={value => { setSearch(value); fieldErrors.clear("customer"); }} placeholder="Gõ tên hoặc số điện thoại (từ 2 ký tự)…" label="Tìm khách hàng"/>
+          </div>
+          <FieldError>{fieldErrors.errors.customer}</FieldError>
           {term.length >= 2 && <ul className="max-h-48 overflow-y-auto rounded-control border border-cs-border">
             {customers.length ? customers.map(c => <li key={c.id}>
               <button type="button" onClick={() => chooseCustomer(c)} className="flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left text-small hover:bg-cs-hover">
@@ -113,17 +123,17 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
         </>}
       </div>
 
-      <Field label="Xe" required className="md:col-span-2">
-        <Select value={vehicleId} disabled={!customer} onChange={e => setVehicleId(e.target.value)}>
+      <Field label="Xe" required error={fieldErrors.errors.vehicle} className="md:col-span-2">
+        <Select value={vehicleId} disabled={!customer} onChange={e => { setVehicleId(e.target.value); fieldErrors.clear("vehicle"); }}>
           <option value="">{customer ? (vehicles.length ? "Chọn xe" : "Khách chưa có xe") : "Chọn khách hàng trước"}</option>
           {vehicles.map(v => <option key={v.id} value={v.id}>{[v.model?.brand?.name, v.model?.name].filter(Boolean).join(" ")} · {v.license_plate ?? "Chưa có biển"}</option>)}
         </Select>
       </Field>
-      <Field label="Ngày hẹn" required>
-        <Input type="date" value={date} min={isoDate(new Date())} onChange={e => setDate(e.target.value)}/>
+      <Field label="Ngày hẹn" required error={fieldErrors.errors.date}>
+        <Input type="date" value={date} min={isoDate(new Date())} onChange={e => { setDate(e.target.value); fieldErrors.clear("date"); }}/>
       </Field>
-      <Field label="Giờ hẹn" required hint="Theo khung giờ đặt lịch ở trang Giờ làm việc.">
-        <Select value={time} onChange={e => setTime(e.target.value)}>
+      <Field label="Giờ hẹn" required error={fieldErrors.errors.time} hint="Theo khung giờ đặt lịch ở trang Giờ làm việc.">
+        <Select value={time} onChange={e => { setTime(e.target.value); fieldErrors.clear("time"); }}>
           <option value="">Chọn giờ</option>
           {slots.morning.length > 0 && <optgroup label="Buổi sáng">{slots.morning.map(t => <option key={t} value={t}>{t}</option>)}</optgroup>}
           {slots.afternoon.length > 0 && <optgroup label="Buổi chiều">{slots.afternoon.map(t => <option key={t} value={t}>{t}</option>)}</optgroup>}
@@ -146,8 +156,8 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
         {picked.length > 0 && <p className="text-caption text-cs-muted">Đã chọn {picked.length} dịch vụ · tạm tính <b className="text-cs-text">{money(total)}</b></p>}
       </div>
 
-      <Field label="Mô tả triệu chứng / yêu cầu" optional className="md:col-span-2">
-        <Textarea value={symptom} maxLength={2000} onChange={e => setSymptom(e.target.value)} placeholder="Ví dụ: xe kêu ở gầm khi qua gờ giảm tốc, muốn kiểm tra thêm phanh…"/>
+      <Field label="Mô tả triệu chứng / yêu cầu" optional error={fieldErrors.errors.symptom} className="md:col-span-2">
+        <Textarea value={symptom} maxLength={2000} onChange={e => { setSymptom(e.target.value); fieldErrors.clear("symptom"); }} placeholder="Ví dụ: xe kêu ở gầm khi qua gờ giảm tốc, muốn kiểm tra thêm phanh…"/>
       </Field>
       {error && <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-fg md:col-span-2">{error}</p>}
     </div>
@@ -175,7 +185,7 @@ export function CancelAppointmentModal({ appointment, onClose, onDone }: {
       setReason("");
       onDone();
     } catch (e) {
-      setError(errorMessage(e, "Không huỷ được lịch hẹn."));
+      notify(errorMessage(e, "Không huỷ được lịch hẹn."), "error");
     } finally {
       setSaving(false);
     }

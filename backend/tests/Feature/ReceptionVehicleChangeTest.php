@@ -44,6 +44,7 @@ class ReceptionVehicleChangeTest extends TestCase
             'appointment_id' => $this->appointment->id,
             'customer_id' => $this->appointment->customer_id,
             'vehicle_id' => $this->otherOwnVehicle->id,
+            'mileage_received' => 1000,
             ...$overrides,
         ]);
     }
@@ -91,7 +92,7 @@ class ReceptionVehicleChangeTest extends TestCase
 
         $walkIn = Vehicle::factory()->create();
         $walkInId = $this->actingAs($this->advisor)->postJson('/api/repair-orders', [
-            'customer_id' => $walkIn->customer_id, 'vehicle_id' => $walkIn->id,
+            'customer_id' => $walkIn->customer_id, 'vehicle_id' => $walkIn->id, 'mileage_received' => 1000,
         ])->assertCreated()->json('id');
         $this->assertSame(RepairOrder::SOURCE_WALK_IN, RepairOrder::query()->findOrFail($walkInId)->source);
     }

@@ -1,7 +1,8 @@
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 import { useState } from "react";
 import { Button, ErrorState, Field, Input, LoadingState } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
-import { adminApi, errorMessage, type ReschedulePolicy } from "../../services/adminApi";
+import { adminApi, type ReschedulePolicy } from "../../services/adminApi";
 import { Panel } from "./kit/AdminKit";
 import { useAdminQuery } from "./kit/useAdminQuery";
 
@@ -15,7 +16,7 @@ export function ReschedulePolicyPanel() {
   const policy = query.data ?? query.stale;
   const [draft, setDraft] = useState<{ limit: string; cutoff_hours: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const fieldErrors = useFieldErrors();
 
   const value = draft ?? (policy ? { limit: String(policy.limit), cutoff_hours: String(policy.cutoff_hours) } : null);
   const changed = !!draft && !!policy && (draft.limit !== String(policy.limit) || draft.cutoff_hours !== String(policy.cutoff_hours));
@@ -23,13 +24,17 @@ export function ReschedulePolicyPanel() {
   async function save() {
     if (!value) return;
     const body: ReschedulePolicy = { limit: Number(value.limit), cutoff_hours: Number(value.cutoff_hours) };
-    setSaving(true); setError("");
+    const problems: FieldErrors = {};
+    if (value.limit === "" || !Number.isInteger(body.limit) || body.limit < 0 || body.limit > 10) problems.limit = "Nhập số nguyên từ 0 đến 10.";
+    if (value.cutoff_hours === "" || !Number.isInteger(body.cutoff_hours) || body.cutoff_hours < 0 || body.cutoff_hours > 168) problems.cutoff_hours = "Nhập số giờ nguyên từ 0 đến 168.";
+    if (fieldErrors.show(problems)) return;
+    setSaving(true);
     try {
       const response = await adminApi.saveReschedulePolicy(body);
       notify(response.message, "success");
       setDraft(null);
       query.reload();
-    } catch (err) { setError(errorMessage(err, "Không lưu được giới hạn đổi lịch.")); }
+    } catch (err) { fieldErrors.showApi(err, { limit: "limit", cutoff_hours: "cutoff_hours" }); }
     finally { setSaving(false); }
   }
 
@@ -37,19 +42,18 @@ export function ReschedulePolicyPanel() {
     {!value ? (query.error ? <ErrorState compact description={query.error} onRetry={query.reload}/> : <LoadingState compact/>) :
       <div className="grid gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Số lần tự đổi tối đa / lịch" hint="0 = khách không tự đổi được.">
-            <Input type="number" min={0} max={10} value={value.limit} onChange={e => setDraft({ ...value, limit: e.target.value })}/>
+          <Field label="Số lần tự đổi tối đa / lịch" error={fieldErrors.errors.limit} hint="0 = khách không tự đổi được.">
+            <Input type="number" min={0} max={10} value={value.limit} onChange={e => { setDraft({ ...value, limit: e.target.value }); fieldErrors.clear("limit"); }}/>
           </Field>
-          <Field label="Hạn chót trước giờ hẹn (giờ)" hint="Sát giờ hơn thì khách phải liên hệ gara.">
-            <Input type="number" min={0} max={168} value={value.cutoff_hours} onChange={e => setDraft({ ...value, cutoff_hours: e.target.value })}/>
+          <Field label="Hạn chót trước giờ hẹn (giờ)" error={fieldErrors.errors.cutoff_hours} hint="Sát giờ hơn thì khách phải liên hệ gara.">
+            <Input type="number" min={0} max={168} value={value.cutoff_hours} onChange={e => { setDraft({ ...value, cutoff_hours: e.target.value }); fieldErrors.clear("cutoff_hours"); }}/>
           </Field>
         </div>
         <p className="rounded-control bg-cs-surface-2 p-3 text-caption text-cs-text-2">
           Lịch đã được gara xác nhận thì khách không tự đổi; cố vấn đổi giúp sau khi thống nhất với khách. Mỗi lần khách tự đổi đều được ghi lịch sử.
         </p>
-        {error && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg">{error}</p>}
         <div className="flex justify-end gap-2">
-          {changed && <Button disabled={saving} onClick={() => { setDraft(null); setError(""); }}>Huỷ</Button>}
+          {changed && <Button disabled={saving} onClick={() => { setDraft(null); fieldErrors.reset(); }}>Huỷ</Button>}
           <Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." disabled={!changed} onClick={() => void save()}>Lưu giới hạn</Button>
         </div>
       </div>}

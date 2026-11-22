@@ -56,6 +56,16 @@ class MediaController extends Controller
         return response()->json($this->present($item), 201);
     }
 
+    /** Xoá ảnh (cố vấn sửa được phiếu) — chỉ khi chứng từ chưa khoá / chưa được khách xác nhận. */
+    public function destroy(MediaAttachment $media): JsonResponse
+    {
+        abort_unless($media->attachable !== null, 404);
+        abort_unless(Gate::allows('update', $this->media->repairOrderOf($media->attachable)), 403);
+        $this->media->delete($media);
+
+        return response()->json(['message' => 'Đã xoá ảnh.']);
+    }
+
     public function show(MediaAttachment $media): StreamedResponse
     {
         abort_unless($media->attachable !== null, 404);

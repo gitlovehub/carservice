@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-/** Ủy quyền nhận xe do chủ xe tạo trong tài khoản (N9). ACTIVE → USED (khi trả xe) | REVOKED. */
+/** Ủy quyền nhận xe do chủ xe tạo trong tài khoản (N9). ACTIVE → USED (khi trả xe) | REVOKED. 4 số cuối giấy tờ không bao giờ trả ra API. */
 #[Fillable(['repair_order_id', 'customer_id', 'full_name', 'phone', 'id_last4', 'valid_until', 'status', 'revoked_at', 'used_at'])]
+#[Hidden(['id_last4'])]
 class PickupAuthorization extends Model
 {
     public const ACTIVE = 'ACTIVE';

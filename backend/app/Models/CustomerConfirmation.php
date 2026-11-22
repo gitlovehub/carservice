@@ -10,7 +10,8 @@ use LogicException;
 
 /**
  * Bằng chứng khách xác nhận một nội dung. Chỉ thêm, không sửa, không xóa.
- * method: ACCOUNT (khách tự bấm trong tài khoản) | EMAIL_OTP (tại quầy, có nhân viên chứng kiến).
+ * method: ACCOUNT (khách tự bấm trong tài khoản) | EMAIL_OTP (tại quầy, có nhân viên chứng kiến)
+ * | EMAIL_LINK (khách tự duyệt báo giá qua link có chữ ký gửi tới email chủ xe).
  */
 #[Fillable([
     'confirmable_type', 'confirmable_id', 'customer_id', 'method', 'confirmation_otp_id',
@@ -21,6 +22,12 @@ class CustomerConfirmation extends Model
     public const METHOD_ACCOUNT = 'ACCOUNT';
 
     public const METHOD_EMAIL_OTP = 'EMAIL_OTP';
+
+    /** Khách tự duyệt báo giá qua link có chữ ký trong email (không đăng nhập) — PO 19/11/2026. */
+    public const METHOD_EMAIL_LINK = 'EMAIL_LINK';
+
+    /** Chủ xe mất email, đến trực tiếp với giấy tờ: cố vấn lập yêu cầu, admin duyệt (HandoverException). */
+    public const METHOD_ADMIN_EXCEPTION = 'ADMIN_EXCEPTION';
 
     protected static function booted(): void
     {

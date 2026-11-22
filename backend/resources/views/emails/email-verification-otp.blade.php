@@ -1,59 +1,11 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mã xác thực tài khoản CarService</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #F8F9FA; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #20252B;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #F8F9FA; padding: 40px 15px;">
-        <tr>
-            <td align="center">
-                <table role="presentation" width="100%" style="max-width: 520px; background-color: #FFFFFF; border-radius: 16px; border: 1px solid #E1E4E6; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); overflow: hidden;" cellspacing="0" cellpadding="0">
-                    <!-- Header -->
-                    <tr>
-                        <td style="background-color: #0F1115; border-bottom: 3px solid #E11D2E; padding: 28px 32px; text-align: center;">
-                            @include('emails.partials.logo')
-                        </td>
-                    </tr>
+@extends('emails.layout')
 
-                    <!-- Body Content -->
-                    <tr>
-                        <td style="padding: 36px 32px;">
-                            <h2 style="margin: 0 0 16px; font-size: 18px; font-weight: 700; color: #20252B;">
-                                Xác thực tài khoản của bạn
-                            </h2>
-                            <p style="margin: 0 0 24px; font-size: 14px; line-height: 1.6; color: #52606D;">
-                                Cảm ơn bạn đã đăng ký tài khoản tại <strong>CarService</strong>. Vui lòng sử dụng mã xác thực (OTP) bên dưới để hoàn tất quá trình kích hoạt tài khoản:
-                            </p>
+@section('title', 'Xác thực tài khoản')
 
-                            <!-- OTP Box -->
-                            <div style="background-color: #FEF2F3; border: 2px dashed #E11D2E; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
-                                <div style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #C8102E; font-family: 'Courier New', Courier, monospace;">
-                                    {{ $otp }}
-                                </div>
-                                <p style="margin: 8px 0 0; font-size: 12px; color: #7B8794;">
-                                    Mã OTP có hiệu lực trong vòng <strong>5 phút</strong>
-                                </p>
-                            </div>
+@section('content')
+    <p style="margin: 0;">Cảm ơn bạn đã đăng ký tài khoản tại <strong>CarService</strong>. Vui lòng sử dụng mã xác thực (OTP) bên dưới để hoàn tất quá trình kích hoạt tài khoản:</p>
 
-                            <p style="margin: 24px 0 0; font-size: 13px; line-height: 1.5; color: #7B8794;">
-                                ⚠️ Nếu bạn không thực hiện yêu cầu đăng ký này, vui lòng bỏ qua email hoặc liên hệ với chúng tôi để được hỗ trợ. Tuyệt đối không chia sẻ mã này cho bất kỳ ai.
-                            </p>
-                        </td>
-                    </tr>
+    @include('emails.partials.otp-box', ['code' => $otp, 'minutes' => 5, 'once' => false])
 
-                    <!-- Footer -->
-                    <tr>
-                        <td style="background-color: #F8F9FA; border-top: 1px solid #E1E4E6; padding: 20px 32px; text-align: center;">
-                            <p style="margin: 0; font-size: 12px; color: #9AA5B1;">
-                                &copy; {{ date('Y') }} CarService. Mọi quyền được bảo lưu.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
+    <p style="margin: 24px 0 0; font-size: 13px; line-height: 1.5; color: #7B8794;">Nếu bạn không thực hiện yêu cầu đăng ký này, vui lòng bỏ qua email hoặc liên hệ với chúng tôi để được hỗ trợ. Tuyệt đối không chia sẻ mã này cho bất kỳ ai.</p>
+@endsection

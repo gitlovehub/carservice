@@ -141,6 +141,44 @@ class RepairFlowTest extends TestCase
         );
     }
 
+    public function test_advisor_edits_draft_quotation_but_not_after_sending(): void
+    {
+        $id = $this->actingAs($this->advisor)
+            ->postJson("/api/repair-orders/{$this->repairOrder->id}/quotations", [
+                'items' => [['item_type' => 'SERVICE', 'service_id' => $this->service->id, 'quantity' => 1]],
+            ])->assertCreated()->json('id');
+
+        // Sửa nháp: thay dòng, đổi số lượng / giá, thêm giảm giá → tổng tính lại.
+        $this->actingAs($this->advisor)->putJson("/api/quotations/{$id}", [
+            'discount_amount' => 100000,
+            'items' => [
+                ['item_type' => 'SERVICE', 'service_id' => $this->service->id, 'quantity' => 2, 'unit_price' => 250000],
+                ['item_type' => 'PART', 'part_id' => $this->part->id, 'quantity' => 1],
+            ],
+        ])->assertOk()->assertJsonCount(2, 'items');
+        $quotation = Quotation::query()->with('items')->findOrFail($id);
+        $this->assertSame(Quotation::DRAFT, $quotation->status);
+        $this->assertSame(500000.0 + 450000.0 - 100000.0, (float) $quotation->total_amount);
+
+        // Phụ tùng ngoài đề xuất chẩn đoán vẫn bị chặn như lúc lập mới.
+        $other = Part::query()->create(['sku' => 'OTHER-01', 'name' => 'Lọc gió', 'unit' => 'Cái', 'sell_price' => 100000, 'status' => 'ACTIVE']);
+        $this->actingAs($this->advisor)->putJson("/api/quotations/{$id}", [
+            'items' => [['item_type' => 'PART', 'part_id' => $other->id, 'quantity' => 1]],
+        ])->assertStatus(422);
+
+        // Đã gửi khách → không sửa được nữa.
+        $this->actingAs($this->advisor)->postJson("/api/quotations/{$id}/send")->assertOk();
+        $this->actingAs($this->advisor)->putJson("/api/quotations/{$id}", [
+            'items' => [['item_type' => 'SERVICE', 'service_id' => $this->service->id, 'quantity' => 1]],
+        ])->assertStatus(422);
+        $this->assertCount(2, Quotation::query()->findOrFail($id)->items);
+
+        // Khách không có quyền sửa.
+        $this->actingAs($this->customerAccount)->putJson("/api/quotations/{$id}", [
+            'items' => [['item_type' => 'SERVICE', 'service_id' => $this->service->id, 'quantity' => 1]],
+        ])->assertForbidden();
+    }
+
     public function test_customer_partial_approval_creates_work_items_only_for_approved_services(): void
     {
         $quotation = $this->sendQuotation();
@@ -170,6 +208,25 @@ class RepairFlowTest extends TestCase
         $this->actingAs($this->advisor)
             ->postJson("/api/repair-orders/{$this->repairOrder->id}/start-repair")
             ->assertUnprocessable();
+    }
+
+    public function test_cannot_export_more_parts_than_customer_approved(): void
+    {
+        // Khách duyệt 2 má phanh (sendQuotation) — kho còn 10.
+        $this->approveAndStartRepair();
+        $inventory = Inventory::query()->create(['part_id' => $this->part->id, 'quantity' => 10]);
+        $url = "/api/repair-orders/{$this->repairOrder->id}/used-parts";
+
+        $this->actingAs($this->advisor)->postJson($url, ['part_id' => $this->part->id, 'quantity' => 3])
+            ->assertUnprocessable()->assertJsonPath('message', 'Khách chỉ duyệt 2, đã xuất 0 — chỉ còn xuất được 2. Cần thêm thì lập báo giá phát sinh.');
+
+        // Xuất từng đợt: 1 + 1 = đủ 2; lần thứ ba bị chặn.
+        $this->actingAs($this->advisor)->postJson($url, ['part_id' => $this->part->id, 'quantity' => 1])->assertCreated();
+        $this->actingAs($this->advisor)->postJson($url, ['part_id' => $this->part->id, 'quantity' => 1])->assertCreated();
+        $this->actingAs($this->advisor)->postJson($url, ['part_id' => $this->part->id, 'quantity' => 1])
+            ->assertUnprocessable()->assertJsonPath('message', 'Đã xuất đủ số khách duyệt (2/2). Cần thêm thì lập báo giá phát sinh.');
+
+        $this->assertSame(8, $inventory->fresh()->quantity);
     }
 
     public function test_technician_uses_approved_part_and_stock_is_exported(): void
@@ -408,6 +465,109 @@ class RepairFlowTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('total_amount', '750000.00')
             ->assertJsonCount(2, 'items');
+    }
+
+    public function test_advisor_supplements_recommendation_after_diagnosis_only_before_repair(): void
+    {
+        $filter = Part::query()->create(['sku' => 'FLT-01', 'name' => 'Lọc dầu', 'unit' => 'Cái', 'sell_price' => 120000, 'status' => 'ACTIVE']);
+        $url = "/api/repair-orders/{$this->repairOrder->id}/inspections/recommendations";
+
+        // Chẩn đoán đã hoàn tất → bổ sung phải có lý do; dòng thiếu lý do làm hỏng cả lô (không lưu gì).
+        $this->actingAs($this->advisor)->postJson($url, ['recommendations' => [
+            ['item_type' => 'PART', 'part_id' => $filter->id, 'quantity' => 1, 'note' => 'Đi kèm thay dầu'],
+            ['item_type' => 'PART', 'part_id' => $filter->id, 'quantity' => 1],
+        ]])->assertUnprocessable();
+        $this->assertSame(0, InspectionRecommendation::query()->where('part_id', $filter->id)->count());
+
+        $this->actingAs($this->advisor)->postJson($url, ['recommendations' => [
+            ['item_type' => 'PART', 'part_id' => $filter->id, 'quantity' => 1, 'note' => 'Lọc dầu đi kèm thay dầu'],
+        ]])->assertCreated()->assertJsonPath('0.added_after_completion', true);
+        $this->assertSame($this->advisor->id, InspectionRecommendation::query()->where('part_id', $filter->id)->value('added_by_account_id'));
+
+        // Đã có đề xuất phụ tùng này → không thêm dòng trùng (kể cả phụ tùng đề xuất gốc).
+        $this->actingAs($this->advisor)->postJson($url, ['item_type' => 'PART', 'part_id' => $filter->id, 'quantity' => 2, 'note' => 'Thêm lọc dầu nữa'])
+            ->assertUnprocessable()->assertJsonPath('message', 'Đề xuất bị trùng dịch vụ / phụ tùng. Gộp lại một dòng và tăng số lượng.');
+        $this->actingAs($this->advisor)->postJson($url, ['item_type' => 'PART', 'part_id' => $this->part->id, 'quantity' => 1, 'note' => 'Má phanh lần nữa'])
+            ->assertUnprocessable();
+        $this->assertSame(1, InspectionRecommendation::query()->where('part_id', $filter->id)->count());
+
+        // Phụ tùng vừa bổ sung báo giá được.
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/quotations", [
+            'items' => [['item_type' => 'PART', 'part_id' => $filter->id, 'quantity' => 1]],
+        ])->assertCreated();
+
+        // Đã bắt đầu sửa → không bổ sung nữa (dùng báo giá phát sinh).
+        $this->repairOrder->update(['status' => RepairOrder::IN_PROGRESS]);
+        $this->actingAs($this->advisor)->postJson($url, ['item_type' => 'PART', 'part_id' => $filter->id, 'quantity' => 1, 'note' => 'Thêm một lọc nữa'])
+            ->assertUnprocessable();
+    }
+
+    public function test_rejecting_a_required_item_rejects_the_whole_quotation(): void
+    {
+        // Bắt buộc mà không có lý do → không lưu.
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/quotations", [
+            'items' => [['item_type' => 'SERVICE', 'service_id' => $this->service->id, 'quantity' => 1, 'is_required' => true]],
+        ])->assertUnprocessable()->assertJsonValidationErrors('items.0.required_reason');
+
+        $id = $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/quotations", [
+            'items' => [
+                ['item_type' => 'SERVICE', 'service_id' => $this->service->id, 'quantity' => 1],
+                ['item_type' => 'PART', 'part_id' => $this->part->id, 'quantity' => 1, 'is_required' => true, 'required_reason' => 'Má phanh mòn tới kim loại, không thay thì không an toàn'],
+            ],
+        ])->assertCreated()->assertJsonPath('items.1.is_required', true)->json('id');
+        $this->actingAs($this->advisor)->postJson("/api/quotations/{$id}/send")->assertOk();
+        $quotation = Quotation::query()->with('items')->findOrFail($id);
+
+        // Khách đồng ý công nhưng từ chối phụ tùng bắt buộc → cả báo giá bị từ chối, không có dòng nào được duyệt.
+        $this->actingAs($this->customerAccount)->postJson("/api/me/quotations/{$id}/respond", [
+            'responses' => $quotation->items->map(fn ($item) => ['item_id' => $item->id, 'is_approved' => $item->item_type === 'SERVICE'])->all(),
+        ])->assertOk()->assertJsonPath('status', Quotation::REJECTED);
+        $this->assertSame(0, $quotation->items()->where('is_approved', true)->count());
+    }
+
+    public function test_quotation_rejects_duplicate_lines(): void
+    {
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/quotations", [
+            'items' => [
+                ['item_type' => 'PART', 'part_id' => $this->part->id, 'quantity' => 1],
+                ['item_type' => 'PART', 'part_id' => $this->part->id, 'quantity' => 1],
+            ],
+        ])->assertUnprocessable()->assertJsonPath('message', 'Báo giá có hạng mục bị trùng. Gộp lại một dòng và tăng số lượng.');
+        $this->assertSame(0, Quotation::query()->count());
+    }
+
+    public function test_discount_cannot_exceed_quotation_or_make_invoice_negative(): void
+    {
+        // Giảm giá lớn hơn tổng các dòng → không lưu báo giá.
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/quotations", [
+            'discount_amount' => 2000000,
+            'items' => [['item_type' => 'SERVICE', 'service_id' => $this->service->id, 'quantity' => 1]],
+        ])->assertUnprocessable();
+        $this->assertSame(0, Quotation::query()->count());
+
+        // Báo giá 1.200.000 giảm 500.000; khách chỉ đồng ý công 300.000 → hoá đơn trừ tối đa 300.000, tổng 0 (không âm).
+        $id = $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/quotations", [
+            'discount_amount' => 500000,
+            'items' => [
+                ['item_type' => 'SERVICE', 'service_id' => $this->service->id, 'quantity' => 1],
+                ['item_type' => 'PART', 'part_id' => $this->part->id, 'quantity' => 2],
+            ],
+        ])->assertCreated()->json('id');
+        $this->actingAs($this->advisor)->postJson("/api/quotations/{$id}/send")->assertOk();
+        $quotation = Quotation::query()->with('items')->findOrFail($id);
+        $this->actingAs($this->customerAccount)->postJson("/api/me/quotations/{$id}/respond", [
+            'responses' => $quotation->items->map(fn ($item) => ['item_id' => $item->id, 'is_approved' => $item->item_type === 'SERVICE'])->all(),
+        ])->assertOk();
+
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/start-repair")->assertOk();
+        WorkItem::query()->where('repair_order_id', $this->repairOrder->id)->update(['status' => WorkItem::COMPLETED]);
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/complete")->assertOk();
+
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/invoice")
+            ->assertCreated()
+            ->assertJsonPath('subtotal', '300000.00')
+            ->assertJsonPath('discount_amount', '300000.00')
+            ->assertJsonPath('total_amount', '0.00');
     }
 
     /**

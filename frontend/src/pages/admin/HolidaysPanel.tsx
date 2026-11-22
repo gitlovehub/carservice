@@ -7,6 +7,7 @@ import { BookingSlotsPanel } from "./BookingSlotsPanel";
 import { ReschedulePolicyPanel } from "./ReschedulePolicyPanel";
 import { Panel } from "./kit/AdminKit";
 import { useAdminQuery } from "./kit/useAdminQuery";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 
 type Form = { replaceIds: number[]; from: string; to: string; reason: string };
 const WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
@@ -23,6 +24,7 @@ export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: stri
   const [form, setForm] = useState<Form | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const fieldErrors = useFieldErrors();
   const query = useAdminQuery("holidays", signal => adminApi.holidays(signal));
   const holidays = useMemo(() => query.data ?? query.stale ?? [], [query.data, query.stale]);
   const today = isoDay(new Date());
@@ -43,8 +45,14 @@ export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: stri
   const iso = (day: number) => isoDay(new Date(month.getFullYear(), month.getMonth(), day));
 
   const save = async () => {
-    if (!form || !form.from || !form.reason.trim()) return setFormError("Chọn ngày và nhập lý do.");
-    setSaving(true); setFormError("");
+    if (!form) return;
+    const problems: FieldErrors = {};
+    if (!form.from) problems.from = "Chọn ngày bắt đầu nghỉ.";
+    if (form.from && form.to && form.to < form.from) problems.to = "Đến ngày phải từ ngày bắt đầu trở đi.";
+    if (!form.reason.trim()) problems.reason = "Nhập lý do nghỉ.";
+    setFormError("");
+    if (fieldErrors.show(problems)) return;
+    setSaving(true);
     try {
       const response = await adminApi.saveHoliday({ from: form.from, to: form.to || null, reason: form.reason.trim(), replace_ids: form.replaceIds.length ? form.replaceIds : undefined });
       notify(response.affected_appointments
@@ -53,7 +61,7 @@ export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: stri
       setForm(null);
       query.reload();
     } catch (error) {
-      setFormError(errorMessage(error, "Không lưu được ngày nghỉ."));
+      fieldErrors.showApi(error, { from: "from", to: "to", reason: "reason" });
     } finally {
       setSaving(false);
     }
@@ -70,13 +78,13 @@ export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: stri
   const item = (h: HolidayRange) => <li key={h.ids[0]} className={`flex items-center gap-3 rounded-control border border-cs-border p-3 ${h.to < today ? "opacity-60" : ""}`}>
     <Icon name="calendar" size={18} className="shrink-0 text-cs-muted"/>
     <span className="min-w-0 flex-1 text-small"><b className="block tabular-nums text-cs-text">{h.from === h.to ? fmt(h.from) : `${fmt(h.from)} – ${fmt(h.to)}`}</b><span className="text-cs-muted">{h.reason ?? "Ngày nghỉ"}{h.days > 1 ? ` · ${h.days} ngày` : ""}</span></span>
-    <IconButton icon="edit" label={`Sửa ${h.reason ?? fmt(h.from)}`} size="sm" onClick={() => { setFormError(""); setForm({ replaceIds: h.ids, from: h.from, to: h.to, reason: h.reason ?? "" }); }}/>
+    <IconButton icon="edit" label={`Sửa ${h.reason ?? fmt(h.from)}`} size="sm" onClick={() => { setFormError(""); fieldErrors.reset(); setForm({ replaceIds: h.ids, from: h.from, to: h.to, reason: h.reason ?? "" }); }}/>
     <IconButton icon="trash" label={`Xoá ${h.reason ?? fmt(h.from)}`} size="sm" tone="danger" onClick={() => void remove(h)}/>
   </li>;
 
   return <div className="mt-6 grid gap-5 xl:grid-cols-2">
     <Panel title="Ngày nghỉ lễ" icon="calendar" subtitle="Ngày nghỉ, lễ không nhận lịch hẹn."
-      action={<Button size="sm" variant="outline" icon="plus" onClick={() => { setFormError(""); setForm({ replaceIds: [], from: "", to: "", reason: "" }); }}>Thêm ngày nghỉ</Button>}>
+      action={<Button size="sm" variant="outline" icon="plus" onClick={() => { setFormError(""); fieldErrors.reset(); setForm({ replaceIds: [], from: "", to: "", reason: "" }); }}>Thêm ngày nghỉ</Button>}>
       {!query.data && !query.stale ? (query.error ? <ErrorState compact description={query.error} onRetry={query.reload}/> : <LoadingState compact/>) :
         <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="rounded-control border border-cs-border p-3">
@@ -105,9 +113,9 @@ export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: stri
     <Modal open={!!form} onClose={() => setForm(null)} dismissible={!saving} title={form?.replaceIds.length ? "Sửa ngày nghỉ" : "Thêm ngày nghỉ"} size="sm"
       footer={<><Button disabled={saving} onClick={() => setForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void save()}>Lưu</Button></>}>
       {form && <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Từ ngày" required><Input type="date" value={form.from} onChange={e => setForm({ ...form, from: e.target.value })}/></Field>
-        <Field label="Đến ngày" optional hint="Tối đa 31 ngày"><Input type="date" value={form.to} min={form.from} onChange={e => setForm({ ...form, to: e.target.value })}/></Field>
-        <Field label="Lý do" required className="sm:col-span-2"><Input value={form.reason} maxLength={255} onChange={e => setForm({ ...form, reason: e.target.value })} placeholder="Tết Nguyên Đán"/></Field>
+        <Field label="Từ ngày" required error={fieldErrors.errors.from}><Input type="date" value={form.from} onChange={e => { setForm({ ...form, from: e.target.value }); fieldErrors.clear("from", "to"); }}/></Field>
+        <Field label="Đến ngày" optional error={fieldErrors.errors.to} hint="Tối đa 31 ngày"><Input type="date" value={form.to} min={form.from} onChange={e => { setForm({ ...form, to: e.target.value }); fieldErrors.clear("to"); }}/></Field>
+        <Field label="Lý do" required error={fieldErrors.errors.reason} className="sm:col-span-2"><Input value={form.reason} maxLength={255} onChange={e => { setForm({ ...form, reason: e.target.value }); fieldErrors.clear("reason"); }} placeholder="Tết Nguyên Đán"/></Field>
         {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
       </div>}
     </Modal>

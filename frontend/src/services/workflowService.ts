@@ -42,7 +42,7 @@ export type WorkflowAppointment = CustomerRequest & {
   vehicle_id?: number | null;
   customer?: { id: number; full_name?: string; phone?: string; email?: string | null } | null;
   vehicle?: {
-    id: number; license_plate?: string; variant?: string; year?: number | null; mileage?: number | null;
+    id: number; license_plate?: string; variant?: string; year?: number | null; mileage?: number | null; vin?: string | null;
     model?: { id: number; name?: string; brand?: { id: number; name?: string } | null } | null;
   } | null;
   /** ADV-08: phiếu sửa chữa đã tạo từ lịch (null = chưa có). */
@@ -54,20 +54,42 @@ export type WorkflowInspection = {
   items?: Array<{ id: number; item_name: string; condition_status?: string | null; note?: string | null }>;
   recommendations?: Array<{
     id: number; item_type?: "SERVICE" | "PART"; service_id?: number | null; part_id?: number | null; quantity?: number; note?: string | null;
+    /** Bổ sung sau khi đã hoàn tất chẩn đoán (PO 19/11) — có lý do + người bổ sung. */
+    added_after_completion?: boolean; created_at?: string | null;
+    added_by?: { id: number; email?: string; employee?: { full_name?: string } | null } | null;
     service?: { id: number; name?: string; base_price?: string | number | null } | null;
     part?: { id: number; name?: string; sell_price?: string | number | null } | null;
   }>;
 };
 export type Money = string | number | null | undefined;
+/** Cách khách xác nhận: tài khoản · mã email tại quầy · link duyệt trong email (báo giá, không đăng nhập). */
+export type ConfirmationMethod = "ACCOUNT" | "EMAIL_OTP" | "EMAIL_LINK" | "ADMIN_EXCEPTION";
+export const CONFIRMATION_METHOD_TEXT: Record<ConfirmationMethod, string> = {
+  ACCOUNT: "Khách tự duyệt trong tài khoản",
+  EMAIL_OTP: "Khách xác nhận tại quầy bằng mã email",
+  EMAIL_LINK: "Khách duyệt qua link trong email",
+  ADMIN_EXCEPTION: "Admin duyệt ngoại lệ, chủ xe có mặt với giấy tờ",
+};
+/** Mô tả hộp thoại xác nhận gửi báo giá (khách đặt lịch đã đồng ý nhận báo giá qua email). */
+export const quotationSendConfirmText = (total: Money) =>
+  `Khách nhận báo giá ${formatVnd(total)} trong tài khoản trên web. Khách đặt lịch (đã đồng ý nhận email) còn nhận email kèm link duyệt từng hạng mục, không cần đăng nhập. Sau khi gửi không sửa được báo giá nữa.`;
+/** Thông báo sau khi gửi báo giá: có email kèm link duyệt hay chỉ thông báo trên web. */
+export const quotationSentText = (result: { emailed_to?: string | null }) => result.emailed_to
+  ? `Đã gửi báo giá. Khách nhận thông báo trên web và email kèm link duyệt (${result.emailed_to}).`
+  : "Đã gửi báo giá. Khách nhận thông báo trong tài khoản trên web.";
 export type WorkflowQuotationItem = {
   id: number; item_type: "SERVICE" | "PART"; service_id?: number | null; part_id?: number | null;
   description?: string | null; quantity: number; unit_price: Money; amount: Money; is_approved?: boolean | null;
+  /** Hạng mục bắt buộc: khách từ chối = từ chối toàn bộ báo giá (PO 19/11). */
+  is_required?: boolean; required_reason?: string | null;
   /** P3: lịch sử từng lần khách quyết định dòng này. */
-  responses?: Array<{ id: number; decision: "APPROVED" | "REJECTED"; created_at?: string; confirmation?: { id: number; method: "ACCOUNT" | "EMAIL_OTP"; confirmed_at: string } | null }>;
+  responses?: Array<{ id: number; decision: "APPROVED" | "REJECTED"; created_at?: string; confirmation?: { id: number; method: ConfirmationMethod; confirmed_at: string } | null }>;
 };
 export type WorkflowQuotation = {
   id: number; quotation_code?: string; version?: number; status: string;
   type?: "INITIAL" | "SUPPLEMENT"; reason?: string | null; parent_quotation_id?: number | null;
+  /** Xe phải lưu xưởng qua đêm: báo trước cho khách trong báo giá, không tính phí. */
+  stays_overnight?: boolean;
   subtotal?: Money; discount_amount?: Money; total_amount?: Money; items?: WorkflowQuotationItem[];
   created_at?: string | null; customer_response_at?: string | null; valid_until?: string | null;
 };
@@ -128,17 +150,22 @@ export const openPartRequests = (order: { part_requests?: PartRequestRow[] }) =>
 /** Phụ tùng cố vấn báo thiếu khi chuyển phiếu sang chờ phụ tùng. */
 export type ShortagePartInput = { part_id: number; quantity: number; note?: string };
 export type PickupAuthorization = {
-  id: number; full_name: string; phone: string; id_last4: string; valid_until?: string | null;
+  id: number; full_name: string; phone: string; valid_until?: string | null;
   status: "ACTIVE" | "USED" | "REVOKED"; created_at?: string;
 };
 export type WorkflowHandover = {
   id: number; type: "CHECK_IN" | "CHECK_OUT"; status: "DRAFT" | "SUBMITTED" | "CONFIRMED" | "VOID";
   mileage?: number | null; fuel_level?: string | null; general_condition?: string | null; valuables_note?: string | null;
-  person_name: string; person_phone?: string | null; person_id_last4?: string | null; person_relation: "OWNER" | "AUTHORIZED" | "OTHER";
+  /** Biên bản trả xe: biên bản nhận xe dùng để đối chiếu. */
+  compared_handover_id?: number | null;
+  compared_handover?: Pick<WorkflowHandover, "id" | "mileage" | "fuel_level" | "general_condition" | "valuables_note" | "checklist_items"> | null;
+  person_name: string; person_phone?: string | null; has_person_id?: boolean; person_relation: "OWNER" | "AUTHORIZED" | "OTHER";
   pickup_authorization_id?: number | null;
   submitted_at?: string | null; confirmed_at?: string | null; void_reason?: string | null;
   checklist_items?: HandoverChecklistItem[];
-  confirmations?: Array<{ id: number; method: "ACCOUNT" | "EMAIL_OTP"; confirmed_at: string; comment?: string | null }>;
+  confirmations?: Array<{ id: number; method: ConfirmationMethod; confirmed_at: string; comment?: string | null }>;
+  /** Yêu cầu ngoại lệ gần nhất khi chủ xe mất email. */
+  latest_exception?: { id: number; status: "PENDING" | "APPROVED" | "REJECTED"; decision_note?: string | null } | null;
 };
 export type WorkflowOrder = {
   id: number;
@@ -159,11 +186,12 @@ export type WorkflowOrder = {
   vehicle_id?: number;
   mileage_received?: number | null;
   initial_condition?: string | null;
-  note?: string | null;
+  /** Lời khách kể / yêu cầu thêm tại quầy (tách khỏi tình trạng xe). */
+  customer_request?: string | null;
   received_at?: string | null;
-  customer?: { id?: number; full_name?: string; phone?: string; email?: string | null } | null;
+  customer?: { id?: number; full_name?: string; phone?: string; email?: string | null; email_verified?: boolean } | null;
   vehicle?: {
-    id?: number; license_plate?: string; variant?: string; year?: number | null;
+    id?: number; license_plate?: string; variant?: string; year?: number | null; vin?: string | null;
     model?: { id: number; name?: string; brand?: { id: number; name?: string } | null } | null;
     trim?: { id: number; name?: string } | null;
   } | null;
@@ -186,12 +214,17 @@ export type WorkflowOrder = {
   quality_inspector?: { id: number; email?: string; employee?: { full_name?: string } | null } | null;
   /** Danh sách có `with_delivery=1`: biên bản trả xe đã được chủ xe xác nhận. */
   check_out_confirmed?: boolean;
+  /** Danh sách có `with_delivery=1`: trạng thái biên bản trả xe gần nhất (bỏ bản đã hủy). */
+  check_out_status?: WorkflowHandover["status"] | null;
   used_parts?: WorkflowUsedPart[];
   invoice?: WorkflowInvoice | null;
 };
+/** Phiếu có báo giá còn hiệu lực ghi xe phải lưu xưởng qua đêm. */
+export const staysOvernight = (order: Pick<WorkflowOrder, "quotations">) =>
+  (order.quotations ?? []).some(q => q.stays_overnight && !["REJECTED", "CANCELLED"].includes(q.status));
 export type WorkflowPage<T> = { data: T[]; current_page: number; last_page: number; total: number };
 /** ADV-03: xe khách mang tới chưa có trong hệ thống — tạo hồ sơ xe cùng lúc với phiếu. */
-export type NewVehicleInput = { model_id: number; trim_id?: number | null; license_plate: string; year?: number | null };
+export type NewVehicleInput = { model_id: number; trim_id?: number | null; license_plate?: string | null; year?: number | null; vin?: string | null };
 /** ADV-02: khách vãng lai mới — tạo hồ sơ khách cùng lúc với phiếu. */
 export type NewCustomerInput = { full_name: string; phone: string; email?: string | null };
 export type ReceivePayload = {
@@ -202,6 +235,10 @@ export type ReceivePayload = {
   vehicle?: NewVehicleInput;
   mileage_received?: number;
   initial_condition?: string;
+  customer_request?: string;
+  /** Bổ sung cho xe có sẵn còn thiếu năm sản xuất / VIN. */
+  vehicle_year?: number;
+  vehicle_vin?: string;
   note?: string;
   /** Bắt buộc khi xe mang tới khác xe trong lịch hẹn (cùng chủ). */
   vehicle_change_reason?: string;
@@ -379,14 +416,15 @@ export async function receiveRepairOrder(data: ReceivePayload): Promise<{ order:
 export type WalkInPayload = {
   customer_id?: number; customer?: NewCustomerInput;
   vehicle_id?: number; vehicle?: NewVehicleInput;
-  mileage_received?: number; initial_condition?: string; note?: string;
+  mileage_received?: number; initial_condition?: string; customer_request?: string; note?: string;
+  vehicle_year?: number; vehicle_vin?: string;
 };
 export const receiveWalkIn = (data: WalkInPayload) =>
   fetchApi<WorkflowOrder>("/repair-orders", { method: "POST", body: JSON.stringify(data) });
 
 export type CounterCustomer = { id: number; full_name: string; phone?: string | null; email?: string | null };
 export type CounterVehicle = {
-  id: number; customer_id: number; license_plate?: string | null; year?: number | null; variant?: string | null;
+  id: number; customer_id: number; license_plate?: string | null; year?: number | null; vin?: string | null; mileage?: number | null; variant?: string | null;
   model?: { id: number; name?: string; brand?: { id: number; name?: string } | null } | null;
   trim?: { id: number; name?: string } | null;
   customer?: CounterCustomer | null;
@@ -528,6 +566,7 @@ export type CatalogService = { id: number; name: string; category?: string | nul
 export type CatalogPart = { id: number; sku: string; name: string; unit?: string | null; sell_price?: Money; inventory?: { quantity: number } | null };
 export type QuotationLineInput = {
   item_type: "SERVICE" | "PART"; service_id?: number; part_id?: number; description?: string; quantity: number; unit_price?: number;
+  is_required?: boolean; required_reason?: string;
 };
 /** Báo giá gốc đang hiệu lực = INITIAL version cao nhất (khớp RepairOrder::latestQuotation). Phát sinh không thay thế. */
 export function latestQuotation(order: { quotations?: WorkflowQuotation[] }): WorkflowQuotation | null {
@@ -589,12 +628,15 @@ export const workflowApi = {
   technicians: () => fetchApi<TechnicianOption[]>("/technicians"),
   services: () => cachedCatalog<CatalogService[]>("/services"),
   parts: () => cachedCatalog<CatalogPart[]>("/parts"),
-  createQuotation: (id: number, payload: { discount_amount?: number; items: QuotationLineInput[]; type?: "INITIAL" | "SUPPLEMENT"; reason?: string }) =>
+  createQuotation: (id: number, payload: { discount_amount?: number; items: QuotationLineInput[]; type?: "INITIAL" | "SUPPLEMENT"; reason?: string; stays_overnight?: boolean }) =>
     fetchApi<WorkflowQuotation>(`/repair-orders/${id}/quotations`, { method: "POST", body: JSON.stringify(payload) }),
   /** P5: dịch vụ nhanh — báo giá niêm yết, bỏ chẩn đoán (backend kiểm điều kiện). */
   quickQuotation: (id: number, serviceIds: number[]) =>
     fetchApi<WorkflowQuotation>(`/repair-orders/${id}/quick-quotation`, { method: "POST", body: JSON.stringify({ service_ids: serviceIds }) }),
-  sendQuotation: (quotationId: number) => fetchApi<WorkflowQuotation>(`/quotations/${quotationId}/send`, { method: "POST" }),
+  /** Sửa báo giá nháp (chưa gửi khách): thay toàn bộ dòng + giảm giá. */
+  updateQuotation: (quotationId: number, payload: { discount_amount?: number; items: QuotationLineInput[]; stays_overnight?: boolean }) =>
+    fetchApi<WorkflowQuotation>(`/quotations/${quotationId}`, { method: "PUT", body: JSON.stringify(payload) }),
+  sendQuotation: (quotationId: number) => fetchApi<WorkflowQuotation & { emailed_to?: string | null }>(`/quotations/${quotationId}/send`, { method: "POST" }),
   // Không có "respondQuotation" phía nhân viên: chỉ khách duyệt báo giá (customerApi.respondQuotation → /me/...).
   transition: (id: number, step: "start-repair" | "waiting-for-parts" | "resume" | "complete" | "hand-over", note?: string) =>
     fetchApi<WorkflowOrder>(`/repair-orders/${id}/${step}`, { method: "POST", body: JSON.stringify(note ? { note } : {}) }),

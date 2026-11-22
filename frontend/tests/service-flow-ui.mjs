@@ -11,7 +11,7 @@ const detail = read('src/pages/advisor/AdvisorRepairOrderDetail.tsx');
 const checkIn = read('src/pages/advisor/CheckInPanel.tsx');
 const evidence = read('src/services/evidenceService.ts');
 const panels = read('src/pages/advisor/RepairOrderPanels.tsx');
-const customer = read('src/pages/customer/RepairStatus.tsx');
+const customer = read('src/pages/showcase/ReferenceTracking.tsx');
 
 assert.match(admin, /service_level: form\.service_level/, 'Admin saves the service level');
 assert.match(admin, /<ServiceStepsEditor /, 'Admin edits standard steps');

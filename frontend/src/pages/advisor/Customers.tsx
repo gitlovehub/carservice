@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, EmptyState, ErrorState, LoadingState, Modal, Pagination, SearchInput } from "../../components/ui";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
@@ -14,7 +14,9 @@ import { customerDirectoryApi, formatVnd, type CustomerDetail, type CustomerRow,
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
 import { vehicleTitle } from "./counterForms";
-import { errorText } from "./workflowFormat";
+import { OpenOrderButton, PreviewDrawer } from "./advisorListKit";
+import { useNarrowDrawer } from "./useNarrowDrawer";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 import "./advisorDashboard.css";
 
 /**
@@ -45,7 +47,6 @@ export default function Customers() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [version, setVersion] = useState(0);
-  const previewRef = useRef<HTMLDivElement>(null);
   const term = useDebounced(search.trim(), 350);
 
   const query = { search: term, page, per_page: PER_PAGE, segment };
@@ -61,22 +62,28 @@ export default function Customers() {
     setParams(next, { replace: true });
   };
   const pickSegment = (next: CustomerSegment | null) => { setParam({ segment: next, customer: null }); setPage(1); };
-  const select = (c: CustomerRow) => {
-    setParam({ customer: String(c.id) });
-    // Màn hẹp: khung chi tiết nằm dưới danh sách → cuộn tới.
-    if (!window.matchMedia("(min-width: 1280px)").matches) window.setTimeout(() => previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-  };
+  // Màn rộng: khung bên phải; màn hẹp: ngăn kéo xem nhanh (cùng cách các trang danh sách khác).
+  const drawer = useNarrowDrawer();
+  const select = (c: CustomerRow) => { setParam({ customer: String(c.id) }); drawer.show(); };
+  const fieldErrors = useFieldErrors();
 
   function openForm(target: CustomerRow | "new") {
     setEditing(target);
     setForm(target === "new" ? emptyForm : { full_name: target.full_name, phone: target.phone ?? "", email: target.email ?? "" });
     setFormError("");
+    fieldErrors.reset();
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!editing) return;
-    setSaving(true); setFormError("");
+    const problems: FieldErrors = {};
+    if (form.full_name.trim().length < 2) problems.full_name = "Nhập họ tên khách.";
+    if (!/^[0-9+\s.-]{8,20}$/.test(form.phone.trim())) problems.phone = "Nhập số điện thoại hợp lệ.";
+    if (form.email.trim() && !/^\S+@\S+\.\S+$/.test(form.email.trim())) problems.email = "Email không hợp lệ.";
+    setFormError("");
+    if (fieldErrors.show(problems)) return;
+    setSaving(true);
     const payload = { full_name: form.full_name.trim(), phone: form.phone.trim(), email: form.email.trim() || null };
     try {
       if (editing === "new") { await createAdvisorCustomer(payload); notify("Đã thêm khách hàng.", "success"); setPage(1); }
@@ -84,7 +91,7 @@ export default function Customers() {
       else { await updateAdvisorCustomer(editing.id, payload); notify("Đã cập nhật khách hàng.", "success"); }
       setEditing(null);
       setVersion(v => v + 1);
-    } catch (err) { setFormError(errorText(err)); }
+    } catch (err) { fieldErrors.showApi(err, { full_name: "full_name", phone: "phone", email: "email" }); }
     finally { setSaving(false); }
   }
 
@@ -141,10 +148,12 @@ export default function Customers() {
         </div>}
       </section>
 
-      <div ref={previewRef} className="adv-ro-preview adv-ro-preview-always">
+      <div className="adv-ro-preview">
         {selectedId ? <CustomerPreview key={`${selectedId}-${version}`} id={selectedId} loyalMin={summary?.loyal_min_visits} onEdit={openForm}/>
           : <section className="adv-card grid min-h-[320px] place-items-center p-8 text-center text-small text-cs-muted">Chọn một khách ở danh sách.</section>}
       </div>
+      {selectedId && <PreviewDrawer open={drawer.open} onClose={drawer.close} title="Hồ sơ khách hàng">
+        <CustomerPreview key={`d-${selectedId}-${version}`} id={selectedId} loyalMin={summary?.loyal_min_visits} onEdit={c => { drawer.close(); openForm(c); }}/></PreviewDrawer>}
     </div>
 
     {editing && <Modal open onClose={() => setEditing(null)} dismissible={!saving} size="sm"
@@ -153,10 +162,10 @@ export default function Customers() {
         <Button variant="secondary" disabled={saving} onClick={() => setEditing(null)}>Huỷ</Button>
         <Button type="submit" form="advisor-customer-form" variant="primary" icon="check" loading={saving}>{editing === "new" ? "Thêm khách" : "Lưu"}</Button>
       </>}>
-      <form id="advisor-customer-form" onSubmit={submit} className="space-y-3">
-        <Field label="Họ tên" required><Input value={form.full_name} maxLength={100} required onChange={e => setForm({ ...form, full_name: e.target.value })}/></Field>
-        <Field label="Số điện thoại" required><Input inputMode="tel" value={form.phone} maxLength={20} required onChange={e => setForm({ ...form, phone: e.target.value })}/></Field>
-        <Field label="Email" optional hint="Dùng để khách nhận mã xác nhận biên bản / báo giá."><Input type="email" value={form.email} maxLength={150} onChange={e => setForm({ ...form, email: e.target.value })}/></Field>
+      <form id="advisor-customer-form" noValidate onSubmit={submit} className="space-y-3">
+        <Field label="Họ tên" required error={fieldErrors.errors.full_name}><Input value={form.full_name} maxLength={100} required onChange={e => { setForm({ ...form, full_name: e.target.value }); fieldErrors.clear("full_name"); }}/></Field>
+        <Field label="Số điện thoại" required error={fieldErrors.errors.phone}><Input inputMode="tel" value={form.phone} maxLength={20} required onChange={e => { setForm({ ...form, phone: e.target.value }); fieldErrors.clear("phone"); }}/></Field>
+        <Field label="Email" optional error={fieldErrors.errors.email} hint={editing !== "new" && editing?.email ? "Email đã xác minh chỉ quản trị viên được đổi." : "Sau khi lưu, xác minh email bằng mã ở bước lập biên bản nhận xe."}><Input type="email" value={form.email} maxLength={150} onChange={e => { setForm({ ...form, email: e.target.value }); fieldErrors.clear("email"); }}/></Field>
         {formError && <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-small text-danger-fg">{formError}</p>}
       </form>
     </Modal>}
@@ -171,10 +180,10 @@ function serviceSummary(order: CustomerDetail["repair_orders"][number]) {
 }
 
 function HistoryTable({ orders }: { orders: CustomerDetail["repair_orders"] }) {
-  return <div className="overflow-x-auto rounded-xl border border-cs-border"><table className="w-full min-w-[620px] text-small">
+  return <div className="overflow-x-auto rounded-xl border border-cs-border"><table className="w-full min-w-[760px] text-small">
     <thead className="bg-cs-surface-2 text-left text-cs-text-2"><tr>
       <th className="px-3 py-2.5 font-semibold">Ngày</th><th className="px-3 py-2.5 font-semibold">Phiếu sửa chữa</th><th className="px-3 py-2.5 font-semibold">Hạng mục</th>
-      <th className="px-3 py-2.5 text-right font-semibold">Thành tiền</th><th className="px-3 py-2.5 font-semibold">Trạng thái</th>
+      <th className="px-3 py-2.5 text-right font-semibold">Thành tiền</th><th className="px-3 py-2.5 font-semibold">Trạng thái</th><th className="px-3 py-2.5"><span className="sr-only">Mở phiếu</span></th>
     </tr></thead>
     <tbody className="divide-y divide-cs-border">{orders.map(o => <tr key={o.id} className="text-cs-text">
       <td className="whitespace-nowrap px-3 py-2.5 tabular-nums">{dmy(o.received_at)}</td>
@@ -183,6 +192,7 @@ function HistoryTable({ orders }: { orders: CustomerDetail["repair_orders"] }) {
       <td className="max-w-72 px-3 py-2.5"><span className="line-clamp-2">{serviceSummary(o)}</span></td>
       <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold tabular-nums">{o.invoice ? formatVnd(o.invoice.total_amount) : "—"}</td>
       <td className="whitespace-nowrap px-3 py-2.5"><StatusBadge domain="repair" status={o.status}/></td>
+      <td className="px-3 py-2 text-right"><OpenOrderButton id={o.id}/></td>
     </tr>)}</tbody>
   </table></div>;
 }
@@ -226,7 +236,6 @@ function CustomerPreview({ id, loyalMin, onEdit }: { id: number; loyalMin?: numb
         <Dropdown label="Thao tác khác" items={[
           { label: "Đặt lịch hộ", icon: "calendar", onSelect: book },
           { label: "Quản lý xe của khách", icon: "car", onSelect: () => navigate(`/advisor/customer-cars?customerId=${c.id}`) },
-          { label: "Làm mới", icon: "refresh", onSelect: detail.reload },
         ]}/>
       </div>
     </header>
@@ -281,6 +290,7 @@ function CustomerPreview({ id, loyalMin, onEdit }: { id: number; loyalMin?: numb
           <span className="text-warning-fg" aria-label={`${r.overall_rating} sao`}>{"★".repeat(r.overall_rating)}<span className="text-cs-border-strong">{"★".repeat(Math.max(0, 5 - r.overall_rating))}</span></span>
           {r.repair_order && <Link className="text-caption font-semibold text-cs-accent-text hover:underline" to={`/advisor/service-orders/${r.repair_order.id}`}>{r.repair_order.repair_order_code}</Link>}
           <span className="text-caption text-cs-muted">{r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}</span>
+          {r.repair_order && <span className="ml-auto"><OpenOrderButton id={r.repair_order.id}/></span>}
         </div>
         {r.comment && <p className="mt-1.5 text-small text-cs-text">{r.comment}</p>}
         {r.reply && <p className="mt-2 rounded-lg bg-cs-surface-2 px-3 py-2 text-caption text-cs-text-2"><b>Gara phản hồi:</b> {r.reply}</p>}

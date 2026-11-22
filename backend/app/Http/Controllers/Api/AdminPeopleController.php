@@ -148,7 +148,7 @@ class AdminPeopleController extends Controller
             ->selectSub($spent, 'total_spent')
             ->selectSub($lastVisit, 'last_visit')
             ->withCount(['vehicles', 'repairOrders'])
-            ->with('account:id,status');
+            ->with('account:id,status,email,email_verified_at');
     }
 
     /** @return array<string, mixed> */
@@ -162,6 +162,7 @@ class AdminPeopleController extends Controller
             'name' => $c->full_name,
             'phone' => $c->phone,
             'email' => $c->email,
+            'email_verified' => $c->confirmationEmail() !== null,
             'city' => $address === '' ? null : trim((string) Str::of($address)->afterLast(',')),
             'vehicles_count' => (int) $c->vehicles_count,
             'visits' => (int) $c->repair_orders_count,

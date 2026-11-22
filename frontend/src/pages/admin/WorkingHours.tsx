@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { fetchApi } from "../../services/api";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { HolidaysPanel } from "./HolidaysPanel";
+import { useFieldErrors } from "../../components/ui/useFieldErrors";
+import { FieldError } from "../../components/ui/Field";
 
 type WorkingHour = {
   id: number;
@@ -87,43 +89,30 @@ function isSame(a: RowForm, b: RowForm): boolean {
   );
 }
 
-function validateRow(form: RowForm): string {
-  if (!form.open_time || !form.close_time) {
-    return "Vui lòng nhập giờ mở cửa và giờ đóng cửa.";
-  }
-
-  if (form.close_time <= form.open_time) {
-    return "Giờ đóng cửa phải sau giờ mở cửa.";
-  }
+/** Lỗi theo từng ô của một dòng ngày làm việc. */
+function validateRow(form: RowForm): Record<string, string> {
+  const problems: Record<string, string> = {};
+  if (!form.open_time) problems.open_time = "Nhập giờ mở cửa.";
+  if (!form.close_time) problems.close_time = "Nhập giờ đóng cửa.";
+  else if (form.open_time && form.close_time <= form.open_time) problems.close_time = "Phải sau giờ mở cửa.";
 
   const slots = Number(form.max_slots);
-
-  if (form.max_slots === "" || !Number.isInteger(slots)) {
-    return "Số lịch tối đa phải là số nguyên.";
-  }
-
-  if (slots < 0 || slots > 100) {
-    return "Số lịch tối đa phải từ 0 đến 100.";
-  }
-
-  if (form.is_active && slots < 1) {
-    return "Ngày hoạt động phải có ít nhất 1 lịch mỗi khung giờ.";
-  }
+  if (form.max_slots === "" || !Number.isInteger(slots)) problems.max_slots = "Phải là số nguyên.";
+  else if (slots < 0 || slots > 100) problems.max_slots = "Từ 0 đến 100.";
+  else if (form.is_active && slots < 1) problems.max_slots = "Ít nhất 1 lịch.";
 
   if (form.capacity_hours !== "") {
     const hours = parseHours(form.capacity_hours);
-    if (!Number.isFinite(hours) || hours <= 0 || hours > 1000) {
-      return "Công suất tự đặt phải là số giờ công lớn hơn 0 (ví dụ 32). Bấm \"Dùng tự động\" nếu không muốn tự đặt.";
-    }
+    if (!Number.isFinite(hours) || hours <= 0 || hours > 1000) problems.capacity_hours = "Nhập số giờ công lớn hơn 0 (ví dụ 32).";
   }
-
-  return "";
+  return problems;
 }
 
 const ROW_GRID = "lg:grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr_0.9fr_1.35fr_1.2fr]";
 
 /** Cột "Công suất / ngày": mặc định hiển thị số tính tự động; admin có thể tự đặt số giờ công. */
-function CapacityCell({ day, form, technicians, onChange }: {
+function CapacityCell({ day, form, technicians, onChange, error }: {
+  error?: string;
   day: string;
   form: RowForm;
   technicians: number;
@@ -174,9 +163,11 @@ function CapacityCell({ day, form, technicians, onChange }: {
           onChange={(event) => onChange(event.target.value.replace(/[^\d.,]/g, ""))}
           className={`${fieldClass} pr-[4.5rem]`}
           aria-label={`Công suất tự đặt (giờ công) ${day}`}
+          aria-invalid={!!error || undefined}
         />
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-cs-muted">giờ công</span>
       </div>
+      <FieldError className="mt-1">{error}</FieldError>
       <p className="mt-1 text-[12px] text-cs-muted">
         Tự đặt ·{" "}
         <button type="button" className={linkClass} onClick={() => onChange("")} aria-label={`Dùng công suất tự động ${day}`}>
@@ -197,6 +188,7 @@ function WorkingHours() {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [technicians, setTechnicians] = useState(0);
+  const fieldErrors = useFieldErrors();
 
   useEffect(() => {
     let active = true;
@@ -250,6 +242,7 @@ function WorkingHours() {
   ).length;
 
   const updateForm = (id: number, patch: Partial<RowForm>) => {
+    fieldErrors.clear(...Object.keys(patch).map((key) => `${id}.${key}`), ...("open_time" in patch ? [`${id}.close_time`] : []));
     setForms((current) => ({ ...current, [id]: { ...current[id], ...patch } }));
     setRowStates((current) => ({
       ...current,
@@ -258,6 +251,7 @@ function WorkingHours() {
   };
 
   const resetRow = (id: number) => {
+    fieldErrors.clear(`${id}.open_time`, `${id}.close_time`, `${id}.max_slots`, `${id}.capacity_hours`);
     setForms((current) => ({ ...current, [id]: saved[id] }));
     setRowStates((current) => ({
       ...current,
@@ -267,15 +261,8 @@ function WorkingHours() {
 
   const saveRow = async (hour: WorkingHour) => {
     const form = forms[hour.id];
-    const validationError = validateRow(form);
-
-    if (validationError) {
-      setRowStates((current) => ({
-        ...current,
-        [hour.id]: { saving: false, error: validationError, success: false },
-      }));
-      return;
-    }
+    const problems = Object.fromEntries(Object.entries(validateRow(form)).map(([key, message]) => [`${hour.id}.${key}`, message]));
+    if (fieldErrors.show(problems)) return;
 
     setRowStates((current) => ({
       ...current,
@@ -307,24 +294,11 @@ function WorkingHours() {
       }));
       notify(`Đã cập nhật giờ làm việc ${DAY_LABELS[hour.day_of_week]}: ${nextForm.is_active ? `${nextForm.open_time}–${nextForm.close_time}, tối đa ${nextForm.max_slots} lịch mỗi khung giờ` : "nghỉ, không nhận lịch"}.`, "success");
     } catch (requestError: unknown) {
-      const data = (requestError as { data?: { errors?: Record<string, string[]> } })
-        ?.data;
-      const firstFieldError = data?.errors
-        ? Object.values(data.errors)[0]?.[0]
-        : "";
-
-      setRowStates((current) => ({
-        ...current,
-        [hour.id]: {
-          saving: false,
-          error:
-            firstFieldError ||
-            (requestError instanceof Error
-              ? requestError.message
-              : "Không thể lưu cấu hình."),
-          success: false,
-        },
-      }));
+      fieldErrors.showApi(requestError, {
+        open_time: `${hour.id}.open_time`, close_time: `${hour.id}.close_time`,
+        max_slots: `${hour.id}.max_slots`, daily_capacity_minutes: `${hour.id}.capacity_hours`,
+      });
+      setRowStates((current) => ({ ...current, [hour.id]: { saving: false, error: "", success: false } }));
     }
   };
 
@@ -449,36 +423,49 @@ function WorkingHours() {
                           </span>
                         </div>
 
-                        <input
-                          type="time"
-                          value={form.open_time}
-                          disabled={disabledFields}
-                          onChange={(event) =>
-                            updateForm(hour.id, { open_time: event.target.value })
-                          }
-                          className={fieldClass}
-                          aria-label={`Giờ mở cửa ${DAY_LABELS[hour.day_of_week]}`}
-                        />
+                        <div className="min-w-0">
+                          <input
+                            type="time"
+                            value={form.open_time}
+                            disabled={disabledFields}
+                            onChange={(event) =>
+                              updateForm(hour.id, { open_time: event.target.value })
+                            }
+                            className={fieldClass}
+                            aria-label={`Giờ mở cửa ${DAY_LABELS[hour.day_of_week]}`}
+                            aria-invalid={!!fieldErrors.errors[`${hour.id}.open_time`] || undefined}
+                          />
+                          <FieldError className="mt-1">{fieldErrors.errors[`${hour.id}.open_time`]}</FieldError>
+                        </div>
 
-                        <input
-                          type="time"
-                          value={form.close_time}
-                          disabled={disabledFields}
-                          onChange={(event) =>
-                            updateForm(hour.id, { close_time: event.target.value })
-                          }
-                          className={fieldClass}
-                          aria-label={`Giờ đóng cửa ${DAY_LABELS[hour.day_of_week]}`}
-                        />
+                        <div className="min-w-0">
+                          <input
+                            type="time"
+                            value={form.close_time}
+                            disabled={disabledFields}
+                            onChange={(event) =>
+                              updateForm(hour.id, { close_time: event.target.value })
+                            }
+                            className={fieldClass}
+                            aria-label={`Giờ đóng cửa ${DAY_LABELS[hour.day_of_week]}`}
+                            aria-invalid={!!fieldErrors.errors[`${hour.id}.close_time`] || undefined}
+                          />
+                          <FieldError className="mt-1">{fieldErrors.errors[`${hour.id}.close_time`]}</FieldError>
+                        </div>
 
-                        <QuantityStepper label={`Số lịch tối đa mỗi khung giờ ${DAY_LABELS[hour.day_of_week]}`} min={0} max={100} size="md" className="w-[132px]"
-                          disabled={disabledFields} value={form.max_slots === "" ? 0 : Number(form.max_slots)}
-                          onChange={(value) => updateForm(hour.id, { max_slots: String(value ?? 0) })}/>
+                        <div className="min-w-0">
+                          <QuantityStepper label={`Số lịch tối đa mỗi khung giờ ${DAY_LABELS[hour.day_of_week]}`} min={0} max={100} size="md" className="w-[132px]"
+                            invalid={!!fieldErrors.errors[`${hour.id}.max_slots`]}
+                            disabled={disabledFields} value={form.max_slots === "" ? 0 : Number(form.max_slots)}
+                            onChange={(value) => updateForm(hour.id, { max_slots: String(value ?? 0) })}/>
+                          <FieldError className="mt-1">{fieldErrors.errors[`${hour.id}.max_slots`]}</FieldError>
+                        </div>
 
                         <CapacityCell
                           day={DAY_LABELS[hour.day_of_week]}
                           form={form}
                           technicians={technicians}
+                          error={fieldErrors.errors[`${hour.id}.capacity_hours`]}
                           onChange={(capacity_hours) => updateForm(hour.id, { capacity_hours })}
                         />
 

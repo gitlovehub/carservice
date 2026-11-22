@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { Modal } from "../ui";
 import { buttonClass } from "../ui/buttonClass";
+import { useAppFeedback } from "../ui/feedbackContext";
+import { apiFieldErrors } from "../ui/formValidation";
 import { fetchApi } from "../../services/api";
 
 export type ContactInfo = { name: string; phone: string; email: string };
@@ -19,9 +21,10 @@ export default function ContactEditModal({ contact, title = "Cập nhật thông
   onClose: () => void;
   onSaved: (contact: ContactInfo, account: unknown) => void;
 }) {
+  const { notify } = useAppFeedback();
   const [name, setName] = useState(contact.name);
   const [phone, setPhone] = useState(contact.phone);
-  const [errs, setErrs] = useState<{ name?: string; phone?: string; form?: string }>({});
+  const [errs, setErrs] = useState<{ name?: string; phone?: string }>({});
   const [saving, setSaving] = useState(false);
 
   const submit = async (e: FormEvent) => {
@@ -43,7 +46,9 @@ export default function ContactEditModal({ contact, title = "Cập nhật thông
       }
       onSaved({ ...contact, name: res?.account?.customer?.full_name ?? n, phone: res?.account?.customer?.phone ?? p }, res?.account ?? null);
     } catch (err: unknown) {
-      setErrs({ form: (err as { data?: { message?: string } })?.data?.message || "Không lưu được thông tin. Vui lòng thử lại." });
+      const fromApi = apiFieldErrors(err);
+      if (fromApi.full_name || fromApi.phone) setErrs({ name: fromApi.full_name, phone: fromApi.phone });
+      else notify(err instanceof Error && err.message ? err.message : "Không lưu được thông tin. Vui lòng thử lại.", "error");
       setSaving(false);
     }
   };
@@ -58,11 +63,11 @@ export default function ContactEditModal({ contact, title = "Cập nhật thông
       </>}>
       <form id="contact-edit-form" onSubmit={submit} className="space-y-4" noValidate>
         <label className="block text-sm font-semibold text-cs-text">Họ và tên <span className="text-rose-500">*</span>
-          <input autoFocus value={name} onChange={(e) => { setName(e.target.value); setErrs((x) => ({ ...x, name: undefined })); }} className={field(errs.name)} placeholder="Nhập họ và tên" autoComplete="name"/>
+          <input autoFocus aria-invalid={!!errs.name || undefined} value={name} onChange={(e) => { setName(e.target.value); setErrs((x) => ({ ...x, name: undefined })); }} className={field(errs.name)} placeholder="Nhập họ và tên" autoComplete="name"/>
           {errs.name && <span className="mt-1 block text-xs font-medium text-rose-500">{errs.name}</span>}
         </label>
         <label className="block text-sm font-semibold text-cs-text">Số điện thoại <span className="text-rose-500">*</span>
-          <input type="tel" inputMode="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setErrs((x) => ({ ...x, phone: undefined })); }} className={field(errs.phone)} placeholder="Ví dụ: 0912345678" autoComplete="tel"/>
+          <input type="tel" inputMode="tel" aria-invalid={!!errs.phone || undefined} value={phone} onChange={(e) => { setPhone(e.target.value); setErrs((x) => ({ ...x, phone: undefined })); }} className={field(errs.phone)} placeholder="Ví dụ: 0912345678" autoComplete="tel"/>
           {errs.phone && <span className="mt-1 block text-xs font-medium text-rose-500">{errs.phone}</span>}
         </label>
         {contact.email && (
@@ -71,7 +76,6 @@ export default function ContactEditModal({ contact, title = "Cập nhật thông
             <span className="mt-1 block text-xs font-normal text-cs-muted">Email đăng nhập không đổi được ở đây.</span>
           </label>
         )}
-        {errs.form && <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{errs.form}</p>}
       </form>
     </Modal>
   );

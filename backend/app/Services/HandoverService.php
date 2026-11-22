@@ -9,6 +9,7 @@ use App\Models\PickupAuthorization;
 use App\Models\RepairOrder;
 use App\Models\VehicleHandover;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -17,6 +18,13 @@ use Illuminate\Validation\ValidationException;
  */
 class HandoverService
 {
+    private const ID_MAX_ATTEMPTS = 5;
+
+    private const ID_LOCK_SECONDS = 900;
+
+    /** Mức hư hại để biết một mục có xấu đi so với lúc nhận hay không. */
+    private const CONDITION_RANK = ['OK' => 0, 'PRESENT' => 0, 'SCRATCH' => 1, 'DENT' => 2, 'BROKEN' => 3, 'MISSING' => 4];
+
     public function __construct(
         private readonly ConfirmationService $confirmations,
         private readonly CustomerNotifier $notifier,
@@ -26,6 +34,9 @@ class HandoverService
     {
         if (in_array($order->status, [RepairOrder::HANDED_OVER, RepairOrder::CLOSED], true)) {
             throw ValidationException::withMessages(['repair_order' => 'Phiếu đã kết thúc, không lập biên bản.']);
+        }
+        if ($type === VehicleHandover::TYPE_CHECK_OUT) {
+            $this->checkIdAttempt((int) $order->id, $data['person_relation'] ?? null, $data['pickup_authorization_id'] ?? null, $data['person_id_last4'] ?? null);
         }
 
         return DB::transaction(function () use ($order, $type, $data, $staff): VehicleHandover {
@@ -59,6 +70,14 @@ class HandoverService
     public function update(VehicleHandover $handover, array $data): VehicleHandover
     {
         $this->assertEditable($handover);
+        if ($handover->type === VehicleHandover::TYPE_CHECK_OUT && array_key_exists('person_id_last4', $data)) {
+            $this->checkIdAttempt(
+                (int) $handover->repair_order_id,
+                $data['person_relation'] ?? $handover->person_relation,
+                array_key_exists('pickup_authorization_id', $data) ? $data['pickup_authorization_id'] : $handover->pickup_authorization_id,
+                $data['person_id_last4'],
+            );
+        }
 
         return DB::transaction(function () use ($handover, $data): VehicleHandover {
             $handover->update([
@@ -87,8 +106,13 @@ class HandoverService
             if ($handover->checklistItems->isEmpty()) {
                 throw ValidationException::withMessages(['items' => 'Biên bản cần ít nhất một mục kiểm tra.']);
             }
+            // Không có kênh xác nhận thì không nhận xe vào xưởng và không giao xe.
+            if (! $handover->repairOrder->customer?->confirmationEmail()) {
+                throw ValidationException::withMessages(['customer_email' => 'Chủ xe chưa xác minh email. Xác minh email trước khi lưu biên bản.']);
+            }
             if ($handover->type === VehicleHandover::TYPE_CHECK_OUT) {
                 $this->assertRecipient($handover);
+                $this->assertComparedWithCheckIn($handover);
                 $this->markDiscrepancies($handover);
                 $handover->load('checklistItems');
             }
@@ -178,6 +202,87 @@ class HandoverService
         }
         // Thông tin người nhận lấy theo ủy quyền, không theo nhập tay.
         $handover->forceFill(['person_name' => $authorization->full_name, 'person_phone' => $authorization->phone])->save();
+    }
+
+    /**
+     * Giới hạn số lần nhập sai 4 số cuối giấy tờ theo từng ủy quyền. Chạy ngoài transaction
+     * vì bộ đếm nằm trong cache database, nếu không sẽ bị rollback cùng lỗi xác thực.
+     */
+    private function checkIdAttempt(int $orderId, ?string $relation, ?int $authorizationId, ?string $last4): void
+    {
+        if ($relation !== 'AUTHORIZED' || ! $authorizationId || $last4 === null) {
+            return;
+        }
+        $authorization = PickupAuthorization::query()->find($authorizationId);
+        if (! $authorization || (int) $authorization->repair_order_id !== $orderId || ! $authorization->isUsable()) {
+            return;
+        }
+        $key = "pickup-id:{$authorization->id}";
+        if (RateLimiter::tooManyAttempts($key, self::ID_MAX_ATTEMPTS)) {
+            $minutes = (int) ceil(RateLimiter::availableIn($key) / 60);
+            throw ValidationException::withMessages(['person_id_last4' => "Nhập sai quá nhiều lần. Thử lại sau {$minutes} phút hoặc liên hệ chủ xe."]);
+        }
+        if (! hash_equals($authorization->id_last4, $last4)) {
+            RateLimiter::hit($key, self::ID_LOCK_SECONDS);
+            throw ValidationException::withMessages(['person_id_last4' => '4 số cuối giấy tờ không khớp với ủy quyền chủ xe đã khai báo.']);
+        }
+        RateLimiter::clear($key);
+    }
+
+    /**
+     * Trả xe phải đối chiếu đủ với biên bản nhận xe: có số km lúc trả, không thấp hơn lúc nhận,
+     * và không được bỏ mục nào đã ghi lúc nhận (mất tài sản thì ghi "Thiếu", không xoá dòng).
+     */
+    private function assertComparedWithCheckIn(VehicleHandover $handover): void
+    {
+        $checkIn = $handover->comparedHandover()->with('checklistItems')->first();
+        if (! $checkIn) {
+            return;
+        }
+        if ($checkIn->mileage !== null && $handover->mileage === null) {
+            throw ValidationException::withMessages(['mileage' => 'Nhập số km lúc trả xe.']);
+        }
+        if ($checkIn->mileage !== null && $handover->mileage < $checkIn->mileage) {
+            throw ValidationException::withMessages(['mileage' => 'Số km lúc trả không được thấp hơn lúc nhận ('.number_format($checkIn->mileage, 0, ',', '.').' km).']);
+        }
+        $labels = $handover->checklistItems->map(fn (HandoverChecklistItem $item) => mb_strtolower(trim($item->label)));
+        $missing = $checkIn->checklistItems->reject(fn (HandoverChecklistItem $item) => $labels->contains(mb_strtolower(trim($item->label))));
+        if ($missing->isNotEmpty()) {
+            throw ValidationException::withMessages(['items' => 'Thiếu mục đã ghi lúc nhận xe: '.$missing->pluck('label')->implode(', ').'. Nếu bị mất, giữ dòng và chọn "Thiếu".']);
+        }
+        $this->assertEvidenceForWorseItems($handover, $checkIn);
+    }
+
+    /** Mục xấu đi so với lúc nhận (hư hơn, thiếu, giảm số lượng) bắt buộc có ghi chú và ảnh; có vị trí thì ảnh phải đúng vị trí. */
+    private function assertEvidenceForWorseItems(VehicleHandover $handover, VehicleHandover $checkIn): void
+    {
+        $before = $checkIn->checklistItems->keyBy(fn (HandoverChecklistItem $item) => mb_strtolower(trim($item->label)));
+        $photoPositions = MediaAttachment::query()
+            ->where('attachable_type', VehicleHandover::class)->where('attachable_id', $handover->id)
+            ->pluck('position_code');
+        $errors = [];
+        $needPhoto = [];
+
+        foreach ($handover->checklistItems->values() as $index => $item) {
+            $prior = $before->get(mb_strtolower(trim($item->label)));
+            $worse = (self::CONDITION_RANK[$item->condition] ?? 0) > (self::CONDITION_RANK[$prior?->condition] ?? 0)
+                || ($prior && (int) $item->quantity < (int) $prior->quantity);
+            if (! $worse) {
+                continue;
+            }
+            if (trim((string) $item->note) === '') {
+                $errors["items.{$index}.note"] = "Ghi rõ thay đổi của {$item->label}.";
+            }
+            if (! ($item->position_code ? $photoPositions->contains($item->position_code) : $photoPositions->isNotEmpty())) {
+                $needPhoto[] = $item->label;
+            }
+        }
+        if ($needPhoto) {
+            $errors['photos'] = 'Cần ảnh minh chứng cho mục xấu đi so với lúc nhận: '.implode(', ', $needPhoto).'.';
+        }
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     /** Đánh dấu mục khác với biên bản nhận xe (cùng nhãn, khác tình trạng; hoặc mục mới không có lúc nhận). */
