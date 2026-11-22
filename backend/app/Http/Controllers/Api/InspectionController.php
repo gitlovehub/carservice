@@ -52,15 +52,9 @@ class InspectionController extends Controller
             return $denied;
         }
 
-        if ($repairOrder->inspections()->exists()) {
-            return response()->json([
-                'message' => 'Mỗi lệnh sửa chữa chỉ thuộc về 1 phiếu kiểm tra tổng thể.',
-            ], 422);
-        }
-
         $inspection = $this->service->recordInspection($repairOrder, $technician, $request->validated(), $employee);
 
-        return response()->json($inspection, 201);
+        return response()->json($inspection, $inspection->wasRecentlyCreated ? 201 : 200);
     }
 
     /**

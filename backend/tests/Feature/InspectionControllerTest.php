@@ -15,6 +15,8 @@ use App\Models\RepairOrder;
 use App\Models\Service;
 use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
+use App\Services\RepairOrderService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -149,6 +151,7 @@ class InspectionControllerTest extends TestCase
             'service_id' => $service->id,
         ]);
 
+        $this->assertDatabaseCount('inspections', 1);
         $this->assertSame(RepairOrder::INSPECTING, $repairOrder->fresh()->status);
     }
 
@@ -172,15 +175,16 @@ class InspectionControllerTest extends TestCase
             ->assertJsonValidationErrors(['inspection_items.0.status']);
     }
 
-    public function test_cannot_create_duplicate_inspection_for_same_repair_order(): void
+    public function test_repeated_inspection_request_returns_the_existing_inspection_without_changes(): void
     {
         [$account, , $technician] = $this->createTechnician();
         $repairOrder = $this->createRepairOrder(RepairOrder::RECEIVED, $technician);
 
-        Inspection::query()->create([
+        $existingInspection = Inspection::query()->create([
             'repair_order_id' => $repairOrder->id,
             'technician_id' => $technician->id,
             'condition_description' => 'Phiếu đã có',
+            'diagnosis' => 'Chẩn đoán gốc',
         ]);
 
         $payload = [
@@ -194,8 +198,58 @@ class InspectionControllerTest extends TestCase
 
         $this->actingAs($account)
             ->postJson("/api/repair-orders/{$repairOrder->id}/inspections", $payload)
-            ->assertStatus(422)
-            ->assertJsonPath('message', 'Mỗi lệnh sửa chữa chỉ thuộc về 1 phiếu kiểm tra tổng thể.');
+            ->assertOk()
+            ->assertJsonPath('id', $existingInspection->id)
+            ->assertJsonPath('condition_description', 'Phiếu đã có')
+            ->assertJsonPath('diagnosis', 'Chẩn đoán gốc');
+
+        $this->assertDatabaseCount('inspections', 1);
+        $this->assertDatabaseCount('inspection_items', 0);
+        $this->assertSame(RepairOrder::RECEIVED, $repairOrder->fresh()->status);
+        $this->assertDatabaseMissing('repair_order_status_history', [
+            'repair_order_id' => $repairOrder->id,
+            'status' => RepairOrder::INSPECTING,
+        ]);
+    }
+
+    public function test_inspection_failure_rolls_back_inspection_items_and_status_change(): void
+    {
+        [, , $technician] = $this->createTechnician();
+        $repairOrder = $this->createRepairOrder(RepairOrder::RECEIVED, $technician);
+
+        try {
+            app(RepairOrderService::class)->recordInspection($repairOrder, $technician, [
+                'inspection_items' => [
+                    ['item_name' => 'Má phanh', 'status' => 'FAILED'],
+                ],
+                'recommendations' => [
+                    ['item_type' => InspectionRecommendation::TYPE_SERVICE, 'service_id' => 999999],
+                ],
+            ]);
+            $this->fail('Expected the invalid service foreign key to fail.');
+        } catch (QueryException) {
+            $this->assertDatabaseCount('inspections', 0);
+            $this->assertDatabaseCount('inspection_items', 0);
+            $this->assertDatabaseCount('inspection_recommendations', 0);
+            $this->assertSame(RepairOrder::RECEIVED, $repairOrder->fresh()->status);
+        }
+    }
+
+    public function test_database_rejects_multiple_inspections_for_one_repair_order(): void
+    {
+        [, , $technician] = $this->createTechnician();
+        $repairOrder = $this->createRepairOrder(RepairOrder::RECEIVED, $technician);
+
+        Inspection::query()->create([
+            'repair_order_id' => $repairOrder->id,
+            'technician_id' => $technician->id,
+        ]);
+
+        $this->expectException(QueryException::class);
+        Inspection::query()->create([
+            'repair_order_id' => $repairOrder->id,
+            'technician_id' => $technician->id,
+        ]);
     }
 
     public function test_technician_and_advisor_can_view_inspection_details(): void
