@@ -26,6 +26,8 @@ const I = {
   external: (s?: number) => <svg {...ico(s)}><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>,
   headset: (s?: number) => <svg {...ico(s)}><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/><path d="M19 20a3 3 0 0 1-3 2h-2"/></svg>,
   eye: (s?: number) => <svg {...ico(s)}><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>,
+  bolt: (s?: number) => <svg {...ico(s)}><path d="M13 2 4 14h7l-1 8 9-12h-7Z"/></svg>,
+  chat: (s?: number) => <svg {...ico(s)}><path d="M21 12a8 8 0 0 1-8 8H4l2-3.2A8 8 0 1 1 21 12Z"/><path d="M9 12h6"/></svg>,
 };
 
 /* ------------------------------------------------------------ Giờ làm việc */
@@ -52,33 +54,62 @@ function useWorkingHours() {
 type FormState = { name: string; phone: string; email: string; message: string };
 const EMPTY: FormState = { name: '', phone: '', email: '', message: '' };
 const LOST_EMAIL_MESSAGE = 'Tôi mất quyền truy cập email cũ và muốn đổi sang email mới.\nEmail cũ: \nBiển số xe: \nMã phiếu gần nhất (nếu có): ';
+type FieldErrors = Partial<Record<keyof FormState, string>>;
+const VIETNAM_PHONE = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+/** Kiểm tra trước khi gửi để lỗi nhập liệu không tốn lượt giới hạn 3 lần/phút của API. */
+function validateContact(form: FormState, lostEmail: boolean): FieldErrors {
+  const errors: FieldErrors = {};
+  const phone = form.phone.trim();
+  const email = form.email.trim();
+  const message = form.message.trim();
+  if (!form.name.trim()) errors.name = 'Vui lòng nhập họ và tên.';
+  if (!phone) errors.phone = 'Vui lòng nhập số điện thoại.';
+  else if (!VIETNAM_PHONE.test(phone.replace(/[ .()-]/g, ''))) errors.phone = 'Số điện thoại không hợp lệ (ví dụ: 0912345678).';
+  if (lostEmail && !email) errors.email = 'Nhập email mới bạn muốn dùng để gara gửi nút xác thực.';
+  else if (email && !/^\S+@\S+\.\S+$/.test(email)) errors.email = 'Email không hợp lệ.';
+  if (!message) errors.message = 'Vui lòng nhập nội dung cần hỗ trợ.';
+  else if (message.length < 10) errors.message = 'Nội dung cần ít nhất 10 ký tự.';
+  return errors;
+}
 function ContactForm() {
   const [searchParams] = useSearchParams();
   const lostEmail = searchParams.get('topic') === 'lost-email';
   const [form, setForm] = useState<FormState>(() => lostEmail ? { ...EMPTY, message: LOST_EMAIL_MESSAGE } : EMPTY);
-  const [state, setState] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; message?: string; field?: string }>({ status: 'idle' });
+  const [state, setState] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; message?: string; errors?: FieldErrors }>({ status: 'idle' });
   const set = (k: keyof FormState) => (e: { target: { value: string } }) => {
     setForm(f => ({ ...f, [k]: e.target.value }));
-    setState(current => current.field === k ? { status: 'idle' } : current);
+    setState(current => {
+      if (!current.errors?.[k]) return current;
+      const errors = { ...current.errors };
+      delete errors[k];
+      return Object.keys(errors).length ? { ...current, errors } : { status: 'idle' };
+    });
   };
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (lostEmail && !/^\S+@\S+\.\S+$/.test(form.email.trim())) { setState({ status: 'error', message: 'Nhập email mới bạn muốn dùng để gara gửi nút xác thực.', field: 'email' }); return; }
+    const errors = validateContact(form, lostEmail);
+    if (Object.keys(errors).length) { setState({ status: 'error', errors }); focusFirstInvalid(); return; }
     setState({ status: 'sending' });
     try {
       const res = await fetchApi<{ message: string }>('/contact-messages', { method: 'POST', body: JSON.stringify({ ...form, email: form.email.trim() || null }) });
       setForm(EMPTY);
       setState({ status: 'sent', message: res.message });
     } catch (err) {
-      const apiKey = err instanceof ApiClientError ? Object.keys(err.data?.errors ?? {})[0] : undefined;
-      const field = apiKey && apiKey in EMPTY ? apiKey : undefined;
+      const serverErrors: FieldErrors = {};
+      if (err instanceof ApiClientError) {
+        for (const [key, value] of Object.entries(err.data?.errors ?? {})) {
+          if (key in EMPTY) serverErrors[key as keyof FormState] = String([value].flat()[0]);
+        }
+      }
       const message = err instanceof ApiClientError && err.status === 429 ? 'Bạn gửi quá nhanh, vui lòng thử lại sau 1 phút.' : userErrorMessage(err, 'Không gửi được yêu cầu.');
-      setState({ status: 'error', message, field });
-      if (field) focusFirstInvalid();
+      setState({ status: 'error', message, errors: serverErrors });
+      if (Object.keys(serverErrors).length) focusFirstInvalid();
     }
   };
-  const field = (k: keyof FormState, label: ReactNode, icon: ReactNode, input: ReactElement<{ 'aria-invalid'?: boolean }>) =>
-    <label className={`v3ref-ct-field${state.field === k ? ' has-error' : ''}`}><span className="v3ref-ct-label">{label}</span><span className="v3ref-ct-input">{icon}{cloneElement(input, { 'aria-invalid': state.field === k || undefined })}</span>{state.status === 'error' && state.field === k && <small className="mt-1 block text-xs font-semibold text-danger" role="alert">{state.message}</small>}</label>;
+  const field = (k: keyof FormState, label: ReactNode, icon: ReactNode, input: ReactElement<{ 'aria-invalid'?: boolean }>, counter?: ReactNode) => {
+    const error = state.status === 'error' ? state.errors?.[k] : undefined;
+    return <label className={`v3ref-ct-field${error ? ' has-error' : ''}`}><span className="v3ref-ct-label">{label}</span><span className="v3ref-ct-input">{icon}{cloneElement(input, { 'aria-invalid': error ? true : undefined })}{counter}</span>{error && <small className="mt-1 block text-xs font-semibold text-danger" role="alert">{error}</small>}</label>;
+  };
   return <form className="v3ref-ct-form" onSubmit={submit} noValidate>
     {lostEmail && <p className="v3ref-ct-lead"><strong>Mất email cũ?</strong> Điền email mới và thông tin xe. Gara sẽ đối chiếu hồ sơ rồi gửi nút xác thực tới email mới của bạn.</p>}
     <div className="v3ref-ct-row">
@@ -86,9 +117,9 @@ function ContactForm() {
       {field('phone', <>Số điện thoại <b>*</b></>, I.phone(18), <input value={form.phone} onChange={set('phone')} placeholder="Nhập số điện thoại" autoComplete="tel" inputMode="tel" maxLength={20} required/>)}
     </div>
     {field('email', lostEmail ? <>Email mới muốn dùng <b>*</b></> : <>Email <small>(không bắt buộc)</small></>, I.mail(18), <input type="email" value={form.email} onChange={set('email')} placeholder={lostEmail ? 'Nhập email mới' : 'Nhập email của bạn'} autoComplete="email" maxLength={150} required={lostEmail}/>)}
-    {field('message', <>Nội dung yêu cầu <b>*</b></>, I.pen(18), <textarea value={form.message} onChange={set('message')} placeholder="Cho chúng tôi biết bạn cần hỗ trợ điều gì..." rows={4} maxLength={2000} required/>)}
+    {field('message', <>Nội dung yêu cầu <b>*</b></>, I.pen(18), <textarea value={form.message} onChange={set('message')} placeholder="Cho chúng tôi biết bạn cần hỗ trợ điều gì..." rows={4} maxLength={2000} required/>, <span className="v3ref-ct-counter">{form.message.length.toLocaleString('vi-VN')} / 2.000</span>)}
     {state.status === 'sent' && <p className="v3ref-ct-alert is-success" role="status">{I.check(18)}{state.message}</p>}
-    <ToastError message={state.status === 'error' && !state.field ? state.message : ''} signal={state}/>
+    <ToastError message={state.status === 'error' && !Object.keys(state.errors ?? {}).length ? state.message : ''} signal={state}/>
     <button type="submit" className="v3ref-ct-submit" disabled={state.status === 'sending'}>{I.send(20)}{state.status === 'sending' ? 'Đang gửi…' : 'Gửi yêu cầu'}</button>
   </form>;
 }
@@ -112,13 +143,32 @@ export default function ReferenceContact() {
       </div>
     </section>
 
+    <section className="v3ref-ct-request">
+      <div className="v3ref-container v3ref-ct-request-grid">
+        <div className="v3ref-ct-intro">
+          <span className="v3ref-ct-badge">{I.chat(16)}Liên hệ với CarService</span>
+          <h2>Gửi <em>yêu cầu liên hệ</em></h2>
+          <p>Điền thông tin bên dưới, chúng tôi sẽ phản hồi sớm nhất cho bạn.</p>
+          <ul>
+            {[
+              [I.bolt(21), 'Phản hồi nhanh', 'Trong vòng 30 phút (giờ làm việc)'],
+              [I.headset(21), 'Hỗ trợ tận tâm', 'Đội ngũ sẵn sàng tư vấn và giải đáp'],
+              [I.shield(21), 'Bảo mật thông tin', 'Cam kết không chia sẻ cho bên thứ ba'],
+            ].map(([icon, title, desc]) => <li key={title as string}><span>{icon}</span><div><strong>{title}</strong><small>{desc}</small></div></li>)}
+          </ul>
+        </div>
+        <div className="v3ref-ct-card">
+          <div className="v3ref-ct-card-head">
+            <span>{I.mail(24)}</span>
+            <div><h3>Thông tin liên hệ</h3><p>Vui lòng cung cấp thông tin để chúng tôi có thể hỗ trợ bạn tốt nhất.</p></div>
+          </div>
+          <ContactForm/>
+        </div>
+      </div>
+    </section>
+
     <div className="v3ref-container">
       <div className="v3ref-ct-main">
-        <section>
-          <div className="v3ref-section-head v3ref-ct-head"><h2>Gửi yêu cầu liên hệ</h2></div>
-          <p className="v3ref-ct-lead">Điền thông tin bên dưới, chúng tôi sẽ phản hồi sớm nhất cho bạn.</p>
-          <ContactForm/>
-        </section>
         <section>
           <div className="v3ref-section-head v3ref-ct-head"><h2>Thông tin gara</h2></div>
           <div className="v3ref-ct-info">
