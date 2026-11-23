@@ -191,7 +191,7 @@ class VehicleController extends Controller
             'repairOrders' => fn ($q) => $q->latest('received_at')->limit(10)
                 ->select('id', 'vehicle_id', 'repair_order_code', 'status', 'received_at', 'mileage_received', 'handed_over_at'),
             'repairOrders.invoice:id,repair_order_id,total_amount,status', 'repairOrders.invoice.items:id,invoice_id,description',
-            'repairOrders.workItems:id,repair_order_id,description,service_id', 'repairOrders.workItems.service:id,name',
+            'repairOrders.workItems:id,repair_order_id,description,service_id', 'repairOrders.workItems.service:id,name,status',
         ])->loadCount('repairOrders');
         $vehicle->setAttribute('open_repair_order', $vehicle->repairOrders()->whereNotIn('status', [RepairOrder::HANDED_OVER, RepairOrder::CLOSED])
             ->first(['id', 'repair_order_code', 'status']));

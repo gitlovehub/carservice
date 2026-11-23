@@ -1,18 +1,19 @@
 import { LABELS } from "../../config/labels";
 import type { ConfirmOptions } from "../../components/ui/feedbackContext";
+import { fmtDateTime } from "../../services/adminApi";
 
-/** Ngày giờ ngắn kiểu Việt Nam (dd/mm/yyyy hh:mm). */
+/** Ngày giờ ngắn kiểu Việt Nam (hh:mm - dd/mm/yyyy). */
 export function formatDateTime(date?: string | null) {
   if (!date) return "Chưa có";
   const parsed = new Date(date);
-  return Number.isNaN(parsed.valueOf()) ? date : parsed.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" });
+  return Number.isNaN(parsed.valueOf()) ? date : fmtDateTime(date);
 }
 
-/** Ngày + giờ hẹn từ API (YYYY-MM-DD, HH:MM:SS) → "dd/mm/yyyy · hh:mm". */
+/** Ngày + giờ hẹn từ API (YYYY-MM-DD, HH:MM:SS) → "hh:mm - dd/mm/yyyy". */
 export function formatSlot(date?: string | null, time?: string | null) {
   const [y, m, d] = (date ?? "").slice(0, 10).split("-");
   const day = y && m && d ? `${d}/${m}/${y}` : date || "Chưa có ngày";
-  return time ? `${day} · ${time.slice(0, 5)}` : day;
+  return time ? `${time.slice(0, 5)} - ${day}` : day;
 }
 
 /** Ngày (YYYY-MM-DD...) có phải hôm nay theo giờ máy không. */

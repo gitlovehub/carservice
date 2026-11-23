@@ -332,6 +332,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Ảnh minh họa dịch vụ (trang Dịch vụ phía khách).
         Route::post('admin/services/{service}/image', [AdminServiceController::class, 'uploadImage'])->whereNumber('service');
         Route::delete('admin/services/{service}/image', [AdminServiceController::class, 'deleteImage'])->whereNumber('service');
+        // Xóa hẳn: chỉ cho dịch vụ đã ngừng và chưa từng được dùng.
+        Route::delete('admin/services/{service}/permanent', [AdminServiceController::class, 'destroyPermanently'])->whereNumber('service');
         // P5: bước chuẩn + phút chuẩn của dịch vụ.
         Route::get('admin/services/{service}/steps', [AdminServiceController::class, 'steps']);
         Route::put('admin/services/{service}/steps', [AdminServiceController::class, 'syncSteps']);
@@ -405,6 +407,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('customers', 'customers');
             Route::get('customers/{customer}', 'customer')->whereNumber('customer');
             Route::patch('customers/{customer}/lock', 'lockCustomer')->whereNumber('customer');
+            Route::post('customers/{customer}/email', 'emailCustomer')->whereNumber('customer')->middleware('throttle:10,1');
             Route::get('staff', 'staff');
             Route::post('staff', 'storeStaff');
             Route::patch('staff/{employee}', 'updateStaff')->whereNumber('employee');

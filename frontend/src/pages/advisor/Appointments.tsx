@@ -226,7 +226,7 @@ function Appointments() {
   async function handleNoShow(appointment: AppointmentRow) {
     const approved = await confirm({
       title: "Đánh dấu khách không đến", reference: appointment.appointment_code,
-      description: `Đã qua giờ hẹn ${hhmm(appointment.appointment_time)} ${dmy(appointment.appointment_date)} mà khách chưa đến. Lịch chuyển sang Không đến, khung giờ được giải phóng.`,
+      description: `Đã qua giờ hẹn ${hhmm(appointment.appointment_time)} - ${dmy(appointment.appointment_date)} mà khách chưa đến. Lịch chuyển sang Không đến, khung giờ được giải phóng.`,
       confirmText: "Khách không đến", variant: "danger",
     });
     if (approved) await run(`noshow-${appointment.id}`, () => catalogAdminApi.noShowAppointment(appointment.id), "Đã đánh dấu khách không đến.");
@@ -393,7 +393,7 @@ function Appointments() {
       <div className="grid gap-3 sm:grid-cols-2">
         <Info label="Khách hàng"><b>{detail.customer?.full_name ?? "—"}</b><p className="text-xs text-cs-muted">{detail.customer?.phone}{detail.customer?.email ? ` · ${detail.customer.email}` : ""}</p></Info>
         <Info label="Xe / biển số"><span className="flex items-center gap-2"><VehicleBrandLogo brand={detail.vehicle?.model?.brand?.name} size={28}/><b>{vehicleName(detail)}</b></span><p className="text-xs text-cs-muted">{detail.vehicle?.license_plate || "xxx.xx"}</p></Info>
-        <Info label="Ngày giờ hẹn"><span className="flex flex-wrap items-center gap-2"><b>{dmy(detail.appointment_date)} · {hhmm(detail.appointment_time)}</b><OverdueBadge a={detail}/></span>
+        <Info label="Ngày giờ hẹn"><span className="flex flex-wrap items-center gap-2"><b>{hhmm(detail.appointment_time)} - {dmy(detail.appointment_date)}</b><OverdueBadge a={detail}/></span>
           {detail.created_at && <p className="mt-2 text-xs text-cs-muted">Đặt lúc: {bookedAt(detail.created_at)}</p>}</Info>
         <Info label="Trạng thái"><StatusBadge domain="appointment" status={detail.status}/><p className="mt-2 text-xs text-cs-muted">Người xử lý: {handler(detail)}</p></Info>
         <div className="cs-info-panel p-4 sm:col-span-2"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-cs-muted">Khách yêu cầu</p><CustomerRequestSummary request={detail}/></div>

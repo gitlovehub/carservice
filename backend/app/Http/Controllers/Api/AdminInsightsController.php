@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\AppliesDateRange;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Inventory;
@@ -27,6 +28,8 @@ use Illuminate\Validation\Rule;
  */
 class AdminInsightsController extends Controller
 {
+    use AppliesDateRange;
+
     private const OPEN_GROUPS = [
         'inspecting' => [RepairOrder::RECEIVED, RepairOrder::INSPECTING],
         'quoting' => [RepairOrder::QUOTING, RepairOrder::WAITING_APPROVAL],
@@ -104,12 +107,20 @@ class AdminInsightsController extends Controller
         ]]);
     }
 
-    /** GET /api/admin/reports?period=YYYY-MM|YYYY-Qn|YYYY */
+    /** GET /api/admin/reports?period=YYYY-MM|YYYY-Qn|YYYY hoặc ?date_from=YYYY-MM-DD&date_to=YYYY-MM-DD (hôm nay, 7 ngày, tùy chỉnh). */
     public function reports(Request $request): JsonResponse
     {
-        $period = $request->validate(['period' => ['nullable', 'regex:/^\d{4}(-(0[1-9]|1[0-2]|Q[1-4]))?$/']])['period']
-            ?? CarbonImmutable::now()->format('Y-m');
-        [$start, $end, $prevStart, $prevEnd, $label] = $this->periodBounds($period);
+        $rules = $this->dateRangeRules($request);
+        $filters = $request->validate([
+            'period' => ['nullable', 'regex:/^\d{4}(-(0[1-9]|1[0-2]|Q[1-4]))?$/'],
+            'date_from' => ['required_with:date_to', ...$rules['date_from']],
+            'date_to' => ['required_with:date_from', ...$rules['date_to']],
+        ]);
+        $period = $filters['period'] ?? CarbonImmutable::now()->format('Y-m');
+        $isRange = ! empty($filters['date_from']);
+        [$start, $end, $prevStart, $prevEnd, $label] = $isRange
+            ? $this->rangeBounds($filters['date_from'], $filters['date_to'])
+            : $this->periodBounds($period);
 
         // Kỳ đang diễn ra: chỉ tính tới hiện tại và so với cùng độ dài của kỳ trước.
         $now = CarbonImmutable::now();
@@ -136,9 +147,12 @@ class AdminInsightsController extends Controller
         }
 
         $items = $this->periodItems($start, $end);
+        ['granularity' => $granularity, 'points' => $series] = $this->reportSeries($start, $end, $items);
 
         return response()->json(['data' => [
-            'period' => $period,
+            'granularity' => $granularity,
+            'series' => $series,
+            'period' => $isRange ? 'custom' : $period,
             'label' => $label,
             'periods' => $this->availablePeriods(),
             'revenue' => [
@@ -267,6 +281,114 @@ class AdminInsightsController extends Controller
     }
 
     /**
+     * Khoảng ngày đã chọn (giờ Việt Nam). Trọn tháng / quý / năm thì so với cùng số tháng ngay trước, còn lại so với cùng số ngày.
+     *
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable, 2: CarbonImmutable, 3: CarbonImmutable, 4: string}
+     */
+    private function rangeBounds(string $from, string $to): array
+    {
+        $start = $this->businessDayStart($from);
+        $end = $this->businessDayEnd($to);
+        $firstDay = CarbonImmutable::parse($from);
+        $lastDay = CarbonImmutable::parse($to);
+        $days = (int) $firstDay->diffInDays($lastDay) + 1;
+        $months = $firstDay->day === 1 && $lastDay->isLastOfMonth()
+            ? ($lastDay->year - $firstDay->year) * 12 + $lastDay->month - $firstDay->month + 1
+            : 0;
+        $previousStart = $months > 0
+            ? $this->businessDayStart($firstDay->subMonthsNoOverflow($months)->toDateString())
+            : $start->subDays($days);
+
+        return [$start, $end, $previousStart, $start->subSecond(), $this->rangeLabel($firstDay, $lastDay, $months)];
+    }
+
+    private function rangeLabel(CarbonImmutable $firstDay, CarbonImmutable $lastDay, int $months): string
+    {
+        if ($firstDay->isSameDay($lastDay)) {
+            return 'Ngày '.$firstDay->format('d/m/Y');
+        }
+        if ($months === 1) {
+            return 'Tháng '.$firstDay->format('m/Y');
+        }
+        if ($months === 3 && ($firstDay->month - 1) % 3 === 0) {
+            return 'Quý '.$firstDay->quarter.'/'.$firstDay->year;
+        }
+        if ($months === 12 && $firstDay->month === 1) {
+            return 'Năm '.$firstDay->year;
+        }
+
+        return $firstDay->format('d/m/Y').' – '.$lastDay->format('d/m/Y');
+    }
+
+    /**
+     * Doanh thu và số phiếu theo từng mốc của khoảng đang lọc (giờ Việt Nam): tới 31 ngày theo ngày, tới 120 ngày theo tuần, dài hơn theo tháng hoặc năm.
+     *
+     * @param  Collection<int, InvoiceItem>  $items
+     * @return array{granularity: string, points: list<array{key: string, label: string, title: string, service: float, parts: float, orders: int}>}
+     */
+    private function reportSeries(CarbonImmutable $start, CarbonImmutable $end, Collection $items): array
+    {
+        $localStart = $start->setTimezone(self::BUSINESS_TIMEZONE);
+        $localEnd = $end->setTimezone(self::BUSINESS_TIMEZONE);
+        $days = (int) $localStart->startOfDay()->diffInDays($localEnd->startOfDay()) + 1;
+        $granularity = match (true) {
+            $days <= 31 => 'day',
+            $days <= 120 => 'week',
+            $days <= 1100 => 'month',
+            default => 'year',
+        };
+        $bucketOf = fn (CarbonImmutable $at): CarbonImmutable => match ($granularity) {
+            'day' => $at->startOfDay(),
+            'week' => $at->startOfWeek(CarbonImmutable::MONDAY),
+            'month' => $at->startOfMonth(),
+            default => $at->startOfYear(),
+        };
+
+        $points = [];
+        for ($bucket = $bucketOf($localStart); $bucket->lessThanOrEqualTo($localEnd); $bucket = match ($granularity) {
+            'day' => $bucket->addDay(),
+            'week' => $bucket->addWeek(),
+            'month' => $bucket->addMonthNoOverflow(),
+            default => $bucket->addYear(),
+        }) {
+            $points[$bucket->toDateString()] = [
+                'key' => $bucket->toDateString(),
+                'label' => $bucket->format(match ($granularity) {
+                    'day', 'week' => 'd/m',
+                    'month' => 'm/Y',
+                    default => 'Y',
+                }),
+                'title' => match ($granularity) {
+                    'day' => $bucket->format('d/m/Y'),
+                    'week' => 'Tuần '.$bucket->format('d/m').' – '.$bucket->addDays(6)->format('d/m/Y'),
+                    'month' => 'Tháng '.$bucket->format('m/Y'),
+                    default => 'Năm '.$bucket->format('Y'),
+                },
+                'service' => 0.0,
+                'parts' => 0.0,
+                'orders' => 0,
+            ];
+        }
+
+        $keyOf = fn (mixed $at): string => $bucketOf(CarbonImmutable::parse($at)->setTimezone(self::BUSINESS_TIMEZONE))->toDateString();
+        foreach ($items as $item) {
+            $key = $keyOf($item->invoice->created_at);
+            $field = $item->item_type === 'PART' ? 'parts' : 'service';
+            if (isset($points[$key])) {
+                $points[$key][$field] = round($points[$key][$field] + (float) $item->net, 2);
+            }
+        }
+        foreach (RepairOrder::query()->whereBetween('received_at', [$start, $end])->pluck('received_at') as $receivedAt) {
+            $key = $keyOf($receivedAt);
+            if (isset($points[$key])) {
+                $points[$key]['orders']++;
+            }
+        }
+
+        return ['granularity' => $granularity, 'points' => array_values($points)];
+    }
+
+    /**
      * Dòng hoá đơn trong kỳ, mỗi dòng có thêm `net` = giá trị sau khi phân bổ giảm giá của hoá đơn.
      *
      * @return Collection<int, InvoiceItem>
@@ -275,7 +397,7 @@ class AdminInsightsController extends Controller
     {
         return InvoiceItem::query()
             ->whereHas('invoice', fn ($q) => $q->where('status', '!=', Invoice::CANCELLED)->whereBetween('created_at', [$from, $to]))
-            ->with(['invoice:id,subtotal,total_amount', 'part:id,sku'])
+            ->with(['invoice:id,subtotal,total_amount,created_at', 'part:id,sku'])
             ->get()
             ->each(function (InvoiceItem $item): void {
                 $subtotal = (float) $item->invoice->subtotal;

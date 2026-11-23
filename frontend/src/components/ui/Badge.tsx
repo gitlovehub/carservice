@@ -18,6 +18,11 @@ export function Badge({ tone = "neutral", children, className = "", status, dot 
   </span>;
 }
 
+/** Tag cho hạng mục trong lịch sử / phiếu sửa chữa khi dịch vụ gốc đã ngừng. */
+export function ServiceStoppedTag({ status, className = "" }: { status?: string | null; className?: string }) {
+  return status === "INACTIVE" ? <Badge tone="warning" className={`shrink-0 ${className}`}>Dịch vụ đã ngừng hoạt động</Badge> : null;
+}
+
 /** Badge trạng thái nghiệp vụ — tên và màu lấy từ config/status.ts. */
 export function StatusBadge({ domain, status, audience = "staff", className }: {
   domain: StatusDomain; status: string | null | undefined; audience?: StatusAudience; className?: string;

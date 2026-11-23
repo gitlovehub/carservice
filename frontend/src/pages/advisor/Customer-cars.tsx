@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, EmptyState, ErrorState, KmInput, LoadingState, Modal, Pagination, SearchInput } from "../../components/ui";
-import { Badge, StatusBadge } from "../../components/ui/Badge";
+import { Badge, ServiceStoppedTag, StatusBadge } from "../../components/ui/Badge";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Dropdown } from "../../components/ui/Dropdown";
 import { Field, Input, Select, Textarea, FieldError } from "../../components/ui/Field";
@@ -304,6 +304,7 @@ function VehiclePreview({ id, onEdit, onDelete }: { id: number; onEdit: (v: Vehi
           <span className="w-24 shrink-0 tabular-nums text-cs-text">{dmy(o.received_at)}</span>
           <span className="w-36 shrink-0 font-semibold text-cs-text" title={o.repair_order_code}>{o.repair_order_code}</span>
           <span className="min-w-0 flex-1 truncate text-cs-text-2" title={serviceSummary(o)}>{serviceSummary(o)}</span>
+          {o.work_items?.some(w => w.service?.status === "INACTIVE") && <ServiceStoppedTag status="INACTIVE"/>}
           <b className="w-28 shrink-0 text-right tabular-nums text-cs-text">{o.invoice ? formatVnd(o.invoice.total_amount) : "—"}</b>
           <span className="w-40 shrink-0 text-right"><StatusBadge domain="repair" status={o.status}/></span>
           <Icon name="chevron-right" size={16} className="shrink-0 text-cs-muted"/>
@@ -315,7 +316,7 @@ function VehiclePreview({ id, onEdit, onDelete }: { id: number; onEdit: (v: Vehi
         {([["Sắp tới", v.upcoming_appointments], ["Gần đây", v.past_appointments]] as const).map(([title, items]) => <div key={title} className="rounded-xl border border-cs-border p-4">
           <h3 className="adv-section-title">{title}</h3>
           {items.length ? <ul className="mt-2 space-y-1.5">{items.map(a => <li key={a.id}><Link to={`/advisor/reception?appointment=${a.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-small hover:bg-cs-hover">
-            <span className="min-w-0"><span className="tabular-nums text-cs-text">{dmy(a.appointment_date)} · <b>{hhmm(a.appointment_time)}</b></span>
+            <span className="min-w-0"><span className="tabular-nums text-cs-text"><b>{hhmm(a.appointment_time)}</b> - {dmy(a.appointment_date)}</span>
               {a.packages?.length ? <span className="block truncate text-caption text-cs-muted">{a.packages.map(p => p.name).join(", ")}</span> : null}</span>
             <StatusBadge domain="appointment" status={a.status}/>
           </Link></li>)}</ul> : <p className="mt-2 text-small text-cs-muted">Không có.</p>}

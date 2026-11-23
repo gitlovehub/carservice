@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\AppliesDateRange;
 use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Appointment;
 use App\Models\AuditLog;
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Quotation;
@@ -20,6 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -28,7 +31,7 @@ use Illuminate\Validation\Rule;
  */
 class AdminOperationsController extends Controller
 {
-    use AppliesSort;
+    use AppliesDateRange, AppliesSort;
 
     public const ORDER_GROUPS = [
         'intake' => [RepairOrder::RECEIVED, RepairOrder::INSPECTING],
@@ -62,6 +65,7 @@ class AdminOperationsController extends Controller
         'repair_order.vehicle_changed' => ['UPDATE', 'Đổi xe trên phiếu sửa chữa'],
         'PICKUP_AUTHORIZATION_CREATED' => ['CREATE', 'Khách uỷ quyền nhận xe'],
         'VNPAY_OVERPAID' => ['STATUS', 'Thanh toán VNPAY vượt số tiền còn lại'],
+        'customer.email_sent' => ['UPDATE', 'Gửi email cho khách hàng'],
     ];
 
     /* ----------------------------------------------------- Phiếu sửa chữa */
@@ -74,6 +78,7 @@ class AdminOperationsController extends Controller
             'technician_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
+            ...$this->dateRangeRules($request),
         ]);
 
         $query = RepairOrder::query()
@@ -85,13 +90,15 @@ class AdminOperationsController extends Controller
                 ->where('repair_order_code', 'like', $like)
                 ->orWhereHas('customer', fn (Builder $c) => $c->where('full_name', 'like', $like)->orWhere('phone', 'like', $like))
                 ->orWhereHas('vehicle', fn (Builder $v) => $v->where('license_plate', 'like', $like))));
+        $this->applyDateRange($query, $filters, 'received_at');
         $this->applySort($query, $request, [
             'created' => 'created_at', 'code' => 'repair_order_code', 'received' => 'received_at',
             'promised' => 'estimated_ready_at', 'status' => 'status',
         ]);
 
         $page = $query->paginate($filters['per_page'] ?? 10);
-        $counts = RepairOrder::query()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $counts = $this->applyDateRange(RepairOrder::query(), $filters, 'received_at')
+            ->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 
         return response()->json([
             'data' => $page->getCollection()->map(fn (RepairOrder $o) => $this->orderRow($o))->values(),
@@ -110,7 +117,7 @@ class AdminOperationsController extends Controller
     public function repairOrder(RepairOrder $repairOrder): JsonResponse
     {
         $repairOrder->load(['customer:id,full_name,phone', 'vehicle:id,model_id,license_plate', 'vehicle.model:id,brand_id,name', 'vehicle.model.brand:id,name',
-            'advisor:id,full_name', 'workItems.technician.employee:id,full_name', 'workItems.service:id,name', 'latestQuotation.items',
+            'advisor:id,full_name', 'workItems.technician.employee:id,full_name', 'workItems.service:id,name,status', 'latestQuotation.items.service:id,status',
             'statusHistory.changedByAccount:id,email,role', 'statusHistory.changedByAccount.employee:id,account_id,full_name',
             'partRequests' => fn ($q) => $q->latest('id'), 'partRequests.part:id,name,unit']);
 
@@ -120,11 +127,12 @@ class AdminOperationsController extends Controller
             'items' => $repairOrder->workItems->map(fn (WorkItem $w) => [
                 'name' => $w->description ?: $w->service?->name,
                 'status' => $w->status,
+                'service_status' => $w->service?->status,
                 'technician' => $w->technician?->employee?->full_name,
                 'price' => (float) ($prices[$w->service_id]->amount ?? 0),
             ])->values(),
             'quotation_items' => $repairOrder->latestQuotation?->items->map(fn ($i) => [
-                'type' => $i->item_type, 'name' => $i->description, 'quantity' => (int) $i->quantity, 'amount' => (float) $i->amount, 'approved' => (bool) $i->is_approved,
+                'type' => $i->item_type, 'service_status' => $i->service?->status, 'name' => $i->description, 'quantity' => (int) $i->quantity, 'amount' => (float) $i->amount, 'approved' => (bool) $i->is_approved,
             ])->values() ?? [],
             // ADV-01 (D-020): phụ tùng cố vấn báo thiếu cho phiếu — Admin đặt / nhận ở Phụ tùng & kho → Cần đặt hàng.
             'part_requests' => $repairOrder->partRequests->map(fn ($r) => [
@@ -170,9 +178,10 @@ class AdminOperationsController extends Controller
             'status' => ['nullable', Rule::in([Invoice::UNPAID, Invoice::PARTIALLY_PAID, Invoice::PAID, Invoice::CANCELLED])],
             'search' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
+            ...$this->dateRangeRules($request),
         ]);
 
-        $page = $this->invoiceQuery()
+        $page = $this->applyDateRange($this->invoiceQuery(), $filters, 'created_at')
             ->when($filters['status'] ?? null, fn (Builder $q, string $s) => $q->where('status', $s))
             ->when($this->term($filters), fn (Builder $q, string $like) => $q->where(fn (Builder $q) => $q
                 ->where('invoice_code', 'like', $like)
@@ -184,7 +193,7 @@ class AdminOperationsController extends Controller
             ]))
             ->paginate($filters['per_page'] ?? 10);
 
-        $all = Invoice::query()->where('status', '!=', Invoice::CANCELLED)
+        $all = $this->applyDateRange(Invoice::query(), $filters, 'created_at')->where('status', '!=', Invoice::CANCELLED)
             ->withSum(['payments as paid' => fn ($q) => $q->where('status', Payment::SUCCESS)], 'amount')->get(['id', 'status', 'total_amount']);
         $open = $all->whereIn('status', [Invoice::UNPAID, Invoice::PARTIALLY_PAID]);
 
@@ -203,7 +212,7 @@ class AdminOperationsController extends Controller
     /** GET /api/admin/invoices/{invoice} */
     public function invoice(int $invoice): JsonResponse
     {
-        $model = $this->invoiceQuery()->with(['items', 'payments'])->findOrFail($invoice);
+        $model = $this->invoiceQuery()->with(['items', 'payments', 'payments.collector:id,email', 'payments.collector.employee:id,account_id,full_name'])->findOrFail($invoice);
 
         return response()->json(['data' => $this->invoiceRow($model) + [
             'lines' => $model->items->map(fn ($i) => ['type' => $i->item_type, 'name' => $i->description, 'quantity' => (int) $i->quantity, 'price' => (float) $i->unit_price, 'amount' => (float) $i->amount])->values(),
@@ -214,10 +223,11 @@ class AdminOperationsController extends Controller
     /** GET /api/admin/payments?search=&page= */
     public function payments(Request $request): JsonResponse
     {
-        $filters = $request->validate(['search' => ['nullable', 'string', 'max:100'], 'per_page' => ['nullable', 'integer', 'min:5', 'max:100']]);
+        $filters = $request->validate(['search' => ['nullable', 'string', 'max:100'], 'per_page' => ['nullable', 'integer', 'min:5', 'max:100'], ...$this->dateRangeRules($request)]);
 
-        $page = Payment::query()
-            ->with(['invoice:id,invoice_code,repair_order_id', 'invoice.repairOrder:id,customer_id', 'invoice.repairOrder.customer:id,full_name'])
+        $page = $this->applyDateRange(Payment::query(), $filters, DB::raw('COALESCE(paid_at, created_at)'))
+            ->with(['invoice:id,invoice_code,repair_order_id', 'invoice.repairOrder:id,repair_order_code,customer_id,vehicle_id', 'invoice.repairOrder.customer:id,full_name',
+                'invoice.repairOrder.vehicle:id,license_plate', 'collector:id,email', 'collector.employee:id,account_id,full_name'])
             ->when($this->term($filters), fn (Builder $q, string $like) => $q->where(fn (Builder $q) => $q
                 ->where('transaction_code', 'like', $like)
                 ->orWhereHas('invoice', fn (Builder $i) => $i->where('invoice_code', 'like', $like))))
@@ -267,6 +277,14 @@ class AdminOperationsController extends Controller
             'amount' => (float) $p->amount,
             'at' => ($p->paid_at ?? $p->created_at)?->toIso8601String(),
             'status' => $p->status,
+            'invoice_id' => $invoice?->id,
+            'order_code' => $invoice?->repairOrder?->repair_order_code,
+            'plate' => $invoice?->repairOrder?->vehicle?->license_plate,
+            'created_at' => $p->created_at?->toIso8601String(),
+            'paid_at' => $p->paid_at?->toIso8601String(),
+            'gateway_ref' => $p->gateway_txn_ref,
+            'bank_code' => $p->bank_code,
+            'collector' => $p->collector?->employee?->full_name ?? $p->collector?->email,
         ];
     }
 
@@ -284,11 +302,13 @@ class AdminOperationsController extends Controller
             'status' => ['nullable', Rule::in(['all', 'unreplied', 'replied', 'hidden'])],
             'search' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
+            ...$this->dateRangeRules($request),
         ]);
         $rating = $filters['rating'] ?? 'all';
         $status = $rating === 'hidden' ? 'hidden' : ($filters['status'] ?? 'all');
+        $inRange = fn (): Builder => $this->applyDateRange(Review::query(), $filters, 'created_at');
 
-        $page = Review::query()
+        $page = $inRange()
             ->with($this->reviewRelations())
             ->where('is_hidden', $status === 'hidden')
             ->when($status === 'unreplied', fn (Builder $q) => $q->whereNull('reply'))
@@ -298,11 +318,12 @@ class AdminOperationsController extends Controller
             ->when($this->term($filters), fn (Builder $q, string $like) => $q->where(fn (Builder $q) => $q
                 ->where('comment', 'like', $like)
                 ->orWhereHas('customer', fn (Builder $c) => $c->where('full_name', 'like', $like))
-                ->orWhereHas('repairOrder', fn (Builder $r) => $r->where('repair_order_code', 'like', $like))))
+                ->orWhereHas('repairOrder', fn (Builder $r) => $r->where('repair_order_code', 'like', $like))
+                ->orWhereHas('repairOrder.vehicle', fn (Builder $v) => $this->whereVehicleMatches($v, (string) $filters['search']))))
             ->orderByDesc('created_at')->orderByDesc('id')
             ->paginate($filters['per_page'] ?? 10);
 
-        $visible = Review::query()->where('is_hidden', false);
+        $visible = $inRange()->where('is_hidden', false);
         $visibleCount = (clone $visible)->count();
         $recent = (clone $visible)->where('created_at', '>=', now()->subDays(30))->avg('overall_rating');
 
@@ -315,12 +336,23 @@ class AdminOperationsController extends Controller
                 'positive_rate' => $visibleCount ? round((clone $visible)->where('overall_rating', '>=', 4)->count() / $visibleCount * 100, 1) : null,
                 'reply_rate' => $visibleCount ? round((clone $visible)->whereNotNull('reply')->count() / $visibleCount * 100, 1) : null,
                 'visible' => $visibleCount,
-                'hidden' => Review::query()->where('is_hidden', true)->count(),
+                'hidden' => $inRange()->where('is_hidden', true)->count(),
                 'unreplied' => (clone $visible)->whereNull('reply')->count(),
                 'low_unreplied' => (clone $visible)->whereNull('reply')->where('overall_rating', '<=', 3)->count(),
                 'distribution' => collect([5, 4, 3, 2, 1])->mapWithKeys(fn (int $s) => [$s => (clone $visible)->where('overall_rating', $s)->count()]),
             ],
         ]);
+    }
+
+    /** Mỗi từ khoá phải khớp biển số, dòng xe hoặc hãng xe (tìm được "Toyota Vios" dù hãng và dòng ở hai bảng). */
+    private function whereVehicleMatches(Builder $vehicle, string $search): void
+    {
+        foreach (preg_split('/\s+/u', VehicleName::clean($search), flags: PREG_SPLIT_NO_EMPTY) as $word) {
+            $like = VehicleName::like($word);
+            $vehicle->where(fn (Builder $q) => $q->where('license_plate', 'like', $like)
+                ->orWhereHas('model', fn (Builder $m) => $m->where('name', 'like', $like)
+                    ->orWhereHas('brand', fn (Builder $b) => $b->where('name', 'like', $like))));
+        }
     }
 
     /** POST /api/admin/reviews/{review}/reply */
@@ -403,13 +435,14 @@ class AdminOperationsController extends Controller
             'category' => ['nullable', Rule::in(['CREATE', 'UPDATE', 'DELETE', 'STATUS'])],
             'search' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
+            ...$this->dateRangeRules($request),
         ]);
 
         $actions = $filters['category'] ?? null
             ? array_keys(array_filter(self::ACTIONS, fn (array $a) => $a[0] === $filters['category']))
             : null;
 
-        $page = AuditLog::query()
+        $page = $this->applyDateRange(AuditLog::query(), $filters, 'created_at')
             ->with(['account:id,email,role', 'account.employee:id,account_id,full_name', 'account.customer:id,account_id,full_name'])
             ->when($actions !== null, fn (Builder $q) => $q->whereIn('action', $actions))
             ->when($this->term($filters), fn (Builder $q, string $like) => $q->where(fn (Builder $q) => $q
@@ -453,6 +486,7 @@ class AdminOperationsController extends Controller
             RepairOrder::class => 'Phiếu sửa chữa #'.$log->auditable_id,
             Payment::class => 'Thanh toán #'.$log->auditable_id,
             Quotation::class => 'Báo giá #'.$log->auditable_id,
+            Customer::class => 'Khách hàng #'.$log->auditable_id,
             default => class_basename((string) $log->auditable_type).' #'.$log->auditable_id,
         };
     }

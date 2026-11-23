@@ -1,3 +1,4 @@
+import { formatDateTime } from "../../services/customerApi";
 import { apiFieldErrors } from "../../components/ui/formValidation";
 import { KmInput } from "../../components/ui";
 import { useLiveRefresh } from "../../services/liveSync";
@@ -287,7 +288,7 @@ function CustomerDashboard() {
       label: "Lịch hẹn sắp tới",
       value: `${upcoming.length} lịch`,
       hint: upcoming[0]
-        ? `Gần nhất: ${formatDate(upcoming[0].appointment_date)} · ${formatTime(upcoming[0].appointment_time)}`
+        ? `Gần nhất: ${formatTime(upcoming[0].appointment_time)} - ${formatDate(upcoming[0].appointment_date)}`
         : "Chưa có lịch hẹn nào",
     },
     {
@@ -408,7 +409,7 @@ function CustomerDashboard() {
                         </h2>
                         <p className="mt-1 text-xs text-cs-muted">
                           Phiếu <strong>{activeOrder.repair_order_code}</strong> · Tiếp nhận{" "}
-                          {formatDate(activeOrder.received_at)} {formatTime(activeOrder.received_at?.slice(11))} ·{" "}
+                          {formatDateTime(activeOrder.received_at)} ·{" "}
                           {repairStatusLabel[activeOrder.status] ?? activeOrder.status}
                         </p>
                       </div>
@@ -660,7 +661,7 @@ function CustomerDashboard() {
                       >
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-bold text-[#20252B]">
-                            {formatDate(a.appointment_date)} · {formatTime(a.appointment_time)}
+                            {formatTime(a.appointment_time)} - {formatDate(a.appointment_date)}
                           </p>
                           <span
                             className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${

@@ -66,6 +66,9 @@ class Service extends Model
 
     public const LEVELS = [self::LEVEL_QUICK, self::LEVEL_STANDARD, self::LEVEL_MAJOR];
 
+    /** Dữ liệu nghiệp vụ tham chiếu dịch vụ; còn bất kỳ dòng nào thì không được xóa vĩnh viễn. */
+    public const USAGE_RELATIONS = ['appointments', 'packages', 'workItems', 'quotationItems', 'invoiceItems', 'inspectionRecommendations'];
+
     protected function casts(): array
     {
         return [
@@ -95,8 +98,62 @@ class Service extends Model
         return $this->hasMany(WorkItem::class);
     }
 
+    public function quotationItems(): HasMany
+    {
+        return $this->hasMany(QuotationItem::class);
+    }
+
+    public function invoiceItems(): HasMany
+    {
+        return $this->hasMany(InvoiceItem::class);
+    }
+
+    public function inspectionRecommendations(): HasMany
+    {
+        return $this->hasMany(InspectionRecommendation::class);
+    }
+
     public function steps(): HasMany
     {
         return $this->hasMany(ServiceStep::class)->orderBy('step_order');
+    }
+
+    /** Có danh mục theo giá trị sắp lưu (category_id ưu tiên hơn chuỗi category, giống hook saving). */
+    public function hasCategory(): bool
+    {
+        if ($this->isDirty('category_id')) {
+            return $this->category_id !== null;
+        }
+        if ($this->isDirty('category')) {
+            return trim((string) $this->category) !== '';
+        }
+
+        return $this->category_id !== null || trim((string) $this->category) !== '';
+    }
+
+    /**
+     * Thông tin còn thiếu để bật "Đang áp dụng".
+     *
+     * @return list<string>
+     */
+    public function activationProblems(): array
+    {
+        return array_values(array_filter([
+            $this->hasCategory() ? null : 'danh mục',
+            (float) $this->base_price > 0 ? null : 'giá lớn hơn 0',
+            (int) $this->estimated_minutes > 0 ? null : 'thời gian ước tính',
+        ]));
+    }
+
+    /** Dịch vụ đã xuất hiện trong lịch hẹn, gói, đề xuất, báo giá, công việc hoặc hóa đơn. */
+    public function isInUse(): bool
+    {
+        foreach (self::USAGE_RELATIONS as $relation) {
+            if ($this->{$relation}()->exists()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -37,6 +37,9 @@ export type ReportData = {
   periods: Array<{ value: string; label: string }>;
   revenue: { total: Kpi; service: Kpi; parts: Kpi };
   monthly: Array<{ month: string; service: number; parts: number; orders: number }>;
+  /** Trục biểu đồ theo đúng khoảng đang lọc. */
+  granularity: "day" | "week" | "month" | "year";
+  series: Array<{ key: string; label: string; title: string; service: number; parts: number; orders: number }>;
   top_services: Array<{ name: string; count: number; revenue: number }>;
   top_parts: Array<{ name: string; sku: string | null; quantity: number; revenue: number }>;
   collection: {
@@ -59,8 +62,8 @@ export type AdminOrder = {
   advisor: string | null; technician: string | null; received_at: string | null; estimated_ready_at: string | null; estimate: number;
 };
 export type AdminOrderDetail = AdminOrder & {
-  items: Array<{ name: string | null; status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"; technician: string | null; price: number }>;
-  quotation_items: Array<{ type: "SERVICE" | "PART"; name: string; quantity: number; amount: number; approved: boolean }>;
+  items: Array<{ name: string | null; status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"; service_status?: string | null; technician: string | null; price: number }>;
+  quotation_items: Array<{ type: "SERVICE" | "PART"; service_status?: string | null; name: string; quantity: number; amount: number; approved: boolean }>;
   timeline: Array<{ at: string | null; status: string; by: string; note: string | null }>;
   /** ADV-01: phụ tùng cố vấn báo thiếu cho phiếu. */
   part_requests: Array<{ id: number; part: string | null; unit: string | null; quantity: number; status: PartRequestStatus; eta_date: string | null; note: string | null }>;
@@ -73,7 +76,11 @@ export type AdminInvoice = {
   id: number; code: string; order_code: string | null; customer: string | null; plate: string | null; issued_at: string | null;
   subtotal: number; discount: number; total: number; paid: number; status: InvoiceStatus;
 };
-export type AdminPayment = { id: number; code: string; invoice: string | null; customer: string | null; method: PaymentGroup; amount: number; at: string | null; status: "SUCCESS" | "PENDING" | "FAILED" | "CANCELLED" };
+export type AdminPayment = {
+  id: number; code: string; invoice: string | null; invoice_id: number | null; customer: string | null; method: PaymentGroup; amount: number; at: string | null;
+  status: "SUCCESS" | "PENDING" | "FAILED" | "CANCELLED"; order_code: string | null; plate: string | null; created_at: string | null; paid_at: string | null;
+  gateway_ref: string | null; bank_code: string | null; collector: string | null;
+};
 export type AdminInvoiceDetail = AdminInvoice & {
   lines: Array<{ type: "SERVICE" | "PART"; name: string; quantity: number; price: number; amount: number }>;
   payments: AdminPayment[];
@@ -111,7 +118,7 @@ export type AdminCustomerDetail = AdminCustomer & {
   history: Array<{ id: number; code: string; date: string | null; title: string; vehicle: string; amount: number; status: string }>;
   last_review: { rating: number; date: string | null; comment: string } | null;
 };
-export type CustomerList = Paged<AdminCustomer, { total: number; with_account: number; new_this_month: number }>;
+export type CustomerList = Paged<AdminCustomer, { total: number; with_account: number; new_this_month: number; returning: number }>;
 
 /* ----------------------------------------------------------------- Nhân sự */
 export type StaffRole = "ADVISOR" | "TECHNICIAN";
@@ -164,7 +171,8 @@ const send = <T>(path: string, method: "POST" | "PUT" | "PATCH" | "DELETE", body
 
 export const adminApi = {
   dashboard: (range: string, signal?: AbortSignal) => fetchApi<{ data: DashboardData }>(`/admin/dashboard${query({ range })}`, { signal }).then(r => r.data),
-  reports: (period: string, signal?: AbortSignal) => fetchApi<{ data: ReportData }>(`/admin/reports${query({ period })}`, { signal }).then(r => r.data),
+  /** `period` (tháng / quý / năm) hoặc `date_from` + `date_to` (hôm nay, 7 ngày, tùy chỉnh). */
+  reports: (params: Params, signal?: AbortSignal) => fetchApi<{ data: ReportData }>(`/admin/reports${query(params)}`, { signal }).then(r => r.data),
 
   repairOrders: (params: Params, signal?: AbortSignal) => fetchApi<OrderList>(`/admin/repair-orders${query(params)}`, { signal }),
   repairOrder: (id: number, signal?: AbortSignal) => fetchApi<{ data: AdminOrderDetail }>(`/admin/repair-orders/${id}`, { signal }).then(r => r.data),
@@ -190,6 +198,7 @@ export const adminApi = {
   customers: (params: Params, signal?: AbortSignal) => fetchApi<CustomerList>(`/admin/customers${query(params)}`, { signal }),
   customer: (id: number, signal?: AbortSignal) => fetchApi<{ data: AdminCustomerDetail }>(`/admin/customers/${id}`, { signal }).then(r => r.data),
   lockCustomer: (id: number, locked: boolean) => send<Message<AdminCustomer>>(`/admin/customers/${id}/lock`, "PATCH", { locked }),
+  emailCustomer: (id: number, body: { subject: string; message: string }) => send<{ message: string }>(`/admin/customers/${id}/email`, "POST", body),
   createCustomer: (body: { full_name: string; phone: string; email: string | null; address: string | null }) => send<{ data: { id: number } }>("/customers", "POST", body),
   updateCustomer: (id: number, body: { full_name: string; phone: string; email: string | null; address: string | null }) => send<{ data: { id: number } }>(`/customers/${id}`, "PATCH", body),
   addVehicle: (body: { customer_id: number; model_id: number; trim_id: number | null; license_plate?: string | null; mileage?: number | null; year: number | null }) => send<{ data: { id: number } }>("/vehicles", "POST", body),
@@ -199,7 +208,7 @@ export const adminApi = {
   createStaff: (body: StaffPayload) => send<Message<AdminStaff>>("/admin/staff", "POST", body),
   updateStaff: (id: number, body: StaffPayload) => send<Message<AdminStaff>>(`/admin/staff/${id}`, "PATCH", body),
 
-  accounts: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminAccount> & { summary: Partial<Record<AccountRole, number>> }>(`/admin/accounts${query(params)}`, { signal }),
+  accounts: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminAccount> & { summary: Partial<Record<AccountRole, number>>; statuses: Partial<Record<AccountStatus, number>> }>(`/admin/accounts${query(params)}`, { signal }),
   createAccount: (body: { email: string; name: string; phone: string | null; role: Exclude<AccountRole, "CUSTOMER">; send_invite: boolean }) => send<Message<AdminAccount>>("/admin/accounts", "POST", body),
   setAccountStatus: (id: number, status: "ACTIVE" | "LOCKED") => send<Message<AdminAccount>>(`/admin/accounts/${id}/status`, "PATCH", { status }),
   resetPassword: (id: number) => send<{ message: string }>(`/admin/accounts/${id}/reset-password`, "POST"),
@@ -240,11 +249,11 @@ export const fmtDate = (iso: string | null | undefined) => {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "—" : `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 };
-/** "08/11/2026 14:30" */
+/** "14:30 - 08/11/2026" */
 export const fmtDateTime = (iso: string | null | undefined) => {
   if (!iso) return "—";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : `${fmtDate(iso)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return Number.isNaN(d.getTime()) ? "—" : `${pad(d.getHours())}:${pad(d.getMinutes())} - ${fmtDate(iso)}`;
 };
 /** "14:30" */
 export const fmtTime = (iso: string | null | undefined) => {

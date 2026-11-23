@@ -1,3 +1,4 @@
+import { fmtDateTime } from "../../services/adminApi";
 import { useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Badge } from "../../components/ui/Badge";
@@ -167,7 +168,7 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
             : "Ghi ODO, nhiên liệu, hư hỏng có sẵn (kèm ảnh), chìa khóa và giấy tờ — rồi gửi chủ xe xác nhận."
           : handover.status === "DRAFT" ? "Biên bản đang là bản nháp. Hoàn tất rồi bấm “Lưu biên bản” để gửi chủ xe xác nhận."
           : handover.status === "SUBMITTED" ? "Đã khóa nội dung. Chủ xe xác nhận trong tài khoản, hoặc tại quầy bằng mã gửi email chủ xe."
-          : `Chủ xe đã xác nhận ${confirmationText(confirmation?.method)}${confirmation ? ` lúc ${new Date(confirmation.confirmed_at).toLocaleString("vi-VN")}` : ""}${confirmation?.comment ? ` · “${confirmation.comment}”` : ""}.`}</p>
+          : `Chủ xe đã xác nhận ${confirmationText(confirmation?.method)}${confirmation ? ` lúc ${fmtDateTime(confirmation.confirmed_at)}` : ""}${confirmation?.comment ? ` · “${confirmation.comment}”` : ""}.`}</p>
       </div>
     </div>
 
@@ -431,7 +432,7 @@ function HandoverEvidence({ handover }: { handover: WorkflowHandover }) {
   const confirmation = handover.confirmations?.[0];
   return <>
     {confirmation && <p className="mt-4 flex items-center gap-2 text-caption text-cs-muted"><Icon name="check" size={14} className="text-success"/>
-      Khách xác nhận {confirmationText(confirmation.method)} lúc {new Date(confirmation.confirmed_at).toLocaleString("vi-VN")}{confirmation.comment ? ` · “${confirmation.comment}”` : ""}.</p>}
+      Khách xác nhận {confirmationText(confirmation.method)} lúc {fmtDateTime(confirmation.confirmed_at)}{confirmation.comment ? ` · “${confirmation.comment}”` : ""}.</p>}
     {handover.status === "VOID" && handover.void_reason && <p className="mt-4 rounded-xl border border-danger/40 bg-danger-soft px-4 py-2.5 text-small text-danger-fg">Lý do hủy: {handover.void_reason}</p>}
     <section className="mt-4 flex items-start gap-2.5 border-t border-cs-border pt-1">
       <Icon name="image" size={20} className="mt-[1.15rem] shrink-0 text-cs-accent-text"/>

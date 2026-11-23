@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, EmptyState, ErrorState, LoadingState, Modal, Pagination, SearchInput } from "../../components/ui";
-import { Badge, StatusBadge } from "../../components/ui/Badge";
+import { Badge, ServiceStoppedTag, StatusBadge } from "../../components/ui/Badge";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Dropdown } from "../../components/ui/Dropdown";
 import { Field, Input } from "../../components/ui/Field";
@@ -189,7 +189,8 @@ function HistoryTable({ orders }: { orders: CustomerDetail["repair_orders"] }) {
       <td className="whitespace-nowrap px-3 py-2.5 tabular-nums">{dmy(o.received_at)}</td>
       <td className="whitespace-nowrap px-3 py-2.5"><Link className="font-semibold hover:text-cs-accent-text hover:underline" to={`/advisor/service-orders/${o.id}`}>{o.repair_order_code}</Link>
         <span className="block text-caption text-cs-muted">{o.vehicle?.license_plate || "xxx.xx"}</span></td>
-      <td className="max-w-72 px-3 py-2.5"><span className="line-clamp-2">{serviceSummary(o)}</span></td>
+      <td className="max-w-72 px-3 py-2.5"><span className="line-clamp-2">{serviceSummary(o)}</span>
+        {o.work_items?.some(w => w.service?.status === "INACTIVE") && <ServiceStoppedTag status="INACTIVE" className="mt-1"/>}</td>
       <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold tabular-nums">{o.invoice ? formatVnd(o.invoice.total_amount) : "—"}</td>
       <td className="whitespace-nowrap px-3 py-2.5"><StatusBadge domain="repair" status={o.status}/></td>
       <td className="px-3 py-2 text-right"><OpenOrderButton id={o.id}/></td>
@@ -279,7 +280,7 @@ function CustomerPreview({ id, loyalMin, onEdit }: { id: number; loyalMin?: numb
         {([["Sắp tới", c.appointments], ["Gần đây", c.past_appointments ?? []]] as const).map(([title, items]) => <div key={title} className="rounded-xl border border-cs-border p-4">
           <h3 className="adv-section-title">{title}</h3>
           {items.length ? <ul className="mt-2 space-y-1.5">{items.map(a => <li key={a.id}><Link to={`/advisor/reception?appointment=${a.id}`} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-small hover:bg-cs-hover">
-            <span className="tabular-nums text-cs-text">{dmy(a.appointment_date)} · <b>{hhmm(a.appointment_time)}</b></span><StatusBadge domain="appointment" status={a.status}/>
+            <span className="tabular-nums text-cs-text"><b>{hhmm(a.appointment_time)}</b> - {dmy(a.appointment_date)}</span><StatusBadge domain="appointment" status={a.status}/>
           </Link></li>)}</ul> : <p className="mt-2 text-small text-cs-muted">Không có.</p>}
           {title === "Sắp tới" && <button type="button" className={`${buttonClass({ variant: "outline", size: "sm" })} mt-3`} onClick={book}><Icon name="calendar" size={15}/>Đặt lịch hộ</button>}
         </div>)}

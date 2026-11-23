@@ -1,3 +1,4 @@
+import { fmtDateTime } from "../../services/adminApi";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
@@ -324,7 +325,7 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
         return <li key={c?.id ?? group[0].id} className="rounded-xl border border-cs-border p-4">
           <p className="flex flex-wrap items-center gap-2 text-small"><Icon name={c?.method === "EMAIL_OTP" ? "mail" : "user"} size={16} className="text-cs-accent-text"/>
             <b className="text-cs-text">{CONFIRMATION_METHOD_TEXT[c?.method ?? "ACCOUNT"]}</b>
-            <span className="tabular-nums text-cs-muted">{c?.confirmed_at || group[0].created_at ? new Date((c?.confirmed_at ?? group[0].created_at)!).toLocaleString("vi-VN") : ""}</span></p>
+            <span className="tabular-nums text-cs-muted">{c?.confirmed_at || group[0].created_at ? fmtDateTime((c?.confirmed_at ?? group[0].created_at)!) : ""}</span></p>
           <ul className="mt-2 flex flex-wrap gap-2">{group.map(r => <li key={r.id}><Badge tone={r.decision === "APPROVED" ? "success" : "danger"}>{r.decision === "APPROVED" ? "Đồng ý" : "Từ chối"} · {r.label}</Badge></li>)}</ul>
         </li>;
       })}</ol> : <p className="rounded-xl border border-dashed border-cs-border px-4 py-8 text-center text-small text-cs-muted">

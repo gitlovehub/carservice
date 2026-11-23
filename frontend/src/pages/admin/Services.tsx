@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button, Dropdown, EmptyState, ErrorState, Icon, LoadingState, NEWEST_FIRST, Pagination, SearchInput, SortHeader, Switch, ariaSort, useTableSort, type IconName } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { errorMessage } from "../../services/adminApi";
-import { CATEGORY_TONE, catalogAdminApi, money, type AdminService } from "../../services/catalogAdminApi";
+import { CATEGORY_TONE, catalogAdminApi, money, serviceActivationProblems, type AdminService } from "../../services/catalogAdminApi";
 import { AdminPage, ClearFilters, FilterSelect, Pill } from "./kit/AdminKit";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
@@ -23,7 +23,7 @@ const alignClass = { left: "text-left", right: "text-right", center: "text-cente
 
 /** Dịch vụ — thống kê, bộ lọc và bảng dịch vụ; danh mục mở trong ngăn kéo bên phải. */
 export default function Services() {
-  const { notify } = useAppFeedback();
+  const { confirm, notify } = useAppFeedback();
   const [category, setCategory] = useState<CategoryFilter>("all");
   const [status, setStatus] = useState<StatusFilter>("");
   const [search, setSearch] = useState("");
@@ -64,6 +64,33 @@ export default function Services() {
     }
   };
 
+  const stop = async (s: AdminService) => {
+    const packages = s.active_packages_count ?? 0;
+    const accepted = await confirm({
+      title: `Ngừng áp dụng “${s.name}”?`,
+      description: `Dịch vụ sẽ tắt cả 2 trạng thái, khách không đặt được và không thêm được vào báo giá mới.${packages ? ` ${packages} gói bảo dưỡng đang bán sẽ tự bỏ qua dịch vụ này.` : ""}`,
+      confirmText: "Ngừng áp dụng", variant: "danger", confirmIcon: "ban",
+    });
+    if (accepted) await patch(s, { status: "INACTIVE", is_visible: false }, `Đã ngừng dịch vụ “${s.name}”.`);
+  };
+
+  const deleteBlocker = (s: AdminService) => s.status === "ACTIVE"
+    ? (s.is_visible ? "tắt cả 2 trạng thái trước" : "tắt Đang áp dụng trước")
+    : s.is_in_use ? "đã có trong lịch sử" : null;
+
+  const removePermanently = async (s: AdminService) => {
+    const accepted = await confirm({ title: `Xóa vĩnh viễn “${s.name}”?`, description: "Dịch vụ chưa từng được sử dụng nên không ảnh hưởng lịch sử. Thao tác này không thể hoàn tác.", confirmText: "Xóa vĩnh viễn", variant: "danger", confirmIcon: "trash" });
+    if (!accepted) return;
+    try {
+      notify((await catalogAdminApi.deleteServicePermanently(s.id)).message, "success");
+      if (rows.length === 1 && page > 1) setPage(page - 1);
+      reload();
+    } catch (e) {
+      notify(errorMessage(e, "Không xóa được dịch vụ."), "error");
+      reload();
+    }
+  };
+
   const currentCategoryId = typeof category === "number" ? category : null;
   const categoryOptions = [
     { value: "all", label: "Tất cả danh mục" }, ...categories.map(c => ({ value: String(c.id), label: c.name })),
@@ -92,7 +119,7 @@ export default function Services() {
         <SearchInput className="sm:max-w-sm" value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Tìm theo tên dịch vụ…"/>
         <FilterSelect label="Danh mục" value={String(category)} onChange={v => pick(v === "all" || v === "none" ? v : Number(v))} options={categoryOptions}/>
         <FilterSelect label="Trạng thái" value={status} onChange={v => { setStatus(v); setPage(1); }} options={[
-          { value: "", label: "Tất cả trạng thái" }, { value: "ACTIVE", label: "Đang áp dụng" }, { value: "INACTIVE", label: "Ngừng" },
+          { value: "", label: "Tất cả trạng thái" }, { value: "ACTIVE", label: "Đang áp dụng" }, { value: "INACTIVE", label: "Nháp / Ngừng" },
         ]}/>
         <ClearFilters active={search !== "" || category !== "all" || status !== "" || !tableSort.isDefault}
           onClear={() => { setSearch(""); setCategory("all"); setStatus(""); tableSort.reset(); setPage(1); }}/>
@@ -117,6 +144,9 @@ export default function Services() {
             <tbody>
               {rows.map(s => {
                 const active = s.status === "ACTIVE";
+                const missing = serviceActivationProblems(s);
+                const isDraft = !active && missing.length > 0;
+                const blocker = deleteBlocker(s);
                 const tone = CATEGORY_TONE[s.service_category?.icon ?? "wrench"] ?? "neutral";
                 return <tr key={s.id} className={`border-t border-cs-border transition-colors hover:bg-cs-hover/60 ${active ? "" : "text-cs-muted"}`}>
                   <td className="px-3 py-3">
@@ -135,10 +165,10 @@ export default function Services() {
                   <td className="whitespace-nowrap px-3 py-3 text-center tabular-nums text-cs-text-2">{s.estimated_minutes ? `${s.estimated_minutes} phút` : "—"}</td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <span className="inline-flex items-center gap-2.5">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-caption font-semibold ${active ? "bg-success-soft text-success-fg" : "bg-neutral-soft text-neutral-fg"}`}>
-                        <span className={`size-1.5 rounded-full ${active ? "bg-success" : "bg-cs-muted"}`} aria-hidden="true"/>{active ? "Áp dụng" : "Ngừng"}
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-caption font-semibold ${active ? "bg-success-soft text-success-fg" : isDraft ? "bg-warning-soft text-warning-fg" : "bg-neutral-soft text-neutral-fg"}`}>
+                        <span className={`size-1.5 rounded-full ${active ? "bg-success" : isDraft ? "bg-warning" : "bg-cs-muted"}`} aria-hidden="true"/>{active ? "Áp dụng" : isDraft ? "Nháp" : "Ngừng"}
                       </span>
-                      <Switch checked={active && s.is_visible} disabled={!active} label={active ? `Hiển thị “${s.name}” cho khách khi đặt lịch` : `“${s.name}” đang ngừng — bật lại để hiển thị`}
+                      <Switch checked={active && s.is_visible} disabled={!active} label={active ? `Hiển thị “${s.name}” cho khách khi đặt lịch` : `Bật Đang áp dụng cho “${s.name}” trước khi hiển thị`}
                         onChange={v => void patch(s, { is_visible: v }, v ? `“${s.name}” đã hiện trên trang đặt lịch của khách.` : `Đã ẩn “${s.name}” khỏi trang đặt lịch (nhân viên vẫn dùng được khi báo giá).`)}/>
                     </span>
                   </td>
@@ -148,8 +178,10 @@ export default function Services() {
                       { label: "Chi tiết & bước chuẩn", icon: "eye", onSelect: () => setViewing(s) },
                       { type: "separator" },
                       active
-                        ? { label: "Ngừng áp dụng", icon: "ban", danger: true, onSelect: () => void patch(s, { status: "INACTIVE" }, `Đã ngừng dịch vụ “${s.name}” — khách không đặt được và không dùng trong báo giá mới.`) }
-                        : { label: "Áp dụng lại", icon: "check", onSelect: () => void patch(s, { status: "ACTIVE" }, `Đã áp dụng lại dịch vụ “${s.name}”.`) },
+                        ? { label: "Ngừng áp dụng", icon: "ban", danger: true, onSelect: () => void stop(s) }
+                        : { label: missing.length ? `Áp dụng (thiếu ${missing.join(", ")})` : "Áp dụng lại", icon: "check", disabled: missing.length > 0,
+                          onSelect: () => void patch(s, { status: "ACTIVE" }, `Đã áp dụng “${s.name}”. Bật Hiển thị nếu muốn khách thấy dịch vụ.`) },
+                      { label: blocker ? `Xóa vĩnh viễn (${blocker})` : "Xóa vĩnh viễn", icon: "trash", danger: true, disabled: blocker !== null, onSelect: () => void removePermanently(s) },
                     ]}/>
                   </td>
                 </tr>;
@@ -166,7 +198,12 @@ export default function Services() {
     {editing !== undefined && <ServiceFormModal open key={editing?.id ?? "new"} service={editing} categories={categories} defaultCategoryId={currentCategoryId}
       onClose={() => setEditing(undefined)} onSaved={() => { setEditing(undefined); reload(); }}/>}
     <ServiceDetailModal service={viewing} onClose={() => setViewing(null)}
-      onMinutes={minutes => { if (viewing && minutes !== null) { setViewing({ ...viewing, estimated_minutes: minutes }); setOverrides(o => ({ ...o, [viewing.id]: { ...o[viewing.id], estimated_minutes: minutes } })); } }}/>
+      onStepsSaved={(minutes, stepsCount) => {
+        if (!viewing) return;
+        const change = { steps_count: stepsCount, ...(minutes !== null ? { estimated_minutes: minutes } : {}) };
+        setViewing({ ...viewing, ...change });
+        setOverrides(o => ({ ...o, [viewing.id]: { ...o[viewing.id], ...change } }));
+      }}/>
     <CategoryDrawer open={showCategories} categories={categories} icons={meta?.icons ?? []} total={meta?.total ?? 0} uncategorized={meta?.uncategorized ?? 0}
       filter={category} onFilter={pick} onClose={() => setShowCategories(false)} onChanged={() => { cats.reload(); list.reload(); }}/>
   </AdminPage>;

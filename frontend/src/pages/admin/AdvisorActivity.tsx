@@ -1,3 +1,4 @@
+import { fmtDateTime } from "../../services/adminApi";
 import { useEffect, useState } from "react";
 import { PageHeader } from "../../components/ui";
 import { fetchApi } from "../../services/api";
@@ -49,7 +50,7 @@ export default function AdvisorActivity({ embedded = false }: { embedded?: boole
                 <td className="px-4 py-3"><p className="font-semibold">{row.name}</p><p className="text-xs text-cs-muted">{row.email}{row.role === "ADMIN" ? " · Admin" : ""}</p></td>
                 <td className={cell}>{row.created}</td><td className={cell}>{row.confirmed}</td><td className={cell}>{row.checked_in}</td>
                 <td className={cell}>{row.rescheduled}</td><td className={cell}>{row.cancelled}</td><td className={cell}>{row.repair_orders}</td>
-                <td className="px-4 py-3 text-xs text-cs-muted">{row.last_action_at ? new Date(row.last_action_at).toLocaleString("vi-VN") : "—"}</td>
+                <td className="px-4 py-3 text-xs text-cs-muted">{row.last_action_at ? fmtDateTime(row.last_action_at) : "—"}</td>
               </tr>)}
         </tbody>
       </table>

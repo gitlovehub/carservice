@@ -190,7 +190,7 @@ class RepairOrderController extends Controller
             // Ai thu từng khoản tại quầy (trang Thanh toán → Lịch sử thanh toán).
             'invoice.payments.collector:id,email', 'invoice.payments.collector.employee:id,account_id,full_name',
             'assignments.technician.employee', 'inspections.items', 'inspections.recordedBy', 'inspections.recommendations.service', 'inspections.recommendations.part', 'inspections.recommendations.addedBy.employee:id,account_id,full_name',
-            'quotations.items', 'workItems.technician', 'workItems.service', 'usedParts.part', 'invoice.items', 'invoice.payments',
+            'quotations.items.service:id,status', 'workItems.technician', 'workItems.service', 'usedParts.part', 'invoice.items', 'invoice.payments',
             // Biên bản giao nhận xe (P2) + xác nhận của khách.
             'handovers.checklistItems', 'handovers.confirmations', 'handovers.latestException', 'pickupAuthorizations', 'partRequests.part',
             // P3: lịch sử từng lần khách duyệt / từ chối, kèm phương thức xác nhận.

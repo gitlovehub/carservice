@@ -1,3 +1,5 @@
+import { formatSlot } from "./workflowFormat";
+import { fmtDateTime } from "../../services/adminApi";
 import { useState } from "react";
 import { Button } from "../../components/ui/Button";
 import type { WorkflowAppointment } from "../../services/workflowService";
@@ -52,7 +54,7 @@ export function AppointmentTimeline({ appointment }: { appointment: WorkflowAppo
       {items.map((item, i) => {
         const latest = i === 0, last = i === items.length - 1;
         const moved = (item.action === "appointment.rescheduled" || item.action === "appointment.rescheduled_by_customer") && item.old_values && item.new_values
-          ? `${String(item.old_values.appointment_time ?? "").slice(0, 5)} ${item.old_values.appointment_date ?? ""} → ${String(item.new_values.appointment_time ?? "").slice(0, 5)} ${item.new_values.appointment_date ?? ""}` : "";
+          ? `${formatSlot(String(item.old_values.appointment_date ?? ""), String(item.old_values.appointment_time ?? ""))} → ${formatSlot(String(item.new_values.appointment_date ?? ""), String(item.new_values.appointment_time ?? ""))}` : "";
         return <li key={item.id} className="relative flex gap-3 pb-4 last:pb-0">
           {/* Đường nối xuống chấm cũ hơn bên dưới. */}
           {!last && <span aria-hidden="true" className="absolute left-[7px] top-4 bottom-0 w-0.5 bg-cs-border"/>}
@@ -62,7 +64,7 @@ export function AppointmentTimeline({ appointment }: { appointment: WorkflowAppo
               <span>{ACTION_TEXT[item.action] ?? item.action}{moved && <span className="font-normal text-cs-text-2"> ({moved})</span>}</span>
               {latest && <span className="rounded-full bg-success-soft px-2 py-0.5 text-[11px] font-semibold leading-tight text-success-fg">Đang ở bước này</span>}
             </p>
-            <p className="text-caption text-cs-muted"><span className="tabular-nums">{new Date(item.created_at).toLocaleString("vi-VN")}</span> · <b className="font-semibold text-cs-text-2">{nameOf(item.account)}</b>
+            <p className="text-caption text-cs-muted"><span className="tabular-nums">{fmtDateTime(item.created_at)}</span> · <b className="font-semibold text-cs-text-2">{nameOf(item.account)}</b>
               {item.reason ? ` — ${item.reason}` : ""}
               {item.action === "appointment.rescheduled" && item.new_values?.contact_method ? ` · khách đồng ý qua ${CONTACT_TEXT[item.new_values.contact_method] ?? item.new_values.contact_method}` : ""}</p>
           </div>

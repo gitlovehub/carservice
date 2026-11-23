@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 trait AppliesSort
 {
     /** Khoá sắp xếp kiểu chữ: mặc định A→Z khi không gửi `dir`. */
-    private const TEXT_SORT_KEYS = ['name', 'code', 'sku', 'email', 'phone', 'category', 'unit', 'brand', 'model', 'customer', 'body', 'role', 'type', 'status', 'order'];
+    private const TEXT_SORT_KEYS = ['name', 'code', 'sku', 'email', 'phone', 'category', 'unit', 'brand', 'model', 'customer', 'body', 'role', 'type', 'status', 'order', 'specialty'];
 
     /**
      * @param  array<string, string|Closure(Builder, string): void>  $columns  khoá → tên cột hoặc hàm tự sắp

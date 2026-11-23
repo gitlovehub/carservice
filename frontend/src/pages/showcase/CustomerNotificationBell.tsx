@@ -1,3 +1,4 @@
+import { formatDateTime } from "../../services/customerApi";
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLiveRefresh } from '../../services/liveSync';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -132,7 +133,7 @@ export default function CustomerNotificationBell() {
                 <strong>{item.title}</strong>
                 <span>{item.content}</span>
                 <span className="v3ref-notification-item-meta">
-                  <small title={item.created_at ? new Date(item.created_at).toLocaleString('vi-VN') : undefined}>{relativeTime(item.created_at)}</small>
+                  <small title={item.created_at ? formatDateTime(item.created_at) : undefined}>{relativeTime(item.created_at)}</small>
                   <em>{target.action} →</em>
                 </span>
               </span>

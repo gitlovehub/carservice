@@ -1,3 +1,4 @@
+import { fmtDateTime } from "../../services/adminApi";
 import { mediaApi, VEHICLE_POSITIONS } from "../../services/evidenceService";
 import { formatGarageAddress, garageApi, type GarageInfo } from "../../services/garageService";
 import type { WorkflowHandover, WorkflowOrder } from "../../services/workflowService";
@@ -10,7 +11,7 @@ import { CATEGORY_TEXT, comparedCheckIn, CONDITION_TEXT, confirmationText, findB
  */
 
 const esc = (value: unknown) => String(value ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
-const dateTime = (iso?: string | null) => iso ? new Date(iso).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+const dateTime = (iso?: string | null) => iso ? fmtDateTime(iso) : "—";
 const FLAGGED = ["SCRATCH", "DENT", "BROKEN", "MISSING"];
 
 const toDataUrl = (blob: Blob) => new Promise<string>((resolve, reject) => {

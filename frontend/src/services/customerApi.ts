@@ -109,6 +109,7 @@ export type CustomerQuotation = {
 
 export type CustomerWorkItem = {
   id: number; description?: string | null; status?: string; started_at?: string | null; completed_at?: string | null;
+  service?: { id: number; name?: string; status?: string } | null;
   technician?: { id: number; employee?: { id: number; full_name: string } | null } | null;
 };
 
@@ -347,7 +348,7 @@ export function formatMoney(value: number | string | null | undefined): string {
 
 /*
  * Định dạng ngày giờ DÙNG CHUNG cho toàn web khách — luôn 24 giờ, không hiện giây, ngày có số 0 đầu:
- *   ngày: 09/11/2026 · giờ: 07:05 · ngày giờ: 07:05 09/11/2026
+ *   ngày: 09/11/2026 · giờ: 07:05 · ngày giờ: 07:05 - 09/11/2026
  * (hourCycle h23 để 0 giờ là "00", không phụ thuộc cài đặt 12/24 giờ của máy.)
  */
 const DATE_FMT = new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -372,10 +373,10 @@ export function formatTime(value?: string | Date | null): string {
   return d ? TIME_FMT.format(d) : "—";
 }
 
-/** "07:05 09/11/2026"; trống/sai → "—". */
+/** "07:05 - 09/11/2026"; trống/sai → "—". */
 export function formatDateTime(value?: string | Date | null): string {
   const d = toDate(value);
-  return d ? `${TIME_FMT.format(d)} ${DATE_FMT.format(d)}` : "—";
+  return d ? `${TIME_FMT.format(d)} - ${DATE_FMT.format(d)}` : "—";
 }
 export type AdvisorCustomer = {
   id: number;

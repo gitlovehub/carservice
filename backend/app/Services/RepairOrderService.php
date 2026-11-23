@@ -208,6 +208,7 @@ class RepairOrderService
             $this->assertNoDuplicateRecommendations($data['recommendations'] ?? []);
             foreach ($data['recommendations'] ?? [] as $rec) {
                 $this->assertRecommendationIsWellFormed($rec);
+                $this->assertRecommendedServiceIsActive($rec);
 
                 InspectionRecommendation::create([
                     'inspection_id' => $inspection->id,
@@ -236,6 +237,7 @@ class RepairOrderService
     public function addInspectionRecommendation(Inspection $inspection, array $rec, ?Account $actor = null): InspectionRecommendation
     {
         $this->assertRecommendationIsWellFormed($rec);
+        $this->assertRecommendedServiceIsActive($rec);
         // Đã có đề xuất cùng dịch vụ / phụ tùng → không thêm dòng trùng (lô nhiều dòng: dòng sau gặp dòng trước vừa lưu).
         $existing = $inspection->recommendations()->get(['item_type', 'service_id', 'part_id'])->map(fn ($r) => $r->only(['item_type', 'service_id', 'part_id']))->all();
         $this->assertNoDuplicateRecommendations([...$existing, $rec]);
@@ -333,8 +335,9 @@ class RepairOrderService
 
         // Phát sinh: phụ tùng mới phát hiện khi đang sửa không cần có trong đề xuất chẩn đoán (PO 22/11/2026).
         $recommendedPartIds = $type === Quotation::TYPE_SUPPLEMENT ? null : $this->recommendedPartIds($ro);
+        $serviceIdsOnOrder = $this->serviceIdsOnOrder($ro);
 
-        return DB::transaction(function () use ($ro, $advisor, $itemsInput, $discountAmount, $validUntil, $recommendedPartIds, $type, $reason, $parentId, $staysOvernight) {
+        return DB::transaction(function () use ($ro, $advisor, $itemsInput, $discountAmount, $validUntil, $recommendedPartIds, $serviceIdsOnOrder, $type, $reason, $parentId, $staysOvernight) {
             $nextVersion = (int) $ro->quotations()->max('version') + 1;
 
             $quotation = Quotation::create([
@@ -351,7 +354,7 @@ class RepairOrderService
                 'valid_until' => $validUntil,
             ]);
 
-            $this->addQuotationItems($quotation, $itemsInput, $recommendedPartIds);
+            $this->addQuotationItems($quotation, $itemsInput, $recommendedPartIds, $serviceIdsOnOrder);
             $quotation->recalculateTotals();
             $this->assertDiscountWithinSubtotal($quotation);
 
@@ -374,16 +377,18 @@ class RepairOrderService
         if ($quotation->type === Quotation::TYPE_SUPPLEMENT && $discountAmount > 0) {
             throw InvalidStatusTransitionException::because('Báo giá phát sinh không áp dụng giảm giá.');
         }
-        $recommendedPartIds = $quotation->type === Quotation::TYPE_SUPPLEMENT ? null : $this->recommendedPartIds($quotation->repairOrder()->firstOrFail());
+        $repairOrder = $quotation->repairOrder()->firstOrFail();
+        $recommendedPartIds = $quotation->type === Quotation::TYPE_SUPPLEMENT ? null : $this->recommendedPartIds($repairOrder);
+        $serviceIdsOnOrder = $this->serviceIdsOnOrder($repairOrder);
 
-        return DB::transaction(function () use ($quotation, $itemsInput, $discountAmount, $recommendedPartIds, $staysOvernight): Quotation {
+        return DB::transaction(function () use ($quotation, $itemsInput, $discountAmount, $recommendedPartIds, $serviceIdsOnOrder, $staysOvernight): Quotation {
             $locked = Quotation::query()->lockForUpdate()->findOrFail($quotation->id);
             if ($locked->status !== Quotation::DRAFT) {
                 throw InvalidStatusTransitionException::because('Báo giá vừa được gửi khách, không sửa được nữa.');
             }
             $locked->items()->delete();
             $locked->update(['discount_amount' => $discountAmount, 'stays_overnight' => $staysOvernight ?? $locked->stays_overnight]);
-            $this->addQuotationItems($locked, $itemsInput, $recommendedPartIds);
+            $this->addQuotationItems($locked, $itemsInput, $recommendedPartIds, $serviceIdsOnOrder);
             $locked->recalculateTotals();
             $this->assertDiscountWithinSubtotal($locked);
 
@@ -410,10 +415,30 @@ class RepairOrderService
     }
 
     /**
+     * Dịch vụ đã có trên phiếu (đề xuất hoặc báo giá): vẫn được báo giá lại dù vừa bị ngừng, để phiếu đang chạy không kẹt.
+     *
+     * @return list<int>
+     */
+    private function serviceIdsOnOrder(RepairOrder $ro): array
+    {
+        $recommended = InspectionRecommendation::query()
+            ->whereHas('inspection', fn ($q) => $q->where('repair_order_id', $ro->id))
+            ->whereNotNull('service_id')
+            ->pluck('service_id');
+        $quoted = QuotationItem::query()
+            ->whereHas('quotation', fn ($q) => $q->where('repair_order_id', $ro->id))
+            ->whereNotNull('service_id')
+            ->pluck('service_id');
+
+        return $recommended->merge($quoted)->map(fn ($id): int => (int) $id)->unique()->values()->all();
+    }
+
+    /**
      * @param  list<array<string, mixed>>  $itemsInput
      * @param  list<int>|null  $recommendedPartIds  null = báo giá phát sinh, chỉ cần phụ tùng đang kinh doanh.
+     * @param  list<int>  $serviceIdsOnOrder  Dịch vụ đã có trên phiếu, được giữ lại dù đã ngừng.
      */
-    private function addQuotationItems(Quotation $quotation, array $itemsInput, ?array $recommendedPartIds): void
+    private function addQuotationItems(Quotation $quotation, array $itemsInput, ?array $recommendedPartIds, array $serviceIdsOnOrder): void
     {
         // Không cho 2 dòng cùng một dịch vụ / phụ tùng — muốn nhiều hơn thì tăng số lượng của dòng đó.
         $keys = array_map(fn (array $item) => $item['item_type'].':'.($item['item_type'] === QuotationItem::TYPE_PART ? $item['part_id'] : $item['service_id']), $itemsInput);
@@ -435,6 +460,10 @@ class RepairOrderService
                 : Service::query()->find($item['service_id']);
             if ($item['item_type'] === QuotationItem::TYPE_PART && $recommendedPartIds === null && $catalogItem?->status !== 'ACTIVE') {
                 throw InvalidStatusTransitionException::because('Phụ tùng này đã ngừng kinh doanh, không đưa vào báo giá phát sinh được.');
+            }
+            if ($item['item_type'] === QuotationItem::TYPE_SERVICE && $catalogItem?->status !== 'ACTIVE'
+                && ! in_array((int) $item['service_id'], $serviceIdsOnOrder, true)) {
+                throw InvalidStatusTransitionException::because("Dịch vụ “{$catalogItem?->name}” đã ngừng áp dụng, không thêm vào báo giá được.");
             }
             $catalogPrice = $item['item_type'] === QuotationItem::TYPE_PART
                 ? $catalogItem?->sell_price
@@ -1164,7 +1193,7 @@ class RepairOrderService
                     'service_id' => $service->id,
                     'service_step_id' => $step->id,
                     'description' => "{$service->name} · {$step->step_order}. {$step->name}",
-                    'standard_minutes' => $step->standard_minutes,
+                    'standard_minutes' => $step->standard_minutes * max(1, (int) $item->quantity),
                     'status' => WorkItem::PENDING,
                 ]);
             }
@@ -1263,6 +1292,18 @@ class RepairOrderService
 
         if ($rec['item_type'] === InspectionRecommendation::TYPE_PART && empty($rec['part_id'])) {
             throw InvalidStatusTransitionException::because('Đề xuất PART phải có part_id.');
+        }
+    }
+
+    /** Đề xuất mới không được dùng dịch vụ đã ngừng áp dụng. */
+    private function assertRecommendedServiceIsActive(array $rec): void
+    {
+        if ($rec['item_type'] !== InspectionRecommendation::TYPE_SERVICE) {
+            return;
+        }
+        $service = Service::query()->find($rec['service_id']);
+        if ($service?->status !== 'ACTIVE') {
+            throw InvalidStatusTransitionException::because("Dịch vụ “{$service?->name}” đã ngừng áp dụng, không thêm vào đề xuất được.");
         }
     }
 

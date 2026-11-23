@@ -5,6 +5,8 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { adminApi, errorMessage, fmtDate, type AdminReview } from "../../services/adminApi";
 import { AdminPage, ClearFilters, FilterSelect, Panel, Person, Pill, Progress, StatCard, Stars, Tabs, Toolbar } from "./kit/AdminKit";
 import { num, type Tone } from "./kit/format";
+import { PeriodFilter } from "./kit/PeriodFilter";
+import { usePeriod } from "./kit/period";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
 
@@ -33,7 +35,8 @@ export default function Reviews() {
   const [sending, setSending] = useState(false);
   const term = useDebounced(search.trim());
 
-  const params = { status, rating, search: term, page };
+  const period = usePeriod("all", () => setPage(1));
+  const params = { status, rating, search: term, page, ...period.params };
   const list = useAdminQuery(`reviews:${JSON.stringify(params)}`, signal => adminApi.reviews(params, signal));
   const result = list.data ?? list.stale;
   const summary = result?.summary;
@@ -119,13 +122,14 @@ export default function Reviews() {
           ]}/>
         </div>
         <Toolbar>
-          <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm theo khách, nội dung, mã phiếu…"/>
+          <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm theo khách, xe, biển số, nội dung, mã phiếu…"/>
+          <PeriodFilter period={period}/>
           <FilterSelect label="Số sao" value={rating} onChange={changeRating} options={[
             { value: "all", label: "Tất cả" }, { value: "5", label: "5 sao" }, { value: "4", label: "4 sao" }, { value: "3", label: "3 sao" },
             { value: "2", label: "2 sao" }, { value: "1", label: "1 sao" },
           ]}/>
-          <ClearFilters active={search !== "" || rating !== "all" || status !== "all"}
-            onClear={() => { setSearch(""); setRating("all"); setStatus("all"); setPage(1); }}/>
+          <ClearFilters active={search !== "" || rating !== "all" || status !== "all" || !period.isDefault}
+            onClear={() => { setSearch(""); setRating("all"); setStatus("all"); period.reset(); setPage(1); }}/>
         </Toolbar>
         {!result
           ? (list.error ? <ErrorState description={list.error} onRetry={list.reload}/> : <LoadingState/>)

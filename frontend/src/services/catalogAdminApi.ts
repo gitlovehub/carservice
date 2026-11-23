@@ -65,8 +65,18 @@ export type AdminService = {
   /** Ảnh minh họa admin tải lên (null = chưa có, trang Dịch vụ hiện khung xám). */
   image_url?: string | null;
   sort_order: number; service_level?: ServiceLevel; active_packages_count?: number;
+  /** Đã có trong lịch hẹn, gói, đề xuất, báo giá, công việc hoặc hóa đơn: không xóa vĩnh viễn được. */
+  is_in_use?: boolean;
+  /** Có bước chuẩn thì thời gian ước tính tự tính từ tổng các bước. */
+  steps_count?: number;
   service_category?: { id: number; name: string; icon: string } | null;
 };
+/** Thông tin còn thiếu để bật "Đang áp dụng" (khớp Service::activationProblems ở backend). */
+export const serviceActivationProblems = (s: { category_id: number | string | null; base_price: number | string; estimated_minutes: number | string | null }): string[] => [
+  ...(s.category_id ? [] : ["danh mục"]),
+  ...(Number(s.base_price) > 0 ? [] : ["giá lớn hơn 0"]),
+  ...(Number(s.estimated_minutes) > 0 ? [] : ["thời gian ước tính"]),
+];
 export type ServicePayload = {
   name: string; category_id: number | null; description: string | null; base_price: number; estimated_minutes: number | null;
   status: ServiceStatus; is_visible: boolean; service_level: ServiceLevel;
@@ -118,6 +128,8 @@ export const catalogAdminApi = {
     form.append("image", image);
     return (await apiClient.post<Message<AdminService>>(`/admin/services/${id}/image`, form)).data;
   },
+  deleteServicePermanently: async (id: number): Promise<{ message: string }> =>
+    (await apiClient.delete<{ message: string }>(`/admin/services/${id}/permanent`)).data,
   deleteServiceImage: async (id: number): Promise<Message<AdminService>> =>
     (await apiClient.delete<Message<AdminService>>(`/admin/services/${id}/image`)).data,  categories: (signal?: AbortSignal) =>
     fetchApi<{ data: ServiceCategory[]; meta: { total: number; uncategorized: number; active?: number; visible?: number; icons: string[] } }>("/admin/service-categories", { signal }),

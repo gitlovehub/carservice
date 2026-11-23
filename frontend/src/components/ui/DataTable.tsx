@@ -44,6 +44,8 @@ type Props<T> = {
   evenColumns?: boolean;
   /** Bề rộng cột thao tác khi `evenColumns` (mặc định 88px — đủ cho 1–2 nút). */
   actionsWidth?: string;
+  /** Bề rộng tối thiểu của bảng; hẹp hơn thì cuộn ngang thay vì bóp cột theo % làm tràn nội dung. */
+  minWidth?: string;
 };
 
 const alignClass = { left: "text-left", right: "text-right", center: "text-center" } as const;
@@ -52,7 +54,7 @@ const alignClass = { left: "text-left", right: "text-right", center: "text-cente
  * Bảng dữ liệu chuẩn. ≥ md: bảng có thể cuộn ngang; < md: danh sách thẻ.
  * Xử lý sẵn Loading / Error / Empty — trang chỉ truyền trạng thái, không tự vẽ lại.
  */
-export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, onRetry, empty, actions, onRowClick, footer, rowClassName, sort, onSort, evenColumns, actionsWidth = "88px" }: Props<T>) {
+export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, onRetry, empty, actions, onRowClick, footer, rowClassName, sort, onSort, evenColumns, actionsWidth = "88px", minWidth }: Props<T>) {
   const frame = "overflow-hidden rounded-card border border-cs-border bg-cs-surface shadow-card";
   if (loading && !rows.length) return <div className={frame}><LoadingState/></div>;
   if (error) return <div className={frame}><ErrorState description={error} onRetry={onRetry}/></div>;
@@ -77,7 +79,7 @@ export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, o
     {/* Desktop / tablet */}
     <div className={`${frame} max-md:hidden`}>
       <div className="overflow-x-auto">
-        <table data-ui="table" className={`w-full border-collapse text-small ${evenColumns ? "table-fixed" : ""}`}>
+        <table data-ui="table" style={minWidth ? { minWidth } : undefined} className={`w-full border-collapse text-small ${evenColumns ? "table-fixed" : ""}`}>
           <caption className="sr-only">{caption}</caption>
           <thead className="bg-cs-surface-2">
             <tr>

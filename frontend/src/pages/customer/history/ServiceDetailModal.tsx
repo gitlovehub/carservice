@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button, ErrorState, IconButton, LoadingState, Modal } from "../../../components/ui";
-import { StatusBadge } from "../../../components/ui/Badge";
+import { ServiceStoppedTag, StatusBadge } from "../../../components/ui/Badge";
 import { Icon, type IconName } from "../../../components/ui/Icon";
 import { VehicleBrandLogo } from "../../../components/vehicle/VehicleBrandLogo";
 import { formatGarageAddress, useGarageInfo, type GarageInfo } from "../../../services/garageService";
@@ -31,7 +31,7 @@ function ConditionText({ status }: { status?: string | null }) {
 }
 
 /** Ngày · giờ như mẫu: "06/11/2026 · 08:30". */
-const dateTime = (value?: string | null) => value ? `${formatDate(value)} · ${formatTime(value)}` : "—";
+const dateTime = (value?: string | null) => value ? `${formatTime(value)} - ${formatDate(value)}` : "—";
 
 /** "8 giờ 15 phút" / "2 ngày 3 giờ" từ hai mốc thời gian. */
 function duration(from?: string | null, to?: string | null): string {
@@ -288,7 +288,7 @@ export default function ServiceDetailModal({ orderId, onClose }: { orderId: numb
                   {data.workItems.map((w) => (
                     <li key={w.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
                       <div className="min-w-0">
-                        <p className="font-bold text-cs-text">{w.description || "Hạng mục dịch vụ"}</p>
+                        <p className="flex flex-wrap items-center gap-2 font-bold text-cs-text">{w.description || "Hạng mục dịch vụ"}<ServiceStoppedTag status={w.service?.status}/></p>
                         <p className="mt-0.5 text-[13px] text-cs-muted">
                           {w.technician?.employee?.full_name ? `KTV: ${w.technician.employee.full_name}` : "Chưa phân công"}
                           {w.completed_at ? ` · Xong ${dateTime(w.completed_at)}` : w.started_at ? ` · Bắt đầu ${dateTime(w.started_at)}` : ""}

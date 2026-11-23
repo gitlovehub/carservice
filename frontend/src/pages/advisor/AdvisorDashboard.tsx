@@ -157,8 +157,8 @@ function CustomerUpdates({ now }: { now: Date }) {
           const t = UPDATE_TYPES[u.type];
           const a = u.appointment;
           const when = u.type === "RESCHEDULED" && u.old_date && u.old_time
-            ? `${u.old_time} ${ddmm(u.old_date)} → ${a.appointment_time} ${ddmm(a.appointment_date)}`
-            : `${a.appointment_time} ${ddmm(a.appointment_date)}`;
+            ? `${u.old_time} - ${ddmm(u.old_date)} → ${a.appointment_time} - ${ddmm(a.appointment_date)}`
+            : `${a.appointment_time} - ${ddmm(a.appointment_date)}`;
           return <li key={u.key}><button type="button" onClick={() => open(u)} className="flex w-full cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-cs-hover">
             <span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${t.tone}`} aria-hidden="true"><Icon name={t.icon} size={15}/></span>
             <span className="min-w-0 flex-1">

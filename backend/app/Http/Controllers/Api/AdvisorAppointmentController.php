@@ -322,7 +322,7 @@ class AdvisorAppointmentController extends Controller
         if ($when->isFuture()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chưa tới giờ hẹn '.$when->format('H:i d/m/Y').', chưa thể đánh dấu khách không đến.',
+                'message' => 'Chưa tới giờ hẹn '.$when->format('H:i - d/m/Y').', chưa thể đánh dấu khách không đến.',
             ], Response::HTTP_BAD_REQUEST);
         }
 

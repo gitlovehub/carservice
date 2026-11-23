@@ -75,14 +75,15 @@ export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: stri
       notify(errorMessage(error), "error");
     }
   };
-  const item = (h: HolidayRange) => <li key={h.ids[0]} className={`flex items-center gap-3 rounded-control border border-cs-border p-3 ${h.to < today ? "opacity-60" : ""}`}>
+  const item = (h: HolidayRange) => <li key={h.ids[0]} className="flex items-center gap-3 rounded-control border border-cs-border p-3">
     <Icon name="calendar" size={18} className="shrink-0 text-cs-muted"/>
     <span className="min-w-0 flex-1 text-small"><b className="block tabular-nums text-cs-text">{h.from === h.to ? fmt(h.from) : `${fmt(h.from)} – ${fmt(h.to)}`}</b><span className="text-cs-muted">{h.reason ?? "Ngày nghỉ"}{h.days > 1 ? ` · ${h.days} ngày` : ""}</span></span>
     <IconButton icon="edit" label={`Sửa ${h.reason ?? fmt(h.from)}`} size="sm" onClick={() => { setFormError(""); fieldErrors.reset(); setForm({ replaceIds: h.ids, from: h.from, to: h.to, reason: h.reason ?? "" }); }}/>
     <IconButton icon="trash" label={`Xoá ${h.reason ?? fmt(h.from)}`} size="sm" tone="danger" onClick={() => void remove(h)}/>
   </li>;
 
-  return <div className="mt-6 grid gap-5 xl:grid-cols-2">
+  // Ngày nghỉ 60%, cột phải 40% gồm khung giờ đặt lịch và giới hạn khách tự đổi lịch.
+  return <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
     <Panel title="Ngày nghỉ lễ" icon="calendar" subtitle="Ngày nghỉ, lễ không nhận lịch hẹn."
       action={<Button size="sm" variant="outline" icon="plus" onClick={() => { setFormError(""); fieldErrors.reset(); setForm({ replaceIds: [], from: "", to: "", reason: "" }); }}>Thêm ngày nghỉ</Button>}>
       {!query.data && !query.stale ? (query.error ? <ErrorState compact description={query.error} onRetry={query.reload}/> : <LoadingState compact/>) :
@@ -102,13 +103,22 @@ export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: stri
           <ul className="flex flex-col gap-2">
             {upcoming.map(item)}
             {!upcoming.length && <li className="text-small text-cs-muted">Chưa có ngày nghỉ sắp tới.</li>}
-            {past.length > 0 && <li className="pt-1 text-caption font-semibold text-cs-muted">Đã qua</li>}
-            {past.map(item)}
+            {past.length > 0 && <li className="pt-1 text-caption text-cs-muted">
+              <b className="font-semibold">Đã qua</b>
+              <ul className="mt-1 grid gap-1">
+                {past.map(h => <li key={h.ids[0]} className="flex gap-2">
+                  <span className="shrink-0 whitespace-nowrap tabular-nums">{h.from === h.to ? fmt(h.from) : `${fmt(h.from)} – ${fmt(h.to)}`}</span>
+                  <span className="min-w-0 truncate" title={h.reason ?? "Ngày nghỉ"}>{h.reason ?? "Ngày nghỉ"}</span>
+                </li>)}
+              </ul>
+            </li>}
           </ul>
         </div>}
     </Panel>
-    <BookingSlotsPanel open={open} close={close}/>
-    <ReschedulePolicyPanel/>
+    <div className="grid min-w-0 gap-5">
+      <BookingSlotsPanel open={open} close={close}/>
+      <ReschedulePolicyPanel/>
+    </div>
 
     <Modal open={!!form} onClose={() => setForm(null)} dismissible={!saving} title={form?.replaceIds.length ? "Sửa ngày nghỉ" : "Thêm ngày nghỉ"} size="sm"
       footer={<><Button disabled={saving} onClick={() => setForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void save()}>Lưu</Button></>}>

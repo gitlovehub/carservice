@@ -4,7 +4,7 @@ import { StatusBadge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { adminApi, errorMessage, fmtDateTime, type AccountRole, type AccountStatus, type AdminAccount } from "../../services/adminApi";
-import { AdminPage, ClearFilters, FilterSelect, Person, Pill, Tabs, Toggle, Toolbar } from "./kit/AdminKit";
+import { AdminPage, ClearFilters, FilterSelect, Person, Pill, StatCard, Tabs, Toggle, Toolbar } from "./kit/AdminKit";
 import type { Tone } from "./kit/format";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
@@ -90,6 +90,12 @@ export default function Accounts() {
 
   return <AdminPage title="Tài khoản" description="Quản lý đăng nhập và trạng thái tài khoản" demo={false}
     actions={<Button variant="primary" icon="plus" onClick={() => { setFormError(""); fieldErrors.reset(); setDraft(emptyDraft); }}>Tạo tài khoản</Button>}>
+    <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard icon="users" tone="brand" label="Tổng tài khoản" value={result ? total : "—"}/>
+      <StatCard icon="check" tone="success" label="Đang hoạt động" value={result ? result.statuses.ACTIVE ?? 0 : "—"}/>
+      <StatCard icon="clock" tone="warning" label="Chờ kích hoạt" value={result ? result.statuses.PENDING ?? 0 : "—"}/>
+      <StatCard icon="lock" tone="danger" label="Đã khoá" value={result ? result.statuses.LOCKED ?? 0 : "—"}/>
+    </div>
     <div className="mb-4">
       <Tabs label="Lọc theo vai trò" value={tab} onChange={id => { setTab(id); setPage(1); }} items={([
         ["all", "Tất cả"], ["ADMIN", "Quản trị"], ["ADVISOR", "Cố vấn dịch vụ"], ["TECHNICIAN", "Kỹ thuật viên"], ["CUSTOMER", "Khách hàng"],

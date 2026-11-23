@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\CustomerMessageMail;
 use App\Mail\PasswordResetOtpMail;
 use App\Models\Account;
 use App\Models\Customer;
@@ -82,6 +83,20 @@ class AdminPeopleControllerTest extends TestCase
         $this->assertSame(Account::STATUS_LOCKED, $account->fresh()->status);
         $this->assertSame(0, $account->tokens()->count());
         $this->patchJson("/api/admin/customers/{$walkIn->id}/lock", ['locked' => true])->assertJsonValidationErrors('locked');
+    }
+
+    public function test_admin_can_email_customer_and_action_is_audited(): void
+    {
+        $customer = Customer::factory()->create(['full_name' => 'Trần Minh Quân', 'email' => 'quan@example.test']);
+
+        $this->postJson("/api/admin/customers/{$customer->id}/email", ['subject' => '', 'message' => ''])->assertJsonValidationErrors(['subject', 'message']);
+        $this->postJson("/api/admin/customers/{$customer->id}/email", ['subject' => 'Nhắc bảo dưỡng', 'message' => 'Xe của anh đã đến hạn.'])->assertOk();
+
+        Mail::assertSent(CustomerMessageMail::class, fn (CustomerMessageMail $mail) => $mail->hasTo('quan@example.test') && $mail->mailSubject === 'Nhắc bảo dưỡng');
+        $this->assertDatabaseHas('audit_logs', ['action' => 'customer.email_sent', 'auditable_id' => $customer->id, 'account_id' => $this->admin->id]);
+
+        $noEmail = Customer::factory()->create(['email' => null, 'account_id' => null]);
+        $this->postJson("/api/admin/customers/{$noEmail->id}/email", ['subject' => 'A', 'message' => 'B'])->assertJsonValidationErrors('email');
     }
 
     public function test_staff_list_create_update_and_deactivate(): void

@@ -7,7 +7,7 @@ export type SortState = { key: string; dir: SortDir };
 export const NEWEST_FIRST: SortState = { key: "created", dir: "desc" };
 
 /** Khoá kiểu chữ: lần bấm đầu sắp A→Z; còn lại (số, ngày, trạng thái số liệu) sắp lớn / mới nhất trước. */
-const TEXT_KEYS = new Set(["name", "code", "sku", "email", "phone", "category", "unit", "brand", "model", "customer", "body", "role", "type", "status", "order"]);
+const TEXT_KEYS = new Set(["name", "code", "sku", "email", "phone", "category", "unit", "brand", "model", "customer", "body", "role", "type", "status", "order", "specialty"]);
 
 /**
  * Trạng thái sắp xếp của một bảng. `toggle(key)`: bấm cột đang sắp → đảo chiều; bấm cột khác → chiều mặc định của cột đó.

@@ -161,7 +161,7 @@ class CustomerNotifier
 
     private function when(Appointment $appointment): string
     {
-        return substr((string) $appointment->appointment_time, 0, 5).' ngày '.Carbon::parse($appointment->appointment_date)->format('d/m/Y');
+        return substr((string) $appointment->appointment_time, 0, 5).' - '.Carbon::parse($appointment->appointment_date)->format('d/m/Y');
     }
 
     private function money(float $amount): string

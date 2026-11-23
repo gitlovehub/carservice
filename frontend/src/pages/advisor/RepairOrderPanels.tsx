@@ -1,3 +1,4 @@
+import { fmtDateTime } from "../../services/adminApi";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import {
@@ -9,7 +10,7 @@ import { card, input, Notice, Req } from "./WorkflowUI";
 import { Button, IconButton } from "../../components/ui/Button";
 import { errorText, formatDateTime } from "./workflowFormat";
 import { QuantityStepper } from "../../components/ui/QuantityStepper";
-import { StatusBadge } from "../../components/ui/Badge";
+import { ServiceStoppedTag, StatusBadge } from "../../components/ui/Badge";
 import { getStatus } from "../../config/status";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
 import { CounterApprovalPanel } from "./CounterApprovalPanel";
@@ -79,7 +80,7 @@ function ApprovalHistory({ quotation }: { quotation: WorkflowQuotation }) {
   return <details className="mt-3 rounded-xl border border-cs-border p-3 text-xs text-cs-text" data-testid="approval-history">
     <summary className="cursor-pointer font-semibold">Lịch sử khách duyệt ({groups.size} lần xác nhận)</summary>
     <ul className="mt-2 space-y-2">{[...groups.values()].map(group => <li key={group[0].confirmation?.id ?? group[0].id}>
-      <p className="text-cs-muted">{group[0].confirmation ? new Date(group[0].confirmation.confirmed_at).toLocaleString("vi-VN") : ""} · {CONFIRMATION_METHOD_TEXT[group[0].confirmation?.method ?? "ACCOUNT"]}</p>
+      <p className="text-cs-muted">{group[0].confirmation ? fmtDateTime(group[0].confirmation.confirmed_at) : ""} · {CONFIRMATION_METHOD_TEXT[group[0].confirmation?.method ?? "ACCOUNT"]}</p>
       <p>{group.map(row => `${row.decision === "APPROVED" ? "✓" : "✗"} ${row.label}`).join(" · ")}</p>
     </li>)}</ul>
   </details>;
@@ -310,7 +311,7 @@ export function RepairPanel({ order, onChanged }: PanelProps) {
 
     <h3 className="mb-2 text-sm font-bold text-cs-text">Công việc ({workItems.length - unfinished}/{workItems.length} xong)</h3>
     {workItems.length ? <ul className="space-y-1">{workItems.map(item => <li key={item.id} data-testid="work-item" className="flex min-h-9 items-center justify-between gap-3 text-sm">
-      <div className="flex min-w-0 items-center gap-2"><p className="min-w-0 truncate font-semibold text-cs-text" title={item.service?.name || item.description || undefined}>{item.service?.name || item.description || `Công việc #${item.id}`}</p><StatusBadge domain="workItem" status={item.status} className="shrink-0"/></div>
+      <div className="flex min-w-0 items-center gap-2"><p className="min-w-0 truncate font-semibold text-cs-text" title={item.service?.name || item.description || undefined}>{item.service?.name || item.description || `Công việc #${item.id}`}</p><ServiceStoppedTag status={item.service?.status}/><StatusBadge domain="workItem" status={item.status} className="shrink-0"/></div>
       {inRepair && <div className="flex shrink-0 gap-2">
         {item.status === "PENDING" && <Button size="sm" variant="secondary" disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(item.id, "IN_PROGRESS"), "Đã bắt đầu công việc.")}>Bắt đầu</Button>}
         {item.status === "IN_PROGRESS" && <Button size="sm" variant="success" icon="check" disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(item.id, "COMPLETED"), "Đã hoàn thành công việc.")}>Xong</Button>}
@@ -377,7 +378,7 @@ export function PaymentPanel({ order }: { order: WorkflowOrder }) {
         <p className="text-base font-black">Tổng cộng: {formatVnd(invoice.total_amount)}</p>
         <p>Đã thu: {formatVnd(paid)} · Còn lại: <strong>{formatVnd(remaining)}</strong></p>
       </div>
-      {!!invoice.payments?.length && <ul className="mt-3 space-y-1 text-xs text-cs-muted">{invoice.payments.map(payment => <li key={payment.id}>{paymentMethodText[payment.payment_method] || payment.payment_method} {formatVnd(payment.amount)} · {payment.paid_at ? new Date(payment.paid_at).toLocaleString("vi-VN") : getStatus("payment", payment.status).label}</li>)}</ul>}
+      {!!invoice.payments?.length && <ul className="mt-3 space-y-1 text-xs text-cs-muted">{invoice.payments.map(payment => <li key={payment.id}>{paymentMethodText[payment.payment_method] || payment.payment_method} {formatVnd(payment.amount)} · {payment.paid_at ? fmtDateTime(payment.paid_at) : getStatus("payment", payment.status).label}</li>)}</ul>}
       {order.status === "HANDED_OVER" && <div className="mt-5"><Notice tone="success">Đã bàn giao xe. Khách có thể gửi đánh giá dịch vụ.</Notice></div>}
     </div>}
     {next && <div className="mt-5 flex justify-end print:hidden"><Link className="adv-btn-gold" to={next.to}><Icon name={next.icon} size={18}/>{next.label}<Icon name="arrow-right" size={18}/></Link></div>}
@@ -549,11 +550,11 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
         {inspection.recommendations?.length ? <ul className="space-y-1.5">{inspection.recommendations.map(rec => <li key={rec.id}>
           • {rec.item_type === "PART" ? "Phụ tùng" : "Dịch vụ"}: <strong>{rec.part?.name || rec.service?.name || "—"}</strong> × {rec.quantity ?? 1}{rec.note ? <> · <span className="font-medium">{rec.note}</span></> : ""}
           {rec.added_after_completion && <span className="ml-2 inline-flex items-center rounded-full bg-cs-soft px-2 py-0.5 align-middle text-caption font-semibold text-cs-accent-text"
-            title={`Bổ sung sau khi hoàn tất chẩn đoán${rec.added_by?.employee?.full_name ? ` · ${rec.added_by.employee.full_name}` : ""}${rec.created_at ? ` · ${new Date(rec.created_at).toLocaleString("vi-VN")}` : ""}`}>Bổ sung</span>}
+            title={`Bổ sung sau khi hoàn tất chẩn đoán${rec.added_by?.employee?.full_name ? ` · ${rec.added_by.employee.full_name}` : ""}${rec.created_at ? ` · ${fmtDateTime(rec.created_at)}` : ""}`}>Bổ sung</span>}
         </li>)}</ul>
           : <p className="text-cs-muted">Chưa có đề xuất.</p>}
       </div>
-      <p className="text-xs text-cs-muted">{inspection.recorded_by?.full_name ? `Người nhập: ${inspection.recorded_by.full_name} · ` : ""}{inspection.inspected_at ? `Hoàn tất ${new Date(inspection.inspected_at).toLocaleString("vi-VN")}` : "Chưa hoàn tất chẩn đoán"}</p>
+      <p className="text-xs text-cs-muted">{inspection.recorded_by?.full_name ? `Người nhập: ${inspection.recorded_by.full_name} · ` : ""}{inspection.inspected_at ? `Hoàn tất ${fmtDateTime(inspection.inspected_at)}` : "Chưa hoàn tất chẩn đoán"}</p>
       <div className="print:hidden"><PhotoUploader type="inspection" id={inspection.id} title="Ảnh chẩn đoán"/></div>
     </div>}
 

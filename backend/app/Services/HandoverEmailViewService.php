@@ -92,7 +92,7 @@ class HandoverEmailViewService
             'orderCode' => $snapshot['repair_order_code'] ?? '',
             'vehicleText' => $this->vehicleText($handover),
             'carName' => trim(($vehicle?->model?->brand?->name ?? '').' '.($vehicle?->model?->name ?? '')),
-            'submittedAt' => $handover->submitted_at?->format('H:i d/m/Y'),
+            'submittedAt' => $handover->submitted_at?->format('H:i - d/m/Y'),
             'confirmed' => $handover->status === VehicleHandover::STATUS_CONFIRMED,
             'personLabel' => $isCheckOut ? 'Người nhận xe' : 'Người giao xe',
             'personName' => $snapshot['person']['name'] ?? '',

@@ -93,6 +93,56 @@ class ServiceStepsTest extends TestCase
             ->assertJsonCount(1, 'items')->assertJsonPath('total_amount', '400000.00');
     }
 
+    public function test_stopped_service_cannot_be_newly_quoted_but_stays_quotable_on_its_order(): void
+    {
+        $stopped = Service::factory()->create(['status' => 'INACTIVE']);
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->order->id}/quotations", [
+            'items' => [['item_type' => 'SERVICE', 'service_id' => $stopped->id, 'quantity' => 1]],
+        ])->assertStatus(422);
+
+        $service = Service::factory()->create(['status' => 'ACTIVE']);
+        $draftId = $this->postJson("/api/repair-orders/{$this->order->id}/quotations", [
+            'items' => [['item_type' => 'SERVICE', 'service_id' => $service->id, 'quantity' => 1]],
+        ])->assertCreated()->json('id');
+        $service->update(['status' => 'INACTIVE']);
+
+        $this->putJson("/api/quotations/{$draftId}", [
+            'items' => [['item_type' => 'SERVICE', 'service_id' => $service->id, 'quantity' => 2]],
+        ])->assertOk();
+    }
+
+    public function test_step_minutes_scale_with_quantity(): void
+    {
+        $service = Service::factory()->create(['status' => 'ACTIVE']);
+        $service->steps()->create(['step_order' => 1, 'name' => 'Tháo', 'standard_minutes' => 20]);
+        $id = $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->order->id}/quotations", [
+            'items' => [['item_type' => 'SERVICE', 'service_id' => $service->id, 'quantity' => 2]],
+        ])->assertCreated()->json('id');
+        $this->postJson("/api/quotations/{$id}/send")->assertOk();
+        $itemId = $this->order->fresh()->latestQuotation->items()->value('id');
+        $this->actingAs($this->customerAccount)->postJson("/api/me/quotations/{$id}/respond", ['responses' => [['item_id' => $itemId, 'is_approved' => true]]])->assertOk();
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->order->id}/start-repair")->assertOk();
+
+        $this->assertSame(40, WorkItem::query()->where('repair_order_id', $this->order->id)->value('standard_minutes'));
+    }
+
+    public function test_stopped_service_stays_on_repair_order_with_its_status_and_cannot_be_deleted(): void
+    {
+        $service = Service::factory()->create(['status' => 'ACTIVE']);
+        $this->approveAndStart($service);
+        $service->update(['status' => 'INACTIVE', 'is_visible' => false]);
+
+        $this->actingAs($this->advisor)->getJson("/api/repair-orders/{$this->order->id}")->assertOk()
+            ->assertJsonPath('work_items.0.service.status', 'INACTIVE')
+            ->assertJsonPath('quotations.0.items.0.service.status', 'INACTIVE');
+        $this->actingAs($this->admin)->getJson("/api/admin/repair-orders/{$this->order->id}")->assertOk()
+            ->assertJsonPath('data.items.0.service_status', 'INACTIVE')
+            ->assertJsonPath('data.quotation_items.0.service_status', 'INACTIVE');
+        $this->actingAs($this->admin)->deleteJson("/api/admin/services/{$service->id}/permanent")->assertConflict();
+
+        $this->assertModelExists($service);
+    }
+
     public function test_service_without_steps_uses_estimated_minutes(): void
     {
         $service = Service::factory()->create(['estimated_minutes' => 40, 'status' => 'ACTIVE']);

@@ -1,3 +1,4 @@
+import { fmtDateTime } from "../../services/adminApi";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { RangePicker } from "./advisorListKit";
 import { RANGES, rangeDates, type Range } from "./advisorListFormat";
@@ -127,7 +128,7 @@ function AppointmentQueue({ selectedId, onSelect, onWalkIn, walkIn, version }: {
         : !shown.length ? <EmptyState compact icon="calendar" title={term ? "Không tìm thấy lịch phù hợp" : "Không có lịch cần tiếp nhận"} description={term ? "Thử tìm theo biển số, SĐT hoặc mã lịch khác." : range === "any" ? "Không còn lịch chờ tiếp nhận." : `${RANGES.find(r => r.id === range)?.label ?? ""} không còn lịch chờ.`}/>
         : shown.map(a => { const label = queueLabel(a); return <button key={a.id} type="button" className="adv-appt" aria-current={selectedId === a.id} onClick={() => onSelect(a.id)}>
           <span className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-2 text-small font-bold tabular-nums text-cs-text"><Icon name="clock" size={15} className="text-cs-accent-text"/>{hhmm(a.appointment_time)} <span className="font-normal text-cs-muted">· {dmy(a.appointment_date)}</span></span>
+            <span className="flex items-center gap-2 text-small font-bold tabular-nums text-cs-text"><Icon name="clock" size={15} className="text-cs-accent-text"/>{hhmm(a.appointment_time)} <span className="font-normal text-cs-muted">- {dmy(a.appointment_date)}</span></span>
             <span className={`rounded-full px-2.5 py-0.5 text-caption font-semibold ${label.tone}`}>{label.text}</span>
           </span>
           <span className="flex items-center gap-3">
@@ -330,7 +331,7 @@ function ReceptionPanel({ id, onStep, onChanged, onBack }: { id: number; onStep:
         <Button variant="secondary" icon="mail" disabled={working} onClick={() => void handleSendEmail()}>{lastEmail ? "Gửi lại email" : "Gửi email xác nhận"}</Button>
       </div>
       {lastEmail && <p className="mt-3 flex items-center gap-1.5 text-caption text-cs-muted"><Icon name="mail" size={13}/>
-        Đã gửi email{lastEmail.new_values?.email ? ` tới ${lastEmail.new_values.email}` : ""} lúc {new Date(lastEmail.created_at).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })} — đang chờ khách bấm xác nhận.</p>}
+        Đã gửi email{lastEmail.new_values?.email ? ` tới ${lastEmail.new_values.email}` : ""} lúc {fmtDateTime(lastEmail.created_at)} — đang chờ khách bấm xác nhận.</p>}
     </section>}
 
     {selected.status === "CONFIRMED" && <section className="border-t border-cs-border pt-5">

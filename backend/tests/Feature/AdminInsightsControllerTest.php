@@ -217,4 +217,29 @@ class AdminInsightsControllerTest extends TestCase
         $this->assertEquals(9_000_000, $this->getJson('/api/admin/reports?period=2026-10')->json('data.revenue.service.value'));
         $this->getJson('/api/admin/reports?period=2026-13')->assertJsonValidationErrors('period');
     }
+
+    public function test_report_range_compares_the_matching_period_and_charts_vietnam_days(): void
+    {
+        // 18:00 UTC ngày 31/10 là 01:00 ngày 1/11 giờ Việt Nam.
+        $november = $this->order(RepairOrder::HANDED_OVER, '2026-10-31 18:00');
+        $this->invoice($november, '2026-10-31 18:00', [['item_type' => 'SERVICE', 'amount' => 3_000_000]]);
+        $october = $this->order(RepairOrder::HANDED_OVER, '2026-10-01 10:00');
+        $this->invoice($october, '2026-10-01 10:00', [['item_type' => 'PART', 'amount' => 2_000_000]]);
+
+        $month = $this->getJson('/api/admin/reports?date_from=2026-11-01&date_to=2026-11-30')->assertOk()->json('data');
+
+        $this->assertSame('Tháng 11/2026', $month['label']);
+        $this->assertEquals(3_000_000, $month['revenue']['total']['value']);
+        $this->assertEquals(2_000_000, $month['revenue']['total']['previous']);
+        $this->assertSame('day', $month['granularity']);
+        $this->assertCount(20, $month['series']);
+        $this->assertSame('2026-11-01', $month['series'][0]['key']);
+        $this->assertEquals(3_000_000, $month['series'][0]['service']);
+        $this->assertSame(1, $month['series'][0]['orders']);
+
+        $quarter = $this->getJson('/api/admin/reports?date_from=2026-07-01&date_to=2026-09-30')->json('data');
+        $this->assertSame('Quý 3/2026', $quarter['label']);
+        $this->assertSame('week', $quarter['granularity']);
+        $this->assertSame('month', $this->getJson('/api/admin/reports?date_from=2026-01-01&date_to=2026-10-31')->json('data.granularity'));
+    }
 }

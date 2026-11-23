@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Button, DataTable, ErrorState, LoadingState, Pagination, SearchInput, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
+import { Button, DataTable, Drawer, ErrorState, LoadingState, Pagination, SearchInput, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { adminApi, errorMessage, fmtDate, fmtDateTime, fmtTime, type AdminInvoice, type AdminPayment, type InvoiceStatus, type PaymentGroup } from "../../services/adminApi";
 import { getStatus } from "../../config/status";
-import { AdminPage, ClearFilters, FilterSelect, InfoList, PaneSection, SplitView, StatCard, Tabs, Toolbar } from "./kit/AdminKit";
+import { AdminPage, ClearFilters, FilterSelect, InfoList, PaneSection, StatCard, Tabs, Toolbar } from "./kit/AdminKit";
 import { vnd } from "./kit/format";
+import { PeriodFilter } from "./kit/PeriodFilter";
+import { usePeriod } from "./kit/period";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
 
@@ -34,14 +36,19 @@ export default function Invoices() {
   const [page, setPage] = useState(1);
   const [paymentPage, setPaymentPage] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null);
   const [exporting, setExporting] = useState(false);
   const term = useDebounced(search.trim());
 
   const invoiceSort = useTableSort(NEWEST_FIRST, () => setPage(1));
   const paymentSort = useTableSort(NEWEST_FIRST, () => setPaymentPage(1));
-  const params = { status, search: term, page, ...invoiceSort.params };
-  const invoices = useAdminQuery(view === "invoices" ? `invoices:${JSON.stringify(params)}` : null, signal => adminApi.invoices(params, signal));
-  const payments = useAdminQuery(view === "payments" ? `payments:${term}:${paymentPage}:${paymentSort.sort.key}:${paymentSort.sort.dir}` : null, signal => adminApi.payments({ search: term, page: paymentPage, ...paymentSort.params }, signal));
+  // Kỳ dùng chung cho hai tab và bốn thẻ số liệu.
+  const period = usePeriod("all", () => { setPage(1); setPaymentPage(1); });
+  const params = { status, search: term, page, ...period.params, ...invoiceSort.params };
+  const paymentParams = { search: term, page: paymentPage, ...period.params, ...paymentSort.params };
+  // Luôn tải hoá đơn để thẻ số liệu đúng kỳ cả khi đang ở tab Giao dịch.
+  const invoices = useAdminQuery(`invoices:${JSON.stringify(params)}`, signal => adminApi.invoices(params, signal));
+  const payments = useAdminQuery(view === "payments" ? `payments:${JSON.stringify(paymentParams)}` : null, signal => adminApi.payments(paymentParams, signal));
   const detail = useAdminQuery(selectedId === null ? null : `invoice:${selectedId}`, signal => adminApi.invoice(selectedId as number, signal));
   const result = invoices.data ?? invoices.stale;
   const paymentResult = payments.data ?? payments.stale;
@@ -53,7 +60,7 @@ export default function Invoices() {
     try {
       const rows: AdminInvoice[] = [];
       for (let p = 1, last = 1; p <= last && p <= 50; p++) {
-        const chunk = await adminApi.invoices({ status, search: term, page: p, per_page: 100 });
+        const chunk = await adminApi.invoices({ status, search: term, ...period.params, page: p, per_page: 100 });
         rows.push(...chunk.data);
         last = chunk.meta.last_page;
       }
@@ -71,20 +78,21 @@ export default function Invoices() {
   };
 
   const invoiceColumns: Column<AdminInvoice>[] = [
-    { key: "code", sortKey: "code", header: "Số hoá đơn", primary: true, render: i => <b className="block truncate text-cs-accent-text">{i.code}</b> },
-    { key: "issued", sortKey: "created", header: "Ngày lập", render: i => <span className="block whitespace-nowrap tabular-nums"><span className="block text-cs-text">{fmtDate(i.issued_at)}</span><span className="block text-caption text-cs-muted">{fmtTime(i.issued_at)}</span></span> },
+    { key: "code", sortKey: "code", header: "Số hoá đơn", primary: true, width: "17%", render: i => <b className="block truncate text-cs-accent-text">{i.code}</b> },
+    { key: "issued", sortKey: "created", header: "Ngày lập", width: "12%", render: i => <span className="block whitespace-nowrap tabular-nums"><span className="block text-cs-text">{fmtDate(i.issued_at)}</span><span className="block text-caption text-cs-muted">{fmtTime(i.issued_at)}</span></span> },
     { key: "customer", header: "Khách hàng", render: i => <span className="block min-w-0"><b className="block truncate text-cs-text">{i.customer ?? "—"}</b><span className="block truncate text-caption text-cs-muted">{i.plate ?? "—"} · {i.order_code ?? "—"}</span></span> },
-    { key: "total", sortKey: "total", header: "Tổng tiền", align: "right", render: i => <b className="tabular-nums">{vnd(i.total)}</b> },
-    { key: "due", header: "Còn nợ", align: "right", render: i => i.status === "CANCELLED" || i.paid >= i.total ? <span className="text-cs-muted">—</span> : <b className="tabular-nums text-danger-fg">{vnd(i.total - i.paid)}</b> },
-    { key: "status", sortKey: "status", header: "Trạng thái", render: i => <StatusBadge domain="invoice" status={i.status}/> },
+    { key: "total", sortKey: "total", header: "Tổng tiền", align: "right", width: "14%", render: i => <b className="tabular-nums">{vnd(i.total)}</b> },
+    { key: "due", header: "Còn nợ", align: "right", width: "14%", render: i => i.status === "CANCELLED" || i.paid >= i.total ? <span className="text-cs-muted">—</span> : <b className="tabular-nums text-danger-fg">{vnd(i.total - i.paid)}</b> },
+    { key: "status", sortKey: "status", header: "Trạng thái", align: "right", width: "19%", render: i => <StatusBadge domain="invoice" status={i.status}/> },
   ];
   const paymentColumns: Column<AdminPayment>[] = [
-    { key: "code", sortKey: "code", header: "Mã giao dịch", primary: true, render: p => <b>{p.code}</b> },
-    { key: "invoice", header: "Hoá đơn", render: p => <span><span className="text-cs-accent-text">{p.invoice ?? "—"}</span><span className="block text-caption text-cs-muted">{p.customer ?? "—"}</span></span> },
-    { key: "method", header: "Phương thức", render: p => <span className="inline-flex items-center gap-2"><Icon name={methodInfo[p.method].icon} size={16} className="text-cs-muted"/>{methodInfo[p.method].label}</span> },
-    { key: "at", sortKey: "created", header: "Thời gian", hideOnMobile: true, render: p => <span className="block whitespace-nowrap tabular-nums"><span className="block text-cs-text">{fmtDate(p.at)}</span><span className="block text-caption text-cs-muted">{fmtTime(p.at)}</span></span> },
-    { key: "amount", sortKey: "amount", header: "Số tiền", align: "right", render: p => <b className="tabular-nums">{vnd(p.amount)}</b> },
-    { key: "status", sortKey: "status", header: "Trạng thái", render: p => <StatusBadge domain="payment" status={p.status}/> },
+    // Mã dài (VNPAY) rút gọn trong bảng, xem đủ ở ngăn chi tiết.
+    { key: "code", sortKey: "code", header: "Mã giao dịch", primary: true, width: "19%", render: p => <b className="block truncate" title={p.code}>{p.code}</b> },
+    { key: "invoice", header: "Hoá đơn / Khách", render: p => <span className="block min-w-0"><span className="block truncate text-cs-accent-text">{p.invoice ?? "—"}</span><span className="block truncate text-caption text-cs-muted">{p.customer ?? "—"}</span></span> },
+    { key: "method", header: "Phương thức", width: "16%", render: p => <span className="inline-flex items-center gap-2 whitespace-nowrap"><Icon name={methodInfo[p.method].icon} size={16} className="text-cs-muted"/>{methodInfo[p.method].label}</span> },
+    { key: "at", sortKey: "created", header: "Thời gian", width: "12%", hideOnMobile: true, render: p => <span className="block whitespace-nowrap tabular-nums"><span className="block text-cs-text">{fmtDate(p.at)}</span><span className="block text-caption text-cs-muted">{fmtTime(p.at)}</span></span> },
+    { key: "amount", sortKey: "amount", header: "Số tiền", align: "right", width: "14%", render: p => <b className="whitespace-nowrap tabular-nums">{vnd(p.amount)}</b> },
+    { key: "status", sortKey: "status", header: "Trạng thái", align: "right", width: "18%", render: p => <StatusBadge domain="payment" status={p.status}/> },
   ];
 
   const pane = selectedId === null ? null : !selected
@@ -141,32 +149,70 @@ export default function Invoices() {
     <div className="mb-4"><Tabs label="Chế độ xem" variant="segment" value={view} onChange={setView} items={[
       { id: "invoices", label: "Hoá đơn", icon: "invoice" }, { id: "payments", label: "Giao dịch", icon: "card" },
     ]}/></div>
-    {view === "invoices" ? <SplitView paneOpen={selectedId !== null} onClose={() => setSelectedId(null)} paneTitle="Chi tiết hoá đơn" pane={pane}
-      paneFooter={selected && selected.status !== "PAID" && selected.status !== "CANCELLED" ? <>
-        <Button icon="printer" onClick={() => window.print()}>In</Button>
-        <Button variant="primary" icon="cash" onClick={() => notify("Ghi nhận thanh toán do Cố vấn thực hiện khi bàn giao xe.", "info")}>Ghi nhận thu tiền</Button>
-      </> : undefined}
-      list={<>
+    {view === "invoices" ? <>
         <Toolbar>
           <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm số hoá đơn, mã phiếu, khách, biển số…"/>
+          <PeriodFilter period={period}/>
           <FilterSelect label="Trạng thái" value={status} onChange={value => { setStatus(value); setPage(1); }} options={[
             { value: "all", label: "Tất cả" }, { value: "UNPAID", label: "Chưa thanh toán" }, { value: "PARTIALLY_PAID", label: "Thanh toán một phần" },
             { value: "PAID", label: "Đã thanh toán" }, { value: "CANCELLED", label: "Đã huỷ" },
           ]}/>
-          <ClearFilters active={search !== "" || status !== "all" || !invoiceSort.isDefault} onClear={() => { setSearch(""); setStatus("all"); invoiceSort.reset(); setPage(1); }}/>
+          <ClearFilters active={search !== "" || status !== "all" || !period.isDefault || !invoiceSort.isDefault} onClear={() => { setSearch(""); setStatus("all"); period.reset(); invoiceSort.reset(); setPage(1); }}/>
         </Toolbar>
-        <DataTable evenColumns sort={invoiceSort.sort} onSort={invoiceSort.toggle} caption="Danh sách hoá đơn" columns={invoiceColumns} rows={result?.data ?? []} rowKey={i => i.id}
+        <DataTable evenColumns minWidth="1100px" sort={invoiceSort.sort} onSort={invoiceSort.toggle} caption="Danh sách hoá đơn" columns={invoiceColumns} rows={result?.data ?? []} rowKey={i => i.id}
           loading={invoices.loading} error={invoices.error || undefined} onRetry={invoices.reload}
           onRowClick={i => setSelectedId(i.id)} rowClassName={i => i.id === selectedId ? "bg-cs-soft/60" : ""}          footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={invoices.loading} onChange={setPage}/>}/>
-      </>}/>
+      </>
       : <>
         <Toolbar>
           <SearchInput value={search} onChange={value => { setSearch(value); setPaymentPage(1); }} placeholder="Tìm mã giao dịch, số hoá đơn…"/>
-          <ClearFilters active={search !== "" || !paymentSort.isDefault} onClear={() => { setSearch(""); paymentSort.reset(); setPaymentPage(1); }}/>
+          <PeriodFilter period={period}/>
+          <ClearFilters active={search !== "" || !period.isDefault || !paymentSort.isDefault} onClear={() => { setSearch(""); period.reset(); paymentSort.reset(); setPaymentPage(1); }}/>
         </Toolbar>
-        <DataTable evenColumns sort={paymentSort.sort} onSort={paymentSort.toggle} caption="Danh sách giao dịch" columns={paymentColumns} rows={paymentResult?.data ?? []} rowKey={p => p.id}
+        <DataTable evenColumns minWidth="1100px" sort={paymentSort.sort} onSort={paymentSort.toggle} caption="Danh sách giao dịch" columns={paymentColumns} rows={paymentResult?.data ?? []} rowKey={p => p.id}
           loading={payments.loading} error={payments.error || undefined} onRetry={payments.reload}
+          onRowClick={setSelectedPayment} rowClassName={p => p.id === selectedPayment?.id ? "bg-cs-soft/60" : ""}
           footer={paymentResult && <Pagination page={paymentResult.meta.current_page} totalPages={paymentResult.meta.last_page} totalItems={paymentResult.meta.total} pageSize={paymentResult.meta.per_page} disabled={payments.loading} onChange={setPaymentPage}/>}/>
       </>}
+    <Drawer open={selectedId !== null} onClose={() => setSelectedId(null)} title="Chi tiết hoá đơn"
+      footer={selected && selected.status !== "PAID" && selected.status !== "CANCELLED" ? <>
+        <Button icon="printer" onClick={() => window.print()}>In</Button>
+        <Button variant="primary" icon="cash" onClick={() => notify("Ghi nhận thanh toán do Cố vấn thực hiện khi bàn giao xe.", "info")}>Ghi nhận thu tiền</Button>
+      </> : undefined}>
+      {pane}
+    </Drawer>
+    <Drawer open={selectedPayment !== null} onClose={() => setSelectedPayment(null)} title="Chi tiết giao dịch"
+      footer={selectedPayment?.invoice_id ? <Button variant="primary" icon="invoice" onClick={() => { setSelectedId(selectedPayment.invoice_id); setSelectedPayment(null); setView("invoices"); }}>Xem hoá đơn</Button> : undefined}>
+      {selectedPayment && <PaymentDetail payment={selectedPayment}/>}
+    </Drawer>
   </AdminPage>;
+}
+
+/** Ngăn chi tiết một giao dịch: bảng chỉ hiện phần cần lướt, đầy đủ thông tin đối soát nằm ở đây. */
+function PaymentDetail({ payment: p }: { payment: AdminPayment }) {
+  return <>
+    <div className="mb-4">
+      <p className="text-caption text-cs-muted">Số tiền</p>
+      <p className="mt-0.5 flex flex-wrap items-center gap-3 text-title font-bold tabular-nums text-cs-text">{vnd(p.amount)}<StatusBadge domain="payment" status={p.status}/></p>
+    </div>
+    <PaneSection title="Giao dịch" icon="card">
+      <InfoList items={[
+        { label: "Mã giao dịch", value: <b className="break-all">{p.code}</b> },
+        { label: "Phương thức", value: <span className="inline-flex items-center gap-2"><Icon name={methodInfo[p.method].icon} size={16} className="text-cs-muted"/>{methodInfo[p.method].label}</span> },
+        { label: "Thanh toán lúc", value: fmtDateTime(p.paid_at) },
+        { label: "Tạo lúc", value: fmtDateTime(p.created_at) },
+        { label: "Người thu", value: p.collector ?? "—" },
+        ...(p.gateway_ref && p.gateway_ref !== p.code ? [{ label: "Mã tham chiếu", value: <span className="break-all">{p.gateway_ref}</span> }] : []),
+        ...(p.bank_code ? [{ label: "Ngân hàng", value: p.bank_code }] : []),
+      ]}/>
+    </PaneSection>
+    <PaneSection title="Hoá đơn & khách hàng" icon="invoice">
+      <InfoList items={[
+        { label: "Số hoá đơn", value: <b className="text-cs-accent-text">{p.invoice ?? "—"}</b> },
+        { label: "Phiếu sửa chữa", value: p.order_code ?? "—" },
+        { label: "Khách hàng", value: p.customer ?? "—" },
+        { label: "Biển số", value: p.plate ?? "—" },
+      ]}/>
+    </PaneSection>
+  </>;
 }

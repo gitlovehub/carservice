@@ -82,6 +82,130 @@ class AdminServiceControllerTest extends TestCase
         ]);
     }
 
+    public function test_admin_permanently_deletes_stopped_unused_service_with_its_steps(): void
+    {
+        $service = Service::factory()->create(['status' => 'INACTIVE', 'is_visible' => false]);
+        $step = $service->steps()->create(['step_order' => 1, 'name' => 'Kiểm tra', 'standard_minutes' => 10]);
+
+        $this->actingAs(Account::factory()->admin()->create())
+            ->deleteJson("/api/admin/services/{$service->id}/permanent")
+            ->assertOk()
+            ->assertJsonPath('message', 'Đã xóa vĩnh viễn dịch vụ.');
+
+        $this->assertModelMissing($service);
+        $this->assertModelMissing($step);
+    }
+
+    public function test_permanent_delete_refuses_active_service(): void
+    {
+        $service = Service::factory()->create(['status' => 'ACTIVE']);
+
+        $this->actingAs(Account::factory()->admin()->create())
+            ->deleteJson("/api/admin/services/{$service->id}/permanent")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Hãy tắt cả Đang áp dụng và Hiển thị cho khách trước khi xóa vĩnh viễn.');
+
+        $this->assertModelExists($service);
+    }
+
+    public function test_permanent_delete_refuses_stopped_service_still_flagged_visible(): void
+    {
+        $service = Service::factory()->create(['status' => 'INACTIVE', 'is_visible' => true]);
+
+        $this->actingAs(Account::factory()->admin()->create())
+            ->deleteJson("/api/admin/services/{$service->id}/permanent")
+            ->assertUnprocessable();
+
+        $this->assertModelExists($service);
+    }
+
+    public function test_uncategorized_service_cannot_be_activated(): void
+    {
+        $admin = Account::factory()->admin()->create();
+        $draft = Service::factory()->create(['category' => null, 'status' => 'INACTIVE', 'is_visible' => false]);
+
+        $this->actingAs($admin)->patchJson("/api/admin/services/{$draft->id}", ['status' => 'ACTIVE'])
+            ->assertUnprocessable()->assertJsonValidationErrors('status');
+        $this->postJson('/api/admin/services', ['name' => 'Nháp mới', 'base_price' => 100000, 'estimated_minutes' => 30, 'status' => 'ACTIVE'])
+            ->assertUnprocessable()->assertJsonValidationErrors('status');
+
+        $this->assertSame('INACTIVE', $draft->fresh()->status);
+    }
+
+    public function test_visibility_requires_active_and_follows_it_off(): void
+    {
+        $admin = Account::factory()->admin()->create();
+        $stopped = Service::factory()->create(['status' => 'INACTIVE', 'is_visible' => false]);
+        $this->actingAs($admin)->patchJson("/api/admin/services/{$stopped->id}", ['is_visible' => true])
+            ->assertUnprocessable()->assertJsonValidationErrors('is_visible');
+
+        $running = Service::factory()->create(['status' => 'ACTIVE', 'is_visible' => true]);
+        $this->patchJson("/api/admin/services/{$running->id}", ['status' => 'INACTIVE'])->assertOk()
+            ->assertJsonPath('data.is_visible', false);
+        $this->patchJson("/api/admin/services/{$running->id}", ['status' => 'ACTIVE'])->assertOk()
+            ->assertJsonPath('data.status', 'ACTIVE')->assertJsonPath('data.is_visible', false);
+    }
+
+    public function test_removing_category_turns_both_states_off(): void
+    {
+        $service = Service::factory()->create(['status' => 'ACTIVE', 'is_visible' => true]);
+
+        $this->actingAs(Account::factory()->admin()->create())
+            ->patchJson("/api/admin/services/{$service->id}", ['category_id' => null])->assertOk()
+            ->assertJsonPath('data.status', 'INACTIVE')->assertJsonPath('data.is_visible', false);
+    }
+
+    public function test_active_service_keeps_price_and_steps_control_minutes(): void
+    {
+        $admin = Account::factory()->admin()->create();
+        $service = Service::factory()->create(['status' => 'ACTIVE', 'base_price' => 200000, 'estimated_minutes' => 30]);
+        $this->actingAs($admin)->patchJson("/api/admin/services/{$service->id}", ['base_price' => 0])
+            ->assertUnprocessable()->assertJsonValidationErrors('base_price');
+
+        $service->steps()->create(['step_order' => 1, 'name' => 'Tháo', 'standard_minutes' => 30]);
+        $this->patchJson("/api/admin/services/{$service->id}", ['estimated_minutes' => 99])
+            ->assertUnprocessable()->assertJsonValidationErrors('estimated_minutes');
+    }
+
+    public function test_steps_reject_blank_duplicate_and_zero_minutes(): void
+    {
+        $service = Service::factory()->create();
+        $this->actingAs(Account::factory()->admin()->create());
+
+        $this->putJson("/api/admin/services/{$service->id}/steps", ['steps' => [['name' => '', 'standard_minutes' => 10]]])
+            ->assertJsonValidationErrors('steps.0.name');
+        $this->putJson("/api/admin/services/{$service->id}/steps", ['steps' => [['name' => 'Tháo', 'standard_minutes' => 10], ['name' => 'THÁO', 'standard_minutes' => 10]]])
+            ->assertJsonValidationErrors('steps.1.name');
+        $this->putJson("/api/admin/services/{$service->id}/steps", ['steps' => [['name' => 'Tháo', 'standard_minutes' => 0]]])
+            ->assertJsonValidationErrors('steps.0.standard_minutes');
+    }
+
+    public function test_permanent_delete_refuses_service_in_use_and_list_flags_it(): void
+    {
+        $admin = Account::factory()->admin()->create();
+        $used = Service::factory()->create(['status' => 'INACTIVE', 'is_visible' => false]);
+        $unused = Service::factory()->create(['status' => 'INACTIVE', 'is_visible' => false]);
+        MaintenancePackage::factory()->create()->services()->attach($used->id, ['quantity' => 1]);
+
+        $rows = collect($this->actingAs($admin)->getJson('/api/admin/services')->assertOk()->json('data.data'))->keyBy('id');
+        $this->assertTrue($rows[$used->id]['is_in_use']);
+        $this->assertFalse($rows[$unused->id]['is_in_use']);
+
+        $this->deleteJson("/api/admin/services/{$used->id}/permanent")->assertConflict();
+        $this->assertModelExists($used);
+    }
+
+    public function test_advisor_cannot_permanently_delete_service(): void
+    {
+        $service = Service::factory()->create(['status' => 'INACTIVE']);
+
+        $this->actingAs(Account::factory()->advisor()->create())
+            ->deleteJson("/api/admin/services/{$service->id}/permanent")
+            ->assertForbidden();
+
+        $this->assertModelExists($service);
+    }
+
     public function test_admin_can_set_booking_display_fields_and_sees_active_package_usage(): void
     {
         $admin = Account::factory()->admin()->create();

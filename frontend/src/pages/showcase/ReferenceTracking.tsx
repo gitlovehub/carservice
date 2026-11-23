@@ -439,7 +439,7 @@ function GuestLookup() {
       <div className={`mt-5 flex gap-3 rounded-xl border p-4 ${TONE_BOX.info}`}>
         <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${TONE_ICON.info}`}><Icon name="calendar" size={19}/></span>
         <div><p className="font-extrabold">Gara chưa tiếp nhận xe</p>
-          <p className="mt-0.5 text-sm opacity-90">Lịch hẹn lúc <strong>{formatTime(result.appointment_time)} ngày {when(result.appointment_date, false)}</strong>. Tiến độ sửa chữa sẽ hiện tại đây ngay khi gara tiếp nhận xe.</p></div>
+          <p className="mt-0.5 text-sm opacity-90">Lịch hẹn lúc <strong>{formatTime(result.appointment_time)} - {when(result.appointment_date, false)}</strong>. Tiến độ sửa chữa sẽ hiện tại đây ngay khi gara tiếp nhận xe.</p></div>
       </div>
     </div> : <div className="space-y-5">
       <div className="rounded-2xl border border-cs-border bg-cs-surface p-6">

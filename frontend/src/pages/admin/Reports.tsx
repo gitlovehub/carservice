@@ -2,14 +2,15 @@ import { useState, type ReactNode } from "react";
 import { Button, EmptyState, ErrorState, LoadingState, StarIcon } from "../../components/ui";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { adminApi, type ReportData } from "../../services/adminApi";
-import { AdminPage, FilterSelect, Panel, PanelLink, Progress, StatCard, Stars, Tabs } from "./kit/AdminKit";
+import { AdminPage, Panel, PanelLink, Progress, StatCard, Stars, Tabs } from "./kit/AdminKit";
 import { AreaChart, BarChart, Legend } from "./kit/Charts";
 import { chartColor, num, shortVnd, vnd, type Tone } from "./kit/format";
+import { PeriodFilter } from "./kit/PeriodFilter";
+import { usePeriod } from "./kit/period";
 import { useAdminQuery } from "./kit/useAdminQuery";
 
 type Tab = "revenue" | "services" | "parts" | "operations";
-const monthLabel = (month: string) => `Tháng ${Number(month.slice(5, 7))}`;
-const currentMonth = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
+const GRANULARITY_TEXT: Record<ReportData["granularity"], string> = { day: "ngày", week: "tuần", month: "tháng", year: "năm" };
 const pct = (value: number | null) => value === null ? "—" : `${num(value)}%`;
 const share = (part: number, total: number) => total > 0 ? (part / total) * 100 : 0;
 /** 30 giờ → "1 ngày 6 giờ"; dưới 1 ngày giữ số giờ. */
@@ -62,14 +63,15 @@ function Figure({ icon, label, value, sub, tone = "brand" }: { icon: IconName; l
 /** Báo cáo — số liệu thật từ GET /api/admin/reports?period=. */
 export default function Reports() {
   const [tab, setTab] = useState<Tab>("revenue");
-  const [period, setPeriod] = useState(currentMonth);
-  const query = useAdminQuery(`reports:${period}`, signal => adminApi.reports(period, signal));
+  // Giữ nguyên khoảng thời gian khi chuyển giữa các tab báo cáo.
+  const period = usePeriod("month");
+  const params = period.params;
+  const query = useAdminQuery(`reports:${JSON.stringify(params)}`, signal => adminApi.reports(params, signal));
   const data = query.data ?? query.stale;
 
   return <AdminPage title="Báo cáo" description="Doanh thu, dịch vụ và tình hình vận hành của ga-ra" demo={false}
     actions={<>
-      <FilterSelect label="Kỳ" value={period} onChange={setPeriod}
-        options={data?.periods.length ? data.periods : [{ value: period, label: period }]}/>
+      <PeriodFilter period={period} allowAll={false}/>
       <Button variant="outline" icon="printer" onClick={() => window.print()}>In báo cáo</Button>
     </>}>
     <div className="mb-5">
@@ -85,7 +87,8 @@ export default function Reports() {
 function ReportBody({ data, tab, setTab }: { data: ReportData; tab: Tab; setTab: (tab: Tab) => void }) {
   const serviceTotal = data.top_services.reduce((s, r) => s + r.revenue, 0) || 1;
   const partTotal = data.top_parts.reduce((s, r) => s + r.revenue, 0) || 1;
-  const labels = data.monthly.map(m => monthLabel(m.month));
+  const labels = data.series.map(point => point.label);
+  const unitText = GRANULARITY_TEXT[data.granularity];
   const serviceRows = data.top_services.map((s, i) => ({ key: `${s.name}-${i}`, share: (s.revenue / serviceTotal) * 100, cells: [i + 1, s.name, num(s.count), vnd(s.revenue)] }));
 
   if (tab === "services") {
@@ -109,15 +112,15 @@ function ReportBody({ data, tab, setTab }: { data: ReportData; tab: Tab; setTab:
       <StatCard icon="box" tone="warning" label="Doanh thu phụ tùng" value={vnd(revenue.parts.value)} delta={revenue.parts.delta ?? undefined}/>
     </div>
     <div className="mt-5 grid gap-5 xl:grid-cols-2">
-      <Panel title="Doanh thu theo tháng" icon="chart"
+      <Panel title={`Doanh thu theo ${unitText}`} icon="chart"
         action={<Legend items={[{ label: "Dịch vụ", color: chartColor.brand }, { label: "Phụ tùng", color: chartColor.brandSoft }]}/>}>
-        <BarChart title="Doanh thu theo tháng" labels={labels} format={shortVnd}
-          bars={[{ label: "Dịch vụ", values: data.monthly.map(m => m.service), color: chartColor.brand }, { label: "Phụ tùng", values: data.monthly.map(m => m.parts), color: chartColor.brandSoft }]}
-          tooltipTitle={i => `${labels[i]}/${data.monthly[i].month.slice(0, 4)}`}/>
+        <BarChart title={`Doanh thu theo ${unitText}`} labels={labels} format={shortVnd}
+          bars={[{ label: "Dịch vụ", values: data.series.map(point => point.service), color: chartColor.brand }, { label: "Phụ tùng", values: data.series.map(point => point.parts), color: chartColor.brandSoft }]}
+          tooltipTitle={i => data.series[i].title}/>
       </Panel>
-      <Panel title="Số phiếu sửa chữa" icon="clipboard">
-        <AreaChart title="Số phiếu sửa chữa theo tháng" labels={labels.map(l => l.replace("Tháng ", "T"))}
-          series={{ label: "Số phiếu", values: data.monthly.map(m => m.orders), color: chartColor.brand }}/>
+      <Panel title={`Số phiếu sửa chữa theo ${unitText}`} icon="clipboard">
+        <AreaChart title={`Số phiếu sửa chữa theo ${unitText}`} labels={labels} tooltipTitle={i => data.series[i].title}
+          series={{ label: "Số phiếu", values: data.series.map(point => point.orders), color: chartColor.brand }}/>
       </Panel>
     </div>
     <div className="mt-5 grid gap-5 xl:grid-cols-2">

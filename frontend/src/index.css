@@ -7,9 +7,9 @@
 
 /* Giá trị cố định (không đổi theo theme/vai trò). */
 @theme {
-  /* Font chính cho giao diện tiếng Việt, ưu tiên Be Vietnam Pro và fallback trên máy. */
-  --font-sans: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
-  --font-mono: ui-monospace, Consolas, monospace;
+  /* Google Sans cho toàn bộ giao diện, Roboto Condensed cho mã phiếu và biển số. */
+  --font-sans: "Google Sans", "Segoe UI", Arial, sans-serif;
+  --font-mono: "Roboto Condensed", "Segoe UI", Arial, sans-serif;
   --font-serif: Georgia, serif;
 
   /* Hiển thị mặc định như Google Fonts: độ đậm chuẩn của Tailwind, không chỉnh letter-spacing.

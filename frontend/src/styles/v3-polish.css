@@ -1,7 +1,7 @@
 /* CarService V3 — UX / typography polish (Customer + Admin + Advisor).
  * Loaded after existing styles. Presentation only; no change to business data / API. */
 :root {
-  --cs-ui-font: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+  --cs-ui-font: "Google Sans", "Segoe UI", Arial, sans-serif;
 }
 html, body, button, input, select, textarea { font-family: var(--cs-ui-font); }
 body { font-size: 14px; line-height: 1.6; font-weight: 400; }

@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Quản trị danh mục dịch vụ. Xóa dịch vụ bằng cách chuyển status sang INACTIVE
@@ -47,6 +50,7 @@ class AdminServiceController extends Controller
         $query = Service::query()
             ->with('serviceCategory:id,name,icon')
             ->withCount([
+                'steps',
                 'packages as active_packages_count' => fn ($query) => $query->where('maintenance_packages.status', 'ACTIVE'),
             ])
             ->when($filters['status'] ?? null, fn ($q, string $status) => $q->where('status', $status))
@@ -62,10 +66,17 @@ class AdminServiceController extends Controller
             'status' => 'status', 'visible' => 'is_visible',
         ]);
 
+        $services = $query->withExists(Service::USAGE_RELATIONS)->paginate($filters['per_page'] ?? 10);
+        $usageColumns = array_map(fn (string $relation): string => Str::snake($relation).'_exists', Service::USAGE_RELATIONS);
+        $services->getCollection()->each(function (Service $service) use ($usageColumns): void {
+            $service->setAttribute('is_in_use', collect($usageColumns)->contains(fn (string $column): bool => (bool) $service->getAttribute($column)));
+            $service->makeHidden($usageColumns);
+        });
+
         return response()->json([
             'success' => true,
             'message' => 'Lấy danh sách dịch vụ thành công.',
-            'data' => $query->paginate($filters['per_page'] ?? 10),
+            'data' => $services,
         ]);
     }
 
@@ -101,7 +112,11 @@ class AdminServiceController extends Controller
             'requires_vehicle_stay' => ['sometimes', 'boolean'],
         ], self::MESSAGES);
 
-        $validated['status'] ??= 'ACTIVE';
+        $service = new Service;
+        $service->fill($validated);
+        $validated['status'] ??= $service->activationProblems() === [] ? 'ACTIVE' : 'INACTIVE';
+        $validated['is_visible'] ??= false;
+        $validated = $this->applyLifecycle($service, $validated);
         $service = Service::query()->create($validated);
 
         return response()->json([
@@ -137,13 +152,56 @@ class AdminServiceController extends Controller
             'requires_vehicle_stay' => ['sometimes', 'boolean'],
         ], self::MESSAGES);
 
-        $service->update($validated);
+        $service->update($this->applyLifecycle($service, $validated));
 
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật dịch vụ thành công.',
             'data' => $service->fresh('serviceCategory:id,name,icon'),
         ]);
+    }
+
+    /**
+     * Thứ tự trạng thái: đủ thông tin → Đang áp dụng → Hiển thị cho khách.
+     * Bỏ danh mục hoặc tắt Đang áp dụng sẽ tắt luôn các trạng thái phụ thuộc.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     *
+     * @throws ValidationException
+     */
+    private function applyLifecycle(Service $service, array $validated): array
+    {
+        $wasActive = $service->exists && $service->getOriginal('status') === 'ACTIVE';
+        $service->fill($validated);
+
+        if ($service->exists && $service->isDirty('estimated_minutes') && $service->steps()->exists()) {
+            throw ValidationException::withMessages(['estimated_minutes' => 'Dịch vụ có bước chuẩn nên thời gian được tính từ tổng các bước.']);
+        }
+
+        if ($wasActive && ! $service->hasCategory()) {
+            return [...$validated, 'status' => 'INACTIVE', 'is_visible' => false];
+        }
+
+        if ($service->status !== 'ACTIVE') {
+            if (($validated['is_visible'] ?? false) === true) {
+                throw ValidationException::withMessages(['is_visible' => 'Bật Đang áp dụng trước khi hiển thị cho khách.']);
+            }
+
+            return [...$validated, 'is_visible' => false];
+        }
+
+        if (! $wasActive && ($problems = $service->activationProblems()) !== []) {
+            throw ValidationException::withMessages(['status' => 'Cần bổ sung '.implode(', ', $problems).' trước khi bật Đang áp dụng.']);
+        }
+        if ($wasActive && $service->isDirty('base_price') && (float) $service->base_price <= 0) {
+            throw ValidationException::withMessages(['base_price' => 'Dịch vụ đang áp dụng phải có giá lớn hơn 0.']);
+        }
+        if ($wasActive && $service->isDirty('estimated_minutes') && (int) $service->estimated_minutes <= 0) {
+            throw ValidationException::withMessages(['estimated_minutes' => 'Dịch vụ đang áp dụng phải có thời gian ước tính.']);
+        }
+
+        return $validated;
     }
 
     /**
@@ -213,9 +271,14 @@ class AdminServiceController extends Controller
     {
         $data = $request->validate([
             'steps' => ['present', 'array', 'max:30'],
-            'steps.*.name' => ['required', 'string', 'max:150'],
-            'steps.*.standard_minutes' => ['required', 'integer', 'min:0', 'max:1440'],
+            'steps.*.name' => ['required', 'string', 'max:150', 'distinct:ignore_case'],
+            'steps.*.standard_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
             'steps.*.requires_photo' => ['sometimes', 'boolean'],
+        ], [
+            'steps.*.name.required' => 'Nhập tên bước.',
+            'steps.*.name.distinct' => 'Tên bước bị trùng.',
+            'steps.*.standard_minutes.min' => 'Phút chuẩn phải từ 1 đến 1440.',
+            'steps.*.standard_minutes.max' => 'Phút chuẩn phải từ 1 đến 1440.',
         ]);
 
         DB::transaction(function () use ($service, $data): void {
@@ -242,12 +305,42 @@ class AdminServiceController extends Controller
      */
     public function destroy(Service $service): JsonResponse
     {
-        $service->update(['status' => 'INACTIVE']);
+        $service->update(['status' => 'INACTIVE', 'is_visible' => false]);
 
         return response()->json([
             'success' => true,
             'message' => 'Đã ẩn dịch vụ (xóa mềm, status = INACTIVE).',
             'data' => $service->fresh(),
         ]);
+    }
+
+    /**
+     * DELETE /api/admin/services/{service}/permanent — xóa hẳn dịch vụ đã ngừng và chưa từng được dùng.
+     * Khóa ngoại vẫn là chốt cuối nếu dịch vụ vừa được dùng ngay sau bước kiểm tra.
+     */
+    public function destroyPermanently(Service $service): JsonResponse
+    {
+        if ($service->status === 'ACTIVE' || $service->is_visible) {
+            return response()->json(['success' => false, 'message' => 'Hãy tắt cả Đang áp dụng và Hiển thị cho khách trước khi xóa vĩnh viễn.'], 422);
+        }
+
+        $inUseMessage = 'Dịch vụ đã có trong lịch sử nên không thể xóa vĩnh viễn. Dịch vụ vẫn được giữ ở trạng thái ngừng hoạt động.';
+        if ($service->isInUse()) {
+            return response()->json(['success' => false, 'message' => $inUseMessage], 409);
+        }
+
+        $imagePath = $service->image_path;
+        try {
+            $service->delete();
+        } catch (QueryException $error) {
+            if ((string) $error->getCode() !== '23000') {
+                throw $error;
+            }
+
+            return response()->json(['success' => false, 'message' => $inUseMessage], 409);
+        }
+        $this->deleteStoredImage($imagePath);
+
+        return response()->json(['success' => true, 'message' => 'Đã xóa vĩnh viễn dịch vụ.']);
     }
 }

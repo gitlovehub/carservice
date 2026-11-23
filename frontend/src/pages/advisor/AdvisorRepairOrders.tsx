@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
 import { IconButton } from "../../components/ui/Button";
-import { Badge, StatusBadge } from "../../components/ui/Badge";
+import { Badge, ServiceStoppedTag, StatusBadge } from "../../components/ui/Badge";
 import { Dropdown, type DropdownItem } from "../../components/ui/Dropdown";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
@@ -191,7 +191,7 @@ function StageTrack({ order }: { order: WorkflowOrder }) {
   })}/>;
 }
 
-type ItemRow = { key: string; name: string; icon: IconName; status: ReactNode; by: string };
+type ItemRow = { key: string; name: string; icon: IconName; status: ReactNode; by: string; serviceStatus?: string };
 const approvalBadge = (approved: boolean | null | undefined, quotationStatus: string): { tone: StatusTone; label: string } => {
   if (approved === true) return { tone: "success", label: "Đã phê duyệt" };
   if (quotationStatus === "SENT") return { tone: "warning", label: "Chờ phê duyệt" };
@@ -202,13 +202,13 @@ const approvalBadge = (approved: boolean | null | undefined, quotationStatus: st
 /** Hạng mục: công việc (khi đã sửa) → dòng báo giá (chờ / đã duyệt) → đề xuất sau chẩn đoán. */
 function itemRows(order: WorkflowOrder): { rows: ItemRow[]; source: "work" | "quote" | "inspection" | "none" } {
   if (order.work_items?.length) return { source: "work", rows: order.work_items.map(w => ({
-    key: `w${w.id}`, name: w.service?.name || w.description || "Công việc", icon: "wrench",
+    key: `w${w.id}`, name: w.service?.name || w.description || "Công việc", icon: "wrench", serviceStatus: w.service?.status,
     status: <StatusBadge domain="workItem" status={w.status}/>, by: w.technician?.employee?.full_name || "—",
   })) };
   const quotations = [latestQuotation(order), ...supplementQuotations(order)].filter((q): q is NonNullable<typeof q> => !!q && q.status !== "CANCELLED");
   const quoteRows = quotations.flatMap(q => (q.items ?? []).map(item => {
     const badge = approvalBadge(item.is_approved, q.status);
-    return { key: `q${item.id}`, name: item.description || "Hạng mục", icon: (item.item_type === "PART" ? "box" : "wrench") as IconName,
+    return { key: `q${item.id}`, name: item.description || "Hạng mục", icon: (item.item_type === "PART" ? "box" : "wrench") as IconName, serviceStatus: item.service?.status,
       status: <Badge tone={badge.tone}>{badge.label}</Badge>, by: "—" };
   }));
   if (quoteRows.length) return { source: "quote", rows: quoteRows };
@@ -299,7 +299,7 @@ function OrderPreview({ id }: { id: number }) {
             <th className="px-4 py-2.5 font-semibold">{items.source === "work" ? "Thực hiện bởi" : ""}</th>
           </tr></thead>
           <tbody className="divide-y divide-cs-border">{items.rows.map(r => <tr key={r.key}>
-            <td className="px-4 py-3"><span className="flex items-center gap-3 font-medium text-cs-text"><Icon name={r.icon} size={18} className="shrink-0 text-cs-muted"/>{r.name}</span></td>
+            <td className="px-4 py-3"><span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-medium text-cs-text"><Icon name={r.icon} size={18} className="shrink-0 text-cs-muted"/>{r.name}<ServiceStoppedTag status={r.serviceStatus}/></span></td>
             <td className="whitespace-nowrap px-4 py-3">{r.status}</td>
             <td className="whitespace-nowrap px-4 py-3 text-cs-text-2">{items.source === "work" ? r.by : ""}</td>
           </tr>)}</tbody>

@@ -144,7 +144,7 @@ class CustomerController extends Controller
             'repairOrders' => fn ($q) => $q->latest('received_at')->limit(10), 'repairOrders.vehicle:id,license_plate,model_id',
             'repairOrders.vehicle.model:id,brand_id,name', 'repairOrders.vehicle.model.brand:id,name',
             'repairOrders.invoice:id,repair_order_id,total_amount,status', 'repairOrders.invoice.items:id,invoice_id,description',
-            'repairOrders.workItems:id,repair_order_id,description,service_id', 'repairOrders.workItems.service:id,name',
+            'repairOrders.workItems:id,repair_order_id,description,service_id', 'repairOrders.workItems.service:id,name,status',
             'appointments' => fn ($q) => $q->whereIn('status', ['PENDING', 'CONFIRMED'])->whereDate('appointment_date', '>=', today())
                 ->orderBy('appointment_date')->orderBy('appointment_time')->limit(5),
             'reviews' => fn ($q) => $q->latest()->limit(10), 'reviews.repairOrder:id,repair_order_code',

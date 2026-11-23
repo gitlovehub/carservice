@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
-import { Badge, StatusBadge } from "../../components/ui/Badge";
+import { Badge, ServiceStoppedTag, StatusBadge } from "../../components/ui/Badge";
 import { Button, IconButton } from "../../components/ui/Button";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Dropdown, type DropdownItem } from "../../components/ui/Dropdown";
@@ -295,7 +295,7 @@ function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void 
             <h3 className="adv-section-title border-b border-cs-border bg-cs-surface-2 px-4 py-3">Hạng mục công việc ({done}/{items.length} xong)</h3>
             {items.length ? <ul className="divide-y divide-cs-border">{items.map(w => <li key={w.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
               <Icon name={w.status === "COMPLETED" ? "check" : w.status === "IN_PROGRESS" ? "refresh" : "clock"} size={18} className={w.status === "COMPLETED" ? "text-success-fg" : "text-cs-muted"}/>
-              <span className="min-w-0 flex-1"><span className="block font-medium text-cs-text">{w.service?.name || w.description || `Công việc #${w.id}`}</span>
+              <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2 font-medium text-cs-text">{w.service?.name || w.description || `Công việc #${w.id}`}<ServiceStoppedTag status={w.service?.status}/></span>
                 {w.technician?.employee?.full_name && <span className="text-caption text-cs-muted">{w.technician.employee.full_name}</span>}</span>
               <StatusBadge domain="workItem" status={w.status}/>
               {workActions(w)}
@@ -318,7 +318,7 @@ function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void 
             <th className="px-3 py-2.5 text-right font-semibold">Phút chuẩn</th><th className="px-3 py-2.5 font-semibold">Trạng thái</th>
           </tr></thead>
           <tbody className="divide-y divide-cs-border">{items.map(w => <tr key={w.id} className="text-cs-text">
-            <td className="px-3 py-2.5 font-medium">{w.service?.name || w.description}</td>
+            <td className="px-3 py-2.5 font-medium"><span className="flex flex-wrap items-center gap-2">{w.service?.name || w.description}<ServiceStoppedTag status={w.service?.status}/></span></td>
             <td className="px-3 py-2.5 text-cs-text-2">{w.technician?.employee?.full_name || "—"}</td>
             <td className="whitespace-nowrap px-3 py-2.5 tabular-nums text-cs-text-2">{w.started_at ? dayTime(w.started_at) : "—"}</td>
             <td className="whitespace-nowrap px-3 py-2.5 tabular-nums text-cs-text-2">{w.completed_at ? dayTime(w.completed_at) : "—"}</td>

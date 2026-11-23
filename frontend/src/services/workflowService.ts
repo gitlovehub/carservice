@@ -79,6 +79,7 @@ export const quotationSentText = (result: { emailed_to?: string | null }) => res
   : "Đã gửi báo giá. Khách nhận thông báo trong tài khoản trên web.";
 export type WorkflowQuotationItem = {
   id: number; item_type: "SERVICE" | "PART"; service_id?: number | null; part_id?: number | null;
+  service?: { id: number; status?: string } | null;
   description?: string | null; quantity: number; unit_price: Money; amount: Money; is_approved?: boolean | null;
   /** Hạng mục bắt buộc: khách từ chối = từ chối toàn bộ báo giá (PO 19/11). */
   is_required?: boolean; required_reason?: string | null;
@@ -114,7 +115,7 @@ export async function listQuotations(params: QuotationListParams, signal?: Abort
   return { ...result, counts: Array.isArray(result.counts) ? {} : (result.counts ?? {}) };
 }
 export type WorkflowWorkItem = {
-  id: number; description?: string | null; status: string; service?: { name?: string } | null;
+  id: number; description?: string | null; status: string; service?: { name?: string; status?: string } | null;
   technician?: { employee?: { full_name?: string } | null } | null;
   started_at?: string | null; completed_at?: string | null; standard_minutes?: number | null;
 };
@@ -461,7 +462,7 @@ export type CustomerDetail = CustomerRow & {
     id: number; repair_order_code: string; status: string; received_at: string | null;
     vehicle?: { license_plate?: string | null; model?: { name?: string; brand?: { name?: string } | null } | null } | null;
     invoice?: { id: number; total_amount: Money; status: string; items?: Array<{ id: number; description?: string | null }> } | null;
-    work_items?: Array<{ id: number; description?: string | null; service?: { name?: string } | null }>;
+    work_items?: Array<{ id: number; description?: string | null; service?: { name?: string; status?: string } | null }>;
   }>;
   appointments: CustomerAppointmentRef[];
   past_appointments?: CustomerAppointmentRef[];
@@ -480,7 +481,7 @@ export type VehicleDetail = VehicleRow & {
   repair_orders: Array<{
     id: number; repair_order_code: string; status: string; received_at: string | null; mileage_received?: number | null;
     invoice?: { id: number; total_amount: Money; status: string; items?: Array<{ id: number; description?: string | null }> } | null;
-    work_items?: Array<{ id: number; description?: string | null; service?: { name?: string } | null }>;
+    work_items?: Array<{ id: number; description?: string | null; service?: { name?: string; status?: string } | null }>;
   }>;
   open_repair_order?: { id: number; repair_order_code: string; status: string } | null;
   upcoming_appointments: VehicleAppointmentRef[];

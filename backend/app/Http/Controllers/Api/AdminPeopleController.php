@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Controllers\Controller;
+use App\Mail\CustomerMessageMail;
 use App\Models\Account;
+use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\Payment;
@@ -20,9 +22,11 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * Admin quản lý con người: khách hàng (xem, khoá), nhân sự (thêm/sửa/nghỉ việc), tài khoản
@@ -80,6 +84,7 @@ class AdminPeopleController extends Controller
                 'total' => Customer::query()->count(),
                 'with_account' => Customer::query()->whereNotNull('account_id')->count(),
                 'new_this_month' => Customer::query()->where('created_at', '>=', now()->startOfMonth())->count(),
+                'returning' => Customer::query()->has('repairOrders', '>=', 2)->count(),
             ],
         ]);
     }
@@ -91,7 +96,7 @@ class AdminPeopleController extends Controller
 
         $history = RepairOrder::query()->where('customer_id', $model->id)
             ->with(['vehicle:id,model_id,license_plate', 'vehicle.model:id,brand_id,name', 'vehicle.model.brand:id,name', 'invoice:id,repair_order_id,total_amount', 'workItems:id,repair_order_id,description'])
-            ->latest('received_at')->limit(10)->get()
+            ->latest('received_at')->limit(100)->get()
             ->map(fn (RepairOrder $o) => [
                 'id' => $o->id,
                 'code' => $o->repair_order_code,
@@ -131,6 +136,41 @@ class AdminPeopleController extends Controller
             'message' => $data['locked'] ? 'Đã khoá tài khoản khách hàng.' : 'Đã mở khoá tài khoản khách hàng.',
             'data' => $this->customerRow($this->customerQuery()->findOrFail($customer->id)),
         ]);
+    }
+
+    /** POST /api/admin/customers/{customer}/email {subject, message} — Admin soạn và gửi email cho khách, có ghi nhật ký. */
+    public function emailCustomer(Request $request, Customer $customer): JsonResponse
+    {
+        $data = $request->validate([
+            'subject' => ['required', 'string', 'max:150'],
+            'message' => ['required', 'string', 'max:5000'],
+        ], ['subject.required' => 'Nhập tiêu đề email.', 'message.required' => 'Nhập nội dung email.']);
+
+        $customer->loadMissing('account:id,email,email_verified_at');
+        $recipient = $customer->confirmationEmail() ?: ($customer->email ?: $customer->account?->email);
+        if (! $recipient) {
+            throw ValidationException::withMessages(['email' => 'Khách hàng chưa có email.']);
+        }
+
+        try {
+            Mail::to($recipient)->send(new CustomerMessageMail($customer->full_name, trim($data['subject']), trim($data['message'])));
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json(['message' => 'Không gửi được email, vui lòng kiểm tra cấu hình mail.'], 502);
+        }
+
+        AuditLog::query()->create([
+            'account_id' => $request->user()->id,
+            'action' => 'customer.email_sent',
+            'auditable_type' => Customer::class,
+            'auditable_id' => $customer->id,
+            'new_values' => ['subject' => trim($data['subject'])],
+            'ip_address' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 1000),
+        ]);
+
+        return response()->json(['message' => "Đã gửi email tới {$recipient}."]);
     }
 
     private function customerQuery(): Builder
@@ -193,6 +233,7 @@ class AdminPeopleController extends Controller
             ->tap(fn (Builder $q) => $this->applySort($q, $request, [
                 'created' => 'created_at', 'name' => 'full_name', 'phone' => 'phone', 'status' => 'status',
                 'joined' => 'created_at',
+                'specialty' => fn (Builder $q, string $dir) => $q->orderBy(TechnicianProfile::query()->select('specialty')->whereColumn('technician_profiles.employee_id', 'employees.id')->limit(1), $dir),
                 'role' => fn (Builder $q, string $dir) => $q->orderBy(Account::query()->select('role')->whereColumn('accounts.id', 'employees.account_id'), $dir),
             ], tieBreaker: 'employees.id'))
             ->get();
@@ -344,6 +385,7 @@ class AdminPeopleController extends Controller
             'data' => $page->getCollection()->map(fn (Account $a) => $this->accountRow($a))->values(),
             'meta' => $this->meta($page),
             'summary' => Account::query()->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role'),
+            'statuses' => Account::query()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status'),
         ]);
     }
 

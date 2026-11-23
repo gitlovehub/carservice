@@ -5,6 +5,8 @@ import { adminApi, fmtDateTime, type AdminAuditLog, type AuditCategory } from ".
 import AdvisorActivity from "./AdvisorActivity";
 import { AdminPage, ClearFilters, FilterSelect, Person, Pill, Tabs, Toolbar } from "./kit/AdminKit";
 import type { Tone } from "./kit/format";
+import { PeriodFilter } from "./kit/PeriodFilter";
+import { usePeriod } from "./kit/period";
 import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
 
@@ -24,7 +26,8 @@ export default function AuditLogs() {
   const term = useDebounced(search.trim());
 
   const tableSort = useTableSort(NEWEST_FIRST, () => setPage(1));
-  const query = { category, search: term, page, ...tableSort.params };
+  const period = usePeriod("all", () => setPage(1));
+  const query = { category, search: term, page, ...period.params, ...tableSort.params };
   const list = useAdminQuery(tab === "logs" ? `audit:${JSON.stringify(query)}` : null, signal => adminApi.auditLogs(query, signal));
   const result = list.data ?? list.stale;
 
@@ -44,11 +47,12 @@ export default function AuditLogs() {
     {tab === "logs" ? <>
       <Toolbar>
         <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm người thực hiện, lý do…"/>
+        <PeriodFilter period={period}/>
         <FilterSelect label="Hành động" value={category} onChange={value => { setCategory(value); setPage(1); }} options={[
           { value: "all", label: "Tất cả" }, ...(Object.keys(categoryInfo) as AuditCategory[]).map(a => ({ value: a, label: categoryInfo[a].label })),
         ]}/>
-        <ClearFilters active={search !== "" || category !== "all" || !tableSort.isDefault}
-          onClear={() => { setSearch(""); setCategory("all"); tableSort.reset(); setPage(1); }}/>
+        <ClearFilters active={search !== "" || category !== "all" || !period.isDefault || !tableSort.isDefault}
+          onClear={() => { setSearch(""); setCategory("all"); period.reset(); tableSort.reset(); setPage(1); }}/>
       </Toolbar>
       <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Nhật ký thao tác" columns={columns} rows={result?.data ?? []} rowKey={l => l.id}
         loading={list.loading} error={list.error || undefined} onRetry={list.reload}

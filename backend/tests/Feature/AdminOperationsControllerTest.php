@@ -128,6 +128,41 @@ class AdminOperationsControllerTest extends TestCase
         $this->getJson('/api/admin/payments')->assertJsonPath('meta.total', 2)->assertJsonPath('data.0.method', 'BANK_TRANSFER');
     }
 
+    public function test_date_range_uses_vietnam_days_and_scopes_lists_and_summaries(): void
+    {
+        // 18:00 UTC ngày 22 = 01:00 ngày 23 giờ Việt Nam.
+        $inRange = $this->order(RepairOrder::IN_PROGRESS);
+        $inRange->update(['received_at' => '2026-11-22 18:00:00']);
+        $this->order(RepairOrder::IN_PROGRESS)->update(['received_at' => '2026-11-22 16:59:59']);
+        $range = 'date_from=2026-11-23&date_to=2026-11-23';
+
+        $this->getJson("/api/admin/repair-orders?{$range}")->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.id', $inRange->id)
+            ->assertJsonPath('summary.total', 1);
+        $this->getJson('/api/admin/repair-orders?date_from=2026-11-24&date_to=2026-11-23')->assertJsonValidationErrors('date_to');
+
+        $invoice = $this->invoice($inRange, 1_000_000, Invoice::PAID, 1_000_000);
+        Invoice::query()->whereKey($invoice->id)->update(['created_at' => '2026-11-22 18:00:00']);
+        Payment::query()->where('invoice_id', $invoice->id)->update(['paid_at' => '2026-11-22 18:00:00']);
+        $this->getJson("/api/admin/invoices?{$range}")->assertJsonPath('meta.total', 1)->assertJsonPath('summary.collected', 1_000_000);
+        $this->getJson('/api/admin/invoices?date_from=2026-11-20&date_to=2026-11-20')->assertJsonPath('meta.total', 0)->assertJsonPath('summary.collected', 0);
+        $this->getJson("/api/admin/payments?{$range}")->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.plate', $inRange->vehicle->license_plate);
+        $this->getJson('/api/admin/payments?date_from=2026-11-20&date_to=2026-11-20')->assertJsonPath('meta.total', 0);
+    }
+
+    public function test_reviews_can_be_found_by_vehicle(): void
+    {
+        $order = $this->order(RepairOrder::HANDED_OVER, plate: '51K-888.99');
+        $other = $this->order(RepairOrder::HANDED_OVER, plate: '30A-111.22');
+        $target = Review::query()->create(['repair_order_id' => $order->id, 'customer_id' => $order->customer_id, 'overall_rating' => 5, 'comment' => 'Tốt']);
+        Review::query()->create(['repair_order_id' => $other->id, 'customer_id' => $other->customer_id, 'overall_rating' => 4, 'comment' => 'Ổn']);
+
+        $this->getJson('/api/admin/reviews?search=888.99')->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $target->id);
+        $vehicleName = trim($order->vehicle->model->brand->name.' '.$order->vehicle->model->name);
+        $this->assertContains($target->id, array_column($this->getJson('/api/admin/reviews?search='.urlencode($vehicleName))->json('data'), 'id'));
+    }
+
     public function test_reviews_filters_summary_reply_and_hide(): void
     {
         $make = fn (int $rating, string $comment, bool $hidden = false) => Review::query()->create([

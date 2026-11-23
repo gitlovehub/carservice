@@ -44,7 +44,7 @@ class AppointmentConfirmationRequestMail extends Mailable
         return [
             'code' => $appointment->appointment_code,
             'customerName' => $appointment->customer?->full_name ?: 'Quý khách',
-            'when' => substr((string) $appointment->appointment_time, 0, 5).' · '.Carbon::parse($appointment->appointment_date)->format('d/m/Y'),
+            'when' => substr((string) $appointment->appointment_time, 0, 5).' - '.Carbon::parse($appointment->appointment_date)->format('d/m/Y'),
             'car' => ($car !== '' ? $car.' · ' : '').($vehicle?->license_plate ?: 'chưa có biển số'),
             'items' => $items,
             'total' => array_sum(array_column($items, 'price')),

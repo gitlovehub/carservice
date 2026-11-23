@@ -77,6 +77,7 @@ class CustomerRepairOrderController extends Controller
             // Màn "Chi tiết lịch sử dịch vụ" của khách: chỉ tên người phụ trách (không lộ SĐT/tài khoản nhân viên),
             // phụ tùng đã dùng và dịch vụ/gói khách đã đặt trong lịch hẹn.
             'advisor:id,full_name',
+            'workItems.service:id,name,status',
             'workItems.technician:id,employee_id',
             'workItems.technician.employee:id,full_name',
             'usedParts:id,repair_order_id,work_item_id,part_id,quantity,unit_price,used_at',
