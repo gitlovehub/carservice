@@ -1,4 +1,5 @@
-import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
+import { useLayoutEffect } from "react";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import { FeedbackProvider } from "./components/ui/FeedbackProvider";
 import { FormValidationHost } from "./components/ui/FormValidationHost";
@@ -80,8 +81,19 @@ function LegacyReviewsRedirect() {
   return <Navigate to={orderId ? `/customer/service-history?review=${encodeURIComponent(orderId)}` : "/customer/service-history"} replace/>;
 }
 
+/** Đánh dấu khu khách hàng trên <html> để dùng font riêng; admin và cố vấn giữ font chung. */
+function ClientFontScope() {
+  const { pathname } = useLocation();
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (/^\/(admin|advisor)(\/|$)/.test(pathname)) delete root.dataset.client;
+    else root.dataset.client = "customer";
+  }, [pathname]);
+  return null;
+}
+
 function App() {
-  return <BrowserRouter><ThemeProvider><AuthProvider><AppErrorBoundary><FeedbackProvider><Routes>
+  return <BrowserRouter><ClientFontScope/><ThemeProvider><AuthProvider><AppErrorBoundary><FeedbackProvider><Routes>
     {/* Public pages continue using their existing components. */}
     <Route element={<PublicLayout/>}>
     <Route path="/" element={<Home/>}/>
