@@ -31,11 +31,12 @@ import { useFieldErrors } from "../../components/ui/useFieldErrors";
  * Khi in, mọi bước đều hiện (panel thao tác đã tự ẩn khi in).
  */
 
-function StepTracker({ current, viewing, closed, onSelect }: { current: number; viewing: number; closed: boolean; onSelect: (index: number) => void }) {
+/** `ended`: phiếu đã bàn giao hoặc đã đóng, không còn bước nào đang làm. */
+function StepTracker({ current, viewing, ended, onSelect }: { current: number; viewing: number; ended: boolean; onSelect: (index: number) => void }) {
   return <ol className="grid grid-cols-5 gap-1.5 print:hidden sm:gap-2" aria-label="Các bước của phiếu sửa chữa">
     {STEPS.map((step, index) => {
-      const done = index < current || (closed && index <= current);
-      const active = !closed && index === current;
+      const done = index < current || (ended && index <= current);
+      const active = !ended && index === current;
       const selected = index === viewing;
       return <li key={step.key}>
         <button type="button" onClick={() => onSelect(index)} aria-current={active ? "step" : undefined} aria-pressed={selected}
@@ -47,7 +48,7 @@ function StepTracker({ current, viewing, closed, onSelect }: { current: number; 
           </span>
           <span className="min-w-0">
             <span className={`block text-[11px] font-semibold leading-tight sm:text-small ${selected || active ? "text-cs-text" : "text-cs-text-2"}`}>{step.label}</span>
-            <span className="hidden text-caption text-cs-muted sm:block">{active ? "Đang làm" : done ? "Đã xong" : "Chưa tới"}</span>
+            <span className="hidden text-caption text-cs-muted sm:block">{active ? "Đang làm" : done ? "Đã xong" : "Chưa thực hiện"}</span>
           </span>
         </button>
       </li>;
@@ -72,7 +73,7 @@ function NextActionBar({ order, viewing, onGo }: { order: WorkflowOrder; viewing
       <p className="text-caption font-semibold uppercase tracking-wide text-cs-muted">{style.title}</p>
       <p className="text-small text-cs-text">{next.text}</p>
     </div>
-    {next.step !== viewing && <Button size="sm" variant="secondary" iconRight="arrow-right" onClick={() => onGo(next.step)}>Tới bước {STEPS[next.step].label}</Button>}
+    {next.step !== viewing && <button type="button" className="adv-btn-gold shrink-0 whitespace-nowrap" onClick={() => onGo(next.step)}>Tới bước {STEPS[next.step].label}<Icon name="arrow-right" size={17}/></button>}
   </div>;
 }
 
@@ -298,7 +299,7 @@ export default function AdvisorRepairOrderDetail() {
 
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] print:block">
       <div className="min-w-0 space-y-5">
-        <StepTracker current={current} viewing={viewing} closed={closed} onSelect={index => setViewStep(index)}/>
+        <StepTracker current={current} viewing={viewing} ended={closed || order.status === "HANDED_OVER"} onSelect={index => setViewStep(index)}/>
         <NextActionBar order={order} viewing={viewing} onGo={index => setViewStep(index)}/>
         {error && <Notice tone="error">{error}</Notice>}
 
