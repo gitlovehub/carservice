@@ -2,6 +2,7 @@ import { formatDateTime } from "../../services/customerApi";
 import { apiFieldErrors } from "../../components/ui/formValidation";
 import { KmInput } from "../../components/ui";
 import { useLiveRefresh } from "../../services/liveSync";
+import { pageCacheSaver, readPageCache } from "../../services/pageCache";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Link, useNavigate } from "react-router-dom";
@@ -58,6 +59,14 @@ const errorText = (e: unknown, fallback: string) => {
 
 type User = { full_name?: string; name?: string; email?: string; customer?: { full_name?: string } | null } | null;
 
+const DASHBOARD_CACHE = "customer:dashboard";
+type DashboardCache = {
+  vehicles: CustomerVehicle[];
+  appointments: CustomerAppointment[];
+  orders: CustomerRepairOrder[];
+  details: Record<number, CustomerRepairOrder>;
+};
+
 function CustomerDashboard() {
   const navigate = useNavigate();
   const hotline = useGarageHotline();
@@ -70,15 +79,16 @@ function CustomerDashboard() {
     }
   });
 
-  const [loading, setLoading] = useState(true);
+  const [cached] = useState(() => readPageCache<DashboardCache>(DASHBOARD_CACHE));
+  const [loading, setLoading] = useState(cached === null);
   const [loadError, setLoadError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   useLiveRefresh(() => setReloadKey((k) => k + 1));
 
-  const [vehicles, setVehicles] = useState<CustomerVehicle[]>([]);
-  const [appointments, setAppointments] = useState<CustomerAppointment[]>([]);
-  const [orders, setOrders] = useState<CustomerRepairOrder[]>([]);
-  const [details, setDetails] = useState<Record<number, CustomerRepairOrder>>({});
+  const [vehicles, setVehicles] = useState<CustomerVehicle[]>(cached?.vehicles ?? []);
+  const [appointments, setAppointments] = useState<CustomerAppointment[]>(cached?.appointments ?? []);
+  const [orders, setOrders] = useState<CustomerRepairOrder[]>(cached?.orders ?? []);
+  const [details, setDetails] = useState<Record<number, CustomerRepairOrder>>(cached?.details ?? {});
 
   const [searchKeyword, setSearchKeyword] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState("ALL");
@@ -105,6 +115,7 @@ function CustomerDashboard() {
     const load = async () => {
       // Lần đầu loading đã là true; các lần tải lại (Làm mới / dữ liệu đổi) làm ngầm, giữ nội dung cũ trên màn hình.
       setLoadError("");
+      const save = pageCacheSaver<DashboardCache>(DASHBOARD_CACHE);
 
       const [profile, vehicleRes, appointmentRes, orderRes] = await Promise.allSettled([
         fetchApi("/me"),
@@ -145,6 +156,10 @@ function CustomerDashboard() {
       });
       setDetails(map);
       setLoading(false);
+      // Chỉ nhớ bản tải đủ, tránh lần sau hiện danh sách trống vì một API lỗi.
+      if (vehicleRes.status === "fulfilled" && appointmentRes.status === "fulfilled" && orderRes.status === "fulfilled") {
+        save({ vehicles: vehicleRes.value, appointments: appointmentRes.value.items, orders: orderList, details: map });
+      }
     };
 
     void load();

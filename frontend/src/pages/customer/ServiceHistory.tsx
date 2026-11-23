@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveRefresh } from "../../services/liveSync";
+import { pageCacheSaver, readPageCache } from "../../services/pageCache";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button, EmptyState, ErrorState, LoadingState, Pagination, buttonClass } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
@@ -24,7 +25,9 @@ const PER_PAGE = 5;
  */
 export default function ServiceHistory() {
   const { notify } = useAppFeedback();
-  const [orders, setOrders] = useState<CustomerRepairOrder[]>([]);
+  const [orders, setOrders] = useState<CustomerRepairOrder[]>(() => readPageCache<CustomerRepairOrder[]>("customer:history") ?? []);
+  // Link ?review= chỉ được kết luận "không tìm thấy" sau khi có dữ liệu mới từ server, không dựa vào bản nhớ tạm.
+  const [ordersSynced, setOrdersSynced] = useState(false);
   const [reviews, setReviews] = useState<CustomerReview[]>([]);
   const [reviewError, setReviewError] = useState(false);
   const [reviewsLoading, setReviewsLoading] = useState(true);
@@ -33,7 +36,7 @@ export default function ServiceHistory() {
   const [searchParams, setSearchParams] = useSearchParams();
   const vehicleId = searchParams.get("vehicleId") || "";
   const reviewParam = searchParams.get("review");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => readPageCache("customer:history") === null);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
   const [query, setQuery] = useState("");
@@ -44,9 +47,14 @@ export default function ServiceHistory() {
     getMyReviews().then((data) => { if (active) { setReviews(data); setReviewError(false); } })
       .catch(() => { if (active) setReviewError(true); })
       .finally(() => { if (active) setReviewsLoading(false); });
-    getMyRepairOrders().then((data) => { if (active) { setOrders(data.filter(row => finished.has(row.status))); setError(""); } })
+    const save = pageCacheSaver<CustomerRepairOrder[]>("customer:history");
+    getMyRepairOrders().then((data) => {
+      const rows = data.filter(row => finished.has(row.status));
+      save(rows);
+      if (active) { setOrders(rows); setError(""); }
+    })
       .catch((e: unknown) => { if (active) setError(userErrorMessage(e, "Không thể tải lịch sử bảo dưỡng.")); })
-      .finally(() => { if (active) setLoading(false); });
+      .finally(() => { if (active) { setLoading(false); setOrdersSynced(true); } });
     return () => { active = false; };
   }, [reload]);
   const reloadAll = () => { setLoading(true); setReviewsLoading(true); setError(""); setReload((n) => n + 1); };
@@ -64,7 +72,7 @@ export default function ServiceHistory() {
   const paged = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   // Deep link ?review=<id> (từ thông báo): sau khi tải xong phiếu + đánh giá, mở modal của đúng phiếu.
-  const ready = !loading && !reviewsLoading && !error;
+  const ready = !loading && ordersSynced && !reviewsLoading && !error;
   const deepLinkOrder = reviewParam && ready ? orders.find((order) => String(order.id) === reviewParam) : undefined;
   const reviewOrder = reviewOrderId !== null ? orders.find((order) => order.id === reviewOrderId) : deepLinkOrder;
   const clearReviewParam = useCallback(() => setSearchParams((previous) => { const next = new URLSearchParams(previous); next.delete("review"); return next; }, { replace: true }), [setSearchParams]);

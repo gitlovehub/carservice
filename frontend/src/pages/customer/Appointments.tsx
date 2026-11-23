@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveRefresh } from "../../services/liveSync";
+import { pageCacheSaver, readPageCache } from "../../services/pageCache";
 import { Link } from "react-router-dom";
 import { Button, DateInput, EmptyState, ErrorState, LoadingState, Modal, Pagination, buttonClass } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
@@ -77,8 +78,8 @@ function DateBlock({ value }: { value: string }) {
 export default function Appointments() {
   const { notify } = useAppFeedback();
   const garage = useGarageInfo();
-  const [items, setItems] = useState<CustomerAppointment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<CustomerAppointment[]>(() => readPageCache<CustomerAppointment[]>("customer:appointments") ?? []);
+  const [loading, setLoading] = useState(() => readPageCache("customer:appointments") === null);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [tab, setTab] = useState<Tab>("all");
@@ -107,8 +108,9 @@ export default function Appointments() {
 
   useEffect(() => {
     let active = true;
+    const save = pageCacheSaver<CustomerAppointment[]>("customer:appointments");
     getMyAppointments({ page: 1, perPage: 100 })
-      .then((res) => { if (active) setItems(res.items); })
+      .then((res) => { save(res.items); if (active) { setItems(res.items); setError(""); } })
       .catch((e: unknown) => { if (active) setError(errorText(e, "Không thể tải danh sách lịch hẹn.")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };

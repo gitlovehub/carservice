@@ -1,5 +1,6 @@
 import { Modal } from "../../components/ui";
 import { useLiveRefresh } from "../../services/liveSync";
+import { pageCacheSaver, readPageCache } from "../../services/pageCache";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Button, IconButton, KmInput, Pagination, StatusBadge } from "../../components/ui";
 import { useEffect, useState } from "react";
@@ -66,6 +67,9 @@ function addMonths(date: Date, months: number): Date {
 }
 
 /** Gom lệnh sửa chữa theo xe: ngày hoàn tất gần nhất + xe có đang nằm xưởng không. */
+const CARS_CACHE = "customer:cars";
+type CarsCache = { cars: CustomerVehicle[]; orders: CustomerRepairOrder[] };
+
 function buildServiceInfo(orders: CustomerRepairOrder[]): Map<number, ServiceInfo> {
   const map = new Map<number, ServiceInfo>();
   for (const order of orders) {
@@ -82,15 +86,15 @@ function buildServiceInfo(orders: CustomerRepairOrder[]): Map<number, ServiceInf
 }
 
 function Cars() {
-  const [cars, setCars] = useState<CustomerVehicle[]>([]);
-  const [serviceInfo, setServiceInfo] = useState<Map<number, ServiceInfo>>(new Map());
-  const [repairOrders, setRepairOrders] = useState<CustomerRepairOrder[]>([]);
+  const [cars, setCars] = useState<CustomerVehicle[]>(() => readPageCache<CarsCache>(CARS_CACHE)?.cars ?? []);
+  const [serviceInfo, setServiceInfo] = useState<Map<number, ServiceInfo>>(() => buildServiceInfo(readPageCache<CarsCache>(CARS_CACHE)?.orders ?? []));
+  const [repairOrders, setRepairOrders] = useState<CustomerRepairOrder[]>(() => readPageCache<CarsCache>(CARS_CACHE)?.orders ?? []);
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(cars.length / CARS_PER_PAGE));
   // Xóa xe cuối của trang cuối → lùi về trang hợp lệ.
   const currentPage = Math.min(page, totalPages);
   const pagedCars = cars.slice((currentPage - 1) * CARS_PER_PAGE, currentPage * CARS_PER_PAGE);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => readPageCache(CARS_CACHE) === null);
   const [error, setError] = useState("");
 
   // Form Thêm xe
@@ -127,9 +131,11 @@ function Cars() {
   const loadVehicles = async (silent = false) => {
     if (!silent) setLoading(true);
     setError("");
+    const save = pageCacheSaver<CarsCache>(CARS_CACHE);
     try {
       // Lịch sử sửa chữa chỉ để hiện ngày bảo dưỡng — lỗi thì vẫn hiện danh sách xe.
       const [data, orders] = await Promise.all([getMyVehicles(), getMyRepairOrders().catch(() => [])]);
+      save({ cars: data, orders });
       setCars(data);
       setServiceInfo(buildServiceInfo(orders));
       setRepairOrders(orders);
@@ -141,7 +147,7 @@ function Cars() {
   };
 
   useEffect(() => {
-    void loadVehicles();
+    void loadVehicles(readPageCache(CARS_CACHE) !== null);
   }, []);
   useLiveRefresh(() => void loadVehicles(true));
 

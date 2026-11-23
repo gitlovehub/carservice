@@ -3,6 +3,32 @@ import { errorMessage } from "../../../services/adminApi";
 import { LIVE_EVENT } from "../../../services/liveSync";
 
 type State<T> = { key: string; data: T | null; error: string };
+type CacheSlot = { id: string; owner: string };
+
+/**
+ * Cache trong bộ nhớ để quay lại trang đã xem không phải chờ vòng quay. Chỉ dùng làm `stale`: trang vẫn gọi API
+ * lấy bản mới, còn `data` chỉ có sau khi server trả lời nên các thao tác dựa vào `data` không chạy trên số liệu cũ.
+ * Tách theo phiên đăng nhập (đổi token là xoá sạch) và theo khu vực, vì admin và cố vấn có khoá trùng tên.
+ */
+const CACHE_LIMIT = 150;
+const queryCache = new Map<string, unknown>();
+let cacheOwner: string | null = null;
+
+function cacheSlot(key: string): CacheSlot | null {
+  const token = localStorage.getItem("token");
+  if (token !== cacheOwner) {
+    queryCache.clear();
+    cacheOwner = token;
+  }
+  return token ? { id: `${window.location.pathname.split("/")[1]}|${key}`, owner: token } : null;
+}
+
+function remember(slot: CacheSlot | null, data: unknown) {
+  if (!slot || localStorage.getItem("token") !== slot.owner) return;
+  queryCache.delete(slot.id);
+  queryCache.set(slot.id, data);
+  if (queryCache.size > CACHE_LIMIT) queryCache.delete(queryCache.keys().next().value as string);
+}
 
 /**
  * Tải dữ liệu theo khoá yêu cầu (đổi tham số → tải lại). "Đang tải" = khoá hiện tại chưa có kết quả,
@@ -26,8 +52,12 @@ export function useAdminQuery<T>(key: string | null, load: (signal: AbortSignal)
       if (document.visibilityState !== "visible") return;
       controller?.abort();
       const current = controller = new AbortController();
+      const slot = key === null ? null : cacheSlot(key);
       load(current.signal)
-        .then(data => setState(prev => prev.key === requestKey ? { key: requestKey, data, error: "" } : prev))
+        .then(data => {
+          if (!current.signal.aborted) remember(slot, data);
+          setState(prev => prev.key === requestKey ? { key: requestKey, data, error: "" } : prev);
+        })
         .catch(() => undefined);
     };
     window.addEventListener(LIVE_EVENT, refresh);
@@ -43,10 +73,16 @@ export function useAdminQuery<T>(key: string | null, load: (signal: AbortSignal)
   useEffect(() => {
     if (requestKey === null) return;
     const controller = new AbortController();
+    const slot = key === null ? null : cacheSlot(key);
     load(controller.signal)
-      .then(data => setState({ key: requestKey, data, error: "" }))
+      .then(data => {
+        if (!controller.signal.aborted) remember(slot, data);
+        setState({ key: requestKey, data, error: "" });
+      })
       .catch((error: unknown) => {
-        if (!controller.signal.aborted) setState(current => ({ key: requestKey, data: current.data, error: errorMessage(error, "Không tải được dữ liệu.") }));
+        if (controller.signal.aborted) return;
+        if (slot) queryCache.delete(slot.id);
+        setState(current => ({ key: requestKey, data: current.data, error: errorMessage(error, "Không tải được dữ liệu.") }));
       });
     return () => controller.abort();
     // `load` đổi theo mỗi lần render; chỉ tải lại khi khoá yêu cầu đổi.
@@ -54,10 +90,12 @@ export function useAdminQuery<T>(key: string | null, load: (signal: AbortSignal)
   }, [requestKey]);
 
   const ready = requestKey !== null && state.key === requestKey;
+  const slot = key === null || ready ? null : cacheSlot(key);
+  const cached = slot ? queryCache.get(slot.id) as T | undefined : undefined;
   return {
     data: ready && !state.error ? state.data : null,
     /** Dữ liệu gần nhất để hiển thị trong lúc chờ. Tải lỗi thì trả null: không để dữ liệu cũ che mất thông báo lỗi. */
-    stale: ready && state.error ? null : state.data,
+    stale: ready && state.error ? null : cached ?? state.data,
     loading: requestKey !== null && !ready,
     error: ready ? state.error : "",
     reload: () => setAttempt(n => n + 1),

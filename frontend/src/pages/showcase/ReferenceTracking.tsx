@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { useLiveRefresh } from '../../services/liveSync';
+import { pageCacheSaver, readPageCache } from '../../services/pageCache';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { OrderPaperwork } from '../customer/RepairStatus';
 import { QuotationDetailModal } from '../customer/QuotationDetailModal';
@@ -253,7 +254,10 @@ function MemberTracking() {
   const urlOrderId = Number(params.get('orderId') || 0);
 
   const [tick, setTick] = useState(0);
-  const [list, setList] = useState<{ orders: CustomerRepairOrder[]; loading: boolean; error: string; updatedAt: Date | null }>({ orders: [], loading: true, error: '', updatedAt: null });
+  const [list, setList] = useState<{ orders: CustomerRepairOrder[]; loading: boolean; error: string; updatedAt: Date | null }>(() => {
+    const cached = readPageCache<CustomerRepairOrder[]>('customer:tracking');
+    return { orders: cached ?? [], loading: cached === null, error: '', updatedAt: null };
+  });
   const [detail, setDetail] = useState<CustomerRepairOrder | null>(null);
   const [appointmentCodes, setAppointmentCodes] = useState<Record<number, string>>({});
   const [tab, setTab] = useState<'active' | 'done' | null>(null);
@@ -262,8 +266,9 @@ function MemberTracking() {
   // Danh sách phiếu: tải lần đầu, khi bấm "Thử lại" (lỗi) và mỗi khi gara cập nhật (realtime bên dưới).
   useEffect(() => {
     let alive = true;
+    const save = pageCacheSaver<CustomerRepairOrder[]>('customer:tracking');
     getMyRepairOrders()
-      .then(rows => { if (alive) setList({ orders: rows, loading: false, error: '', updatedAt: new Date() }); })
+      .then(rows => { save(rows); if (alive) setList({ orders: rows, loading: false, error: '', updatedAt: new Date() }); })
       .catch(e => { if (alive) setList(prev => ({ ...prev, loading: false, error: userErrorMessage(e, 'Không tải được phiếu sửa chữa.') })); });
     return () => { alive = false; };
   }, [tick]);

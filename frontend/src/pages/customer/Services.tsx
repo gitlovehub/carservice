@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchApi } from "../../services/api";
+import { pageCacheSaver, readPageCache } from "../../services/pageCache";
 
 type Service = { id: number; name: string; description?: string | null; category?: string | null; base_price?: number | string | null; estimated_price?: number | string | null };
 
@@ -18,8 +19,8 @@ const btnOutline = `${btn} border-[#e9e9e6] bg-white text-[#191919] hover:border
 const stateBox = "rounded-2xl border border-[#e9e9e6] bg-white px-6 py-16 text-center text-cs-muted dark:border-[#34373a] dark:bg-[#191b1e] [&_button]:cursor-pointer [&_button]:border-0 [&_button]:bg-transparent [&_button]:font-extrabold [&_button]:text-[#cf2935] [&_button]:underline";
 
 export default function Services() {
-  const [items, setItems] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<Service[]>(() => readPageCache<Service[]>("public:services") ?? []);
+  const [loading, setLoading] = useState(() => readPageCache("public:services") === null);
   const [error, setError] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [query, setQuery] = useState("");
@@ -27,9 +28,14 @@ export default function Services() {
 
   useEffect(() => {
     let alive = true;
-    setLoading(true); setError(false);
+    setLoading(readPageCache("public:services") === null); setError(false);
+    const save = pageCacheSaver<Service[]>("public:services");
     fetchApi<Service[] | { data: Service[] }>("/services")
-      .then(res => { if (alive) setItems(Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : []); })
+      .then(res => {
+        const rows = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+        save(rows);
+        if (alive) setItems(rows);
+      })
       .catch(() => { if (alive) setError(true); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
