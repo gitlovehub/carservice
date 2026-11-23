@@ -20,7 +20,7 @@ function Contact() {
       return;
     }
 
-    notify("Biểu mẫu liên hệ chưa được nối API gửi tin. Bạn hãy gọi số hotline để được hỗ trợ; thông tin chưa được gửi.", "info");
+    notify("Biểu mẫu liên hệ chưa được nối API gửi tin. Bạn hãy gọi số hotline để được hỗ trợ; thông tin chưa được gửi.", "warning");
     return;
 
     setName("");

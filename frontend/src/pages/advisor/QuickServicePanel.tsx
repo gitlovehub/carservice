@@ -1,8 +1,9 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useFieldErrors } from "../../components/ui/useFieldErrors";
 import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { formatVnd, workflowApi, type CatalogService, type WorkflowOrder } from "../../services/workflowService";
-import { card, Notice } from "./WorkflowUI";
+import { card } from "./WorkflowUI";
 
 /**
  * Dịch vụ nhanh (P5): chọn dịch vụ mức "Nhanh" → gửi khách báo giá niêm yết, bỏ bước chẩn đoán.
@@ -37,7 +38,7 @@ export function QuickServicePanel({ order, onChanged }: { order: WorkflowOrder; 
   return <section className={`${card} print:hidden`} data-testid="quick-service-panel">
     <h2 className="text-lg font-bold text-cs-text">Dịch vụ nhanh · báo giá niêm yết</h2>
     <p className="mt-1 text-xs text-cs-muted">Chỉ dùng cho dịch vụ mức "Nhanh". Cần đủ 4 ảnh tổng quan (đầu, đuôi, trái, phải) trong biên bản nhận xe. Khách vẫn phải duyệt giá trước khi làm. Việc khác cần kiểm tra → dùng bước chẩn đoán bên dưới.</p>
-    {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
+    <ToastError message={error}/>
     <ul className="mt-3 space-y-1.5">{services.map(service => <li key={service.id}>
       <label className="flex items-center gap-2 text-sm text-cs-text">
         <input type="checkbox" checked={selected.includes(service.id)} onChange={e => setSelected(e.target.checked ? [...selected, service.id] : selected.filter(id => id !== service.id))}/>

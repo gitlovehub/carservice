@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useEffect, useState, type FormEvent } from "react";
 import { Button, IconButton } from "../../components/ui/Button";
 import { StatusBadge } from "../../components/ui/Badge";
@@ -82,7 +83,7 @@ export function SupplementPanel({ order, onChanged }: { order: WorkflowOrder; on
   return <section className={`${card} print:hidden`} data-testid="supplement-panel">
     <h2 className="text-lg font-bold text-cs-text">Báo giá phát sinh</h2>
     <p className="mt-1 text-xs text-cs-muted">Phát sinh cộng thêm vào báo giá gốc. Chỉ hạng mục khách đồng ý mới được làm và tính tiền.</p>
-    {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
+    <ToastError message={error}/>
 
     {supplements.map(q => <div key={q.id} className="mt-4 rounded-xl border border-cs-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">

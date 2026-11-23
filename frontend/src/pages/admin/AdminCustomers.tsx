@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useState } from "react";
 import { Button, DataTable, Drawer, ErrorState, Field, Input, LoadingState, Modal, NEWEST_FIRST, Pagination, SearchInput, Textarea, buttonClass, useTableSort, type Column } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
@@ -239,7 +240,7 @@ export default function AdminCustomers() {
           ? <div className="sm:col-span-2"><OwnerEmailVerify customerId={form.id} currentEmail={selected.email ?? ""} title={`Email đã xác minh: ${selected.email ?? ""}`}
               description="Chỉ đổi khi chủ xe yêu cầu. Mã gửi tới email mới, email cũ sẽ nhận thông báo." actionLabel="Gửi mã tới email mới" clearEmail
               onVerified={() => { notify("Đã đổi email chủ xe.", "success"); setForm(null); refresh(); }}/></div>
-          : <Field label="Email" optional error={customerErrors.errors.email}><Input type="email" value={form.draft.email} onChange={e => setDraft({ email: e.target.value })}/></Field>}        {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
+          : <Field label="Email" optional error={customerErrors.errors.email}><Input type="email" value={form.draft.email} onChange={e => setDraft({ email: e.target.value })}/></Field>}        <ToastError message={formError}/>
       </div>}
     </Modal>
 
@@ -254,7 +255,7 @@ export default function AdminCustomers() {
           <Field label="ODO hiện tại (km)" optional error={vehicleErrors.errors.mileage}><Input type="number" inputMode="numeric" min={0} step={1} value={vehicleForm.mileage} placeholder="VD: 45000" onChange={e => { vehicleErrors.clear("mileage"); setVehicleForm(current => current && { ...current, mileage: e.target.value }); }}/></Field>
           <Field label="Năm sản xuất" optional error={vehicleErrors.errors.year}><Input type="number" min={1990} max={new Date().getFullYear() + 1} value={vehicleForm.year} onChange={e => { vehicleErrors.clear("year"); setVehicleForm(current => current && { ...current, year: e.target.value }); }}/></Field>
         </div>
-        {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg">{formError}</p>}
+        <ToastError message={formError}/>
       </div>}
     </Modal>
   </AdminPage>;

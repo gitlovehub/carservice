@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button, DataTable, EmptyState, Field, Input, Modal, Pagination, QuantityStepper, SearchInput, Select, Textarea, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
@@ -219,8 +220,8 @@ export default function Inventory() {
       <input aria-label="Chọn ảnh phụ tùng" aria-invalid={!!partErrors.errors.image || undefined} type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} className="block w-full cursor-pointer text-small text-cs-text file:mr-3 file:rounded-lg file:border-0 file:bg-cs-soft file:px-3 file:py-2 file:font-semibold file:text-cs-accent-text" onChange={event => {
         const file = event.currentTarget.files?.[0];
         if (!file) return;
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { partErrors.show({ image: "Chỉ nhận ảnh JPG, PNG hoặc WebP." }); event.currentTarget.value = ""; return; }
-        if (file.size > 4 * 1024 * 1024) { partErrors.show({ image: "Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn." }); event.currentTarget.value = ""; return; }
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { partErrors.mark({ image: "Chỉ nhận ảnh JPG, PNG hoặc WebP." }); event.currentTarget.value = ""; return; }
+        if (file.size > 4 * 1024 * 1024) { partErrors.mark({ image: "Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn." }); event.currentTarget.value = ""; return; }
         setFormError(""); partErrors.clear("image"); setImageFile(file);
       }}/>
       <FieldError className="mt-1">{partErrors.errors.image}</FieldError>
@@ -247,7 +248,7 @@ export default function Inventory() {
       <Button variant="outline" icon="plus" className="mt-2" disabled={compatPick.modelId === null || editing.compat.some(c => c.id === compatPick.modelId)}
         onClick={() => { if (compatPick.modelId !== null) { setEditing({ ...editing, compat: [...editing.compat, { id: compatPick.modelId, name: `${compatPick.brandName} ${compatPick.modelName}` }] }); setCompatPick(emptySelection); } }}>Thêm dòng xe</Button>
     </div>
-    {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg">{formError}</p>}
+    <ToastError message={formError}/>
   </div>;
 
   const selectedStockPart = partOptions.data?.data.find(p => p.id === stockForm?.partId);
@@ -311,7 +312,7 @@ export default function Inventory() {
           <Button size="sm" variant="outline" className="mt-2" onClick={() => { setStockForm(null); switchTab("orders"); }}>Mở Cần đặt hàng</Button>
         </div>}
         <Field label={stockForm.type === "IN" ? "Nhà cung cấp / ghi chú" : "Lý do xuất"} optional error={stockErrors.errors.note} className="sm:col-span-2"><Input value={stockForm.note} maxLength={255} onChange={e => { stockErrors.clear("note"); setStockForm({ ...stockForm, note: e.target.value }); }}/></Field>
-        {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
+        <ToastError message={formError}/>
       </div>}
     </Modal>
   </AdminPage>;

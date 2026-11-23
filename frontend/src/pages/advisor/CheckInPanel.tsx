@@ -1,3 +1,5 @@
+import { focusFirstInvalid } from "../../components/ui/focusInvalid";
+import { ToastError } from "../../components/ui/ToastError";
 import { fmtDateTime } from "../../services/adminApi";
 import { useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -145,7 +147,7 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
   }
   async function print() {
     if (!handover) return;
-    if (!await printHandover(order, handover)) notify("Trình duyệt chặn cửa sổ in. Cho phép pop-up với trang này rồi bấm lại.", "error");
+    if (!await printHandover(order, handover)) notify("Trình duyệt chặn cửa sổ in. Cho phép pop-up với trang này rồi bấm lại.", "warning");
   }
 
   const noun = isOut ? "trả xe" : "nhận xe";
@@ -188,7 +190,7 @@ export function CheckInPanel({ order, onChanged, type = "CHECK_IN" }: { order: W
       <Fact label="Hư hỏng / thiếu"><span className={damages ? "text-danger" : ""}>{damages ? `${damages} mục` : "Không"}</span></Fact>
     </dl>}
 
-    {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
+    <ToastError message={error}/>
 
     <div className="mt-4 flex flex-wrap items-center gap-2">
       {!handover && <button type="button" className="adv-btn-gold" onClick={() => setEditing(true)}><Icon name="plus" size={18}/>Lập biên bản {noun}</button>}
@@ -384,7 +386,7 @@ export function HandoverSummary({ handover, checkIn, inlineChanges = true }: {
     { icon: "gauge", label: "Số km (ODO)", value: handover.mileage != null ? handover.mileage.toLocaleString("vi-VN") : "—" },
     { icon: "fuel", label: "Nhiên liệu", value: FUEL_TEXT[handover.fuel_level ?? ""] ?? "—" },
     { icon: "user", label: handover.type === "CHECK_OUT" ? "Người nhận" : "Người giao", value: `${handover.person_name} · ${RELATION_TEXT[handover.person_relation]}` },
-    { icon: "diamond", label: "Đồ có giá trị", value: handover.valuables_note || "Không có" },
+    { icon: "diamond", label: "Đồ có giá trị", value: handover.valuables_note || "—" },
   ];
   const pill = (item: HandoverChecklistItem) => <span className={`shrink-0 rounded-full border px-3 py-1 text-caption font-semibold ${conditionPill(item.condition)}`}>
     {CONDITION_TEXT[item.condition]}{item.quantity ? ` × ${item.quantity}` : ""}{item.note ? ` · ${item.note}` : ""}{item.is_discrepancy ? " · Thay đổi so với lúc nhận" : ""}
@@ -513,7 +515,7 @@ function CheckOutCompareView({ handover, compare, inlineChanges }: { handover: W
   const fuelStatus = !handover.fuel_level ? plain(null) : <Badge tone={handover.fuel_level === compare.fuel_level ? "success" : "warning"}>{handover.fuel_level === compare.fuel_level ? "Nguyên trạng" : "Thay đổi"}</Badge>;
   const noteRows = [
     ...(compare.general_condition || handover.general_condition ? [{ key: "general", cells: ["Tình trạng xe", plain(compare.general_condition), plain(handover.general_condition)] }] : []),
-    { key: "valuables", cells: ["Đồ có giá trị", plain(compare.valuables_note || "Không có"), plain(handover.valuables_note || "Không có")] },
+    { key: "valuables", cells: ["Đồ có giá trị", plain(compare.valuables_note || "—"), plain(handover.valuables_note || "—")] },
   ];
 
   return <div className="@container space-y-6 text-cs-text">
@@ -671,11 +673,7 @@ export function HandoverEditor({ order, handover, type, onClose, onChanged }: {
     setError("");
     setFieldErrors(Object.fromEntries(problems.map(problem => [problem.field, problem.message])));
     setTab(problems[0].tab);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const first = document.querySelector<HTMLElement>('[role="dialog"] [aria-invalid="true"]');
-      first?.scrollIntoView({ block: "center", behavior: "smooth" });
-      first?.focus({ preventScroll: true });
-    }));
+    focusFirstInvalid();
   }
 
   /** Lưu nháp (giữ modal để chụp ảnh) hoặc lưu biên bản = khóa nội dung + gửi chủ xe xác nhận. */
@@ -683,7 +681,7 @@ export function HandoverEditor({ order, handover, type, onClose, onChanged }: {
     const problems = validate(!finish);
     if (problems.length) { showProblems(problems); return; }
     setFieldErrors({});
-    if (finish && order.customer?.email_verified === false) { notify("Chủ xe chưa xác minh email. Xác minh email trước khi lưu biên bản.", "error"); return; }
+    if (finish && order.customer?.email_verified === false) { notify("Chủ xe chưa xác minh email. Xác minh email trước khi lưu biên bản.", "warning"); return; }
     if (finish && !await confirm({
       title: `Lưu biên bản ${noun}`, reference: order.repair_order_code,
       description: "Biên bản sẽ khóa nội dung và gửi chủ xe xác nhận (trong tài khoản hoặc bằng mã gửi email chủ xe tại quầy). Muốn sửa sau đó phải hủy và lập lại.",
@@ -908,7 +906,7 @@ export function HandoverEditor({ order, handover, type, onClose, onChanged }: {
           <IconButton icon="trash" tone="danger" label="Xóa dòng" onClick={() => patch({ items: form.items.filter((_, i) => i !== index) })}/>
         </li>)}</ul> : <p className="rounded-xl border border-dashed border-cs-border px-3 py-3 text-caption text-cs-muted">Chưa có.</p>}
       </section>; })}
-      <Field label={compare ? "Đồ có giá trị lúc trả" : "Đồ có giá trị khách để lại trong xe"} optional hint={compare ? <>Lúc nhận: <span className="font-medium text-cs-text">{compare.valuables_note || "Không có"}</span></> : "Ghi rõ để hai bên đối chiếu khi trả xe."}><Textarea rows={2} maxLength={1000} value={form.valuables_note ?? ""} onChange={e => patch({ valuables_note: e.target.value })} placeholder="VD: Không có / Kính mát trong hộc táp-lô"/></Field>
+      <Field label={compare ? "Đồ có giá trị lúc trả" : "Đồ có giá trị khách để lại trong xe"} optional hint={compare ? <>Lúc nhận: <span className="font-medium text-cs-text">{compare.valuables_note || "—"}</span></> : "Ghi rõ để hai bên đối chiếu khi trả xe."}><Textarea rows={2} maxLength={1000} value={form.valuables_note ?? ""} onChange={e => patch({ valuables_note: e.target.value })} placeholder="VD: Không có / Kính mát trong hộc táp-lô"/></Field>
     </div>}
   </Modal>;
 }

@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { Modal } from "../../components/ui";
 import { useLiveRefresh } from "../../services/liveSync";
 import { pageCacheSaver, readPageCache } from "../../services/pageCache";
@@ -190,7 +191,7 @@ function Cars() {
       await loadVehicles();
     } catch (err) {
       const plateMessage = apiFieldErrors(err).license_plate;
-      if (plateMessage) { addPlateErrors.show({ plate: plateMessage }); return; }
+      if (plateMessage) { addPlateErrors.showApi(err, { license_plate: "plate" }); return; }
       const e = err as { data?: { message?: string; errors?: Record<string, string[]> }; message?: string };
       const firstErr = e.data?.errors ? Object.values(e.data.errors).flat()[0] : undefined;
       setAddError(firstErr || e.data?.message || e.message || "Không thể thêm xe.");
@@ -256,7 +257,7 @@ function Cars() {
       await loadVehicles();
     } catch (err) {
       const plateMessage = apiFieldErrors(err).license_plate;
-      if (plateMessage) { editPlateErrors.show({ plate: plateMessage }); return; }
+      if (plateMessage) { editPlateErrors.showApi(err, { license_plate: "plate" }); return; }
       const e = err as { data?: { message?: string; errors?: Record<string, string[]> }; message?: string };
       const firstErr = e.data?.errors ? Object.values(e.data.errors).flat()[0] : undefined;
       setEditError(firstErr || e.data?.message || e.message || "Không thể cập nhật xe.");
@@ -392,7 +393,7 @@ function Cars() {
                 <div className="grid gap-4 sm:grid-cols-3">
                   <PlateField id="license-plate" value={newPlate} error={addPlateErrors.errors.plate} disabled={saving}
                     onChange={(value) => { setNewPlate(value); addPlateErrors.clear("plate"); }}
-                    onBlur={() => addPlateErrors.show(plateProblem(newPlate))}/>
+                    onBlur={() => addPlateErrors.mark(plateProblem(newPlate))}/>
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="mileage" className="text-label text-cs-text-2">Số km hiện tại (ODO)</label>
                     <KmInput id="mileage" label="Số km hiện tại (ODO)" value={newMileage} onChange={setNewMileage} disabled={saving} className="w-full"/>
@@ -414,7 +415,7 @@ function Cars() {
                 </div>
               </section>
 
-              {addError && <p role="alert" className="rounded-xl border border-cs-accent/40 bg-cs-soft px-4 py-3 text-[14px] font-semibold text-cs-accent-text">{addError}</p>}
+              <ToastError message={addError}/>
             </div>
 
             <div className="flex justify-end gap-2 border-t border-cs-border px-5 py-4 sm:px-6">
@@ -462,7 +463,7 @@ function Cars() {
                   <PlateField id="edit-license-plate" value={editPlate} error={editPlateErrors.errors.plate} disabled={updating}
                     hint={editPlate && editPlate === editingVehicle.license_plate && !isValidLicensePlate(editPlate) ? "Biển số đang lưu chưa đúng định dạng, nên cập nhật lại." : undefined}
                     onChange={(value) => { setEditPlate(value); editPlateErrors.clear("plate"); }}
-                    onBlur={() => editPlateErrors.show(plateProblem(editPlate, editingVehicle.license_plate))}/>
+                    onBlur={() => editPlateErrors.mark(plateProblem(editPlate, editingVehicle.license_plate))}/>
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="edit-mileage" className="text-label text-cs-text-2">Số km hiện tại (ODO)</label>
                     <KmInput id="edit-mileage" label="Số km hiện tại (ODO)" value={editMileage} onChange={setEditMileage} placeholder="Ví dụ: 45.000" disabled={updating} className="w-full"/>
@@ -484,7 +485,7 @@ function Cars() {
                 </div>
               </section>
 
-              {editError && <p role="alert" className="rounded-xl border border-cs-accent/40 bg-cs-soft px-4 py-3 text-[14px] font-semibold text-cs-accent-text">{editError}</p>}
+              <ToastError message={editError}/>
             </div>
 
             <div className="flex justify-end gap-2 border-t border-cs-border px-5 py-4 sm:px-6">
@@ -771,14 +772,14 @@ function VehicleDetailModal({ vehicle, orders, onClose, onEdit, onNoteSaved }: {
                     <textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} rows={4} maxLength={1000} autoFocus disabled={savingNote}
                       placeholder="Ví dụ: Xe hay đi đường dài, lốp thay tháng 10/2026..."
                       className="w-full resize-y rounded-xl border border-cs-border bg-cs-surface-2 px-4 py-3 text-[14px] text-cs-text outline-none focus:border-cs-accent"/>
-                    {noteError && <p className="text-[13px] text-cs-accent-text">{noteError}</p>}
+                    <ToastError message={noteError}/>
                     <div className="flex justify-end gap-2">
                       <Button variant="secondary" size="sm" onClick={() => setEditingNote(false)} disabled={savingNote}>Hủy</Button>
                       <Button variant="primary" size="sm" icon="check" loading={savingNote} loadingText="Đang lưu..." onClick={() => void saveNote()}>Lưu ghi chú</Button>
                     </div>
                   </div>
                 ) : (
-                  <p className={`min-h-[88px] whitespace-pre-line rounded-xl border border-cs-border px-4 py-3 text-[14px] ${vehicle.note ? "text-cs-text" : "text-cs-muted"} font-medium`}>{vehicle.note || "Chưa có ghi chú nào."}</p>
+                  <p className={`min-h-[88px] whitespace-pre-line rounded-xl border border-cs-border px-4 py-3 text-[14px] ${vehicle.note ? "text-cs-text" : "text-cs-muted"} font-medium`}>{vehicle.note || "—"}</p>
                 )}
               </section>
             </>}

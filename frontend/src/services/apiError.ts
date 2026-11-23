@@ -4,25 +4,27 @@ export type ApiErrorKind = "network" | "offline" | "timeout" | "canceled" | "una
 
 export type ApiErrorBody = { success?: boolean; code?: string; message?: string; errors?: Record<string, string[]>; reference?: string };
 
-const GENERIC_MESSAGE = "Đã xảy ra lỗi. Vui lòng thử lại.";
+const GENERIC_MESSAGE = "Không thể hoàn tất thao tác. Vui lòng thử lại sau giây lát.";
 
+/** Mỗi câu gồm hai vế "chuyện gì xảy ra. Cần làm gì." — toast tách thành tiêu đề và mô tả. */
 const KIND_MESSAGES: Record<ApiErrorKind, string> = {
-  network: "Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng rồi thử lại.",
-  offline: "Bạn đang mất kết nối mạng. Vui lòng kiểm tra mạng rồi thử lại.",
-  timeout: "Máy chủ phản hồi quá lâu. Vui lòng thử lại.",
-  canceled: "Yêu cầu đã được hủy.",
+  network: "Mất kết nối. Vui lòng kiểm tra kết nối mạng và thử lại.",
+  offline: "Mất kết nối. Vui lòng kiểm tra kết nối mạng và thử lại.",
+  timeout: "Máy chủ phản hồi chậm. Vui lòng thử lại sau giây lát.",
+  canceled: "Đã hủy yêu cầu.",
   unauthenticated: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
-  forbidden: "Bạn không có quyền thực hiện thao tác này.",
+  forbidden: "Không có quyền thực hiện. Vui lòng liên hệ quản trị viên nếu bạn cần quyền này.",
   not_found: "Không tìm thấy dữ liệu. Dữ liệu có thể đã bị xóa hoặc đường dẫn không đúng.",
-  conflict: "Dữ liệu vừa được thay đổi. Vui lòng tải lại rồi thử lại.",
-  validation: "Dữ liệu chưa hợp lệ. Vui lòng kiểm tra lại.",
-  rate_limited: "Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.",
-  server: "Hệ thống gặp sự cố. Vui lòng thử lại sau ít phút.",
-  unavailable: "Hệ thống đang tạm gián đoạn. Vui lòng thử lại sau ít phút.",
-  request: "Yêu cầu không hợp lệ. Vui lòng kiểm tra lại và thử lại.",
+  conflict: "Dữ liệu đã thay đổi. Vui lòng tải lại trang rồi thử lại.",
+  validation: "Thông tin chưa hợp lệ. Vui lòng kiểm tra lại.",
+  rate_limited: "Thao tác quá nhanh. Vui lòng thử lại sau ít phút.",
+  server: "Hệ thống đang gặp sự cố. Vui lòng thử lại sau ít phút.",
+  unavailable: "Hệ thống tạm gián đoạn. Vui lòng thử lại sau ít phút.",
+  request: "Yêu cầu chưa hợp lệ. Vui lòng kiểm tra lại rồi thử lại.",
 };
 
-const TECHNICAL = /SQLSTATE|stack trace|\bselect\b[\s\S]+\bfrom\b|Unauthenticated|This action is unauthorized|No query results|Too Many Attempts|Server Error|Network Error|Request failed with status|timeout of \d+ms|[A-Za-z]:[\\/][\w.-]+[\\/]|\/(?:var|usr|home)\/|vendor[\\/]|App\\|Illuminate\\|Undefined (?:variable|array key|property)|Call to (?:undefined|a member)|Class ".*" not found/i;
+// Backend đang dùng locale `en`: câu kiểm tra mặc định của Laravel cũng coi là thông báo thô.
+const TECHNICAL = /^The .+\b(?:field|must|has|is|may)\b|Idempotency|^(?:Forbidden|Not Found|Bad Request|Unprocessable)|SQLSTATE|stack trace|\bselect\b[\s\S]+\bfrom\b|Unauthenticated|This action is unauthorized|No query results|Too Many Attempts|Server Error|Network Error|Request failed with status|timeout of \d+ms|[A-Za-z]:[\\/][\w.-]+[\\/]|\/(?:var|usr|home)\/|vendor[\\/]|App\\|Illuminate\\|Undefined (?:variable|array key|property)|Call to (?:undefined|a member)|Class ".*" not found/i;
 
 export const isTechnicalMessage = (message: string) => TECHNICAL.test(message);
 

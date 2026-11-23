@@ -141,7 +141,7 @@ export function SearchableSelect({
       }) : <li className="px-3 py-3 text-small text-cs-muted" role="presentation">{emptyText}</li>}
     </ul>}
 
-    {error && <p id={`${id}-error`} className="text-caption text-danger" role="alert">{error}</p>}
+    {(typeof error === "string" ? error.trim() : error) && <p id={`${id}-error`} className="text-caption text-danger" role="alert">{error}</p>}
     {loadError
       ? <p id={`${id}-hint`} className="flex flex-wrap items-center gap-2 text-caption text-danger" role="alert">
         {loadError}

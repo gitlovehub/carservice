@@ -2,7 +2,8 @@ import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode, 
 import { LABELS } from "../../config/labels";
 import { Icon } from "./Icon";
 import { FieldContext, controlClass, useFieldControl } from "./fieldContext";
-import { focusIfFirstInvalid, isFormControl, validityMessage } from "./formValidation";
+import { focusFirstInvalid } from "./focusInvalid";
+import { isFormControl, validityMessage } from "./formValidation";
 
 type FieldProps = {
   label: ReactNode;
@@ -16,8 +17,11 @@ type FieldProps = {
 
 /** Dòng lỗi đỏ ngay dưới ô nhập (dùng khi ô không nằm trong <Field>). */
 export function FieldError({ children, className = "" }: { children?: ReactNode; className?: string }) {
-  return children ? <p className={`text-caption font-medium text-danger ${className}`} role="alert">{children}</p> : null;
+  return hasErrorText(children) ? <p className={`text-caption font-medium text-danger ${className}`} role="alert">{children}</p> : null;
 }
+
+/** Lỗi từ server chỉ tô đỏ ô (câu lỗi nằm trong toast) nên giá trị là khoảng trắng, không vẽ dòng chữ. */
+const hasErrorText = (error: ReactNode) => typeof error === "string" ? error.trim() !== "" : !!error;
 
 /**
  * Nhãn + ô nhập + gợi ý + lỗi. Ô nhập bên trong (<Input>/<Select>/<Textarea>) tự nhận id và aria.
@@ -28,7 +32,7 @@ export function Field({ label, hint, error, required, optional, className = "", 
   const [browserError, setBrowserError] = useState("");
   const shownError = error || browserError;
   const hintId = hint ? `${id}-hint` : undefined;
-  const errorId = shownError ? `${id}-error` : undefined;
+  const errorId = hasErrorText(shownError) ? `${id}-error` : undefined;
   const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
   return <FieldContext.Provider value={{ id, "aria-describedby": describedBy, "aria-invalid": shownError ? true : undefined, required }}>
     <div data-field="" className={`flex flex-col gap-1.5 ${className}`}
@@ -36,7 +40,7 @@ export function Field({ label, hint, error, required, optional, className = "", 
         if (!isFormControl(event.target)) return;
         event.preventDefault();
         setBrowserError(validityMessage(event.target));
-        focusIfFirstInvalid(event.target);
+        focusFirstInvalid(event.target.form);
       }}
       onInputCapture={() => setBrowserError("")} onChangeCapture={() => setBrowserError("")}>
       <label htmlFor={id} className="text-label text-cs-text-2">
@@ -45,7 +49,7 @@ export function Field({ label, hint, error, required, optional, className = "", 
         {optional && <span className="ml-1 font-normal normal-case tracking-normal text-cs-muted">({LABELS.form.optional})</span>}
       </label>
       {children}
-      {shownError ? <p id={errorId} className="text-caption font-medium text-danger" role="alert">{shownError}</p>
+      {errorId ? <p id={errorId} className="text-caption font-medium text-danger" role="alert">{shownError}</p>
         : hint ? <p id={hintId} className="text-caption text-cs-muted">{hint}</p> : null}
     </div>
   </FieldContext.Provider>;

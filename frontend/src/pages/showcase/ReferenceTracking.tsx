@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { useLiveRefresh } from '../../services/liveSync';
 import { pageCacheSaver, readPageCache } from '../../services/pageCache';
@@ -394,12 +395,14 @@ const fieldClass = 'w-full rounded-xl border border-cs-border bg-cs-surface px-3
 function GuestLookup() {
   const [code, setCode] = useState('');
   const [last4, setLast4] = useState('');
-  const [state, setState] = useState<{ status: 'idle' | 'loading' | 'error'; message?: string; result?: LookupResult }>({ status: 'idle' });
+  const [state, setState] = useState<{ status: 'idle' | 'loading' | 'error'; message?: string; field?: 'code' | 'last4'; result?: LookupResult }>({ status: 'idle' });
+  const fieldError = (name: 'code' | 'last4') => state.status === 'error' && state.field === name ? state.message : undefined;
+  const clearField = (name: 'code' | 'last4') => setState(current => current.field === name ? { status: 'idle' } : current);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!code.trim()) return setState({ status: 'error', message: 'Nhập mã phiếu hoặc mã lịch hẹn.' });
-    if (!/^\d{4}$/.test(last4)) return setState({ status: 'error', message: 'Nhập đúng 4 số cuối số điện thoại đã đăng ký.' });
+    if (!code.trim()) return setState({ status: 'error', field: 'code', message: 'Nhập mã phiếu hoặc mã lịch hẹn.' });
+    if (!/^\d{4}$/.test(last4)) return setState({ status: 'error', field: 'last4', message: 'Nhập đúng 4 số cuối số điện thoại đã đăng ký.' });
     setState({ status: 'loading' });
     try {
       const res = await fetchApi<{ data: LookupResult }>('/repair-orders/lookup', { method: 'POST', body: JSON.stringify({ code: code.trim(), phone_last4: last4 }) });
@@ -418,13 +421,15 @@ function GuestLookup() {
       <h2 className="text-xl font-extrabold text-cs-text">Tra cứu nhanh</h2>
       <p className="mt-1 text-sm text-cs-muted">Không cần đăng nhập. Mã có trong tin nhắn/email xác nhận lịch hẹn hoặc phiếu tiếp nhận xe.</p>
       <label className="mt-5 block text-sm font-bold text-cs-text">Mã phiếu hoặc mã lịch hẹn
-        <input value={code} onChange={e => setCode(e.target.value)} placeholder="VD: RO-2026-DM0198" autoComplete="off" className={`mt-1.5 uppercase placeholder:normal-case ${fieldClass}`}/>
+        <input value={code} onChange={e => { setCode(e.target.value); clearField('code'); }} aria-invalid={!!fieldError('code') || undefined} placeholder="VD: RO-2026-DM0198" autoComplete="off" className={`mt-1.5 uppercase placeholder:normal-case aria-invalid:border-danger ${fieldClass}`}/>
+        {fieldError('code') && <span role="alert" className="mt-1 block text-xs font-semibold text-danger">{fieldError('code')}</span>}
       </label>
       <label className="mt-4 block text-sm font-bold text-cs-text">4 số cuối số điện thoại
-        <input value={last4} onChange={e => setLast4(e.target.value.replace(/\D/g, '').slice(0, 4))} inputMode="numeric" placeholder="VD: 5678" autoComplete="off" className={`mt-1.5 tracking-[0.3em] ${fieldClass}`}/>
+        <input value={last4} onChange={e => { setLast4(e.target.value.replace(/\D/g, '').slice(0, 4)); clearField('last4'); }} aria-invalid={!!fieldError('last4') || undefined} inputMode="numeric" placeholder="VD: 5678" autoComplete="off" className={`mt-1.5 tracking-[0.3em] aria-invalid:border-danger ${fieldClass}`}/>
+        {fieldError('last4') && <span role="alert" className="mt-1 block text-xs font-semibold text-danger">{fieldError('last4')}</span>}
         <span className="mt-1 block text-xs font-normal text-cs-muted">Số điện thoại bạn dùng khi đặt lịch / gửi xe.</span>
       </label>
-      {state.status === 'error' && <p role="alert" className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{state.message}</p>}
+      <ToastError message={state.status === 'error' && !state.field ? state.message : ''} signal={state}/>
       <button type="submit" disabled={state.status === 'loading'} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#e11d2e] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#c81627] disabled:opacity-60">
         <Icon name="search" size={16}/>{state.status === 'loading' ? 'Đang tra cứu…' : 'Tra cứu tiến độ'}
       </button>

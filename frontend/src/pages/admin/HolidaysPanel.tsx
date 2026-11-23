@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useMemo, useState } from "react";
 import { Button, DateInput, ErrorState, Field, IconButton, Input, LoadingState, Modal, confirmDelete } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
@@ -126,7 +127,7 @@ export function HolidaysPanel({ open = "07:30", close = "17:30" }: { open?: stri
         <Field label="Từ ngày" required error={fieldErrors.errors.from}><DateInput value={form.from} onChange={e => { setForm({ ...form, from: e.target.value }); fieldErrors.clear("from", "to"); }}/></Field>
         <Field label="Đến ngày" optional error={fieldErrors.errors.to} hint="Tối đa 31 ngày"><DateInput value={form.to} min={form.from} onChange={e => { setForm({ ...form, to: e.target.value }); fieldErrors.clear("to"); }}/></Field>
         <Field label="Lý do" required error={fieldErrors.errors.reason} className="sm:col-span-2"><Input value={form.reason} maxLength={255} onChange={e => { setForm({ ...form, reason: e.target.value }); fieldErrors.clear("reason"); }} placeholder="Tết Nguyên Đán"/></Field>
-        {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
+        <ToastError message={formError}/>
       </div>}
     </Modal>
   </div>;

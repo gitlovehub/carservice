@@ -588,12 +588,12 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
             {order.appointment?.symptom_description && <p><b className="font-semibold">Khi đặt lịch: </b>{order.appointment.symptom_description}</p>}
             {order.appointment?.note && <p><b className="font-semibold">Ghi chú đặt lịch: </b>{order.appointment.note}</p>}
             {order.customer_request && <p><b className="font-semibold">Tại quầy: </b>{order.customer_request}</p>}
-            {!order.appointment?.symptom_description && !order.appointment?.note && !order.customer_request && <p className="text-cs-muted">Chưa ghi</p>}
+            {!order.appointment?.symptom_description && !order.appointment?.note && !order.customer_request && <p className="text-cs-muted">—</p>}
           </div>
         </div>
         <div className="min-w-0">
           <p className="font-bold text-cs-text">Tình trạng xe khi nhận</p>
-          <p className={`mt-1 whitespace-pre-wrap font-normal ${order.initial_condition ? "text-cs-text" : "text-cs-muted"}`}>{order.initial_condition || "Chưa ghi"}</p>
+          <p className={`mt-1 whitespace-pre-wrap font-normal ${order.initial_condition ? "text-cs-text" : "text-cs-muted"}`}>{order.initial_condition || "—"}</p>
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2">

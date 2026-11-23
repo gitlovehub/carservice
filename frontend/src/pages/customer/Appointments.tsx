@@ -1,3 +1,5 @@
+import { userErrorMessage } from "../../services/apiError";
+import { ToastError } from "../../components/ui/ToastError";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveRefresh } from "../../services/liveSync";
 import { pageCacheSaver, readPageCache } from "../../services/pageCache";
@@ -51,11 +53,7 @@ const SORTS: { id: SortKey; label: string }[] = [
 /** Mốc thời gian của lịch hẹn (ngày + giờ) để sắp xếp. */
 const appointmentTime = (a: CustomerAppointment) => new Date(`${a.appointment_date?.slice(0, 10)}T${(a.appointment_time ?? "00:00").slice(0, 5)}:00`).getTime() || 0;
 
-const errorText = (e: unknown, fallback: string) => {
-  const err = e as { message?: string; data?: { message?: string; errors?: Record<string, string[]> } };
-  const first = err?.data?.errors ? Object.values(err.data.errors).flat()[0] : undefined;
-  return first || err?.data?.message || err?.message || fallback;
-};
+const errorText = (e: unknown, fallback: string) => userErrorMessage(e, fallback);
 
 function servicesText(a: CustomerAppointment) {
   const names = [...(a.services ?? []).map((s) => s.name), ...(a.packages ?? []).map((p) => p.name)];
@@ -318,7 +316,7 @@ export default function Appointments() {
                   <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} maxLength={255} rows={2} className={`${controlClass} resize-none`} placeholder="Ví dụ: Bận việc đột xuất"/>
                 </label>
               )}
-              {modalError && <InlineError>{modalError}</InlineError>}
+              <ToastError message={modalError}/>
             </div>
           )}
           <ModalFoot>

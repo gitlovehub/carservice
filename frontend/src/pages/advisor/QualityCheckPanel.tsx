@@ -1,10 +1,11 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { workflowApi, type WorkflowOrder } from "../../services/workflowService";
 import { QUALITY_ITEMS } from "./repairOrderFlow";
 import { fullDayTime } from "./advisorListFormat";
-import { Notice, Req } from "./WorkflowUI";
+import { Req } from "./WorkflowUI";
 import { useFieldErrors } from "../../components/ui/useFieldErrors";
 import { FieldError } from "../../components/ui/Field";
 
@@ -42,7 +43,7 @@ export function QualityCheckPanel({ order, onChanged, bare = false }: { order: W
       <h3 className="adv-section-title">Checklist kiểm tra sau sửa chữa{editing && <Req/>}</h3>
       {saved && !editing && <span className="inline-flex items-center gap-1 text-caption font-semibold text-success-fg"><Icon name="check" size={14}/>Đã kiểm tra</span>}
     </div>
-    {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
+    <ToastError message={error}/>
     {!legacy && <div role="group" aria-label="Các hạng mục kiểm tra" aria-invalid={!!fieldErrors.errors.items || undefined} className={fieldErrors.errors.items ? "mt-3 rounded-xl border border-danger px-3 py-1" : "mt-3"}><ul className="divide-y divide-cs-border">{QUALITY_ITEMS.map(item => {
       const on = editing ? checked.includes(item.code) : saved;
       return <li key={item.code}>

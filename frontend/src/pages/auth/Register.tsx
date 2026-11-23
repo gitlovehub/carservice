@@ -1,20 +1,15 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { fetchApi } from "../../services/api";
 import { VerifyEmailPrompt } from "../../components/auth/VerifyEmailPrompt";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
-import { GarageAuthError, GarageAuthLayout, GarageField } from "../../components/GaragePublic";
+import { GarageAuthLayout, GarageField } from "../../components/GaragePublic";
 import { AuthSwitchLink, PasswordInput } from "../../components/auth/PasswordInput";
 import { authFieldClass, authPrimaryClass } from "../../components/auth/authStyles";
-
-type ApiErrorResponse = {
-  message?: string;
-  data?: {
-    message?: string;
-    errors?: Record<string, string[] | string>;
-  };
-};
+import { focusFirstInvalid } from "../../components/ui/focusInvalid";
+import { splitApiErrors } from "../../components/ui/formValidation";
 
 function Register() {
   const location = useLocation();
@@ -125,45 +120,6 @@ function Register() {
     return !Object.values(newErrors).some((error) => error !== "");
   };
 
-  const getErrorMessage = (error: unknown, defaultMessage: string): string => {
-    if (typeof error !== "object" || error === null) {
-      return defaultMessage;
-    }
-
-    const err = error as ApiErrorResponse;
-
-    if (err.data?.errors) {
-      const validationErrors = err.data.errors;
-      const firstKey = Object.keys(validationErrors)[0];
-
-      if (firstKey) {
-        const firstError = validationErrors[firstKey];
-
-        if (Array.isArray(firstError) && firstError.length > 0) {
-          return firstError[0];
-        }
-
-        if (typeof firstError === "string") {
-          return firstError;
-        }
-      }
-    }
-
-    if (err.data?.message) {
-      return err.data.message;
-    }
-
-    if ("message" in err && typeof (err as { message: unknown }).message === "string") {
-      const msg = (err as { message: string }).message;
-      if (msg === "Failed to fetch") {
-        return "Không thể kết nối tới máy chủ. Vui lòng thử lại sau.";
-      }
-      return msg;
-    }
-
-    return defaultMessage;
-  };
-
   const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -190,12 +146,11 @@ function Register() {
       setStep("CHECK_EMAIL");
       showToast("Đăng ký thành công! Vui lòng mở email và bấm nút xác thực.", "success");
     } catch (error: unknown) {
-      setApiError(
-        getErrorMessage(
-          error,
-          "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin."
-        )
-      );
+      const { fields, toast } = splitApiErrors(error, {
+        full_name: "fullName", phone: "phone", email: "email", password: "password", password_confirmation: "confirmPassword", accept_terms: "agree",
+      }, "Không thể đăng ký. Vui lòng kiểm tra lại thông tin.");
+      if (Object.keys(fields).length) { setErrors((previous) => ({ ...previous, ...fields })); focusFirstInvalid(); }
+      if (toast) setApiError(toast);
     } finally {
       setIsLoading(false);
     }
@@ -203,7 +158,7 @@ function Register() {
 
   return <GarageAuthLayout title={step === "REGISTER" ? "Đăng ký" : "Xác thực tài khoản."} description={step === "REGISTER" ? "Đăng ký để quản lý xe và đặt lịch bảo dưỡng." : `Email xác thực đã gửi đến ${form.email}.`}>
     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    {apiError && <GarageAuthError message={apiError} />}
+    <ToastError message={apiError}/>
     {step === "REGISTER" ? <>
       <form className="grid gap-4" onSubmit={handleRegisterSubmit} noValidate>
         <GarageField htmlFor="reg-name" label="Họ và tên" error={errors.fullName}><input className={authFieldClass} type="text" id="reg-name" name="fullName" autoComplete="name" placeholder="Nguyễn Văn A" value={form.fullName} onChange={handleChange} aria-invalid={!!errors.fullName} /></GarageField>
@@ -212,8 +167,8 @@ function Register() {
         <GarageField htmlFor="reg-password" label="Mật khẩu" error={errors.password}><PasswordInput id="reg-password" name="password" autoComplete="new-password" placeholder="Tối thiểu 8 ký tự" value={form.password} onChange={handleChange} aria-invalid={!!errors.password}/></GarageField>
         <PasswordStrengthIndicator password={form.password}/>
         <GarageField htmlFor="reg-confirm" label="Xác nhận mật khẩu" error={errors.confirmPassword}><PasswordInput id="reg-confirm" name="confirmPassword" autoComplete="new-password" placeholder="Nhập lại mật khẩu" value={form.confirmPassword} onChange={handleChange} aria-invalid={!!errors.confirmPassword}/></GarageField>
-        <label className="flex cursor-pointer items-start gap-3 text-xs text-cs-muted [&_input]:mt-0.5 [&_input]:size-4 [&_input]:shrink-0 [&_input]:cursor-pointer [&_input]:accent-[#cf2935]"><input name="agree" type="checkbox" checked={form.agree} onChange={handleChange}/><span>Tôi đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của CarService.</span></label>
-        {errors.agree && <p className="text-xs font-bold text-[#dc4250]">{errors.agree}</p>}
+        <label className="flex cursor-pointer items-start gap-3 text-xs text-cs-muted [&_input]:mt-0.5 [&_input]:size-4 [&_input]:shrink-0 [&_input]:cursor-pointer [&_input]:accent-[#cf2935]"><input name="agree" type="checkbox" checked={form.agree} onChange={handleChange} aria-invalid={!!errors.agree || undefined}/><span>Tôi đồng ý với <strong className="font-bold text-cs-text">Điều khoản dịch vụ</strong> và <strong className="font-bold text-cs-text">Chính sách bảo mật</strong> của CarService.</span></label>
+        {errors.agree.trim() && <p className="text-xs font-bold text-[#dc4250]" role="alert">{errors.agree}</p>}
         <button type="submit" className={authPrimaryClass} disabled={isLoading} aria-busy={isLoading || undefined}>{isLoading ? "Đang tạo tài khoản..." : "Đăng ký"}</button>
       </form>
       <AuthSwitchLink text="Đã có tài khoản?" to="/login" label="Đăng nhập" state={location.state}/>

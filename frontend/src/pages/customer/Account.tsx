@@ -1,3 +1,4 @@
+import { focusFirstInvalid } from "../../components/ui/focusInvalid";
 import { Modal } from "../../components/ui";
 import { useEffect, useState, useRef, type ChangeEvent } from "react";
 import Header from "../../components/Header";
@@ -249,11 +250,12 @@ function Account() {
         }
         if (Object.keys(backendErrors).length) {
           setPasswordErrors(backendErrors);
+          focusFirstInvalid();
           return;
         }
       }
       const message =
-        errorData?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại.";
+        errorData?.message || "Không thể đổi mật khẩu. Vui lòng kiểm tra lại.";
       showToast(message, "error");
     } finally {
       setIsSubmitting(false);

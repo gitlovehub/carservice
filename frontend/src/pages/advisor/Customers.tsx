@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, EmptyState, ErrorState, LoadingState, Modal, Pagination, SearchInput } from "../../components/ui";
@@ -167,7 +168,7 @@ export default function Customers() {
         <Field label="Họ tên" required error={fieldErrors.errors.full_name}><Input value={form.full_name} maxLength={100} required onChange={e => { setForm({ ...form, full_name: e.target.value }); fieldErrors.clear("full_name"); }}/></Field>
         <Field label="Số điện thoại" required error={fieldErrors.errors.phone}><Input inputMode="tel" value={form.phone} maxLength={20} required onChange={e => { setForm({ ...form, phone: e.target.value }); fieldErrors.clear("phone"); }}/></Field>
         {!(editing !== "new" && editing.has_account) && <Field label="Email" optional error={fieldErrors.errors.email} hint={editing !== "new" && editing?.email ? "Email đã xác minh chỉ quản trị viên được đổi." : "Sau khi lưu, xác minh email bằng mã ở bước lập biên bản nhận xe."}><Input type="email" value={form.email} maxLength={150} onChange={e => { setForm({ ...form, email: e.target.value }); fieldErrors.clear("email"); }}/></Field>}
-        {formError && <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-small text-danger-fg">{formError}</p>}
+        <ToastError message={formError}/>
       </form>
       {editing !== "new" && editing.has_account && <div className="mt-3"><SendEmailChangeLink customerId={editing.id} currentEmail={editing.email ?? ""}/></div>}
     </Modal>}

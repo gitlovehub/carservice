@@ -1,3 +1,4 @@
+import { ToastError } from "../../../components/ui/ToastError";
 import { useEffect, useMemo, useState } from "react";
 import { Button, Field, Input, Modal, Select, Switch, Textarea } from "../../../components/ui";
 import { useAppFeedback } from "../../../components/ui/feedbackContext";
@@ -63,8 +64,8 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
     const file = input.files?.[0];
     if (!file) return;
     setError("");
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { fieldErrors.show({ image: "Chỉ nhận ảnh JPG, PNG hoặc WebP." }); input.value = ""; return; }
-    if (file.size > 4 * 1024 * 1024) { fieldErrors.show({ image: "Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn." }); input.value = ""; return; }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { fieldErrors.mark({ image: "Chỉ nhận ảnh JPG, PNG hoặc WebP." }); input.value = ""; return; }
+    if (file.size > 4 * 1024 * 1024) { fieldErrors.mark({ image: "Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn." }); input.value = ""; return; }
     fieldErrors.clear("image"); setImageFile(file);
   };
 
@@ -189,7 +190,7 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
       {!form.status && (service?.active_packages_count ?? 0) > 0 && <p className="rounded-control bg-warning-soft px-3 py-2 text-small text-warning-fg sm:col-span-2">
         Dịch vụ đang nằm trong {service?.active_packages_count} gói bảo dưỡng; khi ngừng, các gói này sẽ không tính dịch vụ này.
       </p>}
-      {error && <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-fg sm:col-span-2">{error}</p>}
+      <ToastError message={error}/>
     </div>
   </Modal>;
 }

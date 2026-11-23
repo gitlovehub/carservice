@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState, Pagination, SearchInput } from "../../components/ui";
@@ -356,7 +357,7 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
               <FieldError className="mt-1">{fieldErrors.errors.code}</FieldError>
             </label>}
         </div>
-        {error && <p className="text-small text-danger" role="alert">{error}</p>}
+        <ToastError message={error}/>
       </section>}
       {canPay && emailedTo && <div className="adv-notice" role="status"><Icon name="mail" size={18} className="text-success-fg"/><span className="min-w-0 flex-1 text-small">Đã gửi link thanh toán tới <b className="break-all">{emailedTo}</b>. Khi khách trả xong, phiếu tự chuyển sang đã thanh toán.</span></div>}
       {invoice.status === "PAID" && order.status === "COMPLETED" && <div className="adv-notice"><Icon name="check" size={18} className="text-success-fg"/><span className="min-w-0 flex-1 text-small">Đã thu đủ tiền. Bước tiếp theo: kiểm tra sau sửa chữa (nếu chưa) và bàn giao xe.</span></div>}

@@ -82,7 +82,7 @@ export default function AdvisorHandovers() {
   async function print(h: HandoverListRow) {
     try {
       const order = await workflowApi.order(h.repair_order_id);
-      if (!await printHandover(order, h)) notify("Trình duyệt chặn cửa sổ in. Cho phép pop-up với trang này rồi bấm lại.", "error");
+      if (!await printHandover(order, h)) notify("Trình duyệt chặn cửa sổ in. Cho phép pop-up với trang này rồi bấm lại.", "warning");
     } catch (err) { notify(errorText(err), "error"); }
   }
 

@@ -1,4 +1,7 @@
+import { LABELS } from "../../config/labels";
 import { ApiClientError } from "../../services/api";
+import { isTechnicalMessage, userErrorMessage } from "../../services/apiError";
+import { isBusinessConflict } from "./toastContent";
 
 export type FormControl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
@@ -22,14 +25,30 @@ export function validityMessage(control: FormControl): string {
   return "Giá trị không hợp lệ.";
 }
 
-/** Đưa con trỏ tới ô lỗi đầu tiên của form. */
-export function focusIfFirstInvalid(control: FormControl) {
-  const first = control.form?.querySelector("input:invalid, select:invalid, textarea:invalid");
-  if (!control.form || first === control) control.focus();
-}
-
 /** Lỗi 422 của Laravel theo từng trường: { mileage: "..." }. */
 export function apiFieldErrors(error: unknown): Record<string, string> {
   if (!(error instanceof ApiClientError) || !error.data?.errors) return {};
   return Object.fromEntries(Object.entries(error.data.errors).flatMap(([key, messages]) => messages[0] ? [[key, messages[0]]] : []));
+}
+
+/** Ô sai do server trả về nhưng câu lỗi đã nằm trong toast: giữ viền đỏ, không lặp chữ dưới ô. */
+export const API_ERROR_MARK = " ";
+
+/**
+ * Chia lỗi API: lỗi nhập liệu nằm dưới đúng ô; lỗi nghiệp vụ đầu tiên (trùng dữ liệu, sai mật khẩu...) ra MỘT toast.
+ * Lỗi không thuộc ô nào cũng chỉ ra một toast để không xếp chồng nhiều thông báo.
+ */
+export function splitApiErrors(error: unknown, fieldByApiKey: Record<string, string> = {}, fallback: string = LABELS.notify.genericError) {
+  const fields: Record<string, string> = {};
+  let toast: string | null = null;
+  Object.entries(apiFieldErrors(error)).forEach(([key, message]) => {
+    const field = fieldByApiKey[key];
+    const technical = isTechnicalMessage(message);
+    if (!field) { if (!technical) toast ??= message; return; }
+    if (technical) { fields[field] = "Thông tin chưa hợp lệ."; return; }
+    if (isBusinessConflict(message) && toast === null) { toast = message; fields[field] = API_ERROR_MARK; return; }
+    fields[field] = message;
+  });
+  if (toast === null && !Object.keys(fields).length) toast = userErrorMessage(error, fallback);
+  return { fields, toast: toast as string | null };
 }

@@ -185,7 +185,7 @@ export function GarageAuthLayout({ title, description, children }: { title: stri
 }
 
 export function GarageField({ label, htmlFor, error, children }: { label: string; htmlFor?: string; error?: string; children: ReactNode }) {
-  return <div className="grid gap-2"><label className="text-xs font-bold" htmlFor={htmlFor}>{label}</label>{children}{error && <p className="text-xs font-semibold text-danger">{error}</p>}</div>;
+  return <div className="grid gap-2"><label className="text-xs font-bold" htmlFor={htmlFor}>{label}</label>{children}{error?.trim() && <p className="text-xs font-semibold text-danger" role="alert">{error}</p>}</div>;
 }
 
 export function GarageAuthError({ message }: { message: string }) {

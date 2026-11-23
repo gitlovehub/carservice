@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, EmptyState, ErrorState, KmInput, LoadingState, Modal, Pagination, SearchInput } from "../../components/ui";
@@ -238,7 +239,7 @@ export default function CustomerCars() {
         </div>
         <Field label="Số khung (VIN)" optional error={fieldErrors.errors.vin} hint="6–17 chữ và số không dấu"><Input value={form.vin} maxLength={17} className="uppercase" placeholder="VD: 1HGCM82633A004352" onChange={e => { setForm({ ...form, vin: formatVin(e.target.value) }); fieldErrors.clear("vin"); }}/></Field>
         <Field label="Ghi chú" optional error={fieldErrors.errors.note}><Textarea rows={2} value={form.note} onChange={e => { setForm({ ...form, note: e.target.value }); fieldErrors.clear("note"); }}/></Field>
-        {formError && <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-small text-danger-fg">{formError}</p>}
+        <ToastError message={formError}/>
       </form>
     </Modal>}
   </main>;
@@ -344,7 +345,7 @@ function VehiclePreview({ id, onEdit, onDelete }: { id: number; onEdit: (v: Vehi
         : <p className="text-small text-cs-muted">Chưa có ảnh — ảnh được chụp trong các lần sửa tại gara.</p>)}
 
       {tab === "notes" && <div className="rounded-xl border border-cs-border p-4 text-small">
-        <p className="whitespace-pre-wrap text-cs-text font-medium">{v.note || "Chưa có ghi chú cho xe này."}</p>
+        <p className={`whitespace-pre-wrap font-medium ${v.note ? "text-cs-text" : "text-cs-muted"}`}>{v.note || "—"}</p>
         <button type="button" className={`${buttonClass({ variant: "ghost", size: "sm" })} mt-3`} onClick={() => onEdit(v)}><Icon name="edit" size={15}/>Sửa ghi chú</button>
       </div>}
     </div>

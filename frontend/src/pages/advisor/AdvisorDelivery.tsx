@@ -186,7 +186,7 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
   // Biên bản trả xe gần nhất (bỏ bản đã hủy) — xem bằng cùng modal với chi tiết phiếu / trang Biên bản.
   const checkout = [...(order.handovers ?? [])].reverse().find(h => h.type === "CHECK_OUT" && h.status !== "VOID") ?? null;
   async function print() {
-    if (order && checkout && !await printHandover(order, checkout)) notify("Trình duyệt chặn cửa sổ in. Cho phép pop-up với trang này rồi bấm lại.", "error");
+    if (order && checkout && !await printHandover(order, checkout)) notify("Trình duyệt chặn cửa sổ in. Cho phép pop-up với trang này rồi bấm lại.", "warning");
   }
   const notes = [order.quality_check?.note && `Kiểm tra sau sửa: ${order.quality_check.note}`,
     ...(order.status_history ?? []).filter(h => h.note && ["COMPLETED", "HANDED_OVER"].includes(h.status ?? "")).map(h => `${dayTime(h.created_at)} · ${h.note}`)].filter((n): n is string => !!n);
@@ -244,7 +244,7 @@ function DeliveryPreview({ id, onChanged }: { id: number; onChanged: () => void 
         <div role="tabpanel" className="min-h-[120px]">
           {tab === "photos" ? <PhotoUploader type="repair_order" id={order.id} readOnly={order.status !== "COMPLETED"} title="Ảnh xe sau sửa chữa"/>
             : notes.length ? <ul className="list-disc space-y-1 pl-5 text-small font-medium text-cs-text">{notes.map(n => <li key={n}>{n}</li>)}</ul>
-            : <p className="text-small text-cs-muted">Không có ghi chú.</p>}
+            : <p className="text-small text-cs-muted">—</p>}
         </div>
 
         <section className="rounded-2xl border border-cs-border p-4" aria-label="Điều kiện bàn giao">

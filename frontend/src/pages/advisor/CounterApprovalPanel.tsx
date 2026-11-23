@@ -1,9 +1,10 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useState, type FormEvent } from "react";
 import { Button } from "../../components/ui/Button";
 import { counterApprovalApi, type OtpSent, type QuotationDecision } from "../../services/evidenceService";
 import { formatVnd, toNumber, type WorkflowOrder, type WorkflowQuotation } from "../../services/workflowService";
 import { OwnerEmailVerify } from "./OwnerEmailVerify";
-import { input, Notice, Req } from "./WorkflowUI";
+import { input, Req } from "./WorkflowUI";
 import { RequiredMark } from "./RepairOrderPanels";
 import { useFieldErrors } from "../../components/ui/useFieldErrors";
 import { FieldError } from "../../components/ui/Field";
@@ -66,7 +67,7 @@ export function CounterApprovalPanel({ quotation, owner, onDone }: { quotation: 
     </ul>
     {rejectsRequired && <p role="alert" className="mt-3 rounded-xl border border-warning/40 bg-warning-soft px-4 py-3 text-sm text-warning-fg">Khách từ chối hạng mục <b>bắt buộc</b> — gara không thể chỉ làm phần còn lại, nên báo giá sẽ ghi nhận là <b>từ chối toàn bộ</b>. Giải thích lý do với khách trước khi gửi mã.</p>}
     <p className="mt-2 text-right text-sm text-cs-text">Tổng khách đồng ý: <strong>{formatVnd(approvedTotal)}</strong></p>
-    {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
+    <ToastError message={error}/>
     {owner?.email_verified === false && owner.id
       ? <div className="mt-3"><OwnerEmailVerify customerId={owner.id} currentEmail={owner.email ?? ""} title="Chủ xe chưa xác minh email"
           description="Xác minh email trước khi gửi mã duyệt báo giá." onVerified={() => void onDone("Đã xác minh email chủ xe.")}/></div>

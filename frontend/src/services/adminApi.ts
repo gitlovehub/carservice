@@ -273,4 +273,4 @@ export const fmtTime = (iso: string | null | undefined) => {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "—" : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
-export const errorMessage = (error: unknown, fallback = "Có lỗi khi xử lý yêu cầu.") => (userErrorMessage(error, fallback));
+export const errorMessage = (error: unknown, fallback = "Không thể xử lý yêu cầu. Vui lòng thử lại sau giây lát.") => (userErrorMessage(error, fallback));

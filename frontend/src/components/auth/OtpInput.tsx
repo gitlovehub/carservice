@@ -90,6 +90,7 @@ export function OtpInput({
           maxLength={1}
           value={digit}
           disabled={disabled}
+          aria-invalid={hasError || undefined}
           onChange={(e) => handleChange(index, e)}
           onKeyDown={(e) => handleKeyDown(index, e)}
           onPaste={handlePaste}

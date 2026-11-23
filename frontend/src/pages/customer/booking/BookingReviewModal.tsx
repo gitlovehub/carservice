@@ -1,3 +1,4 @@
+import { ToastError } from "../../../components/ui/ToastError";
 import { useState, type ReactNode } from "react";
 import { Modal, buttonClass } from "../../../components/ui";
 import { Icon } from "../../../components/ui/Icon";
@@ -109,7 +110,7 @@ export default function BookingReviewModal({
         {checkbox(emailConsent, setEmailConsent, <>Tôi đồng ý nhận <strong>kết quả báo giá</strong> và thông tin liên lạc về lịch hẹn qua email{contact.email ? <> <strong>{contact.email}</strong></> : null}. Gara chỉ sửa chữa khi tôi đồng ý báo giá.</>)}
       </div>
 
-      {error && <p role="alert" className="mt-4 rounded-xl border border-danger/40 bg-danger-soft px-3 py-2 text-sm text-danger-fg">{error}</p>}
+      <ToastError message={error}/>
     </Modal>
   );
 }

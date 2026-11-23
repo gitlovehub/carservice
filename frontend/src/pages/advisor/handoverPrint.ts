@@ -104,8 +104,8 @@ ${h.general_condition ? `<p style="margin:6px 0 0"><b>Tình trạng xe ${h.type 
 <table class="list"><thead><tr><th style="width:5%" class="c">#</th><th>Hạng mục</th><th style="width:15%">Nhóm</th>${compare ? `<th style="width:16%">Lúc nhận</th>` : ""}<th style="width:14%">${compare ? "Lúc trả" : "Tình trạng"}</th><th style="width:8%" class="c">Số lượng</th><th style="width:26%">Ghi chú</th></tr></thead><tbody>
 ${assets.map((i, n) => `<tr><td class="c">${n + 1}</td><td>${esc(i.label)}</td><td>${esc(CATEGORY_TEXT[i.category])}</td>${compare ? beforeCell(i) : ""}<td>${cond(i.condition)}</td><td class="c">${esc(i.quantity ?? "")}</td><td>${esc(i.note || "")}</td></tr>`).join("") || `<tr><td colspan="${compare ? 7 : 6}" class="c">Không có</td></tr>`}
 </tbody></table>
-${compare ? `<p style="margin:6px 0 0"><b>Đồ có giá trị lúc nhận:</b></p><div class="note">${esc(compare.valuables_note || "Không có")}</div>` : ""}
-<p style="margin:6px 0 0"><b>Đồ có giá trị ${compare ? "lúc trả" : "khách để lại trong xe"}:</b></p><div class="note">${esc(h.valuables_note || "Không có")}</div>
+${compare ? `<p style="margin:6px 0 0"><b>Đồ có giá trị lúc nhận:</b></p><div class="note">${esc(compare.valuables_note || "—")}</div>` : ""}
+<p style="margin:6px 0 0"><b>Đồ có giá trị ${compare ? "lúc trả" : "khách để lại trong xe"}:</b></p><div class="note">${esc(h.valuables_note || "—")}</div>
 
 ${images.length ? `<h2>Ảnh minh chứng</h2><div class="photos">${images.map(p => `<figure><img src="${p.src}" alt=""><figcaption>${esc(p.caption)}</figcaption></figure>`).join("")}</div>` : ""}
 

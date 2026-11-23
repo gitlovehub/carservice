@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useState } from "react";
 import { Button, DataTable, Dropdown, Field, Input, Modal, Pagination, SearchInput, Select, type Column } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
@@ -133,7 +134,7 @@ export default function Accounts() {
         <label className="flex items-center gap-3 text-small text-cs-text sm:col-span-2">
           <Toggle checked={draft.sendInvite} onChange={v => setDraft({ ...draft, sendInvite: v })} label="Gửi email kích hoạt"/>Gửi email kích hoạt (mã OTP đặt mật khẩu)
         </label>
-        {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
+        <ToastError message={formError}/>
       </div>}
     </Modal>
   </AdminPage>;

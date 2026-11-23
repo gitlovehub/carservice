@@ -230,7 +230,7 @@ export default function ServiceDetailModal({ orderId, onClose }: { orderId: numb
                     <Row icon="calendar" label="Tình trạng khi nhận">
                       {data.checkIn?.general_condition || order.initial_condition
                         ? <span className="font-medium">{data.checkIn?.general_condition || order.initial_condition}</span>
-                        : <span className="font-normal text-cs-muted">Chưa ghi</span>}
+                        : <span className="font-normal text-cs-muted">—</span>}
                     </Row>
                     {data.checkIn?.fuel_level && <Row icon="droplet" label="Mức nhiên liệu" inline>{data.checkIn.fuel_level}</Row>}
                   </Panel>

@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Button, ErrorState, Field, Input, LoadingState, PasswordInput, buttonClass } from "../../components/ui";
@@ -212,7 +213,7 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
                 <Input type="email" value={me.email} disabled/>
               </Field>
             </div>
-            {profileError && <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-fg">{profileError}</p>}
+            <ToastError message={profileError}/>
             {draft && <div className="flex flex-wrap justify-end gap-2 border-t border-cs-border pt-4">
               <Button type="button" disabled={saving} onClick={() => { setDraft(null); setProfileError(""); profileErrors.reset(); }}>Huỷ</Button>
               <Button type="submit" variant="primary" icon="check" loading={saving} loadingText="Đang lưu...">Lưu thay đổi</Button>
@@ -235,7 +236,7 @@ export default function AdminProfile({ area = "admin" }: { area?: keyof typeof a
               </Field>
             </div>
             <p className="flex items-center gap-1.5 text-caption text-cs-muted"><Icon name="info" size={14}/>Tối thiểu 8 ký tự, gồm chữ thường, chữ hoa và chữ số; không trùng mật khẩu hiện tại.</p>
-            {passwordError && <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-fg">{passwordError}</p>}
+            <ToastError message={passwordError}/>
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-cs-border pt-4">
               {/* Không nhớ mật khẩu hiện tại → đặt lại qua OTP email (trang Quên mật khẩu dùng chung), xong quay về đây. */}
               <Link to="/forgot-password" state={{ from: { pathname: copy.path, search: "", hash: "" } }}

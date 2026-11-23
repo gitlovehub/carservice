@@ -1,6 +1,8 @@
+import { ToastError } from "../../components/ui/ToastError";
 // Trang Liên hệ công khai (không cần đăng nhập). Thông tin gara + giờ làm việc lấy từ Admin;
 // form gửi thật tới POST /api/contact-messages (Admin xem ở "Tin nhắn liên hệ").
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { cloneElement, useEffect, useState, type FormEvent, type ReactElement, type ReactNode } from 'react';
+import { focusFirstInvalid } from '../../components/ui/focusInvalid';
 import { useSearchParams } from 'react-router-dom';
 import Breadcrumb from '../../components/Breadcrumb';
 import { ApiClientError, fetchApi } from '../../services/api';
@@ -55,7 +57,10 @@ function ContactForm() {
   const lostEmail = searchParams.get('topic') === 'lost-email';
   const [form, setForm] = useState<FormState>(() => lostEmail ? { ...EMPTY, message: LOST_EMAIL_MESSAGE } : EMPTY);
   const [state, setState] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; message?: string; field?: string }>({ status: 'idle' });
-  const set = (k: keyof FormState) => (e: { target: { value: string } }) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const set = (k: keyof FormState) => (e: { target: { value: string } }) => {
+    setForm(f => ({ ...f, [k]: e.target.value }));
+    setState(current => current.field === k ? { status: 'idle' } : current);
+  };
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (lostEmail && !/^\S+@\S+\.\S+$/.test(form.email.trim())) { setState({ status: 'error', message: 'Nhập email mới bạn muốn dùng để gara gửi nút xác thực.', field: 'email' }); return; }
@@ -65,13 +70,15 @@ function ContactForm() {
       setForm(EMPTY);
       setState({ status: 'sent', message: res.message });
     } catch (err) {
-      const field = err instanceof ApiClientError ? Object.keys(err.data?.errors ?? {})[0] : undefined;
+      const apiKey = err instanceof ApiClientError ? Object.keys(err.data?.errors ?? {})[0] : undefined;
+      const field = apiKey && apiKey in EMPTY ? apiKey : undefined;
       const message = err instanceof ApiClientError && err.status === 429 ? 'Bạn gửi quá nhanh, vui lòng thử lại sau 1 phút.' : userErrorMessage(err, 'Không gửi được yêu cầu.');
       setState({ status: 'error', message, field });
+      if (field) focusFirstInvalid();
     }
   };
-  const field = (k: keyof FormState, label: ReactNode, icon: ReactNode, input: ReactNode) =>
-    <label className={`v3ref-ct-field${state.field === k ? ' has-error' : ''}`}><span className="v3ref-ct-label">{label}</span><span className="v3ref-ct-input">{icon}{input}</span></label>;
+  const field = (k: keyof FormState, label: ReactNode, icon: ReactNode, input: ReactElement<{ 'aria-invalid'?: boolean }>) =>
+    <label className={`v3ref-ct-field${state.field === k ? ' has-error' : ''}`}><span className="v3ref-ct-label">{label}</span><span className="v3ref-ct-input">{icon}{cloneElement(input, { 'aria-invalid': state.field === k || undefined })}</span>{state.status === 'error' && state.field === k && <small className="mt-1 block text-xs font-semibold text-danger" role="alert">{state.message}</small>}</label>;
   return <form className="v3ref-ct-form" onSubmit={submit} noValidate>
     {lostEmail && <p className="v3ref-ct-lead"><strong>Mất email cũ?</strong> Điền email mới và thông tin xe. Gara sẽ đối chiếu hồ sơ rồi gửi nút xác thực tới email mới của bạn.</p>}
     <div className="v3ref-ct-row">
@@ -81,7 +88,7 @@ function ContactForm() {
     {field('email', lostEmail ? <>Email mới muốn dùng <b>*</b></> : <>Email <small>(không bắt buộc)</small></>, I.mail(18), <input type="email" value={form.email} onChange={set('email')} placeholder={lostEmail ? 'Nhập email mới' : 'Nhập email của bạn'} autoComplete="email" maxLength={150} required={lostEmail}/>)}
     {field('message', <>Nội dung yêu cầu <b>*</b></>, I.pen(18), <textarea value={form.message} onChange={set('message')} placeholder="Cho chúng tôi biết bạn cần hỗ trợ điều gì..." rows={4} maxLength={2000} required/>)}
     {state.status === 'sent' && <p className="v3ref-ct-alert is-success" role="status">{I.check(18)}{state.message}</p>}
-    {state.status === 'error' && <p className="v3ref-ct-alert is-error" role="alert">{state.message}</p>}
+    <ToastError message={state.status === 'error' && !state.field ? state.message : ''} signal={state}/>
     <button type="submit" className="v3ref-ct-submit" disabled={state.status === 'sending'}>{I.send(20)}{state.status === 'sending' ? 'Đang gửi…' : 'Gửi yêu cầu'}</button>
   </form>;
 }

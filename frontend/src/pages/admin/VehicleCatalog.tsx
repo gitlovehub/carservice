@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Button, DataTable, EmptyState, Field, IconButton, Input, Modal, NEWEST_FIRST, PageHeader, Pagination, SearchInput, Select, Switch, confirmDelete, useAppFeedback, useTableSort, type Column, type SortState } from "../../components/ui";
 import { SearchableSelect, type SelectOption } from "../../components/vehicle/SearchableSelect";
@@ -401,7 +402,7 @@ export default function VehicleCatalog() {
           <Switch checked={form.status === "ACTIVE"} label="Hiển thị trong bộ chọn xe"
             onChange={on => setForm(current => current && { ...current, status: on ? "ACTIVE" : "INACTIVE" })}/>
         </div>
-        {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg">{formError}</p>}
+        <ToastError message={formError}/>
       </form>}
     </Modal>
   </main>;

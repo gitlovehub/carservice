@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useEffect, useRef, useState } from "react";
 import { Button, Modal } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
@@ -230,7 +231,7 @@ export function RescheduleModal<T extends ReschedulableAppointment>({ appointmen
           <Icon name="alert" size={15} className="mt-0.5 shrink-0"/>Lịch cũ được giữ nguyên. Hãy liên hệ khách và thống nhất giờ mới trước khi lưu.</p>}
       </section>
 
-      {error && <p className="rounded-card bg-danger-soft px-3 py-2.5 text-small text-danger-fg">{error}</p>}
+      <ToastError message={error}/>
     </div>
   </Modal>;
 }

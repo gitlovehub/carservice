@@ -1,3 +1,4 @@
+import { ToastError } from "../../../components/ui/ToastError";
 import { useEffect, useMemo, useState } from "react";
 import { Button, Field, Icon, IconButton, Input, KmInput, Modal, QuantityStepper, SearchInput, Select, Switch, Textarea } from "../../../components/ui";
 import { useAppFeedback } from "../../../components/ui/feedbackContext";
@@ -174,7 +175,7 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
           </li>)}
         </ul>}
       </section>
-      {error && <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-fg md:col-span-2">{error}</p>}
+      <ToastError message={error}/>
     </div>
   </Modal>;
 }

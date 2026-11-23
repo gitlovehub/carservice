@@ -39,8 +39,8 @@ export function VehicleAvatarControls({ vehicleId, hasImage, name, compact = fal
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file || busy.current) return;
-    if (!ACCEPTED_TYPES.includes(file.type)) { notify("Chỉ nhận ảnh JPG, PNG hoặc WebP.", "error"); return; }
-    if (file.size > MAX_BYTES) { notify("Ảnh không được vượt quá 5 MB.", "error"); return; }
+    if (!ACCEPTED_TYPES.includes(file.type)) { notify("Chỉ nhận ảnh JPG, PNG hoặc WebP.", "warning"); return; }
+    if (file.size > MAX_BYTES) { notify("Ảnh không được vượt quá 5 MB.", "warning"); return; }
     const body = new FormData();
     body.append("image", file);
     void run("upload", async () => (await apiClient.post<AvatarResponse>(`/vehicles/${vehicleId}/avatar`, body, { timeout: 60000 })).data, "Không tải được ảnh lên. Vui lòng thử lại.");

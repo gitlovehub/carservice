@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button, Modal } from "../../components/ui";
@@ -5,7 +6,7 @@ import { StatusBadge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { formatDate, formatMoney, getVehicleName, respondQuotation, type QuotationItem } from "../../services/customerApi";
-import { InlineError, ModalFoot, ModalHead, SectionLabel, Tag } from "./account/AccountKit";
+import { ModalFoot, ModalHead, SectionLabel, Tag } from "./account/AccountKit";
 import { MODAL_CLASS } from "./account/accountStyles";
 import { awaitsResponse, quotationRoundLabel, selectedItemsTotal, type QuotationRow } from "./account/useDetailedOrders";
 
@@ -124,7 +125,7 @@ export function QuotationDetailModal({ row, onClose, onResponded }: { row: Quota
         <p className="flex flex-wrap items-center gap-1.5 text-[14px] text-cs-muted"><Icon name="receipt" size={15}/>Phiếu sửa chữa này đã có hóa đơn <b className="font-mono text-cs-text">{row.order.invoice.invoice_code}</b> ·
           <Link to="/invoices" className="font-bold text-cs-accent-text hover:underline">Xem hóa đơn</Link></p>
       )}
-      {submitError && <InlineError>{submitError}</InlineError>}
+      <ToastError message={submitError}/>
     </div>
     <ModalFoot>
       <Button variant="secondary" onClick={onClose} disabled={submitting}>Đóng</Button>

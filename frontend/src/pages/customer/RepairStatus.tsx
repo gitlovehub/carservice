@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useLiveRefresh } from "../../services/liveSync";
@@ -82,7 +83,7 @@ function HandoverItem({ handover, checkIn, code, onConfirmed }: { handover: Work
       {waiting && <div className="mt-5 space-y-2 border-t border-cs-border pt-4">
         <label className="block text-xs font-semibold text-cs-muted">Ghi chú cho gara (không bắt buộc)
           <textarea className={`mt-1.5 ${controlClass}`} rows={2} maxLength={1000} value={comment} onChange={event => setComment(event.target.value)} placeholder="VD: Đúng tình trạng, lưu ý vết xước cửa sau đã có từ trước"/></label>
-        {error && <p role="alert" className="text-sm font-semibold text-cs-danger">{error}</p>}
+        <ToastError message={error}/>
       </div>}
     </HandoverViewModal>}
   </>;
@@ -218,7 +219,7 @@ function CustomerPickupBlock({ orderId }: { orderId: number }) {
         <span className="text-xs text-cs-muted">{item.phone} · đã khai báo giấy tờ{item.valid_until ? ` · hiệu lực đến ${formatDateTime(item.valid_until)}` : ""}</span></span>
       <Button variant="danger-outline" icon="x" disabled={working} onClick={() => void act(() => pickupAuthorizationApi.revoke(item.id))}>Thu hồi</Button>
     </li>)}</ul>}
-    {error && <p role="alert" className="mt-3 text-sm font-semibold text-cs-danger">{error}</p>}
+    <ToastError message={error}/>
     {!open ? <div className="mt-4"><Button variant="secondary" icon="plus" onClick={() => setOpen(true)}>Thêm người được ủy quyền</Button></div>
       : <form className="mt-4 grid gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-4 sm:grid-cols-2" onSubmit={event => {
         event.preventDefault();

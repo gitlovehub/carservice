@@ -280,7 +280,7 @@ export default function ServicePicker({
         </div>
       )}
 
-      {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
+      {error && <p data-invalid="true" role="alert" className="mt-2 text-[12px] text-red-500">{error}</p>}
 
       {drawerOpen &&
         createPortal(

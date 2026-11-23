@@ -1,13 +1,16 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { fetchApi } from "../../services/api";
 import { readReturnLocation, resolveReturnPath, setUserRole } from "./auth";
 import { LostEmailLink, VerifyEmailPrompt } from "../../components/auth/VerifyEmailPrompt";
 import Toast, { type ToastType } from "../../components/auth/Toast";
-import { GarageAuthError, GarageAuthLayout, GarageField } from "../../components/GaragePublic";
+import { GarageAuthLayout, GarageField } from "../../components/GaragePublic";
 import { AuthSwitchLink, PasswordInput } from "../../components/auth/PasswordInput";
 import { authFieldClass, authPrimaryClass } from "../../components/auth/authStyles";
 import { markAuthSession } from "../../services/authPersistence";
+import { focusFirstInvalid } from "../../components/ui/focusInvalid";
+import { API_ERROR_MARK, splitApiErrors } from "../../components/ui/formValidation";
 
 const REMEMBER_EMAIL_KEY = "carservice_remembered_email";
 
@@ -217,11 +220,11 @@ function Login() {
         return;
       }
 
-      setApiError(
-        emailErrors[0] ||
-          backendMessage ||
-          "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.",
-      );
+      const { fields, toast } = splitApiErrors(error, { email: "email", password: "password" }, "Không thể đăng nhập. Vui lòng kiểm tra lại thông tin.");
+      // Sai thông tin đăng nhập: giữ email, đưa con trỏ về ô mật khẩu để nhập lại.
+      const invalid = toast && /Email hoặc mật khẩu không đúng/i.test(toast) ? { password: API_ERROR_MARK } : fields;
+      if (Object.keys(invalid).length) { setErrors({ email: "", password: "", ...invalid }); focusFirstInvalid(); }
+      if (toast) setApiError(toast);
     } finally {
       setIsLoading(false);
     }
@@ -233,7 +236,7 @@ function Login() {
       description={pendingEmail ? "Tài khoản của bạn chưa được kích hoạt." : "Vui lòng nhập địa chỉ email và mật khẩu của bạn:"}
     >
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      {apiError && <GarageAuthError message={apiError} />}
+      <ToastError message={apiError}/>
       {linkNotice && !pendingEmail && <p role="status" className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">{linkNotice}</p>}
       {!pendingEmail ? (
         <>

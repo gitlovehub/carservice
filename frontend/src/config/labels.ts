@@ -57,7 +57,7 @@ export const LABELS = {
     saved: "Đã lưu thay đổi.",
     created: "Đã tạo mới thành công.",
     deleted: "Đã xóa.",
-    genericError: "Đã xảy ra lỗi. Vui lòng thử lại.",
+    genericError: "Không thể hoàn tất thao tác. Vui lòng thử lại sau giây lát.",
   },
   confirm: {
     deleteTitle: (name: string) => `Xóa ${name}?`,

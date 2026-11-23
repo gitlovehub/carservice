@@ -60,7 +60,7 @@ export function BookingSlotsPanel({ open = "07:30", close = "17:30" }: { open?: 
   };
   const save = async () => {
     if (!draft) return;
-    if (!draft.morning.length && !draft.afternoon.length) return setErrors({ form: "Cần ít nhất một khung giờ đặt lịch." });
+    if (!draft.morning.length && !draft.afternoon.length) return notify("Cần ít nhất một khung giờ đặt lịch.", "error");
     setSaving(true);
     try {
       const response = await adminApi.saveBookingSlots(draft);
@@ -68,7 +68,7 @@ export function BookingSlotsPanel({ open = "07:30", close = "17:30" }: { open?: 
       setDraft(null);
       query.reload();
     } catch (error) {
-      setErrors({ form: errorMessage(error, "Không lưu được khung giờ đặt lịch.") });
+      notify(errorMessage(error, "Không lưu được khung giờ đặt lịch."), "error");
     } finally {
       setSaving(false);
     }
@@ -122,7 +122,6 @@ export function BookingSlotsPanel({ open = "07:30", close = "17:30" }: { open?: 
           </div>
           <FieldError className="mt-2">{errors[p.id]}</FieldError>
         </section>)}
-        {errors.form && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{errors.form}</p>}
       </div>}
     </Modal>
   </Panel>;

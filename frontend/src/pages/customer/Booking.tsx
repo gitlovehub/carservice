@@ -1,3 +1,4 @@
+import { focusFirstInvalid } from "../../components/ui/focusInvalid";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button, Modal, buttonClass } from "../../components/ui";
 import ContactEditModal from "../../components/customer/ContactEditModal";
@@ -586,9 +587,8 @@ export default function Booking() {
       }
       return;
     }
-    if (validators[currentStep]?.()) {
-      goToStep(currentStep + 1);
-    }
+    if (validators[currentStep]?.()) goToStep(currentStep + 1);
+    else focusFirstInvalid();
   };
 
   const completeBooking = async () => {
@@ -597,7 +597,7 @@ export default function Booking() {
       return;
     }
     if (isStaffAccount) {
-      notify("Tài khoản nhân viên không đặt lịch ở trang này. Vui lòng dùng chức năng tạo lịch hẹn trong khu quản lý.", "error");
+      notify("Tài khoản nhân viên không đặt lịch ở trang này. Vui lòng dùng chức năng tạo lịch hẹn trong khu quản lý.", "warning");
       return;
     }
 
@@ -798,7 +798,7 @@ export default function Booking() {
 
                 {/* Khai báo xe mới trùng dòng + phiên bản với xe chưa biển số đã lưu → hỏi: đúng xe đó hay một xe khác. */}
                 {platelessTwins.length > 0 && (
-                  <div role="radiogroup" aria-label="Xe này là xe nào" className={`mt-4 rounded-2xl border p-4 ${errors.twin ? "border-[#e11d2e] bg-cs-soft" : "border-[#e11d2e]/30 bg-cs-soft"}`}>
+                  <div role="radiogroup" aria-label="Xe này là xe nào" aria-invalid={!!errors.twin || undefined} className={`mt-4 rounded-2xl border p-4 ${errors.twin ? "border-[#e11d2e] bg-cs-soft" : "border-[#e11d2e]/30 bg-cs-soft"}`}>
                     <p className="text-sm font-semibold text-cs-text">
                       Bạn đã có {platelessTwins.length > 1 ? `${platelessTwins.length} xe` : "xe"} {vehicleName} chưa có biển số trong hồ sơ. Đây là:
                     </p>
@@ -920,7 +920,7 @@ export default function Booking() {
 
                     {/* Chọn giờ */}
                     <h3 className="mb-3 border-l-4 border-[#e11d2e] pl-3 text-lg font-extrabold text-cs-text">Chọn giờ</h3>
-                    <div className="space-y-3">
+                    <div className="space-y-3" data-invalid={errors.time ? "true" : undefined}>
                       {slotRow("Buổi sáng", <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="#fbbf24"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>, bookingSlots.morning, "bg-gradient-to-r from-[#fff4ec] to-white dark:from-[#3a2a22] dark:to-transparent")}
                       {slotRow("Buổi chiều", <svg viewBox="0 0 24 24" width="30" height="30" fill="none" strokeLinecap="round" aria-hidden="true"><circle cx="9" cy="9" r="3.5" fill="#fbbf24" stroke="#f59e0b" strokeWidth="1.8"/><path d="M9 2.5v1.5M3.5 9H2M4.8 4.8l1 1M13.2 4.8l-1 1" stroke="#f59e0b" strokeWidth="1.8"/><path d="M8 20h10a3.5 3.5 0 0 0 0-7 5 5 0 0 0-9.6 1.5A3 3 0 0 0 8 20Z" fill="#fb923c" stroke="#f97316" strokeWidth="1.6"/></svg>, bookingSlots.afternoon, "bg-cs-surface")}
                     </div>

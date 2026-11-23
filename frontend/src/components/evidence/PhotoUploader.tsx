@@ -1,3 +1,4 @@
+import { ToastError } from "../ui/ToastError";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/Button";
 import { Icon } from "../ui/Icon";
@@ -59,7 +60,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
       }
       await load();
     } catch (err) {
-      setError(userErrorMessage(err, "Tải ảnh thất bại."));
+      setError(userErrorMessage(err, "Không tải được ảnh lên."));
     } finally {
       setBusy(false);
       if (fileInput.current) fileInput.current.value = "";
@@ -88,7 +89,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
         <Button size="sm" variant="secondary" loading={busy} loadingText="Đang tải ảnh…" onClick={() => fileInput.current?.click()}>Thêm ảnh</Button>
       </>}
     </div>
-    {error && <p className="mt-2 text-xs font-semibold text-cs-danger" role="alert">{error}</p>}
+    <ToastError message={error}/>
     {items.length > 0
       ? <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">{items.map(item => <li key={item.id} className="relative overflow-hidden rounded-lg border border-cs-border bg-cs-surface-2">
         {!readOnly && <button type="button" onClick={() => void remove(item)} disabled={busy} aria-label="Xoá ảnh" title="Xoá ảnh"

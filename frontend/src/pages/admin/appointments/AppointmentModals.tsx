@@ -1,3 +1,4 @@
+import { ToastError } from "../../../components/ui/ToastError";
 import { useEffect, useMemo, useState } from "react";
 import { Button, DateInput, Field, Icon, Modal, SearchInput, Select, Textarea } from "../../../components/ui";
 import { useAppFeedback } from "../../../components/ui/feedbackContext";
@@ -159,7 +160,7 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
       <Field label="Mô tả triệu chứng / yêu cầu" optional error={fieldErrors.errors.symptom} className="md:col-span-2">
         <Textarea value={symptom} maxLength={2000} onChange={e => { setSymptom(e.target.value); fieldErrors.clear("symptom"); }} placeholder="Ví dụ: xe kêu ở gầm khi qua gờ giảm tốc, muốn kiểm tra thêm phanh…"/>
       </Field>
-      {error && <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-fg md:col-span-2">{error}</p>}
+      <ToastError message={error}/>
     </div>
   </Modal>;
 }

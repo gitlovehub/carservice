@@ -52,7 +52,7 @@ function NoteBlock({ icon, title, children }: { icon: IconName; title: string; c
   </section>;
 }
 
-const Empty = () => <span className="font-normal text-cs-muted">Chưa ghi</span>;
+const Empty = () => <span className="font-normal text-cs-muted">—</span>;
 
 /** Hiển thị phần ghi nhận trên phiếu sửa chữa (chi tiết, xem nhanh). */
 export function ReceptionNotes({ order }: { order: WorkflowOrder }) {

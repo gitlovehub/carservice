@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { focusIfFirstInvalid, isFormControl, validityMessage, type FormControl } from "./formValidation";
+import { focusFirstInvalid } from "./focusInvalid";
+import { isFormControl, validityMessage, type FormControl } from "./formValidation";
 
 /**
  * Ô nhập không nằm trong <Field>: thay bong bóng lỗi của trình duyệt bằng viền đỏ + dòng lỗi ngay dưới ô.
@@ -31,8 +32,10 @@ export function FormValidationHost() {
       }
       message.textContent = validityMessage(control);
       control.setAttribute("aria-invalid", "true");
-      focusIfFirstInvalid(control);
+      focusFirstInvalid(control.form);
     };
+    // Form tự kiểm tra trong onSubmit: sau khi vẽ lỗi, đưa người dùng tới ô đầu tiên.
+    const onSubmit = (event: Event) => { if (event.target instanceof HTMLFormElement) focusFirstInvalid(event.target); };
     const onEdit = (event: Event) => { if (isFormControl(event.target)) clear(event.target); };
     // Ô bị gỡ khỏi trang (đóng modal, đổi bước) thì gỡ luôn dòng lỗi.
     const observer = new MutationObserver(() => {
@@ -40,11 +43,13 @@ export function FormValidationHost() {
     });
     observer.observe(document.body, { childList: true, subtree: true });
     document.addEventListener("invalid", onInvalid, true);
+    document.addEventListener("submit", onSubmit);
     document.addEventListener("input", onEdit, true);
     document.addEventListener("change", onEdit, true);
     return () => {
       observer.disconnect();
       document.removeEventListener("invalid", onInvalid, true);
+      document.removeEventListener("submit", onSubmit);
       document.removeEventListener("input", onEdit, true);
       document.removeEventListener("change", onEdit, true);
       messages.forEach(message => message.remove());

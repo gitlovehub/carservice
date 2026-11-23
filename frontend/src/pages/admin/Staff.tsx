@@ -1,3 +1,4 @@
+import { ToastError } from "../../components/ui/ToastError";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button, DataTable, Dropdown, Field, Input, Modal, NEWEST_FIRST, Pagination, SearchInput, Select, buttonClass, useTableSort, type Column } from "../../components/ui";
@@ -54,7 +55,7 @@ export default function Staff() {
     const parts = specialtyParts(draft.specialty);
     const exists = parts.some(part => part.toLowerCase() === tag.toLowerCase());
     const next = (exists ? parts.filter(part => part.toLowerCase() !== tag.toLowerCase()) : [...parts, tag]).join(", ");
-    if (next.length > SPECIALTY_MAX) { fieldErrors.show({ specialty: `Chuyên môn tối đa ${SPECIALTY_MAX} ký tự.` }); return; }
+    if (next.length > SPECIALTY_MAX) { fieldErrors.mark({ specialty: `Chuyên môn tối đa ${SPECIALTY_MAX} ký tự.` }); return; }
     setField({ specialty: next });
   };
 
@@ -164,7 +165,7 @@ export default function Staff() {
           <Toggle checked={draft.sendInvite} onChange={v => setDraft({ ...draft, sendInvite: v })} label="Gửi email kích hoạt"/>
           <span className="text-small text-cs-text">Gửi email mã OTP để nhân viên tự đặt mật khẩu</span>
         </div>}
-        {formError && <p role="alert" className="rounded-control bg-danger-soft p-3 text-small text-danger-fg sm:col-span-2">{formError}</p>}
+        <ToastError message={formError}/>
       </div>}
     </Modal>
   </AdminPage>;

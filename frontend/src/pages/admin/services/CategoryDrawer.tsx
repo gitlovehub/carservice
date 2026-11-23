@@ -1,3 +1,4 @@
+import { ToastError } from "../../../components/ui/ToastError";
 import { useState } from "react";
 import { Button, Drawer, Field, Icon, IconButton, Input, type IconName } from "../../../components/ui";
 import { useAppFeedback } from "../../../components/ui/feedbackContext";
@@ -130,7 +131,7 @@ export function CategoryDrawer({ open, categories, icons, total, uncategorized, 
       </div>
     </div>
     {current && current.services_count > 0 && <p className="text-caption text-cs-muted">Danh mục còn dịch vụ — chuyển dịch vụ sang danh mục khác trước khi xoá.</p>}
-    {error && <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-fg">{error}</p>}
+    <ToastError message={error}/>
   </div>;
 
   const footer = editing

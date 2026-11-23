@@ -1,3 +1,5 @@
+import { focusFirstInvalid } from "../../components/ui/focusInvalid";
+import { userErrorMessage } from "../../services/apiError";
 import { formatDateTime } from "../../services/customerApi";
 import { apiFieldErrors } from "../../components/ui/formValidation";
 import { KmInput } from "../../components/ui";
@@ -51,11 +53,7 @@ const STEP_BY_STATUS: Record<string, number> = {
   CLOSED: 5,
 };
 
-const errorText = (e: unknown, fallback: string) => {
-  const err = e as { message?: string; data?: { message?: string; errors?: Record<string, string[]> } };
-  const first = err?.data?.errors ? Object.values(err.data.errors).flat()[0] : undefined;
-  return first || err?.data?.message || err?.message || fallback;
-};
+const errorText = (e: unknown, fallback: string) => userErrorMessage(e, fallback);
 
 type User = { full_name?: string; name?: string; email?: string; customer?: { full_name?: string } | null } | null;
 
@@ -263,7 +261,7 @@ function CustomerDashboard() {
       showToast(`Đã cập nhật số ODO thành ${mileage.toLocaleString("vi-VN")} km.`, "success");
     } catch (err) {
       const mileageError = apiFieldErrors(err).mileage;
-      if (mileageError) setOdoError(mileageError);
+      if (mileageError) { setOdoError(mileageError); focusFirstInvalid(); }
       else showToast(errorText(err, "Không thể cập nhật số ODO."), "error");
     } finally {
       setOdoSaving(false);

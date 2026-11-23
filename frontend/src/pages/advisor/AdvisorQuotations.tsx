@@ -303,7 +303,7 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
           <div className="rounded-xl border border-cs-border p-4">
             <p className="flex items-center gap-2 text-small font-semibold text-cs-text"><Icon name="clipboard" size={16} className="text-cs-muted"/>Ghi chú:</p>
             {notes.length ? <ul className="mt-2 list-disc space-y-1 pl-5 text-small font-medium text-cs-text-2">{notes.slice(0, 4).map(n => <li key={n}>{n}</li>)}</ul>
-              : <p className="mt-2 text-small text-cs-muted">Không có ghi chú.</p>}
+              : <p className="mt-2 text-small text-cs-muted">—</p>}
           </div>
           <dl className="adv-quote-total">
             <div><dt>Tổng tiền dịch vụ</dt><dd>{formatVnd(serviceTotal)}</dd></div>
@@ -333,9 +333,9 @@ function QuotationPreview({ row, onChanged }: { row: QuotationListRow; onChanged
 
       {tab === "notes" && <dl className="grid gap-4 sm:grid-cols-2">
         {q.reason && <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Lý do báo giá phát sinh</dt><dd className="mt-1 text-small text-cs-text">{q.reason}</dd></div>}
-        <div><dt className="text-caption text-cs-muted">Tình trạng xe khi nhận</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text font-medium">{order.initial_condition || "Chưa ghi"}</dd></div>
-        <div><dt className="text-caption text-cs-muted">Kết quả kiểm tra</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text font-medium">{inspection?.condition_description || "Chưa ghi"}</dd></div>
-        <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Kết luận chẩn đoán</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.diagnosis || "Chưa ghi"}</dd></div>
+        <div><dt className="text-caption text-cs-muted">Tình trạng xe khi nhận</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text font-medium">{order.initial_condition || "—"}</dd></div>
+        <div><dt className="text-caption text-cs-muted">Kết quả kiểm tra</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text font-medium">{inspection?.condition_description || "—"}</dd></div>
+        <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Kết luận chẩn đoán</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.diagnosis || "—"}</dd></div>
         {q.valid_until && <div><dt className="text-caption text-cs-muted">Hiệu lực đến</dt><dd className="mt-1 text-small text-cs-text">{new Date(q.valid_until).toLocaleDateString("vi-VN")}</dd></div>}
         {(inspection?.recommendations ?? []).some(r => r.note) && <div className="sm:col-span-2"><dt className="text-caption text-cs-muted">Ghi chú đề xuất</dt>
           <dd><ul className="mt-1 list-disc space-y-1 pl-5 text-small text-cs-text">{inspection!.recommendations!.filter(r => r.note).map(r => <li key={r.id}>{r.service?.name || r.part?.name}: {r.note}</li>)}</ul></dd></div>}

@@ -308,7 +308,7 @@ function ProgressPreview({ id, version, onChanged }: { id: number; version: numb
           </div>
           <div className="adv-ro-vehicle sm:!grid-cols-2">
             <p className="flex items-center gap-3"><span className="adv-avatar" aria-hidden="true"><Icon name="user" size={18}/></span>
-              <span className="min-w-0"><span className="block text-caption text-cs-muted">Kỹ thuật viên phụ trách</span><b className="block truncate text-cs-text">{technicians.length ? technicians.join(", ") : "Chưa ghi"}</b></span></p>
+              <span className="min-w-0"><span className="block text-caption text-cs-muted">Kỹ thuật viên phụ trách</span><b className="block truncate text-cs-text">{technicians.length ? technicians.join(", ") : "—"}</b></span></p>
             <p className="flex items-center gap-3"><Icon name="clock" size={26} className="shrink-0 text-cs-muted"/>
               <span><span className="block text-caption text-cs-muted">Thời gian dự kiến còn lại</span><b className={left?.late ? "text-danger" : "text-cs-text"}>{left?.text ?? "—"}</b></span></p>
           </div>
@@ -358,8 +358,8 @@ function ProgressPreview({ id, version, onChanged }: { id: number; version: numb
       {tab === "notes" && <div className="space-y-4">
         <ReceptionNotes order={order}/>
         <dl className="grid gap-4">
-          <div><dt className="text-caption text-cs-muted">Kết quả kiểm tra</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.condition_description || "Chưa ghi"}</dd></div>
-          <div><dt className="text-caption text-cs-muted">Kết luận chẩn đoán</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.diagnosis || "Chưa ghi"}</dd></div>
+          <div><dt className="text-caption text-cs-muted">Kết quả kiểm tra</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.condition_description || "—"}</dd></div>
+          <div><dt className="text-caption text-cs-muted">Kết luận chẩn đoán</dt><dd className="mt-1 whitespace-pre-wrap text-small text-cs-text">{inspection?.diagnosis || "—"}</dd></div>
           {notesFromHistory.length > 0 && <div><dt className="text-caption text-cs-muted">Ghi chú khi đổi trạng thái</dt>
             <dd><ul className="mt-1 space-y-1.5">{notesFromHistory.map(h => <li key={h.id} className="flex flex-wrap items-center gap-2 text-small text-cs-text"><StatusBadge domain="repair" status={h.status || ""}/><span className="tabular-nums text-caption text-cs-muted">{dayTime(h.created_at)}</span><span className="font-medium">{h.note}</span></li>)}</ul></dd></div>}
         </dl>
