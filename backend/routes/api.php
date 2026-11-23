@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\AdminServiceController;
 use App\Http\Controllers\Api\AdminVehicleCatalogController;
 use App\Http\Controllers\Api\AdvisorAppointmentController;
 use App\Http\Controllers\Api\AdvisorDashboardController;
+use App\Http\Controllers\Api\AdvisorReviewController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingCatalogController;
@@ -54,6 +55,9 @@ use Illuminate\Support\Facades\Route;
 
 // Public part catalog images are streamed via Laravel: no symlink required.
 Route::get('part-images/{part}', [AdminInventoryController::class, 'showImage'])->whereNumber('part');
+// Ảnh đại diện xe: tên file UUID ngẫu nhiên; chỉ Admin/Cố vấn mới có API tải lên, thay, xoá.
+Route::get('vehicle-avatars/{file}', [VehicleController::class, 'avatar'])
+    ->where('file', '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(webp|jpg)');
 
 /*
 |--------------------------------------------------------------------------
@@ -67,9 +71,7 @@ Route::controller(AuthController::class)->group(function (): void {
 
     Route::post('login', 'login')->middleware('throttle:5,1');
 
-    Route::post('verify-email-otp', 'verifyEmailOtp')->middleware('throttle:5,1');
-
-    Route::post('resend-email-otp', 'resendEmailOtp')->middleware('throttle:3,1');
+    Route::post('resend-verification', 'resendVerification')->middleware('throttle:3,1');
 
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
 
@@ -148,6 +150,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('me', 'me');
         Route::patch('me/profile', 'updateProfile');
         Route::post('me/change-password', 'changePassword');
+        Route::post('me/email-change', 'requestEmailChange')->middleware('throttle:5,1');
         Route::post('logout', 'logout');
     });
 
@@ -289,10 +292,15 @@ Route::middleware('auth:sanctum')->group(function (): void {
             ->whereNumber('customer')->middleware('throttle:5,1');
         Route::post('customers/{customer}/email-verification/verify', [CustomerEmailVerificationController::class, 'verify'])
             ->whereNumber('customer')->middleware('throttle:10,1');
+        // Khách có tài khoản: chỉ gửi nút xác thực tới email mới để khách tự bấm.
+        Route::post('customers/{customer}/email-change-link', [CustomerEmailVerificationController::class, 'sendChangeLink'])
+            ->whereNumber('customer')->middleware('throttle:5,1');
 
         // Vehicle CRUD
         Route::apiResource('vehicles', VehicleController::class)
             ->only(['index', 'store', 'show', 'update', 'destroy']);
+        Route::post('vehicles/{vehicle}/avatar', [VehicleController::class, 'uploadAvatar'])->whereNumber('vehicle')->middleware('throttle:30,1');
+        Route::delete('vehicles/{vehicle}/avatar', [VehicleController::class, 'deleteAvatar'])->whereNumber('vehicle')->middleware('throttle:30,1');
 
         // Xe của một khách hàng
         Route::get(
@@ -378,6 +386,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('payments', 'payments');
             Route::get('reviews', 'reviews');
             Route::post('reviews/{review}/reply', 'replyReview')->whereNumber('review');
+            Route::put('reviews/{review}/reply', 'updateReviewReply')->whereNumber('review');
+            Route::get('reviews/{review}/reply-history', 'reviewReplyHistory')->whereNumber('review');
             Route::patch('reviews/{review}', 'updateReview')->whereNumber('review');
             Route::get('audit-logs', 'auditLogs');
         });
@@ -486,6 +496,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('technicians', [TechnicianController::class, 'index']);
 
+        // Phản hồi khách hàng: chỉ đánh giá thuộc phiếu mình phụ trách (kiểm tra trong controller).
+        Route::controller(AdvisorReviewController::class)->prefix('advisor/reviews')->group(function (): void {
+            Route::get('/', 'index');
+            Route::post('{review}/reply', 'reply')->whereNumber('review')->middleware('throttle:30,1');
+            Route::put('{review}/reply', 'updateReply')->whereNumber('review')->middleware('throttle:30,1');
+        });
+
         // Tải ảnh bằng chứng lên disk private (D-007).
         Route::post('media', [MediaController::class, 'store'])->middleware('throttle:60,1');
         Route::delete('media/{media}', [MediaController::class, 'destroy'])->middleware('throttle:60,1');
@@ -579,6 +596,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
                 'invoices/{invoice}/payments',
                 'store'
             );
+
+            // Cố vấn đồng ý gửi hoá đơn kèm link thanh toán qua email
+            Route::post('invoices/{invoice}/payment-email', 'sendPaymentEmail')->middleware('throttle:6,1');
 
             // Tạm thời Advisor xác nhận QR
             Route::post(

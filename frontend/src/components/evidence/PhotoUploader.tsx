@@ -4,6 +4,7 @@ import { Icon } from "../ui/Icon";
 import { useAppFeedback } from "../ui/feedbackContext";
 import { formatDateTime } from "../../services/customerApi";
 import { compressImage, mediaApi, VEHICLE_POSITIONS, type MediaAttachableType, type MediaItem } from "../../services/evidenceService";
+import { userErrorMessage } from "../../services/apiError";
 
 /**
  * Ảnh bằng chứng (P1B). Ảnh lưu private trên server; hiển thị bằng blob tải kèm token.
@@ -35,7 +36,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
         setUrls({ ...urlsRef.current });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không tải được ảnh.");
+      setError(userErrorMessage(err, "Không tải được ảnh."));
     }
   }, [type, id]);
 
@@ -58,7 +59,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
       }
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Tải ảnh thất bại.");
+      setError(userErrorMessage(err, "Tải ảnh thất bại."));
     } finally {
       setBusy(false);
       if (fileInput.current) fileInput.current.value = "";
@@ -74,7 +75,7 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
       if (urlsRef.current[item.id]) { URL.revokeObjectURL(urlsRef.current[item.id]); delete urlsRef.current[item.id]; setUrls({ ...urlsRef.current }); }
       setItems(list => list.filter(x => x.id !== item.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không xoá được ảnh.");
+      setError(userErrorMessage(err, "Không xoá được ảnh."));
     } finally { setBusy(false); }
   }
 

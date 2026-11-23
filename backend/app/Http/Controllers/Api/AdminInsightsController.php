@@ -148,10 +148,17 @@ class AdminInsightsController extends Controller
 
         $items = $this->periodItems($start, $end);
         ['granularity' => $granularity, 'points' => $series] = $this->reportSeries($start, $end, $items);
+        $previousPoints = $this->reportSeries($prevStart, $prevEnd, $this->periodItems($prevStart, $prevEnd))['points'];
 
         return response()->json(['data' => [
             'granularity' => $granularity,
             'series' => $series,
+            'previous_series' => array_map(fn (array $point): array => [
+                'label' => $point['label'],
+                'title' => $point['title'],
+                'revenue' => round($point['service'] + $point['parts'], 2),
+            ], $previousPoints),
+            'revenue_groups' => $this->revenueGroups($items),
             'period' => $isRange ? 'custom' : $period,
             'label' => $label,
             'periods' => $this->availablePeriods(),
@@ -397,13 +404,31 @@ class AdminInsightsController extends Controller
     {
         return InvoiceItem::query()
             ->whereHas('invoice', fn ($q) => $q->where('status', '!=', Invoice::CANCELLED)->whereBetween('created_at', [$from, $to]))
-            ->with(['invoice:id,subtotal,total_amount,created_at', 'part:id,sku'])
+            ->with(['invoice:id,subtotal,total_amount,created_at', 'part:id,sku', 'service:id,category'])
             ->get()
             ->each(function (InvoiceItem $item): void {
                 $subtotal = (float) $item->invoice->subtotal;
                 $ratio = $subtotal > 0 ? (float) $item->invoice->total_amount / $subtotal : 1.0;
                 $item->setAttribute('net', round((float) $item->amount * $ratio, 2));
             });
+    }
+
+    /**
+     * Doanh thu theo nhóm: phụ tùng và từng danh mục dịch vụ; ngoài 4 nhóm lớn nhất gộp vào "Khác".
+     *
+     * @param  Collection<int, InvoiceItem>  $items
+     * @return list<array{name: string, revenue: float}>
+     */
+    private function revenueGroups(Collection $items): array
+    {
+        $groups = $items
+            ->groupBy(fn (InvoiceItem $item): string => $item->item_type === 'PART' ? 'Phụ tùng' : ($item->service?->category ?: 'Dịch vụ khác'))
+            ->map(fn (Collection $rows, string $name): array => ['name' => $name, 'revenue' => round((float) $rows->sum('net'), 2)])
+            ->sortByDesc('revenue')
+            ->values();
+        $rest = round((float) $groups->slice(4)->sum('revenue'), 2);
+
+        return $groups->take(4)->when($rest > 0, fn (Collection $top) => $top->push(['name' => 'Khác', 'revenue' => $rest]))->values()->all();
     }
 
     /** @return array{service: float, parts: float} */
@@ -514,8 +539,19 @@ class AdminInsightsController extends Controller
         $avgPrev = $rating($prevFrom, $prevTo);
         $tatNow = $turnaround($from, $to);
         $tatPrev = $turnaround($prevFrom, $prevTo);
+        $statusCounts = RepairOrder::query()->whereBetween('received_at', [$from, $to])
+            ->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $countStatuses = fn (string ...$statuses): int => (int) collect($statuses)->sum(fn (string $status) => $statusCounts[$status] ?? 0);
 
         return [
+            'order_status' => [
+                'completed' => $countStatuses(RepairOrder::COMPLETED, RepairOrder::HANDED_OVER),
+                'in_progress' => $countStatuses(RepairOrder::IN_PROGRESS),
+                'waiting_parts' => $countStatuses(RepairOrder::WAITING_FOR_PARTS),
+                'waiting_approval' => $countStatuses(RepairOrder::QUOTING, RepairOrder::WAITING_APPROVAL),
+                'inspecting' => $countStatuses(RepairOrder::RECEIVED, RepairOrder::INSPECTING),
+                'closed' => $countStatuses(RepairOrder::CLOSED),
+            ],
             'received' => $this->kpi($received($from, $to), $received($prevFrom, $prevTo)),
             'delivered' => RepairOrder::query()->whereBetween('handed_over_at', [$from, $to])->count(),
             'in_shop' => $this->inShopAt($to),

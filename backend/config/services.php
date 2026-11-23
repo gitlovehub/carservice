@@ -24,6 +24,11 @@ return [
         'email' => env('CHATBOT_EMAIL', 'contact@carservice.vn'),
     ],
 
+    // Địa chỉ web khách dùng để chuyển về sau khi bấm nút trong email. Mặc định lấy origin đầu tiên của CORS.
+    'frontend' => [
+        'url' => rtrim(trim(explode(',', (string) env('FRONTEND_URL', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173')))[0]), '/'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | VNPay

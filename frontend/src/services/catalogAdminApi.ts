@@ -48,11 +48,11 @@ export type AppointmentList = {
   pagination: { current_page: number; per_page: number; total: number; last_page: number };
 };
 
-export const REQUEST_TYPES: Record<RequestType, { label: string; short: string; icon: "droplet" | "tools" | "search" | "wrench" }> = {
+export const REQUEST_TYPES: Record<RequestType, { label: string; short: string; icon: "droplet" | "search" | "wrench" | "box" }> = {
   MAINTENANCE: { label: "Bảo dưỡng định kỳ", short: "Bảo dưỡng", icon: "droplet" },
-  REPAIR: { label: "Sửa chữa", short: "Sửa chữa", icon: "tools" },
+  REPAIR: { label: "Sửa chữa", short: "Sửa chữa", icon: "wrench" },
   DIAGNOSIS: { label: "Kiểm tra", short: "Kiểm tra", icon: "search" },
-  REPLACEMENT: { label: "Thay thế phụ tùng", short: "Thay phụ tùng", icon: "wrench" },
+  REPLACEMENT: { label: "Thay thế phụ tùng", short: "Thay phụ tùng", icon: "box" },
 };
 
 /* ---------------- Dịch vụ ---------------- */

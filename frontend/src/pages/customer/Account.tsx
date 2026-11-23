@@ -6,6 +6,7 @@ import { NotificationsPanel } from "./account/NotificationsPanel";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
 import { Link, useSearchParams } from "react-router-dom";
+import ChangeEmailModal from "../../components/customer/ChangeEmailModal";
 import ContactEditModal from "../../components/customer/ContactEditModal";
 import { buttonClass } from "../../components/ui/buttonClass";
 import { Icon } from "../../components/ui/Icon";
@@ -118,6 +119,8 @@ function Account() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [isChangeEmailOpen, setIsChangeEmailOpen] = useState(false);
 
   // Avatar Selection
   const [selectedAvatar, setSelectedAvatar] = useState<string>("");
@@ -376,6 +379,13 @@ function Account() {
                 <div className="mt-5 divide-y divide-cs-border rounded-xl border border-cs-border">
                   <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
                     <div className="flex min-w-0 items-start gap-3">
+                      <span className="mt-0.5 text-cs-muted"><ProfileGlyph name="mail"/></span>
+                      <div className="min-w-0"><p className="text-sm font-semibold text-cs-text">Email đăng nhập</p><p className="break-all text-xs text-cs-muted">{account?.email ?? email}. Đổi email cần mật khẩu và xác thực từ email mới.</p></div>
+                    </div>
+                    <button type="button" onClick={() => setIsChangeEmailOpen(true)} className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-[#e11d2e] px-5 py-2 text-sm font-bold text-cs-accent-text transition hover:bg-cs-soft"><Icon name="edit" size={15}/>Đổi email</button>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
+                    <div className="flex min-w-0 items-start gap-3">
                       <span className="mt-0.5 text-cs-muted"><ProfileGlyph name="lock"/></span>
                       <div className="min-w-0"><p className="text-sm font-semibold text-cs-text">Đổi mật khẩu</p><p className="text-xs text-cs-muted">Nhập mật khẩu hiện tại rồi đặt mật khẩu mới (tối thiểu 8 ký tự, có chữ hoa, chữ thường và chữ số).</p></div>
                     </div>
@@ -398,6 +408,9 @@ function Account() {
           </div>
         </section>
       </div></main>
+
+      {isChangeEmailOpen && <ChangeEmailModal currentEmail={account?.email ?? (email === "Chưa cập nhật" ? "" : email)} onClose={() => setIsChangeEmailOpen(false)}
+        onSent={message => { setIsChangeEmailOpen(false); showToast(message, "success"); }}/>}
 
       {/* ========================================================= */}
       {/* MODAL 1: CHỈNH SỬA THÔNG TIN CÁ NHÂN                     */}

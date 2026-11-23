@@ -56,8 +56,8 @@ export function useAdminQuery<T>(key: string | null, load: (signal: AbortSignal)
   const ready = requestKey !== null && state.key === requestKey;
   return {
     data: ready && !state.error ? state.data : null,
-    /** Dữ liệu gần nhất (kể cả của lần tải trước) để hiển thị trong lúc chờ. */
-    stale: state.data,
+    /** Dữ liệu gần nhất để hiển thị trong lúc chờ. Tải lỗi thì trả null: không để dữ liệu cũ che mất thông báo lỗi. */
+    stale: ready && state.error ? null : state.data,
     loading: requestKey !== null && !ready,
     error: ready ? state.error : "",
     reload: () => setAttempt(n => n + 1),

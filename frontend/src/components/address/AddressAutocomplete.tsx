@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { garageApi, type AddressSuggestion } from "../../services/garageService";
+import { userErrorMessage } from "../../services/apiError";
 
 /**
  * Ô nhập địa chỉ có gợi ý kiểu app đặt xe: gõ ≥ 3 ký tự → danh sách gợi ý (Goong / OpenStreetMap),
@@ -26,7 +27,7 @@ export function AddressAutocomplete({ value, onChange, onSelect, label = "Địa
       setLoading(true); setError("");
       garageApi.suggest(query, controller.signal)
         .then(list => { setItems(list); setOpen(true); setActive(-1); })
-        .catch((err: unknown) => { if (!controller.signal.aborted) setError(err instanceof Error ? err.message : "Không tải được gợi ý."); })
+        .catch((err: unknown) => { if (!controller.signal.aborted) setError(userErrorMessage(err, "Không tải được gợi ý.")); })
         .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     }, 300);
     return () => { window.clearTimeout(timer); controller.abort(); };

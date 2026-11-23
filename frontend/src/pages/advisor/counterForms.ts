@@ -42,7 +42,12 @@ const yearIsValid = (year: string) => /^\d{4}$/.test(year) && Number(year) >= 19
 
 /** VIN khi gõ: viết hoa, bỏ khoảng trắng, tối đa 17 ký tự. */
 export const formatVin = (text: string) => text.replace(/\s/g, "").toUpperCase().slice(0, 17);
-const vinProblem = (vin: string) => !vin ? "Nhập số VIN của xe." : VIN.test(vin) ? null : "Số VIN gồm 6–17 chữ và số (đủ 17 ký tự thì không có I, O, Q).";
+export const VIN_FORMAT_ERROR = "Số VIN gồm 6–17 chữ và số không dấu (đủ 17 ký tự thì không có I, O, Q).";
+export const isValidVin = (vin: string) => VIN.test(vin);
+/** Khi sửa xe: VIN cũ giữ nguyên mà chỉ vướng I, O, Q vẫn lưu được; VIN có dấu hoặc ký tự lạ phải sửa. */
+export const editedVinIsValid = (vin: string, current?: string | null) =>
+  isValidVin(vin) || (vin === formatVin(current ?? "") && /^[A-Z0-9]{6,17}$/.test(vin));
+const vinProblem = (vin: string) => !vin ? "Nhập số VIN của xe." : isValidVin(vin) ? null : VIN_FORMAT_ERROR;
 
 /** Lỗi theo từng ô của xe mới (backend vẫn kiểm lại). Tiếp nhận: bắt buộc năm + VIN, biển số không bắt buộc. */
 export function vehicleDraftProblems({ selection, plate, year, vin }: NewVehicleDraft, atReception = false): Record<string, string> {

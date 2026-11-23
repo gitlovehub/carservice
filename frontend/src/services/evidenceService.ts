@@ -57,6 +57,8 @@ export const handoverApi = {
 export const ownerEmailApi = {
   send: async (customerId: number, email: string) => (await apiClient.post<{ sent_to: string; expires_at: string }>(`/customers/${customerId}/email-verification`, { email })).data,
   verify: async (customerId: number, email: string, code: string) => (await apiClient.post<{ email: string }>(`/customers/${customerId}/email-verification/verify`, { email, code })).data,
+  /** Khách có tài khoản: gửi nút xác thực tới email mới, email chỉ đổi khi khách bấm nút. */
+  sendChangeLink: async (customerId: number, email: string) => (await apiClient.post<{ message: string; sent_to: string }>(`/customers/${customerId}/email-change-link`, { email })).data,
 };
 
 export type HandoverExceptionRow = {

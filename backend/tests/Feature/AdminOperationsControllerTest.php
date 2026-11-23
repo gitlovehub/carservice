@@ -12,12 +12,15 @@ use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\RepairOrder;
 use App\Models\Review;
+use App\Models\ReviewReplyRevision;
 use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
 use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use LogicException;
+use RuntimeException;
 use Tests\TestCase;
 
 class AdminOperationsControllerTest extends TestCase
@@ -211,13 +214,133 @@ class AdminOperationsControllerTest extends TestCase
         ]);
 
         $this->postJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Cảm ơn anh/chị.'])->assertOk();
-        $this->postJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Cảm ơn anh/chị.'])->assertOk();
+        $this->putJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Cảm ơn anh/chị.', 'expected_reply' => 'Cảm ơn anh/chị.'])->assertUnprocessable();
 
         $this->assertSame(1, Notification::query()->where('account_id', $account->id)->where('type', Notification::TYPE_REVIEW_REPLIED)->count());
         $this->assertDatabaseHas('notifications', ['account_id' => $account->id, 'repair_order_id' => $review->repair_order_id, 'type' => Notification::TYPE_REVIEW_REPLIED]);
 
-        $this->postJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Gara đã liên hệ lại anh/chị.'])->assertOk();
+        $this->putJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Gara đã liên hệ lại anh/chị.', 'expected_reply' => 'Cảm ơn anh/chị.'])->assertOk();
         $this->assertSame(2, Notification::query()->where('account_id', $account->id)->where('type', Notification::TYPE_REVIEW_REPLIED)->count());
+    }
+
+    private function reviewFor(array $attributes = []): Review
+    {
+        $order = $this->order(RepairOrder::HANDED_OVER);
+
+        return Review::query()->create([
+            'repair_order_id' => $order->id, 'customer_id' => $order->customer_id, 'overall_rating' => 3, 'comment' => 'Chờ hơi lâu',
+        ] + $attributes);
+    }
+
+    public function test_editing_reply_keeps_one_current_reply_and_full_history(): void
+    {
+        $this->travelTo('2026-11-23 08:00:00');
+        $review = $this->reviewFor();
+        $this->postJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Bản một'])->assertOk()->assertJsonPath('data.reply_edited_at', null);
+
+        $this->travelTo('2026-11-23 09:00:00');
+        $this->putJson("/api/admin/reviews/{$review->id}/reply", [
+            'reply' => '  Bản hai  ', 'expected_reply' => 'Bản một', 'overall_rating' => 5, 'comment' => 'Bị sửa', 'edited_at' => '2020-01-01 00:00:00',
+        ])->assertOk()->assertJsonPath('data.reply', 'Bản hai');
+
+        $fresh = $review->fresh();
+        $this->assertSame(3, $fresh->overall_rating);
+        $this->assertSame('Chờ hơi lâu', $fresh->comment);
+        $this->assertSame('2026-11-23 08:00:00', $fresh->replied_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-11-23 09:00:00', $fresh->reply_edited_at->format('Y-m-d H:i:s'));
+
+        $history = $this->getJson("/api/admin/reviews/{$review->id}/reply-history")->assertOk()->json('data');
+        $this->assertSame([2, 1], array_column($history, 'version'));
+        $this->assertSame('Bản hai', $history[0]['content']);
+        $this->assertSame('Bản một', $history[0]['old_content']);
+        $this->assertNotEmpty($history[0]['edited_by']);
+        $this->assertStringStartsWith('2026-11-23T09:00:00', $history[0]['edited_at']);
+    }
+
+    public function test_legacy_reply_is_kept_as_original_version_when_first_edited(): void
+    {
+        $review = $this->reviewFor(['reply' => 'Phản hồi cũ', 'replied_at' => now()->subDay()]);
+
+        $this->assertSame('Phản hồi cũ', $this->getJson("/api/admin/reviews/{$review->id}/reply-history")->json('data.0.content'));
+        $this->assertDatabaseCount('review_reply_revisions', 0);
+
+        $this->putJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Phản hồi mới', 'expected_reply' => 'Phản hồi cũ'])->assertOk();
+
+        $history = $this->getJson("/api/admin/reviews/{$review->id}/reply-history")->json('data');
+        $this->assertSame(['Phản hồi mới', 'Phản hồi cũ'], array_column($history, 'content'));
+        $this->assertNull($history[1]['edited_by']);
+    }
+
+    public function test_reply_edit_rejects_invalid_stale_and_overwriting_requests(): void
+    {
+        $review = $this->reviewFor(['reply' => 'Hiện tại', 'replied_at' => now()]);
+        $url = "/api/admin/reviews/{$review->id}/reply";
+
+        $this->putJson($url, ['reply' => '   ', 'expected_reply' => 'Hiện tại'])->assertUnprocessable();
+        $this->putJson($url, ['reply' => ' Hiện tại ', 'expected_reply' => 'Hiện tại'])->assertUnprocessable();
+        $this->putJson($url, ['reply' => 'Mới', 'expected_reply' => 'Nội dung cũ'])->assertConflict();
+        $this->postJson($url, ['reply' => 'Ghi đè'])->assertConflict();
+        $this->putJson('/api/admin/reviews/'.$this->reviewFor()->id.'/reply', ['reply' => 'Mới', 'expected_reply' => 'x'])->assertConflict();
+
+        $this->assertSame('Hiện tại', $review->fresh()->reply);
+        $this->assertDatabaseCount('review_reply_revisions', 0);
+    }
+
+    public function test_reply_and_history_roll_back_together(): void
+    {
+        $review = $this->reviewFor(['reply' => 'Giữ nguyên', 'replied_at' => now()]);
+        ReviewReplyRevision::creating(fn () => throw new RuntimeException('Không ghi được lịch sử'));
+
+        $this->withoutExceptionHandling();
+        try {
+            $this->putJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Mới', 'expected_reply' => 'Giữ nguyên']);
+            $this->fail('Yêu cầu phải thất bại khi không ghi được lịch sử.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Không ghi được lịch sử', $exception->getMessage());
+        } finally {
+            ReviewReplyRevision::flushEventListeners();
+            ReviewReplyRevision::clearBootedModels();
+        }
+
+        $this->assertSame('Giữ nguyên', $review->fresh()->reply);
+        $this->assertNull($review->fresh()->reply_edited_at);
+    }
+
+    public function test_reply_revisions_are_immutable(): void
+    {
+        $review = $this->reviewFor();
+        $this->postJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Bản một'])->assertOk();
+        $revision = ReviewReplyRevision::query()->firstOrFail();
+
+        foreach ([fn () => $revision->update(['new_reply' => 'Sửa lịch sử']), fn () => $revision->delete()] as $change) {
+            try {
+                $change();
+                $this->fail('Lịch sử không được thay đổi.');
+            } catch (LogicException) {
+                $this->assertSame('Bản một', ReviewReplyRevision::query()->findOrFail($revision->id)->new_reply);
+            }
+        }
+    }
+
+    public function test_only_admin_can_edit_or_view_reply_history_and_customer_sees_current_reply_only(): void
+    {
+        $account = Account::factory()->create(['role' => Account::ROLE_CUSTOMER]);
+        $review = $this->reviewFor();
+        $review->customer->update(['account_id' => $account->id]);
+        $this->postJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Bản một'])->assertOk();
+        $this->putJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'Bản hai', 'expected_reply' => 'Bản một'])->assertOk();
+
+        Sanctum::actingAs(Account::factory()->create(['role' => Account::ROLE_ADVISOR]));
+        $this->putJson("/api/admin/reviews/{$review->id}/reply", ['reply' => 'X', 'expected_reply' => 'Bản hai'])->assertForbidden();
+        $this->getJson("/api/admin/reviews/{$review->id}/reply-history")->assertForbidden();
+
+        Sanctum::actingAs($account);
+        $this->getJson("/api/admin/reviews/{$review->id}/reply-history")->assertForbidden();
+        $mine = $this->getJson('/api/me/reviews')->assertOk()->json('data.0');
+        $this->assertSame('Bản hai', $mine['reply']);
+        $this->assertNotNull($mine['reply_edited_at']);
+        $this->assertArrayNotHasKey('reply_revisions', $mine);
+        $this->assertStringNotContainsString('Bản một', json_encode($mine, JSON_UNESCAPED_UNICODE));
     }
 
     public function test_audit_logs_are_labelled_and_filterable(): void

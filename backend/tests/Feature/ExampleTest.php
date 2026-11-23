@@ -36,7 +36,7 @@ class ExampleTest extends TestCase
 
         $this->getJson('/api/test/invalid-status-transition')
             ->assertUnprocessable()
-            ->assertExactJson(['message' => 'Chuyển trạng thái không hợp lệ.']);
+            ->assertExactJson(['success' => false, 'code' => 'INVALID_STATE', 'message' => 'Chuyển trạng thái không hợp lệ.']);
     }
 
     public function test_technician_can_only_view_assigned_repair_orders(): void

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\Vehicle;
 use App\Support\VehicleCatalogSelection;
+use App\Support\VehicleVin;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -15,9 +16,6 @@ use Illuminate\Validation\ValidationException;
  */
 class CounterRecordService
 {
-    /** VIN chuẩn 17 ký tự (không có I, O, Q) hoặc số khung xe đời cũ 6–16 chữ và số. */
-    private const VIN_PATTERN = '/^(?:[A-HJ-NPR-Z0-9]{17}|[A-Z0-9]{6,16})$/';
-
     /**
      * Luật validate dùng chung (nơi gọi tự thêm điều kiện riêng, ví dụ cấm khách mới khi đã có lịch hẹn).
      *
@@ -54,9 +52,9 @@ class CounterRecordService
             'mileage_received' => ['required', 'integer', 'min:0'],
             'vehicle.license_plate' => ['nullable', 'string', 'max:20', Rule::unique('vehicles', 'license_plate')],
             'vehicle.year' => ['required_with:vehicle', 'integer', 'min:1900', "max:{$maxYear}"],
-            'vehicle.vin' => ['required_with:vehicle', 'string', 'regex:'.self::VIN_PATTERN, Rule::unique('vehicles', 'vin')],
+            'vehicle.vin' => ['required_with:vehicle', 'string', 'regex:'.VehicleVin::PATTERN, Rule::unique('vehicles', 'vin')],
             'vehicle_year' => ['nullable', 'integer', 'min:1900', "max:{$maxYear}"],
-            'vehicle_vin' => ['nullable', 'string', 'regex:'.self::VIN_PATTERN, Rule::unique('vehicles', 'vin')],
+            'vehicle_vin' => ['nullable', 'string', 'regex:'.VehicleVin::PATTERN, Rule::unique('vehicles', 'vin')],
             'customer_request' => ['nullable', 'string', 'max:2000'],
         ];
     }
@@ -64,8 +62,8 @@ class CounterRecordService
     /** @return array<string, string> */
     public static function receptionMessages(): array
     {
-        $vinFormat = 'Số VIN gồm 6–17 chữ và số (đủ 17 ký tự thì không có I, O, Q).';
-        $vinTaken = 'Số VIN đã thuộc một xe khác trong hệ thống.';
+        $vinFormat = VehicleVin::INVALID_MESSAGE;
+        $vinTaken = VehicleVin::TAKEN_MESSAGE;
 
         return [
             'mileage_received.required' => 'Nhập số ODO khi tiếp nhận xe.',
@@ -128,7 +126,7 @@ class CounterRecordService
 
     private static function normalizeVin(string $vin): string
     {
-        return mb_strtoupper((string) preg_replace('/\s+/', '', $vin));
+        return VehicleVin::normalize($vin);
     }
 
     /** @return array<string, string> */

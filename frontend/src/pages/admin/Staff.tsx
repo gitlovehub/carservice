@@ -139,7 +139,7 @@ export default function Staff() {
       footer={<><Button disabled={saving} onClick={() => setDraft(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void save()}>Lưu</Button></>}>
       {draft && <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Họ tên" required error={fieldErrors.errors.name} className="sm:col-span-2"><Input value={draft.name} maxLength={100} onChange={e => setField({ name: e.target.value })}/></Field>
-        <Field label="Email" required error={fieldErrors.errors.email} hint="Dùng để đăng nhập."><Input type="email" value={draft.email} onChange={e => setField({ email: e.target.value })}/></Field>
+        <Field label="Email" required error={fieldErrors.errors.email} hint={editing ? "Đổi email sẽ đăng xuất nhân viên và báo tới cả email cũ, email mới." : "Dùng để đăng nhập."}><Input type="email" value={draft.email} onChange={e => setField({ email: e.target.value })}/></Field>
         <Field label="Số điện thoại" required error={fieldErrors.errors.phone}><Input inputMode="tel" maxLength={11} value={draft.phone} onChange={e => setField({ phone: e.target.value })}/></Field>
         <Field label="Vai trò" required error={fieldErrors.errors.role}><Select value={draft.role} onChange={e => setField({ role: e.target.value as StaffRole })}>
           <option value="ADVISOR">Cố vấn dịch vụ</option><option value="TECHNICIAN">Kỹ thuật viên</option>

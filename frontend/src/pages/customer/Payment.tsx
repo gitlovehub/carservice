@@ -12,6 +12,7 @@ import { PRIMARY_RED } from "./account/accountStyles";
 import {
   invoiceDiscount, invoiceIssuedAt, invoiceLineItems, invoiceRows, isPayable, paidAmount, paymentHistoryItems, remainingAmount, useDetailedOrders,
 } from "./account/useDetailedOrders";
+import { userErrorMessage } from "../../services/apiError";
 
 /**
  * Thanh toán — trang "trả tiền" cho MỘT hóa đơn (chọn qua ?invoice_id, mặc định hóa đơn cần trả mới nhất).
@@ -44,7 +45,7 @@ export default function Payment() {
       const { payment_url } = await createVnpayPayment(invoice.id);
       window.location.assign(payment_url);
     } catch (err) {
-      notify(err instanceof Error ? err.message : "Không thể khởi tạo thanh toán VNPay.", "error");
+      notify(userErrorMessage(err, "Không thể khởi tạo thanh toán VNPay."), "error");
       setRedirecting(false);
     }
   };

@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { DateInput } from "../../components/ui/DateInput";
 import { Icon } from "../../components/ui/Icon";
 import { isTodayRange, isoDay, rangeLabel, shiftRange, todayRange, weekStart, type RangeMode, type TimeRange } from "./timeRange";
 
@@ -9,7 +10,6 @@ const MODES: Array<{ id: RangeMode; label: string }> = [
 // Mọi control cao 40px (màn hẹp 44px), hover chỉ đổi màu — không dịch chuyển / phóng to.
 const box = "inline-flex min-h-10 items-center rounded-control border border-cs-border bg-cs-surface max-sm:min-h-11";
 const navBtn = "grid min-h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-control border border-cs-border bg-cs-surface text-cs-text-2 transition-colors hover:border-cs-border-strong hover:bg-cs-hover hover:text-cs-text max-sm:min-h-11 max-sm:w-11";
-const dateInput = "min-h-10 rounded-control border border-cs-border bg-cs-surface px-3 text-small tabular-nums text-cs-text transition-colors hover:border-cs-border-strong focus:border-cs-accent focus:outline-none max-sm:min-h-11";
 
 /**
  * Thanh lọc thời gian trang Lịch hẹn: [Ngày | Tuần này | Tháng | Tùy chỉnh | Tất cả]  ·  [‹] [📅 nhãn] [›] [Hôm nay].
@@ -56,8 +56,8 @@ export function TimeRangeBar({ value, onChange }: { value: TimeRange; onChange: 
         <button type="button" className={navBtn} aria-label="Sau" title="Sau" onClick={() => onChange(shiftRange(value, 1))}><Icon name="chevron-right" size={18}/></button>
       </>}
       {value.mode === "custom" && <span className="flex flex-wrap items-center gap-2 text-small text-cs-muted">
-        <label className="flex items-center gap-2">Từ <input type="date" className={dateInput} value={value.from} max={value.to || undefined} onChange={e => e.target.value && onChange({ ...value, from: e.target.value })}/></label>
-        <label className="flex items-center gap-2">đến <input type="date" className={dateInput} value={value.to} min={value.from || undefined} onChange={e => e.target.value && onChange({ ...value, to: e.target.value })}/></label>
+        <label className="flex items-center gap-2">Từ <DateInput wrapperClassName="w-40" value={value.from} max={value.to || undefined} onChange={e => { if (e.target.value) onChange({ ...value, from: e.target.value }); }}/></label>
+        <label className="flex items-center gap-2">đến <DateInput wrapperClassName="w-40" value={value.to} min={value.from || undefined} onChange={e => { if (e.target.value) onChange({ ...value, to: e.target.value }); }}/></label>
       </span>}
       {value.mode === "all" && <span className="px-2 text-small text-cs-muted">Toàn bộ lịch hẹn, không giới hạn thời gian</span>}
       {/* Đang xem hôm nay → nút mờ, không bấm được; xem ngày / khoảng khác → nút sáng (vàng) để quay về hôm nay. */}

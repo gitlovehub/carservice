@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthSession } from "../contexts/authSession";
 import { useTheme } from "../contexts/theme";
@@ -93,13 +93,15 @@ function AccountMenu({ area }: { area: WorkArea }) {
 const GEAR_TEETH = [0, 45, 90, 135, 180, 225, 270, 315];
 /** Biểu tượng Admin: bánh răng + xe đỏ. */
 function AdminMarkSvg() {
+  // Logo hiện ở cả bản mở rộng và thu gọn: id riêng để bản đang ẩn không làm mất màu gradient của bản đang hiện.
+  const gradientId = `cs-admin-car-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   return <svg viewBox="0 0 72 44" className="cs-admin-brand-mark" aria-hidden="true">
-      <defs><linearGradient id="cs-admin-car" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stopColor="#ff4b55"/><stop offset="1" stopColor="#c8101e"/></linearGradient></defs>
+      <defs><linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="0"><stop offset="0" stopColor="#ff4b55"/><stop offset="1" stopColor="#c8101e"/></linearGradient></defs>
       <g transform="translate(46 16)" fill="currentColor" className="cs-admin-brand-gear">
         {GEAR_TEETH.map(a => <rect key={a} x="-3" y="-16.5" width="6" height="6" rx="1.2" transform={`rotate(${a})`}/>)}
         <circle r="11" fill="none" stroke="currentColor" strokeWidth="5"/>
       </g>
-      <path fill="url(#cs-admin-car)" d="M3 34 C7 27 15 23.5 25 22.5 C31 16.5 39 13.5 49 14 C57 14.5 63 18.5 67 23.5 C69.5 26.5 69.5 31 68 34 L60 34 A6.5 6.5 0 0 0 47 34 L27 34 A6.5 6.5 0 0 0 14 34 Z"/>
+      <path fill={`url(#${gradientId})`} d="M3 34 C7 27 15 23.5 25 22.5 C31 16.5 39 13.5 49 14 C57 14.5 63 18.5 67 23.5 C69.5 26.5 69.5 31 68 34 L60 34 A6.5 6.5 0 0 0 47 34 L27 34 A6.5 6.5 0 0 0 14 34 Z"/>
       <path fill="#121316" opacity=".85" d="M30 22.5 C35 18.5 41 16.5 47.5 16.8 C53 17.2 57 19.2 60 22.5 Z"/>
       <circle cx="20.5" cy="35" r="4.3" fill="none" stroke="#e01b28" strokeWidth="2.4"/>
       <circle cx="53.5" cy="35" r="4.3" fill="none" stroke="#e01b28" strokeWidth="2.4"/>
@@ -198,7 +200,7 @@ function WorkLayout({ area }: { area: WorkArea }) {
           <Link to={areaInfo[area].home} onClick={close} aria-label={`${roleLabel[area]} — Tổng quan`}>
             {/* Mở rộng: chữ khu làm việc (PO 18/11: không dùng logo); thu gọn (sidebar hẹp): biểu tượng vuông. */}
             <WorkBrand area={area}/>
-            <span className="cs-ws-logo-mark">{area === "advisor" ? <AdvisorMark/> : <span className="cs-ws-brand-mark" aria-hidden="true">C</span>}</span>
+            <span className="cs-ws-logo-mark">{area === "advisor" ? <AdvisorMark/> : <AdminMarkSvg/>}</span>
           </Link>
           <span className="cs-ws-mobile-only">
             <IconButton ref={closeButtonRef} icon="close" label="Đóng thanh điều hướng" size="sm" onClick={close}/>

@@ -91,7 +91,7 @@ export function RescheduleModal<T extends ReschedulableAppointment>({ appointmen
           customer_agreed: true, contact_method: method, expected_date: currentDate, expected_time: currentTime,
         }),
       });
-      onDone(`Đã đổi lịch sang ${time} ngày ${dmy(date)} và báo khách.`, response.data);
+      onDone(`Đã đổi lịch sang ${time} - ${dmy(date)} và báo khách.`, response.data);
     } catch (err) {
       fieldErrors.showApi(err, { appointment_date: "time", appointment_time: "time", reason: "note", customer_agreed: "contact" });
     }

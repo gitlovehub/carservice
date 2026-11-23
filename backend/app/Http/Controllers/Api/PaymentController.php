@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\InvoiceEmailPaymentService;
 use App\Services\RepairOrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,16 @@ class PaymentController extends Controller
         $payment = $this->service->recordPayment($invoice, $data['payment_method'] ?? Payment::DIRECT, (float) $data['amount'], $data['transaction_code'] ?? null, $request->user());
 
         return response()->json($payment, 201);
+    }
+
+    /** POST /api/invoices/{invoice}/payment-email — cố vấn đồng ý gửi hoá đơn kèm link thanh toán VNPay cho khách. */
+    public function sendPaymentEmail(Request $request, Invoice $invoice, InvoiceEmailPaymentService $emailPayments): JsonResponse
+    {
+        $this->authorize('update', $invoice);
+
+        $email = $emailPayments->send($invoice, $request->user());
+
+        return response()->json(['message' => "Đã gửi hoá đơn và link thanh toán tới {$email}.", 'emailed_to' => $email]);
     }
 
     public function confirmQr(Request $request, Payment $payment): JsonResponse

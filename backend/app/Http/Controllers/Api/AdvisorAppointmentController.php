@@ -19,7 +19,6 @@ use App\Services\CustomerNotifier;
 use App\Services\CustomerReschedulePolicy;
 use App\Support\GarageDay;
 use Carbon\Carbon;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -101,136 +100,126 @@ class AdvisorAppointmentController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        try {
-            $query = Appointment::with([
-                'customer:id,full_name,phone,email',
-                'vehicle:id,license_plate,model_id,variant,year,mileage',
-                'vehicle.model.brand:id,name',
-                'services:id,name,base_price,estimated_minutes',
-                'packages:id,name,mileage_milestone',
-                // Cần cả tên: modal Chi tiết lịch hẹn liệt kê dịch vụ trong gói từ dữ liệu danh sách.
-                'packages.services:id,name,estimated_minutes',
-                // Nhân viên xử lý gần nhất.
-                'handledBy:id,email,role', 'handledBy.employee:id,account_id,full_name',
-                // ADV-08: phiếu đã tạo từ lịch (trang Tiếp nhận biết lịch nào đã có phiếu).
-                'repairOrder:id,appointment_id,repair_order_code,status',
-            ]);
+        $query = Appointment::with([
+            'customer:id,full_name,phone,email',
+            'vehicle:id,license_plate,model_id,variant,year,mileage',
+            'vehicle.model.brand:id,name',
+            'services:id,name,base_price,estimated_minutes',
+            'packages:id,name,mileage_milestone',
+            // Cần cả tên: modal Chi tiết lịch hẹn liệt kê dịch vụ trong gói từ dữ liệu danh sách.
+            'packages.services:id,name,estimated_minutes',
+            // Nhân viên xử lý gần nhất.
+            'handledBy:id,email,role', 'handledBy.employee:id,account_id,full_name',
+            // ADV-08: phiếu đã tạo từ lịch (trang Tiếp nhận biết lịch nào đã có phiếu).
+            'repairOrder:id,appointment_id,repair_order_code,status',
+        ]);
 
-            // Lọc theo nhân viên xử lý (tài khoản cố vấn).
-            if ($request->filled('handled_by')) {
-                $query->where('handled_by_account_id', (int) $request->query('handled_by'));
-            }
+        // Lọc theo nhân viên xử lý (tài khoản cố vấn).
+        if ($request->filled('handled_by')) {
+            $query->where('handled_by_account_id', (int) $request->query('handled_by'));
+        }
 
-            // Lọc theo ngày hẹn cụ thể (YYYY-MM-DD)
-            // appointment_date là cột DATE: so sánh trực tiếp (không bọc DATE()) để dùng được index idx_appointments_datetime.
-            if ($request->filled('date')) {
-                $query->where('appointment_date', $this->day($request->query('date')));
-            }
+        // Lọc theo ngày hẹn cụ thể (YYYY-MM-DD)
+        // appointment_date là cột DATE: so sánh trực tiếp (không bọc DATE()) để dùng được index idx_appointments_datetime.
+        if ($request->filled('date')) {
+            $query->where('appointment_date', $this->day($request->query('date')));
+        }
 
-            // Lọc theo khoảng ngày (YYYY-MM-DD): Ngày / 7 ngày / Tháng / Tùy chỉnh (cố vấn), tuần (Admin).
-            if ($request->filled('date_from')) {
-                $query->where('appointment_date', '>=', $this->day($request->query('date_from')));
-            }
-            if ($request->filled('date_to')) {
-                $query->where('appointment_date', '<=', $this->day($request->query('date_to')));
-            }
+        // Lọc theo khoảng ngày (YYYY-MM-DD): Ngày / 7 ngày / Tháng / Tùy chỉnh (cố vấn), tuần (Admin).
+        if ($request->filled('date_from')) {
+            $query->where('appointment_date', '>=', $this->day($request->query('date_from')));
+        }
+        if ($request->filled('date_to')) {
+            $query->where('appointment_date', '<=', $this->day($request->query('date_to')));
+        }
 
-            // Loại yêu cầu (MAINTENANCE, REPAIR, DIAGNOSIS, REPLACEMENT).
-            if ($request->filled('request_type')) {
-                $query->where('request_type', $request->query('request_type'));
-            }
+        // Loại yêu cầu (MAINTENANCE, REPAIR, DIAGNOSIS, REPLACEMENT).
+        if ($request->filled('request_type')) {
+            $query->where('request_type', $request->query('request_type'));
+        }
 
-            // ADV-08: lọc theo dịch vụ khách yêu cầu (chọn lẻ hoặc nằm trong gói đã chọn).
-            if ($request->filled('service_id')) {
-                $serviceId = (int) $request->query('service_id');
-                $query->where(fn ($q) => $q->whereHas('services', fn ($s) => $s->where('services.id', $serviceId))
-                    ->orWhereHas('packages.services', fn ($s) => $s->where('services.id', $serviceId)));
-            }
+        // ADV-08: lọc theo dịch vụ khách yêu cầu (chọn lẻ hoặc nằm trong gói đã chọn).
+        if ($request->filled('service_id')) {
+            $serviceId = (int) $request->query('service_id');
+            $query->where(fn ($q) => $q->whereHas('services', fn ($s) => $s->where('services.id', $serviceId))
+                ->orWhereHas('packages.services', fn ($s) => $s->where('services.id', $serviceId)));
+        }
 
-            // Lọc nhiều gói bảo dưỡng / dịch vụ cùng lúc (?package_ids=1,2&service_ids=3): khớp BẤT KỲ mục nào được chọn
-            // (dịch vụ tính cả khi nằm trong gói khách chọn).
-            $serviceIds = $this->idList($request->query('service_ids'));
-            $packageIds = $this->idList($request->query('package_ids'));
-            if ($serviceIds || $packageIds) {
-                $query->where(function ($q) use ($serviceIds, $packageIds) {
-                    if ($serviceIds) {
-                        $q->orWhereHas('services', fn ($s) => $s->whereKey($serviceIds))
-                            ->orWhereHas('packages.services', fn ($s) => $s->whereKey($serviceIds));
-                    }
-                    if ($packageIds) {
-                        $q->orWhereHas('packages', fn ($p) => $p->whereKey($packageIds));
-                    }
+        // Lọc nhiều gói bảo dưỡng / dịch vụ cùng lúc (?package_ids=1,2&service_ids=3): khớp BẤT KỲ mục nào được chọn
+        // (dịch vụ tính cả khi nằm trong gói khách chọn).
+        $serviceIds = $this->idList($request->query('service_ids'));
+        $packageIds = $this->idList($request->query('package_ids'));
+        if ($serviceIds || $packageIds) {
+            $query->where(function ($q) use ($serviceIds, $packageIds) {
+                if ($serviceIds) {
+                    $q->orWhereHas('services', fn ($s) => $s->whereKey($serviceIds))
+                        ->orWhereHas('packages.services', fn ($s) => $s->whereKey($serviceIds));
+                }
+                if ($packageIds) {
+                    $q->orWhereHas('packages', fn ($p) => $p->whereKey($packageIds));
+                }
+            });
+        }
+
+        // Tìm theo mã lịch, biển số, hãng / dòng xe, tên / SĐT khách. Nhiều từ ("Lexus LX", "Tèo 0901") → mỗi từ phải khớp một trường.
+        if ($request->filled('search')) {
+            $terms = preg_split('/\s+/u', trim((string) $request->query('search')), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            foreach (array_slice($terms, 0, 5) as $term) {
+                $like = '%'.addcslashes($term, '%_\\').'%';
+                $query->where(function ($q) use ($like) {
+                    $q->where('appointment_code', 'like', $like)
+                        ->orWhereHas('vehicle', fn ($v) => $v->where('license_plate', 'like', $like))
+                        ->orWhereHas('vehicle.model', fn ($m) => $m->where('name', 'like', $like))
+                        ->orWhereHas('vehicle.model.brand', fn ($b) => $b->where('name', 'like', $like))
+                        ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', $like)->orWhere('phone', 'like', $like));
                 });
             }
-
-            // Tìm theo mã lịch, biển số, hãng / dòng xe, tên / SĐT khách. Nhiều từ ("Lexus LX", "Tèo 0901") → mỗi từ phải khớp một trường.
-            if ($request->filled('search')) {
-                $terms = preg_split('/\s+/u', trim((string) $request->query('search')), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-                foreach (array_slice($terms, 0, 5) as $term) {
-                    $like = '%'.addcslashes($term, '%_\\').'%';
-                    $query->where(function ($q) use ($like) {
-                        $q->where('appointment_code', 'like', $like)
-                            ->orWhereHas('vehicle', fn ($v) => $v->where('license_plate', 'like', $like))
-                            ->orWhereHas('vehicle.model', fn ($m) => $m->where('name', 'like', $like))
-                            ->orWhereHas('vehicle.model.brand', fn ($b) => $b->where('name', 'like', $like))
-                            ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', $like)->orWhere('phone', 'like', $like));
-                    });
-                }
-            }
-
-            // Số lịch theo trạng thái với cùng bộ lọc (trừ trạng thái) — cho các chip lọc nhanh.
-            $counts = (clone $query)->setEagerLoads([])->reorder()
-                ->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status')
-                ->map(fn ($n) => (int) $n);
-
-            // Lọc theo trạng thái (PENDING, CONFIRMED, CHECKED_IN, CANCELLED, NO_SHOW)
-            if ($request->filled('status')) {
-                $query->where('status', $request->query('status'));
-            }
-            // Nhiều trạng thái (?statuses=PENDING,CONFIRMED,CHECKED_IN) — trang Tiếp nhận xe lọc ở máy chủ để "Tất cả" không bị cắt bởi per_page.
-            if ($request->filled('statuses')) {
-                $statuses = array_values(array_filter(array_map('trim', explode(',', (string) $request->query('statuses')))));
-                $query->whereIn('status', array_slice($statuses, 0, 10));
-            }
-
-            // Có ?sort= (bảng Admin): sắp theo cột được chọn, mặc định mới tạo lên đầu.
-            // Không có (màn hình Cố vấn): giữ thứ tự theo ngày giờ hẹn tăng dần.
-            if ($request->filled('sort')) {
-                $this->applySort($query, $request, [
-                    'created' => 'created_at', 'code' => 'appointment_code', 'status' => 'status', 'type' => 'request_type',
-                    // Giờ hẹn = ngày rồi giờ; trùng thời điểm thì applySort thêm appointments.id cùng chiều → thứ tự ổn định giữa các trang.
-                    'time' => fn ($q, string $dir) => $q->orderBy('appointment_date', $dir)->orderBy('appointment_time', $dir),
-                    'customer' => fn ($q, string $dir) => $q->orderBy(Customer::query()->select('full_name')->whereColumn('customers.id', 'appointments.customer_id'), $dir),
-                ], tieBreaker: 'appointments.id');
-            } else {
-                $query->orderBy('appointment_date', 'asc')->orderBy('appointment_time', 'asc');
-            }
-            // Số lần khách tự đổi lịch trên web (cố vấn thấy nhãn trên bảng). Thêm sau khi đã đếm theo trạng thái.
-            $appointments = $query
-                ->withCount(['activities as customer_reschedules' => fn ($q) => $q->where('action', CustomerReschedulePolicy::ACTION)])
-                ->paginate(min(500, max(1, (int) $request->query('per_page', 15))));
-            $appointments->getCollection()->each(fn (Appointment $a) => $this->withEstimates($a));
-
-            return response()->json([
-                'success' => true,
-                'counts' => ['ALL' => $counts->sum(), ...$counts->all()],
-                'data' => $appointments->items(),
-                'pagination' => [
-                    'current_page' => $appointments->currentPage(),
-                    'per_page' => $appointments->perPage(),
-                    'total' => $appointments->total(),
-                    'last_page' => $appointments->lastPage(),
-                ],
-            ], Response::HTTP_OK);
-
-        } catch (ValidationException $e) {
-            throw $e; // 422 có thông báo, không gộp thành lỗi 500.
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+
+        // Số lịch theo trạng thái với cùng bộ lọc (trừ trạng thái) — cho các chip lọc nhanh.
+        $counts = (clone $query)->setEagerLoads([])->reorder()
+            ->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status')
+            ->map(fn ($n) => (int) $n);
+
+        // Lọc theo trạng thái (PENDING, CONFIRMED, CHECKED_IN, CANCELLED, NO_SHOW)
+        if ($request->filled('status')) {
+            $query->where('status', $request->query('status'));
+        }
+        // Nhiều trạng thái (?statuses=PENDING,CONFIRMED,CHECKED_IN) — trang Tiếp nhận xe lọc ở máy chủ để "Tất cả" không bị cắt bởi per_page.
+        if ($request->filled('statuses')) {
+            $statuses = array_values(array_filter(array_map('trim', explode(',', (string) $request->query('statuses')))));
+            $query->whereIn('status', array_slice($statuses, 0, 10));
+        }
+
+        // Có ?sort= (bảng Admin): sắp theo cột được chọn, mặc định mới tạo lên đầu.
+        // Không có (màn hình Cố vấn): giữ thứ tự theo ngày giờ hẹn tăng dần.
+        if ($request->filled('sort')) {
+            $this->applySort($query, $request, [
+                'created' => 'created_at', 'code' => 'appointment_code', 'status' => 'status', 'type' => 'request_type',
+                // Giờ hẹn = ngày rồi giờ; trùng thời điểm thì applySort thêm appointments.id cùng chiều → thứ tự ổn định giữa các trang.
+                'time' => fn ($q, string $dir) => $q->orderBy('appointment_date', $dir)->orderBy('appointment_time', $dir),
+                'customer' => fn ($q, string $dir) => $q->orderBy(Customer::query()->select('full_name')->whereColumn('customers.id', 'appointments.customer_id'), $dir),
+            ], tieBreaker: 'appointments.id');
+        } else {
+            $query->orderBy('appointment_date', 'asc')->orderBy('appointment_time', 'asc');
+        }
+        // Số lần khách tự đổi lịch trên web (cố vấn thấy nhãn trên bảng). Thêm sau khi đã đếm theo trạng thái.
+        $appointments = $query
+            ->withCount(['activities as customer_reschedules' => fn ($q) => $q->where('action', CustomerReschedulePolicy::ACTION)])
+            ->paginate(min(500, max(1, (int) $request->query('per_page', 15))));
+        $appointments->getCollection()->each(fn (Appointment $a) => $this->withEstimates($a));
+
+        return response()->json([
+            'success' => true,
+            'counts' => ['ALL' => $counts->sum(), ...$counts->all()],
+            'data' => $appointments->items(),
+            'pagination' => [
+                'current_page' => $appointments->currentPage(),
+                'per_page' => $appointments->perPage(),
+                'total' => $appointments->total(),
+                'last_page' => $appointments->lastPage(),
+            ],
+        ], Response::HTTP_OK);
     }
 
     /**

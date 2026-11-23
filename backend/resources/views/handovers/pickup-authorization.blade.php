@@ -37,7 +37,7 @@
                                 @error($field)<span role="alert" style="display:block;margin-top:4px;font-size:13px;font-weight:500;color:#D7192A;">{{ $message }}</span>@enderror
                             </label>
                         @endforeach
-                        <button type="submit" style="display:block;width:100%;margin-top:22px;padding:13px 18px;border:0;border-radius:12px;background:#E11D2E;color:#FFFFFF;font-size:15px;font-weight:800;cursor:pointer;">Xác nhận ủy quyền</button>
+                        <button type="submit" style="display:block;width:100%;margin-top:22px;padding:13px 18px;border:0;border-radius:12px;background:#E11D2E;color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;line-height:1.4;cursor:pointer;">Xác nhận ủy quyền</button>
                     </form>
                 @endif
             </div>

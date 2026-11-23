@@ -1,6 +1,7 @@
 import { LABELS } from "../../config/labels";
 import type { ConfirmOptions } from "../../components/ui/feedbackContext";
 import { fmtDateTime } from "../../services/adminApi";
+import { userErrorMessage } from "../../services/apiError";
 
 /** Ngày giờ ngắn kiểu Việt Nam (hh:mm - dd/mm/yyyy). */
 export function formatDateTime(date?: string | null) {
@@ -98,4 +99,4 @@ export function checkInConfirmOptions(a: CheckInSource): ConfirmOptions {
   };
 }
 
-export function errorText(error: unknown) { return error instanceof Error ? error.message : LABELS.notify.genericError; }
+export function errorText(error: unknown) { return userErrorMessage(error, LABELS.notify.genericError); }

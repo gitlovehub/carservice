@@ -470,7 +470,7 @@ export type CustomerDetail = CustomerRow & {
 };
 export type CustomerSummary = { total: number; with_account: number; new_this_month: number; new_30_days?: number; in_shop?: number; loyal?: number; loyal_min_visits?: number };
 export type VehicleRow = CounterVehicle & {
-  mileage?: number | null; vin?: string | null; note?: string | null; last_service_at?: string | null; open_repair_order_id?: number | null;
+  mileage?: number | null; vin?: string | null; note?: string | null; avatar_url?: string | null; last_service_at?: string | null; open_repair_order_id?: number | null;
   /** Mockup 17/11: ngày lịch hẹn sắp tới gần nhất (nhãn "Có lịch hẹn"). */
   next_appointment_date?: string | null; created_at?: string | null;
 };
@@ -670,6 +670,9 @@ export const workflowApi = {
   /** Thu tại quầy (PO 17/11/2026): trừ tiền mặt bắt buộc mã giao dịch. */
   payAtCounter: (invoiceId: number, method: CounterMethod, amount: number, transactionCode?: string) =>
     fetchApi<WorkflowPayment>(`/invoices/${invoiceId}/payments`, { method: "POST", body: JSON.stringify({ payment_method: method, amount, ...(transactionCode ? { transaction_code: transactionCode } : {}) }) }),
+  /** Cố vấn đồng ý gửi hoá đơn kèm link thanh toán VNPay (khách không cần đăng nhập). */
+  sendInvoicePaymentEmail: (invoiceId: number) =>
+    fetchApi<{ message: string; emailed_to: string }>(`/invoices/${invoiceId}/payment-email`, { method: "POST" }),
   assignTechnician: (id: number, technicianId: number, note?: string) => fetchApi(`/repair-orders/${id}/assign-technician`, {
     method: "POST", body: JSON.stringify({ technician_id: technicianId, note: note || null }),
   }),

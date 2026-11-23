@@ -64,13 +64,13 @@ function OverdueBadge({ a }: { a: AppointmentRow }) {
     className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold ${expired ? "bg-danger-soft text-danger-fg" : "bg-warning-soft text-warning-fg"}`}>
     <Icon name={expired ? "alert" : "clock"} size={12}/>{expired ? "Quá hạn" : "Quá giờ"}</span>;
 }
-/** Lúc đặt lịch (created_at, UTC) → giờ VN "dd/mm/yyyy · HH:mm". */
+/** Lúc đặt lịch (created_at, UTC) → giờ VN "HH:mm - dd/mm/yyyy". */
 const bookedAt = (iso: string) => {
   const d = new Date(iso);
   if (Number.isNaN(d.valueOf())) return iso;
   const date = d.toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric" });
   const time = d.toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", hour12: false });
-  return `${date} · ${time}`;
+  return `${time} - ${date}`;
 };
 const initials = (name?: string | null) => (name ?? "?").trim().split(/\s+/).slice(-2).map(w => w[0]).join("").toUpperCase();
 const handler = (a: AppointmentRow) => a.handled_by ? (a.handled_by.employee?.full_name || a.handled_by.email || "—") : "Chưa xử lý";

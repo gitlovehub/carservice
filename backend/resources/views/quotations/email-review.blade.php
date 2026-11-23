@@ -96,7 +96,7 @@
                         @endif
 
                         <div style="margin-top: 24px; text-align: center;">
-                            <button type="submit" style="padding: 14px 34px; border-radius: 12px; border: 1px solid #FF6B78; background-color: #E11D2E; background-image: linear-gradient(180deg, #FF4757 0%, #E11D2E 55%, #B3101F 100%); color: #FFFFFF; font-size: 15px; font-weight: 800; letter-spacing: .03em; box-shadow: 0 0 6px rgba(255, 71, 87, .9), 0 0 18px rgba(225, 29, 46, .6); cursor: pointer;">Gửi lựa chọn cho gara</button>
+                            <button type="submit" style="padding: 14px 34px; border-radius: 12px; border: 1px solid #FF6B78; background-color: #E11D2E; background-image: linear-gradient(180deg, #FF4757 0%, #E11D2E 55%, #B3101F 100%); color: #FFFFFF; font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: 700; line-height: 1.4; box-shadow: 0 0 6px rgba(255, 71, 87, .9), 0 0 18px rgba(225, 29, 46, .6); cursor: pointer;">Gửi lựa chọn cho gara</button>
                             <p style="margin: 10px 0 0; font-size: 12px; color: #7B8794;">Sau khi gửi, lựa chọn không sửa được qua link này. Cần đổi lại, vui lòng liên hệ gara.</p>
                         </div>
                     </form>

@@ -34,6 +34,7 @@ import Payment from "./pages/customer/Payment";
 import VnpayReturn from "./pages/customer/VnpayReturn";
 import Invoices from "./pages/customer/Invoices";
 import AdvisorCustomers from "./pages/advisor/Customers";
+import AdvisorReviews from "./pages/advisor/AdvisorReviews";
 import AdvisorCustomerCars from "./pages/advisor/Customer-cars";
 import AdvisorAppointments from "./pages/advisor/Appointments";
 import ReceptionWorkflow from "./pages/advisor/ReceptionWorkflow";
@@ -106,6 +107,8 @@ function App() {
       {/* Tiến độ sửa chữa: trang riêng ở menu chính. Chưa đăng nhập → tra cứu bằng mã phiếu/lịch hẹn + 4 số cuối SĐT;
           khách đã đăng nhập → danh sách phiếu của tài khoản (ReferenceTracking tự chọn giao diện). */}
       <Route path="/repair-status" element={<ReferenceTracking/>}/>
+      {/* Kết quả VNPay: công khai vì khách có thể trả từ email mà không đăng nhập; Backend xác thực chữ ký VNPay. */}
+      <Route path="/payment/vnpay-return" element={<VnpayReturn/>}/>
     </Route>
 
     {/* Customer shell: all legacy business pages retained, not rewritten. */}
@@ -131,7 +134,6 @@ function App() {
         <Route path="/reviews" element={<LegacyReviewsRedirect/>}/>
         <Route path="/invoices" element={<Invoices/>}/>
         <Route path="/payment" element={<Payment/>}/>
-        <Route path="/payment/vnpay-return" element={<VnpayReturn/>}/>
       </Route>
     </Route>
     </Route>
@@ -146,6 +148,7 @@ function App() {
       <Route path="service-orders/:orderId" element={<AdvisorRepairOrderDetail/>}/>
       <Route path="customers" element={<AdvisorCustomers/>}/>
       <Route path="customer-cars" element={<AdvisorCustomerCars/>}/>
+      <Route path="reviews" element={<AdvisorReviews/>}/>
       <Route path="create-booking" element={<AdvisorCreateBooking/>}/>
       {/* Báo giá, tiến độ, thanh toán được thao tác trên chi tiết phiếu; các menu cũ trỏ vào danh sách đã lọc. */}
       <Route path="repair-status" element={<Navigate to="/advisor/repair-progress" replace/>}/>

@@ -70,7 +70,7 @@ class CustomerEmailVerificationTest extends TestCase
     public function test_admin_changes_verified_email_and_old_address_is_notified(): void
     {
         $admin = Account::factory()->admin()->create();
-        $customer = Customer::factory()->create(['email' => 'old@example.test']);
+        $customer = Customer::factory()->walkIn()->create(['email' => 'old@example.test', 'email_verified_at' => now()]);
 
         $this->actingAs($admin)->postJson("/api/customers/{$customer->id}/email-verification", ['email' => 'new@example.test'])->assertOk();
         $this->actingAs($admin)->postJson("/api/customers/{$customer->id}/email-verification/verify", ['email' => 'new@example.test', 'code' => $this->sentCode()])->assertOk();

@@ -99,7 +99,7 @@ export default function ServiceReviewDialog({ order, review, onClose, onReviewed
               : <p className="text-[14px] text-cs-muted">Bạn đã chấm sao mà không viết nhận xét.</p>}
             {review.reply
               ? <div className="rounded-xl border-l-[3px] border-cs-accent bg-cs-soft px-4 py-3">
-                  <p className="flex items-center gap-1.5 text-[13px] font-bold text-cs-accent-text"><Icon name="reply" size={15}/>Phản hồi từ CarService{review.replied_at && <span className="font-normal text-cs-muted">· {formatDate(review.replied_at)}</span>}</p>
+                  <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-bold text-cs-accent-text"><Icon name="reply" size={15}/>Phản hồi từ CarService{review.replied_at && <span className="font-normal text-cs-muted">· {formatDate(review.replied_at)}</span>}{review.reply_edited_at && <span className="font-normal text-cs-muted">· Đã chỉnh sửa {formatDate(review.reply_edited_at)}</span>}</p>
                   <p className="mt-1 whitespace-pre-wrap text-[14px] text-cs-text">{review.reply}</p>
                 </div>
               : <p className="text-[13px] text-cs-muted">Gara chưa phản hồi đánh giá này.</p>}

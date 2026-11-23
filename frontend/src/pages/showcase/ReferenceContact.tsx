@@ -1,9 +1,11 @@
 // Trang Liên hệ công khai (không cần đăng nhập). Thông tin gara + giờ làm việc lấy từ Admin;
 // form gửi thật tới POST /api/contact-messages (Admin xem ở "Tin nhắn liên hệ").
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Breadcrumb from '../../components/Breadcrumb';
 import { ApiClientError, fetchApi } from '../../services/api';
 import { useGarage } from './publicData';
+import { userErrorMessage } from '../../services/apiError';
 
 const ico = (size = 24) => ({ viewBox: '0 0 24 24', width: size, height: size, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true });
 const I = {
@@ -47,12 +49,16 @@ function useWorkingHours() {
 /* --------------------------------------------------------------------- Form */
 type FormState = { name: string; phone: string; email: string; message: string };
 const EMPTY: FormState = { name: '', phone: '', email: '', message: '' };
+const LOST_EMAIL_MESSAGE = 'Tôi mất quyền truy cập email cũ và muốn đổi sang email mới.\nEmail cũ: \nBiển số xe: \nMã phiếu gần nhất (nếu có): ';
 function ContactForm() {
-  const [form, setForm] = useState<FormState>(EMPTY);
+  const [searchParams] = useSearchParams();
+  const lostEmail = searchParams.get('topic') === 'lost-email';
+  const [form, setForm] = useState<FormState>(() => lostEmail ? { ...EMPTY, message: LOST_EMAIL_MESSAGE } : EMPTY);
   const [state, setState] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; message?: string; field?: string }>({ status: 'idle' });
   const set = (k: keyof FormState) => (e: { target: { value: string } }) => setForm(f => ({ ...f, [k]: e.target.value }));
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (lostEmail && !/^\S+@\S+\.\S+$/.test(form.email.trim())) { setState({ status: 'error', message: 'Nhập email mới bạn muốn dùng để gara gửi nút xác thực.', field: 'email' }); return; }
     setState({ status: 'sending' });
     try {
       const res = await fetchApi<{ message: string }>('/contact-messages', { method: 'POST', body: JSON.stringify({ ...form, email: form.email.trim() || null }) });
@@ -60,18 +66,19 @@ function ContactForm() {
       setState({ status: 'sent', message: res.message });
     } catch (err) {
       const field = err instanceof ApiClientError ? Object.keys(err.data?.errors ?? {})[0] : undefined;
-      const message = err instanceof ApiClientError && err.status === 429 ? 'Bạn gửi quá nhanh, vui lòng thử lại sau 1 phút.' : err instanceof Error ? err.message : 'Không gửi được yêu cầu.';
+      const message = err instanceof ApiClientError && err.status === 429 ? 'Bạn gửi quá nhanh, vui lòng thử lại sau 1 phút.' : userErrorMessage(err, 'Không gửi được yêu cầu.');
       setState({ status: 'error', message, field });
     }
   };
   const field = (k: keyof FormState, label: ReactNode, icon: ReactNode, input: ReactNode) =>
     <label className={`v3ref-ct-field${state.field === k ? ' has-error' : ''}`}><span className="v3ref-ct-label">{label}</span><span className="v3ref-ct-input">{icon}{input}</span></label>;
   return <form className="v3ref-ct-form" onSubmit={submit} noValidate>
+    {lostEmail && <p className="v3ref-ct-lead"><strong>Mất email cũ?</strong> Điền email mới và thông tin xe. Gara sẽ đối chiếu hồ sơ rồi gửi nút xác thực tới email mới của bạn.</p>}
     <div className="v3ref-ct-row">
       {field('name', <>Họ và tên <b>*</b></>, I.user(18), <input value={form.name} onChange={set('name')} placeholder="Nhập họ và tên" autoComplete="name" maxLength={100} required/>)}
       {field('phone', <>Số điện thoại <b>*</b></>, I.phone(18), <input value={form.phone} onChange={set('phone')} placeholder="Nhập số điện thoại" autoComplete="tel" inputMode="tel" maxLength={20} required/>)}
     </div>
-    {field('email', <>Email <small>(không bắt buộc)</small></>, I.mail(18), <input type="email" value={form.email} onChange={set('email')} placeholder="Nhập email của bạn" autoComplete="email" maxLength={150}/>)}
+    {field('email', lostEmail ? <>Email mới muốn dùng <b>*</b></> : <>Email <small>(không bắt buộc)</small></>, I.mail(18), <input type="email" value={form.email} onChange={set('email')} placeholder={lostEmail ? 'Nhập email mới' : 'Nhập email của bạn'} autoComplete="email" maxLength={150} required={lostEmail}/>)}
     {field('message', <>Nội dung yêu cầu <b>*</b></>, I.pen(18), <textarea value={form.message} onChange={set('message')} placeholder="Cho chúng tôi biết bạn cần hỗ trợ điều gì..." rows={4} maxLength={2000} required/>)}
     {state.status === 'sent' && <p className="v3ref-ct-alert is-success" role="status">{I.check(18)}{state.message}</p>}
     {state.status === 'error' && <p className="v3ref-ct-alert is-error" role="alert">{state.message}</p>}

@@ -37,6 +37,7 @@ export const shellNavigation: Record<ShellArea, ShellNavItem[]> = {
     { label: "Thanh toán", path: "/advisor/payments", icon: "dollar", group: "Thanh toán & bàn giao" },
     { label: "Khách hàng", path: "/advisor/customers", icon: "users", group: "Khách hàng" },
     { label: "Xe của khách hàng", path: "/advisor/customer-cars", icon: "car", group: "Khách hàng" },
+    { label: "Phản hồi khách hàng", path: "/advisor/reviews", icon: "star", group: "Khách hàng" },
   ],
   admin: [
     { label: "Tổng quan", path: "/admin", icon: "dashboard", group: "Điều hành" },

@@ -228,6 +228,9 @@ class CustomerController extends Controller
 
         // Email nhận mã xác nhận không đổi qua form thường: email đã xác minh phải đi qua luồng xác minh, chỉ admin được đổi.
         if (array_key_exists('email', $validated) && mb_strtolower((string) $validated['email']) !== mb_strtolower((string) $customer->email)) {
+            if ($customer->account_id) {
+                throw ValidationException::withMessages(['email' => 'Khách có tài khoản: hãy gửi nút xác thực tới email mới để khách tự xác nhận.']);
+            }
             if ($customer->confirmationEmail()) {
                 throw ValidationException::withMessages(['email' => 'Email đã xác minh không đổi được ở đây. Quản trị viên đổi bằng mã gửi tới email mới.']);
             }
@@ -346,9 +349,11 @@ class CustomerController extends Controller
             ],
         ]);
 
+        // Email là email đăng nhập: chỉ đổi qua "Bảo mật & Đăng nhập" (mật khẩu + nút xác thực gửi tới email mới).
         if (array_key_exists('email', $validated) && mb_strtolower((string) $validated['email']) !== mb_strtolower((string) $customer->email)) {
-            $customer->forceFill(['email_verified_at' => null]);
+            throw ValidationException::withMessages(['email' => 'Đổi email trong mục Bảo mật & Đăng nhập.']);
         }
+        unset($validated['email']);
 
         $customer->update($validated);
 

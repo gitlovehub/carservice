@@ -14,6 +14,7 @@
 export { Button, IconButton, type ButtonProps, type IconButtonProps } from "./Button";
 export { buttonClass, type ButtonVariant, type ButtonSize } from "./buttonClass";
 export { Field, Input, PasswordInput, Select, Textarea, SearchInput } from "./Field";
+export { DateInput, DateTimeInput } from "./DateInput";
 export { controlClass } from "./fieldContext";
 export { Badge, ServiceStoppedTag, StatusBadge } from "./Badge";
 export { Modal, Drawer } from "./Modal";

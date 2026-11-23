@@ -95,6 +95,8 @@ export default function AdvisorRepairProgress() {
   // Màn rộng: khung bên phải; màn hẹp: ngăn kéo xem nhanh (cùng cách các trang danh sách khác).
   const drawer = useNarrowDrawer();
   const open = (o: WorkflowOrder) => { setParam({ order: String(o.id) }); drawer.show(); };
+  // Giữ đúng phiếu đang xem khi danh sách sắp xếp lại sau thao tác.
+  const refreshAfterAction = () => { if (selectedId && !selectedParam) setParam({ order: String(selectedId) }); setVersion(v => v + 1); };
   const options: DropdownItem[] = [
     { label: "Dự kiến xong sớm nhất trước", icon: sort === "ready" ? "check" : "clock", onSelect: () => { setSort("ready"); setPage(1); } },
     { label: "Mới nhận xe gần nhất trước", icon: sort === "created" ? "check" : "calendar", onSelect: () => { setSort("created"); setPage(1); } },
@@ -151,11 +153,11 @@ export default function AdvisorRepairProgress() {
       </section>
 
       <div className="adv-ro-preview">
-        {selectedId ? <ProgressPreview key={`${selectedId}-${version}`} id={selectedId} onChanged={() => setVersion(v => v + 1)}/>
+        {selectedId ? <ProgressPreview key={selectedId} id={selectedId} version={version} onChanged={refreshAfterAction}/>
           : <section className="adv-card grid min-h-[320px] place-items-center p-8 text-center text-small text-cs-muted">Chọn một phiếu ở danh sách để xem tiến độ.</section>}
       </div>
       {selectedId && <PreviewDrawer open={drawer.open} onClose={drawer.close} title="Tiến độ sửa chữa">
-        <ProgressPreview key={`d-${selectedId}-${version}`} id={selectedId} onChanged={() => setVersion(v => v + 1)}/></PreviewDrawer>}
+        <ProgressPreview key={`d-${selectedId}`} id={selectedId} version={version} onChanged={refreshAfterAction}/></PreviewDrawer>}
     </div>
   </main>;
 }
@@ -195,14 +197,16 @@ function ProcessTimeline({ order }: { order: WorkflowOrder }) {
 
 type Tab = "progress" | "work" | "parts" | "photos" | "notes";
 
-function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void }) {
+function ProgressPreview({ id, version, onChanged }: { id: number; version: number; onChanged: () => void }) {
   const { confirm, notify } = useAppFeedback();
   const [tab, setTab] = useState<Tab>("progress");
   const [working, setWorking] = useState(false);
   const [waitDialog, setWaitDialog] = useState(false);
   const redirect = useStageRedirect();
-  const detail = useAdminQuery(`progress-order:${id}`, () => workflowApi.order(id));
-  const order = detail.data;
+  const detail = useAdminQuery(`progress-order:${id}:${version}`, () => workflowApi.order(id));
+  // Đang tải lại sau thao tác: giữ nội dung hiện tại, không hiện màn hình "Đang tải".
+  const order = detail.data ?? detail.stale;
+  const busy = working || detail.loading;
 
   if (!order) return <section className="adv-card min-h-[420px] p-6">
     {detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact label="Đang tải phiếu..."/>}
@@ -245,8 +249,8 @@ function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void 
     { id: "notes", label: "Ghi chú", icon: "file" },
   ];
   const workActions = (w: (typeof items)[number]): ReactNode => !inRepair ? null
-    : w.status === "PENDING" ? <Button size="sm" variant="secondary" disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(w.id, "IN_PROGRESS"), "Đã bắt đầu công việc.")}>Bắt đầu</Button>
-    : w.status === "IN_PROGRESS" ? <Button size="sm" variant="success" icon="check" disabled={working} onClick={() => void run(() => workflowApi.updateWorkItem(w.id, "COMPLETED"), "Đã hoàn thành công việc.")}>Xong</Button>
+    : w.status === "PENDING" ? <Button size="sm" variant="secondary" disabled={busy} onClick={() => void run(() => workflowApi.updateWorkItem(w.id, "IN_PROGRESS"), "Đã bắt đầu công việc.")}>Bắt đầu</Button>
+    : w.status === "IN_PROGRESS" ? <Button size="sm" variant="success" icon="check" disabled={busy} onClick={() => void run(() => workflowApi.updateWorkItem(w.id, "COMPLETED"), "Đã hoàn thành công việc.")}>Xong</Button>
     : null;
 
   return <section className="adv-card adv-ro-detail" aria-label={`Tiến độ phiếu ${order.repair_order_code ?? ""}`}>
@@ -281,6 +285,7 @@ function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void 
       </div>
     </div>
 
+    {detail.error && <ErrorState compact description={detail.error} onRetry={detail.reload}/>}
     <div role="tablist" aria-label="Nội dung tiến độ" className="adv-ro-tabs adv-ro-tabs-5">
       {TABS.map(t => <button key={t.id} type="button" role="tab" id={`p-tab-${t.id}`} aria-selected={tab === t.id} aria-controls={`p-panel-${t.id}`} className="adv-ro-tab" onClick={() => setTab(t.id)}>
         <Icon name={t.icon} size={18}/><span>{t.label}</span>
@@ -365,8 +370,8 @@ function ProgressPreview({ id, onChanged }: { id: number; onChanged: () => void 
       <span className="cs-btn-row">
         {order.status === "IN_PROGRESS" && <>
           <Link className={buttonClass({ variant: "outline" })} to={orderStepPath(order.id, 3)}><Icon name="edit" size={16}/>Cập nhật tiến độ</Link>
-          <Button variant="outline" icon="box" disabled={working} onClick={() => setWaitDialog(true)}>Báo thiếu phụ tùng</Button>
-          <button type="button" className="adv-btn-gold" disabled={working || unfinished > 0}
+          <Button variant="outline" icon="box" disabled={busy} onClick={() => setWaitDialog(true)}>Báo thiếu phụ tùng</Button>
+          <button type="button" className="adv-btn-gold" disabled={busy || unfinished > 0}
             title={unfinished > 0 ? `Còn ${unfinished} công việc chưa xong` : undefined} onClick={() => void complete()}><Icon name="check" size={18}/>Hoàn thành sửa chữa</button>
         </>}
         {order.status === "WAITING_FOR_PARTS" && <Link className="adv-btn-gold" to={orderStepPath(order.id, 3)}>Tiếp tục sửa chữa<Icon name="arrow-right" size={18}/></Link>}

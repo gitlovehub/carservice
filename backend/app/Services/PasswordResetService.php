@@ -31,8 +31,6 @@ class PasswordResetService
             'expires_at' => now()->addMinutes(self::TTL_MINUTES),
         ]);
 
-        Log::info("[OTP QUÊN MẬT KHẨU] Email: {$account->email} | Mã OTP: {$otp}");
-
         try {
             Mail::to($account->email)->send(new PasswordResetOtpMail($otp));
 

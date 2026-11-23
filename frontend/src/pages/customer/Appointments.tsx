@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveRefresh } from "../../services/liveSync";
 import { Link } from "react-router-dom";
-import { Button, EmptyState, ErrorState, LoadingState, Modal, Pagination, buttonClass } from "../../components/ui";
+import { Button, DateInput, EmptyState, ErrorState, LoadingState, Modal, Pagination, buttonClass } from "../../components/ui";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
 import { controlClass } from "../../components/ui/fieldContext";
@@ -278,8 +278,8 @@ export default function Appointments() {
                 </div>
               </div>
               <dl className="grid gap-3 sm:grid-cols-3">
-                <InfoTile label="Ngày hẹn" value={formatDate(selected.appointment_date)}/>
                 <InfoTile label="Giờ hẹn" value={formatTime(selected.appointment_time)}/>
+                <InfoTile label="Ngày hẹn" value={formatDate(selected.appointment_date)}/>
                 <InfoTile label="Loại yêu cầu" value={requestTypeLabel[selected.request_type] ?? selected.request_type}/>
               </dl>
               <div>
@@ -300,7 +300,7 @@ export default function Appointments() {
               {mode === "edit" && (
                 <div className="grid gap-4 rounded-2xl border border-cs-border p-4 sm:grid-cols-2">
                   <label className="flex flex-col gap-1.5"><span className="text-label text-cs-text-2">Ngày hẹn mới</span>
-                    <input type="date" min={todayISO} aria-invalid={!!fieldErrors.errors.date || undefined} value={editDate} onChange={(e) => { setEditDate(e.target.value); fieldErrors.clear("date"); }} className={controlClass}/>
+                    <DateInput min={todayISO} aria-invalid={!!fieldErrors.errors.date || undefined} value={editDate} onChange={(e) => { setEditDate(e.target.value); fieldErrors.clear("date"); }}/>
                     <FieldError>{fieldErrors.errors.date}</FieldError></label>
                   <label className="flex flex-col gap-1.5"><span className="text-label text-cs-text-2">Giờ hẹn mới</span>
                     <input type="time" aria-invalid={!!fieldErrors.errors.time || undefined} value={editTime} onChange={(e) => { setEditTime(e.target.value); fieldErrors.clear("time"); }} className={controlClass}/>

@@ -161,6 +161,7 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
   const [code, setCode] = useState("");
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const [emailedTo, setEmailedTo] = useState("");
   const redirect = useStageRedirect();
   const detail = useAdminQuery(`billing-order:${id}`, () => workflowApi.order(id));
   const order = detail.data;
@@ -188,6 +189,24 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
     setWorking(true);
     try { await workflowApi.createInvoice(order!.id); notify("Đã lập hoá đơn từ các hạng mục khách đã duyệt.", "success"); onChanged(); }
     catch (err) { notify(errorText(err), "error"); }
+    finally { setWorking(false); }
+  }
+
+  async function sendPaymentEmail() {
+    if (!invoice) return;
+    const recipient = order!.customer?.email || "email trong tài khoản của khách";
+    if (!await confirm({
+      title: "Gửi email thanh toán", reference: invoice.invoice_code,
+      description: `Gửi hoá đơn và link thanh toán VNPay ${formatVnd(remaining)} tới ${recipient}. Khách mở link là xem và trả được ngay, không cần đăng nhập. Link có hiệu lực 3 ngày.`,
+      confirmText: "Đồng ý gửi", confirmIcon: "mail",
+      checklist: ["Đã kiểm tra đúng email của khách và số tiền trên hoá đơn."],
+    })) return;
+    setWorking(true);
+    try {
+      const result = await workflowApi.sendInvoicePaymentEmail(invoice.id);
+      setEmailedTo(result.emailed_to);
+      notify(result.message, "success");
+    } catch (err) { notify(errorText(err), "error"); }
     finally { setWorking(false); }
   }
 
@@ -277,7 +296,7 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
             <ul className="mt-2 list-disc space-y-1 pl-5 text-cs-text-2">
               <li>Hoá đơn gồm các hạng mục khách đã phê duyệt.</li>
               {order.quality_checked_at ? <li>Đã kiểm tra sau sửa chữa ({fullDayTime(order.quality_checked_at)}).</li> : <li>Chưa kiểm tra sau sửa chữa — cần làm trước khi bàn giao.</li>}
-              <li>Khách cũng có thể tự thanh toán VNPay trong tài khoản.</li>
+              <li>Khách có thể tự thanh toán VNPay trong tài khoản hoặc qua email thanh toán.</li>
             </ul>
           </div>
           <dl className="adv-quote-total">
@@ -339,6 +358,7 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
         </div>
         {error && <p className="text-small text-danger" role="alert">{error}</p>}
       </section>}
+      {canPay && emailedTo && <div className="adv-notice" role="status"><Icon name="mail" size={18} className="text-success-fg"/><span className="min-w-0 flex-1 text-small">Đã gửi link thanh toán tới <b className="break-all">{emailedTo}</b>. Khi khách trả xong, phiếu tự chuyển sang đã thanh toán.</span></div>}
       {invoice.status === "PAID" && order.status === "COMPLETED" && <div className="adv-notice"><Icon name="check" size={18} className="text-success-fg"/><span className="min-w-0 flex-1 text-small">Đã thu đủ tiền. Bước tiếp theo: kiểm tra sau sửa chữa (nếu chưa) và bàn giao xe.</span></div>}
     </>}
 
@@ -347,6 +367,7 @@ function BillingPreview({ id, onChanged }: { id: number; onChanged: () => void }
         {invoice && <Link className={buttonClass({ variant: "outline" })} to={printPath}><Icon name="printer" size={16}/>In hoá đơn</Link>}
         {/* Một nút vàng đồng cho việc kế tiếp: lập hoá đơn → thu tiền → sang bàn giao. */}
         {!invoice && order.status === "COMPLETED" && <button type="button" className="adv-btn-gold" disabled={working} onClick={() => void createInvoice()}><Icon name="receipt" size={18}/>Lập hoá đơn</button>}
+        {canPay && <button type="button" className={buttonClass({ variant: "outline" })} disabled={working} onClick={() => void sendPaymentEmail()}><Icon name="mail" size={16}/>{emailedTo ? "Gửi lại email thanh toán" : "Gửi email thanh toán"}</button>}
         {canPay && <button type="button" className="adv-btn-gold" disabled={working} onClick={() => void pay()}><Icon name="check" size={18}/>Xác nhận thanh toán</button>}
         {invoice?.status === "PAID" && order.status === "COMPLETED" && <Link className="adv-btn-gold" to={stagePath(order) ?? `/advisor/delivery?order=${order.id}`}>Kiểm tra & bàn giao<Icon name="arrow-right" size={18}/></Link>}
       </span>

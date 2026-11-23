@@ -9,6 +9,8 @@ import { Icon, type IconName } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
 import { SearchableSelect, type SelectOption } from "../../components/vehicle/SearchableSelect";
+import { VehicleAvatar } from "../../components/vehicle/VehicleAvatar";
+import { VehicleAvatarControls } from "../../components/vehicle/VehicleAvatarControls";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
 import { createAdvisorVehicle, deleteAdvisorVehicle, updateAdvisorVehicle } from "../../services/advisorVehicleService";
@@ -17,7 +19,7 @@ import { emptySelection, vehicleCatalogApi, type CatalogBrand, type VehicleSelec
 import { customerDirectoryApi, formatVnd, type VehicleDetail, type VehicleRow, type VehicleSegment } from "../../services/workflowService";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
 import { useDebounced } from "../admin/kit/useDebounced";
-import { vehicleTitle } from "./counterForms";
+import { editedVinIsValid, formatVin, VIN_FORMAT_ERROR, vehicleTitle } from "./counterForms";
 import { PreviewDrawer } from "./advisorListKit";
 import { useNarrowDrawer } from "./useNarrowDrawer";
 import { orderStepPath } from "./repairOrderFlow";
@@ -121,13 +123,15 @@ export default function CustomerCars() {
     const problems: FieldErrors = {};
     if (!form.customerId) problems.customer = "Chọn chủ xe.";
     if (!form.selection.modelId) problems.model = "Chọn hãng và dòng xe.";
+    const vin = formatVin(form.vin);
+    if (vin && !editedVinIsValid(vin, editing === "new" ? null : editing.vin)) problems.vin = VIN_FORMAT_ERROR;
     setFormError("");
     if (fieldErrors.show(problems) || !form.customerId || !form.selection.modelId) return;
     setSaving(true);
     const payload = {
       customer_id: form.customerId, model_id: form.selection.modelId, trim_id: form.selection.trimId,
       license_plate: form.plate.trim().toUpperCase() || null, year: form.year ? Number(form.year) : null,
-      mileage: form.mileage ? Number(form.mileage) : null, vin: form.vin.trim() || null, note: form.note.trim() || null,
+      mileage: form.mileage ? Number(form.mileage) : null, vin: vin || null, note: form.note.trim() || null,
     };
     try {
       if (editing === "new") { await createAdvisorVehicle(payload); notify("Đã thêm xe.", "success"); setPage(1); }
@@ -231,7 +235,7 @@ export default function CustomerCars() {
           <Field label="Năm sản xuất" optional error={fieldErrors.errors.year}><Input inputMode="numeric" maxLength={4} value={form.year} placeholder="VD: 2020" onChange={e => { setForm({ ...form, year: e.target.value.replace(/\D/g, "") }); fieldErrors.clear("year"); }}/></Field>
           <Field label="Số km (ODO)" optional error={fieldErrors.errors.mileage}><KmInput label="Số km (ODO)" value={form.mileage} onChange={mileage => { setForm({ ...form, mileage }); fieldErrors.clear("mileage"); }}/></Field>
         </div>
-        <Field label="Số khung (VIN)" optional error={fieldErrors.errors.vin}><Input value={form.vin} maxLength={50} className="uppercase" onChange={e => { setForm({ ...form, vin: e.target.value }); fieldErrors.clear("vin"); }}/></Field>
+        <Field label="Số khung (VIN)" optional error={fieldErrors.errors.vin} hint="6–17 chữ và số không dấu"><Input value={form.vin} maxLength={17} className="uppercase" placeholder="VD: 1HGCM82633A004352" onChange={e => { setForm({ ...form, vin: formatVin(e.target.value) }); fieldErrors.clear("vin"); }}/></Field>
         <Field label="Ghi chú" optional error={fieldErrors.errors.note}><Textarea rows={2} value={form.note} onChange={e => { setForm({ ...form, note: e.target.value }); fieldErrors.clear("note"); }}/></Field>
         {formError && <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-small text-danger-fg">{formError}</p>}
       </form>
@@ -250,7 +254,8 @@ function VehiclePreview({ id, onEdit, onDelete }: { id: number; onEdit: (v: Vehi
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("history");
   const detail = useAdminQuery(`advisor-vehicle:${id}`, signal => customerDirectoryApi.vehicle(id, signal));
-  const v = detail.data;
+  // Giữ nội dung trong lúc tải lại (đổi ảnh đại diện) để khung không nháy; component đã gắn key theo xe.
+  const v = detail.data ?? detail.stale;
   if (!v) return <section className="adv-card min-h-[420px] p-6">
     {detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact label="Đang tải xe..."/>}
   </section>;
@@ -260,8 +265,7 @@ function VehiclePreview({ id, onEdit, onDelete }: { id: number; onEdit: (v: Vehi
   const status = open ? { tone: "success" as const, label: "Đang ở xưởng" } : v.upcoming_appointments.length ? { tone: "info" as const, label: "Có lịch hẹn" } : { tone: "neutral" as const, label: "Hoạt động" };
   const book = () => navigate("/advisor/create-booking", { state: { customer: v.customer ? { id: v.customer.id, full_name: v.customer.full_name, phone: v.customer.phone, email: v.customer.email } : undefined } });
   const facts: Array<[IconName, string, ReactNode]> = [
-    ["tag", "Hãng xe", v.model?.brand?.name ?? "—"], ["car", "Dòng xe", v.model?.name ?? "—"], ["layers", "Phiên bản", v.trim?.name || v.variant || "—"],
-    ["calendar", "Năm", v.year ?? "—"], ["gauge", "ODO", v.mileage != null ? `${v.mileage.toLocaleString("vi-VN")} km` : "—"], ["key", "VIN", v.vin || "—"],
+    ["layers", "Phiên bản", v.trim?.name || v.variant || "—"], ["calendar", "Năm", v.year ?? "—"], ["gauge", "ODO", v.mileage != null ? `${v.mileage.toLocaleString("vi-VN")} km` : "—"], ["key", "VIN", v.vin || "—"],
   ];
   const TABS: Array<{ id: Tab; label: string; icon: IconName }> = [
     { id: "history", label: "Lịch sử", icon: "clock" }, { id: "appointments", label: "Lịch hẹn", icon: "calendar" },
@@ -270,9 +274,12 @@ function VehiclePreview({ id, onEdit, onDelete }: { id: number; onEdit: (v: Vehi
 
   return <section className="adv-card adv-ro-detail" aria-label={`Xe ${v.license_plate ?? ""}`}>
     <header className="flex flex-wrap items-start gap-4">
-      <span className="grid h-24 w-28 shrink-0 place-items-center rounded-2xl border border-cs-border bg-cs-surface-2" aria-hidden="true"><VehicleBrandLogo brand={v.model?.brand?.name} size={72}/></span>
+      <div className="flex w-36 shrink-0 flex-col items-start gap-2">
+        <VehicleAvatar path={v.avatar_url} name={modelName(v)} iconSize={40} className="aspect-[4/3] w-full rounded-2xl"/>
+        <VehicleAvatarControls vehicleId={v.id} hasImage={!!v.avatar_url} name={modelName(v)} onChanged={detail.reload}/>
+      </div>
       <div className="min-w-0 flex-1 space-y-2">
-        <div className="flex flex-wrap items-center gap-3"><h2 className="text-title text-cs-text">{modelName(v)}</h2><Badge tone={status.tone}>{status.label}</Badge></div>
+        <div className="flex flex-wrap items-center gap-3"><VehicleBrandLogo brand={v.model?.brand?.name} size={36}/><h2 className="text-title text-cs-text">{modelName(v)}</h2><Badge tone={status.tone}>{status.label}</Badge></div>
         <p className="flex flex-wrap items-center gap-x-5 gap-y-2 text-small">
           <span className="inline-flex items-center gap-2 rounded-lg border border-cs-border px-3 py-1 font-semibold tabular-nums tracking-wide text-cs-text"><Icon name="car" size={16} className="text-cs-muted"/>{v.license_plate || "xxx.xx"}</span>
           {v.customer && <Link to={`/advisor/customers?customer=${v.customer.id}`} className="inline-flex items-center gap-2 text-cs-text hover:text-cs-accent-text hover:underline"><Icon name="user" size={16} className="text-cs-muted"/>Khách hàng: {v.customer.full_name}</Link>}
@@ -290,7 +297,7 @@ function VehiclePreview({ id, onEdit, onDelete }: { id: number; onEdit: (v: Vehi
     </header>
 
     <div className="adv-veh-facts">{facts.map(([icon, label, value]) => <div key={label} className="flex min-w-0 items-center gap-3">
-      <Icon name={icon} size={22} className="shrink-0 text-cs-muted"/><span className="min-w-0"><span className="block text-caption text-cs-muted">{label}</span><b className="block truncate tabular-nums text-cs-text">{value}</b></span>
+      <Icon name={icon} size={22} className="shrink-0 text-cs-muted"/><span className="min-w-0"><span className="block text-caption text-cs-muted">{label}</span><b className="block truncate tabular-nums text-cs-text" title={typeof value === "string" ? value : undefined}>{value}</b></span>
     </div>)}</div>
 
     <div role="tablist" aria-label="Thông tin xe" className="adv-ro-tabs adv-ro-tabs-5">

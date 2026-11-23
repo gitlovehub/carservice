@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\ApiExceptionRenderer;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Http\Middleware\EnsureAccountRole;
 use App\Http\Middleware\EnsureIdempotency;
@@ -24,6 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'appointments/*/email-confirm',
             // Link duyệt báo giá từ email: cùng lý do (URL có chữ ký, hết hạn, gắn đúng nội dung báo giá).
             'quotations/*/email-review',
+            // Link thanh toán hoá đơn từ email: URL có chữ ký, hết hạn, số tiền do Backend tính lại.
+            'invoices/*/email-payment',
+            // Nút xác thực tài khoản / đổi email: URL có chữ ký, hết hạn, không tạo phiên đăng nhập.
+            'accounts/*/email-verify',
+            'accounts/*/email-change',
             // Link ủy quyền nhận xe từ email: URL có chữ ký, hết hạn, dùng một lần.
             'repair-orders/*/pickup-authorization',
         ]);
@@ -34,8 +40,12 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (InvalidStatusTransitionException $e, Request $request) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json(['success' => false, 'code' => 'INVALID_STATE', 'message' => $e->getMessage()], 422);
         });
+
+        // Mọi lỗi API có cùng định dạng; chi tiết kỹ thuật chỉ ghi vào log kèm mã tra cứu.
+        $exceptions->render(fn (Throwable $e, Request $request) => ApiExceptionRenderer::render($e, $request));
+        $exceptions->context(fn (): array => array_filter(['error_reference' => ApiExceptionRenderer::reference()]));
 
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),

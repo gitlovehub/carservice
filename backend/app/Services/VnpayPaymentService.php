@@ -27,11 +27,12 @@ class VnpayPaymentService
     ) {}
 
     /**
+     * @param  string|null  $returnUrl  Trang kết quả riêng (link email không đăng nhập); null = trang trong tài khoản khách.
      * @return array{payment: Payment, payment_url: string}
      */
-    public function createPayment(Invoice $invoice, string $ipAddress): array
+    public function createPayment(Invoice $invoice, string $ipAddress, ?string $returnUrl = null): array
     {
-        return DB::transaction(function () use ($invoice, $ipAddress) {
+        return DB::transaction(function () use ($invoice, $ipAddress, $returnUrl) {
             $invoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->id);
 
             if ($invoice->status === Invoice::PAID) {
@@ -86,6 +87,7 @@ class VnpayPaymentService
                 'ip_address' => $ipAddress,
                 'created_at' => $payment->created_at,
                 'expires_at' => $payment->expires_at,
+                'return_url' => $returnUrl,
             ]);
 
             return ['payment' => $payment, 'payment_url' => $paymentUrl];

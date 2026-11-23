@@ -4,6 +4,7 @@ import { buttonClass } from "../ui/buttonClass";
 import { useAppFeedback } from "../ui/feedbackContext";
 import { apiFieldErrors } from "../ui/formValidation";
 import { fetchApi } from "../../services/api";
+import { userErrorMessage } from "../../services/apiError";
 
 export type ContactInfo = { name: string; phone: string; email: string };
 
@@ -48,7 +49,7 @@ export default function ContactEditModal({ contact, title = "Cập nhật thông
     } catch (err: unknown) {
       const fromApi = apiFieldErrors(err);
       if (fromApi.full_name || fromApi.phone) setErrs({ name: fromApi.full_name, phone: fromApi.phone });
-      else notify(err instanceof Error && err.message ? err.message : "Không lưu được thông tin. Vui lòng thử lại.", "error");
+      else notify(userErrorMessage(err, "Không lưu được thông tin. Vui lòng thử lại."), "error");
       setSaving(false);
     }
   };
@@ -73,7 +74,7 @@ export default function ContactEditModal({ contact, title = "Cập nhật thông
         {contact.email && (
           <label className="block text-sm font-semibold text-cs-text">Email
             <input value={contact.email} disabled className="mt-1.5 w-full cursor-not-allowed rounded-xl border border-cs-border bg-cs-surface-2 px-3.5 py-2.5 text-sm text-cs-muted"/>
-            <span className="mt-1 block text-xs font-normal text-cs-muted">Email đăng nhập không đổi được ở đây.</span>
+            <span className="mt-1 block text-xs font-normal text-cs-muted">Đổi email trong Hồ sơ của tôi, mục Bảo mật & Đăng nhập.</span>
           </label>
         )}
       </form>

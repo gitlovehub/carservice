@@ -1,6 +1,6 @@
 import { useFieldErrors } from "../../components/ui/useFieldErrors";
 import { useMemo, useState } from "react";
-import { Button, DataTable, EmptyState, Field, Input, SearchInput, type Column } from "../../components/ui";
+import { Button, DataTable, DateInput, EmptyState, Field, Input, SearchInput, type Column } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { adminApi, fmtDateTime, type AdminPartRequest } from "../../services/adminApi";
@@ -97,7 +97,7 @@ function RequestCard({ request, stock, onChanged }: { request: AdminPartRequest;
     {request.status === "ORDERED" && <p className="mt-1 text-caption text-cs-muted">Đã đặt {fmtDateTime(request.ordered_at)}{request.supplier_note ? <> · <span className="font-medium">{request.supplier_note}</span></> : ""}</p>}
 
     <div className="mt-3 grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)]">
-      <Field label="Ngày dự kiến về" required error={fieldErrors.errors.eta}><Input type="date" min={today()} value={eta} onChange={e => { setEta(e.target.value); fieldErrors.clear("eta"); }}/></Field>
+      <Field label="Ngày dự kiến về" required error={fieldErrors.errors.eta}><DateInput min={today()} value={eta} onChange={e => { setEta(e.target.value); fieldErrors.clear("eta"); }}/></Field>
       <Field label="Nhà cung cấp" error={fieldErrors.errors.supplier}><Input maxLength={1000} value={supplier} onChange={e => { setSupplier(e.target.value); fieldErrors.clear("supplier"); }} placeholder="Không bắt buộc"/></Field>
       <Button variant="outline" icon="calendar" className="sm:col-span-2 sm:justify-self-end" disabled={working} onClick={saveOrder}>
         {request.status === "ORDERED" ? "Cập nhật" : "Đã đặt hàng"}

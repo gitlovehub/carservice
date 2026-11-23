@@ -17,7 +17,7 @@ export default function GarageSettings() {
   if (UNDER_MAINTENANCE) return <main className="page-container">
     <PageHeader title="Thông tin gara"/>
     <div className="rounded-card border border-cs-border bg-cs-surface shadow-card" data-testid="garage-settings-maintenance">
-      <EmptyState icon="tools" title="Trang đang nâng cấp, bảo trì"
+      <EmptyState icon="wrench" title="Trang đang nâng cấp, bảo trì"
         description="Chức năng chỉnh sửa thông tin gara tạm thời chưa sử dụng được. Thông tin hiện tại vẫn hiển thị bình thường cho khách. Vui lòng quay lại sau."/>
     </div>
   </main>;

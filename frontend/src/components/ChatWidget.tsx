@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { apiClient } from "../services/api";
+import { userErrorMessage } from "../services/apiError";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -67,9 +68,7 @@ export default function ChatWidget() {
       setMessages([...next, { role: "assistant", content: data.reply }]);
     } catch (error) {
       const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Không thể kết nối trợ lý, vui lòng thử lại.";
+        userErrorMessage(error, "Không thể kết nối trợ lý, vui lòng thử lại.");
       setMessages([...next, { role: "assistant", content: `⚠️ ${message}` }]);
     } finally {
       setLoading(false);

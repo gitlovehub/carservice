@@ -11,6 +11,7 @@ import ServiceReviewDialog from "./ServiceReviewDialog";
 import { formatDate, formatMoney, getMyRepairOrders, getMyReviews, getVehicleName, type CustomerReview, type CustomerRepairOrder } from "../../services/customerApi";
 import { AccountCard, AccountPage, FilterBar, FilterSelect } from "./account/AccountKit";
 import { PRIMARY_RED } from "./account/accountStyles";
+import { userErrorMessage } from "../../services/apiError";
 
 /** Phiếu đã sửa xong (CLOSED = đóng phiếu không làm → không phải một lần bảo dưỡng). */
 const finished = new Set(["COMPLETED", "HANDED_OVER"]);
@@ -44,7 +45,7 @@ export default function ServiceHistory() {
       .catch(() => { if (active) setReviewError(true); })
       .finally(() => { if (active) setReviewsLoading(false); });
     getMyRepairOrders().then((data) => { if (active) { setOrders(data.filter(row => finished.has(row.status))); setError(""); } })
-      .catch((e: unknown) => { if (active) setError(e instanceof Error ? e.message : "Không thể tải lịch sử bảo dưỡng."); })
+      .catch((e: unknown) => { if (active) setError(userErrorMessage(e, "Không thể tải lịch sử bảo dưỡng.")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [reload]);

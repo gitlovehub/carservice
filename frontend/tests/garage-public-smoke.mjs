@@ -23,9 +23,10 @@ assert.match(shell, /GarageAuthLayout/);
 assert.match(shell, /toggleTheme/);
 assert.match(shell, /useAuthSession/);
 assert.match(login, /fetchApi\("\/login"/);
-assert.match(login, /fetchApi\("\/verify-email-otp"/);
+assert.match(login, /VerifyEmailPrompt/);
 assert.match(register, /fetchApi\("\/register"/);
-assert.match(register, /fetchApi\("\/verify-email-otp"/);
+assert.match(register, /VerifyEmailPrompt/);
+assert.doesNotMatch(login + register, /verify-email-otp/, 'Account activation uses the email button, not an OTP login');
 assert.match(forgot, /fetchApi\("\/forgot-password"/);
 assert.match(forgot, /fetchApi\("\/reset-password"/);
 // Màu thương hiệu và responsive của header công khai: token + breakpoint thay cho CSS cũ.

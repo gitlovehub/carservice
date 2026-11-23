@@ -1,14 +1,12 @@
-import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { fetchApi } from "../../services/api";
-import { readReturnLocation, resolveReturnPath, setUserRole } from "./auth";
-import OtpInput from "../../components/auth/OtpInput";
+import { VerifyEmailPrompt } from "../../components/auth/VerifyEmailPrompt";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
 import { GarageAuthError, GarageAuthLayout, GarageField } from "../../components/GaragePublic";
 import { AuthSwitchLink, PasswordInput } from "../../components/auth/PasswordInput";
-import { authFieldClass, authLinkRowClass, authPrimaryClass } from "../../components/auth/authStyles";
-import { markAuthSession } from "../../services/authPersistence";
+import { authFieldClass, authPrimaryClass } from "../../components/auth/authStyles";
 
 type ApiErrorResponse = {
   message?: string;
@@ -19,7 +17,6 @@ type ApiErrorResponse = {
 };
 
 function Register() {
-  const navigate = useNavigate();
   const location = useLocation();
 
   const [form, setForm] = useState({
@@ -42,24 +39,10 @@ function Register() {
 
   const [apiError, setApiError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<"REGISTER" | "OTP">("REGISTER");
-  const [otp, setOtp] = useState("");
-
-  // Countdown timer cho gửi lại OTP (60s)
-  const [resendCountdown, setResendCountdown] = useState(0);
+  const [step, setStep] = useState<"REGISTER" | "CHECK_EMAIL">("REGISTER");
 
   // Toast notification
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    if (resendCountdown > 0) {
-      timer = setTimeout(() => {
-        setResendCountdown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [resendCountdown]);
 
   const showToast = (message: string, type: ToastType = "info") => {
     setToast({ message, type });
@@ -204,9 +187,8 @@ function Register() {
         }),
       });
 
-      setResendCountdown(60);
-      setStep("OTP");
-      showToast("Đăng ký thành công! Mã xác thực OTP đã được gửi đến email của bạn.", "success");
+      setStep("CHECK_EMAIL");
+      showToast("Đăng ký thành công! Vui lòng mở email và bấm nút xác thực.", "success");
     } catch (error: unknown) {
       setApiError(
         getErrorMessage(
@@ -219,81 +201,7 @@ function Register() {
     }
   };
 
-  const handleOtpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!otp || otp.length !== 6) {
-      setApiError("Vui lòng nhập đủ 6 chữ số OTP.");
-      return;
-    }
-
-    setIsLoading(true);
-    setApiError("");
-
-    try {
-      const response = await fetchApi("/verify-email-otp", {
-        method: "POST",
-        body: JSON.stringify({
-          email: form.email.trim(),
-          otp,
-        }),
-      });
-
-      // Tự động lưu phiên đăng nhập ngay sau khi xác thực OTP thành công
-      if (response?.account) {
-        if (response.token) {
-          localStorage.setItem("token", response.token);
-        }
-        localStorage.setItem("user", JSON.stringify(response.account));
-        markAuthSession(true);
-        setUserRole(response.account.role || "CUSTOMER");
-        showToast("Xác thực email thành công! Đang chuyển hướng vào hệ thống...", "success");
-        setTimeout(() => {
-          // Về lại trang đang đứng trước khi phải đăng nhập/đăng ký (quy tắc chung với trang Đăng nhập).
-          navigate(resolveReturnPath(response.account.role || "CUSTOMER", readReturnLocation(location.state)), { replace: true });
-        }, 800);
-        return;
-      }
-
-      showToast("Xác thực email thành công! Vui lòng đăng nhập.", "success");
-      setTimeout(() => {
-        navigate("/login", { state: location.state });
-      }, 800);
-    } catch (error: unknown) {
-      setApiError(
-        getErrorMessage(error, "Mã OTP không chính xác hoặc đã hết hạn.")
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (resendCountdown > 0) return;
-
-    setIsLoading(true);
-    setApiError("");
-
-    try {
-      await fetchApi("/resend-email-otp", {
-        method: "POST",
-        body: JSON.stringify({
-          email: form.email.trim(),
-        }),
-      });
-
-      setResendCountdown(60);
-      showToast("Mã OTP mới đã được gửi lại vào email của bạn.", "success");
-    } catch (error: unknown) {
-      setApiError(
-        getErrorMessage(error, "Không thể gửi lại mã OTP lúc này.")
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return <GarageAuthLayout title={step === "REGISTER" ? "Đăng ký" : "Xác thực tài khoản."} description={step === "REGISTER" ? "Đăng ký để quản lý xe và đặt lịch bảo dưỡng." : `Mã xác thực đã gửi đến ${form.email}.`}>
+  return <GarageAuthLayout title={step === "REGISTER" ? "Đăng ký" : "Xác thực tài khoản."} description={step === "REGISTER" ? "Đăng ký để quản lý xe và đặt lịch bảo dưỡng." : `Email xác thực đã gửi đến ${form.email}.`}>
     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     {apiError && <GarageAuthError message={apiError} />}
     {step === "REGISTER" ? <>
@@ -306,13 +214,10 @@ function Register() {
         <GarageField htmlFor="reg-confirm" label="Xác nhận mật khẩu" error={errors.confirmPassword}><PasswordInput id="reg-confirm" name="confirmPassword" autoComplete="new-password" placeholder="Nhập lại mật khẩu" value={form.confirmPassword} onChange={handleChange} aria-invalid={!!errors.confirmPassword}/></GarageField>
         <label className="flex cursor-pointer items-start gap-3 text-xs text-cs-muted [&_input]:mt-0.5 [&_input]:size-4 [&_input]:shrink-0 [&_input]:cursor-pointer [&_input]:accent-[#cf2935]"><input name="agree" type="checkbox" checked={form.agree} onChange={handleChange}/><span>Tôi đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của CarService.</span></label>
         {errors.agree && <p className="text-xs font-bold text-[#dc4250]">{errors.agree}</p>}
-        <button type="submit" className={authPrimaryClass} disabled={isLoading} aria-busy={isLoading || undefined}>{isLoading ? "Đang tạo tài khoản..." : "Đăng ký"}</button>
+        <button type="submit" className={authPrimaryClass} disabled={isLoading} aria-busy={isLoading || undefined}>{isLoading ? "Đang tạo tài khoản..." : "Đăng ký"}</button>
       </form>
       <AuthSwitchLink text="Đã có tài khoản?" to="/login" label="Đăng nhập" state={location.state}/>
-    </> : <>
-      <form className="grid gap-4" onSubmit={handleOtpSubmit} noValidate><OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!apiError}/><button type="submit" className={authPrimaryClass} disabled={isLoading || otp.length !== 6} aria-busy={isLoading || undefined}>{isLoading ? "Đang xác minh..." : "Xác thực email →"}</button></form>
-      <div className={authLinkRowClass}>{resendCountdown > 0 ? <span>Gửi lại OTP sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại OTP</button>}<button type="button" onClick={() => {setStep("REGISTER");setOtp("");setApiError("");}}>← Chỉnh sửa thông tin</button></div>
-    </>}
+    </> : <VerifyEmailPrompt email={form.email.trim()} justSent backLabel="Quay lại đăng ký" onBack={() => { setStep("REGISTER"); setApiError(""); }}/>}
   </GarageAuthLayout>;
 
 }

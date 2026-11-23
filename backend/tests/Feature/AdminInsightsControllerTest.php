@@ -207,6 +207,13 @@ class AdminInsightsControllerTest extends TestCase
         $this->assertSame(1, $ops['satisfaction']['distribution'][5]);
         $this->assertNull($ops['quotations']['approval_rate']);
 
+        // Tổng quan: phiếu theo tình trạng, doanh thu theo nhóm cộng đúng tổng, đường so sánh kỳ trước.
+        $this->assertSame(['completed' => 1, 'in_progress' => 0, 'waiting_parts' => 0, 'waiting_approval' => 0, 'inspecting' => 0, 'closed' => 1], $ops['order_status']);
+        $groups = collect($data['revenue_groups']);
+        $this->assertEquals(900_000, $groups->firstWhere('name', 'Phụ tùng')['revenue']);
+        $this->assertEquals(4_500_000, $groups->sum('revenue'));
+        $this->assertEquals(2_000_000, collect($data['previous_series'])->sum('revenue'));
+
         $this->assertSame('Quý 4/2026', $this->getJson('/api/admin/reports?period=2026-Q4')->json('data.label'));
         $this->assertEquals(5_600_000, $this->getJson('/api/admin/reports?period=2026')->json('data.revenue.service.value'));
 

@@ -2,8 +2,10 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useLiveRefresh } from "../../services/liveSync";
 import { formatDate, formatDateTime, type CustomerRepairOrder } from "../../services/customerApi";
-import { Badge } from "../../components/ui/Badge";
+import { Badge, StatusBadge } from "../../components/ui/Badge";
+import { getStatus } from "../../config/status";
 import { Button } from "../../components/ui/Button";
+import { DateTimeInput } from "../../components/ui/DateInput";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { controlClass } from "../../components/ui/fieldContext";
 import { PhotoUploader } from "../../components/evidence/PhotoUploader";
@@ -11,6 +13,7 @@ import { HandoverViewModal } from "../advisor/CheckInPanel";
 import { comparedCheckIn, type CheckInRef } from "../advisor/handoverText";
 import { handoverApi, pickupAuthorizationApi } from "../../services/evidenceService";
 import type { PickupAuthorization, WorkflowHandover } from "../../services/workflowService";
+import { userErrorMessage } from "../../services/apiError";
 
 /**
  * Giấy tờ của một phiếu sửa chữa phía khách (PO 18/11/2026): biên bản nhận / trả xe (xem & tự xác nhận),
@@ -55,7 +58,7 @@ function HandoverItem({ handover, checkIn, code, onConfirmed }: { handover: Work
   function confirm() {
     setWorking(true); setError("");
     handoverApi.confirmAsCustomer(handover.id, comment.trim() || undefined).then(() => { setOpen(false); onConfirmed(); })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Không xác nhận được."))
+      .catch((err: unknown) => setError(userErrorMessage(err, "Không xác nhận được.")))
       .finally(() => setWorking(false));
   }
 
@@ -85,33 +88,99 @@ function HandoverItem({ handover, checkIn, code, onConfirmed }: { handover: Work
   </>;
 }
 
-const INSPECTION_TEXT: Record<string, { label: string; tone: "success" | "warning" | "danger" }> = {
-  PASSED: { label: "Đạt", tone: "success" }, NORMAL: { label: "Bình thường", tone: "success" },
-  WARNING: { label: "Cần lưu ý", tone: "warning" }, NEEDS_SERVICE: { label: "Cần bảo dưỡng", tone: "warning" },
-  FAILED: { label: "Không đạt", tone: "danger" }, NEEDS_REPLACEMENT: { label: "Cần thay thế", tone: "danger" },
-};
+type CustomerInspection = NonNullable<CustomerRepairOrder["inspections"]>[number];
+type InspectionRecommendation = NonNullable<CustomerInspection["recommendations"]>[number];
 
-/** Kết quả chẩn đoán gara ghi nhận (P3): khách xem trước khi duyệt báo giá. */
-function CustomerDiagnosisBlock({ inspection }: { inspection: NonNullable<CustomerRepairOrder["inspections"]>[number] }) {
-  return <Card title="Kết quả chẩn đoán" icon="search">
-    {inspection.diagnosis && <p className="whitespace-pre-wrap rounded-xl bg-cs-surface-2 px-4 py-3 text-sm text-cs-text">{inspection.diagnosis}</p>}
-    {!!inspection.items?.length && <ul className="mt-3 divide-y divide-cs-border rounded-xl border border-cs-border">{inspection.items.map(item => {
-      const result = INSPECTION_TEXT[item.condition_status ?? ""];
-      return <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-sm">
-        <span className="min-w-0"><span className="font-semibold text-cs-text">{item.item_name}</span>{item.condition_description ? <span className="block text-xs text-cs-muted font-medium">{item.condition_description}</span> : null}</span>
-        {result ? <Badge tone={result.tone}>{result.label}</Badge> : <span className="text-xs text-cs-muted">{item.condition_status ?? "—"}</span>}
-      </li>;
-    })}</ul>}
-    {!!inspection.recommendations?.length && <div className="mt-4">
-      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-cs-muted">Gara đề xuất</p>
-      <ul className="grid gap-2 sm:grid-cols-2">{inspection.recommendations.map(rec => <li key={rec.id} className="flex items-center gap-2.5 rounded-xl border border-cs-border px-3 py-2 text-sm">
-        <span className="text-cs-accent-text"><Icon name={rec.item_type === "PART" ? "box" : "wrench"} size={16}/></span>
-        <span className="min-w-0 flex-1 truncate text-cs-text">{rec.part?.name || rec.service?.name || "—"}</span>
-        <span className="text-xs text-cs-muted">× {rec.quantity ?? 1}</span>
-      </li>)}</ul>
-      <p className="mt-2 text-xs text-cs-muted">Đề xuất chỉ được làm khi bạn đồng ý trong báo giá.</p>
-    </div>}
-    <div className="mt-4"><PhotoUploader type="inspection" id={inspection.id} readOnly title="Ảnh chẩn đoán"/></div>
+const toneOf = (status?: string | null) => status ? getStatus("inspection", status, "customer").tone : "neutral";
+const SEVERITY: Record<string, number> = { danger: 0, warning: 1 };
+const RESULT_STYLE: Record<string, { icon: IconName; className: string }> = {
+  success: { icon: "check", className: "bg-success-soft text-success-fg" },
+  warning: { icon: "alert", className: "bg-warning-soft text-warning-fg" },
+  danger: { icon: "alert", className: "bg-danger-soft text-danger-fg" },
+};
+const NEUTRAL_RESULT = { icon: "info" as IconName, className: "bg-neutral-soft text-neutral-fg" };
+
+function DiagnosisHeading({ icon, title, count }: { icon: IconName; title: string; count?: number }) {
+  return <h4 className="mb-2.5 flex items-center gap-2 text-sm font-bold text-cs-text">
+    <span className="text-cs-muted"><Icon name={icon} size={16}/></span>{title}
+    {count !== undefined && <span className="rounded-full bg-cs-surface-2 px-2 py-0.5 text-xs font-semibold tabular-nums text-cs-muted">{count}</span>}
+  </h4>;
+}
+
+function RecommendationGroup({ title, icon, items }: { title: string; icon: IconName; items: InspectionRecommendation[] }) {
+  if (!items.length) return null;
+  return <div className="min-w-0 rounded-xl border border-cs-border">
+    <p className="flex items-center gap-2 border-b border-cs-border bg-cs-surface-2 px-4 py-2.5 text-xs font-bold text-cs-text-2 first:rounded-t-xl">
+      <span className="text-cs-accent-text"><Icon name={icon} size={15}/></span>{title} ({items.length})
+    </p>
+    <ul className="divide-y divide-cs-border">{items.map(rec => <li key={rec.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
+      <span className="min-w-0 break-words font-medium text-cs-text">{rec.part?.name || rec.service?.name || "—"}</span>
+      <span className="shrink-0 text-xs text-cs-muted">SL <b className="tabular-nums text-cs-text">{rec.quantity ?? 1}</b></span>
+    </li>)}</ul>
+  </div>;
+}
+
+/** Kết quả chẩn đoán gara ghi nhận (P3): khách xem trước khi duyệt báo giá. Hạng mục cần xử lý được xếp lên đầu. */
+function CustomerDiagnosisBlock({ inspection }: { inspection: CustomerInspection }) {
+  const items = [...(inspection.items ?? [])].sort((a, b) => (SEVERITY[toneOf(a.condition_status)] ?? 2) - (SEVERITY[toneOf(b.condition_status)] ?? 2));
+  const count = (tone: string) => items.filter(item => toneOf(item.condition_status) === tone).length;
+  const passed = count("success"), warning = count("warning"), danger = count("danger");
+  const attention = warning + danger;
+  const recommendations = inspection.recommendations ?? [];
+  const notes = ([
+    ["clipboard", "Tình trạng xe ghi nhận", inspection.condition_description],
+    ["search", "Kết luận của gara", inspection.diagnosis],
+  ] as Array<[IconName, string, string | null | undefined]>).filter(([, , text]) => text?.trim());
+  const badge = attention ? <Badge tone={danger ? "danger" : "warning"}>{attention} mục cần chú ý</Badge>
+    : items.length && passed === items.length ? <Badge tone="success">Tất cả đạt</Badge> : undefined;
+
+  return <Card title="Kết quả chẩn đoán" icon="search" badge={badge}>
+    <div className="space-y-5">
+      {inspection.inspected_at && <p className="-mt-2 flex items-center gap-1.5 text-xs text-cs-muted"><Icon name="clock" size={14}/>Hoàn tất lúc {formatDateTime(inspection.inspected_at)}</p>}
+
+      {notes.length > 0 && <div className={`grid gap-3 ${notes.length > 1 ? "md:grid-cols-2" : ""}`}>
+        {notes.map(([icon, title, text]) => <div key={title} className="min-w-0 rounded-xl bg-cs-surface-2 px-4 py-3">
+          <p className="flex items-center gap-2 text-xs font-bold text-cs-muted"><Icon name={icon} size={14}/>{title}</p>
+          <p className="mt-1.5 whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-cs-text">{text}</p>
+        </div>)}
+      </div>}
+
+      {items.length > 0 && <div>
+        <DiagnosisHeading icon="list" title="Hạng mục đã kiểm tra" count={items.length}/>
+        <dl className="mb-3 grid grid-cols-3 gap-2">
+          {([["Đạt", passed, "success"], ["Cần lưu ý", warning, "warning"], ["Cần xử lý", danger, "danger"]] as const).map(([label, value, tone]) =>
+            <div key={label} className={`rounded-xl px-3 py-2 ${value ? RESULT_STYLE[tone].className : "bg-cs-surface-2 text-cs-muted"}`}>
+              <dt className="truncate text-xs font-semibold">{label}</dt>
+              <dd className="text-lg font-extrabold tabular-nums">{value}</dd>
+            </div>)}
+        </dl>
+        <ul className="divide-y divide-cs-border rounded-xl border border-cs-border">{items.map(item => {
+          const style = RESULT_STYLE[toneOf(item.condition_status)] ?? NEUTRAL_RESULT;
+          return <li key={item.id} className="flex items-start gap-3 px-4 py-3 text-sm">
+            <span className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-full ${style.className}`} aria-hidden="true"><Icon name={style.icon} size={14}/></span>
+            <span className="min-w-0 flex-1">
+              <span className="block break-words font-semibold text-cs-text">{item.item_name}</span>
+              {item.condition_description && <span className="mt-0.5 block whitespace-pre-wrap break-words text-xs font-medium leading-relaxed text-cs-muted">{item.condition_description}</span>}
+            </span>
+            {item.condition_status ? <StatusBadge domain="inspection" status={item.condition_status} audience="customer" className="shrink-0"/>
+              : <span className="shrink-0 text-xs text-cs-muted">Chưa đánh giá</span>}
+          </li>;
+        })}</ul>
+      </div>}
+
+      {recommendations.length > 0 && <div>
+        <DiagnosisHeading icon="wrench" title="Gara đề xuất" count={recommendations.length}/>
+        <div className="grid items-start gap-3 md:grid-cols-2">
+          <RecommendationGroup title="Dịch vụ" icon="wrench" items={recommendations.filter(rec => rec.item_type !== "PART")}/>
+          <RecommendationGroup title="Phụ tùng" icon="box" items={recommendations.filter(rec => rec.item_type === "PART")}/>
+        </div>
+        <p className="mt-3 flex items-start gap-2 rounded-xl bg-info-soft px-3 py-2 text-xs font-medium text-info-fg">
+          <span className="mt-px shrink-0"><Icon name="info" size={14}/></span>Gara chỉ thực hiện các đề xuất bạn đồng ý trong báo giá.
+        </p>
+      </div>}
+
+      <div className="border-t border-cs-border pt-4"><PhotoUploader type="inspection" id={inspection.id} readOnly title="Ảnh chẩn đoán"/></div>
+    </div>
   </Card>;
 }
 
@@ -134,7 +203,7 @@ function CustomerPickupBlock({ orderId }: { orderId: number }) {
   async function act(task: () => Promise<unknown>) {
     setWorking(true); setError("");
     try { await task(); setReloadKey(key => key + 1); return true; }
-    catch (err) { setError(err instanceof Error ? err.message : "Không thực hiện được."); return false; }
+    catch (err) { setError(userErrorMessage(err, "Không thực hiện được.")); return false; }
     finally { setWorking(false); }
   }
   const active = items.filter(item => item.status === "ACTIVE");
@@ -159,7 +228,7 @@ function CustomerPickupBlock({ orderId }: { orderId: number }) {
         <label className={label}><span>Họ tên {req}</span><input className={controlClass} required maxLength={150} value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })}/></label>
         <label className={label}><span>Số điện thoại {req}</span><input className={controlClass} required inputMode="tel" maxLength={20} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}/></label>
         <label className={label}><span>4 số cuối CCCD / giấy tờ {req}</span><input className={controlClass} required inputMode="numeric" pattern="\d{4}" maxLength={4} value={form.id_last4} onChange={e => setForm({ ...form, id_last4: e.target.value.replace(/\D/g, "") })}/></label>
-        <label className={label}><span>Hiệu lực đến <span className="font-normal">(không bắt buộc)</span></span><input className={controlClass} type="datetime-local" value={form.valid_until} onChange={e => setForm({ ...form, valid_until: e.target.value })}/></label>
+        <label className={label}><span>Hiệu lực đến <span className="font-normal">(không bắt buộc)</span></span><DateTimeInput value={form.valid_until} onChange={valid_until => setForm({ ...form, valid_until })}/></label>
         <div className="flex justify-end gap-2 sm:col-span-2"><Button variant="secondary" onClick={() => setOpen(false)}>Hủy</Button><Button type="submit" variant="primary" icon="check" loading={working}>Lưu ủy quyền</Button></div>
       </form>}
   </Card>;

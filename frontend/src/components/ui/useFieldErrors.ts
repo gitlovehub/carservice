@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useAppFeedback } from "./feedbackContext";
 import { apiFieldErrors } from "./formValidation";
+import { userErrorMessage } from "../../services/apiError";
 
 export type FieldErrors = Record<string, string>;
 
@@ -37,7 +38,7 @@ export function useFieldErrors() {
   const showApi = useCallback((error: unknown, fieldByApiKey: Record<string, string> = {}) => {
     const mapped = Object.entries(apiFieldErrors(error)).flatMap(([key, message]) => fieldByApiKey[key] ? [[fieldByApiKey[key], message]] : []);
     if (mapped.length) show(Object.fromEntries(mapped));
-    else general(error instanceof Error && error.message ? error.message : "Có lỗi xảy ra. Vui lòng thử lại.");
+    else general(userErrorMessage(error, "Có lỗi xảy ra. Vui lòng thử lại."));
   }, [general, show]);
   return { errors, show, clear, reset, showApi, general };
 }

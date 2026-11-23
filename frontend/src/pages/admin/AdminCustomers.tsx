@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Button, DataTable, Drawer, ErrorState, Field, Input, LoadingState, Modal, NEWEST_FIRST, Pagination, SearchInput, Textarea, buttonClass, useTableSort, type Column } from "../../components/ui";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { VehicleAvatar } from "../../components/vehicle/VehicleAvatar";
+import { VehicleAvatarControls } from "../../components/vehicle/VehicleAvatarControls";
 import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
-import { adminApi, errorMessage, fmtDate, type AdminCustomer } from "../../services/adminApi";
+import { adminApi, errorMessage, fmtDate, type AdminCustomer, type AdminCustomerDetail } from "../../services/adminApi";
 import { emptySelection, type VehicleSelection } from "../../services/vehicleCatalog";
 import { getStatus } from "../../config/status";
 import { AdminPage, ClearFilters, FilterSelect, InfoList, PaneSection, Person, Pill, StatCard, Stars, Toolbar } from "./kit/AdminKit";
@@ -12,6 +14,7 @@ import { useAdminQuery } from "./kit/useAdminQuery";
 import { useDebounced } from "./kit/useDebounced";
 import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 import { OwnerEmailVerify } from "../advisor/OwnerEmailVerify";
+import { SendEmailChangeLink } from "../advisor/SendEmailChangeLink";
 import { FieldError } from "../../components/ui/Field";
 
 type CarFilter = "all" | "has" | "none";
@@ -19,6 +22,7 @@ type Draft = { name: string; phone: string; email: string; address: string };
 const emptyDraft: Draft = { name: "", phone: "", email: "", address: "" };
 /** Hồ sơ khách: số xe / lần dịch vụ hiện sẵn, phần còn lại bấm Xem thêm. */
 const PREVIEW_COUNT = 3;
+const vehicleLabel = (v: AdminCustomerDetail["vehicles"][number]) => [v.brand, v.model, v.trim].filter(Boolean).join(" ") || "Xe chưa rõ dòng";
 
 /** Khách hàng — dữ liệu thật: /api/admin/customers (danh sách, hồ sơ, khoá), /api/customers và /api/vehicles (thêm/sửa). */
 export default function AdminCustomers() {
@@ -32,6 +36,7 @@ export default function AdminCustomers() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [showAllCars, setShowAllCars] = useState(false);
+  const [avatars, setAvatars] = useState<Record<number, string | null>>({});
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [mailForm, setMailForm] = useState<{ subject: string; message: string } | null>(null);
   const [sendingMail, setSendingMail] = useState(false);
@@ -44,7 +49,9 @@ export default function AdminCustomers() {
   const result = list.data ?? list.stale;
   const selected = detail.data;
   const refresh = () => { list.reload(); detail.reload(); };
-  const openProfile = (id: number) => { setSelectedId(id); setShowAllCars(false); setShowAllHistory(false); };
+  const openProfile = (id: number) => { setSelectedId(id); setShowAllCars(false); setShowAllHistory(false); setAvatars({}); };
+  // Đổi ảnh cập nhật ngay tại dòng xe, không tải lại cả hồ sơ.
+  const avatarOf = (v: AdminCustomerDetail["vehicles"][number]) => v.id in avatars ? avatars[v.id] : v.avatar_url;
 
   const columns: Column<AdminCustomer>[] = [
     { key: "name", header: "Khách hàng", primary: true, render: c => <span className="flex items-center gap-2"><Person name={c.name} sub={c.email ?? (c.has_account ? undefined : "Khách vãng lai")}/>{c.locked && <Icon name="lock" size={14} className="shrink-0 text-danger"/>}</span> },
@@ -158,11 +165,12 @@ export default function AdminCustomers() {
         onClick={() => { setFormError(""); vehicleErrors.reset(); setVehicleForm({ selection: emptySelection, mileage: "", year: "" }); }}>Thêm xe</Button>}>
         {selected.vehicles.length ? <ul className="flex flex-col gap-2">
           {(showAllCars ? selected.vehicles : selected.vehicles.slice(0, PREVIEW_COUNT)).map(v => <li key={v.id} className="flex items-center gap-3 rounded-control border border-cs-border p-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-control bg-cs-surface-2 text-cs-accent-text"><Icon name="car" size={24}/></span>
+            <VehicleAvatar path={avatarOf(v)} name={vehicleLabel(v)} iconSize={24} className="h-12 w-16 rounded-control"/>
             <span className="min-w-0 flex-1 text-small">
-              <b className="block text-cs-text">{[v.brand, v.model, v.trim].filter(Boolean).join(" ") || "Xe chưa rõ dòng"}</b>
+              <b className="block text-cs-text">{vehicleLabel(v)}</b>
               <span className="text-cs-muted">Biển số: <span className="text-cs-text">{v.plate ?? "—"}</span>{v.year ? ` · Năm ${v.year}` : ""}{v.mileage ? ` · ${v.mileage.toLocaleString("vi-VN")} km` : ""}</span>
             </span>
+            <VehicleAvatarControls compact vehicleId={v.id} hasImage={!!avatarOf(v)} name={vehicleLabel(v)} onChanged={url => setAvatars(current => ({ ...current, [v.id]: url }))}/>
           </li>)}
         </ul> : <p className="text-small text-cs-muted">Khách chưa đăng ký xe.</p>}
         {selected.vehicles.length > PREVIEW_COUNT && <Button variant="ghost" size="sm" className="mt-2" aria-expanded={showAllCars} onClick={() => setShowAllCars(value => !value)}>
@@ -225,7 +233,9 @@ export default function AdminCustomers() {
       {form && <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Họ tên" required error={customerErrors.errors.name} className="sm:col-span-2"><Input value={form.draft.name} maxLength={100} onChange={e => setDraft({ name: e.target.value })}/></Field>
         <Field label="Số điện thoại" required error={customerErrors.errors.phone}><Input inputMode="tel" value={form.draft.phone} maxLength={11} onChange={e => setDraft({ phone: e.target.value })}/></Field>
-        {form.id !== null && selected?.email_verified
+        {form.id !== null && selected?.has_account
+          ? <div className="sm:col-span-2"><SendEmailChangeLink customerId={form.id} currentEmail={selected.email ?? ""}/></div>
+          : form.id !== null && selected?.email_verified
           ? <div className="sm:col-span-2"><OwnerEmailVerify customerId={form.id} currentEmail={selected.email ?? ""} title={`Email đã xác minh: ${selected.email ?? ""}`}
               description="Chỉ đổi khi chủ xe yêu cầu. Mã gửi tới email mới, email cũ sẽ nhận thông báo." actionLabel="Gửi mã tới email mới" clearEmail
               onVerified={() => { notify("Đã đổi email chủ xe.", "success"); setForm(null); refresh(); }}/></div>

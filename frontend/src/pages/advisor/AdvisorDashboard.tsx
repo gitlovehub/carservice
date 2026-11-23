@@ -108,7 +108,7 @@ function AppointmentRows({ items, tab }: { items: DashboardAppointment[]; tab: A
   return <ul className="adv-timeline space-y-0.5 px-2 pb-3">
     {items.map(a => <li key={a.id} className="adv-timeline-row" role="link" tabIndex={0} onClick={() => open(a)}
       onKeyDown={(e: KeyboardEvent) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); open(a); } }}>
-      <span className="adv-time">{showDate ? <span className="text-center text-[11px] leading-tight">{dayLabel(a.date)}<br/><b className="text-small">{a.time}</b></span> : a.time}</span>
+      <span className="adv-time">{showDate ? <span className="text-center text-[11px] leading-tight"><b className="text-small">{a.time}</b><br/>{dayLabel(a.date)}</span> : a.time}</span>
       <VehicleBrandLogo brand={a.brand} size={36}/>
       <span className="min-w-0"><b className="block truncate text-small text-cs-text">{a.customer || "Khách hàng"}</b>
         <span className="block truncate text-caption text-cs-muted">{a.plate || "xxx.xx"}{a.brand || a.model ? ` · ${[a.brand, a.model].filter(Boolean).join(" ")}` : ""}</span></span>
@@ -130,8 +130,8 @@ const UPDATE_TYPES: Record<CustomerUpdate["type"], { label: string; icon: IconNa
   CONFIRMED: { label: "Xác nhận qua email", icon: "check", tone: "bg-success-soft text-success-fg" },
   CANCELLED: { label: "Tự hủy lịch", icon: "x", tone: "bg-danger-soft text-danger-fg" },
 };
-const ddmm = (iso: string) => { const [, m, d] = iso.split("-"); return `${d}/${m}`; };
-/** "vừa xong", "15 phút trước", "3 giờ trước", quá 1 ngày → dd/mm HH:mm. */
+const slotDate = (iso: string) => { const [y, m, d] = iso.slice(0, 10).split("-"); return `${d}/${m}/${y}`; };
+/** "vừa xong", "15 phút trước", "3 giờ trước", quá 1 ngày → HH:mm - dd/mm/yyyy. */
 function ago(iso: string | null, now: Date) {
   if (!iso) return "";
   const at = new Date(iso);
@@ -139,7 +139,7 @@ function ago(iso: string | null, now: Date) {
   if (minutes < 1) return "vừa xong";
   if (minutes < 60) return `${minutes} phút trước`;
   if (minutes < 24 * 60) return `${Math.floor(minutes / 60)} giờ trước`;
-  return `${String(at.getDate()).padStart(2, "0")}/${String(at.getMonth() + 1).padStart(2, "0")} ${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
+  return `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")} - ${String(at.getDate()).padStart(2, "0")}/${String(at.getMonth() + 1).padStart(2, "0")}/${at.getFullYear()}`;
 }
 
 /** Cập nhật từ khách: khu nhân viên chưa có chuông thông báo — những việc khách tự làm với lịch hẹn hiện ở đây. Bấm dòng → mở lịch. */
@@ -157,8 +157,8 @@ function CustomerUpdates({ now }: { now: Date }) {
           const t = UPDATE_TYPES[u.type];
           const a = u.appointment;
           const when = u.type === "RESCHEDULED" && u.old_date && u.old_time
-            ? `${u.old_time} - ${ddmm(u.old_date)} → ${a.appointment_time} - ${ddmm(a.appointment_date)}`
-            : `${a.appointment_time} - ${ddmm(a.appointment_date)}`;
+            ? `${u.old_time} - ${slotDate(u.old_date)} → ${a.appointment_time} - ${slotDate(a.appointment_date)}`
+            : `${a.appointment_time} - ${slotDate(a.appointment_date)}`;
           return <li key={u.key}><button type="button" onClick={() => open(u)} className="flex w-full cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-cs-hover">
             <span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${t.tone}`} aria-hidden="true"><Icon name={t.icon} size={15}/></span>
             <span className="min-w-0 flex-1">

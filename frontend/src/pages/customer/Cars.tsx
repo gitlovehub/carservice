@@ -18,12 +18,17 @@ import {
   type CustomerVehicle,
 } from "../../services/customerApi";
 import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
+import { VehicleAvatar } from "../../components/vehicle/VehicleAvatar";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
-import { formatLicensePlate } from "../../services/licensePlate";
+import { formatLicensePlate, isValidLicensePlate, licensePlateError } from "../../services/licensePlate";
+import { FieldError } from "../../components/ui/Field";
+import { apiFieldErrors } from "../../components/ui/formValidation";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 import { AccountHeader, InlineError } from "./account/AccountKit";
 import { PRIMARY_RED } from "./account/accountStyles";
 import { controlClass } from "../../components/ui/fieldContext";
 import { emptySelection, selectionFromVehicle, type VehicleSelection } from "../../services/vehicleCatalog";
+import { userErrorMessage } from "../../services/apiError";
 
 type SelectionErrors = { brand?: string; model?: string };
 
@@ -116,6 +121,8 @@ function Cars() {
   const [detailVehicle, setDetailVehicle] = useState<CustomerVehicle | null>(null);
 
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const addPlateErrors = useFieldErrors();
+  const editPlateErrors = useFieldErrors();
 
   const loadVehicles = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -127,7 +134,7 @@ function Cars() {
       setServiceInfo(buildServiceInfo(orders));
       setRepairOrders(orders);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể tải danh sách xe.");
+      setError(userErrorMessage(err, "Không thể tải danh sách xe."));
     } finally {
       setLoading(false);
     }
@@ -142,7 +149,8 @@ function Cars() {
     event.preventDefault();
     const selectionErrors = validateSelection(newSelection);
     setNewSelectionErrors(selectionErrors);
-    if (selectionErrors.brand || selectionErrors.model) {
+    const plateInvalid = addPlateErrors.show(plateProblem(newPlate));
+    if (selectionErrors.brand || selectionErrors.model || plateInvalid) {
       setAddError("");
       return;
     }
@@ -175,6 +183,8 @@ function Cars() {
       setIsAddFormOpen(false);
       await loadVehicles();
     } catch (err) {
+      const plateMessage = apiFieldErrors(err).license_plate;
+      if (plateMessage) { addPlateErrors.show({ plate: plateMessage }); return; }
       const e = err as { data?: { message?: string; errors?: Record<string, string[]> }; message?: string };
       const firstErr = e.data?.errors ? Object.values(e.data.errors).flat()[0] : undefined;
       setAddError(firstErr || e.data?.message || e.message || "Không thể thêm xe.");
@@ -191,6 +201,7 @@ function Cars() {
     setNewMileage("");
     setNewYear("");
     setAddError("");
+    addPlateErrors.reset();
     setIsAddFormOpen(true);
   };
 
@@ -198,10 +209,12 @@ function Cars() {
     setEditingVehicle(car);
     setEditSelection(selectionFromVehicle(car));
     setEditSelectionErrors({});
-    setEditPlate(car.license_plate ? formatLicensePlate(car.license_plate) : "");
+    // Hiện đúng giá trị đang lưu: không định dạng lại kẻo biển số cũ bị cắt bớt số khi bấm lưu.
+    setEditPlate(car.license_plate ?? "");
     setEditMileage(car.mileage != null ? String(car.mileage) : "");
     setEditYear(car.year != null ? String(car.year) : "");
     setEditError("");
+    editPlateErrors.reset();
   };
 
   /** Xe đang sửa đã có phiếu sửa chữa → khóa hãng/dòng/phiên bản/năm. */
@@ -214,7 +227,8 @@ function Cars() {
     if (!editingVehicle) return;
     const selectionErrors = validateSelection(editSelection);
     setEditSelectionErrors(selectionErrors);
-    if (selectionErrors.brand || selectionErrors.model) return;
+    const plateInvalid = editPlateErrors.show(plateProblem(editPlate, editingVehicle.license_plate));
+    if (selectionErrors.brand || selectionErrors.model || plateInvalid) return;
     setUpdating(true);
     setEditError("");
 
@@ -235,6 +249,8 @@ function Cars() {
       setEditingVehicle(null);
       await loadVehicles();
     } catch (err) {
+      const plateMessage = apiFieldErrors(err).license_plate;
+      if (plateMessage) { editPlateErrors.show({ plate: plateMessage }); return; }
       const e = err as { data?: { message?: string; errors?: Record<string, string[]> }; message?: string };
       const firstErr = e.data?.errors ? Object.values(e.data.errors).flat()[0] : undefined;
       setEditError(firstErr || e.data?.message || e.message || "Không thể cập nhật xe.");
@@ -294,10 +310,8 @@ function Cars() {
               const nextServiceDue = nextServiceAt !== null && nextServiceAt.getTime() <= Date.now();
               return (
                 <article key={car.id} data-testid="customer-car-card" className="grid min-w-0 grid-cols-[200px_minmax(0,1fr)_minmax(330px,1.15fr)_auto] items-center gap-5 rounded-[18px] border border-cs-border bg-cs-surface p-4 shadow-[0_2px_10px_rgb(15_23_42/4%)] transition-colors hover:border-[#cf29358c] max-[1180px]:grid-cols-[170px_minmax(0,1fr)_auto] max-[670px]:grid-cols-1 max-[670px]:gap-4">
-                  {/* Ảnh xe — tạm thời để trống, chờ có ảnh theo dòng xe. */}
-                  <div className="flex aspect-[16/10] w-full items-center justify-center rounded-xl bg-cs-surface-2 text-cs-muted/60 max-[1180px]:row-span-2 max-[670px]:row-span-1" aria-hidden="true">
-                    <Icon name="car" size={44}/>
-                  </div>
+                  {/* Ảnh đại diện do gara quản lý: khách chỉ xem, chưa có ảnh thì hiện biểu tượng ô tô. */}
+                  <VehicleAvatar path={car.avatar_url} name={getVehicleName(car)} iconSize={44} className="aspect-[16/10] w-full rounded-xl max-[1180px]:row-span-2 max-[670px]:row-span-1 max-[670px]:max-w-[280px]"/>
 
                   {/* Hãng + dòng xe + phiên bản + biển số */}
                   <div className="min-w-0">
@@ -370,18 +384,9 @@ function Cars() {
                 <h4 className="mb-3 text-[13px] font-extrabold uppercase tracking-[0.08em] text-cs-muted">Thông tin xe</h4>
                 {/* Cùng kiểu ô nhập (controlClass) và nhãn với các ô chọn hãng / dòng / phiên bản ở trên. */}
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="license-plate" className="text-label text-cs-text-2">Biển số xe <span className="ml-1 font-normal text-cs-muted">(không bắt buộc)</span></label>
-                    <input
-                      id="license-plate"
-                      maxLength={20}
-                      value={newPlate}
-                      onChange={(e) => setNewPlate(formatLicensePlate(e.target.value))}
-                      placeholder="Ví dụ: 30A-123.45"
-                      disabled={saving}
-                      className={`${controlClass} font-mono uppercase placeholder:normal-case placeholder:font-sans`}
-                    />
-                  </div>
+                  <PlateField id="license-plate" value={newPlate} error={addPlateErrors.errors.plate} disabled={saving}
+                    onChange={(value) => { setNewPlate(value); addPlateErrors.clear("plate"); }}
+                    onBlur={() => addPlateErrors.show(plateProblem(newPlate))}/>
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="mileage" className="text-label text-cs-text-2">Số km hiện tại (ODO)</label>
                     <KmInput id="mileage" label="Số km hiện tại (ODO)" value={newMileage} onChange={setNewMileage} disabled={saving} className="w-full"/>
@@ -448,18 +453,10 @@ function Cars() {
               <section className="border-t border-cs-border pt-5">
                 <h4 className="mb-3 text-[13px] font-extrabold uppercase tracking-[0.08em] text-cs-muted">Thông tin xe</h4>
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="edit-license-plate" className="text-label text-cs-text-2">Biển số xe <span className="ml-1 font-normal text-cs-muted">(không bắt buộc)</span></label>
-                    <input
-                      id="edit-license-plate"
-                      maxLength={20}
-                      placeholder="Ví dụ: 30A-123.45"
-                      value={editPlate}
-                      onChange={(e) => setEditPlate(formatLicensePlate(e.target.value))}
-                      disabled={updating}
-                      className={`${controlClass} font-mono uppercase placeholder:normal-case placeholder:font-sans`}
-                    />
-                  </div>
+                  <PlateField id="edit-license-plate" value={editPlate} error={editPlateErrors.errors.plate} disabled={updating}
+                    hint={editPlate && editPlate === editingVehicle.license_plate && !isValidLicensePlate(editPlate) ? "Biển số đang lưu chưa đúng định dạng, nên cập nhật lại." : undefined}
+                    onChange={(value) => { setEditPlate(value); editPlateErrors.clear("plate"); }}
+                    onBlur={() => editPlateErrors.show(plateProblem(editPlate, editingVehicle.license_plate))}/>
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="edit-mileage" className="text-label text-cs-text-2">Số km hiện tại (ODO)</label>
                     <KmInput id="edit-mileage" label="Số km hiện tại (ODO)" value={editMileage} onChange={setEditMileage} placeholder="Ví dụ: 45.000" disabled={updating} className="w-full"/>
@@ -534,6 +531,36 @@ function Cars() {
         />
       )}
 
+    </div>
+  );
+}
+
+const plateProblem = (value: string, current?: string | null): FieldErrors => {
+  const message = licensePlateError(value, current);
+  return message ? { plate: message } : {};
+};
+
+/** Ô biển số dùng chung cho Thêm xe và Cập nhật xe: tự định dạng khi gõ, báo lỗi ngay tại ô. */
+function PlateField({ id, value, error, hint, disabled, onChange, onBlur }: {
+  id: string; value: string; error?: string; hint?: string; disabled: boolean; onChange: (value: string) => void; onBlur: () => void;
+}) {
+  const messageId = `${id}-message`;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-label text-cs-text-2">Biển số xe <span className="ml-1 font-normal text-cs-muted">(không bắt buộc)</span></label>
+      <input
+        id={id}
+        maxLength={20}
+        value={value}
+        onChange={(e) => onChange(formatLicensePlate(e.target.value))}
+        onBlur={onBlur}
+        placeholder="Ví dụ: 30A-123.45"
+        disabled={disabled}
+        aria-invalid={!!error || undefined}
+        aria-describedby={error || hint ? messageId : undefined}
+        className={`${controlClass} font-mono uppercase placeholder:normal-case placeholder:font-sans`}
+      />
+      {error ? <div id={messageId}><FieldError>{error}</FieldError></div> : hint ? <p id={messageId} className="text-caption text-warning-fg">{hint}</p> : null}
     </div>
   );
 }
@@ -630,7 +657,7 @@ function VehicleDetailModal({ vehicle, orders, onClose, onEdit, onNoteSaved }: {
       onNoteSaved(note || null);
       setEditingNote(false);
     } catch (err) {
-      setNoteError(err instanceof Error ? err.message : "Không thể lưu ghi chú.");
+      setNoteError(userErrorMessage(err, "Không thể lưu ghi chú."));
     } finally {
       setSavingNote(false);
     }
@@ -665,15 +692,9 @@ function VehicleDetailModal({ vehicle, orders, onClose, onEdit, onNoteSaved }: {
         <IconButton icon="x" label="Đóng" onClick={onClose}/>
       </div>
       <div className="grid grid-cols-[380px_minmax(0,1fr)] max-[900px]:grid-cols-1">
-        {/* CỘT TRÁI: ảnh (tạm trống) + tóm tắt */}
+        {/* CỘT TRÁI: ảnh đại diện + tóm tắt */}
         <aside className="border-r border-cs-border p-5 max-[900px]:border-b max-[900px]:border-r-0 sm:p-6">
-          <div className="flex aspect-[16/10] w-full flex-col items-center justify-center gap-2 rounded-2xl bg-cs-surface-2 text-cs-muted/70" aria-label="Chưa có ảnh xe" role="img">
-            <Icon name="car" size={52}/>
-            <span className="text-[13px] font-semibold">Chưa có ảnh xe</span>
-          </div>
-          <div className="mt-3 grid grid-cols-4 gap-2" aria-hidden="true">
-            {[0, 1, 2, 3].map((slot) => <div key={slot} className="aspect-[4/3] rounded-lg border border-dashed border-cs-border bg-cs-surface-2"/>)}
-          </div>
+          <VehicleAvatar path={vehicle.avatar_url} name={getVehicleName(vehicle)} iconSize={52} className="aspect-[16/10] w-full rounded-2xl max-[900px]:max-w-[320px]"/>
 
           <div className="mt-5 flex items-center gap-2.5">
             <VehicleBrandLogo brand={vehicle.model?.brand?.name} size={56}/>

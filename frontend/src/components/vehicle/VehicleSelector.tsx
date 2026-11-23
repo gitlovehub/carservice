@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { vehicleCatalogApi, type VehicleSelection } from "../../services/vehicleCatalog";
 import { SearchableSelect, type SelectOption } from "./SearchableSelect";
 import { VehicleBrandLogo } from "./VehicleBrandLogo";
+import { userErrorMessage } from "../../services/apiError";
 
 /** Logo hãng cạnh tên hãng (danh sách + đầu ô đã chọn) — cùng nguồn logo với mọi nơi khác. */
 const brandIcon = (name: string) => <VehicleBrandLogo brand={name} size={24}/>;
@@ -25,7 +26,7 @@ function useCatalogLevel(key: string | null, load: (signal: AbortSignal) => Prom
       .then(options => setState({ key: requestKey, options, error: "" }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        setState({ key: requestKey, options: [], error: error instanceof Error ? error.message : "Không tải được danh sách." });
+        setState({ key: requestKey, options: [], error: userErrorMessage(error, "Không tải được danh sách.") });
       });
     return () => controller.abort();
     // `load` đổi theo mỗi lần render; chỉ tải lại khi khóa yêu cầu đổi.

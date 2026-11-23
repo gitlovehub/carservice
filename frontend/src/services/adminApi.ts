@@ -1,4 +1,5 @@
 import { apiClient, fetchApi } from "./api";
+import { userErrorMessage } from "./apiError";
 
 /** API thật của khu Admin (backend/app/Http/Controllers/Api/Admin*Controller.php). */
 
@@ -40,6 +41,10 @@ export type ReportData = {
   /** Trục biểu đồ theo đúng khoảng đang lọc. */
   granularity: "day" | "week" | "month" | "year";
   series: Array<{ key: string; label: string; title: string; service: number; parts: number; orders: number }>;
+  /** Doanh thu kỳ liền trước, cùng cách chia mốc, để so sánh xu hướng. */
+  previous_series: Array<{ label: string; title: string; revenue: number }>;
+  /** Phụ tùng và các danh mục dịch vụ lớn nhất. */
+  revenue_groups: Array<{ name: string; revenue: number }>;
   top_services: Array<{ name: string; count: number; revenue: number }>;
   top_parts: Array<{ name: string; sku: string | null; quantity: number; revenue: number }>;
   collection: {
@@ -47,6 +52,7 @@ export type ReportData = {
     unpaid_invoices: number; collection_rate: number | null;
   };
   operations: {
+    order_status: Record<"completed" | "in_progress" | "waiting_parts" | "waiting_approval" | "inspecting" | "closed", number>;
     received: Kpi; delivered: number; in_shop: number; turnaround_hours: Kpi | null;
     appointments: { total: number; arrived: number; cancelled: number; no_show: number; upcoming: number; show_rate: number | null };
     customers: { total: number; returning: number; new: number; return_rate: number | null };
@@ -96,8 +102,12 @@ export type ReschedulePolicy = { limit: number; cutoff_hours: number };
 export type AdminReview = {
   id: number; customer: string | null; phone: string | null; vehicle: string; plate: string | null;
   order_id: number | null; order_code: string | null; visit_date: string | null; services: string[];
-  rating: number; comment: string; date: string | null; reply: string | null; replied_at: string | null; hidden: boolean;
+  rating: number; comment: string; date: string | null; reply: string | null; replied_at: string | null; reply_edited_at: string | null; hidden: boolean;
+  /** Chỉ có ở API Cố vấn: phản hồi này do chính cố vấn đang đăng nhập tạo. */
+  can_edit_reply?: boolean;
 };
+/** Một phiên bản phản hồi. `edited_by` null: phản hồi có từ trước khi hệ thống ghi lịch sử. */
+export type ReviewReplyVersion = { version: number; content: string; old_content: string | null; edited_by: string | null; edited_at: string | null };
 export type ReviewList = Paged<AdminReview, {
   average: number; recent_average: number | null; positive_rate: number | null; reply_rate: number | null;
   visible: number; hidden: number; unreplied: number; low_unreplied: number; distribution: Record<string, number>;
@@ -114,7 +124,7 @@ export type AdminCustomer = {
 };
 export type AdminCustomerDetail = AdminCustomer & {
   address: string | null; created_at: string | null;
-  vehicles: Array<{ id: number; brand: string | null; model: string | null; trim: string | null; plate: string | null; year: number | null; mileage: number | null }>;
+  vehicles: Array<{ id: number; brand: string | null; model: string | null; trim: string | null; plate: string | null; year: number | null; mileage: number | null; avatar_url: string | null }>;
   history: Array<{ id: number; code: string; date: string | null; title: string; vehicle: string; amount: number; status: string }>;
   last_review: { rating: number; date: string | null; comment: string } | null;
 };
@@ -189,6 +199,8 @@ export const adminApi = {
 
   reviews: (params: Params, signal?: AbortSignal) => fetchApi<ReviewList>(`/admin/reviews${query(params)}`, { signal }),
   replyReview: (id: number, reply: string) => send<Message<AdminReview>>(`/admin/reviews/${id}/reply`, "POST", { reply }),
+  editReviewReply: (id: number, reply: string, expectedReply: string) => send<Message<AdminReview>>(`/admin/reviews/${id}/reply`, "PUT", { reply, expected_reply: expectedReply }),
+  reviewReplyHistory: (id: number, signal?: AbortSignal) => fetchApi<{ data: ReviewReplyVersion[] }>(`/admin/reviews/${id}/reply-history`, { signal }).then(r => r.data),
   hideReview: (id: number, hidden: boolean) => send<Message<AdminReview>>(`/admin/reviews/${id}`, "PATCH", { is_hidden: hidden }),
 
   contactMessages: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminContactMessage, { new: number }>>(`/admin/contact-messages${query(params)}`, { signal }),
@@ -261,4 +273,4 @@ export const fmtTime = (iso: string | null | undefined) => {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "—" : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
-export const errorMessage = (error: unknown, fallback = "Có lỗi khi xử lý yêu cầu.") => (error instanceof Error ? error.message : fallback);
+export const errorMessage = (error: unknown, fallback = "Có lỗi khi xử lý yêu cầu.") => (userErrorMessage(error, fallback));

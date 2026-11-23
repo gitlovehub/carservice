@@ -1,7 +1,9 @@
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { LABELS } from "../../config/labels";
 import { Button } from "./Button";
 import { Icon, type IconName } from "./Icon";
+
+const RETRY_GUARD_MS = 500;
 
 type StateProps = { title?: ReactNode; description?: ReactNode; action?: ReactNode; icon?: IconName; compact?: boolean; className?: string };
 
@@ -27,10 +29,25 @@ export function LoadingState({ label = LABELS.state.loading, compact }: { label?
   </div>;
 }
 
-/** Lỗi tải dữ liệu, kèm nút Thử lại khi có onRetry. */
-export function ErrorState({ title = LABELS.state.error, description, onRetry, compact, className }: {
-  title?: ReactNode; description?: ReactNode; onRetry?: () => void; compact?: boolean; className?: string;
+/** Lỗi tải dữ liệu. `onRetry` gọi lại API: nút có loading và chặn bấm lặp; `action` thay cho nút Thử lại khi cần nút riêng. */
+export function ErrorState({ title = LABELS.state.error, description, onRetry, action, compact, className }: {
+  title?: ReactNode; description?: ReactNode; onRetry?: () => void | Promise<unknown>; action?: ReactNode; compact?: boolean; className?: string;
 }) {
+  const [retrying, setRetrying] = useState(false);
+  const busy = useRef(false);
+  const retry = async () => {
+    if (!onRetry || busy.current) return;
+    busy.current = true;
+    setRetrying(true);
+    try {
+      await onRetry();
+      // Hàm reload đồng bộ: giữ trạng thái chờ đủ lâu để không gửi trùng khi bấm liên tiếp.
+      await new Promise(resolve => setTimeout(resolve, RETRY_GUARD_MS));
+    } catch { /* Lỗi mới do màn hình gọi hiển thị lại. */ } finally {
+      busy.current = false;
+      setRetrying(false);
+    }
+  };
   return <StateBox role="alert" title={title} description={description} icon="alert" tone="bg-danger-soft text-danger" compact={compact} className={className}
-    action={onRetry && <Button variant="secondary" icon="refresh" onClick={onRetry}>{LABELS.action.retry}</Button>}/>;
+    action={action ?? (onRetry && <Button variant="secondary" icon="refresh" loading={retrying} loadingText="Đang thử lại..." onClick={() => void retry()}>{LABELS.action.retry}</Button>)}/>;
 }

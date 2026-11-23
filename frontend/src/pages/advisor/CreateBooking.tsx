@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
-import { Field, Input, SearchInput, Textarea, FieldError } from "../../components/ui/Field";
+import { DateInput } from "../../components/ui/DateInput";
+import { Field, SearchInput, Textarea, FieldError } from "../../components/ui/Field";
 import { Icon } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
@@ -115,7 +116,7 @@ export default function CreateBooking() {
     if (!time) problems.time = "Chọn khung giờ hẹn.";
     if (fieldErrors.show(problems) || !time) return;
     const approved = await confirm({
-      title: "Đặt lịch hộ khách", reference: `${fmtDay(date)} · ${time}`,
+      title: "Đặt lịch hộ khách", reference: `${time} - ${fmtDay(date)}`,
       description: `Tạo lịch cho ${customerName} · ${vehicleLabel ?? "—"}. Lịch ở trạng thái Chờ xác nhận; bước tiếp theo là xác nhận lại với khách.${capacityDay?.over_capacity ? " Lưu ý: ngày này đã vượt công suất gara." : ""}`,
       confirmText: "Đặt lịch", checklist: ["Khách đã đồng ý ngày giờ và nội dung qua điện thoại / tin nhắn."],
     });
@@ -183,7 +184,7 @@ export default function CreateBooking() {
         {ready && <section className={card}>
           <h2 className="text-lg font-bold text-cs-text">Ngày & khung giờ<Req/></h2>
           <div className="mt-4 flex flex-wrap items-end gap-3">
-            <Field label="Ngày hẹn" required><Input type="date" min={isoDay(0)} value={date} onChange={e => { if (e.target.value) { setDate(e.target.value); setTime(null); } }}/></Field>
+            <Field label="Ngày hẹn" required><DateInput min={isoDay(0)} value={date} onChange={e => { if (e.target.value) { setDate(e.target.value); setTime(null); } }}/></Field>
             <Button variant={date === isoDay(0) ? "tonal" : "outline"} onClick={() => { setDate(isoDay(0)); setTime(null); }}>Hôm nay</Button>
             <Button variant={date === isoDay(1) ? "tonal" : "outline"} onClick={() => { setDate(isoDay(1)); setTime(null); }}>Ngày mai</Button>
           </div>
@@ -225,7 +226,7 @@ export default function CreateBooking() {
             <div><dt className="text-caption text-cs-muted">Nội dung</dt><dd className="text-cs-text">{selectedPackage || chosenServices.length
               ? <ul className="space-y-0.5">{selectedPackage && <li>• {selectedPackage.name}</li>}{chosenServices.map(s => <li key={s.id}>• {s.name}</li>)}</ul>
               : symptom.trim() ? "Kiểm tra theo mô tả của khách" : "—"}</dd></div>
-            <div><dt className="text-caption text-cs-muted">Thời gian</dt><dd className="font-medium text-cs-text">{time ? `${time} · ${fmtDay(date)}` : "Chưa chọn khung giờ"}</dd></div>
+            <div><dt className="text-caption text-cs-muted">Thời gian</dt><dd className="font-medium text-cs-text">{time ? `${time} - ${fmtDay(date)}` : "Chưa chọn khung giờ"}</dd></div>
             {estimate > 0 && <div className="border-t border-cs-border pt-3"><dt className="text-caption text-cs-muted">Ước tính (giá niêm yết)</dt><dd className="text-lg font-bold text-cs-text">{formatVnd(estimate)}</dd><dd className="text-caption text-cs-muted">Giá chính thức chốt ở báo giá sau khi kiểm tra.</dd></div>}
           </dl>
           <Button type="submit" variant="primary" icon="calendar" className="mt-5 w-full" loading={working} loadingText="Đang đặt lịch..." disabled={!ready || !time}>Đặt lịch</Button>

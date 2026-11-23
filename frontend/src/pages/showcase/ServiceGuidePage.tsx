@@ -7,6 +7,7 @@ import { ReferenceBanner } from './ReferenceShell';
 import ServicePicksBar from './ServicePicksBar';
 import { byPopularity, foldVi, money, serviceImage, type Service } from './serviceDisplay';
 import { SERVICE_GUIDES, findGuide } from './serviceGuides';
+import { userErrorMessage } from '../../services/apiError';
 
 type GuideService = Service & { estimated_minutes?: number | null };
 
@@ -31,7 +32,7 @@ export default function ServiceGuidePage() {
     let alive = true;
     fetchApi<GuideService[] | { data: GuideService[] }>('/services')
       .then(r => { if (alive) { setServices(Array.isArray(r) ? r : Array.isArray(r?.data) ? r.data : []); setError(''); } })
-      .catch(e => { if (alive) setError(e instanceof Error ? e.message : 'Không tải được danh sách dịch vụ.'); })
+      .catch(e => { if (alive) setError(userErrorMessage(e, 'Không tải được danh sách dịch vụ.')); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [retry]);

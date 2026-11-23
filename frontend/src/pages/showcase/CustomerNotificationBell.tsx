@@ -10,6 +10,7 @@ import {
   readCustomerNotification,
   type CustomerNotification,
 } from '../../services/customerNotifications';
+import { userErrorMessage } from "../../services/apiError";
 
 /** "5 phút trước", "Hôm qua"… — xem nhanh dễ hơn ngày giờ đầy đủ (ngày đầy đủ ở tooltip). */
 function relativeTime(value: string | null): string {
@@ -52,7 +53,7 @@ export default function CustomerNotificationBell() {
       setItems(response.items);
       setUnread(response.unreadCount);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể lấy thông báo.');
+      setError(userErrorMessage(cause, 'Không thể lấy thông báo.'));
     } finally {
       setLoading(false);
     }
@@ -89,7 +90,7 @@ export default function CustomerNotificationBell() {
         setUnread(current => Math.max(0, current - 1));
       } catch (cause) {
         // Không hiển thị là đã đọc khi API thất bại; vẫn cho khách đi tới trang liên quan.
-        setError(cause instanceof Error ? cause.message : 'Không thể đánh dấu đã đọc.');
+        setError(userErrorMessage(cause, 'Không thể đánh dấu đã đọc.'));
       }
     }
     setOpen(false);
@@ -103,7 +104,7 @@ export default function CustomerNotificationBell() {
       setItems(current => current.map(row => row.read_at ? row : {...row, read_at: now}));
       setUnread(0);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể đánh dấu đã đọc.');
+      setError(userErrorMessage(cause, 'Không thể đánh dấu đã đọc.'));
     }
   }
 

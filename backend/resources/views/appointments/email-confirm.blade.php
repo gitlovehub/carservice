@@ -47,7 +47,7 @@
                 {{-- Tự gửi ngay khi trang mở (khách chỉ bấm 1 lần trong mail). Trình quét link của hộp thư không chạy JS nên không xác nhận hộ. --}}
                 <form id="confirm-form" method="POST" action="{{ $action }}" style="margin: 24px 0 0; text-align: center;">
                     <noscript><p style="margin: 0 0 12px;">Bấm nút bên dưới để xác nhận lịch hẹn.</p></noscript>
-                    <button id="confirm-button" type="submit" style="padding: 14px 34px; border-radius: 12px; border: 1px solid #FF6B78; background-color: #E11D2E; background-image: linear-gradient(180deg, #FF4757 0%, #E11D2E 55%, #B3101F 100%); color: #FFFFFF; font-size: 15px; font-weight: 800; letter-spacing: .03em; text-shadow: 0 0 8px rgba(255, 255, 255, .55); box-shadow: 0 0 6px rgba(255, 71, 87, .95), 0 0 18px rgba(225, 29, 46, .7), 0 0 38px rgba(225, 29, 46, .4), inset 0 1px 0 rgba(255, 255, 255, .35); cursor: pointer;">Xác nhận lịch hẹn</button>
+                    <button id="confirm-button" type="submit" style="padding: 14px 34px; border-radius: 12px; border: 1px solid #FF6B78; background-color: #E11D2E; background-image: linear-gradient(180deg, #FF4757 0%, #E11D2E 55%, #B3101F 100%); color: #FFFFFF; font-size: 15px; font-family: Arial, Helvetica, sans-serif; font-weight: 700; line-height: 1.4; box-shadow: 0 0 6px rgba(255, 71, 87, .95), 0 0 18px rgba(225, 29, 46, .7), 0 0 38px rgba(225, 29, 46, .4), inset 0 1px 0 rgba(255, 255, 255, .35); cursor: pointer;">Xác nhận lịch hẹn</button>
                 </form>
                 <script>
                     (function () {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LABELS } from "../config/labels";
 import { useAppFeedback } from "../components/ui/feedbackContext";
 import type { ConfirmOptions } from "../components/ui/feedbackContext";
+import { userErrorMessage } from "../services/apiError";
 
 type Options<Args extends unknown[], R> = {
   /** Hỏi xác nhận trước (xóa, hủy, đóng phiếu). Hàm nhận cùng tham số với run(). */
@@ -51,7 +52,7 @@ export function useAsyncAction<Args extends unknown[], R>(action: (...args: Args
       await opts.onSuccess?.(result);
       return result;
     } catch (caught) {
-      const message = caught instanceof Error && caught.message ? caught.message : LABELS.notify.genericError;
+      const message = userErrorMessage(caught, LABELS.notify.genericError);
       if (mounted.current) setError(message);
       if (opts.error !== false) notify(opts.error || message, "error");
       return undefined;

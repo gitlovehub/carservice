@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Field, Icon, Input, Modal, SearchInput, Select, Textarea } from "../../../components/ui";
+import { Button, DateInput, Field, Icon, Modal, SearchInput, Select, Textarea } from "../../../components/ui";
 import { useAppFeedback } from "../../../components/ui/feedbackContext";
 import { adminApi, errorMessage, type BookingSlots } from "../../../services/adminApi";
 import {
@@ -130,7 +130,7 @@ export function CreateAppointmentModal({ open, onClose, onCreated }: {
         </Select>
       </Field>
       <Field label="Ngày hẹn" required error={fieldErrors.errors.date}>
-        <Input type="date" value={date} min={isoDate(new Date())} onChange={e => { setDate(e.target.value); fieldErrors.clear("date"); }}/>
+        <DateInput value={date} min={isoDate(new Date())} onChange={e => { setDate(e.target.value); fieldErrors.clear("date"); }}/>
       </Field>
       <Field label="Giờ hẹn" required error={fieldErrors.errors.time} hint="Theo khung giờ đặt lịch ở trang Giờ làm việc.">
         <Select value={time} onChange={e => { setTime(e.target.value); fieldErrors.clear("time"); }}>

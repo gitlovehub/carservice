@@ -307,6 +307,10 @@ class ConfirmationService
     private function assertEmailChangeAllowed(Customer $customer, string $email, Account $actor): void
     {
         $current = $customer->confirmationEmail();
+        // Khách có tài khoản dùng một email duy nhất: đổi bằng nút xác thực (AccountEmailService), không đổi bằng mã tại quầy.
+        if ($customer->account && mb_strtolower((string) $customer->account->email) !== $email) {
+            throw ValidationException::withMessages(['email' => 'Khách có tài khoản: hãy gửi nút xác thực tới email mới để khách tự xác nhận.']);
+        }
         if ($current && mb_strtolower($current) !== $email && $actor->role !== Account::ROLE_ADMIN) {
             throw ValidationException::withMessages(['email' => 'Email đã xác minh chỉ quản trị viên được đổi.']);
         }

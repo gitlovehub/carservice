@@ -1,19 +1,23 @@
 import axios from "axios";
 import type { AxiosError, AxiosRequestConfig } from "axios";
+import { apiErrorKind, apiErrorMessage, type ApiErrorBody, type ApiErrorKind } from "./apiError";
 
 // Vite proxy serves /api locally. The production nginx also proxies /api to Laravel.
 // For a distinct deployment, set VITE_API_BASE_URL to an HTTPS API origin ending in /api.
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
 
-export type ApiErrorBody = { message?: string; errors?: Record<string, string[]> };
+export type { ApiErrorBody };
 export class ApiClientError extends Error {
   readonly status: number;
   readonly data: ApiErrorBody | null;
-  constructor(message: string, status: number, data: ApiErrorBody | null) {
+  /** Loại lỗi đã phân biệt: mất mạng, hết thời gian, 401, 403, 404, 409, 422, 429, 5xx... */
+  readonly kind: ApiErrorKind;
+  constructor(message: string, status: number, data: ApiErrorBody | null, kind: ApiErrorKind = apiErrorKind(status)) {
     super(message);
     this.name = "ApiClientError";
     this.status = status;
     this.data = data;
+    this.kind = kind;
   }
 }
 
@@ -36,9 +40,11 @@ apiClient.interceptors.response.use(
   response => response,
   (error: AxiosError<ApiErrorBody>) => {
     const status = error.response?.status ?? 0;
-    const data = error.response?.data ?? null;
-    const validation = data?.errors && Object.values(data.errors).flat()[0];
-    const message = validation || data?.message || (status === 0 ? "Không thể kết nối tới máy chủ." : "Có lỗi khi xử lý yêu cầu.");
+    // Proxy/gateway có thể trả HTML: chỉ đọc nội dung khi là JSON object.
+    const body: unknown = error.response?.data;
+    const data = body && typeof body === "object" ? body as ApiErrorBody : null;
+    const kind = apiErrorKind(status, error.code);
+    const message = apiErrorMessage(kind, data);
     // Backend enforces role/ownership; 401 invalidates the cached session.
     if (status === 401) {
       localStorage.removeItem("token");
@@ -48,7 +54,7 @@ apiClient.interceptors.response.use(
       localStorage.removeItem("isLoggedIn");
       window.dispatchEvent(new Event("user-updated"));
     }
-    return Promise.reject(new ApiClientError(message, status, data));
+    return Promise.reject(new ApiClientError(message, status, data, kind));
   },
 );
 

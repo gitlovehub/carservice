@@ -12,6 +12,7 @@ import {
 import { getStatus } from "../../../config/status";
 import { LineItemsTable } from "../account/AccountKit";
 import { MODAL_CLASS } from "../account/accountStyles";
+import { userErrorMessage } from "../../../services/apiError";
 
 type Tab = "overview" | "services" | "parts" | "invoice" | "history";
 const TABS: { id: Tab; label: string; icon: IconName }[] = [
@@ -30,7 +31,7 @@ function ConditionText({ status }: { status?: string | null }) {
   return <b className={status ? (passed ? "text-success-fg" : "text-danger-fg") : "text-cs-muted"}>{label}</b>;
 }
 
-/** Ngày · giờ như mẫu: "06/11/2026 · 08:30". */
+/** Giờ trước, ngày sau: "08:30 - 06/11/2026". */
 const dateTime = (value?: string | null) => value ? `${formatTime(value)} - ${formatDate(value)}` : "—";
 
 /** "8 giờ 15 phút" / "2 ngày 3 giờ" từ hai mốc thời gian. */
@@ -137,7 +138,7 @@ export default function ServiceDetailModal({ orderId, onClose }: { orderId: numb
     let active = true;
     getMyRepairOrderDetail(orderId)
       .then((data) => { if (active) setOrder(data); })
-      .catch((e: unknown) => { if (active) setError(e instanceof Error ? e.message : "Không tải được chi tiết dịch vụ."); });
+      .catch((e: unknown) => { if (active) setError(userErrorMessage(e, "Không tải được chi tiết dịch vụ.")); });
     return () => { active = false; };
   }, [orderId, attempt]);
 

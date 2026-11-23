@@ -31,7 +31,7 @@ class VnpayService
     /**
      * Tạo URL chuyển khách sang trang thanh toán VNPay.
      *
-     * @param  array{txn_ref: string, amount: int, order_info: string, ip_address: string, created_at: CarbonInterface, expires_at: CarbonInterface}  $order
+     * @param  array{txn_ref: string, amount: int, order_info: string, ip_address: string, created_at: CarbonInterface, expires_at: CarbonInterface, return_url?: string|null}  $order
      */
     public function buildPaymentUrl(array $order): string
     {
@@ -45,7 +45,7 @@ class VnpayService
             'vnp_OrderInfo' => $order['order_info'],
             'vnp_OrderType' => (string) $this->config('order_type', 'other'),
             'vnp_Locale' => (string) $this->config('locale', 'vn'),
-            'vnp_ReturnUrl' => (string) $this->config('return_url'),
+            'vnp_ReturnUrl' => (string) ($order['return_url'] ?? $this->config('return_url')),
             'vnp_IpAddr' => $order['ip_address'],
             'vnp_CreateDate' => $this->formatDate($order['created_at']),
             'vnp_ExpireDate' => $this->formatDate($order['expires_at']),

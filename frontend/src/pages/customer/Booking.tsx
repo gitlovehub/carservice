@@ -26,6 +26,7 @@ import BookingReviewModal from "./booking/BookingReviewModal";
 import { logout } from "../auth/auth";
 import { getStatus, type StatusTone } from "../../config/status";
 import { formatLicensePlate } from "../../services/licensePlate";
+import { userErrorMessage } from "../../services/apiError";
 
 type SavedVehicle = {
   id: number;
@@ -648,7 +649,7 @@ export default function Booking() {
         confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
       }, 150);
     } catch (err) {
-      notify(err instanceof Error ? err.message : "Không thể gửi lịch hẹn. Vui lòng thử lại.", "error");
+      notify(userErrorMessage(err, "Không thể gửi lịch hẹn. Vui lòng thử lại."), "error");
     } finally {
       setSubmitting(false);
     }
@@ -685,7 +686,7 @@ export default function Booking() {
   const selectedDateObj = upcomingDates[selectedDateIndex] || upcomingDates[0];
   const finalModelDisplayName = [effectiveModelName || "Xe riêng", vehicleSelection.trimName].filter(Boolean).join(" ");
   const vehicleLabel = `${vehicleBrand} ${finalModelDisplayName}${vehiclePlate ? ` (${vehiclePlate})` : ""}`;
-  const timeLabel = selectedTime ? `${selectedTime}, ${selectedDateObj.fullLabel}` : undefined;
+  const timeLabel = selectedTime ? `${selectedTime} - ${selectedDateObj.fullLabel}` : undefined;
   // Bước 3 có khung "Thông tin đã chọn" ngay trong thẻ → ẩn cột tóm tắt bên ngoài để không trùng.
   const showSummary = currentStep >= 2 && currentStep <= BOOKING_STEPS.length && currentStep !== 3;
 
@@ -938,12 +939,12 @@ export default function Booking() {
                   <aside className="h-fit rounded-2xl border border-cs-border bg-cs-surface-2 p-4">
                     <h3 className="mb-3 flex items-center gap-2 border-b border-cs-border pb-3 text-base font-extrabold text-cs-text"><span className="text-[#e11d2e]"><Icon name="calendar" size={20}/></span>Thông tin đã chọn</h3>
                     <div className="flex items-center gap-3 border-b border-cs-border py-3">
-                      <span className="grid size-10 place-items-center rounded-xl bg-cs-surface text-cs-text-2"><Icon name="calendar" size={18}/></span>
-                      <div><p className="text-xs text-cs-muted">Ngày hẹn</p><p className="text-sm font-extrabold text-cs-text">{WEEKDAY_FULL[sel.dayOfWeek]}, {sel.isoDate.split("-").reverse().join("/")}</p></div>
-                    </div>
-                    <div className="flex items-center gap-3 border-b border-cs-border py-3">
                       <span className="grid size-10 place-items-center rounded-xl bg-cs-surface text-cs-text-2"><Icon name="clock" size={18}/></span>
                       <div><p className="text-xs text-cs-muted">Giờ hẹn</p><p className="text-sm font-extrabold text-cs-text">{selectedTime || "Chưa chọn"}</p></div>
+                    </div>
+                    <div className="flex items-center gap-3 border-b border-cs-border py-3">
+                      <span className="grid size-10 place-items-center rounded-xl bg-cs-surface text-cs-text-2"><Icon name="calendar" size={18}/></span>
+                      <div><p className="text-xs text-cs-muted">Ngày hẹn</p><p className="text-sm font-extrabold text-cs-text">{WEEKDAY_FULL[sel.dayOfWeek]}, {sel.isoDate.split("-").reverse().join("/")}</p></div>
                     </div>
                     <div className={`mt-3 flex items-start gap-3 rounded-xl border p-3 ${timeValid ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10" : "border-cs-border bg-cs-surface"}`}>
                       <span className={`grid size-8 shrink-0 place-items-center rounded-full ${timeValid ? "bg-emerald-500 text-white" : "bg-slate-200 text-cs-muted"}`}><Icon name={timeValid ? "check" : "clock"} size={16}/></span>

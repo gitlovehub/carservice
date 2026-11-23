@@ -7,17 +7,31 @@ use App\Models\RepairOrder;
 use App\Models\Vehicle;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
+use App\Services\VehicleAvatarService;
 use App\Support\GarageDay;
+use App\Support\LicensePlate;
 use App\Support\VehicleCatalogSelection;
+use App\Support\VehicleVin;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VehicleController extends Controller
 {
     /** Hãng, dòng xe và phiên bản để giao diện hiển thị đủ tên xe. */
     private const CATALOG_RELATIONS = ['model.brand:id,name', 'trim:id,model_id,name,status'];
+
+    private const IDENTITY_MESSAGES = [
+        'license_plate.string' => LicensePlate::INVALID_MESSAGE,
+        'license_plate.max' => LicensePlate::INVALID_MESSAGE,
+        'license_plate.unique' => 'Biển số này đã được đăng ký cho một xe khác. Vui lòng kiểm tra lại hoặc liên hệ gara.',
+        'vin.string' => VehicleVin::INVALID_MESSAGE,
+        'vin.regex' => VehicleVin::INVALID_MESSAGE,
+        'vin.unique' => VehicleVin::TAKEN_MESSAGE,
+    ];
 
     /*
     |--------------------------------------------------------------------------
@@ -111,6 +125,8 @@ class VehicleController extends Controller
      */
     public function store(Request $request)
     {
+        $this->normalizeVinInput($request);
+
         $validated = $request->validate([
             'customer_id' => [
                 'required',
@@ -150,7 +166,7 @@ class VehicleController extends Controller
             'vin' => [
                 'nullable',
                 'string',
-                'max:50',
+                'regex:'.VehicleVin::PATTERN,
                 'unique:vehicles,vin',
             ],
 
@@ -164,7 +180,7 @@ class VehicleController extends Controller
                 'nullable',
                 'string',
             ],
-        ]);
+        ], self::IDENTITY_MESSAGES);
 
         $validated = VehicleCatalogSelection::apply($validated, allowHidden: true);
 
@@ -215,6 +231,8 @@ class VehicleController extends Controller
      */
     public function update(Request $request, Vehicle $vehicle)
     {
+        $this->normalizeVinInput($request);
+
         $validated = $request->validate([
             'customer_id' => [
                 'sometimes',
@@ -255,7 +273,7 @@ class VehicleController extends Controller
             'vin' => [
                 'nullable',
                 'string',
-                'max:50',
+                VehicleVin::rule($vehicle->vin),
                 Rule::unique('vehicles', 'vin')
                     ->ignore($vehicle->id),
             ],
@@ -270,7 +288,7 @@ class VehicleController extends Controller
                 'nullable',
                 'string',
             ],
-        ]);
+        ], self::IDENTITY_MESSAGES);
 
         $vehicle->update(VehicleCatalogSelection::apply($validated, $vehicle, allowHidden: true));
 
@@ -311,6 +329,52 @@ class VehicleController extends Controller
             'success' => true,
             'message' => 'Đã xóa xe. Lịch sử sửa chữa vẫn được lưu.',
         ]);
+    }
+
+    /**
+     * POST /api/vehicles/{vehicle}/avatar — Admin/Cố vấn tải lên hoặc thay ảnh đại diện xe.
+     */
+    public function uploadAvatar(Request $request, Vehicle $vehicle, VehicleAvatarService $avatars): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:'.VehicleAvatarService::MAX_KILOBYTES],
+        ], [
+            'image.required' => 'Vui lòng chọn ảnh xe.',
+            'image.file' => 'Tệp ảnh không hợp lệ. Vui lòng chọn lại.',
+            'image.uploaded' => 'Không tải được ảnh lên. Vui lòng chọn ảnh dưới 5 MB rồi thử lại.',
+            'image.mimes' => 'Chỉ nhận ảnh JPG, PNG hoặc WebP.',
+            'image.mimetypes' => 'Chỉ nhận ảnh JPG, PNG hoặc WebP.',
+            'image.max' => 'Ảnh không được vượt quá 5 MB.',
+        ]);
+        $updated = $avatars->replace($vehicle, $request->file('image'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã cập nhật ảnh đại diện xe.',
+            'data' => ['id' => $updated->id, 'avatar_url' => $updated->avatar_url],
+        ]);
+    }
+
+    /**
+     * DELETE /api/vehicles/{vehicle}/avatar — xoá ảnh, xe trở về biểu tượng mặc định.
+     */
+    public function deleteAvatar(Vehicle $vehicle, VehicleAvatarService $avatars): JsonResponse
+    {
+        $updated = $avatars->remove($vehicle);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã xóa ảnh đại diện xe.',
+            'data' => ['id' => $updated->id, 'avatar_url' => null],
+        ]);
+    }
+
+    /**
+     * GET /api/vehicle-avatars/{file} — tên file là UUID ngẫu nhiên nên thẻ img hiển thị được mà không lộ danh sách ảnh.
+     */
+    public function avatar(string $file, VehicleAvatarService $avatars): StreamedResponse
+    {
+        return $avatars->response($file);
     }
 
     /**
@@ -410,6 +474,9 @@ class VehicleController extends Controller
             'Hilux',
         ];
 
+        $this->normalizePlateInput($request);
+        $this->normalizeVinInput($request);
+
         // Khách thêm lại biển số của chính xe mình đã xóa → khôi phục xe cũ để nối lại lịch sử.
         $restored = $this->restoreDeletedVehicleByPlate($request, $customer->id);
         if ($restored) {
@@ -455,13 +522,14 @@ class VehicleController extends Controller
                 'nullable',
                 'string',
                 'max:20',
+                LicensePlate::rule(),
                 'unique:vehicles,license_plate',
             ],
 
             'vin' => [
                 'nullable',
                 'string',
-                'max:50',
+                'regex:'.VehicleVin::PATTERN,
                 'unique:vehicles,vin',
             ],
 
@@ -475,7 +543,7 @@ class VehicleController extends Controller
                 'nullable',
                 'string',
             ],
-        ]);
+        ], self::IDENTITY_MESSAGES);
 
         if (! empty($validated['model_name'])) {
             $brand = VehicleBrand::firstOrCreate(
@@ -548,6 +616,8 @@ class VehicleController extends Controller
         }
 
         $this->authorize('own', $vehicle);
+        $this->normalizePlateInput($request);
+        $this->normalizeVinInput($request);
 
         $validated = $request->validate([
             'model_id' => [
@@ -577,6 +647,7 @@ class VehicleController extends Controller
                 'nullable',
                 'string',
                 'max:20',
+                LicensePlate::rule($vehicle->license_plate),
                 Rule::unique('vehicles', 'license_plate')
                     ->ignore($vehicle->id),
             ],
@@ -584,7 +655,7 @@ class VehicleController extends Controller
             'vin' => [
                 'nullable',
                 'string',
-                'max:50',
+                VehicleVin::rule($vehicle->vin),
                 Rule::unique('vehicles', 'vin')
                     ->ignore($vehicle->id),
             ],
@@ -599,7 +670,7 @@ class VehicleController extends Controller
                 'nullable',
                 'string',
             ],
-        ]);
+        ], self::IDENTITY_MESSAGES);
 
         $this->ensureIdentityUnchangedWhenHasHistory($vehicle, $validated);
 
@@ -659,6 +730,26 @@ class VehicleController extends Controller
     | PRIVATE HELPERS
     |--------------------------------------------------------------------------
     */
+
+    /** Chuẩn hoá biển số trước khi kiểm tra trùng để "30a12345" và "30A-123.45" được coi là một. */
+    private function normalizePlateInput(Request $request): void
+    {
+        $plate = $request->input('license_plate');
+        if (is_string($plate)) {
+            $normalized = LicensePlate::normalize($plate);
+            $request->merge(['license_plate' => $normalized === '' ? null : $normalized]);
+        }
+    }
+
+    /** Viết hoa, bỏ khoảng trắng; để trống là xe chưa có số khung. */
+    private function normalizeVinInput(Request $request): void
+    {
+        $vin = $request->input('vin');
+        if (is_string($vin)) {
+            $normalized = VehicleVin::normalize($vin);
+            $request->merge(['vin' => $normalized === '' ? null : $normalized]);
+        }
+    }
 
     /**
      * Xe đã có phiếu sửa chữa: không cho đổi hãng/dòng/phiên bản/năm/số khung,

@@ -5,6 +5,7 @@ import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { HolidaysPanel } from "./HolidaysPanel";
 import { useFieldErrors } from "../../components/ui/useFieldErrors";
 import { FieldError } from "../../components/ui/Field";
+import { userErrorMessage } from "../../services/apiError";
 
 type WorkingHour = {
   id: number;
@@ -218,9 +219,7 @@ function WorkingHours() {
 
         setHours([]);
         setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Không thể tải cấu hình giờ làm việc.",
+          userErrorMessage(requestError, "Không thể tải cấu hình giờ làm việc."),
         );
       })
       .finally(() => {

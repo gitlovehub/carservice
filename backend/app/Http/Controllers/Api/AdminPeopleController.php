@@ -13,6 +13,7 @@ use App\Models\Payment;
 use App\Models\RepairOrder;
 use App\Models\Review;
 use App\Models\TechnicianProfile;
+use App\Services\AccountEmailService;
 use App\Services\PasswordResetService;
 use App\Support\VehicleName;
 use Illuminate\Database\Eloquent\Builder;
@@ -114,7 +115,7 @@ class AdminPeopleController extends Controller
             'created_at' => $model->created_at?->toIso8601String(),
             'vehicles' => $model->vehicles->map(fn ($v) => [
                 'id' => $v->id, 'brand' => $v->model?->brand?->name, 'model' => $v->model?->name, 'trim' => $v->trim?->name ?? $v->variant,
-                'plate' => $v->license_plate, 'year' => $v->year, 'mileage' => $v->mileage,
+                'plate' => $v->license_plate, 'year' => $v->year, 'mileage' => $v->mileage, 'avatar_url' => $v->avatar_url,
             ])->values(),
             'history' => $history,
             'last_review' => $review ? ['rating' => (int) $review->overall_rating, 'date' => $review->created_at?->toIso8601String(), 'comment' => (string) $review->comment] : null,
@@ -266,6 +267,7 @@ class AdminPeopleController extends Controller
         $employee->loadMissing('account', 'technicianProfile');
         abort_unless(in_array($employee->account?->role, self::STAFF_ROLES, true), 404);
         $data = $this->validateStaff($request, $employee);
+        $previousEmail = (string) $employee->account->email;
 
         DB::transaction(function () use ($employee, $data): void {
             $employee->update(['full_name' => $data['name'], 'phone' => $data['phone'], 'status' => $data['status'] ?? $employee->status]);
@@ -280,6 +282,9 @@ class AdminPeopleController extends Controller
                 ]);
             }
         });
+        if (mb_strtolower($previousEmail) !== mb_strtolower((string) $employee->account->email)) {
+            app(AccountEmailService::class)->staffEmailChanged($employee->account, $previousEmail, $request->user());
+        }
 
         return response()->json(['message' => 'Đã cập nhật nhân viên.', 'data' => $this->staffRow($employee->fresh(['account', 'technicianProfile']))]);
     }

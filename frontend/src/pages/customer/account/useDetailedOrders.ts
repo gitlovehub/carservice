@@ -4,6 +4,7 @@ import {
   type CustomerQuotation, type CustomerRepairOrder,
 } from "../../../services/customerApi";
 import { useLiveRefresh } from "../../../services/liveSync";
+import { userErrorMessage } from "../../../services/apiError";
 
 /**
  * Dữ liệu + quy tắc nghiệp vụ dùng chung cho 3 trang Báo giá / Hóa đơn / Thanh toán.
@@ -37,7 +38,7 @@ export function useDetailedOrders() {
     const session = currentSession();
     getMyBillingOrders()
       .then((list) => { cache = { session, orders: list }; if (active) { setOrders(list); setError(""); } })
-      .catch((e: unknown) => { if (active) setError(e instanceof Error ? e.message : "Không thể tải dữ liệu."); })
+      .catch((e: unknown) => { if (active) setError(userErrorMessage(e, "Không thể tải dữ liệu.")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [version]);

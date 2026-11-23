@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button, IconButton } from "../../components/ui/Button";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { fetchApi } from "../../services/api";
+import { userErrorMessage } from "../../services/apiError";
 
 type Step = { name: string; standard_minutes: number; requires_photo?: boolean };
 
@@ -60,7 +61,7 @@ export function ServiceStepsEditor({ serviceId, onSaved, onDirtyChange }: {
       onSaved?.(response.service.estimated_minutes, next.length);
       notify(`Đã lưu ${next.length} bước chuẩn của dịch vụ (tổng ${next.reduce((sum, step) => sum + step.standard_minutes, 0)} phút).`, "success");
     } catch (error) {
-      notify(error instanceof Error ? error.message : "Không lưu được các bước chuẩn.", "error");
+      notify(userErrorMessage(error, "Không lưu được các bước chuẩn."), "error");
     } finally { setSaving(false); }
   }
 

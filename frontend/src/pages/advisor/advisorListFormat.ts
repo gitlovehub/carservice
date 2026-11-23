@@ -1,4 +1,6 @@
-/** Hàm dùng chung cho các trang danh sách khu cố vấn (khoảng ngày, ngày giờ ngắn, tên xe). */
+import { fmtDateTime } from "../../services/adminApi";
+
+/** Hàm dùng chung cho các trang danh sách khu cố vấn (khoảng ngày, ngày giờ, tên xe). */
 
 export type Range = "any" | "today" | "7d" | "week" | "month";
 export const RANGES: Array<{ id: Range; label: string }> = [
@@ -22,20 +24,13 @@ export function rangeDates(range: Range): { from?: string; to?: string } {
   return { from: isoDay(start), to: isoDay(today) };
 }
 
-/** "16/11 · 08:00". */
-export function dayTime(value?: string | null) {
-  if (!value) return "—";
-  const d = new Date(value);
-  const two = (n: number) => String(n).padStart(2, "0");
-  return Number.isNaN(d.valueOf()) ? value : `${two(d.getDate())}/${two(d.getMonth() + 1)} · ${two(d.getHours())}:${two(d.getMinutes())}`;
-}
-
-/** "16/11/2026 · 17:30". */
+/** Giờ trước, ngày sau như khu Admin: "17:30 - 16/11/2026". */
 export function fullDayTime(value?: string | null) {
   if (!value) return "—";
-  const d = new Date(value);
-  return Number.isNaN(d.valueOf()) ? value : `${d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })} · ${dayTime(value).split(" · ")[1]}`;
+  return Number.isNaN(new Date(value).valueOf()) ? value : fmtDateTime(value);
 }
+
+export const dayTime = fullDayTime;
 
 type VehicleLike = { model?: { name?: string | null; brand?: { name?: string | null } | null } | null } | null | undefined;
 export const vehicleName = (vehicle: VehicleLike) => [vehicle?.model?.brand?.name, vehicle?.model?.name].filter(Boolean).join(" ") || "Chưa rõ dòng xe";

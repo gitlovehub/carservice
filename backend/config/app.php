@@ -39,7 +39,8 @@ return [
     |
     */
 
-    'debug' => (bool) env('APP_DEBUG', false),
+    // Production luôn tắt debug, kể cả khi biến môi trường bị đặt nhầm.
+    'debug' => env('APP_ENV') !== 'production' && (bool) env('APP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------

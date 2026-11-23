@@ -229,8 +229,7 @@ html[data-theme="dark"] .adv-ro-doc-icon { color: var(--adv-gold-1); }
 
 /* Xe của khách hàng: hàng thông số + dòng lịch sử dịch vụ (phiếu đang sửa tô vàng). */
 .adv-veh-facts { display: grid; gap: 14px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--cs-border); background: var(--cs-surface-2); grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (min-width: 900px) { .adv-veh-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (min-width: 1800px) { .adv-veh-facts { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (min-width: 1800px) { .adv-veh-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .adv-veh-row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 14px; border-radius: 14px; border: 1px solid var(--cs-border); font-size: 14px; transition: border-color var(--cs-duration) ease, background-color var(--cs-duration) ease; }
 .adv-veh-row:hover { border-color: var(--cs-accent); background: var(--cs-hover); }
 .adv-veh-row:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }

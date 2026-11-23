@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Mail\AppointmentRescheduledMail;
 use App\Models\Account;
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\Notification;
@@ -133,5 +134,20 @@ class AppointmentStaffTrackingTest extends TestCase
         $this->assertSame(1, $rows[$this->advisorB->id]['cancelled']);
         $this->assertSame('Cố vấn Bình', $rows[$this->advisorB->id]['name']);
         $this->actingAs($this->advisorA)->getJson('/api/admin/advisor-activity')->assertForbidden();
+    }
+
+    public function test_advisor_activity_filters_by_vietnam_day(): void
+    {
+        $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/confirm")->assertOk();
+        // 18:00 UTC ngày 22 = 01:00 ngày 23 giờ Việt Nam.
+        AuditLog::query()->where('account_id', $this->advisorA->id)->update(['created_at' => '2026-11-22 18:00:00']);
+        $admin = Account::factory()->create(['role' => Account::ROLE_ADMIN]);
+        $confirmedIn = fn (string $query) => collect($this->actingAs($admin)->getJson("/api/admin/advisor-activity?{$query}")->assertOk()->json('data'))
+            ->firstWhere('account_id', $this->advisorA->id)['confirmed'];
+
+        $this->assertSame(1, $confirmedIn('date_from=2026-11-23&date_to=2026-11-23'));
+        $this->assertSame(0, $confirmedIn('date_from=2026-11-22&date_to=2026-11-22'));
+        $this->assertSame(1, $confirmedIn('date_from=2026-11-01&date_to=2026-11-30'));
+        $this->actingAs($admin)->getJson('/api/admin/advisor-activity?date_from=2026-11-24&date_to=2026-11-23')->assertJsonValidationErrors('date_to');
     }
 }

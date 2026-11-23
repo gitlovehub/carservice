@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { fetchApi } from "../../services/api";
 import OtpInput from "../../components/auth/OtpInput";
+import { LostEmailLink } from "../../components/auth/VerifyEmailPrompt";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
 import { GarageAuthError, GarageAuthLayout, GarageField } from "../../components/GaragePublic";
@@ -168,6 +169,7 @@ function ForgotPassword() {
     {step === "FORGOT" && <><form className="grid gap-4" onSubmit={handleForgotSubmit} noValidate>
       <GarageField htmlFor="fp-email" label="Email đã đăng ký"><input id="fp-email" type="email" className={authFieldClass} autoComplete="email" placeholder="you@example.com" value={email} onChange={e => {setEmail(e.target.value); setErrorMsg("");}} /></GarageField>
       <button type="submit" className={authPrimaryClass} disabled={isLoading || !email.trim()} aria-busy={isLoading || undefined}>{isLoading ? "Đang gửi mã..." : "Gửi mã xác thực OTP →"}</button></form>
+      <p className="mt-3 text-center"><LostEmailLink/></p>
       <AuthSwitchLink text="Nhớ mật khẩu?" to="/login" label="Đăng nhập ngay" state={location.state}/>
     </>}
     {step === "RESET" && <><form className="grid gap-4" onSubmit={handleResetSubmit} noValidate>

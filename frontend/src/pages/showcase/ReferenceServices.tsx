@@ -16,6 +16,7 @@ function ServicePhoto({ service }: { service: Service }) {
 import { MaintenancePackageSlider } from './HomeSections';
 import { useApi } from './publicData';
 import { Icon, type IconName } from '../../components/ui/Icon';
+import { userErrorMessage } from '../../services/apiError';
 
 const PAGE_SIZE=6;
 const ALL='Tất cả dịch vụ';
@@ -61,7 +62,7 @@ export default function ReferenceServices(){
   const timer=window.setTimeout(()=>setSearchParams(prev=>{const copy=new URLSearchParams(prev);if(next)copy.set('search',next);else copy.delete('search');copy.delete('page');return copy},{replace:true}),300);
   return()=>window.clearTimeout(timer);
  },[draft,query,setSearchParams]);
- useEffect(()=>{let alive=true;setLoading(true);setError('');fetchApi<Service[]|{data:Service[]}>('/services').then(r=>{if(alive)setItems(Array.isArray(r)?r:Array.isArray(r?.data)?r.data:[])}).catch(e=>{if(alive)setError(e instanceof Error?e.message:'Không tải được danh mục dịch vụ')}).finally(()=>{if(alive)setLoading(false)});return()=>{alive=false}},[retry]);
+ useEffect(()=>{let alive=true;setLoading(true);setError('');fetchApi<Service[]|{data:Service[]}>('/services').then(r=>{if(alive)setItems(Array.isArray(r)?r:Array.isArray(r?.data)?r.data:[])}).catch(e=>{if(alive)setError(userErrorMessage(e, 'Không tải được danh mục dịch vụ'))}).finally(()=>{if(alive)setLoading(false)});return()=>{alive=false}},[retry]);
  // Danh mục + icon do admin chọn (/service-categories, theo thứ tự admin). Lỗi API → suy từ danh sách dịch vụ, icon mặc định.
  const apiCategories=useApi<{data:{id:number;name:string;icon:string;services_count:number}[]}>('/service-categories')?.data;
  const categories=useMemo(()=>{

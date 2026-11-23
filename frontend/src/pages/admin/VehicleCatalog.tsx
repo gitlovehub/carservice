@@ -9,6 +9,7 @@ import {
   adminVehicleCatalogApi, brandLogoUrl, loadBrandLogos, type AdminLevel, type CatalogBrand, type CatalogModel, type CatalogStatus, type CatalogTrim, type Paginated,
 } from "../../services/vehicleCatalog";
 import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
+import { userErrorMessage } from "../../services/apiError";
 
 type Row = CatalogBrand | CatalogModel | CatalogTrim;
 type Filters = { search: string; status: "" | CatalogStatus; brandId: number | null; modelId: number | null; page: number };
@@ -29,7 +30,7 @@ const LEVELS: Record<AdminLevel, { tab: string; noun: string; add: string }> = {
 const BODY_TYPES: Record<string, string> = { SEDAN: "Sedan", SUV: "SUV", HATCHBACK: "Hatchback", MPV: "MPV", PICKUP: "Bán tải", OTHER: "Khác" };
 const PER_PAGE = 15;
 const emptyFilters: Filters = { search: "", status: "", brandId: null, modelId: null, page: 1 };
-const errorText = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
+const errorText = (error: unknown, fallback: string) => (userErrorMessage(error, fallback));
 
 /** Tải danh sách theo khóa yêu cầu; "đang tải" = khóa hiện tại chưa có kết quả. */
 function useAdminList(level: AdminLevel, filters: Filters, reload: number, sort: SortState) {

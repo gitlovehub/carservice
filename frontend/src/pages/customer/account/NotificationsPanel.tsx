@@ -8,6 +8,7 @@ import {
   readAllCustomerNotifications, readCustomerNotification, type CustomerNotification, type NotificationGroup,
 } from "../../../services/customerNotifications";
 import { useLiveRefresh } from "../../../services/liveSync";
+import { userErrorMessage } from "../../../services/apiError";
 
 type Filter = "all" | "unread" | NotificationGroup;
 const LIMIT = 200;
@@ -31,14 +32,14 @@ export function NotificationsPanel() {
       setItems(response.items);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Không tải được thông báo.");
+      setError(userErrorMessage(cause, "Không tải được thông báo."));
     }
   }, []);
   useEffect(() => {
     let active = true;
     getCustomerNotifications(LIMIT)
       .then(response => { if (active) setItems(response.items); })
-      .catch((cause: unknown) => { if (active) { setItems([]); setError(cause instanceof Error ? cause.message : "Không tải được thông báo."); } });
+      .catch((cause: unknown) => { if (active) { setItems([]); setError(userErrorMessage(cause, "Không tải được thông báo.")); } });
     return () => { active = false; };
   }, []);
   useLiveRefresh(() => void load());
@@ -71,7 +72,7 @@ export function NotificationsPanel() {
       const now = new Date().toISOString();
       setItems(rows => rows?.map(row => row.read_at ? row : { ...row, read_at: now }) ?? rows);
     } catch (cause) {
-      notify(cause instanceof Error ? cause.message : "Không thể đánh dấu đã đọc.", "error");
+      notify(userErrorMessage(cause, "Không thể đánh dấu đã đọc."), "error");
     } finally { setBusy(false); }
   }
 
@@ -89,7 +90,7 @@ export function NotificationsPanel() {
       setFilter("all");
       notify("Đã xóa toàn bộ thông báo.", "success");
     } catch (cause) {
-      notify(cause instanceof Error ? cause.message : "Không thể xóa thông báo.", "error");
+      notify(userErrorMessage(cause, "Không thể xóa thông báo."), "error");
     } finally { setBusy(false); }
   }
 

@@ -17,9 +17,9 @@ export function LiveClock() {
     title={`${dateLabel} · giờ Việt Nam — bấm để chuyển sang ${is24h ? "12 giờ (AM/PM)" : "24 giờ"}`}
     aria-label={`${text}, ${dateLabel}. Bấm để chuyển sang định dạng ${is24h ? "12 giờ" : "24 giờ"}`}>
     <Icon name="calendar" size={15}/>
-    <span>{dateLabel}</span>
+    <span className="cs-ws-clock-date">{dateLabel}</span>
     <span className="cs-ws-clock-sep" aria-hidden="true"/>
     <Icon name="clock" size={15}/>
-    <time dateTime={now.toISOString()}>{text}</time>
+    <time className="cs-ws-clock-time" dateTime={now.toISOString()}>{text}</time>
   </button>;
 }

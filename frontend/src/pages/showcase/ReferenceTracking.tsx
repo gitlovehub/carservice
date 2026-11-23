@@ -14,6 +14,7 @@ import {
 } from '../../services/customerApi';
 import { ReferenceBanner } from './ReferenceShell';
 import { foldVi } from './serviceDisplay';
+import { userErrorMessage } from '../../services/apiError';
 
 /**
  * Tiến độ sửa chữa (khách đã đăng nhập) — trang riêng ở menu chính, không nằm trong khu Hồ sơ.
@@ -263,7 +264,7 @@ function MemberTracking() {
     let alive = true;
     getMyRepairOrders()
       .then(rows => { if (alive) setList({ orders: rows, loading: false, error: '', updatedAt: new Date() }); })
-      .catch(e => { if (alive) setList(prev => ({ ...prev, loading: false, error: e instanceof Error ? e.message : 'Không tải được phiếu sửa chữa.' })); });
+      .catch(e => { if (alive) setList(prev => ({ ...prev, loading: false, error: userErrorMessage(e, 'Không tải được phiếu sửa chữa.') })); });
     return () => { alive = false; };
   }, [tick]);
   // Gara cập nhật tiến độ / báo giá / biên bản → tải lại ngay (WebSocket; mất kết nối thì liveSync tự hỏi định kỳ).
@@ -401,7 +402,7 @@ function GuestLookup() {
     } catch (err) {
       const message = err instanceof ApiClientError && err.status === 429
         ? 'Bạn đã thử quá nhiều lần. Vui lòng đợi 1 phút rồi tra cứu lại.'
-        : err instanceof Error ? err.message : 'Không tra cứu được, vui lòng thử lại.';
+        : userErrorMessage(err, 'Không tra cứu được, vui lòng thử lại.');
       setState({ status: 'error', message });
     }
   };

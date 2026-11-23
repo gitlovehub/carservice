@@ -18,6 +18,8 @@ export type CustomerVehicle = {
   created_at?: string | null;
   vin?: string | null;
   note?: string | null;
+  /** Ảnh đại diện xe (tùy chọn, do gara quản lý); khách chỉ xem. */
+  avatar_url?: string | null;
   /** Số phiếu sửa chữa của xe; > 0 → đã có lịch sử, không đổi được hãng/dòng/phiên bản/năm. */
   repair_orders_count?: number;
 };
@@ -290,6 +292,7 @@ export type CustomerReview = {
   comment?: string | null;
   reply?: string | null;
   replied_at?: string | null;
+  reply_edited_at?: string | null;
   created_at?: string | null;
   repair_order?: CustomerRepairOrder | null;
   repairOrder?: CustomerRepairOrder | null;
@@ -474,6 +477,8 @@ export type VnpayPaymentResult = "PENDING" | "SUCCESS" | "FAILED" | "CANCELLED";
 export type VnpayReturnResponse = {
   result: VnpayPaymentResult;
   message: string;
+  /** Khách trả từ email: link mở lại hoá đơn khi giao dịch lỗi / huỷ (do Backend cấp). */
+  retry_url?: string | null;
   vnp_response_code: string;
   payment: {
     id: number;

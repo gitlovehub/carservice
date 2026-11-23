@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Button, Field, IconButton, Input } from "../../../components/ui";
+import { Button, DateInput, Field, IconButton } from "../../../components/ui";
 import { Icon, type IconName } from "../../../components/ui/Icon";
 import { useOverlayArea } from "../../../components/ui/useOverlayArea";
 import { detectUnit, isoDay, parseDay, quickRanges, rangeLabel, shiftRange, unitRange, type DayRange, type PeriodState, type PeriodUnit } from "./period";
@@ -11,7 +11,9 @@ const UNITS: Array<{ id: PeriodUnit; label: string; icon: IconName }> = [
 ];
 const WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 const PICK_TITLE: Record<PeriodUnit, string> = { day: "Chọn ngày", week: "Chọn tuần", month: "Chọn tháng", quarter: "Chọn quý", year: "Chọn năm" };
-const POPOVER_WIDTH = 720;
+const POPOVER_WIDTH = 640;
+/** Dưới nút còn ít hơn mức này và phía trên rộng hơn thì mở lên trên. */
+const MIN_SPACE_BELOW = 340;
 
 type Draft = { unit: PeriodUnit; from: string; to: string; all: boolean; picking: boolean; custom: boolean; cursor: Date };
 
@@ -39,7 +41,7 @@ export function PeriodFilter({ period, allowAll = true, allowFuture = false }: {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [position, setPosition] = useState({ top: 0, left: 0, width: POPOVER_WIDTH, maxHeight: 560 });
+  const [position, setPosition] = useState<{ top?: number; bottom?: number; left: number; width: number; maxHeight: number }>({ top: 0, left: 0, width: POPOVER_WIDTH, maxHeight: 560 });
   const today = isoDay(new Date());
   const maxDay = allowFuture ? undefined : today;
   const applied: DayRange | null = params.date_from && params.date_to ? { from: params.date_from, to: params.date_to } : null;
@@ -50,11 +52,15 @@ export function PeriodFilter({ period, allowAll = true, allowFuture = false }: {
     if (!rect) return;
     const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
     const width = Math.min(POPOVER_WIDTH, viewportWidth - 16);
-    const below = rect.bottom + 6;
-    const top = window.innerHeight - below >= 420 ? below : 8;
     // Đủ chỗ thì canh trái theo nút, nút nằm sát phải thì canh phải theo nút.
-    const left = rect.left + width <= viewportWidth - 8 ? rect.left : rect.right - width;
-    setPosition({ top, left: Math.min(Math.max(8, left), viewportWidth - width - 8), width, maxHeight: window.innerHeight - top - 8 });
+    const preferred = rect.left + width <= viewportWidth - 8 ? rect.left : rect.right - width;
+    const left = Math.min(Math.max(8, preferred), viewportWidth - width - 8);
+    // Luôn bám sát nút, không che header: thiếu chỗ thì nội dung tự cuộn bên trong.
+    const spaceBelow = window.innerHeight - rect.bottom - 14;
+    const spaceAbove = rect.top - 14;
+    setPosition(spaceBelow >= MIN_SPACE_BELOW || spaceBelow >= spaceAbove
+      ? { top: rect.bottom + 6, left, width, maxHeight: spaceBelow }
+      : { bottom: window.innerHeight - rect.top + 6, left, width, maxHeight: spaceAbove });
   };
   const close = (returnFocus = true) => {
     setDraft(null);
@@ -184,7 +190,7 @@ export function PeriodFilter({ period, allowAll = true, allowFuture = false }: {
     {draft && createPortal(
       <div ref={panelRef} id={panelId} role="dialog" aria-label="Chọn khoảng thời gian" data-area={area}
         onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); } }}
-        style={{ top: position.top, left: position.left, width: position.width, maxHeight: position.maxHeight }}
+        style={{ top: position.top, bottom: position.bottom, left: position.left, width: position.width, maxHeight: position.maxHeight }}
         className="cs-feedback-layer fixed z-[350] flex flex-col overflow-hidden rounded-card border border-cs-border bg-cs-surface text-cs-text shadow-raised">
         <div role="tablist" aria-label="Đơn vị thời gian" className="flex shrink-0 gap-1 overflow-x-auto border-b border-cs-border p-2">
           {UNITS.map(u => <button key={u.id} type="button" role="tab" aria-selected={draft.unit === u.id}
@@ -193,7 +199,7 @@ export function PeriodFilter({ period, allowAll = true, allowFuture = false }: {
             <Icon name={u.icon} size={15} className="max-sm:hidden"/>{u.label}
           </button>)}
         </div>
-        <div className="grid min-h-0 flex-1 overflow-y-auto sm:grid-cols-[13rem_minmax(0,1fr)]">
+        <div className="grid min-h-0 flex-1 overflow-y-auto sm:grid-cols-[11rem_minmax(0,1fr)]">
           <div className="border-cs-border p-3 max-sm:border-b sm:border-r">
             <p className="mb-1.5 px-3 text-small font-semibold">Chọn nhanh</p>
             <ul className="grid gap-0.5 max-sm:grid-cols-2">
@@ -214,8 +220,8 @@ export function PeriodFilter({ period, allowAll = true, allowFuture = false }: {
           </div>
           <div className="min-w-0 p-3">
             {draft.custom ? <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Từ ngày" required><Input type="date" value={draft.from} max={maxDay} onChange={e => setDraft({ ...draft, from: e.target.value })}/></Field>
-              <Field label="Đến ngày" required error={reversed ? "Đến ngày phải từ ngày bắt đầu trở đi." : undefined}><Input type="date" value={draft.to} min={draft.from || undefined} max={maxDay} onChange={e => setDraft({ ...draft, to: e.target.value })}/></Field>
+              <Field label="Từ ngày" required><DateInput value={draft.from} max={maxDay} onChange={e => setDraft({ ...draft, from: e.target.value })}/></Field>
+              <Field label="Đến ngày" required error={reversed ? "Đến ngày phải từ ngày bắt đầu trở đi." : undefined}><DateInput value={draft.to} max={maxDay} onChange={e => setDraft({ ...draft, to: e.target.value })}/></Field>
             </div> : <>
               <div className="mb-2 flex items-center justify-between gap-2">
                 <p className="text-small font-semibold">{PICK_TITLE[draft.unit]}</p>
