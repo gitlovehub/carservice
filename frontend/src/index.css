@@ -145,12 +145,10 @@
   font-optical-sizing: auto;
 }
 
-/* Font riêng khu khách hàng, gắn ở <html> để cả modal/dropdown render qua portal cũng nhận.
-   Itim chỉ có một độ đậm nên bật đậm giả lập để tiêu đề vẫn nổi hơn nội dung. */
+/* Font riêng khu khách hàng, gắn ở <html> để cả modal/dropdown render qua portal cũng nhận. */
 :root[data-client="customer"] {
-  --font-sans: "Itim", "Segoe UI", Arial, sans-serif;
-  --cs-ui-font: "Itim", "Segoe UI", Arial, sans-serif;
-  font-synthesis: weight;
+  --font-sans: "Signika Negative", "Segoe UI", Arial, sans-serif;
+  --cs-ui-font: "Signika Negative", "Segoe UI", Arial, sans-serif;
 }
 
 * {

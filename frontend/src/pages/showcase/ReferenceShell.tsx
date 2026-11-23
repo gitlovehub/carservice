@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuthSession } from '../../contexts/authSession';
 import { useTheme } from '../../contexts/theme';
 import { Icon } from '../../components/ui/Icon';
-import { logout } from '../auth/auth';
+import { getUserDisplayName, logout } from '../auth/auth';
 import CustomerNotificationBell from './CustomerNotificationBell';
 import { SITE_LOGO_SRC } from '../../components/common/SiteLogo';
 import Breadcrumb, { type Crumb } from '../../components/Breadcrumb';
@@ -75,7 +75,9 @@ export function ReferenceHeader() {
   const accountRef = useRef<HTMLDivElement>(null);
   const logged = session.status === 'authenticated';
   const customer = logged && session.account.role === 'CUSTOMER';
-  const initial = logged ? (session.account.full_name?.[0] || session.account.email?.[0] || 'K').toUpperCase() : 'K';
+  // Tên nằm trong account.customer / account.employee, không phải account.full_name.
+  const displayName = logged ? getUserDisplayName(session.account) : '';
+  const initial = logged ? (displayName[0] || 'K').toUpperCase() : 'K';
   const management = logged && session.account.role === 'ADMIN' ? '/admin' : '/advisor';
   const managementLabel = management === '/admin' ? 'Vào quản trị' : 'Vào trang cố vấn';
   const paths = customer ? menu : logged ? menu.filter(x => ['/', '/services', '/about', '/contact'].includes(x.to)) : menu.filter(x => !['/appointments','/cars','/quotation'].includes(x.to));
@@ -119,8 +121,8 @@ export function ReferenceHeader() {
           {accountOpen && <div className="v3ref-account-popover" role="menu" aria-label="Menu tài khoản">
             {/* Ai đang đăng nhập (không bấm được) → lối tắt hay dùng (tên trùng sidebar) → Đăng xuất. */}
             <div className="v3ref-account-identity">
-              <strong>{session.account.full_name || 'Khách hàng'}</strong>
-              {session.account.email && <small>{session.account.email}</small>}
+              <strong>{displayName}</strong>
+              {session.account.email && session.account.email !== displayName && <small>{session.account.email}</small>}
             </div>
             {AVATAR_MENU_LINKS.map(link => <Link key={link.to} role="menuitem" to={link.to} onClick={()=>setAccountOpen(false)}
               aria-current={isAccountLinkActive(link, location.pathname) ? 'page' : undefined}><Icon name={link.icon} size={16}/>{link.label}</Link>)}
