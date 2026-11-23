@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FocusEvent, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthSession } from '../../contexts/authSession';
@@ -10,6 +10,7 @@ import { SITE_LOGO_SRC } from '../../components/common/SiteLogo';
 import Breadcrumb, { type Crumb } from '../../components/Breadcrumb';
 import type { ReactNode } from 'react';
 import { AVATAR_MENU_LINKS, isAccountLinkActive } from '../../layouts/customerAccountNav';
+import ServicesMegaMenu from './ServicesMegaMenu';
 import '../../styles/v3-reference.css';
 
 const menu = [
@@ -63,6 +64,24 @@ function FirstVisitIntro() {
     </div>, document.body);
 }
 
+/** Mở menu khi rê chuột, đóng trễ một nhịp để kịp di chuột vào menu. Cảm ứng không dùng hover, vẫn bấm để mở. */
+function useHoverMenu(setOpen: (open: boolean) => void) {
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  return {
+    onPointerEnter: (e: ReactPointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      window.clearTimeout(timer.current);
+      setOpen(true);
+    },
+    onPointerLeave: (e: ReactPointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => setOpen(false), 180);
+    },
+  };
+}
+
 /** Header thống nhất: trạng thái active theo cả URL cũ và URL mới,
  * menu mobile đóng khi chuyển trang/nhấn Escape/ra ngoài, menu tài khoản dễ tìm. */
 export function ReferenceHeader() {
@@ -73,6 +92,12 @@ export function ReferenceHeader() {
   const location = useLocation();
   const headerRef = useRef<HTMLElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
+  const [megaOpen,setMegaOpen] = useState(false);
+  const megaPanelRef = useRef<HTMLDivElement>(null);
+  const megaButtonRef = useRef<HTMLButtonElement>(null);
+  const accountHover = useHoverMenu(setAccountOpen);
+  // Mega menu chỉ có trên desktop; dưới 1160px mục Dịch vụ là link thường trong menu hamburger.
+  const megaHover = useHoverMenu(open => setMegaOpen(open && window.matchMedia('(min-width:1161px)').matches));
   const logged = session.status === 'authenticated';
   const customer = logged && session.account.role === 'CUSTOMER';
   // Tên nằm trong account.customer / account.employee, không phải account.full_name.
@@ -82,12 +107,31 @@ export function ReferenceHeader() {
   const managementLabel = management === '/admin' ? 'Vào quản trị' : 'Vào trang cố vấn';
   const paths = customer ? menu : logged ? menu.filter(x => ['/', '/services', '/about', '/contact'].includes(x.to)) : menu.filter(x => !['/appointments','/cars','/quotation'].includes(x.to));
 
-  useEffect(() => { setMobileOpen(false); setAccountOpen(false); }, [location.pathname]);
+  // Chuột bấm giữ menu đang mở bởi hover; cảm ứng và bàn phím thì bấm để bật/tắt.
+  const toggleOnClick = (e: MouseEvent, setOpen: (update: (open: boolean) => boolean) => void) => {
+    const mouse = e.detail > 0 && window.matchMedia('(hover: hover)').matches;
+    setOpen(open => mouse || !open);
+  };
+  const toggleMega = (e: MouseEvent) => {
+    toggleOnClick(e, setMegaOpen);
+    // Mở bằng bàn phím: đưa focus vào link đầu tiên của menu.
+    if (e.detail === 0 && !megaOpen) requestAnimationFrame(() => megaPanelRef.current?.querySelector('a')?.focus());
+  };
+  const megaBlur = (e: FocusEvent<HTMLDivElement>) => {
+    const next = e.relatedTarget as Node | null;
+    if (next && !megaPanelRef.current?.contains(next) && next !== megaButtonRef.current) setMegaOpen(false);
+  };
+
+  useEffect(() => { setMobileOpen(false); setAccountOpen(false); setMegaOpen(false); }, [location.pathname]);
   useEffect(() => {
-    const escape = (e:KeyboardEvent) => { if(e.key==='Escape'){setMobileOpen(false);setAccountOpen(false)} };
+    const escape = (e:KeyboardEvent) => {
+      if(e.key!=='Escape') return;
+      if(megaPanelRef.current?.contains(document.activeElement)) megaButtonRef.current?.focus();
+      setMobileOpen(false);setAccountOpen(false);setMegaOpen(false);
+    };
     const outside = (e:PointerEvent) => {
       const node = e.target as Node;
-      if(headerRef.current && !headerRef.current.contains(node)) setMobileOpen(false);
+      if(headerRef.current && !headerRef.current.contains(node)) { setMobileOpen(false); setMegaOpen(false); }
       if(accountRef.current && !accountRef.current.contains(node)) setAccountOpen(false);
     };
     document.addEventListener('keydown',escape);
@@ -101,6 +145,12 @@ export function ReferenceHeader() {
       <nav id="v3ref-navigation" className={mobileOpen ? 'v3ref-menu open' : 'v3ref-menu'} aria-label="Điều hướng CarService">
         {paths.map(item => {
           const current = activeMenu(item.to,location.pathname);
+          if (item.to === '/services') return <div key={item.to} className="v3ref-menu-item" {...megaHover}>
+            <Link to={item.to} onClick={()=>{setMobileOpen(false);setMegaOpen(false)}} aria-current={current?'page':undefined} className={current||megaOpen?'active':''}>{item.label}</Link>
+            <button type="button" ref={megaButtonRef} className="v3ref-mega-toggle" onClick={toggleMega} aria-label="Mở nhóm dịch vụ" aria-expanded={megaOpen} aria-controls="v3ref-services-mega">
+              <Icon name="chevron-down" size={13}/>
+            </button>
+          </div>;
           return <Link key={item.to} to={item.to} onClick={()=>setMobileOpen(false)} aria-current={current?'page':undefined} className={current?'active':''}>{item.label}</Link>
         })}
       </nav>
@@ -111,8 +161,8 @@ export function ReferenceHeader() {
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/>
         </button>
         {customer && <CustomerNotificationBell/>}
-        {logged ? customer ? <div className="v3ref-account" ref={accountRef}>
-          <button type="button" className="v3ref-account-trigger" aria-expanded={accountOpen} aria-haspopup="menu" aria-label="Mở menu tài khoản" onClick={()=>setAccountOpen(v=>!v)}>
+        {logged ? customer ? <div className="v3ref-account" ref={accountRef} {...accountHover}>
+          <button type="button" className="v3ref-account-trigger" aria-expanded={accountOpen} aria-haspopup="menu" aria-label="Mở menu tài khoản" onClick={e=>toggleOnClick(e,setAccountOpen)}>
             {/* Ảnh đại diện lấy từ phiên (/me); đổi ảnh ở Hồ sơ → sự kiện user-updated làm mới phiên → header cập nhật ngay. */}
             <span className="v3ref-avatar">{session.account.avatar
               ? <img src={session.account.avatar} alt="" referrerPolicy="no-referrer" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'inherit'}}/>
@@ -134,6 +184,8 @@ export function ReferenceHeader() {
         <button type="button" className="v3ref-hamburger" onClick={()=>setMobileOpen(v=>!v)} aria-label={mobileOpen?'Đóng menu':'Mở menu'} aria-expanded={mobileOpen} aria-controls="v3ref-navigation">{mobileOpen?'✕':'☰'}</button>
       </div>
     </div>
+    <ServicesMegaMenu id="v3ref-services-mega" open={megaOpen} panelRef={megaPanelRef} showBooking={!logged || customer}
+      onNavigate={()=>setMegaOpen(false)} onPointerEnter={megaHover.onPointerEnter} onPointerLeave={megaHover.onPointerLeave} onBlur={megaBlur}/>
   </header></>;
 }
 export function ReferenceFooter(){return <footer className="v3ref-footer"><div className="v3ref-footer-inner">

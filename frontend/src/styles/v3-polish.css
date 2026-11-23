@@ -69,6 +69,63 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -.018em; text-wrap: pretty; }
 .v3ref-account-popover a:hover, .v3ref-account-popover button:hover,
 .v3ref-account-popover :focus-visible { background: #fff0f3; color: #bd1129; }
 .v3ref-account-popover .v3ref-logout-action { color: #ba2436; border-top: 1px solid #edf0f4; border-radius: 0 0 8px 8px; margin-top: 4px; }
+/* Cầu nối vô hình qua khoảng hở giữa avatar và menu để hover không bị ngắt. */
+.v3ref-account-popover::before { content: ""; position: absolute; left: 0; right: 0; top: -14px; height: 14px; }
+
+/* Mega menu mục Dịch vụ (desktop). Dùng token theme nên tự đúng ở cả sáng và tối. */
+.v3ref-menu-item { display: flex; align-items: center; gap: 1px; height: 100%; }
+.v3ref-mega-toggle {
+  display: grid; place-items: center; width: 18px; height: 22px; padding: 0; border: 0; border-radius: 5px;
+  background: transparent; color: var(--cs-muted); cursor: pointer;
+}
+.v3ref-mega-toggle svg { transition: transform .16s ease; }
+.v3ref-mega-toggle[aria-expanded="true"] { color: var(--cs-accent-text); }
+.v3ref-mega-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.v3ref-mega {
+  position: absolute; z-index: 75; top: 100%; left: 50%; transform: translateX(-50%);
+  width: min(1180px, calc(100vw - 40px)); max-height: calc(100dvh - 92px); overflow-y: auto;
+  background: var(--cs-surface); color: var(--cs-text); border: 1px solid var(--cs-border); border-top: 0;
+  border-radius: 0 0 16px 16px; box-shadow: 0 22px 52px rgb(17 24 39 / 20%);
+  animation: v3ref-mega-in .16s ease-out;
+}
+@keyframes v3ref-mega-in { from { opacity: 0; margin-top: -6px; } to { opacity: 1; margin-top: 0; } }
+.v3ref-mega-inner { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; padding: 22px; }
+.v3ref-mega-inner.has-cta { grid-template-columns: repeat(3, minmax(0, 1fr)) 230px; }
+.v3ref-mega-group { display: flex; flex-direction: column; min-width: 0; }
+.v3ref-mega-head { display: flex; align-items: center; gap: 11px; padding: 6px; margin: -6px -6px 8px; border-radius: 11px; color: var(--cs-text); transition: background-color .15s; }
+.v3ref-mega-head:hover { background: var(--cs-soft); }
+.v3ref-mega-head img { width: 54px; height: 54px; flex-shrink: 0; object-fit: cover; border-radius: 10px; }
+.v3ref-mega-head span { display: grid; gap: 2px; min-width: 0; }
+.v3ref-mega-head strong { font: 750 14.5px/1.3 var(--cs-ui-font); }
+.v3ref-mega-head small { font: 500 12px/1.35 var(--cs-ui-font); color: var(--cs-muted); }
+.v3ref-mega-group ul { display: grid; gap: 1px; margin: 0 0 6px; padding: 0; list-style: none; }
+.v3ref-mega-group li a {
+  display: block; padding: 6px 8px; margin-inline: -2px; border-radius: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 550 13px/1.45 var(--cs-ui-font); color: var(--cs-text); transition: background-color .15s, color .15s;
+}
+.v3ref-mega-group li a:hover, .v3ref-mega-group li a:focus-visible { background: var(--cs-soft); color: var(--cs-accent-text); }
+.v3ref-mega-more, .v3ref-mega-foot a { display: inline-flex; align-items: center; gap: 6px; font: 700 12.5px/1.4 var(--cs-ui-font); color: var(--cs-accent-text); }
+.v3ref-mega-more { margin-top: auto; padding: 5px 6px; }
+.v3ref-mega-more:hover, .v3ref-mega-foot a:hover { text-decoration: underline !important; }
+.v3ref-mega-skeleton { display: grid; gap: 10px; padding: 8px 6px 12px; }
+.v3ref-mega-skeleton i { display: block; height: 11px; border-radius: 6px; background: var(--cs-surface-2); animation: v3ref-mega-pulse 1.1s ease-in-out infinite alternate; }
+.v3ref-mega-skeleton i:nth-child(2) { width: 82%; }
+.v3ref-mega-skeleton i:nth-child(3) { width: 64%; }
+@keyframes v3ref-mega-pulse { from { opacity: .55; } to { opacity: 1; } }
+.v3ref-mega-cta { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 16px; border-radius: 13px; background: var(--cs-soft); color: var(--cs-accent-text); }
+.v3ref-mega-cta strong { font: 750 14.5px/1.3 var(--cs-ui-font); color: var(--cs-text); }
+.v3ref-mega-cta p { margin: 0 0 6px; font: 500 12.5px/1.5 var(--cs-ui-font); color: var(--cs-muted); }
+.v3ref-mega-cta a { margin-top: auto; padding: 8px 13px; border-radius: 9px; background: #e11d2e; color: #fff; font: 700 12.5px/1.4 var(--cs-ui-font); transition: background-color .15s; }
+.v3ref-mega-cta a:hover { background: #c81627; }
+.v3ref-mega-foot { display: flex; justify-content: flex-end; padding: 11px 22px; border-top: 1px solid var(--cs-border); background: var(--cs-surface-2); }
+@media (max-width:1160px) {
+  .v3ref-menu-item { display: block; height: auto; }
+  .v3ref-mega-toggle, .v3ref-mega { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v3ref-mega, .v3ref-mega-skeleton i { animation: none; }
+  .v3ref-mega-toggle svg { transition: none; }
+}
 .v3ref-management-link { display: flex; gap: 8px; align-items: center; font-size: 12px; font-weight: 700; color: #b6192d; }
 /* Nút Đăng nhập ở header: nút chính màu đỏ thương hiệu (giống nút Đặt lịch / nút chính ở trang auth). */
 .v3ref-login { font-weight: 700; font-size: 13px; padding: 9px 16px; border-radius: 10px; background: #e11d2e; color: #fff; box-shadow: 0 6px 16px rgb(225 29 46 / 22%); transition: background-color .15s, box-shadow .15s; }
