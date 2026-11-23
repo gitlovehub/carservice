@@ -287,6 +287,9 @@ export default function Booking() {
   const [savedVehicles, setSavedVehicles] = useState<SavedVehicle[]>([]);
   // Khách chọn "Một xe khác" khi xe khai báo trùng dòng + phiên bản với xe chưa biển số đã lưu.
   const [separateVehicle, setSeparateVehicle] = useState(false);
+  // Modal hỏi khi bấm Tiếp tục; giữ danh sách lúc mở để nội dung không nhảy trong hiệu ứng đóng.
+  const [twinModalOpen, setTwinModalOpen] = useState(false);
+  const [twinChoices, setTwinChoices] = useState<SavedVehicle[]>([]);
   // Đặt lịch không hỏi biển số → xe khai báo mới luôn chưa biển; trùng dòng + phiên bản với xe chưa biển đã lưu = có thể là cùng một xe.
   const platelessTwins = !selectedSavedVehicleId && vehicleSelection.modelId !== null && !vehiclePlate.trim()
     ? savedVehicles.filter((v) => !v.license_plate?.trim() && (v.model_id ?? v.model?.id) === vehicleSelection.modelId && (v.trim_id ?? v.trim?.id ?? null) === vehicleSelection.trimId)
@@ -477,7 +480,7 @@ export default function Booking() {
     setSelectedSavedVehicleId(null);
     setVehicleSelection(next);
     setSeparateVehicle(false);
-    setErrors((prev) => ({ ...prev, brand: "", model: "", twin: "" }));
+    setErrors((prev) => ({ ...prev, brand: "", model: "" }));
   };
 
   function fillFromSavedVehicle(v: SavedVehicle) {
@@ -520,8 +523,6 @@ export default function Booking() {
       newErrors.brand = "Vui lòng chọn hãng xe.";
     } else if (vehicleSelection.modelId === null) {
       newErrors.model = `Vui lòng chọn dòng xe của hãng ${vehicleBrand}.`;
-    } else if (platelessTwins.length > 0 && !separateVehicle) {
-      newErrors.twin = "Chọn xe đã lưu hoặc \"Một xe khác\" để tiếp tục.";
     }
 
     setErrors(newErrors);
@@ -587,8 +588,24 @@ export default function Booking() {
       }
       return;
     }
-    if (validators[currentStep]?.()) goToStep(currentStep + 1);
-    else focusFirstInvalid();
+    if (!validators[currentStep]?.()) {
+      focusFirstInvalid();
+      return;
+    }
+    // Xe khai báo trùng xe chưa biển số đã lưu → hỏi đúng xe đó hay xe khác rồi mới sang bước sau.
+    if (currentStep === 1 && platelessTwins.length > 0 && !separateVehicle) {
+      setTwinChoices(platelessTwins);
+      setTwinModalOpen(true);
+      return;
+    }
+    goToStep(currentStep + 1);
+  };
+
+  const chooseTwinVehicle = (vehicle: SavedVehicle | null) => {
+    if (vehicle) fillFromSavedVehicle(vehicle);
+    else setSeparateVehicle(true);
+    setTwinModalOpen(false);
+    goToStep(2);
   };
 
   const completeBooking = async () => {
@@ -715,11 +732,11 @@ export default function Booking() {
           </div>
         )}
         {restoredNotice && currentStep !== SUCCESS_STEP && (
-          <div role="status" className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <div role="status" className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
             <span className="flex items-center gap-2"><Icon name="check" size={16}/>Đã khôi phục thông tin bạn điền trước đó.</span>
             <span className="flex gap-2">
-              <button type="button" onClick={discardDraft} className="rounded-lg px-3 py-1.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100">Làm lại từ đầu</button>
-              <button type="button" onClick={() => setRestoredNotice(false)} aria-label="Đóng thông báo" className="rounded-lg px-2 py-1.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100">✕</button>
+              <button type="button" onClick={discardDraft} className="rounded-lg px-3 py-1.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 dark:text-success-fg! dark:ring-1 dark:ring-emerald-400/40 dark:hover:bg-emerald-500/25!">Làm lại từ đầu</button>
+              <button type="button" onClick={() => setRestoredNotice(false)} aria-label="Đóng thông báo" className="rounded-lg px-2 py-1.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 dark:text-success-fg! dark:ring-1 dark:ring-emerald-400/40 dark:hover:bg-emerald-500/25!">✕</button>
             </span>
           </div>
         )}
@@ -795,30 +812,6 @@ export default function Booking() {
                 </div>
                 {/* Không hỏi biển số khi đặt lịch: gara ghi nhận biển số lúc tiếp nhận xe.
                     Xe đã lưu (chọn ở trên) vẫn mang theo biển số của nó. */}
-
-                {/* Khai báo xe mới trùng dòng + phiên bản với xe chưa biển số đã lưu → hỏi: đúng xe đó hay một xe khác. */}
-                {platelessTwins.length > 0 && (
-                  <div role="radiogroup" aria-label="Xe này là xe nào" aria-invalid={!!errors.twin || undefined} className={`mt-4 rounded-2xl border p-4 ${errors.twin ? "border-[#e11d2e] bg-cs-soft" : "border-[#e11d2e]/30 bg-cs-soft"}`}>
-                    <p className="text-sm font-semibold text-cs-text">
-                      Bạn đã có {platelessTwins.length > 1 ? `${platelessTwins.length} xe` : "xe"} {vehicleName} chưa có biển số trong hồ sơ. Đây là:
-                    </p>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      {platelessTwins.map((v) => (
-                        <button key={v.id} type="button" role="radio" aria-checked={false} onClick={() => handleSelectSavedVehicle(v.id)}
-                          className="cursor-pointer rounded-xl border border-cs-border bg-cs-surface px-4 py-3 text-left text-sm transition-colors hover:border-[#e11d2e]">
-                          <b className="block text-cs-text">Xe đã lưu</b>
-                          <span className="text-cs-muted">{vehicleSub(v, savedVehicles)}</span>
-                        </button>
-                      ))}
-                      <button type="button" role="radio" aria-checked={separateVehicle} onClick={() => { setSeparateVehicle(true); clearError("twin"); }}
-                        className={`cursor-pointer rounded-xl border px-4 py-3 text-left text-sm transition-colors ${separateVehicle ? "border-[#e11d2e] bg-cs-surface ring-1 ring-[#e11d2e]" : "border-cs-border bg-cs-surface hover:border-[#e11d2e]"}`}>
-                        <b className="block text-cs-text">Một xe khác</b>
-                        <span className="text-cs-muted">Thêm xe mới vào hồ sơ</span>
-                      </button>
-                    </div>
-                    {errors.twin && <p role="alert" className="mt-2 text-sm font-medium text-[#e11d2e]">{errors.twin}</p>}
-                  </div>
-                )}
 
               </div>
             )}
@@ -1134,6 +1127,28 @@ export default function Booking() {
               </div>
             )}
           </div>
+
+          <Modal
+            open={twinModalOpen}
+            onClose={() => setTwinModalOpen(false)}
+            title="Đây có phải xe đã lưu?"
+            description={`Bạn đã có ${twinChoices.length > 1 ? `${twinChoices.length} xe` : "xe"} ${vehicleName} chưa có biển số trong hồ sơ. Chọn đúng xe để tiếp tục.`}
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
+              {twinChoices.map((v) => (
+                <button key={v.id} type="button" onClick={() => chooseTwinVehicle(v)}
+                  className="cursor-pointer rounded-xl border border-cs-border bg-cs-surface px-4 py-3 text-left text-sm transition-colors hover:border-[#e11d2e]">
+                  <b className="block text-cs-text">Xe đã lưu</b>
+                  <span className="text-cs-muted">{vehicleSub(v, savedVehicles)}</span>
+                </button>
+              ))}
+              <button type="button" onClick={() => chooseTwinVehicle(null)}
+                className="cursor-pointer rounded-xl border border-cs-border bg-cs-surface px-4 py-3 text-left text-sm transition-colors hover:border-[#e11d2e]">
+                <b className="block text-cs-text">Một xe khác</b>
+                <span className="text-cs-muted">Thêm xe mới vào hồ sơ</span>
+              </button>
+            </div>
+          </Modal>
 
           {reviewOpen && currentStep === BOOKING_STEPS.length && (
             <BookingReviewModal
