@@ -72,11 +72,11 @@ export default function AdvisorHandovers() {
     Object.entries(changes).forEach(([key, value]) => value ? next.set(key, value) : next.delete(key));
     setParams(next, { replace: true });
   };
-  // Bấm thẻ: chọn biên bản (khung xem nhanh màn rộng) + mở modal xem biên bản (cùng modal trang chi tiết phiếu).
+  // Bấm thẻ: màn rộng xem ngay ở khung bên phải; màn hẹp không có khung đó nên mở modal xem biên bản.
   const [viewing, setViewing] = useState<HandoverListRow | null>(null);
   const open = (h: HandoverListRow) => {
     if (window.matchMedia(WIDE).matches) setParam({ handover: String(h.id) });
-    setViewing(h);
+    else setViewing(h);
   };
   const { notify } = useAppFeedback();
   async function print(h: HandoverListRow) {
@@ -121,9 +121,10 @@ export default function AdvisorHandovers() {
                 description="Biên bản nhận xe được lập ngay sau khi tạo phiếu; biên bản trả xe lập khi sửa xong."/>
             : rows.map(h => <button key={h.id} type="button" className="adv-appt adv-ro-item" aria-current={h.id === selected?.id} onClick={() => open(h)}>
               <span className="min-w-0 space-y-1.5">
+                <b className="block truncate text-small tracking-wide text-cs-text">{h.repair_order?.repair_order_code ?? `Phiếu #${h.repair_order_id}`}</b>
+                {/* Tag luôn ở dòng riêng để mọi thẻ giống nhau, kể cả với nhãn dài "Chờ khách xác nhận". */}
                 <span className="flex flex-wrap items-center gap-2">
-                  <b className="text-small tracking-wide text-cs-text">{h.repair_order?.repair_order_code ?? `Phiếu #${h.repair_order_id}`}</b>
-                  <Badge tone={h.type === "CHECK_IN" ? "info" : "neutral"}>{typeText(h.type)}</Badge>
+                  <Badge tone={h.type === "CHECK_IN" ? "info" : "success"}>{typeText(h.type)}</Badge>
                   <Badge tone={STATUS_BADGE[h.status].tone}>{STATUS_BADGE[h.status].label}</Badge>
                 </span>
                 <span className="flex items-center gap-3">

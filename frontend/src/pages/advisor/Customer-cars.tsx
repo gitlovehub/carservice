@@ -15,6 +15,7 @@ import { VehicleBrandLogo } from "../../components/vehicle/VehicleBrandLogo";
 import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
 import { createAdvisorVehicle, deleteAdvisorVehicle, updateAdvisorVehicle } from "../../services/advisorVehicleService";
 import { dmy, hhmm } from "../../services/catalogAdminApi";
+import { formatLicensePlate } from "../../services/licensePlate";
 import { emptySelection, vehicleCatalogApi, type CatalogBrand, type VehicleSelection } from "../../services/vehicleCatalog";
 import { customerDirectoryApi, formatVnd, type VehicleDetail, type VehicleRow, type VehicleSegment } from "../../services/workflowService";
 import { useAdminQuery } from "../admin/kit/useAdminQuery";
@@ -231,7 +232,7 @@ export default function CustomerCars() {
           <FieldError className="mt-1.5">{fieldErrors.errors.model}</FieldError>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
-          <Field label="Biển số" optional error={fieldErrors.errors.plate}><Input value={form.plate} maxLength={20} className="uppercase" placeholder="VD: 51K-123.45" onChange={e => { setForm({ ...form, plate: e.target.value }); fieldErrors.clear("plate"); }}/></Field>
+          <Field label="Biển số" optional error={fieldErrors.errors.plate}><Input value={form.plate} maxLength={12} className="uppercase" placeholder="VD: 51K-123.45" onChange={e => { setForm({ ...form, plate: formatLicensePlate(e.target.value) }); fieldErrors.clear("plate"); }}/></Field>
           <Field label="Năm sản xuất" optional error={fieldErrors.errors.year}><Input inputMode="numeric" maxLength={4} value={form.year} placeholder="VD: 2020" onChange={e => { setForm({ ...form, year: e.target.value.replace(/\D/g, "") }); fieldErrors.clear("year"); }}/></Field>
           <Field label="Số km (ODO)" optional error={fieldErrors.errors.mileage}><KmInput label="Số km (ODO)" value={form.mileage} onChange={mileage => { setForm({ ...form, mileage }); fieldErrors.clear("mileage"); }}/></Field>
         </div>
