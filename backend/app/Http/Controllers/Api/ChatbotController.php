@@ -132,7 +132,7 @@ PROMPT;
             ->get();
 
         if ($rows->isEmpty()) {
-            return "GIỜ LÀM VIỆC: chưa có dữ liệu, mời khách liên hệ hotline.";
+            return 'GIỜ LÀM VIỆC: chưa có dữ liệu, mời khách liên hệ hotline.';
         }
 
         $lines = $rows->map(function ($r): string {

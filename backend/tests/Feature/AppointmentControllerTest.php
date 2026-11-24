@@ -5,11 +5,14 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\Appointment;
 use App\Models\Customer;
+use App\Models\MaintenancePackage;
+use App\Models\Service;
 use App\Models\Vehicle;
+use App\Models\VehicleBrand;
+use App\Models\VehicleModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AppointmentControllerTest extends TestCase
@@ -43,12 +46,11 @@ class AppointmentControllerTest extends TestCase
                 'brand' => 'Toyota',
                 'model' => 'Vios',
                 'license_plate' => '30A-123.45',
-                'vehicle_type' => 'Sedan / Hatchback (4-5 chỗ)',
             ],
             'appointment_date' => now()->toDateString(),
             'appointment_time' => '09:00',
             'request_type' => 'MAINTENANCE',
-            'service_name' => 'Bảo dưỡng định kỳ',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ]);
 
         $response->assertCreated();
@@ -61,7 +63,6 @@ class AppointmentControllerTest extends TestCase
         $this->assertSame('30A-123.45', $vehicle->license_plate);
         $this->assertSame('Vios', $vehicle->model->name);
         $this->assertSame('Toyota', $vehicle->model->brand->name);
-        $this->assertSame('SEDAN', $vehicle->model->body_type);
         $this->assertDatabaseHas('appointments', [
             'vehicle_id' => $vehicle->id,
             'customer_id' => $customer['customer']->id,
@@ -76,11 +77,11 @@ class AppointmentControllerTest extends TestCase
             'new_vehicle' => [
                 'brand' => 'Toyota',
                 'model' => 'Vios',
-                'vehicle_type' => 'Sedan / Hatchback (4-5 chỗ)',
             ],
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '09:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])->assertCreated();
 
         $this->assertDatabaseHas('vehicles', [
@@ -89,16 +90,56 @@ class AppointmentControllerTest extends TestCase
         ]);
     }
 
-    public static function newVehicleTypes(): array
+    public function test_two_identical_plateless_vehicles_can_book_the_same_slot_when_marked_separate(): void
     {
-        return [
-            'pickup' => ['Hilux', 'PICKUP'],
-            'mpv' => ['Innova', 'MPV'],
-        ];
+        $customer = $this->createAuthenticatedCustomer();
+        $booking = fn (array $vehicle) => $this->withToken($customer['token'])->postJson('/api/appointments', [
+            'new_vehicle' => ['brand' => 'MG', 'model' => 'G50'] + $vehicle,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '10:00',
+            'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
+        ]);
+
+        $booking([])->assertCreated();
+        // Không đánh dấu xe khác → hiểu là cùng xe chưa biển số → báo trùng, kèm hướng dẫn chọn "Một xe khác".
+        $booking([])->assertUnprocessable()->assertJsonPath('errors.vehicle_id.0', fn ($message) => str_contains($message, 'MG G50') && str_contains($message, 'Một xe khác'));
+        $this->assertSame(1, Vehicle::where('customer_id', $customer['customer']->id)->count());
+
+        // Khách chọn "Một xe khác" → tạo xe thứ hai, đặt cùng khung giờ được.
+        $booking(['separate' => true])->assertCreated();
+        $this->assertSame(2, Vehicle::where('customer_id', $customer['customer']->id)->whereNull('license_plate')->count());
     }
 
-    #[DataProvider('newVehicleTypes')]
-    public function test_booking_persists_the_selected_pickup_or_mpv_type(string $modelName, string $vehicleType): void
+    public function test_new_vehicle_with_catalog_model_keeps_catalog_body_type(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $brand = VehicleBrand::factory()->create(['name' => 'Toyota']);
+        $catalogModel = VehicleModel::factory()->create([
+            'brand_id' => $brand->id,
+            'name' => 'Hilux',
+            'body_type' => 'PICKUP',
+        ]);
+
+        $this->withToken($customer['token'])->postJson('/api/appointments', [
+            'new_vehicle' => [
+                'brand' => 'Toyota',
+                'model' => 'Hilux',
+            ],
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '09:00',
+            'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
+        ])->assertCreated();
+
+        $vehicle = Vehicle::where('customer_id', $customer['customer']->id)->firstOrFail();
+
+        $this->assertSame($catalogModel->id, $vehicle->model_id);
+        $this->assertSame('PICKUP', $catalogModel->fresh()->body_type);
+    }
+
+    public function test_new_vehicle_with_unknown_model_leaves_body_type_empty(): void
     {
         $this->travelTo(now()->startOfDay());
         $customer = $this->createAuthenticatedCustomer();
@@ -106,20 +147,18 @@ class AppointmentControllerTest extends TestCase
         $this->withToken($customer['token'])->postJson('/api/appointments', [
             'new_vehicle' => [
                 'brand' => 'Toyota',
-                'model' => $modelName,
-                'vehicle_type' => $vehicleType,
+                'model' => 'Mẫu xe tự nhập',
             ],
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '09:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])->assertCreated();
 
-        $vehicle = Vehicle::query()
-            ->where('customer_id', $customer['customer']->id)
-            ->with('model')
-            ->firstOrFail();
+        $vehicle = Vehicle::where('customer_id', $customer['customer']->id)->with('model')->firstOrFail();
 
-        $this->assertSame($vehicleType, $vehicle->model->body_type);
+        $this->assertSame('Mẫu xe tự nhập', $vehicle->model->name);
+        $this->assertNull($vehicle->model->body_type);
     }
 
     public function test_rejects_the_sixth_booking_for_a_time_slot(): void
@@ -135,11 +174,11 @@ class AppointmentControllerTest extends TestCase
                     'brand' => 'Toyota',
                     'model' => 'Vios',
                     'license_plate' => sprintf('30A-100.%02d', $bookingNumber),
-                    'vehicle_type' => 'Sedan / Hatchback (4-5 chỗ)',
                 ],
                 'appointment_date' => $bookingDate,
                 'appointment_time' => '09:00',
                 'request_type' => 'MAINTENANCE',
+                'symptom_description' => 'Kiểm tra tổng quát',
             ])->assertCreated();
 
             Auth::forgetGuards();
@@ -152,11 +191,11 @@ class AppointmentControllerTest extends TestCase
                 'brand' => 'Toyota',
                 'model' => 'Vios',
                 'license_plate' => '30A-100.06',
-                'vehicle_type' => 'Sedan / Hatchback (4-5 chỗ)',
             ],
             'appointment_date' => $bookingDate,
             'appointment_time' => '09:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])
             ->assertUnprocessable()
             ->assertJsonPath('message', 'Khung giờ đã đầy.')
@@ -173,11 +212,11 @@ class AppointmentControllerTest extends TestCase
                 'brand' => 'Toyota',
                 'model' => 'Vios',
                 'license_plate' => '30A-555.55',
-                'vehicle_type' => 'Sedan / Hatchback (4-5 chỗ)',
             ],
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '09:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])->assertCreated();
 
         $vehicle = Vehicle::where('customer_id', $customer['customer']->id)->firstOrFail();
@@ -188,6 +227,7 @@ class AppointmentControllerTest extends TestCase
             'appointment_date' => now()->addDays(3)->toDateString(),
             'appointment_time' => '09:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])->assertCreated()->assertJsonPath('data.vehicle_id', $vehicle->id);
 
         $this->assertSame($vehicleCount, Vehicle::count());
@@ -203,11 +243,11 @@ class AppointmentControllerTest extends TestCase
                 'brand' => 'Toyota',
                 'model' => 'Vios',
                 'license_plate' => '30A-666.66',
-                'vehicle_type' => 'Sedan / Hatchback (4-5 chỗ)',
             ],
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '09:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])->assertCreated();
 
         $vehicle = Vehicle::where('customer_id', $owner['customer']->id)->firstOrFail();
@@ -219,6 +259,7 @@ class AppointmentControllerTest extends TestCase
             'appointment_date' => now()->addDays(3)->toDateString(),
             'appointment_time' => '09:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])->assertUnprocessable();
 
         $this->assertDatabaseMissing('appointments', [
@@ -238,15 +279,90 @@ class AppointmentControllerTest extends TestCase
                 'brand' => 'Toyota',
                 'model' => 'Vios',
                 'license_plate' => '30A-777.77',
-                'vehicle_type' => 'Sedan / Hatchback (4-5 chỗ)',
             ],
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '23:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])->assertUnprocessable();
 
         $this->assertSame($vehicleCount, Vehicle::count());
         $this->assertDatabaseMissing('vehicles', ['license_plate' => '30A-777.77']);
+    }
+
+    public function test_rebooking_with_own_license_plate_reuses_existing_vehicle(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $payload = fn (int $days) => [
+            'new_vehicle' => [
+                'brand' => 'Toyota',
+                'model' => 'Vios',
+                'license_plate' => '30A-888.88',
+            ],
+            'appointment_date' => now()->addDays($days)->toDateString(),
+            'appointment_time' => '09:00',
+            'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
+        ];
+
+        $first = $this->withToken($customer['token'])->postJson('/api/appointments', $payload(2))->assertCreated();
+        $vehicleCount = Vehicle::count();
+
+        $this->withToken($customer['token'])->postJson('/api/appointments', $payload(3))
+            ->assertCreated()
+            ->assertJsonPath('data.vehicle_id', $first->json('data.vehicle_id'));
+
+        $this->assertSame($vehicleCount, Vehicle::count());
+    }
+
+    public function test_rebooking_restores_soft_deleted_own_vehicle(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $vehicle = Vehicle::factory()->create([
+            'customer_id' => $customer['customer']->id,
+            'license_plate' => '30A-999.99',
+        ]);
+        $vehicle->delete();
+
+        $this->withToken($customer['token'])->postJson('/api/appointments', [
+            'new_vehicle' => [
+                'brand' => 'Toyota',
+                'model' => 'Vios',
+                'license_plate' => '30a-999.99',
+            ],
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '09:00',
+            'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
+        ])->assertCreated()->assertJsonPath('data.vehicle_id', $vehicle->id);
+
+        $this->assertNotSoftDeleted('vehicles', ['id' => $vehicle->id]);
+    }
+
+    public function test_cannot_book_with_license_plate_of_another_customer(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $owner = $this->createAuthenticatedCustomer();
+        Vehicle::factory()->create(['customer_id' => $owner['customer']->id, 'license_plate' => '30A-121.21']);
+
+        $other = $this->createAuthenticatedCustomer();
+        $this->app['auth']->forgetGuards();
+
+        $this->withToken($other['token'])->postJson('/api/appointments', [
+            'new_vehicle' => [
+                'brand' => 'Toyota',
+                'model' => 'Vios',
+                'license_plate' => '30A-121.21',
+            ],
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '09:00',
+            'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
+        ])->assertUnprocessable()->assertJsonValidationErrors('new_vehicle.license_plate');
+
+        $this->assertDatabaseMissing('appointments', ['customer_id' => $other['customer']->id]);
     }
 
     public function test_rejects_both_existing_and_new_vehicle_in_same_booking(): void
@@ -262,11 +378,11 @@ class AppointmentControllerTest extends TestCase
                 'brand' => 'Toyota',
                 'model' => 'Vios',
                 'license_plate' => '30A-888.88',
-                'vehicle_type' => 'Sedan / Hatchback (4-5 chỗ)',
             ],
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '09:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])->assertUnprocessable();
 
         $this->assertSame($before, Vehicle::count());
@@ -285,6 +401,7 @@ class AppointmentControllerTest extends TestCase
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '09:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])->assertUnprocessable();
 
         $this->assertDatabaseCount('appointments', 0);
@@ -300,6 +417,7 @@ class AppointmentControllerTest extends TestCase
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '09:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ];
 
         $this->withToken($customer['token'])->postJson('/api/appointments', $payload)->assertCreated();
@@ -326,6 +444,7 @@ class AppointmentControllerTest extends TestCase
                 'appointment_date' => now()->addDays(2)->toDateString(),
                 'appointment_time' => '12:00',
                 'request_type' => 'MAINTENANCE',
+                'symptom_description' => 'Kiểm tra tổng quát',
             ])
             ->assertCreated();
     }
@@ -349,6 +468,7 @@ class AppointmentControllerTest extends TestCase
                 'appointment_date' => now()->addDays(2)->toDateString(),
                 'appointment_time' => '12:00',
                 'request_type' => 'MAINTENANCE',
+                'symptom_description' => 'Kiểm tra tổng quát',
             ])
             ->assertCreated();
     }
@@ -363,6 +483,7 @@ class AppointmentControllerTest extends TestCase
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '12:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ];
 
         $first = $this->withToken($customer['token'])
@@ -393,6 +514,7 @@ class AppointmentControllerTest extends TestCase
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '12:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])->assertCreated();
 
         $this->withToken($customer['token'])->withHeaders($headers)->postJson('/api/appointments', [
@@ -400,6 +522,7 @@ class AppointmentControllerTest extends TestCase
             'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => '13:00',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])->assertStatus(409);
 
         $this->assertDatabaseCount('appointments', 1);
@@ -432,7 +555,8 @@ class AppointmentControllerTest extends TestCase
             'appointment_code' => 'APT-'.uniqid(),
             'customer_id' => $vehicle->customer_id,
             'vehicle_id' => $vehicle->id,
-            'appointment_date' => now()->addDay()->toDateString(),
+            // 2 ngày sau: luôn còn quá 12 tiếng (hạn chót khách tự đổi lịch), không phụ thuộc giờ chạy test.
+            'appointment_date' => now()->addDays(2)->toDateString(),
             'appointment_time' => $time.':00',
             'request_type' => 'MAINTENANCE',
             'status' => $status,
@@ -502,6 +626,7 @@ class AppointmentControllerTest extends TestCase
             'appointment_date' => now()->addDay()->toDateString(),
             'appointment_time' => '9h',
             'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
         ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['appointment_time' => 'Giờ hẹn phải đúng định dạng HH:MM (ví dụ 09:00).']);
@@ -511,6 +636,103 @@ class AppointmentControllerTest extends TestCase
             ->patchJson("/api/appointments/{$mine->id}", ['appointment_time' => '9h'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['appointment_time' => 'Giờ hẹn phải đúng định dạng HH:MM (ví dụ 09:00).']);
+    }
+
+    public function test_rejects_booking_without_service_package_or_symptom(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+
+        $this->withToken($customer['token'])->postJson('/api/appointments', [
+            'vehicle_id' => $vehicle->id,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '09:00',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('service_ids');
+
+        $this->assertDatabaseCount('appointments', 0);
+    }
+
+    public function test_booking_snapshots_prices_skips_services_already_in_package_and_infers_maintenance(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+        $oilChange = Service::factory()->create(['name' => 'Thay dầu', 'base_price' => 300000]);
+        $brakeCheck = Service::factory()->create(['name' => 'Kiểm tra phanh', 'base_price' => 200000]);
+        $package = MaintenancePackage::factory()->create(['vehicle_model_id' => null]);
+        $package->services()->attach($oilChange->id, ['quantity' => 1]);
+
+        $response = $this->withToken($customer['token'])->postJson('/api/appointments', [
+            'vehicle_id' => $vehicle->id,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '09:00',
+            'service_ids' => [$oilChange->id, $brakeCheck->id],
+            'package_ids' => [$package->id],
+        ])->assertCreated();
+
+        $appointmentId = $response->json('data.id');
+        $oilChange->update(['base_price' => 999000]);
+
+        $this->assertDatabaseHas('appointments', ['id' => $appointmentId, 'request_type' => 'MAINTENANCE']);
+        $this->assertDatabaseMissing('appointment_services', ['appointment_id' => $appointmentId, 'service_id' => $oilChange->id]);
+        $this->assertDatabaseHas('appointment_services', [
+            'appointment_id' => $appointmentId,
+            'service_id' => $brakeCheck->id,
+            'estimated_price' => 200000,
+        ]);
+        $this->assertDatabaseHas('appointment_packages', [
+            'appointment_id' => $appointmentId,
+            'package_id' => $package->id,
+            'estimated_price' => 300000,
+        ]);
+    }
+
+    public function test_symptom_only_booking_is_a_diagnosis(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+
+        $this->withToken($customer['token'])->postJson('/api/appointments', [
+            'vehicle_id' => $vehicle->id,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '09:00',
+            'symptom_description' => 'Xe rung khi phanh',
+        ])->assertCreated()->assertJsonPath('data.status', 'PENDING');
+
+        $this->assertDatabaseHas('appointments', ['vehicle_id' => $vehicle->id, 'request_type' => 'DIAGNOSIS']);
+    }
+
+    public function test_rejects_package_for_another_vehicle_model_or_more_than_one_package(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+        $otherModelPackage = MaintenancePackage::factory()->create([
+            'vehicle_model_id' => VehicleModel::factory()->create()->id,
+        ]);
+        $payload = [
+            'vehicle_id' => $vehicle->id,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '09:00',
+        ];
+
+        $this->withToken($customer['token'])
+            ->postJson('/api/appointments', [...$payload, 'package_ids' => [$otherModelPackage->id]])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['package_ids' => 'Gói bảo dưỡng không áp dụng cho dòng xe này.']);
+
+        $sharedPackages = MaintenancePackage::factory()->count(2)->create(['vehicle_model_id' => null]);
+
+        $this->withToken($customer['token'])
+            ->postJson('/api/appointments', [...$payload, 'package_ids' => $sharedPackages->modelKeys()])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['package_ids' => 'Mỗi lịch hẹn chỉ chọn một gói bảo dưỡng.']);
+
+        $this->assertDatabaseCount('appointments', 0);
     }
 
     private function createAuthenticatedCustomer(): array

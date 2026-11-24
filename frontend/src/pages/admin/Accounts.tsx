@@ -1,564 +1,141 @@
-import AdminHubNav from "../../components/AdminHubNav";
-import { useMemo, useState } from "react";
-import AdminSidebar from "./AdminSidebar";
-import AdminTopbar from "./AdminTopbar";
+import { ToastError } from "../../components/ui/ToastError";
+import { useState } from "react";
+import { Button, DataTable, Dropdown, Field, Input, Modal, Pagination, SearchInput, Select, type Column } from "../../components/ui";
+import { StatusBadge } from "../../components/ui/Badge";
+import { Icon } from "../../components/ui/Icon";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { adminApi, errorMessage, fmtDateTime, type AccountRole, type AccountStatus, type AdminAccount } from "../../services/adminApi";
+import { AdminPage, ClearFilters, FilterSelect, Person, Pill, StatCard, Tabs, Toggle, Toolbar } from "./kit/AdminKit";
+import type { Tone } from "./kit/format";
+import { useAdminQuery } from "./kit/useAdminQuery";
+import { useDebounced } from "./kit/useDebounced";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
 
-type AccountRole = "Cố vấn dịch vụ" | "Kỹ thuật viên" | "Quản trị viên";
-type AccountStatus = "Hoạt động" | "Khóa";
-
-type Account = {
-  id: number;
-  name: string;
-  username: string;
-  role: AccountRole;
-  status: AccountStatus;
-  phone: string;
+const roleInfo: Record<AccountRole, { label: string; tone: Tone }> = {
+  ADMIN: { label: "Quản trị", tone: "brand" },
+  ADVISOR: { label: "Cố vấn dịch vụ", tone: "info" },
+  TECHNICIAN: { label: "Kỹ thuật viên", tone: "violet" },
+  CUSTOMER: { label: "Khách hàng", tone: "neutral" },
 };
+type RoleTab = "all" | AccountRole;
+type Draft = { email: string; name: string; phone: string; role: Exclude<AccountRole, "CUSTOMER">; sendInvite: boolean };
+const emptyDraft: Draft = { email: "", name: "", phone: "", role: "ADVISOR", sendInvite: true };
 
-const initialAccounts: Account[] = [
-  {
-    id: 1,
-    name: "Nguyễn Văn A",
-    username: "nguyenvana",
-    role: "Cố vấn dịch vụ",
-    status: "Hoạt động",
-    phone: "0901 234 567",
-  },
-  {
-    id: 2,
-    name: "Trần Thị B",
-    username: "tranthib",
-    role: "Kỹ thuật viên",
-    status: "Hoạt động",
-    phone: "0912 345 678",
-  },
-  {
-    id: 3,
-    name: "Lê Văn C",
-    username: "levanc",
-    role: "Kỹ thuật viên",
-    status: "Khóa",
-    phone: "0987 654 321",
-  },
-];
+/** Tài khoản — dữ liệu thật từ /api/admin/accounts (tạo tài khoản nội bộ, khoá / kích hoạt, gửi email đặt lại mật khẩu). */
+export default function Accounts() {
+  const { notify, confirm } = useAppFeedback();
+  const [tab, setTab] = useState<RoleTab>("all");
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<"all" | AccountStatus>("all");
+  const [page, setPage] = useState(1);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+  const term = useDebounced(search.trim());
 
-const roles: AccountRole[] = [
-  "Cố vấn dịch vụ",
-  "Kỹ thuật viên",
-  "Quản trị viên",
-];
+  const params = { role: tab, status, search: term, page };
+  const list = useAdminQuery(`accounts:${JSON.stringify(params)}`, signal => adminApi.accounts(params, signal));
+  const result = list.data ?? list.stale;
+  const counts = result?.summary ?? {};
+  const total = Object.values(counts).reduce((s, n) => s + (n ?? 0), 0);
 
-function Accounts() {
-  const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
-  const [keyword, setKeyword] = useState("");
-  const [searchText, setSearchText] = useState("");
-  const [roleFilter, setRoleFilter] = useState("Tất cả vai trò");
-  const [statusFilter, setStatusFilter] = useState("Tất cả trạng thái");
-  const [showForm, setShowForm] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
-  const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<AccountRole>("Cố vấn dịch vụ");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-
-  const filteredAccounts = useMemo(() => {
-    const normalizedKeyword = searchText.trim().toLowerCase();
-
-    return accounts.filter((account) => {
-      const matchesKeyword =
-        account.name.toLowerCase().includes(normalizedKeyword) ||
-        account.username.toLowerCase().includes(normalizedKeyword) ||
-        account.phone.toLowerCase().includes(normalizedKeyword);
-
-      const matchesRole =
-        roleFilter === "Tất cả vai trò" || account.role === roleFilter;
-
-      const matchesStatus =
-        statusFilter === "Tất cả trạng thái" ||
-        account.status === statusFilter;
-
-      return matchesKeyword && matchesRole && matchesStatus;
-    });
-  }, [accounts, searchText, roleFilter, statusFilter]);
-
-  const activeCount = accounts.filter(
-    (account) => account.status === "Hoạt động",
-  ).length;
-
-  const lockedCount = accounts.filter(
-    (account) => account.status === "Khóa",
-  ).length;
-
-  const employeeCount = accounts.filter(
-    (account) => account.role !== "Quản trị viên",
-  ).length;
-
-  const resetForm = () => {
-    setName("");
-    setUsername("");
-    setPhone("");
-    setRole("Cố vấn dịch vụ");
-    setEditingAccount(null);
-    setShowForm(false);
-    setError("");
-  };
-
-  const openCreateForm = () => {
-    resetForm();
-    setMessage("");
-    setShowForm(true);
-  };
-
-  const openRoleForm = (account: Account) => {
-    setEditingAccount(account);
-    setName(account.name);
-    setUsername(account.username);
-    setPhone(account.phone);
-    setRole(account.role);
-    setError("");
-    setMessage("");
-    setShowForm(true);
-  };
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError("");
-    setMessage("");
-
-    const normalizedUsername = username.trim();
-
-    if (
-      accounts.some(
-        (account) =>
-          account.username.toLowerCase() === normalizedUsername.toLowerCase() &&
-          account.id !== editingAccount?.id,
-      )
-    ) {
-      setError("Tên tài khoản đã tồn tại.");
-      return;
+  const setStatusOf = async (account: AdminAccount, next: "ACTIVE" | "LOCKED") => {
+    if (next === "LOCKED" && !await confirm({ title: `Khoá tài khoản ${account.email}?`, description: "Người dùng sẽ bị đăng xuất và không đăng nhập được cho tới khi mở khoá.", confirmText: "Khoá tài khoản", variant: "danger", confirmIcon: "lock" })) return;
+    try {
+      const response = await adminApi.setAccountStatus(account.id, next);
+      notify(response.message, "success");
+      list.reload();
+    } catch (error) {
+      notify(errorMessage(error), "error");
     }
-
-    if (editingAccount) {
-      setAccounts((current) =>
-        current.map((account) =>
-          account.id === editingAccount.id
-            ? {
-                ...account,
-                name: name.trim(),
-                username: normalizedUsername,
-                phone: phone.trim(),
-                role,
-              }
-            : account,
-        ),
-      );
-      setMessage("Cập nhật tài khoản và phân quyền thành công.");
-    } else {
-      const newAccount: Account = {
-        id: Math.max(0, ...accounts.map((account) => account.id)) + 1,
-        name: name.trim(),
-        username: normalizedUsername,
-        phone: phone.trim(),
-        role,
-        status: "Hoạt động",
-      };
-
-      setAccounts((current) => [...current, newAccount]);
-      setMessage("Tạo tài khoản thành công.");
+  };
+  const fieldErrors = useFieldErrors();
+  const resetPassword = async (account: AdminAccount) => {
+    if (!await confirm({ title: `Gửi email đặt lại mật khẩu?`, description: `Mã OTP (hiệu lực 5 phút) sẽ được gửi tới ${account.email}. Người dùng nhập mã ở trang Quên mật khẩu để đặt mật khẩu mới.`, confirmText: "Gửi email", variant: "info", confirmIcon: "send" })) return;
+    try {
+      notify((await adminApi.resetPassword(account.id)).message, "success");
+    } catch (error) {
+      notify(errorMessage(error), "error");
     }
-
-    resetForm();
+  };
+  const create = async () => {
+    if (!draft) return;
+    const problems: FieldErrors = {};
+    if (!/^\S+@\S+\.\S+$/.test(draft.email.trim())) problems.email = "Nhập email hợp lệ.";
+    if (!draft.name.trim()) problems.name = "Nhập họ tên.";
+    if (draft.phone.trim() && !/^0\d{9,10}$/.test(draft.phone.trim())) problems.phone = "Số điện thoại gồm 10–11 số, bắt đầu bằng 0.";
+    setFormError("");
+    if (fieldErrors.show(problems)) return;
+    setSaving(true);
+    try {
+      const response = await adminApi.createAccount({ email: draft.email.trim(), name: draft.name.trim(), phone: draft.phone.trim() || null, role: draft.role, send_invite: draft.sendInvite });
+      notify(response.message, "success");
+      setDraft(null);
+      list.reload();
+    } catch (error) {
+      fieldErrors.showApi(error, { email: "email", name: "name", phone: "phone", role: "role" });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const toggleStatus = (account: Account) => {
-    const nextStatus: AccountStatus =
-      account.status === "Hoạt động" ? "Khóa" : "Hoạt động";
+  const columns: Column<AdminAccount>[] = [
+    { key: "email", header: "Tài khoản", primary: true, render: a => <Person name={a.name} sub={a.email}/> },
+    { key: "role", header: "Vai trò", render: a => <Pill tone={roleInfo[a.role].tone}>{roleInfo[a.role].label}</Pill> },
+    { key: "status", header: "Trạng thái", render: a => <StatusBadge domain="account" status={a.status}/> },
+    { key: "verified", header: "Email", hideOnMobile: true, render: a => a.verified
+      ? <span className="inline-flex items-center gap-1 text-success-fg"><Icon name="check" size={15}/>Đã xác thực</span>
+      : <span className="text-cs-muted">Chưa xác thực</span> },
+    { key: "login", header: "Đăng nhập gần nhất", hideOnMobile: true, render: a => <span className="tabular-nums text-cs-text-2">{a.last_login_at ? fmtDateTime(a.last_login_at) : "Chưa đăng nhập"}</span> },
+  ];
 
-    setAccounts((current) =>
-      current.map((item) =>
-        item.id === account.id ? { ...item, status: nextStatus } : item,
-      ),
-    );
-
-    setMessage(
-      `${nextStatus === "Khóa" ? "Đã khóa" : "Đã mở khóa"} tài khoản ${account.username}.`,
-    );
-    setError("");
-  };
-
-  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSearchText(keyword);
-  };
-
-  return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdminSidebar />
-
-      <div className="lg:ml-[250px]">
-        <AdminTopbar />
-
-        <main className="px-6 py-8 lg:px-8">
-          <div className="mx-auto max-w-[1200px]">
-            <div className="mb-8">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
-                KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
-              </p>
-
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
-                  AD
-                </div>
-
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-[#20252B]">
-                    Quản trị viên
-                  </h1>
-                  <p className="mt-1 text-xs text-[#66717C]">
-                    Quản lý tài khoản người dùng và phân quyền nhân viên.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {[
-                {
-                  label: "Tổng tài khoản",
-                  value: accounts.length,
-                  description: "Tài khoản trong danh sách",
-                },
-                {
-                  label: "Đang hoạt động",
-                  value: activeCount,
-                  description: "Tài khoản đang sử dụng",
-                },
-                {
-                  label: "Nhân viên",
-                  value: employeeCount,
-                  description: "Cố vấn và kỹ thuật viên",
-                },
-                {
-                  label: "Đang khóa",
-                  value: lockedCount,
-                  description: "Tài khoản bị khóa",
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
-                >
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                    {item.label}
-                  </p>
-                  <p className="mt-4 text-2xl font-bold text-[#20252B]">
-                    {item.value}
-                  </p>
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
-                    {item.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <AdminHubNav />
-
-            {message && (
-              <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[#D9E8D8] bg-[#F0F7EF] px-4 py-3 text-xs text-[#315B35]">
-                <p>{message}</p>
-                <button
-                  type="button"
-                  onClick={() => setMessage("")}
-                  className="font-bold"
-                >
-                  Đóng
-                </button>
-              </div>
-            )}
-
-            <div className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-6">
-              <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                    GARA / TÀI KHOẢN & NHÂN VIÊN
-                  </p>
-                  <h2 className="mt-1 text-base font-bold text-[#20252B]">
-                    Tìm kiếm tài khoản & nhân viên
-                  </h2>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={openCreateForm}
-                  className="cs-btn cs-btn-primary"
-                >
-                  + Tạo tài khoản
-                </button>
-              </div>
-
-              <form onSubmit={handleSearch}>
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                  <input
-                    type="text"
-                    value={keyword}
-                    onChange={(event) => setKeyword(event.target.value)}
-                    placeholder="Tên, tài khoản hoặc số điện thoại..."
-                    className="min-w-0 rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none transition focus:border-[#1F2933]"
-                  />
-
-                  <select
-                    value={roleFilter}
-                    onChange={(event) => setRoleFilter(event.target.value)}
-                    className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#1F2933]"
-                  >
-                    <option>Tất cả vai trò</option>
-                    {roles.map((item) => (
-                      <option key={item}>{item}</option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={statusFilter}
-                    onChange={(event) => setStatusFilter(event.target.value)}
-                    className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#1F2933]"
-                  >
-                    <option>Tất cả trạng thái</option>
-                    <option>Hoạt động</option>
-                    <option>Khóa</option>
-                  </select>
-
-                  <button
-                    type="submit"
-                    className="cs-btn cs-btn-primary"
-                  >
-                    Tìm kiếm
-                  </button>
-                </div>
-              </form>
-
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-[10px] text-[#8A949E]">
-                  Tìm kiếm và lọc danh sách theo thông tin hiện có.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setKeyword("");
-                    setSearchText("");
-                    setRoleFilter("Tất cả vai trò");
-                    setStatusFilter("Tất cả trạng thái");
-                  }}
-                  className="text-[10px] font-semibold text-[#66717C] underline underline-offset-4 hover:text-[#20252B]"
-                >
-                  Xóa bộ lọc
-                </button>
-              </div>
-            </div>
-
-            {showForm && (
-              <div className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-6">
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                      ACCOUNT SETTINGS
-                    </p>
-                    <h2 className="mt-1 text-base font-bold">
-                      {editingAccount ? "Phân quyền tài khoản" : "Tạo tài khoản mới"}
-                    </h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="rounded-lg border border-[#D9DDE1] px-3 py-2 text-xs hover:bg-[#F7F7F5]"
-                  >
-                    Đóng
-                  </button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-xs font-semibold">
-                      Họ và tên
-                    </label>
-                    <input
-                      required
-                      value={name}
-                      onChange={(event) => setName(event.target.value)}
-                      placeholder="Nhập họ và tên"
-                      className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs outline-none focus:border-[#1F2933]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-xs font-semibold">
-                      Tên tài khoản
-                    </label>
-                    <input
-                      required
-                      value={username}
-                      onChange={(event) => setUsername(event.target.value)}
-                      placeholder="Nhập tên tài khoản"
-                      className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs outline-none focus:border-[#1F2933]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-xs font-semibold">
-                      Số điện thoại
-                    </label>
-                    <input
-                      required
-                      type="tel"
-                      value={phone}
-                      onChange={(event) => setPhone(event.target.value)}
-                      placeholder="Nhập số điện thoại"
-                      className="w-full rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs outline-none focus:border-[#1F2933]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-xs font-semibold">
-                      Vai trò
-                    </label>
-                    <select
-                      value={role}
-                      onChange={(event) =>
-                        setRole(event.target.value as AccountRole)
-                      }
-                      className="w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs outline-none focus:border-[#1F2933]"
-                    >
-                      {roles.map((item) => (
-                        <option key={item} value={item}>
-                          {item}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {error && (
-                    <p className="text-xs text-red-600 md:col-span-2">{error}</p>
-                  )}
-
-                  <div className="flex flex-wrap gap-3 md:col-span-2">
-                    <button
-                      type="submit"
-                      className="cs-btn cs-btn-primary"
-                    >
-                      {editingAccount ? "Lưu phân quyền" : "Tạo tài khoản"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                      className="rounded-xl border border-[#D9DDE1] px-5 py-3 text-xs font-semibold hover:bg-[#F7F7F5]"
-                    >
-                      Hủy
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            <div className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
-              <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-6 py-5 sm:flex-row sm:items-center">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                    ACCOUNT MANAGEMENT
-                  </p>
-                  <h2 className="mt-1 text-base font-bold text-[#20252B]">
-                    Danh sách tài khoản & nhân viên
-                  </h2>
-                </div>
-                <p className="text-[10px] text-[#8A949E]">
-                  {filteredAccounts.length} / {accounts.length} kết quả
-                </p>
-              </div>
-
-              {filteredAccounts.length === 0 ? (
-                <div className="px-6 py-12 text-center">
-                  <p className="text-sm font-semibold text-[#20252B]">
-                    Không tìm thấy tài khoản
-                  </p>
-                  <p className="mt-2 text-xs text-[#8A949E]">
-                    Hãy thử thay đổi từ khóa hoặc bộ lọc.
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-[#EEF0F2]">
-                  {filteredAccounts.map((account, index) => (
-                    <div
-                      key={account.id}
-                      className="p-5 transition hover:bg-[#F7F7F5]"
-                    >
-                      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-white">
-                            {String(index + 1).padStart(2, "0")}
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-[#20252B]">
-                              {account.name}
-                            </p>
-                            <p className="mt-1 text-[10px] text-[#8A949E]">
-                              {account.phone}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <p className="text-[10px] text-[#8A949E]">TÀI KHOẢN</p>
-                          <p className="mt-1 text-xs font-semibold text-[#20252B]">
-                            {account.username}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-[10px] text-[#8A949E]">VAI TRÒ</p>
-                          <p className="mt-1 text-xs font-semibold text-[#20252B]">
-                            {account.role}
-                          </p>
-                        </div>
-
-                        <div>
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1.5 text-[10px] font-semibold ${
-                              account.status === "Hoạt động"
-                                ? "bg-[#F3E8D2] text-[#3A3020]"
-                                : "bg-[#F3F4F2] text-[#66717C]"
-                            }`}
-                          >
-                            {account.status}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openRoleForm(account)}
-                            className="rounded-xl border border-[#D9DDE1] px-4 py-2 text-[10px] font-semibold text-[#20252B] transition hover:bg-[#F3F4F2]"
-                          >
-                            Phân quyền
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleStatus(account)}
-                            className="rounded-xl border border-[#D9DDE1] px-4 py-2 text-[10px] font-semibold text-[#20252B] transition hover:bg-[#F3F4F2]"
-                          >
-                            {account.status === "Hoạt động" ? "Khóa" : "Mở khóa"}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </main>
-      </div>
+  return <AdminPage title="Tài khoản" description="Quản lý đăng nhập và trạng thái tài khoản" demo={false}
+    actions={<Button variant="primary" icon="plus" onClick={() => { setFormError(""); fieldErrors.reset(); setDraft(emptyDraft); }}>Tạo tài khoản</Button>}>
+    <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard icon="users" tone="brand" label="Tổng tài khoản" value={result ? total : "—"}/>
+      <StatCard icon="check" tone="success" label="Đang hoạt động" value={result ? result.statuses.ACTIVE ?? 0 : "—"}/>
+      <StatCard icon="clock" tone="warning" label="Chờ kích hoạt" value={result ? result.statuses.PENDING ?? 0 : "—"}/>
+      <StatCard icon="lock" tone="danger" label="Đã khoá" value={result ? result.statuses.LOCKED ?? 0 : "—"}/>
     </div>
-  );
-}
+    <div className="mb-4">
+      <Tabs label="Lọc theo vai trò" value={tab} onChange={id => { setTab(id); setPage(1); }} items={([
+        ["all", "Tất cả"], ["ADMIN", "Quản trị"], ["ADVISOR", "Cố vấn dịch vụ"], ["TECHNICIAN", "Kỹ thuật viên"], ["CUSTOMER", "Khách hàng"],
+      ] as Array<[RoleTab, string]>).map(([id, label]) => ({ id, label, count: result ? (id === "all" ? total : counts[id] ?? 0) : undefined }))}/>
+    </div>
+    <Toolbar>
+      <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm theo email, họ tên…"/>
+      <FilterSelect label="Trạng thái" value={status} onChange={value => { setStatus(value); setPage(1); }} options={[
+        { value: "all", label: "Tất cả" }, { value: "ACTIVE", label: "Đang hoạt động" }, { value: "PENDING", label: "Chờ kích hoạt" },
+        { value: "LOCKED", label: "Đã khoá" }, { value: "INACTIVE", label: "Ngừng hoạt động" },
+      ]}/>
+      <ClearFilters active={search !== "" || status !== "all" || tab !== "all"} onClear={() => { setSearch(""); setStatus("all"); setTab("all"); setPage(1); }}/>
+    </Toolbar>
+    <DataTable caption="Danh sách tài khoản" columns={columns} rows={result?.data ?? []} rowKey={a => a.id}
+      loading={list.loading} error={list.error || undefined} onRetry={list.reload}
+      actions={a => <Dropdown label={`Thao tác cho ${a.email}`} items={[
+        { label: "Gửi email đặt lại mật khẩu", icon: "key", onSelect: () => { void resetPassword(a); } },
+        { type: "separator" },
+        a.status === "ACTIVE"
+          ? { label: "Khoá tài khoản", icon: "lock", danger: true, onSelect: () => { void setStatusOf(a, "LOCKED"); }, disabled: a.role === "ADMIN" }
+          : { label: "Kích hoạt", icon: "check", onSelect: () => { void setStatusOf(a, "ACTIVE"); } },
+      ]}/>}
+      footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={list.loading} onChange={setPage}/>}/>
 
-export default Accounts;
+    <Modal open={draft !== null} onClose={() => setDraft(null)} dismissible={!saving} title="Tạo tài khoản nội bộ"
+      description="Tạo kèm hồ sơ nhân viên. Mật khẩu do người dùng tự đặt qua email OTP."
+      footer={<><Button disabled={saving} onClick={() => setDraft(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang tạo..." onClick={() => void create()}>Tạo tài khoản</Button></>}>
+      {draft && <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Email" required error={fieldErrors.errors.email} className="sm:col-span-2"><Input type="email" value={draft.email} onChange={e => { setDraft({ ...draft, email: e.target.value }); fieldErrors.clear("email"); }}/></Field>
+        <Field label="Họ tên" required error={fieldErrors.errors.name}><Input value={draft.name} maxLength={100} onChange={e => { setDraft({ ...draft, name: e.target.value }); fieldErrors.clear("name"); }}/></Field>
+        <Field label="Số điện thoại" optional error={fieldErrors.errors.phone}><Input inputMode="tel" maxLength={11} value={draft.phone} onChange={e => { setDraft({ ...draft, phone: e.target.value }); fieldErrors.clear("phone"); }}/></Field>
+        <Field label="Vai trò" required error={fieldErrors.errors.role} className="sm:col-span-2"><Select value={draft.role} onChange={e => { setDraft({ ...draft, role: e.target.value as Draft["role"] }); fieldErrors.clear("role"); }}>
+          <option value="ADVISOR">Cố vấn dịch vụ</option><option value="TECHNICIAN">Kỹ thuật viên</option><option value="ADMIN">Quản trị</option>
+        </Select></Field>
+        <label className="flex items-center gap-3 text-small text-cs-text sm:col-span-2">
+          <Toggle checked={draft.sendInvite} onChange={v => setDraft({ ...draft, sendInvite: v })} label="Gửi email kích hoạt"/>Gửi email kích hoạt (mã OTP đặt mật khẩu)
+        </label>
+        <ToastError message={formError}/>
+      </div>}
+    </Modal>
+  </AdminPage>;
+}

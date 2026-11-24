@@ -21,7 +21,7 @@ class MaintenancePackageController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = MaintenancePackage::query()
-            ->with(['services', 'parts'])
+            ->with(['services' => fn ($query) => $query->where('status', 'ACTIVE'), 'parts'])
             ->where('status', 'ACTIVE');
 
         if ($request->filled('model_id')) {
@@ -45,7 +45,7 @@ class MaintenancePackageController extends Controller
     {
         abort_if($maintenancePackage->status !== 'ACTIVE', 404);
 
-        $maintenancePackage->load(['services', 'parts'])
+        $maintenancePackage->load(['services' => fn ($query) => $query->where('status', 'ACTIVE'), 'parts'])
             ->withComputedFields();
 
         return response()->json($maintenancePackage);

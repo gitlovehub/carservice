@@ -5,27 +5,26 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
-use App\Mail\EmailVerificationOtpMail;
-use App\Mail\PasswordResetOtpMail;
 use App\Models\Account;
 use App\Models\Customer;
-use App\Models\EmailVerificationOtp;
 use App\Models\Employee;
 use App\Models\PasswordResetOtp;
+use App\Services\AccountEmailService;
+use App\Services\PasswordResetService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly AccountEmailService $accountEmails) {}
+
     public function register(RegisterRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -41,7 +40,7 @@ class AuthController extends Controller
                 'status' => Account::STATUS_PENDING,
             ]);
 
-            // Luôn tạo hồ sơ riêng; chỉ liên kết hồ sơ walk-in sau khi xác thực OTP email.
+            // Luôn tạo hồ sơ riêng; chỉ liên kết hồ sơ walk-in sau khi khách bấm nút xác thực trong email.
             Customer::query()->create([
                 'account_id' => $account->id,
                 'full_name' => $data['full_name'],
@@ -52,29 +51,10 @@ class AuthController extends Controller
             return $account;
         });
 
-        $otp = (string) random_int(100000, 999999);
-
-        EmailVerificationOtp::query()
-            ->where('account_id', $account->id)
-            ->whereNull('used_at')
-            ->delete();
-
-        EmailVerificationOtp::query()->create([
-            'account_id' => $account->id,
-            'otp_hash' => Hash::make($otp),
-            'expires_at' => now()->addMinutes(5),
-        ]);
-
-        Log::info("[OTP ĐĂNG KÝ] Email: {$account->email} | Mã OTP: {$otp}");
-
-        try {
-            Mail::to($account->email)->send(new EmailVerificationOtpMail($otp));
-        } catch (\Throwable $e) {
-            Log::error('[OTP EMAIL ERROR] '.$e->getMessage());
-        }
+        $this->accountEmails->sendVerification($account);
 
         return response()->json([
-            'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để lấy mã OTP.',
+            'message' => 'Đăng ký thành công. Vui lòng mở email và bấm nút xác thực tài khoản.',
             'email' => $account->email,
         ], 201);
     }
@@ -94,7 +74,7 @@ class AuthController extends Controller
         if ($account->status === Account::STATUS_PENDING) {
             throw ValidationException::withMessages([
                 'email' => [
-                    'Tài khoản chưa xác thực email. Vui lòng nhập mã OTP.',
+                    'Tài khoản chưa xác thực email. Vui lòng bấm nút xác thực trong email.',
                 ],
             ]);
         }
@@ -310,149 +290,39 @@ class AuthController extends Controller
         ];
     }
 
-    public function verifyEmailOtp(Request $request): JsonResponse
+    /** POST /api/resend-verification: chỉ gửi cho tài khoản đang chờ, phản hồi giống nhau để không lộ email có tồn tại hay không. */
+    public function resendVerification(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'email' => ['required', 'email'],
-            'otp' => ['required', 'digits:6'],
-        ]);
-
-        $email = strtolower(trim($data['email']));
-
-        $account = Account::query()
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->first();
-
-        if (! $account) {
-            throw ValidationException::withMessages([
-                'email' => ['Không tìm thấy tài khoản.'],
-            ]);
+        $data = $request->validate(['email' => ['required', 'email']]);
+        $account = Account::query()->whereRaw('LOWER(email) = ?', [strtolower(trim($data['email']))])->first();
+        if ($account?->status === Account::STATUS_PENDING) {
+            $this->accountEmails->sendVerification($account);
         }
 
-        $otpRecord = EmailVerificationOtp::query()
-            ->where('account_id', $account->id)
-            ->whereNull('used_at')
-            ->latest('id')
-            ->first();
-
-        if (! $otpRecord) {
-            throw ValidationException::withMessages([
-                'otp' => ['Không tìm thấy mã OTP. Vui lòng yêu cầu gửi lại mã.'],
-            ]);
-        }
-
-        if ($otpRecord->expires_at->isPast()) {
-            throw ValidationException::withMessages([
-                'otp' => ['Mã OTP đã hết hạn.'],
-            ]);
-        }
-
-        if (! Hash::check($data['otp'], $otpRecord->otp_hash)) {
-            throw ValidationException::withMessages([
-                'otp' => ['Mã OTP không chính xác.'],
-            ]);
-        }
-
-        DB::transaction(function () use ($account, $otpRecord) {
-            $otpRecord->update([
-                'used_at' => now(),
-            ]);
-
-            if ($account->email_verified_at === null) {
-                $account->update([
-                    'email_verified_at' => now(),
-                    'status' => Account::STATUS_ACTIVE,
-                ]);
-
-                $this->linkWalkInCustomerByVerifiedEmail($account);
-            }
-        });
-
-        $token = $account->createToken('default')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Xác thực email thành công.',
-            'token' => $token,
-            'account' => $this->formatAccount($account->fresh()),
-        ]);
+        return response()->json(['message' => 'Nếu tài khoản đang chờ xác thực, email xác thực mới đã được gửi.']);
     }
 
-    private function linkWalkInCustomerByVerifiedEmail(Account $account): void
+    /** POST /api/me/email-change: khách nhập mật khẩu + email mới, email chỉ đổi sau khi bấm nút trong email mới. */
+    public function requestEmailChange(Request $request): JsonResponse
     {
-        $walkInCustomer = Customer::query()
-            ->whereNull('account_id')
-            ->whereRaw('LOWER(email) = ?', [strtolower(trim($account->email))])
-            ->lockForUpdate()
-            ->first();
+        $account = $this->authenticatedAccount($request);
+        abort_unless($account->role === Account::ROLE_CUSTOMER, 403, 'Email nhân viên do quản trị viên thay đổi.');
 
-        if (! $walkInCustomer) {
-            return;
-        }
-
-        $existingCustomer = Customer::withTrashed()
-            ->where('account_id', $account->id)
-            ->first();
-
-        if ($existingCustomer) {
-            $hasData = $existingCustomer->vehicles()->withTrashed()->exists()
-                || $existingCustomer->appointments()->exists()
-                || $existingCustomer->repairOrders()->exists();
-
-            if ($hasData) {
-                return;
-            }
-
-            $existingCustomer->forceDelete();
-        }
-
-        $walkInCustomer->update([
-            'account_id' => $account->id,
-            'email' => strtolower(trim((string) $account->email)),
-        ]);
-    }
-
-    public function resendEmailOtp(Request $request): JsonResponse
-    {
         $data = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email', 'max:150'],
+            'current_password' => ['required', 'string'],
+        ], [
+            'email.required' => 'Nhập email mới.',
+            'email.email' => 'Email không hợp lệ.',
+            'current_password.required' => 'Nhập mật khẩu hiện tại.',
         ]);
-
-        $email = strtolower(trim($data['email']));
-
-        $account = Account::query()
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->first();
-
-        if (! $account) {
-            throw ValidationException::withMessages([
-                'email' => ['Không tìm thấy tài khoản.'],
-            ]);
+        if (! Hash::check($data['current_password'], $account->getAuthPassword())) {
+            throw ValidationException::withMessages(['current_password' => 'Mật khẩu hiện tại không chính xác.']);
         }
 
-        $otp = (string) random_int(100000, 999999);
+        $sentTo = $this->accountEmails->requestChange($account, $data['email'], $account);
 
-        EmailVerificationOtp::query()
-            ->where('account_id', $account->id)
-            ->whereNull('used_at')
-            ->delete();
-
-        EmailVerificationOtp::query()->create([
-            'account_id' => $account->id,
-            'otp_hash' => Hash::make($otp),
-            'expires_at' => now()->addMinutes(5),
-        ]);
-
-        Log::info("[OTP GỬI LẠI] Email: {$account->email} | Mã OTP: {$otp}");
-
-        try {
-            Mail::to($account->email)->send(new EmailVerificationOtpMail($otp));
-        } catch (\Throwable $e) {
-            Log::error('[OTP EMAIL ERROR] '.$e->getMessage());
-        }
-
-        return response()->json([
-            'message' => 'Mã OTP mới đã được gửi đến email.',
-        ]);
+        return response()->json(['message' => "Đã gửi nút xác thực tới {$sentTo}. Email cũ vẫn dùng được cho đến khi bạn xác thực.", 'sent_to' => $sentTo]);
     }
 
     public function forgotPassword(Request $request)
@@ -472,28 +342,7 @@ class AuthController extends Controller
             ]);
         }
 
-        // Hủy các OTP cũ chưa sử dụng
-        PasswordResetOtp::where('account_id', $account->id)
-            ->whereNull('used_at')
-            ->delete();
-
-        // Tạo OTP 6 số
-        $otp = (string) random_int(100000, 999999);
-
-        // Lưu OTP dưới dạng hash
-        PasswordResetOtp::create([
-            'account_id' => $account->id,
-            'otp_hash' => Hash::make($otp),
-            'expires_at' => now()->addMinutes(5),
-        ]);
-
-        Log::info("[OTP QUÊN MẬT KHẨU] Email: {$account->email} | Mã OTP: {$otp}");
-
-        try {
-            Mail::to($account->email)->send(new PasswordResetOtpMail($otp));
-        } catch (\Throwable $e) {
-            Log::error('[OTP EMAIL ERROR] '.$e->getMessage());
-        }
+        app(PasswordResetService::class)->sendOtp($account);
 
         return response()->json([
             'message' => 'Nếu email tồn tại trong hệ thống, mã OTP sẽ được gửi đến email.',

@@ -16,9 +16,22 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Realtime (Reverb): xác thực kênh riêng bằng token Sanctum như mọi API → POST /api/broadcasting/auth.
+    ->withBroadcasting(__DIR__.'/../routes/channels.php', ['prefix' => 'api', 'middleware' => ['api', 'auth:sanctum']])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
             'api/*',
+            // Link xác nhận lịch từ email: chữ ký trong URL là quyền truy cập, khách không có phiên đăng nhập.
+            'appointments/*/email-confirm',
+            // Link duyệt báo giá từ email: cùng lý do (URL có chữ ký, hết hạn, gắn đúng nội dung báo giá).
+            'quotations/*/email-review',
+            // Link thanh toán hoá đơn từ email: URL có chữ ký, hết hạn, số tiền do Backend tính lại.
+            'invoices/*/email-payment',
+            // Nút xác thực tài khoản / đổi email: URL có chữ ký, hết hạn, không tạo phiên đăng nhập.
+            'accounts/*/email-verify',
+            'accounts/*/email-change',
+            // Link ủy quyền nhận xe từ email: URL có chữ ký, hết hạn, dùng một lần.
+            'repair-orders/*/pickup-authorization',
         ]);
         $middleware->alias([
             'role' => EnsureAccountRole::class,

@@ -1,0 +1,183 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\MaintenancePackage;
+use App\Models\Service;
+use App\Models\VehicleModel;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+
+/**
+ * Danh mục cho trang đặt lịch: gộp gói bảo dưỡng và dịch vụ lẻ thành các nhóm.
+ * Dữ liệu vẫn nằm ở hai bảng riêng; đây chỉ là lớp hiển thị.
+ */
+class BookingCatalogController extends Controller
+{
+    /** Icon cho gói bảo dưỡng (gói không có danh mục/icon do admin chọn). */
+    private const PACKAGE_ICON = 'layers';
+
+    /** Gói "phù hợp với xe" khi số km cách mốc của gói tối đa chừng này (sắp tới hoặc vừa qua mốc). */
+    private const DUE_WINDOW_KM = 1000;
+
+    /** Icon khi dịch vụ chưa gán danh mục. */
+    private const DEFAULT_SERVICE_ICON = 'wrench';
+
+    /**
+     * GET /api/booking-catalog?model_id=&brand=&model=&mileage=
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'model_id' => ['nullable', 'integer'],
+            'brand' => ['nullable', 'string', 'max:100'],
+            'model' => ['nullable', 'string', 'max:100'],
+            'mileage' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $vehicleModelId = $this->resolveVehicleModelId($validated);
+        $mileage = isset($validated['mileage']) ? (int) $validated['mileage'] : null;
+
+        $groups = collect([$this->packageGroup($vehicleModelId, $mileage)])
+            ->merge($this->serviceGroups())
+            ->filter(fn (array $group) => $group['items'] !== [])
+            ->values();
+
+        return response()->json(['groups' => $groups]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function resolveVehicleModelId(array $validated): ?int
+    {
+        if (! empty($validated['model_id'])) {
+            return (int) $validated['model_id'];
+        }
+
+        if (empty($validated['brand']) || empty($validated['model'])) {
+            return null;
+        }
+
+        $modelId = VehicleModel::query()
+            ->where('name', trim($validated['model']))
+            ->whereHas('brand', fn ($query) => $query->where('name', trim($validated['brand'])))
+            ->value('id');
+
+        return $modelId === null ? null : (int) $modelId;
+    }
+
+    /**
+     * @return array{key: string, name: string, items: array<int, array<string, mixed>>}
+     */
+    private function packageGroup(?int $vehicleModelId, ?int $mileage): array
+    {
+        $packages = MaintenancePackage::query()
+            ->availableFor($vehicleModelId)
+            ->with([
+                'services' => fn ($query) => $query->where('status', 'ACTIVE')->orderByDesc('services.created_at')->orderByDesc('services.id'),
+                'parts',
+            ])
+            ->orderBy('mileage_milestone')
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (MaintenancePackage $package) => $package->services->isNotEmpty())
+            ->values();
+
+        // "Phù hợp với xe" chỉ khi xe THẬT SỰ tới hạn: số km cách mốc của gói không quá DUE_WINDOW_KM
+        // (sắp tới hoặc vừa qua mốc). Xe 2.000 km không bị gợi ý gói 5.000 km; nhiều gói cùng khớp → mốc gần nhất.
+        $recommendedId = $mileage === null ? null : $packages
+            ->filter(fn (MaintenancePackage $package) => $package->mileage_milestone !== null
+                && abs($package->mileage_milestone - $mileage) <= self::DUE_WINDOW_KM)
+            ->sortBy(fn (MaintenancePackage $package) => abs($package->mileage_milestone - $mileage))
+            ->first()?->id;
+
+        return [
+            'key' => 'packages',
+            'name' => 'Gói bảo dưỡng',
+            // Gói không có danh mục/icon do admin chọn → icon cố định.
+            'icon' => self::PACKAGE_ICON,
+            'items' => $packages->map(fn (MaintenancePackage $package) => [
+                'key' => "package:{$package->id}",
+                'type' => 'package',
+                'id' => $package->id,
+                'name' => $package->name,
+                'icon' => self::PACKAGE_ICON,
+                'summary' => (string) ($package->description ?: $package->shortSummary()),
+                'includes' => $package->shortSummary(4),
+                'price' => $this->displayPrice($package->calculateEstimatedPrice()),
+                'minutes' => $this->packageMinutes($package),
+                'recommended' => $package->id === $recommendedId,
+                // Mốc km của gói: trang đặt lịch mở & làm nổi gói khi khách nhập đúng mốc.
+                'mileage_milestone' => $package->mileage_milestone,
+                'included_service_ids' => $package->services->modelKeys(),
+            ])->all(),
+        ];
+    }
+
+    /**
+     * Mỗi danh mục một nhóm (đã bỏ nhóm "Phổ biến" do admin tự đánh dấu — số liệu dùng thật xem ở Báo cáo).
+     *
+     * @return Collection<int, array{key: string, name: string, items: array<int, array<string, mixed>>}>
+     */
+    private function serviceGroups(): Collection
+    {
+        $services = Service::query()
+            ->with('serviceCategory:id,icon')
+            ->where('status', 'ACTIVE')
+            ->where('is_visible', true)
+            // D-018: dịch vụ mới tạo lên đầu trong từng danh mục (bộ lọc Phổ biến / Mới nhất cho khách làm sau).
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get();
+
+        return $services
+            ->groupBy(fn (Service $service) => $service->category ?: 'Khác')
+            ->sortKeys()
+            ->map(fn (Collection $items, string $category) => [
+                'key' => "category:{$category}",
+                'name' => $category,
+                // Icon danh mục do admin chọn (Admin → Dịch vụ → Danh mục).
+                'icon' => $items->first()?->serviceCategory?->icon ?? self::DEFAULT_SERVICE_ICON,
+                'items' => $items->map(fn (Service $service) => $this->serviceItem($service))->values()->all(),
+            ])
+            ->values();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function serviceItem(Service $service): array
+    {
+        return [
+            'key' => "service:{$service->id}",
+            'type' => 'service',
+            'id' => $service->id,
+            'name' => $service->name,
+            'icon' => $service->serviceCategory?->icon ?? self::DEFAULT_SERVICE_ICON,
+            'summary' => (string) $service->description,
+            'price' => $this->displayPrice((float) $service->base_price),
+            'minutes' => $service->estimated_minutes,
+            'recommended' => false,
+        ];
+    }
+
+    private function packageMinutes(MaintenancePackage $package): ?int
+    {
+        $minutes = $package->services->sum(
+            fn (Service $service) => (int) $service->estimated_minutes * (int) ($service->pivot->quantity ?? 1)
+        );
+
+        return $minutes > 0 ? $minutes : null;
+    }
+
+    /**
+     * Giá 0 nghĩa là "báo giá tại garage"; trả null để giao diện hiển thị đúng.
+     */
+    private function displayPrice(float $price): ?float
+    {
+        return $price > 0 ? $price : null;
+    }
+}

@@ -1,0 +1,472 @@
+brand,model,trim
+Aston Martin,DBX,707
+Audi,A5,Tiêu chuẩn
+Audi,A6,S line 2.0 TFSI
+Audi,A6,S line 40 TFSI
+Audi,Q3,Sportback TFSI S line
+Audi,Q3,TFSI Advanced
+Audi,Q5,Sportback TFSI quattro S line
+Audi,Q5,TFSI quattro S line
+Audi,Q6 e-tron,Performance
+Audi,Q7,45 TFSI quattro Basic
+Audi,Q7,45 TFSI quattro S Line
+Audi,S6,Sportback e-tron
+Bentley,Bentayga,SWB Aternara Edition V8
+Bestune,Xiaoma,222
+BMW,i7,xDrive60 Pure Excellence
+BMW,Series 5,520i
+BMW,Series 5,520i Premium
+BMW,Series 5,530i M Sport
+BMW,Series 7,735i Pure Excellence
+BMW,Series 7,735Li M Sport
+BMW,Series 7,740i Pure Excellence
+BMW,X1,sDrive20i
+BMW,X3,20 xDrive
+BMW,X3,20 xDrive M Sport
+BMW,X5,xDrive40i M Sport
+BMW,X5,xDrive40i xLine
+BMW,X7,xDrive40i M Sport
+BMW,X7,xDrive40i Pure Excellence
+BYD,Atto 3,Dynamic
+BYD,Atto 3,Premium
+BYD,Dolphin,GLX
+BYD,Han,Performance
+BYD,M6,Standard
+BYD,M9,Advanced
+BYD,M9,Premium
+BYD,Seal,Advanced
+BYD,Seal,Performance
+BYD,Seal 5,Premium DM-i
+BYD,Sealion 6,Dynamic
+BYD,Sealion 6,Premium
+BYD,Sealion 8,Performance
+Dongfeng,Box,E1 330km
+Dongfeng,Box,E2 330km
+Dongfeng,Box,E2 430km
+Dongfeng,Box,E3 430km
+Ford,Everest,Platinum
+Ford,Everest,Sport 2.0L AT 4x2
+Ford,Everest,Titanium 2.0L AT 4x2
+Ford,Everest,Titanium 2.0L AT 4x4
+Ford,Mustang Mach-E,Premium AWD
+Ford,Ranger,Raptor 2.0L 4WD AT
+Ford,Ranger,Sport 2.0L AT 4x4
+Ford,Ranger,Stormtrak
+Ford,Ranger,Wildtrak 2.0L AT 4x4
+Ford,Ranger,XLS 2.0L 4x2 AT
+Ford,Ranger,XLS 2.0L 4x2 MT
+Ford,Territory,Titanium 1.5L AT
+Ford,Territory,Titanium X 1.5L AT
+Ford,Territory,Trend 1.5L AT
+Ford,Transit,Premium 18 chỗ
+Ford,Transit,Trend 16 chỗ
+GAC,GS3 Emzoom,1.5T Premium R
+GAC,GS8,2WD GL
+GAC,M6 Pro,1.5T GL
+GAC,M6 Pro,1.5T GS
+GAC,M8,2.0T GL Master
+GAC,M8,2.0T GT Master
+GAC,M8,2.0T GX Master
+Geely,Coolray,Executive
+Geely,Coolray,Flagship
+Geely,Coolray,Premium
+Geely,EX2,Max
+Geely,EX2,Pro
+Geely,EX5,Max
+Geely,EX5,Pro
+Geely,EX5 EM-i,Max
+Geely,EX5 EM-i,Pro
+Geely,EX5 EM-i,Ultra
+Geely,Monjaro,Flagship
+Geely,Monjaro,Premium
+Haima,7X,Premium
+Haima,7X-E,Cao cấp
+Haima,7X-E,Tiêu chuẩn
+Haval,H6,HEV
+Haval,Jolion,Pro
+Haval,Jolion,Ultra
+Honda,BR-V,G
+Honda,BR-V,L
+Honda,City,L
+Honda,City,RS
+Honda,Civic,e:HEV RS
+Honda,Civic,G
+Honda,Civic,RS
+Honda,CR-V,e:HEV RS
+Honda,CR-V,G
+Honda,CR-V,L
+Honda,CR-V,L AWD
+Honda,HR-V,G
+Honda,HR-V,L
+Honda,HR-V,RS
+Hongqi,E-HS9,Deluxe (7 chỗ)
+Hongqi,E-HS9,Executive (7 chỗ)
+Hongqi,E-HS9,Flagship (4 chỗ)
+Hongqi,E-HS9,Premium (6 chỗ)
+Hyundai,Accent,1.5 AT Cao cấp
+Hyundai,Accent,1.5 AT Tiêu chuẩn
+Hyundai,Accent,1.5 AT Đặc biệt
+Hyundai,Accent,1.5 MT
+Hyundai,Creta,1.5 Cao cấp
+Hyundai,Creta,1.5 Tiêu chuẩn
+Hyundai,Creta,1.5 Đặc biệt
+Hyundai,Creta,N Line
+Hyundai,Custin,1.5T Cao cấp
+Hyundai,Custin,1.5T Tiêu chuẩn
+Hyundai,Custin,1.5T Đặc biệt
+Hyundai,Custin,2.0T
+Hyundai,Elantra,1.6 AT
+Hyundai,Elantra,2.0 AT
+Hyundai,Elantra,N Line
+Hyundai,Grand i10,AT
+Hyundai,Grand i10,MT
+Hyundai,Grand i10 Sedan,AT
+Hyundai,Grand i10 Sedan,MT
+Hyundai,Ioniq 5,Exclusive
+Hyundai,Ioniq 5,Prestige
+Hyundai,Palisade,Exclusive
+Hyundai,Palisade,Prestige
+Hyundai,Santa Fe,Calligraphy
+Hyundai,Santa Fe,Exclusive
+Hyundai,Santa Fe,Hybrid
+Hyundai,Santa Fe,Prestige
+Hyundai,Stargazer,Cao cấp
+Hyundai,Stargazer,Tiêu chuẩn
+Hyundai,Stargazer,Đặc biệt
+Hyundai,Tucson,1.6 Turbo
+Hyundai,Tucson,2.0 Dầu
+Hyundai,Tucson,2.0 Xăng
+Hyundai,Tucson,N Line
+Hyundai,Venue,1.0T Tiêu chuẩn
+Hyundai,Venue,1.0T Đặc biệt
+Isuzu,D-Max,D-CARGO 1000
+Isuzu,D-Max,Hi-Lander
+Isuzu,D-Max,Prestige
+Isuzu,D-Max,Type Z
+Isuzu,D-Max,UTR 800
+Isuzu,D-Max,UTZ 800
+Isuzu,mu-X,B7 Plus 4x2
+Isuzu,mu-X,Premium 4x4
+Isuzu,mu-X,Prestige 4x2
+Isuzu,mu-X,Sport 4x4
+Jaecoo,J5,BEV
+Jaecoo,J5,ICE Premium
+Jaecoo,J5,SHS Flagship
+Jaecoo,J5,SHS Premium
+Jaecoo,J7,Flagship
+Jaecoo,J7,PHEV Flagship
+Jeep,Wrangler,Rubicon
+Jeep,Wrangler,Sahara
+Jeep,Wrangler,Sport
+Kia,Carens,1.5G Deluxe
+Kia,Carens,1.5G IVT
+Kia,Carens,1.5G Luxury
+Kia,Carens Clavis,1.5G Deluxe
+Kia,Carens Clavis,1.5G Luxury
+Kia,K3,1.6 Luxury
+Kia,K5,2.0 Luxury
+Kia,K5,2.0 Premium
+Kia,K5,2.5 GT-Line
+Kia,Morning,MT
+Kia,New Carnival,2.2D Luxury 8S
+Kia,New Carnival,2.2D Premium 7S
+Kia,New Carnival,2.2D Premium 8S
+Kia,New Carnival,2.2D Signature 7S
+Kia,New Carnival Hybrid,1.6 Turbo Hybrid Luxury 8S
+Kia,New Carnival Hybrid,1.6 Turbo Hybrid Premium 7S
+Kia,New Carnival Hybrid,1.6 Turbo Hybrid Signature 7S
+Kia,New Morning,AT
+Kia,New Morning,GT-Line
+Kia,New Seltos,1.5 Turbo Deluxe
+Kia,New Seltos,1.5 Turbo Luxury
+Kia,New Seltos,1.5L AT
+Kia,New Seltos,1.5L Deluxe
+Kia,New Seltos,1.5L Luxury
+Kia,New Seltos,1.5L Premium
+Kia,New Sonet,1.5L AT
+Kia,New Sonet,1.5L Deluxe
+Kia,New Sonet,1.5L Luxury
+Kia,New Sonet,1.5L Premium
+Kia,New Sorento,2.2D Signature AWD
+Kia,New Sorento,2.2D Signature FWD
+Kia,New Sorento,2.5G Signature AWD
+Kia,New Sorento,2.5G Signature FWD
+Kia,New Sorento Hybrid,1.6 Turbo Signature AWD (Nâu)
+Kia,New Sorento Hybrid,1.6 Turbo Signature FWD (Nâu)
+Kia,New Sportage,2.0G Deluxe
+Kia,New Sportage,2.0G Luxury
+Kia,New Sportage Hybrid,1.6 Turbo HEV Premium
+Kia,New Sportage Hybrid,1.6 Turbo HEV Signature
+Kia,New Sportage Hybrid,1.6 Turbo HEV Signature AWD
+Kia,Soluto,MT
+Kia,Soluto,MT Deluxe
+Kia,Sorento Hybrid,1.6L Premium
+Kia,Sorento Plug-in Hybrid,1.6L Premium (Nội thất Đen)
+Kia,Sportage,1.6 Turbo Signature AWD
+Kia,Sportage,2.0G Premium
+Kia,Sportage,2.0G Signature
+Land Rover,Range Rover Evoque,1.5 S
+Land Rover,Range Rover Evoque,2.0 Dynamic SE
+Land Rover,Range Rover Evoque,2.0 S
+Land Rover,Range Rover Evoque,Hoxton Edition 1.5L AWD PHEV
+Land Rover,Range Rover Evoque,S 2.0 AWD
+Land Rover,Range Rover Sport,Dynamic SE 3.0 I6 P360
+Land Rover,Range Rover Velar,P250 Dynamic SE
+Land Rover,Range Rover Velar,P250 S
+Land Rover,Range Rover Velar,P340 Dynamic HSE
+Land Rover,Range Rover Velar,P340 Dynamic SE
+Land Rover,Range Rover Velar,P340 S
+Land Rover,Range Rover Velar,P400e Dynamic HSE
+Lexus,ES,250
+Lexus,ES,300h
+Lexus,GX,550
+Lexus,GX,550M
+Lexus,LM,500h (4 chỗ)
+Lexus,LM,500h (6 chỗ)
+Lexus,LS,500h
+Lexus,LX,600 F Sport
+Lexus,LX,600 Urban
+Lexus,LX,600 VIP
+Lexus,NX,350h
+Lexus,RX,350h Luxury
+Lexus,RX,350h Premium
+Lexus,RX,500h F Sport Performance
+Lotus,Eletre,600
+Lotus,Eletre,600 GT SE
+Lotus,Eletre,600 SPORT SE
+Lotus,Eletre,900 SPORT
+Lotus,Eletre,900 SPORT CARBON
+Lotus,Emira,Turbo
+Lotus,Emira,Turbo SE
+Lotus,Emira,Turbo SE Racing Line
+Lotus,Emira,V6 SE
+Lotus,Emira,V6 SE Racing Line
+Lynk & Co,01,Hyper
+Lynk & Co,01,Hyper Pro
+Lynk & Co,02,Halo
+Lynk & Co,02,Pro
+Lynk & Co,03,Plus
+Lynk & Co,03,Pro
+Lynk & Co,06,Hyper Pro
+Lynk & Co,08,EM-P Halo
+Lynk & Co,08,EM-P Pro
+Maserati,GranTurismo,Modena
+Maserati,Grecale,GT
+Maserati,Grecale,Modena
+Maserati,Grecale,Trofeo
+Maserati,Grecale Folgore,Folgore
+Mazda,CX-3,1.5 AT
+Mazda,CX-3,1.5 Deluxe
+Mazda,CX-3,1.5 Luxury
+Mazda,CX-3,1.5 Premium
+Mazda,CX-30,2.0 Luxury
+Mazda,CX-30,2.0 Premium
+Mazda,CX-5,2.0L Deluxe
+Mazda,CX-5,2.0L Deluxe (Tuỳ chọn)
+Mazda,CX-5,2.0L Luxury
+Mazda,CX-5,2.0L Premium
+Mazda,CX-5,2.0L Premium Exclusive
+Mazda,CX-5,2.0L Premium Sport
+Mazda,CX-8,Luxury
+Mazda,CX-8,Premium
+Mazda,CX-8,Signature AWD
+Mazda,Mazda2,Sedan 1.5 AT
+Mazda,Mazda2,Sedan 1.5 Deluxe
+Mazda,Mazda2,Sedan 1.5 Luxury
+Mazda,Mazda2,Sedan 1.5 Premium
+Mazda,Mazda2,Sport 1.5 Luxury
+Mazda,Mazda2,Sport 1.5 Premium
+Mazda,Mazda3,Sedan 1.5 Deluxe
+Mazda,Mazda3,Sedan 1.5 Deluxe (Tuỳ chọn)
+Mazda,Mazda3,Sedan 1.5 Luxury
+Mazda,Mazda3,Sedan 1.5 Premium
+Mazda,Mazda3,Sport 1.5 Luxury
+Mazda,Mazda3,Sport 1.5 Premium
+Mercedes-Benz,AMG SL,SL 63 S E PERFORMANCE
+Mercedes-Benz,C-Class,C 200 Avantgarde
+Mercedes-Benz,C-Class,C 200 Avantgarde Plus
+Mercedes-Benz,C-Class,C 300 AMG
+Mercedes-Benz,E-Class,E 200 Avantgarde
+Mercedes-Benz,E-Class,E 200 Exclusive
+Mercedes-Benz,E-Class,E 300 AMG
+Mercedes-Benz,E-Class,E 350 e
+Mercedes-Benz,EQE SUV,EQE 500 4MATIC
+Mercedes-Benz,EQS SUV,EQS 500 4MATIC
+Mercedes-Benz,G-Class,AMG G 63
+Mercedes-Benz,G-Class,G 580 EQ
+Mercedes-Benz,GLC,GLC 200 4MATIC
+Mercedes-Benz,GLC,GLC 300 4MATIC
+Mercedes-Benz,GLC,GLC 350 e 4MATIC
+Mercedes-Benz,GLE,GLE 400 e 4MATIC
+Mercedes-Benz,GLE,GLE 450 4MATIC
+Mercedes-Benz,GLS,GLS 450 4MATIC
+Mercedes-Benz,S-Class,S 450 4MATIC
+Mercedes-Benz,S-Class,S 450 4MATIC Luxury
+Mercedes-Benz,S-Class,S 580 e 4MATIC
+Mercedes-Benz,V-Class,V 300 AMG
+Mercedes-Benz,V-Class,V 300 Avantgarde
+MG,Cyberster,AWD
+MG,G50,1.5 MT COM
+MG,G50,1.5T AT DEL
+MG,G50,1.5T AT LUX
+MG,MG4 EV,DEL
+MG,MG4 EV,LUX
+MG,MG5,CVT Deluxe
+MG,MG5,CVT Standard
+MG,MG5,MT
+MG,MG7,1.5 Luxury
+MG,MG7,2.0 Luxury
+MG,MG7,2.0 Premium
+MG,RX5,1.5 LUX
+MG,RX5,1.5 STD
+MG,ZS,LUX+
+MG,ZS,STD+
+MINI,3 Door,Cooper S 3 cửa
+MINI,3 Door,John Cooper Works 3 Doors
+MINI,5 Door,Cooper S 5 cửa
+MINI,Aceman,SE
+MINI,Countryman,S ALL4
+MINI,Countryman,S ALL4 JCW
+Mitsubishi,Attrage,CVT Premium
+Mitsubishi,Attrage,MT
+Mitsubishi,Destinator,Premium
+Mitsubishi,Destinator,Ultimate
+Mitsubishi,Triton,2WD AT GLX
+Mitsubishi,Triton,4WD AT Athlete
+Mitsubishi,Triton,4WD AT Premium
+Mitsubishi,Xforce,GLX
+Mitsubishi,Xforce,Luxury
+Mitsubishi,Xforce,Ultimate
+Mitsubishi,Xpander,AT
+Mitsubishi,Xpander,AT Premium
+Mitsubishi,Xpander,MT
+Nissan,Almera,CVT
+Nissan,Almera,VL
+Nissan,Navara,EL 2WD
+Omoda,C5,Flagship
+Omoda,C5,Luxury
+Omoda,C5,Premium
+Omoda,C5,Sport
+Peugeot,3008,GT
+Peugeot,3008,Premium
+Peugeot,5008,GT
+Peugeot,5008,Premium
+Porsche,911,Carrera
+Porsche,911,Carrera 4 GTS
+Porsche,911,Carrera 4 GTS Cabriolet
+Porsche,911,Carrera Cabriolet
+Porsche,911,Carrera GTS
+Porsche,911,Carrera GTS Cabriolet
+Porsche,911,Carrera S
+Porsche,911,Carrera S Cabriolet
+Porsche,911,Carrera T
+Porsche,911,Carrera T Cabriolet
+Porsche,911,Targa 4 GTS
+Porsche,Macan,GTS
+Porsche,Macan,Macan
+Porsche,Macan,S
+Porsche,Macan,T
+Porsche,Macan EV,4 Electric
+Porsche,Macan EV,4S Electric
+Porsche,Macan EV,GTS Electric
+Porsche,Macan EV,Macan Electric
+Porsche,Macan EV,Turbo Electric
+Porsche,Taycan,4 Cross Turismo
+Porsche,Taycan,4S
+Porsche,Taycan,4S Cross Turismo
+Porsche,Taycan,Base
+Porsche,Taycan,Turbo
+Porsche,Taycan,Turbo Cross Turismo
+Porsche,Taycan,Turbo GT
+Porsche,Taycan,Turbo S
+Ram,1500,Rebel
+Ram,1500,RHO
+Skoda,Karoq,Premium
+Skoda,Karoq,Sportline
+Skoda,Kodiaq,Premium
+Skoda,Kodiaq,Sportline
+Skoda,Kushaq,Ambition
+Skoda,Kushaq,Style
+Skoda,Octavia,RS
+Skoda,Slavia,Active
+Skoda,Slavia,Ambition
+Skoda,Slavia,Style
+Subaru,BRZ,2.4 AT EyeSight
+Subaru,BRZ,2.4 MT EyeSight
+Subaru,Crosstrek,2.0 i-S EyeSight
+Subaru,Crosstrek,2.0 i-S EyeSight e-Boxer Hybrid
+Subaru,Forester,2.5i-L EyeSight
+Subaru,Forester,2.5i-S EyeSight
+Subaru,Outback,2.5i-T EyeSight
+Subaru,WRX,2.4 CVT tS EyeSight
+Subaru,WRX,2.4 MT tS EyeSight
+Suzuki,Fronx,GL
+Suzuki,Fronx,GLX
+Suzuki,Fronx,GLX Plus
+Suzuki,Jimny,1-Tone
+Suzuki,Jimny,2-Tone
+Suzuki,Swift,1-Tone
+Suzuki,Swift,2-Tone
+Suzuki,XL7,Hybrid 1-Tone
+Suzuki,XL7,Hybrid 2-Tone
+Toyota,Alphard,HEV
+Toyota,Avanza Premio,CVT
+Toyota,Avanza Premio,MT
+Toyota,Camry,HEV Luxury
+Toyota,Camry,HEV Premium
+Toyota,Corolla Cross,1.8HEV
+Toyota,Corolla Cross,1.8V
+Toyota,Fortuner,2.7AT 4x2
+Toyota,Fortuner,Legender 2.7AT 4x2
+Toyota,Fortuner,Legender 2.7AT 4x4
+Toyota,Hilux,PRO 2.8 4x2 AT
+Toyota,Hilux,STANDARD 2.8 4x2 MT
+Toyota,Hilux,TRAILHUNTER 2.8 4x4 AT
+Toyota,Innova Cross,2.0G
+Toyota,Innova Cross,2.0HEV
+Toyota,Innova Cross,2.0V
+Toyota,Raize,1.0 Turbo CVT
+Toyota,Veloz Cross,CVT
+Toyota,Veloz Cross,CVT TOP
+Toyota,Vios,1.5E-CVT
+Toyota,Vios,1.5E-MT
+Toyota,Vios,1.5G-CVT
+Toyota,Wigo,G
+Toyota,Yaris Cross,HEV
+Toyota,Yaris Cross,Xăng
+VinFast,EC Van,Nâng cao
+VinFast,EC Van,Nâng cao + Cửa trượt
+VinFast,EC Van,Tiêu chuẩn
+VinFast,VF 5,Plus
+VinFast,VF 6,Eco
+VinFast,VF 6,Plus
+VinFast,VF 7,Eco
+VinFast,VF 7,Plus - trần kính
+VinFast,VF 7,Plus - trần thép
+VinFast,VF 8,Eco
+VinFast,VF 8,Plus
+VinFast,VF 9,Eco
+VinFast,VF 9,Plus - trần thép
+Volkswagen,T-Cross,Luxury
+Volkswagen,Teramont,Limited
+Volkswagen,Teramont,President
+Volkswagen,Teramont Pro,Max
+Volkswagen,Teramont Pro,Tiêu chuẩn
+Volkswagen,Teramont X,Luxury
+Volkswagen,Teramont X,Platinum
+Volkswagen,Touareg,Elegance
+Volkswagen,Touareg,Highline
+Volkswagen,Touareg,Luxury
+Volkswagen,Touareg,R-Line
+Volkswagen,Viloran,Luxury
+Volkswagen,Viloran,Premium
+Volkswagen,Virtus,Elegance
+Volkswagen,Virtus,Luxury
+Volvo,S90,Plug-in Hybrid Ultra
+Volvo,S90,Ultra
+Volvo,XC60,Plug-in Hybrid Ultra
+Volvo,XC60,Ultra
+Volvo,XC90,Ultra B5
+Wuling,Bingo,Max 410 km
+Wuling,Bingo,Plus 333 km
+Wuling,Bingo,Tiêu chuẩn 333 km
