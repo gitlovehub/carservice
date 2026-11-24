@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'quotation_id', 'item_type', 'service_id', 'part_id', 'description',
-    'quantity', 'unit_price', 'amount', 'is_approved',
+    'quantity', 'unit_price', 'amount', 'is_approved', 'is_required', 'required_reason',
 ])]
 class QuotationItem extends Model
 {
@@ -24,6 +25,7 @@ class QuotationItem extends Model
             'unit_price' => 'decimal:2',
             'amount' => 'decimal:2',
             'is_approved' => 'boolean',
+            'is_required' => 'boolean',
         ];
     }
 
@@ -40,5 +42,11 @@ class QuotationItem extends Model
     public function part(): BelongsTo
     {
         return $this->belongsTo(Part::class);
+    }
+
+    /** Lịch sử quyết định của khách cho dòng này (P3). */
+    public function responses(): HasMany
+    {
+        return $this->hasMany(QuotationItemResponse::class)->orderBy('id');
     }
 }

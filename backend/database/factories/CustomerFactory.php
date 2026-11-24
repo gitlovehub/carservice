@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Customer;
+use Database\Factories\Support\VietnameseData;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class CustomerFactory extends Factory
@@ -11,12 +12,15 @@ class CustomerFactory extends Factory
 
     public function definition(): array
     {
+        $name = VietnameseData::fullName();
+
         return [
             'account_id' => null,
-            'full_name' => fake()->name(),
-            'phone' => fake()->numerify('09########'),
-            'email' => fake()->safeEmail(),
-            'address' => fake()->address(),
+            'full_name' => $name,
+            'phone' => VietnameseData::phone(),
+            'email' => VietnameseData::email($name),
+            'email_verified_at' => now(),
+            'address' => VietnameseData::address(),
         ];
     }
 
@@ -25,6 +29,7 @@ class CustomerFactory extends Factory
         return $this->state(fn () => [
             'account_id' => null,
             'email' => null,
+            'email_verified_at' => null,
         ]);
     }
 }

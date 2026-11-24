@@ -10,15 +10,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'repair_order_id', 'service_id', 'technician_id', 'description',
-    'status', 'started_at', 'completed_at',
+    'status', 'started_at', 'completed_at', 'standard_minutes', 'service_step_id',
 ])]
 class WorkItem extends Model
 {
     use HasFactory;
 
     public const PENDING = 'PENDING';
+
     public const IN_PROGRESS = 'IN_PROGRESS';
+
     public const COMPLETED = 'COMPLETED';
+
     public const CANCELLED = 'CANCELLED';
 
     protected function casts(): array

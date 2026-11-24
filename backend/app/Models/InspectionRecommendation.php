@@ -6,10 +6,21 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['inspection_id', 'item_type', 'service_id', 'part_id', 'quantity', 'note'])]
+#[Fillable(['inspection_id', 'item_type', 'service_id', 'part_id', 'quantity', 'note', 'added_after_completion', 'added_by_account_id'])]
 class InspectionRecommendation extends Model
 {
     public const UPDATED_AT = null;
+
+    protected function casts(): array
+    {
+        return ['added_after_completion' => 'boolean'];
+    }
+
+    /** Người bổ sung đề xuất sau khi đã hoàn tất chẩn đoán (ghi vết). */
+    public function addedBy(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'added_by_account_id');
+    }
 
     public const TYPE_SERVICE = 'SERVICE';
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,6 +38,38 @@ class MaintenancePackage extends Model
     {
         return $this->belongsToMany(Part::class, 'maintenance_package_parts', 'package_id', 'part_id')
             ->withPivot('quantity');
+    }
+
+    /**
+     * Gói đang bán và áp dụng được cho dòng xe: gói dùng chung, hoặc gói đúng dòng xe đó.
+     */
+    public function scopeAvailableFor(Builder $query, ?int $vehicleModelId): void
+    {
+        $query->where('status', 'ACTIVE')
+            ->where(function (Builder $query) use ($vehicleModelId): void {
+                $query->whereNull('vehicle_model_id');
+
+                if ($vehicleModelId !== null) {
+                    $query->orWhere('vehicle_model_id', $vehicleModelId);
+                }
+            });
+    }
+
+    /**
+     * Danh sách dịch vụ rút gọn trong gói, ví dụ "Thay dầu, Lọc gió, +2 hạng mục".
+     */
+    public function shortSummary(int $limit = 3): string
+    {
+        $names = $this->services->pluck('name');
+
+        if ($names->isEmpty()) {
+            return '';
+        }
+
+        $summary = $names->take($limit)->implode(', ');
+        $remaining = $names->count() - $limit;
+
+        return $remaining > 0 ? "{$summary}, +{$remaining} hạng mục" : $summary;
     }
 
     /**
