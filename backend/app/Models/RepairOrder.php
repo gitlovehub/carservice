@@ -10,11 +10,21 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'repair_order_code', 'appointment_id', 'customer_id', 'vehicle_id', 'advisor_id',
-    'mileage_received', 'initial_condition', 'status', 'received_at', 'completed_at',
-    'handed_over_at', 'closed_at', 'close_reason', 'note',
+    'mileage_received', 'initial_condition', 'customer_request', 'status', 'received_at', 'completed_at',
+    'handed_over_at', 'closed_at', 'close_reason',
+    'booked_vehicle_id', 'vehicle_change_reason', 'source', 'requires_check_in',
+    'flow_type', 'estimated_ready_at',
+    'quality_check', 'quality_checked_at', 'quality_checked_by',
 ])]
 class RepairOrder extends Model
 {
+    /** P5: luồng dịch vụ nhanh — RECEIVED → WAITING_APPROVAL bằng báo giá niêm yết (bỏ chẩn đoán). */
+    public const FLOW_QUICK = 'QUICK';
+
+    public const SOURCE_APPOINTMENT = 'APPOINTMENT';
+
+    public const SOURCE_WALK_IN = 'WALK_IN';
+
     public const RECEIVED = 'RECEIVED';
 
     public const INSPECTING = 'INSPECTING';
@@ -36,7 +46,8 @@ class RepairOrder extends Model
     public const REVIEW_TEST = 'REVIEW_TEST';
 
     public const TRANSITIONS = [
-        self::RECEIVED => [self::INSPECTING, self::CLOSED],
+        // RECEIVED → WAITING_APPROVAL chỉ qua luồng dịch vụ nhanh (RepairOrderService::createQuickQuotation).
+        self::RECEIVED => [self::INSPECTING, self::WAITING_APPROVAL, self::CLOSED],
         self::INSPECTING => [self::QUOTING, self::WAITING_APPROVAL, self::CLOSED],
         self::QUOTING => [self::WAITING_APPROVAL, self::CLOSED],
         self::WAITING_APPROVAL => [self::IN_PROGRESS, self::CLOSED],
@@ -61,7 +72,73 @@ class RepairOrder extends Model
             'completed_at' => 'datetime',
             'handed_over_at' => 'datetime',
             'closed_at' => 'datetime',
+            'requires_check_in' => 'boolean',
+            'estimated_ready_at' => 'datetime',
+            'quality_check' => 'array',
+            'quality_checked_at' => 'datetime',
         ];
+    }
+
+    public function bookedVehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class, 'booked_vehicle_id');
+    }
+
+    public function handovers(): HasMany
+    {
+        return $this->hasMany(VehicleHandover::class)->orderBy('id');
+    }
+
+    public function partRequests(): HasMany
+    {
+        return $this->hasMany(PartRequest::class)->orderBy('id');
+    }
+
+    public function pickupAuthorizations(): HasMany
+    {
+        return $this->hasMany(PickupAuthorization::class)->orderByDesc('id');
+    }
+
+    /** Biên bản CHECK_OUT đã được chủ xe xác nhận (bản mới nhất). */
+    /**
+     * Hạng mục kiểm tra sau sửa chữa — cố vấn phải tick đủ trước khi bàn giao (PO 17/11/2026).
+     *
+     * @var array<string, string>
+     */
+    public const QUALITY_CHECK_ITEMS = [
+        'ENGINE' => 'Động cơ, vận hành ổn định',
+        'BRAKES' => 'Hệ thống phanh',
+        'STEERING' => 'Hệ thống lái',
+        'ELECTRICAL' => 'Hệ thống đèn, điện',
+        'EXTERIOR_CLEAN' => 'Ngoại thất & vệ sinh xe',
+        'APPROVED_ITEMS' => 'Đối chiếu hạng mục đã phê duyệt',
+    ];
+
+    public function qualityInspector(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'quality_checked_by');
+    }
+
+    public function confirmedCheckOut(): HasOne
+    {
+        return $this->hasOne(VehicleHandover::class)
+            ->where('type', VehicleHandover::TYPE_CHECK_OUT)
+            ->where('status', VehicleHandover::STATUS_CONFIRMED)
+            ->latestOfMany();
+    }
+
+    /** Biên bản CHECK_IN đã được khách xác nhận (bản mới nhất). */
+    public function confirmedCheckIn(): HasOne
+    {
+        return $this->hasOne(VehicleHandover::class)
+            ->where('type', VehicleHandover::TYPE_CHECK_IN)
+            ->where('status', VehicleHandover::STATUS_CONFIRMED)
+            ->latestOfMany();
+    }
+
+    public function appointment(): BelongsTo
+    {
+        return $this->belongsTo(Appointment::class);
     }
 
     public function customer(): BelongsTo
@@ -69,9 +146,10 @@ class RepairOrder extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    /** Kể cả xe khách đã xóa khỏi danh sách, để lịch sử sửa chữa luôn hiện đúng xe. */
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class);
+        return $this->belongsTo(Vehicle::class)->withTrashed();
     }
 
     public function advisor(): BelongsTo
@@ -106,9 +184,39 @@ class RepairOrder extends Model
         return $this->hasMany(Quotation::class)->orderByDesc('version');
     }
 
+    /**
+     * Báo giá gốc đang hiệu lực = bản INITIAL có version cao nhất (báo giá lại thay thế bản cũ).
+     * Không gồm SUPPLEMENT: phát sinh cộng thêm, không thay thế báo giá gốc (xem billableQuotationIds).
+     */
     public function latestQuotation(): HasOne
     {
-        return $this->hasOne(Quotation::class)->latestOfMany('version');
+        return $this->hasOne(Quotation::class)->ofMany(
+            ['version' => 'max'],
+            fn ($query) => $query->where('type', Quotation::TYPE_INITIAL),
+        );
+    }
+
+    public function supplementQuotations(): HasMany
+    {
+        return $this->hasMany(Quotation::class)->where('type', Quotation::TYPE_SUPPLEMENT)->orderBy('version');
+    }
+
+    /**
+     * Báo giá được tính tiền / xuất kho: INITIAL đang hiệu lực + mọi SUPPLEMENT khách đã trả lời xong
+     * (APPROVED / PARTIALLY_APPROVED). Không gộp các bản INITIAL cũ (sẽ tính trùng — P0).
+     *
+     * @return list<int>
+     */
+    public function billableQuotationIds(): array
+    {
+        $ids = [];
+        if ($initial = $this->latestQuotation()->first()) {
+            $ids[] = $initial->id;
+        }
+
+        return [...$ids, ...$this->supplementQuotations()
+            ->whereIn('status', [Quotation::APPROVED, Quotation::PARTIALLY_APPROVED])
+            ->pluck('id')->map(fn ($id) => (int) $id)->all()];
     }
 
     public function workItems(): HasMany

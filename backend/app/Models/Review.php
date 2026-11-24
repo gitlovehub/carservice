@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'repair_order_id',
@@ -15,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'comment',
     'reply',
     'replied_at',
+    'reply_edited_at',
+    'is_hidden',
 ])]
 class Review extends Model
 {
@@ -25,6 +29,8 @@ class Review extends Model
             'advisor_rating' => 'integer',
             'technician_rating' => 'integer',
             'replied_at' => 'datetime',
+            'reply_edited_at' => 'datetime',
+            'is_hidden' => 'boolean',
         ];
     }
 
@@ -36,5 +42,15 @@ class Review extends Model
     public function repairOrder(): BelongsTo
     {
         return $this->belongsTo(RepairOrder::class);
+    }
+
+    public function replyRevisions(): HasMany
+    {
+        return $this->hasMany(ReviewReplyRevision::class);
+    }
+
+    public function firstReplyRevision(): HasOne
+    {
+        return $this->hasOne(ReviewReplyRevision::class)->oldestOfMany();
     }
 }

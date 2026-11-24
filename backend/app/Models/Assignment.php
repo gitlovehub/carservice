@@ -13,8 +13,11 @@ class Assignment extends Model
     use HasFactory;
 
     public const ASSIGNED = 'ASSIGNED';
+
     public const IN_PROGRESS = 'IN_PROGRESS';
+
     public const COMPLETED = 'COMPLETED';
+
     public const CANCELLED = 'CANCELLED';
 
     protected function casts(): array

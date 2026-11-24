@@ -12,7 +12,8 @@ class VehicleBrandFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->unique()->randomElement(['Toyota', 'Honda', 'Hyundai', 'Mazda', 'Ford', 'Kia', 'BMW', 'Mercedes-Benz']),
+            // Tên ngẫu nhiên không trùng tên hãng thật mà test tự tạo (Toyota, Honda...).
+            'name' => 'Hãng '.fake()->unique()->bothify('??##'),
             'status' => 'ACTIVE',
         ];
     }

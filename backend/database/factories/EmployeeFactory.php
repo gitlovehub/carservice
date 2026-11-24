@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Account;
 use App\Models\Employee;
+use Database\Factories\Support\VietnameseData;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class EmployeeFactory extends Factory
@@ -14,8 +15,8 @@ class EmployeeFactory extends Factory
     {
         return [
             'account_id' => Account::factory()->advisor(),
-            'full_name' => fake()->name(),
-            'phone' => fake()->numerify('09########'),
+            'full_name' => VietnameseData::fullName(),
+            'phone' => VietnameseData::phone(),
             'status' => 'ACTIVE',
         ];
     }

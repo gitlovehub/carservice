@@ -26,13 +26,19 @@ class Account extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     public const ROLE_CUSTOMER = 'CUSTOMER';
+
     public const ROLE_ADVISOR = 'ADVISOR';
+
     public const ROLE_TECHNICIAN = 'TECHNICIAN';
+
     public const ROLE_ADMIN = 'ADMIN';
 
     public const STATUS_PENDING = 'PENDING';
+
     public const STATUS_ACTIVE = 'ACTIVE';
+
     public const STATUS_LOCKED = 'LOCKED';
+
     public const STATUS_INACTIVE = 'INACTIVE';
 
     public function getAuthPasswordName(): string
