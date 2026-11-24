@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\ApiExceptionRenderer;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Http\Middleware\EnsureAccountRole;
 use App\Http\Middleware\EnsureIdempotency;
@@ -26,8 +27,12 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (InvalidStatusTransitionException $e, Request $request) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json(['success' => false, 'code' => 'INVALID_STATE', 'message' => $e->getMessage()], 422);
         });
+
+        // Mọi lỗi API có cùng định dạng; chi tiết kỹ thuật chỉ ghi vào log kèm mã tra cứu.
+        $exceptions->render(fn (Throwable $e, Request $request) => ApiExceptionRenderer::render($e, $request));
+        $exceptions->context(fn (): array => array_filter(['error_reference' => ApiExceptionRenderer::reference()]));
 
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),

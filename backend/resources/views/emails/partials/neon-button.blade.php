@@ -1,0 +1,4 @@
+{{-- Nút đỏ "neon" dùng chung cho mail (đồng bộ tông đỏ khu khách). Biến: href, label.
+     Hộp thư không hỗ trợ box-shadow (Outlook) vẫn thấy nút đỏ gradient + viền sáng.
+     Arial đậm 700 có đủ dấu tiếng Việt trên mọi hộp thư; không dùng 800, giãn chữ hay đổ bóng chữ vì làm vỡ dấu. --}}
+<a href="{{ $href }}" style="display: inline-block; padding: 14px 34px; border-radius: 12px; border: 1px solid #FF6B78; background-color: #E11D2E; background-image: linear-gradient(180deg, #FF4757 0%, #E11D2E 55%, #B3101F 100%); color: #FFFFFF; font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: 700; line-height: 1.4; text-decoration: none; box-shadow: 0 0 6px rgba(255, 71, 87, .95), 0 0 18px rgba(225, 29, 46, .7), 0 0 38px rgba(225, 29, 46, .4), inset 0 1px 0 rgba(255, 255, 255, .35);">{{ $label }}</a>
