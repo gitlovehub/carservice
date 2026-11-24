@@ -421,11 +421,11 @@ function GuestLookup() {
       <h2 className="text-xl font-extrabold text-cs-text">Tra cứu nhanh</h2>
       <p className="mt-1 text-sm text-cs-muted">Không cần đăng nhập. Mã có trong tin nhắn/email xác nhận lịch hẹn hoặc phiếu tiếp nhận xe.</p>
       <label className="mt-5 block text-sm font-bold text-cs-text">Mã phiếu hoặc mã lịch hẹn
-        <input value={code} onChange={e => { setCode(e.target.value); clearField('code'); }} aria-invalid={!!fieldError('code') || undefined} placeholder="VD: RO-2026-DM0198" autoComplete="off" className={`mt-1.5 uppercase placeholder:normal-case aria-invalid:border-danger ${fieldClass}`}/>
+        <input value={code} onChange={e => { setCode(e.target.value); clearField('code'); }} aria-invalid={!!fieldError('code') || undefined} autoComplete="off" className={`mt-1.5 uppercase aria-invalid:border-danger ${fieldClass}`}/>
         {fieldError('code') && <span role="alert" className="mt-1 block text-xs font-semibold text-danger">{fieldError('code')}</span>}
       </label>
       <label className="mt-4 block text-sm font-bold text-cs-text">4 số cuối số điện thoại
-        <input value={last4} onChange={e => { setLast4(e.target.value.replace(/\D/g, '').slice(0, 4)); clearField('last4'); }} aria-invalid={!!fieldError('last4') || undefined} inputMode="numeric" placeholder="VD: 5678" autoComplete="off" className={`mt-1.5 tracking-[0.3em] aria-invalid:border-danger ${fieldClass}`}/>
+        <input value={last4} onChange={e => { setLast4(e.target.value.replace(/\D/g, '').slice(0, 4)); clearField('last4'); }} aria-invalid={!!fieldError('last4') || undefined} inputMode="numeric" autoComplete="off" className={`mt-1.5 tracking-[0.3em] aria-invalid:border-danger ${fieldClass}`}/>
         {fieldError('last4') && <span role="alert" className="mt-1 block text-xs font-semibold text-danger">{fieldError('last4')}</span>}
         <span className="mt-1 block text-xs font-normal text-cs-muted">Số điện thoại bạn dùng khi đặt lịch / gửi xe.</span>
       </label>
