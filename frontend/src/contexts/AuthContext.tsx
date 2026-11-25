@@ -1,17 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PropsWithChildren } from "react";
 import { fetchApi } from "../services/api";
+import { startLiveSync } from "../services/liveSync";
 import type { AuthUserInfo } from "../pages/auth/auth";
-
-export type SessionState =
-  | { status: "checking"; account: null }
-  | { status: "guest"; account: null }
-  | { status: "error"; account: null }
-  | { status: "authenticated"; account: NonNullable<AuthUserInfo> };
-
-const AuthContext = createContext<SessionState | null>(null);
+import { AuthContext, type SessionState } from "./authSession";
 
 // Chỉ dữ liệu /api/me được xác nhận bởi Sanctum mới cấp quyền truy cập route.
+// Hook đọc phiên: useAuthSession() trong contexts/authSession.ts.
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<SessionState>({ status: "checking", account: null });
   const [revision, setRevision] = useState(0);
@@ -34,7 +29,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       queueMicrotask(() => { if (active) setSession({ status: "guest", account: null }); });
       return () => { active = false; };
     }
-    queueMicrotask(() => { if (active) setSession({ status: "checking", account: null }); });
+    // Đang đăng nhập mà kiểm tra lại (user-updated / storage): giữ phiên cũ tới khi /me trả lời,
+    // tránh header nháy "Đăng nhập" và layout tài khoản biến mất. Quyền vẫn do server quyết định.
+    queueMicrotask(() => { if (active) setSession(previous => previous.status === "authenticated" ? previous : { status: "checking", account: null }); });
     void fetchApi("/me")
       .then((response: { account?: NonNullable<AuthUserInfo> }) => {
         if (!active) return;
@@ -53,12 +50,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => { active = false; };
   }, [revision]);
 
+  // Đã đăng nhập → bật đồng bộ nhanh (services/liveSync.ts): dữ liệu đổi ở đâu, trang đang mở tự cập nhật.
+  const liveAccountId = session.status === "authenticated" ? session.account.id : null;
+  const liveRole = session.status === "authenticated" ? session.account.role : null;
+  useEffect(() => liveAccountId === null || liveRole === null ? undefined : startLiveSync({ id: Number(liveAccountId), role: String(liveRole) }), [liveAccountId, liveRole]);
+
   const value = useMemo(() => session, [session]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuthSession() {
-  const session = useContext(AuthContext);
-  if (!session) throw new Error("useAuthSession phải được dùng trong AuthProvider");
-  return session;
 }
