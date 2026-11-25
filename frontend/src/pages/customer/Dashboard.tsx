@@ -1,7 +1,16 @@
+import { focusFirstInvalid } from "../../components/ui/focusInvalid";
+import { userErrorMessage } from "../../services/apiError";
+import { formatDateTime } from "../../services/customerApi";
+import { apiFieldErrors } from "../../components/ui/formValidation";
+import { KmInput } from "../../components/ui";
+import { useLiveRefresh } from "../../services/liveSync";
+import { pageCacheSaver, readPageCache } from "../../services/pageCache";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { buttonClass } from "../../components/ui/buttonClass";
 import { Link, useNavigate } from "react-router-dom";
 import { Toast, type ToastType } from "../../components/auth/Toast";
 import { fetchApi } from "../../services/api";
+import { useGarageHotline } from "../../services/garageService";
 import { getUserDisplayName } from "../auth/auth";
 import {
   FINISHED_REPAIR_STATUSES,
@@ -21,9 +30,8 @@ import {
   type CustomerRepairOrder,
   type CustomerVehicle,
 } from "../../services/customerApi";
+import { FieldError } from "../../components/ui/Field";
 
-const HOTLINE_DISPLAY = "033 240 5972";
-const HOTLINE_TEL = "0332405972";
 
 /* Bước hiển thị trên timeline và vị trí hiện tại theo trạng thái phiếu sửa chữa */
 const STEPS = [
@@ -45,16 +53,21 @@ const STEP_BY_STATUS: Record<string, number> = {
   CLOSED: 5,
 };
 
-const errorText = (e: unknown, fallback: string) => {
-  const err = e as { message?: string; data?: { message?: string; errors?: Record<string, string[]> } };
-  const first = err?.data?.errors ? Object.values(err.data.errors).flat()[0] : undefined;
-  return first || err?.data?.message || err?.message || fallback;
-};
+const errorText = (e: unknown, fallback: string) => userErrorMessage(e, fallback);
 
 type User = { full_name?: string; name?: string; email?: string; customer?: { full_name?: string } | null } | null;
 
+const DASHBOARD_CACHE = "customer:dashboard";
+type DashboardCache = {
+  vehicles: CustomerVehicle[];
+  appointments: CustomerAppointment[];
+  orders: CustomerRepairOrder[];
+  details: Record<number, CustomerRepairOrder>;
+};
+
 function CustomerDashboard() {
   const navigate = useNavigate();
+  const hotline = useGarageHotline();
 
   const [user, setUser] = useState<User>(() => {
     try {
@@ -64,14 +77,16 @@ function CustomerDashboard() {
     }
   });
 
-  const [loading, setLoading] = useState(true);
+  const [cached] = useState(() => readPageCache<DashboardCache>(DASHBOARD_CACHE));
+  const [loading, setLoading] = useState(cached === null);
   const [loadError, setLoadError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  useLiveRefresh(() => setReloadKey((k) => k + 1));
 
-  const [vehicles, setVehicles] = useState<CustomerVehicle[]>([]);
-  const [appointments, setAppointments] = useState<CustomerAppointment[]>([]);
-  const [orders, setOrders] = useState<CustomerRepairOrder[]>([]);
-  const [details, setDetails] = useState<Record<number, CustomerRepairOrder>>({});
+  const [vehicles, setVehicles] = useState<CustomerVehicle[]>(cached?.vehicles ?? []);
+  const [appointments, setAppointments] = useState<CustomerAppointment[]>(cached?.appointments ?? []);
+  const [orders, setOrders] = useState<CustomerRepairOrder[]>(cached?.orders ?? []);
+  const [details, setDetails] = useState<Record<number, CustomerRepairOrder>>(cached?.details ?? {});
 
   const [searchKeyword, setSearchKeyword] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState("ALL");
@@ -96,8 +111,9 @@ function CustomerDashboard() {
     let active = true;
 
     const load = async () => {
-      setLoading(true);
+      // Lần đầu loading đã là true; các lần tải lại (Làm mới / dữ liệu đổi) làm ngầm, giữ nội dung cũ trên màn hình.
       setLoadError("");
+      const save = pageCacheSaver<DashboardCache>(DASHBOARD_CACHE);
 
       const [profile, vehicleRes, appointmentRes, orderRes] = await Promise.allSettled([
         fetchApi("/me"),
@@ -138,6 +154,10 @@ function CustomerDashboard() {
       });
       setDetails(map);
       setLoading(false);
+      // Chỉ nhớ bản tải đủ, tránh lần sau hiện danh sách trống vì một API lỗi.
+      if (vehicleRes.status === "fulfilled" && appointmentRes.status === "fulfilled" && orderRes.status === "fulfilled") {
+        save({ vehicles: vehicleRes.value, appointments: appointmentRes.value.items, orders: orderList, details: map });
+      }
     };
 
     void load();
@@ -240,18 +260,21 @@ function CustomerDashboard() {
       setShowOdoModal(false);
       showToast(`Đã cập nhật số ODO thành ${mileage.toLocaleString("vi-VN")} km.`, "success");
     } catch (err) {
-      setOdoError(errorText(err, "Không thể cập nhật số ODO."));
+      const mileageError = apiFieldErrors(err).mileage;
+      if (mileageError) { setOdoError(mileageError); focusFirstInvalid(); }
+      else showToast(errorText(err, "Không thể cập nhật số ODO."), "error");
     } finally {
       setOdoSaving(false);
     }
   };
 
   const handleCopyHotline = async () => {
+    if (!hotline) return;
     try {
-      await navigator.clipboard.writeText(HOTLINE_DISPLAY);
-      showToast(`Đã sao chép số ${HOTLINE_DISPLAY}.`, "success");
+      await navigator.clipboard.writeText(hotline.display);
+      showToast(`Đã sao chép số ${hotline.display}.`, "success");
     } catch {
-      showToast(`Hotline: ${HOTLINE_DISPLAY}`, "info");
+      showToast(`Đường dây nóng: ${hotline.display}`, "info");
     }
   };
 
@@ -278,7 +301,7 @@ function CustomerDashboard() {
       label: "Lịch hẹn sắp tới",
       value: `${upcoming.length} lịch`,
       hint: upcoming[0]
-        ? `Gần nhất: ${formatDate(upcoming[0].appointment_date)} · ${formatTime(upcoming[0].appointment_time)}`
+        ? `Gần nhất: ${formatTime(upcoming[0].appointment_time)} - ${formatDate(upcoming[0].appointment_date)}`
         : "Chưa có lịch hẹn nào",
     },
     {
@@ -298,7 +321,7 @@ function CustomerDashboard() {
   ];
 
   return (
-    <div className="at-customer-dashboard min-h-screen bg-[#F7F7F5] text-[#20252B]">
+    <div className="at-customer-dashboard min-h-screen bg-cs-bg text-[#20252B]">
 
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
@@ -309,13 +332,10 @@ function CustomerDashboard() {
           {/* ===== TIÊU ĐỀ TRANG ===== */}
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#D6A85F]">
-                KHÁCH HÀNG / TỔNG QUAN DỊCH VỤ
-              </p>
-              <h1 className="mt-2 text-[28px] font-bold tracking-[-0.6px] text-[#1F2933]">
+              <h1 className="mt-2 text-[28px] font-bold tracking-normal text-[#1F2933]">
                 Xin chào, {getUserDisplayName(user)}
               </h1>
-              <p className="mt-1.5 text-[13px] leading-6 text-[#66717C]">
+              <p className="mt-1.5 text-[13px] leading-6 text-cs-muted">
                 {loading
                   ? "Đang đồng bộ dữ liệu của bạn..."
                   : "Theo dõi xe đang ở gara, lịch hẹn và toàn bộ lịch sử dịch vụ tại một nơi."}
@@ -326,7 +346,7 @@ function CustomerDashboard() {
               <button
                 type="button"
                 onClick={openOdoModal}
-                className="cs-btn cs-btn-secondary"
+                className={buttonClass({ variant: "secondary" })}
               >
                 Cập nhật số ODO
               </button>
@@ -361,18 +381,18 @@ function CustomerDashboard() {
                 className="group flex min-h-[116px] cursor-pointer flex-col justify-between rounded-2xl border border-[#E1E4E6] bg-white p-5 shadow-[0_8px_25px_rgba(31,41,51,0.04)] transition hover:border-[#D6A85F] hover:shadow-md"
               >
                 <div className="flex items-start justify-between">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A949E]">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-cs-muted">
                     {kpi.label}
                   </p>
-                  <span className="text-sm text-[#B5BDC5] transition group-hover:translate-x-0.5 group-hover:text-[#D6A85F]">
+                  <span className="text-sm text-cs-muted transition group-hover:translate-x-0.5 group-hover:text-[#D6A85F]">
                     →
                   </span>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold tracking-tight text-[#20252B]">
+                  <p className="text-2xl font-bold tracking-normal text-[#20252B]">
                     {loading ? "…" : kpi.value}
                   </p>
-                  <p className="mt-1 text-[11px] text-[#66717C]">{loading ? " " : kpi.hint}</p>
+                  <p className="mt-1 text-[12px] text-cs-muted">{loading ? " " : kpi.hint}</p>
                 </div>
               </Link>
             ))}
@@ -390,7 +410,7 @@ function CustomerDashboard() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-amber-500" />
-                          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-amber-600">
+                          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-amber-600">
                             Xe đang được xử lý tại gara
                           </p>
                         </div>
@@ -400,9 +420,9 @@ function CustomerDashboard() {
                             {activeOrder.vehicle?.license_plate ?? "—"}
                           </span>
                         </h2>
-                        <p className="mt-1 text-xs text-[#66717C]">
+                        <p className="mt-1 text-xs text-cs-muted">
                           Phiếu <strong>{activeOrder.repair_order_code}</strong> · Tiếp nhận{" "}
-                          {formatDate(activeOrder.received_at)} {formatTime(activeOrder.received_at?.slice(11))} ·{" "}
+                          {formatDateTime(activeOrder.received_at)} ·{" "}
                           {repairStatusLabel[activeOrder.status] ?? activeOrder.status}
                         </p>
                       </div>
@@ -450,14 +470,14 @@ function CustomerDashboard() {
                                   ? "border-emerald-500 bg-emerald-500 text-white"
                                   : state === "active"
                                     ? "border-amber-500 bg-amber-50 text-amber-700 ring-4 ring-amber-100"
-                                    : "border-[#E1E4E6] bg-white text-[#8A949E]"
+                                    : "border-[#E1E4E6] bg-white text-cs-muted"
                               }`}
                             >
                               {state === "done" ? "✓" : step.n}
                             </button>
                             <p
                               className={`mt-2 text-xs font-bold ${
-                                state === "todo" ? "text-[#8A949E]" : "text-[#20252B]"
+                                state === "todo" ? "text-cs-muted" : "text-[#20252B]"
                               }`}
                             >
                               {step.title}
@@ -474,7 +494,7 @@ function CustomerDashboard() {
                     </p>
                     {!loading && (
                       <>
-                        <p className="mt-1 text-xs text-[#8A949E]">
+                        <p className="mt-1 text-xs text-cs-muted">
                           Khi gara tiếp nhận xe của bạn, tiến độ sẽ hiển thị tại đây.
                         </p>
                         <Link
@@ -493,7 +513,7 @@ function CustomerDashboard() {
               <section className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
                 <div>
                   <h2 className="text-lg font-bold text-[#1F2933]">Lịch sử dịch vụ</h2>
-                  <p className="mt-0.5 text-xs text-[#66717C]">
+                  <p className="mt-0.5 text-xs text-cs-muted">
                     Các phiếu bảo dưỡng, sửa chữa đã hoàn tất và chi phí từng lần.
                   </p>
                 </div>
@@ -505,13 +525,13 @@ function CustomerDashboard() {
                       value={searchKeyword}
                       onChange={(e) => setSearchKeyword(e.target.value)}
                       placeholder="Tìm mã phiếu, biển số, tên xe..."
-                      className="h-10 w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3.5 pr-8 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
+                      className="h-10 w-full rounded-xl border border-[#E1E4E6] bg-cs-bg px-3.5 pr-8 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
                     />
                     {searchKeyword && (
                       <button
                         type="button"
                         onClick={() => setSearchKeyword("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-[#8A949E] hover:text-[#20252B]"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-cs-muted hover:text-[#20252B]"
                       >
                         ✕
                       </button>
@@ -520,7 +540,7 @@ function CustomerDashboard() {
                   <select
                     value={vehicleFilter}
                     onChange={(e) => setVehicleFilter(e.target.value)}
-                    className="h-10 w-full cursor-pointer rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
+                    className="h-10 w-full cursor-pointer rounded-xl border border-[#E1E4E6] bg-cs-bg px-3 text-xs outline-none transition focus:border-[#D6A85F] focus:bg-white"
                   >
                     <option value="ALL">Tất cả xe</option>
                     {vehicles.map((v) => (
@@ -533,13 +553,13 @@ function CustomerDashboard() {
 
                 <div className="mt-5 divide-y divide-[#EEF0F2] rounded-xl border border-[#E1E4E6]">
                   {loading ? (
-                    <p className="p-10 text-center text-xs text-[#8A949E]">Đang tải lịch sử...</p>
+                    <p className="p-10 text-center text-xs text-cs-muted">Đang tải lịch sử...</p>
                   ) : filteredHistory.length === 0 ? (
                     <div className="p-10 text-center">
                       <p className="text-sm font-semibold text-[#20252B]">
                         {history.length === 0 ? "Chưa có lịch sử dịch vụ" : "Không có phiếu phù hợp"}
                       </p>
-                      <p className="mt-1 text-xs text-[#8A949E]">
+                      <p className="mt-1 text-xs text-cs-muted">
                         {history.length === 0
                           ? "Sau khi hoàn tất dịch vụ đầu tiên, phiếu sẽ xuất hiện tại đây."
                           : "Thử đổi từ khóa hoặc bộ lọc xe."}
@@ -551,7 +571,7 @@ function CustomerDashboard() {
                             setSearchKeyword("");
                             setVehicleFilter("ALL");
                           }}
-                          className="cs-btn cs-btn-primary mt-4"
+                          className={buttonClass({ variant: "primary", className: "mt-4" })}
                         >
                           Xóa bộ lọc
                         </button>
@@ -562,24 +582,24 @@ function CustomerDashboard() {
                       <div
                         key={o.id}
                         onClick={() => void openOrderDetail(o)}
-                        className="flex cursor-pointer flex-col gap-3 p-4 transition hover:bg-[#FAF8F5] md:flex-row md:items-center md:justify-between"
+                        className="flex cursor-pointer flex-col gap-3 p-4 transition hover:bg-cs-surface-2 md:flex-row md:items-center md:justify-between"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2 text-xs">
-                            <span className="rounded-md border border-[#E5B869]/50 bg-[#FAF8F5] px-2 py-0.5 font-mono font-bold text-[#8F641B]">
+                            <span className="rounded-md border border-[#E5B869]/50 bg-cs-surface-2 px-2 py-0.5 font-mono font-bold text-[#8F641B]">
                               {o.vehicle?.license_plate ?? "—"}
                             </span>
                             <span className="font-semibold text-[#20252B]">{getVehicleName(o.vehicle)}</span>
                             {o.mileage_received != null && (
-                              <span className="text-[#8A949E]">
+                              <span className="text-cs-muted">
                                 · {Number(o.mileage_received).toLocaleString("vi-VN")} km
                               </span>
                             )}
-                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
                               {repairStatusLabel[o.status] ?? o.status}
                             </span>
                           </div>
-                          <p className="mt-1.5 text-[11px] text-[#66717C]">
+                          <p className="mt-1.5 text-[12px] text-cs-muted">
                             Phiếu <strong>{o.repair_order_code}</strong> · Hoàn tất{" "}
                             {formatDate(o.completed_at ?? o.handed_over_at ?? o.received_at)}
                           </p>
@@ -596,7 +616,7 @@ function CustomerDashboard() {
                                 e.stopPropagation();
                                 void openOrderDetail(o);
                               }}
-                              className="cs-btn cs-btn-secondary"
+                              className={buttonClass({ variant: "secondary" })}
                             >
                               Chi tiết
                             </button>
@@ -606,7 +626,7 @@ function CustomerDashboard() {
                                 e.stopPropagation();
                                 navigate(o.vehicle_id ? `/booking?vehicle_id=${o.vehicle_id}` : "/booking");
                               }}
-                              className="cursor-pointer rounded-lg border border-[#E5B869]/50 bg-[#FAF8F5] px-3 py-1.5 text-[11px] font-bold text-[#8F641B] transition hover:bg-[#F3E8D2]"
+                              className="cursor-pointer rounded-lg border border-[#E5B869]/50 bg-cs-surface-2 px-3 py-1.5 text-[12px] font-bold text-[#8F641B] transition hover:bg-[#F3E8D2]"
                             >
                               Đặt lịch lại
                             </button>
@@ -626,7 +646,7 @@ function CustomerDashboard() {
                   <h2 className="text-base font-bold text-[#1F2933]">Lịch hẹn sắp tới</h2>
                   <Link
                     to="/customer/appointments"
-                    className="cursor-pointer text-[11px] font-bold text-[#8F641B] hover:underline"
+                    className="cursor-pointer text-[12px] font-bold text-[#8F641B] hover:underline"
                   >
                     Xem tất cả
                   </Link>
@@ -634,13 +654,13 @@ function CustomerDashboard() {
 
                 <div className="mt-4 space-y-3">
                   {loading ? (
-                    <p className="text-xs text-[#8A949E]">Đang tải...</p>
+                    <p className="text-xs text-cs-muted">Đang tải...</p>
                   ) : upcoming.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-[#E1E4E6] p-5 text-center">
                       <p className="text-xs font-semibold text-[#20252B]">Chưa có lịch hẹn nào</p>
                       <Link
                         to="/booking"
-                        className="mt-3 inline-flex cursor-pointer rounded-lg bg-[#1F2933] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-slate-800"
+                        className="mt-3 inline-flex cursor-pointer rounded-lg bg-[#1F2933] px-3 py-1.5 text-[12px] font-bold text-white transition hover:bg-slate-800"
                       >
                         Đặt lịch ngay
                       </Link>
@@ -650,26 +670,26 @@ function CustomerDashboard() {
                       <Link
                         key={a.id}
                         to="/customer/appointments"
-                        className="block cursor-pointer rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] p-4 transition hover:border-[#D6A85F]"
+                        className="block cursor-pointer rounded-xl border border-[#E1E4E6] bg-cs-bg p-4 transition hover:border-[#D6A85F]"
                       >
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-bold text-[#20252B]">
-                            {formatDate(a.appointment_date)} · {formatTime(a.appointment_time)}
+                            {formatTime(a.appointment_time)} - {formatDate(a.appointment_date)}
                           </p>
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                               a.status === "CONFIRMED"
                                 ? "bg-[#F3E8D2] text-[#3A3020]"
-                                : "bg-white text-[#66717C]"
+                                : "bg-white text-cs-muted"
                             }`}
                           >
                             {appointmentStatusLabel[a.status] ?? a.status}
                           </span>
                         </div>
-                        <p className="mt-1.5 text-[11px] text-[#66717C]">
+                        <p className="mt-1.5 text-[12px] text-cs-muted">
                           {getVehicleName(a.vehicle)} · {a.vehicle?.license_plate ?? "—"}
                         </p>
-                        <p className="mt-0.5 text-[11px] text-[#8A949E]">
+                        <p className="mt-0.5 text-[12px] text-cs-muted">
                           {requestTypeLabel[a.request_type] ?? a.request_type} · {a.appointment_code}
                         </p>
                       </Link>
@@ -680,32 +700,33 @@ function CustomerDashboard() {
 
               <section className="rounded-2xl border border-[#E1E4E6] bg-white p-6 shadow-[0_8px_25px_rgba(31,41,51,0.04)]">
                 <h2 className="text-base font-bold text-[#1F2933]">Cần hỗ trợ?</h2>
-                <p className="mt-0.5 text-xs leading-5 text-[#66717C]">
+                <p className="mt-0.5 text-xs leading-5 text-cs-muted">
                   Liên hệ gara khi xe gặp sự cố hoặc cần tư vấn, báo giá.
                 </p>
 
-                <div className="mt-4 rounded-xl bg-[#1F2933] p-4 text-white">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#E5B869]">
-                    Hotline hỗ trợ kỹ thuật
+                {/* Hotline lấy từ Cài đặt gara (Admin); chưa cấu hình thì chỉ còn nút Liên hệ bên dưới. */}
+                {hotline && <div className="mt-4 rounded-xl bg-[#1F2933] p-4 text-white">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#E5B869]">
+                    Đường dây nóng hỗ trợ kỹ thuật
                   </p>
                   <a
-                    href={`tel:${HOTLINE_TEL}`}
+                    href={`tel:${hotline.tel}`}
                     className="mt-1 block cursor-pointer text-xl font-bold tracking-wider"
                   >
-                    {HOTLINE_DISPLAY}
+                    {hotline.display}
                   </a>
                   <button
                     type="button"
                     onClick={() => void handleCopyHotline()}
-                    className="mt-2 cursor-pointer text-[11px] text-slate-300 underline underline-offset-2 transition hover:text-white"
+                    className="mt-2 cursor-pointer text-[12px] text-slate-300 underline underline-offset-2 transition hover:text-white"
                   >
                     Sao chép số
                   </button>
-                </div>
+                </div>}
 
                 <Link
                   to="/contact"
-                  className="mt-3 block cursor-pointer rounded-xl border border-[#E1E4E6] py-2.5 text-center text-xs font-bold text-[#20252B] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
+                  className="mt-3 block cursor-pointer rounded-xl border border-[#E1E4E6] py-2.5 text-center text-xs font-bold text-[#20252B] transition hover:border-[#D6A85F] hover:bg-cs-bg"
                 >
                   Gửi yêu cầu hỗ trợ
                 </Link>
@@ -717,11 +738,11 @@ function CustomerDashboard() {
 
       {/* ===== MODAL CHI TIẾT PHIẾU ===== */}
       {selectedOrderId !== null && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+        <div className="cs-modal-scrim fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#D6A85F]">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#D6A85F]">
                   CHI TIẾT PHIẾU DỊCH VỤ
                 </p>
                 <h3 className="text-lg font-extrabold text-[#1F2933]">
@@ -742,14 +763,14 @@ function CustomerDashboard() {
             </div>
 
             {detailLoading ? (
-              <p className="py-10 text-center text-xs text-[#8A949E]">Đang tải chi tiết...</p>
+              <p className="py-10 text-center text-xs text-cs-muted">Đang tải chi tiết...</p>
             ) : detailError ? (
               <p className="my-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
                 {detailError}
               </p>
             ) : (
               <div className="mt-4 space-y-4 text-xs">
-                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-[#F7F7F5] p-4">
+                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-cs-bg p-4">
                   <div>
                     <p className="text-slate-400">Trạng thái</p>
                     <p className="mt-0.5 font-bold text-slate-800">
@@ -795,10 +816,10 @@ function CustomerDashboard() {
                     </p>
                     <div className="overflow-x-auto rounded-xl border border-slate-200">
                       <table className="w-full text-left">
-                        <thead className="border-b border-slate-200 bg-[#FAF8F5] font-bold text-slate-500">
+                        <thead className="border-b border-slate-200 bg-cs-surface-2 font-bold text-slate-500">
                           <tr>
                             <th className="px-3 py-2.5">Nội dung</th>
-                            <th className="px-3 py-2.5 text-center">SL</th>
+                            <th className="px-3 py-2.5 text-center">Số lượng</th>
                             <th className="px-3 py-2.5 text-right">Đơn giá</th>
                             <th className="px-3 py-2.5 text-right">Thành tiền</th>
                           </tr>
@@ -817,7 +838,7 @@ function CustomerDashboard() {
                             </tr>
                           ))}
                         </tbody>
-                        <tfoot className="border-t border-slate-200 bg-[#FAF8F5] font-bold">
+                        <tfoot className="border-t border-slate-200 bg-cs-surface-2 font-bold">
                           <tr>
                             <td colSpan={3} className="px-3 py-3 text-right text-slate-700">
                               Tổng cộng
@@ -841,12 +862,6 @@ function CustomerDashboard() {
                     Phiếu này chưa có hóa đơn.
                   </p>
                 )}
-
-                {selectedOrder?.note && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-700">
-                    <strong>Ghi chú:</strong> {selectedOrder.note}
-                  </div>
-                )}
               </div>
             )}
 
@@ -860,7 +875,7 @@ function CustomerDashboard() {
               <button
                 type="button"
                 onClick={() => setSelectedOrderId(null)}
-                className="cs-btn cs-btn-primary"
+                className={buttonClass({ variant: "primary" })}
               >
                 Đóng
               </button>
@@ -871,7 +886,7 @@ function CustomerDashboard() {
 
       {/* ===== MODAL CẬP NHẬT ODO ===== */}
       {showOdoModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+        <div className="cs-modal-scrim fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-lg font-bold text-[#1F2933]">Cập nhật số ODO xe</h3>
@@ -908,34 +923,22 @@ function CustomerDashboard() {
                 <label className="mb-1 block text-xs font-bold text-slate-700">
                   Số km hiện tại trên đồng hồ
                 </label>
-                <input
-                  type="number"
-                  min={0}
-                  value={odoValue}
-                  onChange={(e) => setOdoValue(e.target.value)}
-                  placeholder="Ví dụ: 41500"
-                  className="h-11 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-[#D6A85F]"
-                />
+                <KmInput label="Số km hiện tại trên đồng hồ" invalid={!!odoError} value={odoValue} onChange={value => { setOdoValue(value); setOdoError(""); }} placeholder="Ví dụ: 41.500" className="w-full !h-11 !rounded-xl"/>
+                <FieldError className="mt-1">{odoError}</FieldError>
               </div>
-
-              {odoError && (
-                <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
-                  {odoError}
-                </p>
-              )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowOdoModal(false)}
-                  className="cs-btn cs-btn-secondary"
+                  className={buttonClass({ variant: "secondary" })}
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={odoSaving}
-                  className="cs-btn cs-btn-primary"
+                  className={buttonClass({ variant: "primary" })}
                 >
                   {odoSaving ? "Đang lưu..." : "Lưu số ODO"}
                 </button>
