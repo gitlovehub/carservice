@@ -14,6 +14,18 @@ class RepairOrderPolicy
             || (int) $repairOrder->customer_id === (int) $account->customer?->id;
     }
 
+    /**
+     * Phiếu thuộc hồ sơ khách của CHÍNH tài khoản này — dùng cho các API "của tôi" (/me/...).
+     * Khác `view`: nhân viên xem được mọi phiếu ở khu làm việc, nhưng khi dùng tài khoản như khách
+     * thì chỉ thao tác (xác nhận biên bản, ủy quyền nhận xe, thanh toán) trên phiếu của chính mình.
+     */
+    public function own(Account $account, RepairOrder $repairOrder): bool
+    {
+        $customerId = $account->customer?->id;
+
+        return $customerId !== null && (int) $repairOrder->customer_id === (int) $customerId;
+    }
+
     public function update(Account $account, RepairOrder $repairOrder): bool
     {
         return $this->canManageAll($account)
