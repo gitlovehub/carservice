@@ -13,6 +13,14 @@ class InvoicePolicy
             || (int) $invoice->repairOrder?->customer_id === (int) $account->customer?->id;
     }
 
+    /** Hóa đơn của chính tài khoản này (API "của tôi", ví dụ thanh toán VNPay). */
+    public function own(Account $account, Invoice $invoice): bool
+    {
+        $customerId = $account->customer?->id;
+
+        return $customerId !== null && (int) $invoice->repairOrder?->customer_id === (int) $customerId;
+    }
+
     public function update(Account $account, Invoice $invoice): bool
     {
         return $this->canManageAll($account);
