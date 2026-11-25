@@ -1,27 +1,24 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ToastError } from "../../components/ui/ToastError";
+import { useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { fetchApi } from "../../services/api";
-import { getRoleManagementPage, setUserRole } from "./auth";
-import OtpInput from "../../components/auth/OtpInput";
+import { readReturnLocation, resolveReturnPath, setUserRole } from "./auth";
+import { LostEmailLink, VerifyEmailPrompt } from "../../components/auth/VerifyEmailPrompt";
 import Toast, { type ToastType } from "../../components/auth/Toast";
-import { AtelierAuthError, AtelierAuthLayout, AtelierField } from "../../components/AtelierPublic";
+import { GarageAuthLayout, GarageField } from "../../components/GaragePublic";
+import { AuthSwitchLink, PasswordInput } from "../../components/auth/PasswordInput";
+import { authFieldClass, authPrimaryClass } from "../../components/auth/authStyles";
+import { markAuthSession } from "../../services/authPersistence";
+import { focusFirstInvalid } from "../../components/ui/focusInvalid";
+import { API_ERROR_MARK, splitApiErrors } from "../../components/ui/formValidation";
 
 const REMEMBER_EMAIL_KEY = "carservice_remembered_email";
-
-type Step = "login" | "otp";
 
 type ApiErrorDetails = {
   message?: string;
   errors?: Record<string, string[]>;
 };
 
-type LocationState = {
-  from?: {
-    pathname?: string;
-    search?: string;
-    hash?: string;
-  };
-};
 
 const getApiErrorDetails = (error: unknown): ApiErrorDetails => {
   if (typeof error !== "object" || error === null || !("data" in error)) {
@@ -63,12 +60,17 @@ const getApiErrorDetails = (error: unknown): ApiErrorDetails => {
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const linkedEmail = searchParams.get("email")?.trim() ?? "";
+  // Về từ nút xác thực trong email: điền sẵn email và báo kết quả.
+  const linkNotice = searchParams.has("verified") ? "Xác thực thành công. Nhập mật khẩu để đăng nhập."
+    : searchParams.has("email_changed") ? "Đã đổi email. Vui lòng đăng nhập bằng email mới." : "";
 
-  const [step, setStep] = useState<Step>("login");
+  // Tài khoản đúng mật khẩu nhưng chưa bấm nút xác thực trong email.
   const [pendingEmail, setPendingEmail] = useState("");
-  const [otp, setOtp] = useState("");
 
-  // Only the email is remembered locally; never store a plaintext password.
+  // "Ghi nhớ đăng nhập": có tích → giữ phiên khi đóng trình duyệt + nhớ email; không tích → đóng trình duyệt là đăng xuất
+  // (xem services/authPersistence.ts). Không bao giờ lưu mật khẩu.
   const [rememberMe, setRememberMe] = useState(() =>
     typeof window !== "undefined" &&
     localStorage.getItem(REMEMBER_EMAIL_KEY) !== null,
@@ -76,9 +78,10 @@ function Login() {
 
   const [form, setForm] = useState(() => ({
     email:
-      typeof window !== "undefined"
+      linkedEmail ||
+      (typeof window !== "undefined"
         ? localStorage.getItem(REMEMBER_EMAIL_KEY) || ""
-        : "",
+        : ""),
     password: "",
   }));
 
@@ -89,23 +92,11 @@ function Login() {
 
   const [apiError, setApiError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [resendCountdown, setResendCountdown] = useState(0);
 
   const [toast, setToast] = useState<{
     message: string;
     type: ToastType;
   } | null>(null);
-
-  useEffect(() => {
-    if (resendCountdown <= 0) return;
-
-    const timer = setTimeout(() => {
-      setResendCountdown((previous) => previous - 1);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [resendCountdown]);
 
   const showToast = (message: string, type: ToastType = "info") => {
     setToast({ message, type });
@@ -123,53 +114,8 @@ function Login() {
       return;
     }
 
-    const state = location.state as LocationState | null;
-    const from = state?.from;
-    const requestedPath = from?.pathname || "";
-
-    const rolePage = getRoleManagementPage(role);
-    const isBooking = requestedPath === "/booking";
-
-    const isAllowedPath =
-      role === "CUSTOMER"
-        ? requestedPath.startsWith("/customer/") ||
-          [
-            "/booking",
-            "/appointments",
-            "/cars",
-            "/account",
-            "/contact",
-            "/repair-status",
-            "/quotation",
-            "/payment",
-            "/invoices",
-            "/reviews",
-          ].includes(requestedPath)
-        : role === "ADMIN"
-          ? requestedPath.startsWith("/admin/") ||
-            requestedPath === "/admin"
-          : role === "ADVISOR"
-            ? requestedPath.startsWith("/advisor/")
-            : false;
-
-    if (isBooking && role !== "CUSTOMER") {
-      navigate(rolePage?.path || "/", { replace: true });
-      return;
-    }
-
-    if (from && isAllowedPath) {
-      navigate(
-        {
-          pathname: from.pathname || "/",
-          search: from.search || "",
-          hash: from.hash || "",
-        },
-        { replace: true },
-      );
-      return;
-    }
-
-    navigate(rolePage?.path || "/", { replace: true });
+    // Về lại đúng trang đang đứng trước khi phải đăng nhập (quy tắc chung: resolveReturnPath).
+    navigate(resolveReturnPath(role, readReturnLocation(location.state)), { replace: true });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,25 +154,13 @@ function Login() {
     return !Object.values(newErrors).some(Boolean);
   };
 
-  const sendOtpForPendingAccount = async (email: string) => {
-    setPendingEmail(email);
-
-    await fetchApi("/resend-email-otp", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
-
-    setResendCountdown(60);
-    setStep("otp");
-    showToast("Mã xác thực OTP đã được gửi đến email của bạn.", "info");
-  };
-
   const saveRememberedEmail = (email: string) => {
     if (rememberMe) {
       localStorage.setItem(REMEMBER_EMAIL_KEY, email);
     } else {
       localStorage.removeItem(REMEMBER_EMAIL_KEY);
     }
+    markAuthSession(rememberMe);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -280,178 +214,53 @@ function Login() {
       const details = getApiErrorDetails(error);
       const backendMessage = details.message || "";
       const emailErrors = details.errors?.email || [];
-      const otpErrors = details.errors?.otp || [];
 
-      if (
-        backendMessage.toLowerCase().includes("chưa xác thực") ||
-        backendMessage.toLowerCase().includes("otp") ||
-        emailErrors.some((message) =>
-          /chưa xác thực|otp/i.test(message),
-        ) ||
-        otpErrors.length > 0
-      ) {
-        try {
-          await sendOtpForPendingAccount(form.email.trim());
-        } catch (resendError: unknown) {
-          const resendDetails = getApiErrorDetails(resendError);
-          setPendingEmail(form.email.trim());
-          setStep("otp");
-          setResendCountdown(60);
-          setApiError(
-            resendDetails.message ||
-              "Không gửi được mã OTP. Vui lòng thử lại sau.",
-          );
-        }
-
+      if ([backendMessage, ...emailErrors].some((message) => /chưa xác thực/i.test(message))) {
+        setPendingEmail(form.email.trim());
         return;
       }
 
-      setApiError(
-        emailErrors[0] ||
-          backendMessage ||
-          "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.",
-      );
+      const { fields, toast } = splitApiErrors(error, { email: "email", password: "password" }, "Không thể đăng nhập. Vui lòng kiểm tra lại thông tin.");
+      // Sai thông tin đăng nhập: giữ email, đưa con trỏ về ô mật khẩu để nhập lại.
+      const invalid = toast && /Email hoặc mật khẩu không đúng/i.test(toast) ? { password: API_ERROR_MARK } : fields;
+      if (Object.keys(invalid).length) { setErrors({ email: "", password: "", ...invalid }); focusFirstInvalid(); }
+      if (toast) setApiError(toast);
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleOtpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!pendingEmail) {
-      setStep("login");
-      setApiError("Không tìm thấy email cần xác thực.");
-      return;
-    }
-
-    if (!otp || otp.length !== 6) {
-      setApiError("Vui lòng nhập đủ 6 chữ số OTP.");
-      return;
-    }
-
-    setIsLoading(true);
-    setApiError("");
-
-    try {
-      const response = await fetchApi("/verify-email-otp", {
-        method: "POST",
-        body: JSON.stringify({
-          email: pendingEmail,
-          otp,
-        }),
-      });
-
-      const finalToken = response?.token;
-      const finalAccount = response?.account || null;
-
-      if (finalAccount?.role) {
-        saveRememberedEmail(pendingEmail);
-
-        if (finalToken) {
-          localStorage.setItem("token", finalToken);
-        }
-
-        localStorage.setItem("user", JSON.stringify(finalAccount));
-        setUserRole(finalAccount.role);
-
-        showToast("Xác thực OTP thành công!", "success");
-
-        setTimeout(() => {
-          goToDashboard(finalAccount.role);
-        }, 500);
-
-        return;
-      }
-
-      setApiError("Xác thực OTP không thành công.");
-    } catch (error: unknown) {
-      const details = getApiErrorDetails(error);
-
-      setApiError(
-        details.errors?.otp?.[0] ||
-          details.message ||
-          "Mã OTP không chính xác hoặc đã hết hạn.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (!pendingEmail) {
-      setApiError("Không tìm thấy email cần gửi lại OTP.");
-      return;
-    }
-
-    if (resendCountdown > 0) return;
-
-    setIsLoading(true);
-    setApiError("");
-
-    try {
-      await fetchApi("/resend-email-otp", {
-        method: "POST",
-        body: JSON.stringify({ email: pendingEmail }),
-      });
-
-      setResendCountdown(60);
-      showToast("Mã OTP mới đã được gửi lại vào email của bạn.", "success");
-    } catch (error: unknown) {
-      const details = getApiErrorDetails(error);
-      setApiError(details.message || "Không thể gửi lại mã OTP lúc này.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fieldClass = "block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]";
-  const primaryClass = "flex min-h-14 w-full cursor-pointer items-center justify-center rounded-xl bg-[#cf2935] px-6 py-4 text-sm font-bold !font-semibold text-white transition hover:bg-[#b92430] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] disabled:cursor-not-allowed disabled:opacity-55";
 
   return (
-    <AtelierAuthLayout
-      title={step === "login" ? "Đăng nhập" : "Xác thực email"}
-      description={step === "login" ? "Vui lòng nhập địa chỉ email và mật khẩu của bạn:" : `Nhập mã OTP được gửi tới ${pendingEmail}.`}
+    <GarageAuthLayout
+      title={pendingEmail ? "Xác thực email" : "Đăng nhập"}
+      description={pendingEmail ? "Tài khoản của bạn chưa được kích hoạt." : "Vui lòng nhập địa chỉ email và mật khẩu của bạn:"}
     >
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      {apiError && <AtelierAuthError message={apiError} />}
-      {step === "login" ? (
+      <ToastError message={apiError}/>
+      {linkNotice && !pendingEmail && <p role="status" className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">{linkNotice}</p>}
+      {!pendingEmail ? (
         <>
           <form className="grid gap-4" onSubmit={handleSubmit} noValidate>
-            <AtelierField htmlFor="login-email" label="Địa chỉ email" error={errors.email}>
-              <input id="login-email" name="email" type="email" autoComplete="username" placeholder="you@example.com" value={form.email} onChange={handleChange} aria-invalid={!!errors.email} className={fieldClass} />
-            </AtelierField>
-            <AtelierField htmlFor="login-password" label="Mật khẩu" error={errors.password}>
-              <div className="relative">
-                <input id="login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Nhập mật khẩu" value={form.password} onChange={handleChange} aria-invalid={!!errors.password} className={`${fieldClass} pr-16`} />
-                <button type="button" aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"} onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-[#757575] hover:text-[#cf2935]">{showPassword ? "Ẩn" : "Hiện"}</button>
-              </div>
-            </AtelierField>
-            <div className="flex flex-wrap items-center justify-between gap-3 py-1 text-xs text-[#757575]">
-              <label htmlFor="login-remember" className="inline-flex cursor-pointer items-center gap-2.5">
+            <GarageField htmlFor="login-email" label="Địa chỉ email" error={errors.email}>
+              <input id="login-email" name="email" type="email" autoComplete="username" placeholder="you@example.com" value={form.email} onChange={handleChange} aria-invalid={!!errors.email} className={authFieldClass} />
+            </GarageField>
+            <GarageField htmlFor="login-password" label="Mật khẩu" error={errors.password}>
+              <PasswordInput id="login-password" name="password" autoFocus={!!linkedEmail} autoComplete="current-password" placeholder="Nhập mật khẩu" value={form.password} onChange={handleChange} aria-invalid={!!errors.password}/>
+            </GarageField>
+            <div className="flex flex-wrap items-center justify-between gap-3 py-1 text-xs text-cs-muted">
+              <label htmlFor="login-remember" className="inline-flex cursor-pointer items-center gap-2.5" title="Không tích: tự đăng xuất khi đóng trình duyệt (nên dùng trên máy dùng chung).">
                 <input id="login-remember" type="checkbox" checked={rememberMe} onChange={e => { setRememberMe(e.target.checked); if (!e.target.checked) localStorage.removeItem(REMEMBER_EMAIL_KEY); }} className="size-4 cursor-pointer accent-[#cf2935]" />
                 Ghi nhớ đăng nhập
               </label>
-              <Link to="/forgot-password" className="cursor-pointer font-bold hover:text-[#cf2935] hover:underline">Quên mật khẩu?</Link>
+              <Link to="/forgot-password" state={location.state} className="cursor-pointer font-bold hover:text-[#cf2935] hover:underline">Quên mật khẩu?</Link>
             </div>
-            <button type="submit" disabled={isLoading} className={primaryClass}>{isLoading ? "Đang đăng nhập..." : "Đăng nhập"}</button>
+            <button type="submit" disabled={isLoading} aria-busy={isLoading || undefined} className={authPrimaryClass}>{isLoading ? "Đang đăng nhập..." : "Đăng nhập"}</button>
           </form>
-          <p className="mt-5 mb-3 text-center text-sm text-[#757575]">Chưa có tài khoản?</p>
-          <Link to="/register" className="flex min-h-14 w-full cursor-pointer items-center justify-center rounded-xl border border-[#e9e9e6] bg-[#252525] px-6 py-4 text-sm font-bold text-white transition hover:bg-[#393939] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935]">Đăng ký</Link>
+          <p className="mt-3 text-center"><LostEmailLink/></p>
+          <AuthSwitchLink text="Chưa có tài khoản?" to="/register" label="Đăng ký ngay" state={location.state}/>
         </>
-      ) : (
-        <>
-          <form className="grid gap-4" onSubmit={handleOtpSubmit} noValidate>
-            <OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!apiError} />
-            <button type="submit" disabled={isLoading || otp.length !== 6} className={primaryClass}>{isLoading ? "Đang xác thực..." : "Xác thực email →"}</button>
-          </form>
-          <div className="mt-5 grid gap-3 text-xs text-[#757575] [&_button]:cursor-pointer [&_button]:text-left [&_button]:font-extrabold [&_button]:text-[#cf2935] [&_button:disabled]:cursor-not-allowed">
-            {resendCountdown > 0 ? <span>Gửi lại OTP sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại OTP</button>}
-            <button type="button" onClick={() => { setStep("login"); setOtp(""); setApiError(""); }}>← Quay lại đăng nhập</button>
-          </div>
-        </>
-      )}
-    </AtelierAuthLayout>
+      ) : <VerifyEmailPrompt email={pendingEmail} justSent={false} backLabel="Quay lại đăng nhập" onBack={() => { setPendingEmail(""); setApiError(""); }}/>}
+    </GarageAuthLayout>
   );
 }
 
