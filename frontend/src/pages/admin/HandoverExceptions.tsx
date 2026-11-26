@@ -41,3 +41,24 @@ function ExceptionCard({ row, onChanged }: { row: HandoverExceptionRow; onChange
   const [working, setWorking] = useState(false);
   const fieldErrors = useFieldErrors();
   const vehicle = row.handover?.vehicle;
+  const car = [vehicle?.model?.brand?.name, vehicle?.model?.name].filter(Boolean).join(" ");
+
+  async function decide(approve: boolean) {
+    if (fieldErrors.show(note.trim().length < 5 ? { note: approve ? "Ghi rõ đã đối chiếu giấy tờ thế nào (ít nhất 5 ký tự)." : "Ghi lý do từ chối (ít nhất 5 ký tự)." } : {})) return;
+    if (approve && !await confirm({
+      title: "Duyệt ngoại lệ biên bản", reference: row.handover?.repair_order?.repair_order_code ?? undefined,
+      description: "Biên bản sẽ được ghi nhận là đã xác nhận mà không có mã từ email chủ xe. Thao tác này không hoàn tác được.",
+      confirmText: "Duyệt ngoại lệ", variant: "warning", checklist: ["Đã đối chiếu CCCD với chủ xe.", "Đã đối chiếu giấy đăng ký với xe."],
+    })) return;
+    setWorking(true);
+    try {
+      await (approve ? handoverExceptionApi.approve(row.id, note.trim()) : handoverExceptionApi.reject(row.id, note.trim()));
+      notify(approve ? "Đã duyệt ngoại lệ." : "Đã từ chối yêu cầu.", "success");
+      onChanged();
+    } catch (err) { fieldErrors.showApi(err, { note: "note" }); }
+    finally { setWorking(false); }
+  }
+
+  return <li className="rounded-card border border-cs-border bg-cs-surface p-5 shadow-card">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="min-w-0">
