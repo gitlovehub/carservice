@@ -11,3 +11,5 @@ export function usePaged<T>(rows: T[], pageSize = 10) {
     totalPages,
     pageRows: rows.slice((current - 1) * pageSize, current * pageSize),
     pagination: { page: current, totalPages, onChange: setPage, totalItems: rows.length, pageSize },
+  };
+}
