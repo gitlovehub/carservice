@@ -53,7 +53,7 @@ export function DateInput({ value, min, max, onChange, className = "", wrapperCl
       onChange={event => type(event.target.value)}
       onBlur={event => { if (text !== toDisplay(value)) setText(toDisplay(value)); onBlur?.(event); }}
       className={`${controlClass} pr-10 tabular-nums ${className}`}/>
-    <button type="button" tabIndex={-1} disabled={disabled} onClick={openPicker} aria-label="Mở lịch chọn ngày" title="Mở lịch chọn ngày"
+    <button type="button" disabled={disabled} onClick={openPicker} aria-label="Mở lịch chọn ngày" title="Mở lịch chọn ngày"
       className="absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-md text-cs-muted transition-colors hover:bg-cs-hover hover:text-cs-text disabled:cursor-not-allowed disabled:opacity-50">
       <Icon name="calendar" size={15}/>
     </button>
