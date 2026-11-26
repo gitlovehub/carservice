@@ -92,3 +92,50 @@ export function Panel({ title, icon, action, children, className = "", bodyClass
 }
 
 /** Liên kết điều hướng chữ + mũi tên phải: cùng cỡ/font, hover gạch chân (`.cs-link-arrow`). Truyền `to` để chuyển trang hoặc `onClick` để đổi tab. */
+export function PanelLink({ to, onClick, children }: { to?: string; onClick?: () => void; children: ReactNode }) {
+  const content = <>{children}<Icon name="arrow-right" size={14}/></>;
+  return to
+    ? <Link to={to} className="cs-link-arrow">{content}</Link>
+    : <button type="button" className="cs-link-arrow" onClick={onClick}>{content}</button>;
+}
+
+/* ---------- Tab ---------- */
+export type TabItem<T extends string> = { id: T; label: string; icon?: IconName; count?: number; tone?: Tone };
+
+/** Tab gạch chân (mặc định), dạng nút phân đoạn ("segment") hoặc chip đếm theo trạng thái ("chips"). */
+export function Tabs<T extends string>({ items, value, onChange, variant = "underline", label }: {
+  items: TabItem<T>[]; value: T; onChange: (id: T) => void; variant?: "underline" | "segment" | "chips"; label: string;
+}) {
+  if (variant === "chips") return <div role="tablist" aria-label={label} className="flex flex-wrap gap-2">
+    {items.map(item => {
+      const active = item.id === value;
+      return <button key={item.id} type="button" role="tab" aria-selected={active} onClick={() => onChange(item.id)}
+        className={`inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-full border px-3.5 text-small font-medium transition-colors ${active
+          ? "border-cs-accent bg-cs-accent text-cs-accent-contrast hover:border-cs-accent-hover hover:bg-cs-accent-hover"
+          : "border-cs-border bg-cs-surface text-cs-text-2 hover:border-transparent hover:bg-cs-soft-hover hover:text-cs-on-soft"}`}>
+        {item.icon && <Icon name={item.icon} size={15}/>}
+        {item.label}
+        {item.count !== undefined && <span className={`rounded-full px-1.5 py-px text-caption font-semibold tabular-nums ${active ? "bg-white/20" : toneSoft[item.tone ?? "neutral"]}`}>{num(item.count)}</span>}
+      </button>;
+    })}
+  </div>;
+  if (variant === "segment") return <div role="tablist" aria-label={label} className="inline-flex flex-wrap gap-1 rounded-control bg-cs-surface-2 p-1">
+    {items.map(item => {
+      const active = item.id === value;
+      return <button key={item.id} type="button" role="tab" aria-selected={active} onClick={() => onChange(item.id)}
+        className={`inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-[9px] px-4 text-small font-medium transition-colors ${active
+          ? "bg-cs-surface text-cs-accent-text shadow-card hover:bg-cs-soft" : "text-cs-text-2 hover:bg-cs-soft-hover hover:text-cs-on-soft"}`}>
+        {item.icon && <Icon name={item.icon} size={16}/>}{item.label}
+        {item.count !== undefined && <span className="text-caption text-cs-muted">({item.count})</span>}
+      </button>;
+    })}
+  </div>;
+  return <div role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-cs-border">
+    {items.map(item => {
+      const active = item.id === value;
+      return <button key={item.id} type="button" role="tab" aria-selected={active} onClick={() => onChange(item.id)}
+        className={`-mb-px inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 border-b-2 px-4 text-small font-medium transition-colors ${active
+          ? "border-cs-accent text-cs-accent-text" : "border-transparent text-cs-text-2 hover:text-cs-text"}`}>
+        {item.icon && <Icon name={item.icon} size={16}/>}{item.label}
+        {item.count !== undefined && <span className="text-caption">({item.count})</span>}
+      </button>;
