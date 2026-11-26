@@ -86,3 +86,47 @@ export default function Invoices() {
     { key: "status", sortKey: "status", header: "Trạng thái", align: "right", width: "19%", render: i => <StatusBadge domain="invoice" status={i.status}/> },
   ];
   const paymentColumns: Column<AdminPayment>[] = [
+    // Mã dài (VNPAY) rút gọn trong bảng, xem đủ ở ngăn chi tiết.
+    { key: "code", sortKey: "code", header: "Mã giao dịch", primary: true, width: "19%", render: p => <b className="block truncate" title={p.code}>{p.code}</b> },
+    { key: "invoice", header: "Hoá đơn / Khách", render: p => <span className="block min-w-0"><span className="block truncate text-cs-accent-text">{p.invoice ?? "—"}</span><span className="block truncate text-caption text-cs-muted">{p.customer ?? "—"}</span></span> },
+    { key: "method", header: "Phương thức", width: "16%", render: p => <span className="inline-flex items-center gap-2 whitespace-nowrap"><Icon name={methodInfo[p.method].icon} size={16} className="text-cs-muted"/>{methodInfo[p.method].label}</span> },
+    { key: "at", sortKey: "created", header: "Thời gian", width: "12%", hideOnMobile: true, render: p => <span className="block whitespace-nowrap tabular-nums"><span className="block text-cs-text">{fmtDate(p.at)}</span><span className="block text-caption text-cs-muted">{fmtTime(p.at)}</span></span> },
+    { key: "amount", sortKey: "amount", header: "Số tiền", align: "right", width: "14%", render: p => <b className="whitespace-nowrap tabular-nums">{vnd(p.amount)}</b> },
+    { key: "status", sortKey: "status", header: "Trạng thái", align: "right", width: "18%", render: p => <StatusBadge domain="payment" status={p.status}/> },
+  ];
+
+  const pane = selectedId === null ? null : !selected
+    ? (detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact/>)
+    : <>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-subheading font-bold text-cs-accent-text">{selected.code}</span>
+        <StatusBadge domain="invoice" status={selected.status}/>
+      </div>
+      <PaneSection title="Thông tin" icon="file">
+        <InfoList items={[
+          { label: "Khách hàng", value: <b>{selected.customer ?? "—"}</b> }, { label: "Biển số", value: selected.plate ?? "—" },
+          { label: "Phiếu sửa chữa", value: selected.order_code ?? "—" }, { label: "Ngày lập", value: fmtDateTime(selected.issued_at) },
+        ]}/>
+      </PaneSection>
+      <PaneSection title="Chi tiết" icon="list">
+        <table className="w-full text-small">
+          <tbody>
+            {selected.lines.map((l, i) => <tr key={`${l.name}-${i}`} className="border-b border-cs-border last:border-0">
+              <td className="py-2 pr-2 text-cs-text">{l.name}<span className="block text-caption text-cs-muted">{l.type === "PART" ? "Phụ tùng" : "Dịch vụ"} · Số lượng {l.quantity} ×{vnd(l.price)}</span></td>
+              <td className="py-2 text-right tabular-nums">{vnd(l.amount)}</td>
+            </tr>)}
+          </tbody>
+        </table>
+        <dl className="mt-3 flex flex-col gap-1.5 rounded-control bg-cs-surface-2 p-3 text-small">
+          {selected.discount > 0 && <>
+            <div className="flex justify-between"><dt className="text-cs-muted">Tạm tính</dt><dd className="tabular-nums">{vnd(selected.subtotal)}</dd></div>
+            <div className="flex justify-between"><dt className="text-cs-muted">Giảm giá</dt><dd className="tabular-nums">−{vnd(selected.discount)}</dd></div>
+          </>}
+          <div className="flex justify-between"><dt className="text-cs-muted">Tổng cộng</dt><dd className="font-semibold tabular-nums">{vnd(selected.total)}</dd></div>
+          <div className="flex justify-between"><dt className="text-cs-muted">Đã thanh toán</dt><dd className="tabular-nums text-success-fg">{vnd(selected.paid)}</dd></div>
+          <div className="flex justify-between border-t border-cs-border pt-1.5 text-subheading"><dt>Còn lại</dt><dd className="font-bold tabular-nums text-cs-accent-text">{vnd(selected.status === "CANCELLED" ? 0 : Math.max(0, selected.total - selected.paid))}</dd></div>
+        </dl>
+      </PaneSection>
+      <PaneSection title="Lịch sử thanh toán" icon="card">
+        {selected.payments.length ? <ul className="flex flex-col gap-2 text-small">
+          {selected.payments.map(p => <li key={p.id} className="flex items-center gap-3 rounded-control border border-cs-border p-3">
