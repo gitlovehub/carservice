@@ -77,3 +77,82 @@ html[data-theme="dark"] .adv-card { backdrop-filter: blur(8px); box-shadow: 0 16
 /* PO 18/11: bỏ ảnh banner gara — đầu trang gọn theo token sáng / tối; tab vẫn gắn vào khung nội dung bên dưới. */
 .adv-page-hero { display: grid; gap: 18px; padding: 4px 2px 0; color: var(--cs-text); }
 .adv-page-hero h1 { font-size: clamp(1.35rem, 1.1rem + 0.8vw, 1.75rem); font-weight: 700; line-height: 1.2; color: var(--cs-text); }
+.adv-page-hero p { color: var(--cs-text-2); }
+.adv-page-icon {
+  display: grid; place-items: center; width: 56px; height: 56px; flex-shrink: 0; border-radius: 14px;
+  background: linear-gradient(135deg, var(--adv-gold-1), var(--adv-gold-3)); color: #1e1810;
+}
+.adv-hero-tabs { display: flex; gap: 10px; }
+.adv-hero-tab {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 22px; border-radius: 14px 14px 0 0;
+  font-weight: 600; color: var(--cs-text-2); border: 1px solid var(--cs-border); border-bottom: 0; background: var(--cs-surface); cursor: pointer;
+  transition: background-color var(--cs-duration) ease, color var(--cs-duration) ease;
+}
+.adv-hero-tab:not([aria-selected="true"]):hover { background: var(--cs-hover); color: var(--cs-text); }
+.adv-hero-tab:is([aria-selected="true"], [aria-current="page"]) { background: linear-gradient(135deg, var(--adv-gold-1), var(--adv-gold-2)); color: #1e1810; border-color: transparent; }
+.adv-hero-tab:focus-visible { outline: 2px solid var(--adv-gold-1); outline-offset: 2px; }
+.adv-page-body { margin-top: -1px; border-radius: 0 0 20px 20px; padding: 20px; }
+@media (max-width: 640px) { .adv-page-hero { padding: 0; } .adv-page-body { padding: 14px; } .adv-hero-tab { padding: 0 14px; } }
+
+.adv-stat {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; text-align: left; cursor: pointer;
+  background: var(--cs-surface); border: 1px solid var(--cs-border); transition: border-color var(--cs-duration) ease, background-color var(--cs-duration) ease;
+}
+html[data-theme="dark"] .adv-stat { background: rgb(255 255 255 / 0.03); }
+.adv-stat:hover { border-color: var(--cs-accent); background: var(--cs-hover); }
+.adv-stat[aria-pressed="true"] { border-color: var(--cs-accent); background: var(--cs-soft); box-shadow: inset 0 0 0 1px var(--cs-accent); }
+.adv-stat:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }
+.adv-stat-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 999px; }
+.adv-notice {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px; border-radius: 14px;
+  background: var(--cs-soft); border: 1px solid color-mix(in srgb, var(--cs-accent) 35%, transparent); color: var(--cs-text);
+}
+/* Tiếp nhận xe (ADV-08): thanh 4 bước + thẻ lịch trong danh sách. */
+.adv-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 10px; border-radius: 20px; background: rgb(20 16 11 / 0.92); border: 1px solid rgb(227 187 111 / 0.3); }
+.adv-step { position: relative; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 14px; border-radius: 14px; color: rgb(255 247 232 / 0.62); border: 1px solid rgb(255 255 255 / 0.06); background: rgb(255 255 255 / 0.03); }
+.adv-step b { display: block; color: #fff7e8; font-size: 14px; line-height: 1.25; }
+.adv-step small { display: block; font-size: 12px; line-height: 1.3; }
+.adv-step-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; background: rgb(255 255 255 / 0.06); color: #f2cf86; }
+.adv-step[data-state="active"] { background: linear-gradient(135deg, rgb(242 207 134 / 0.28), rgb(184 130 44 / 0.18)); border-color: rgb(242 207 134 / 0.7); color: rgb(255 247 232 / 0.85); }
+.adv-step[data-state="active"] .adv-step-icon { background: linear-gradient(135deg, #f2cf86, #b8822c); color: #1e1810; }
+.adv-step[data-state="done"] .adv-step-icon { background: rgb(62 207 122 / 0.16); color: #6ee7a8; }
+/* Tải gara 7 ngày tới: mỗi ngày một thẻ; hôm nay viền vàng, quá tải / nghỉ tông đỏ. */
+.adv-cap-day { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--cs-border); background: color-mix(in srgb, var(--cs-surface-2) 55%, transparent); }
+.adv-cap-icon { color: var(--cs-text-2); }
+.adv-cap-track { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--cs-text) 12%, transparent); overflow: hidden; }
+.adv-cap-track > span { display: block; height: 100%; border-radius: inherit; background: var(--cs-accent); }
+.adv-cap-pill { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; min-width: 52px; justify-content: center; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; background: color-mix(in srgb, var(--cs-text) 10%, transparent); color: var(--cs-text); }
+.adv-cap-day[data-state="today"] { border-color: color-mix(in srgb, var(--cs-accent) 75%, transparent); background: linear-gradient(135deg, color-mix(in srgb, var(--cs-accent) 18%, transparent), color-mix(in srgb, var(--cs-accent) 6%, transparent)); }
+.adv-cap-day[data-state="today"] .adv-cap-icon { color: var(--cs-accent-text); }
+.adv-cap-day[data-state="today"] .adv-cap-pill { background: var(--cs-accent); color: var(--cs-accent-contrast); }
+.adv-cap-day[data-state="closed"], .adv-cap-day[data-state="over"] { border-color: color-mix(in srgb, var(--cs-danger) 45%, transparent); background: color-mix(in srgb, var(--cs-danger) 10%, transparent); }
+.adv-cap-day[data-state="closed"] .adv-cap-icon, .adv-cap-day[data-state="over"] .adv-cap-icon { color: var(--cs-danger); }
+.adv-cap-day[data-state="closed"] .adv-cap-pill, .adv-cap-day[data-state="over"] .adv-cap-pill { background: color-mix(in srgb, var(--cs-danger) 18%, transparent); color: var(--cs-danger); }
+.adv-cap-day[data-state="over"] .adv-cap-track > span { background: var(--cs-danger); }
+
+/* Mũi tên chỉ hướng giữa các bước: nằm giữa khe hai ô, bước đã qua thì sáng vàng. */
+.adv-steps { column-gap: 26px; }
+.adv-step-arrow { position: absolute; top: 50%; right: -20px; z-index: 1; display: grid; place-items: center; width: 14px; height: 22px; transform: translateY(-50%); color: rgb(242 207 134 / 0.45); }
+.adv-step[data-state="done"] .adv-step-arrow { color: #f2cf86; }
+@media (max-width: 900px) {
+  .adv-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* 2 cột: ô thứ 2 ở cuối hàng, mũi tên không còn chỉ tới đâu. */
+  .adv-step:nth-child(2n) .adv-step-arrow { display: none; }
+}
+@media (max-width: 480px) { .adv-step small { display: none; } .adv-step { padding: 8px 10px; } }
+.adv-appt {
+  display: grid; gap: 8px; width: 100%; padding: 12px 14px; border-radius: 14px; text-align: left; cursor: pointer;
+  background: var(--cs-surface); border: 1px solid var(--cs-border); transition: border-color var(--cs-duration) ease, background-color var(--cs-duration) ease;
+}
+html[data-theme="dark"] .adv-appt { background: rgb(255 255 255 / 0.03); }
+.adv-appt:hover { border-color: var(--cs-accent); background: var(--cs-hover); }
+.adv-appt[aria-current="true"] { border-color: var(--cs-accent); background: var(--cs-soft); box-shadow: inset 0 0 0 1px var(--cs-accent); }
+.adv-appt:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }
+.adv-section-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--cs-text); }
+
+/* ---------- Phiếu sửa chữa (mockup PO 17/11): thẻ số liệu + danh sách thẻ + khung xem nhanh ---------- */
+.adv-ro-stats { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 1100px) { .adv-ro-stats { grid-template-columns: repeat(4, minmax(0, 1fr)) auto; align-items: stretch; } }
+.adv-ro-stat {
+  display: flex; align-items: center; gap: 16px; min-height: 92px; padding: 14px 18px; text-align: left; cursor: pointer;
+  transition: border-color var(--cs-duration) ease, box-shadow var(--cs-duration) ease;
