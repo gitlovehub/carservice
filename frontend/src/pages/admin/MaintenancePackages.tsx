@@ -86,3 +86,46 @@ export default function MaintenancePackages() {
           ]}/>        </div>
 
         {list.error ? <div className="rounded-card border border-cs-border bg-cs-surface"><ErrorState description={list.error} onRetry={list.reload}/></div>
+          : list.loading && !rows.length ? <div className="rounded-card border border-cs-border bg-cs-surface"><LoadingState/></div>
+          : !rows.length ? <div className="rounded-card border border-cs-border bg-cs-surface"><EmptyState title="Chưa có gói phù hợp" description="Đổi bộ lọc hoặc bấm “Tạo gói”."/></div>
+          : <ul className="flex flex-col gap-3" aria-busy={list.loading || undefined}>
+            {rows.map(p => {
+              const on = p.id === currentId;
+              const activeP = p.status === "ACTIVE";
+              return <li key={p.id} className={`relative rounded-card border bg-cs-surface p-4 shadow-card transition-colors ${on ? "border-cs-accent bg-cs-soft/40" : "border-cs-border hover:border-cs-border-strong"}`}>
+                <div className="flex items-start gap-3">
+                  <BrandMark p={p}/>
+                  <button type="button" aria-current={on ? "true" : undefined} onClick={() => setSelectedId(p.id)}
+                    className="min-w-0 flex-1 cursor-pointer text-left after:absolute after:inset-0 after:content-['']">
+                    <span className="block truncate text-subheading font-bold text-cs-text">{p.name}</span>
+                    <span className="block truncate text-small text-cs-muted">{modelText(p)}</span>
+                  </button>
+                  <span className="relative z-10 flex items-center gap-2">
+                    <StatusDot active={activeP}/>
+                    <Dropdown label={`Thao tác gói ${p.name}`} items={[
+                      { label: "Xem chi tiết", icon: "eye", onSelect: () => setSelectedId(p.id) },
+                      { label: "Chỉnh sửa", icon: "edit", onSelect: () => setEditing(p) },
+                      { type: "separator" },
+                      activeP ? { label: "Tạm ngừng gói", icon: "ban", danger: true, onSelect: () => void setStatusOf(p, "INACTIVE") }
+                        : { label: "Áp dụng lại", icon: "check", onSelect: () => void setStatusOf(p, "ACTIVE") },
+                    ]}/>
+                  </span>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <Meta icon="gauge">{p.mileage_milestone ? `${n(p.mileage_milestone)} km` : "—"}</Meta>
+                  <Meta icon="calendar">{p.month_milestone ? `${p.month_milestone} tháng` : "—"}</Meta>
+                  <Meta icon="wrench">{p.services.length} dịch vụ</Meta>
+                  <Meta icon="box">{p.parts.length} phụ tùng</Meta>
+                  <span className="ml-auto border-l border-cs-border pl-4 text-right">
+                    <b className="block text-subheading tabular-nums text-cs-text">{money(p.price)}</b>
+                    <span className="text-caption text-cs-muted">(Ước tính)</span>
+                  </span>
+                </div>
+              </li>;
+            })}
+          </ul>}
+        {result && result.last_page > 1 && <Pagination page={result.current_page} totalPages={result.last_page} totalItems={result.total} pageSize={result.per_page}
+          disabled={list.loading} onChange={p => { setPage(p); setSelectedId(null); }}/>}
+      </div>
+
+      <aside aria-label="Chi tiết gói" className="min-w-0 rounded-card border border-cs-border bg-cs-surface p-5 shadow-card xl:sticky xl:top-[84px]">
