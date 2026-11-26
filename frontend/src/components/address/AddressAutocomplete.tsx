@@ -62,3 +62,19 @@ export function AddressAutocomplete({ value, onChange, onSelect, label = "Địa
           else if (e.key === "ArrowUp") { e.preventDefault(); setActive(i => (i <= 0 ? items.length - 1 : i - 1)); }
           else if (e.key === "Enter" && active >= 0) { e.preventDefault(); void choose(items[active]); }
           else if (e.key === "Escape") setOpen(false);
+        }}
+      />
+    </label>
+    {loading && <p className="mt-1 text-xs text-cs-muted">Đang tìm…</p>}
+    {error && <p role="alert" className="mt-1 text-xs text-cs-danger">{error}</p>}
+    {open && <ul id={listId} role="listbox" className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-cs-border bg-cs-surface shadow-lg" data-testid="address-suggestions">
+      {items.length ? items.map((item, index) => <li key={`${item.place_id ?? item.description}-${index}`} id={`${listId}-${index}`} role="option" aria-selected={index === active}
+        className={`cursor-pointer px-3 py-2 text-sm ${index === active ? "bg-cs-soft" : "hover:bg-cs-soft"}`}
+        onMouseDown={e => { e.preventDefault(); void choose(item); }}>
+        <p className="font-semibold text-cs-text">{item.main_text}</p>
+        {item.secondary_text && <p className="text-xs text-cs-muted">{item.secondary_text}</p>}
+      </li>) : <li className="px-3 py-2 text-sm text-cs-muted">Không tìm thấy địa chỉ phù hợp.</li>}
+      <li className="border-t border-cs-border px-3 py-1 text-[10px] text-cs-muted">{items[0]?.provider === "goong" ? "Dữ liệu: Goong" : "Dữ liệu: © OpenStreetMap"}</li>
+    </ul>}
+  </div>;
+}
