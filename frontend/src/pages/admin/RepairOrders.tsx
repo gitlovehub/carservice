@@ -91,3 +91,34 @@ export default function RepairOrders() {
               <span className="min-w-0 flex-1 text-cs-text">{item.name}<ServiceStoppedTag status={item.service_status} className="ml-2"/><span className="block text-caption text-cs-muted">{workItemLabel[item.status]}{item.technician ? ` · ${item.technician}` : ""}</span></span>
               {item.price > 0 && <span className="tabular-nums text-cs-text-2">{vnd(item.price)}</span>}
             </li>)}
+          </ul>}
+      </PaneSection>
+      {selected.part_requests.length > 0 && <PaneSection title="Phụ tùng đang chờ" icon="box">
+        <ul className="flex flex-col gap-2 text-small">
+          {selected.part_requests.map(r => {
+            const overdue = r.status === "ORDERED" && !!r.eta_date && r.eta_date < new Date().toISOString().slice(0, 10);
+            const label = { REQUESTED: "Cần đặt hàng", ORDERED: overdue ? "Quá hạn" : "Đã đặt", RECEIVED: "Đã về", CANCELLED: "Đã huỷ" }[r.status];
+            const tone = r.status === "REQUESTED" ? "text-warning-fg" : overdue ? "text-danger-fg" : r.status === "RECEIVED" ? "text-success-fg" : r.status === "ORDERED" ? "text-info-fg" : "text-cs-muted";
+            return <li key={r.id} className="flex items-start gap-3">
+              <span className="min-w-0 flex-1 text-cs-text">{r.part ?? "—"} × {r.quantity}{r.unit ? ` ${r.unit}` : ""}{r.note && <span className="block text-caption text-cs-muted font-medium">{r.note}</span>}</span>
+              <span className={`whitespace-nowrap text-caption font-semibold ${tone}`}>{label}{r.eta_date && ["ORDERED"].includes(r.status) ? ` · ${fmtDate(r.eta_date)}` : ""}</span>
+            </li>;
+          })}
+        </ul>
+        <Link to="/admin/inventory?tab=orders" className="mt-3 inline-flex items-center gap-1 text-small font-semibold text-cs-accent-text hover:underline">Đặt / nhận hàng ở Phụ tùng & kho<Icon name="chevron-right" size={14}/></Link>
+      </PaneSection>}
+      <PaneSection title="Tiến trình" icon="history">
+        <ol className="relative ml-1.5 border-l-2 border-cs-border pl-5">
+          {[...selected.timeline].reverse().map((t, i) => <li key={`${t.status}-${i}`} className="relative pb-3 last:pb-0 text-small">
+            <span className={`absolute -left-[27px] top-1 size-3 rounded-full border-2 border-cs-accent ${i === 0 ? "bg-cs-accent" : "bg-cs-surface"}`}/>
+            <p className="font-semibold text-cs-text">{getStatus("repair", t.status, "staff").label}</p>
+            <p className="text-caption text-cs-muted">{fmtDateTime(t.at)} · {t.by}</p>
+            {t.note && <p className="text-caption text-cs-text-2 font-medium">{t.note}</p>}
+          </li>)}
+        </ol>
+      </PaneSection>
+    </>;
+
+  return <AdminPage title="Phiếu sửa chữa" description="Theo dõi toàn bộ xe trong xưởng: đang ở bước nào, ai phụ trách" demo={false}>
+    <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard icon="car" tone="brand" label="Xe trong xưởng" value={summary?.in_shop ?? "—"}/>
