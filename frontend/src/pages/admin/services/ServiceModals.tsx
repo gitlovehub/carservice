@@ -43,3 +43,48 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
   // Định dạng lại làm con trỏ nhảy về cuối, nên đặt lại đúng vị trí theo số chữ số đứng trước nó.
   const changePrice = (input: HTMLInputElement) => {
     const digitsBefore = priceDigits(input.value.slice(0, input.selectionStart ?? input.value.length)).length;
+    const digits = priceDigits(input.value);
+    set({ base_price: digits });
+    requestAnimationFrame(() => {
+      const shown = groupPrice(digits);
+      let caret = 0;
+      for (let seen = 0; caret < shown.length && seen < digitsBefore; caret++) if (shown[caret] !== ".") seen++;
+      input.setSelectionRange(caret, caret);
+    });
+  };
+
+  // Ảnh minh họa: chọn file → xem trước → tải lên sau khi lưu thông tin dịch vụ.
+  const [savedImage, setSavedImage] = useState<string | null>(service?.image_url ?? null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const imagePreview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile]);
+  // Giải phóng URL xem trước khi đổi ảnh / đóng form.
+  useEffect(() => () => { if (imagePreview) URL.revokeObjectURL(imagePreview); }, [imagePreview]);
+
+  const pickImage = (input: HTMLInputElement) => {
+    const file = input.files?.[0];
+    if (!file) return;
+    setError("");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { fieldErrors.mark({ image: "Chỉ nhận ảnh JPG, PNG hoặc WebP." }); input.value = ""; return; }
+    if (file.size > 4 * 1024 * 1024) { fieldErrors.mark({ image: "Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn." }); input.value = ""; return; }
+    fieldErrors.clear("image"); setImageFile(file);
+  };
+
+  const removeSavedImage = async () => {
+    if (!service || !savedImage) return;
+    setSaving(true); setError("");
+    try {
+      const res = await catalogAdminApi.deleteServiceImage(service.id);
+      setSavedImage(null);
+      notify(res.message, "success");
+      onSaved(res.data);
+    } catch (e) {
+      fieldErrors.showApi(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const dirty = !!imageFile || JSON.stringify(form) !== JSON.stringify(initialForm);
+  const blockers = [
+    ...(form.name.trim() ? [] : ["nhập tên dịch vụ"]),
+    ...(form.base_price === "" ? ["nhập giá cơ bản"] : []),
