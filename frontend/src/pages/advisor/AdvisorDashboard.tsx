@@ -218,3 +218,56 @@ function DashboardBody({ data, name }: { data: Data; name: string }) {
             </button>)}
           </div>
           <span className="pb-2.5">{seeAll("/advisor/appointments")}</span>
+        </header>
+        <div className="pt-2" role="tabpanel">
+          <AppointmentRows tab={tab} items={data[appointmentTabs.find(t => t.id === tab)!.key]}/>
+        </div>
+      </section>
+
+      <div className="adv-area-side grid min-w-0 gap-5">
+        <Panel title="Phiếu đang mở theo bước" action={seeAll("/advisor/service-orders")}>
+          <div className="px-5 pb-5 pt-2">
+            {openOrders === 0 ? <EmptyState compact icon="clipboard" title="Không có phiếu đang mở"/>
+              : <DonutChart size="lg" title="Phiếu sửa chữa đang mở theo bước" centerValue={openOrders} centerLabel="phiếu đang mở"
+                segments={data.stages.map((s, i) => ({ label: s.label, value: s.value, color: `var(--adv-stage-${i + 1})` }))}/>}
+          </div>
+        </Panel>
+        <Panel title="Cần xử lý" icon="check" action={seeAll("/advisor/service-orders")}>
+          <ul className="space-y-0.5 px-2 pb-3">
+            {todo.parts_ready > 0 && <TodoRow to="/advisor/repair-progress?filter=parts" icon="box" label="Phụ tùng đã về đủ — tiếp tục sửa" count={todo.parts_ready} highlight/>}
+            <TodoRow to="/advisor/reception" icon="calendar" label="Lịch chờ xác nhận với khách" count={todo.pending_appointments}/>
+            <TodoRow to="/advisor/reception" icon="car" label="Đã xác nhận hôm nay, chờ xe đến" count={todo.confirmed_today}/>
+            <TodoRow to="/advisor/service-orders?group=intake" icon="clipboard" label="Xe mới nhận — lập biên bản, kiểm tra" count={todo.received}/>
+            <TodoRow to="/advisor/service-orders?status=QUOTING" icon="receipt" label="Lập báo giá" count={todo.quoting}/>
+            <TodoRow to="/advisor/quotations?status=sent" icon="clock" label="Chờ khách duyệt báo giá" count={todo.waiting_approval}/>
+            <TodoRow to="/advisor/repair-progress?filter=parts" icon="box" label="Chờ phụ tùng về" count={todo.waiting_parts}/>
+            <TodoRow to="/advisor/service-orders?group=deliver" icon="cash" label="Thu tiền & bàn giao xe" count={todo.ready_delivery}/>
+          </ul>
+        </Panel>
+        <CustomerUpdates now={now}/>
+      </div>
+
+      <Panel title="Phiếu sửa chữa gần đây" icon="history" action={seeAll("/advisor/service-orders")} className="adv-area-recent">
+        {data.recent_orders.length ? <ul className="space-y-0.5 px-2 pb-3">
+          {data.recent_orders.map(o => <li key={o.id}><Link to={`/advisor/service-orders/${o.id}`} className="flex items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-cs-hover">
+            <VehicleBrandLogo brand={o.brand} size={32}/>
+            <span className="min-w-0 flex-1"><b className="block truncate text-small text-cs-text">{o.code}</b><span className="block truncate text-caption text-cs-muted">{o.customer || "Khách hàng"} · {o.plate || "xxx.xx"}</span></span>
+            <StatusBadge domain="repair" status={o.status}/>
+          </Link></li>)}
+        </ul> : <EmptyState compact icon="clipboard" title="Chưa có phiếu sửa chữa"/>}
+      </Panel>
+    </div>
+  </>;
+}
+
+export default function AdvisorDashboard() {
+  const session = useAuthSession();
+  const name = getUserDisplayName(session.status === "authenticated" ? session.account : null);
+  const query = useAdminQuery("advisor-dashboard", signal => advisorDashboardApi(signal));
+  const data = query.data ?? query.stale;
+  return <div className="page-container adv-dash">
+    {!data && query.loading ? <LoadingState label="Đang tải tổng quan..."/>
+      : !data ? <ErrorState description={query.error || "Không tải được tổng quan."} onRetry={query.reload}/>
+      : <DashboardBody data={data} name={name}/>}
+  </div>;
+}
