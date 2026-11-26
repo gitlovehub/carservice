@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTheme } from "../contexts/theme";
+import { LABELS } from "../config/labels";
+import { Icon } from "./ui/Icon";
 import {
   getRoleManagementPage,
   getUserDisplayName,
@@ -16,6 +19,7 @@ const getInitials = (name?: string) => {
 function RoleAccountMenu() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
   
   const [user, setUser] = useState(() => {
     try {
@@ -55,8 +59,8 @@ function RoleAccountMenu() {
         onClick={() => setOpen(!open)}
         className={`flex cursor-pointer items-center gap-3 rounded-xl border px-2.5 py-2 transition sm:px-3 ${
           open
-            ? "border-[#D6A85F] bg-[#F7F7F5]"
-            : "border-[#E1E4E6] bg-white hover:border-[#D6A85F] hover:bg-[#F7F7F5]"
+            ? "border-[#D6A85F] bg-cs-bg"
+            : "border-[#E1E4E6] bg-white hover:border-[#D6A85F] hover:bg-cs-bg"
         }`}
       >
         {user?.avatar ? (
@@ -66,23 +70,23 @@ function RoleAccountMenu() {
             className="h-8 w-8 shrink-0 rounded-full object-cover border border-[#D6A85F]/50 shadow-xs"
           />
         ) : (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F2933] text-[9px] font-bold text-[#D6A85F]">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F2933] text-[11px] font-bold text-[#D6A85F]">
             {getInitials(getUserDisplayName(user))}
           </div>
         )}
 
         <div className="hidden min-w-0 text-left sm:block">
-          <p className="max-w-[120px] truncate text-[11px] font-semibold text-[#20252B]">
+          <p className="max-w-[120px] truncate text-[12px] font-semibold text-[#20252B]">
             {getUserDisplayName(user)}
           </p>
 
-          <p className="mt-0.5 text-[10px] text-[#8A949E]">
+          <p className="mt-0.5 text-[11px] text-cs-muted">
             {user?.role || "Khách hàng"}
           </p>
         </div>
 
         <span
-          className={`hidden text-[11px] text-[#8A949E] transition sm:block ${
+          className={`hidden text-[12px] text-cs-muted transition sm:block ${
             open ? "rotate-180" : ""
           }`}
         >
@@ -93,7 +97,7 @@ function RoleAccountMenu() {
       {open && (
         <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[280px] overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white shadow-[0_16px_40px_rgba(31,41,51,0.12)]">
           <div className="border-b border-[#E1E4E6] px-4 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8A949E]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-cs-muted">
               TÀI KHOẢN
             </p>
           </div>
@@ -105,19 +109,19 @@ function RoleAccountMenu() {
               className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                 location.pathname === "/"
                   ? "bg-[#F3E8D2]"
-                  : "hover:bg-[#F7F7F5]"
+                  : "hover:bg-cs-bg"
               }`}
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D6A85F] text-[12px] text-[#3A3020]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D6A85F] text-[13px] text-[#3A3020]">
                 ⌂
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Trang chủ
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Trở về trang chính
                 </p>
               </div>
@@ -129,19 +133,19 @@ function RoleAccountMenu() {
               className={`mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                 location.pathname === "/account"
                   ? "bg-[#F3E8D2]"
-                  : "hover:bg-[#F7F7F5]"
+                  : "hover:bg-cs-bg"
               }`}
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3E8D2] text-[12px] text-[#3A3020]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3E8D2] text-[13px] text-[#3A3020]">
                 ◉
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Thông tin tài khoản
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Xem thông tin tài khoản
                 </p>
               </div>
@@ -154,7 +158,7 @@ function RoleAccountMenu() {
                 className={`mt-1 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                   location.pathname === managementPage.path
                     ? "bg-[#F3E8D2]"
-                    : "hover:bg-[#F7F7F5]"
+                    : "hover:bg-cs-bg"
                 }`}
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1F2933] text-[13px] text-white">
@@ -162,11 +166,11 @@ function RoleAccountMenu() {
                 </span>
 
                 <div>
-                  <p className="text-[12px] font-semibold text-[#20252B]">
+                  <p className="text-[13px] font-semibold text-[#20252B]">
                     {managementPage.label}
                   </p>
 
-                  <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                  <p className="mt-0.5 text-[11px] text-cs-muted">
                     {user?.role === "CUSTOMER"
                       ? "Lịch sử bảo dưỡng & theo dõi xe"
                       : "Quay lại khu vực làm việc"}
@@ -181,7 +185,7 @@ function RoleAccountMenu() {
               className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                 location.pathname === "/booking"
                   ? "bg-[#F3E8D2]"
-                  : "hover:bg-[#F7F7F5]"
+                  : "hover:bg-cs-bg"
               }`}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3E8D2] text-[13px] text-[#3A3020]">
@@ -189,11 +193,11 @@ function RoleAccountMenu() {
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Đặt lịch
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Tạo lịch hẹn mới
                 </p>
               </div>
@@ -205,7 +209,7 @@ function RoleAccountMenu() {
               className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                 location.pathname === "/customer/appointments"
                   ? "bg-[#F3E8D2]"
-                  : "hover:bg-[#F7F7F5]"
+                  : "hover:bg-cs-bg"
               }`}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3E8D2] text-[13px] text-[#3A3020]">
@@ -213,11 +217,11 @@ function RoleAccountMenu() {
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Lịch hẹn
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Theo dõi lịch hẹn
                 </p>
               </div>
@@ -229,7 +233,7 @@ function RoleAccountMenu() {
               className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                 location.pathname === "/customer/cars"
                   ? "bg-[#F3E8D2]"
-                  : "hover:bg-[#F7F7F5]"
+                  : "hover:bg-cs-bg"
               }`}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3E8D2] text-[13px] text-[#3A3020]">
@@ -237,11 +241,11 @@ function RoleAccountMenu() {
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Xe của tôi
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Quản lý phương tiện
                 </p>
               </div>
@@ -253,19 +257,37 @@ function RoleAccountMenu() {
           <div className="border-t border-[#E1E4E6] p-2">
             <button
               type="button"
-              onClick={handleLogout}
-              className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-[#F7F7F5]"
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? LABELS.theme.toLight : LABELS.theme.toDark}
+              className="mb-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-cs-bg"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3F4F2] text-[13px] text-[#3A3020]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cs-surface-2 text-[#3A3020]">
+                <Icon name={theme === "dark" ? "sun" : "moon"} size={16}/>
+              </span>
+              <div>
+                <p className="text-[13px] font-semibold text-[#20252B]">
+                  {theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}
+                </p>
+                <p className="mt-0.5 text-[11px] text-cs-muted">
+                  Chuyển chế độ hiển thị
+                </p>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-cs-bg"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cs-surface-2 text-[13px] text-[#3A3020]">
                 ↪
               </span>
 
               <div>
-                <p className="text-[12px] font-semibold text-[#20252B]">
+                <p className="text-[13px] font-semibold text-[#20252B]">
                   Đăng xuất
                 </p>
 
-                <p className="mt-0.5 text-[10px] text-[#8A949E]">
+                <p className="mt-0.5 text-[11px] text-cs-muted">
                   Thoát khỏi tài khoản
                 </p>
               </div>
