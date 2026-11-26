@@ -146,3 +146,53 @@ function PeriodPanels({ report }: { report: ReportData }) {
     </div>
   </>;
 }
+
+function TrendTile({ label, kpi, invert = false }: { label: string; kpi: Kpi | null; invert?: boolean }) {
+  const delta = kpi?.delta ?? null;
+  const good = delta === null || delta === 0 ? null : invert ? delta < 0 : delta > 0;
+  const tone = good === null ? "bg-cs-surface-2 text-cs-muted" : good ? "bg-success-soft text-success-fg" : "bg-danger-soft text-danger-fg";
+  return <div className={`rounded-control px-3 py-2.5 text-center ${tone}`}>
+    <dd className="inline-flex items-center gap-1 text-small font-bold tabular-nums">
+      {delta !== null && delta !== 0 && <Icon name={delta > 0 ? "trend-up" : "trend-down"} size={14}/>}
+      {delta === null ? "—" : `${delta > 0 ? "+" : ""}${num(delta)}%`}
+    </dd>
+    <dt className="mt-0.5 truncate text-caption text-cs-text-2">{label}</dt>
+  </div>;
+}
+
+function UpcomingPanel({ data }: { data: DashboardData }) {
+  return <Panel title="Lịch hẹn sắp tới" icon="calendar" action={<PanelLink to="/admin/appointments">Xem tất cả</PanelLink>} bodyClassName="!pt-3">
+    {data.upcoming_appointments.length === 0
+      ? <EmptyState compact icon="calendar" title="Chưa có lịch hẹn sắp tới"/>
+      : <div className="overflow-x-auto rounded-control border border-cs-border">
+        <table className="w-full min-w-[720px] text-small">
+          <caption className="sr-only">Lịch hẹn sắp tới</caption>
+          <thead className="bg-cs-surface-2 text-left text-cs-text-2"><tr>
+            {["Thời gian", "Khách hàng", "Xe / Biển số", "Dịch vụ"].map(h => <th key={h} scope="col" className="whitespace-nowrap px-3 py-2.5 font-semibold">{h}</th>)}
+            <th scope="col" className="px-3 py-2.5 text-right font-semibold">Trạng thái</th>
+          </tr></thead>
+          <tbody className="divide-y divide-cs-border">{data.upcoming_appointments.map(a => <tr key={a.id} className="text-cs-text">
+            <td className="whitespace-nowrap px-3 py-2.5 tabular-nums"><b>{a.start}</b><span className="text-cs-muted"> - {slotDate(a.date)}</span></td>
+            <td className="max-w-40 truncate px-3 py-2.5 font-medium">{a.customer ?? "Khách hàng"}</td>
+            <td className="max-w-52 truncate px-3 py-2.5 text-cs-text-2">{a.vehicle || "Xe chưa rõ"} · {a.plate ?? "xxx.xx"}</td>
+            <td className="max-w-44 truncate px-3 py-2.5 text-cs-text-2" title={a.services || undefined}>{a.services || "Kiểm tra theo mô tả"}</td>
+            <td className="whitespace-nowrap px-3 py-2.5 text-right"><StatusBadge domain="appointment" status={a.status}/></td>
+          </tr>)}</tbody>
+        </table>
+      </div>}
+  </Panel>;
+}
+
+function TasksPanel({ data }: { data: DashboardData }) {
+  const tasks: Array<{ icon: IconName; tone: Tone; label: string; count: number; to: string }> = [
+    { icon: "calendar", tone: "info", label: "Lịch hẹn chờ xác nhận", count: data.attention.pending_appointments, to: "/admin/appointments" },
+    { icon: "dollar", tone: "warning", label: "Báo giá chờ khách duyệt", count: data.repair_status.quoting, to: "/admin/repair-orders" },
+    { icon: "box", tone: "violet", label: "Xe chờ phụ tùng", count: data.repair_status.waiting_parts, to: "/admin/repair-orders" },
+    { icon: "invoice", tone: "danger", label: "Hoá đơn chưa thu đủ", count: data.kpis.unpaid_invoices.value, to: "/admin/invoices" },
+    { icon: "star", tone: "neutral", label: "Đánh giá thấp chưa phản hồi", count: data.attention.low_reviews_unreplied, to: "/admin/reviews" },
+  ];
+  const sorted = [...tasks].sort((a, b) => Number(b.count > 0) - Number(a.count > 0));
+  return <Panel title="Việc cần xử lý" icon="clipboard" subtitle={tasks.some(t => t.count) ? `${tasks.filter(t => t.count).length} nhóm việc đang chờ` : "Không có việc tồn đọng"} bodyClassName="!pt-3">
+    <ul className="flex flex-col gap-2">{sorted.map(task => <li key={task.label}>
+      <Link to={task.to} className={`group flex items-center gap-3 rounded-control border border-cs-border px-3 py-2 no-underline transition-colors hover:bg-cs-hover ${task.count ? "" : "opacity-60"}`}>
+        <span className={`grid size-9 shrink-0 place-items-center rounded-control ${toneSoft[task.tone]}`}><Icon name={task.icon} size={17}/></span>
