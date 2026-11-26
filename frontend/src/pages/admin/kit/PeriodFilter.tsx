@@ -201,3 +201,52 @@ export function PeriodFilter({ period, allowAll = true, allowFuture = false }: {
         </div>
         <div className="grid min-h-0 flex-1 overflow-y-auto sm:grid-cols-[11rem_minmax(0,1fr)]">
           <div className="border-cs-border p-3 max-sm:border-b sm:border-r">
+            <p className="mb-1.5 px-3 text-small font-semibold">Chọn nhanh</p>
+            <ul className="grid gap-0.5 max-sm:grid-cols-2">
+              {quickRanges(draft.unit).map(q => {
+                const active = !draft.all && !draft.custom && draft.from === q.range.from && draft.to === q.range.to;
+                return <li key={q.label}><button type="button" className={quickClass(active)}
+                  onClick={() => setDraft({ ...draft, ...q.range, all: false, picking: false, custom: false, cursor: parseDay(q.range.to) })}>
+                  {q.label}{active && <Icon name="check" size={14}/>}
+                </button></li>;
+              })}
+              <li><button type="button" className={quickClass(draft.custom)} onClick={() => setDraft({ ...draft, from: draft.from || today, to: draft.to || today, all: false, picking: false, custom: true })}>
+                Tùy chỉnh{draft.custom && <Icon name="check" size={14}/>}
+              </button></li>
+              {allowAll && <li><button type="button" className={quickClass(draft.all)} onClick={() => setDraft({ ...draft, from: "", to: "", all: true, picking: false, custom: false })}>
+                Tất cả thời gian{draft.all && <Icon name="check" size={14}/>}
+              </button></li>}
+            </ul>
+          </div>
+          <div className="min-w-0 p-3">
+            {draft.custom ? <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Từ ngày" required><DateInput value={draft.from} max={maxDay} onChange={e => setDraft({ ...draft, from: e.target.value })}/></Field>
+              <Field label="Đến ngày" required error={reversed ? "Đến ngày phải từ ngày bắt đầu trở đi." : undefined}><DateInput value={draft.to} max={maxDay} onChange={e => setDraft({ ...draft, to: e.target.value })}/></Field>
+            </div> : <>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-small font-semibold">{PICK_TITLE[draft.unit]}</p>
+                <span className="inline-flex items-center gap-1">
+                  <IconButton icon="chevron-left" size="sm" label="Trang trước" onClick={() => moveCursor(-1)}/>
+                  <b className="min-w-24 text-center text-small tabular-nums">{cursorLabel()}</b>
+                  <IconButton icon="chevron-right" size="sm" label="Trang sau" onClick={() => moveCursor(1)}/>
+                </span>
+              </div>
+              {picker()}
+            </>}
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-cs-border p-3">
+          <p className="min-w-0 text-small text-cs-text-2">
+            <span className="text-cs-muted">Đang chọn: </span><b className="tabular-nums text-cs-text">{selection}</b>
+            {draft.picking && <span className="block text-caption text-cs-muted">Bấm thêm một ô để chọn nhiều kỳ liên tiếp.</span>}
+          </p>
+          <span className="ml-auto inline-flex gap-2">
+            <Button size="sm" onClick={() => close()}>Huỷ</Button>
+            <Button size="sm" variant="primary" icon="check" disabled={!canApply} onClick={apply}>Áp dụng</Button>
+          </span>
+        </div>
+      </div>,
+      document.body,
+    )}
+  </>;
+}
