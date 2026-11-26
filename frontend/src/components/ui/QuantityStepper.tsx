@@ -21,9 +21,11 @@ export function QuantityStepper({ value, onChange, label, min = 1, max = 999, st
   const setText = setDraft;
   const clamp = (n: number) => Math.min(max, Math.max(min, Math.round(n)));
   const bump = (dir: 1 | -1) => {
-    const base = value ?? (dir > 0 ? min - step : min);
+    const digits = draft?.replace(/\D/g, "") ?? "";
+    const base = digits ? clamp(Number(digits)) : (draft !== null ? (dir > 0 ? min - step : min) : value ?? (dir > 0 ? min - step : min));
     // Nhảy về bội số của bước (ví dụ 12.345 km + → 13.000 km).
     const next = dir > 0 ? Math.floor(base / step) * step + step : Math.ceil(base / step) * step - step;
+    setDraft(null);
     onChange(clamp(next));
   };
   const commit = (raw: string) => {
@@ -42,6 +44,7 @@ export function QuantityStepper({ value, onChange, label, min = 1, max = 999, st
       <input id={id} type="text" inputMode="numeric" aria-label={label} aria-invalid={hasError || undefined} value={text} placeholder={placeholder} disabled={disabled}
         onChange={e => setText(e.target.value.replace(/[^\d.]/g, ""))} onBlur={e => commit(e.target.value)}
         onKeyDown={e => {
+          if (e.key === "Escape") { e.preventDefault(); setDraft(null); }
           if (e.key === "Enter") commit((e.target as HTMLInputElement).value);
           if (e.key === "ArrowUp") { e.preventDefault(); bump(1); }
           if (e.key === "ArrowDown") { e.preventDefault(); bump(-1); }

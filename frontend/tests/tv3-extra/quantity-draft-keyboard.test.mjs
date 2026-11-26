@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {component,nodes} from './component-harness.mjs';
+const changes=[],drafts=[];
+const {QuantityStepper}=component('src/components/ui/QuantityStepper.tsx',{react:{useState:()=>['12.345',x=>drafts.push(x)]},'./fieldContext':{useFieldControl:()=>null},'./Icon':{Icon:()=>null}});
+const tree=QuantityStepper({value:1000,step:1000,max:2000000,label:'ODO',onChange:x=>changes.push(x)});
+const input=nodes(tree,n=>n.type==='input')[0].props;
+let prevented=0;
+input.onKeyDown({key:'ArrowUp',preventDefault:()=>prevented++});
+assert.deepEqual(changes,[13000]);assert.deepEqual(drafts,[null]);
+input.onKeyDown({key:'Escape',preventDefault:()=>prevented++});
+assert.deepEqual(changes,[13000]);assert.deepEqual(drafts,[null,null]);assert.equal(prevented,2);
