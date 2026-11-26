@@ -235,3 +235,82 @@ html[data-theme="dark"] .adv-ro-doc-icon { color: var(--adv-gold-1); }
 .adv-veh-row:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }
 .adv-veh-row-open { border-color: var(--adv-gold-2); background: color-mix(in srgb, var(--adv-gold-1) 18%, transparent); }
 @media (max-width: 900px) { .adv-veh-row { flex-wrap: wrap; } .adv-veh-row > .w-36, .adv-veh-row > .w-40 { width: auto; } }
+
+/* Khách hàng: không có trang chi tiết riêng → khung chi tiết luôn hiện (màn hẹp nằm dưới danh sách). */
+.adv-ro-preview-always { display: block; }
+.adv-tier { color: var(--cs-muted); }
+.adv-tier[data-tier="LOYAL"] { background: color-mix(in srgb, var(--adv-gold-1) 30%, transparent); border-color: color-mix(in srgb, var(--adv-gold-2) 55%, transparent); color: var(--adv-gold-3); }
+html[data-theme="dark"] .adv-tier[data-tier="LOYAL"] { color: var(--adv-gold-1); }
+.adv-tier[data-tier="RETURNING"] { color: var(--cs-info-fg); }
+
+/* Thanh toán: 4 thẻ phương thức (radio). */
+/* Luôn 2 cột (PO 20/11): 4 cột thì chữ "Chuyển khoản", "Thẻ ngân hàng" bị xuống dòng. */
+.adv-pay-methods { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.adv-pay-method {
+  display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 14px; border-radius: 12px; cursor: pointer; text-align: left;
+  border: 1px solid var(--cs-border); background: var(--cs-surface); color: var(--cs-text); font-size: 14px; font-weight: 600;
+  transition: border-color var(--cs-duration) ease, background-color var(--cs-duration) ease;
+}
+.adv-pay-method:hover { border-color: var(--cs-accent); }
+.adv-pay-method[aria-checked="true"] { border: 2px solid var(--adv-gold-2); background: color-mix(in srgb, var(--adv-gold-1) 22%, transparent); }
+.adv-pay-method:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }
+.adv-pay-radio { display: grid; place-items: center; width: 20px; height: 20px; flex-shrink: 0; border-radius: 999px; border: 2px solid var(--cs-border-strong); }
+.adv-pay-method[aria-checked="true"] .adv-pay-radio { border-color: var(--adv-gold-3); }
+.adv-pay-method[aria-checked="true"] .adv-pay-radio::after { content: ""; width: 10px; height: 10px; border-radius: 999px; background: var(--adv-gold-3); }
+
+/* Checklist kiểm tra sau sửa chữa: ô tick xanh như mockup. */
+.adv-check {
+  appearance: none; display: grid; place-items: center; flex-shrink: 0; width: 22px; height: 22px; margin: 0; border-radius: 6px; cursor: pointer;
+  border: 2px solid var(--cs-border-strong); background: var(--cs-surface); transition: background-color var(--cs-duration) ease, border-color var(--cs-duration) ease;
+}
+.adv-check:checked { background: #22a565; border-color: #22a565; }
+/* shell.css:163 đặt `background: initial !important` cho mọi checkbox ở theme tối — cần độ đặc hiệu cao hơn. */
+html[data-theme="dark"] .cs-workspace input[type="checkbox"].adv-check { background: var(--cs-surface) !important; border-color: var(--cs-border-strong) !important; }
+html[data-theme="dark"] .cs-workspace input[type="checkbox"].adv-check:checked { background: #22a565 !important; border-color: #22a565 !important; }
+.adv-check:checked::after { content: ""; width: 6px; height: 11px; margin-top: -2px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+.adv-check:disabled { cursor: default; }
+.adv-check:disabled:not(:checked) { opacity: 0.55; }
+.adv-check:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }
+
+/* Phụ tùng (cố vấn, chỉ xem — D-020) */
+.adv-ro-stat-icon[data-tone="warning"] { background: linear-gradient(135deg, #f6b24a, #d9771a); color: #fff; }
+.adv-parts-layout { display: grid; gap: 20px; align-items: start; }
+@media (min-width: 1280px) { .adv-parts-layout { grid-template-columns: minmax(0, 1fr) minmax(340px, 420px); } }
+.adv-parts-preview { min-width: 0; }
+@media (min-width: 1280px) { .adv-parts-preview { position: sticky; top: 16px; } }
+.adv-parts-tabs { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 12px 0; }
+.adv-parts-tabs .adv-ro-tab { flex: 1 1 auto; padding: 0 16px; border-radius: 12px 12px 0 0; }
+@media (max-width: 760px) { .adv-parts-tabs .adv-ro-tab { flex-basis: calc(50% - 4px); border-radius: 12px; } }
+/* Hàng lọc: tìm kiếm rộng hơn, các ô chọn co theo nội dung; điện thoại xếp dọc. */
+.adv-parts-filters { display: grid; gap: 8px; align-items: center; }
+.adv-parts-filters > :is(select, div) { min-width: 0; }
+@media (min-width: 640px) { .adv-parts-filters { grid-template-columns: minmax(0, 1.5fr) repeat(auto-fit, minmax(150px, 1fr)); } }
+.adv-parts-filters:has(> select:only-child) { grid-template-columns: minmax(0, 320px); }
+.adv-parts-row { cursor: pointer; transition: background-color var(--cs-duration) ease; }
+.adv-parts-row:hover { background: var(--cs-hover); }
+.adv-parts-row[aria-selected="true"] { background: color-mix(in srgb, var(--adv-gold-1) 22%, transparent); box-shadow: inset 3px 0 0 var(--adv-gold-2); }
+.adv-parts-row:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: -2px; }
+
+/* Tiến độ sửa chữa */
+@media (min-width: 1100px) { .adv-ro-stats-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.adv-ro-tabs-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1500px) { .adv-ro-tabs-5 .adv-ro-tab { font-size: 13px; padding: 0 6px; gap: 6px; } }
+@media (max-width: 760px) { .adv-ro-tabs-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.adv-prog-top { display: grid; gap: 12px; }
+@media (min-width: 900px) { .adv-prog-top { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); } }
+.adv-prog-top > .adv-ro-vehicle { padding: 14px 16px; }
+.adv-bar { position: relative; flex: 1; min-width: 60px; height: 8px; border-radius: 999px; background: var(--cs-border); overflow: hidden; }
+.adv-bar > span { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, var(--adv-gold-2), #e8892b); }
+.adv-bar > span[data-full] { background: #22a565; }
+.adv-vtrack { display: grid; }
+.adv-vtrack > li { position: relative; display: flex; gap: 12px; padding: 8px 10px 14px; border-radius: 12px; }
+.adv-vtrack > li::before { content: ""; position: absolute; left: 23px; top: 38px; bottom: -6px; width: 2px; background: var(--cs-border); }
+.adv-vtrack > li:last-child::before { display: none; }
+.adv-vtrack > li[data-state="done"]::before { background: #22a565; }
+.adv-vtrack > li[data-state="active"] { background: color-mix(in srgb, var(--adv-gold-1) 22%, transparent); }
+.adv-vtrack b { display: block; font-size: 14px; color: var(--cs-text); }
+.adv-vtrack li[data-state="todo"] b { color: var(--cs-text-2); font-weight: 600; }
+.adv-vtrack small { display: block; font-size: 12px; color: var(--cs-text-2); }
+.adv-vtrack > li .adv-track-dot { flex-shrink: 0; }
+.adv-vtrack > li[data-state="done"] .adv-track-dot { background: #22a565; border-color: #22a565; color: #fff; }
+.adv-vtrack > li[data-state="active"] .adv-track-dot { background: var(--cs-surface); border: 3px solid var(--adv-gold-2); }
