@@ -30,3 +30,18 @@ export function AddressAutocomplete({ value, onChange, onSelect, label = "Địa
         .catch((err: unknown) => { if (!controller.signal.aborted) setError(userErrorMessage(err, "Không tải được gợi ý.")); })
         .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     }, 300);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [value]);
+
+  async function choose(item: AddressSuggestion) {
+    skipNext.current = true;
+    setOpen(false);
+    onChange(item.main_text);
+    let latitude = item.latitude ?? null;
+    let longitude = item.longitude ?? null;
+    if ((latitude === null || longitude === null) && item.provider === "goong" && item.place_id) {
+      const place = await garageApi.place(item.place_id).catch(() => null);
+      latitude = place?.latitude ?? null; longitude = place?.longitude ?? null;
+    }
+    onSelect({ ...item, latitude, longitude });
+  }
