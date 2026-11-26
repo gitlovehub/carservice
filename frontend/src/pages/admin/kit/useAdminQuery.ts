@@ -61,3 +61,24 @@ export function useAdminQuery<T>(key: string | null, load: (signal: AbortSignal)
         .catch(() => undefined);
     };
     window.addEventListener(LIVE_EVENT, refresh);
+    const timer = live ? window.setInterval(refresh, live) : undefined;
+    return () => {
+      window.removeEventListener(LIVE_EVENT, refresh);
+      window.clearInterval(timer);
+      controller?.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestKey, live]);
+
+  useEffect(() => {
+    if (requestKey === null) return;
+    const controller = new AbortController();
+    const slot = key === null ? null : cacheSlot(key);
+    load(controller.signal)
+      .then(data => {
+        if (!controller.signal.aborted) remember(slot, data);
+        setState({ key: requestKey, data, error: "" });
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        if (slot) queryCache.delete(slot.id);
