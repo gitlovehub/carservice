@@ -76,3 +76,29 @@ export function rangeLabel(range: DayRange, now = new Date()): string {
 }
 
 /** Các lựa chọn nhanh của từng tab. */
+export function quickRanges(unit: PeriodUnit, now = new Date()): Array<{ label: string; range: DayRange }> {
+  const today = isoDay(now);
+  const back = (u: PeriodUnit, steps: number) => {
+    let current = unitRange(u, today);
+    for (let i = 0; i < steps; i++) current = shiftRange(current, -1);
+    return current;
+  };
+  const recent = (u: PeriodUnit, count: number) => ({ from: back(u, count - 1).from, to: unitRange(u, today).to });
+  switch (unit) {
+    case "week": return [{ label: "Tuần này", range: back("week", 0) }, { label: "Tuần trước", range: back("week", 1) }, { label: "4 tuần gần đây", range: recent("week", 4) }];
+    case "month": return [{ label: "Tháng này", range: back("month", 0) }, { label: "Tháng trước", range: back("month", 1) }, { label: "3 tháng gần đây", range: recent("month", 3) }, { label: "6 tháng gần đây", range: recent("month", 6) }];
+    case "quarter": return [{ label: "Quý này", range: back("quarter", 0) }, { label: "Quý trước", range: back("quarter", 1) }];
+    case "year": return [{ label: "Năm nay", range: back("year", 0) }, { label: "Năm trước", range: back("year", 1) }, { label: "3 năm gần đây", range: recent("year", 3) }];
+    default: return [
+      { label: "Hôm nay", range: { from: today, to: today } }, { label: "Hôm qua", range: { from: addDays(today, -1), to: addDays(today, -1) } },
+      { label: "7 ngày qua", range: { from: addDays(today, -6), to: today } }, { label: "30 ngày qua", range: { from: addDays(today, -29), to: today } },
+    ];
+  }
+}
+
+/** Đổi lựa chọn kỳ thành khoảng ngày gửi API (`date_from`, `date_to`). Tùy chỉnh chọn ngược thì tự đảo lại. */
+export function periodRange({ preset, from, to }: PeriodValue, now = new Date()): PeriodRange {
+  const today = isoDay(now);
+  const send = (range: DayRange) => ({ date_from: range.from, date_to: range.to });
+  switch (preset) {
+    case "today": return send({ from: today, to: today });
