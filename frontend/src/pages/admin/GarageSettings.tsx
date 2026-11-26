@@ -85,3 +85,24 @@ function GarageSettingsForm() {
             province: parts.at(-1) ?? current.province, district: parts.at(-2) ?? current.district, ward: parts.length >= 3 ? parts.at(-3) ?? current.ward : current.ward,
           }));
         }}
+      />
+      <FieldError className="mt-1">{fieldErrors.errors.address_line}</FieldError>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="block text-xs font-semibold text-cs-muted">Phường / Xã<input className={field} maxLength={120} value={form.ward ?? ""} aria-invalid={!!fieldErrors.errors.ward || undefined} onChange={e => patchField({ ward: e.target.value })}/><FieldError className="mt-1">{fieldErrors.errors.ward}</FieldError></label>
+        <label className="block text-xs font-semibold text-cs-muted">Quận / Huyện<input className={field} maxLength={120} value={form.district ?? ""} aria-invalid={!!fieldErrors.errors.district || undefined} onChange={e => patchField({ district: e.target.value })}/><FieldError className="mt-1">{fieldErrors.errors.district}</FieldError></label>
+        <label className="block text-xs font-semibold text-cs-muted">Tỉnh / Thành phố<input className={field} maxLength={120} value={form.province ?? ""} aria-invalid={!!fieldErrors.errors.province || undefined} onChange={e => patchField({ province: e.target.value })}/><FieldError className="mt-1">{fieldErrors.errors.province}</FieldError></label>
+      </div>
+      <p className="text-xs text-cs-muted" data-testid="garage-coords">{hasCoords
+        ? <>Vị trí: {form.latitude?.toFixed(6)}, {form.longitude?.toFixed(6)} · <a className="underline" target="_blank" rel="noreferrer" href={`https://www.openstreetmap.org/?mlat=${form.latitude}&mlon=${form.longitude}#map=18/${form.latitude}/${form.longitude}`}>Xem trên bản đồ</a></>
+        : "Chưa có vị trí — chọn một địa chỉ từ gợi ý để lấy tọa độ."}</p>
+      </fieldset>
+      {editing
+        ? <div className="flex flex-wrap gap-2">
+          <Button type="button" disabled={saving} onClick={cancel}>Huỷ</Button>
+          <Button type="submit" variant="primary" icon="check" loading={saving}>Lưu thông tin gara</Button>
+        </div>
+        : <Button key="edit" type="button" variant="outline" icon="edit" onClick={() => setEditing(true)}>Sửa</Button>}
+    </form>
+  </main>;
+}
