@@ -13,16 +13,16 @@ import {
 import { userErrorMessage } from "../../services/apiError";
 
 /** "5 phút trước", "Hôm qua"… — xem nhanh dễ hơn ngày giờ đầy đủ (ngày đầy đủ ở tooltip). */
-function relativeTime(value: string | null): string {
+export function relativeTime(value: string | null, now = Date.now()): string {
   if (!value) return '';
   const date = new Date(value);
-  const minutes = Math.round((Date.now() - date.getTime()) / 60000);
+  const minutes = Math.floor((now - date.getTime()) / 60000);
   if (Number.isNaN(minutes)) return '';
   if (minutes < 1) return 'Vừa xong';
   if (minutes < 60) return `${minutes} phút trước`;
-  const hours = Math.round(minutes / 60);
+  const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} giờ trước`;
-  const days = Math.round(hours / 24);
+  const days = Math.floor(hours / 24);
   if (days === 1) return 'Hôm qua';
   if (days < 7) return `${days} ngày trước`;
   return date.toLocaleDateString('vi-VN');
