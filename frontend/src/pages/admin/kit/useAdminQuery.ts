@@ -40,3 +40,24 @@ function remember(slot: CacheSlot | null, data: unknown) {
  */
 export function useAdminQuery<T>(key: string | null, load: (signal: AbortSignal) => Promise<T>, options?: { live?: number }) {
   const [state, setState] = useState<State<T>>({ key: "", data: null, error: "" });
+  const [attempt, setAttempt] = useState(0);
+  const requestKey = key === null ? null : `${key}#${attempt}`;
+  const live = options?.live ?? 0;
+
+  // Làm mới ngầm: khi server báo dữ liệu đổi (liveSync — mọi trang), và thêm theo chu kỳ `live` nếu có.
+  useEffect(() => {
+    if (requestKey === null) return;
+    let controller: AbortController | null = null;
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      controller?.abort();
+      const current = controller = new AbortController();
+      const slot = key === null ? null : cacheSlot(key);
+      load(current.signal)
+        .then(data => {
+          if (!current.signal.aborted) remember(slot, data);
+          setState(prev => prev.key === requestKey ? { key: requestKey, data, error: "" } : prev);
+        })
+        .catch(() => undefined);
+    };
+    window.addEventListener(LIVE_EVENT, refresh);
