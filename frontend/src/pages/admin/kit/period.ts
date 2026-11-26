@@ -24,3 +24,29 @@ export function unitRange(unit: PeriodUnit, iso: string): DayRange {
   const y = date.getFullYear(), m = date.getMonth(), d = date.getDate();
   switch (unit) {
     case "week": { const monday = d - ((date.getDay() + 6) % 7); return span(new Date(y, m, monday), new Date(y, m, monday + 6)); }
+    case "month": return span(new Date(y, m, 1), new Date(y, m + 1, 0));
+    case "quarter": { const first = m - (m % 3); return span(new Date(y, first, 1), new Date(y, first + 3, 0)); }
+    case "year": return span(new Date(y, 0, 1), new Date(y, 11, 31));
+    default: return { from: iso, to: iso };
+  }
+}
+
+/** Nhận ra khoảng ngày đang là tuần, tháng, quý hay năm trọn vẹn để mở đúng tab và đặt nhãn. */
+export function detectUnit({ from, to }: DayRange): PeriodUnit {
+  const start = parseDay(from);
+  if (start.getDate() === 1 && parseDay(addDays(to, 1)).getDate() === 1) {
+    const months = monthCount(from, to);
+    if (start.getMonth() === 0 && months % 12 === 0) return "year";
+    if (start.getMonth() % 3 === 0 && months % 3 === 0) return "quarter";
+    return "month";
+  }
+  return start.getDay() === 1 && dayCount(from, to) % 7 === 0 ? "week" : "day";
+}
+
+/** Dịch cả khoảng sang kỳ trước / sau có cùng độ dài. */
+export function shiftRange(range: DayRange, direction: -1 | 1): DayRange {
+  const unit = detectUnit(range);
+  if (unit === "day" || unit === "week") {
+    const days = dayCount(range.from, range.to) * direction;
+    return { from: addDays(range.from, days), to: addDays(range.to, days) };
+  }
