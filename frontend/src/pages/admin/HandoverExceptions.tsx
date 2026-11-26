@@ -62,3 +62,24 @@ function ExceptionCard({ row, onChanged }: { row: HandoverExceptionRow; onChange
   return <li className="rounded-card border border-cs-border bg-cs-surface p-5 shadow-card">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
+        <p className="font-bold text-cs-text">{row.handover?.repair_order?.repair_order_code ?? "—"} <span className="font-normal text-cs-muted">· Biên bản {row.handover?.type === "CHECK_OUT" ? "trả xe" : "nhận xe"}</span></p>
+        <p className="text-small text-cs-text-2">{[car, vehicle?.license_plate || "xxx.xx"].filter(Boolean).join(" · ")} · Chủ xe {row.handover?.repair_order?.customer?.full_name ?? "—"} {row.handover?.repair_order?.customer?.phone ?? ""}</p>
+        <p className="text-caption text-cs-muted">Lập bởi {person(row.requested_by)} · {fmtDateTime(row.created_at)}</p>
+      </div>
+      <Badge tone={STATUS[row.status].tone}>{STATUS[row.status].label}</Badge>
+    </div>
+    <p className="mt-3 rounded-control bg-cs-surface-2 px-3 py-2 text-small text-cs-text-2"><b className="text-cs-text">Lý do:</b> <span className="font-medium">{row.reason}</span></p>
+    {row.documents_available
+      ? <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <DocumentPreview id={row.id} kind="id-document" label="CCCD của chủ xe"/>
+        <DocumentPreview id={row.id} kind="registration" label="Giấy đăng ký xe"/>
+      </div>
+      : <p className="mt-3 rounded-control border border-dashed border-cs-border px-3 py-2 text-small text-cs-muted">Ảnh giấy tờ đã tự xóa sau 90 ngày kể từ khi xử lý.</p>}
+    {row.status !== "PENDING" && row.documents_available && <p className="mt-2 text-caption text-cs-muted">Ảnh giấy tờ sẽ tự xóa sau 90 ngày kể từ khi xử lý.</p>}
+    {row.status === "PENDING"
+      ? <div className="mt-4 space-y-3">
+        <Field label="Ghi chú của admin" required error={fieldErrors.errors.note}><Textarea rows={2} maxLength={1000} value={note} placeholder="VD: Đã đối chiếu CCCD và giấy đăng ký, khớp với chủ xe" onChange={e => { setNote(e.target.value); fieldErrors.clear("note"); }}/></Field>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button variant="danger-outline" icon="x" disabled={working} onClick={() => void decide(false)}>Từ chối</Button>
+          <Button variant="primary" icon="check" loading={working} onClick={() => void decide(true)}>Duyệt ngoại lệ</Button>
+        </div>
