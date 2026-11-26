@@ -122,3 +122,33 @@ export function CategoryDrawer({ open, categories, icons, total, uncategorized, 
       </div>
     </fieldset>
     <div className="rounded-control bg-cs-surface-2 p-3">
+      <p className="mb-2 text-caption font-medium text-cs-muted">Xem trước</p>
+      <div className="flex flex-wrap items-center gap-4">
+        <span className="flex items-center gap-2.5 rounded-control bg-cs-soft px-3 py-2 text-small font-semibold text-cs-accent-text">
+          <Icon name={editing.icon as IconName} size={18}/>{editing.name.trim() || "Tên danh mục"}
+        </span>
+        <Pill tone={CATEGORY_TONE[editing.icon] ?? "neutral"}>{editing.name.trim() || "Tên danh mục"}</Pill>
+      </div>
+    </div>
+    {current && current.services_count > 0 && <p className="text-caption text-cs-muted">Danh mục còn dịch vụ — chuyển dịch vụ sang danh mục khác trước khi xoá.</p>}
+    <ToastError message={error}/>
+  </div>;
+
+  const footer = editing
+    ? <>
+      {current && <Button variant="danger-outline" icon="trash" className="mr-auto" disabled={current.services_count > 0 || busy !== null} loading={busy === "delete"} onClick={() => void remove()}>Xoá</Button>}
+      <Button disabled={busy !== null} onClick={back}>Huỷ</Button>
+      <Button variant="primary" icon={isNew ? "plus" : "check"} disabled={(!isNew && !dirty) || busy !== null} loading={busy === "save"} loadingText="Đang lưu..."
+        onClick={() => void save()}>{isNew ? "Thêm danh mục" : "Lưu thay đổi"}</Button>
+    </>
+    : <>
+      <Button variant="outline" icon="plus" className="mr-auto" onClick={() => edit(null)}>Thêm danh mục</Button>
+      <Button onClick={onClose}>Đóng</Button>
+    </>;
+
+  return <Drawer open={open} onClose={() => { setEditing(null); onClose(); }} dismissible={busy === null} width="md"
+    title="Danh mục dịch vụ" description={editing ? "Đổi tên hoặc icon — icon hiện trên từng dòng dịch vụ và trang đặt lịch." : "Bấm “Xem dịch vụ” để lọc bảng, bấm biểu tượng bút để sửa."}
+    footer={footer}>
+    {editing ? form : list}
+  </Drawer>;
+}
