@@ -5,3 +5,6 @@ export function usePaged<T>(rows: T[], pageSize = 10) {
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const current = Math.min(page, totalPages);
+  return {
+    page: current,
+    setPage,
