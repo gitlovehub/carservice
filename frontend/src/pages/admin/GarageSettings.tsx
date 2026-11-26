@@ -64,3 +64,24 @@ function GarageSettingsForm() {
   const hasCoords = form.latitude != null && form.longitude != null;
   return <main className="page-container">
     <PageHeader title="Thông tin gara" description="Tên, liên hệ và địa chỉ gara. Bấm “Sửa” để chỉnh, gõ địa chỉ rồi chọn từ gợi ý để có vị trí chính xác trên bản đồ."/>
+    <form noValidate className="max-w-3xl space-y-4 rounded-2xl border border-cs-border bg-cs-surface p-5" onSubmit={event => void save(event)} data-testid="garage-settings">
+      <fieldset disabled={!editing || saving} className="m-0 min-w-0 space-y-4 border-0 p-0">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="block text-xs font-semibold text-cs-muted sm:col-span-1">Tên gara<input className={field} required maxLength={150} value={form.name} aria-invalid={!!fieldErrors.errors.name || undefined} onChange={e => patchField({ name: e.target.value })}/><FieldError className="mt-1">{fieldErrors.errors.name}</FieldError></label>
+        <label className="block text-xs font-semibold text-cs-muted">Số điện thoại<input className={field} inputMode="tel" maxLength={30} value={form.phone ?? ""} aria-invalid={!!fieldErrors.errors.phone || undefined} onChange={e => patchField({ phone: e.target.value })}/><FieldError className="mt-1">{fieldErrors.errors.phone}</FieldError></label>
+        <label className="block text-xs font-semibold text-cs-muted">Email<input className={field} type="email" maxLength={150} value={form.email ?? ""} aria-invalid={!!fieldErrors.errors.email || undefined} onChange={e => patchField({ email: e.target.value })}/><FieldError className="mt-1">{fieldErrors.errors.email}</FieldError></label>
+      </div>
+      <div role="group" aria-label="Địa chỉ gara" aria-invalid={!!fieldErrors.errors.address_line || undefined} className={fieldErrors.errors.address_line ? "rounded-xl border border-danger p-3" : undefined}>
+      <AddressAutocomplete
+        label="Địa chỉ (số nhà, đường)" required value={form.address_line ?? ""}
+        onChange={text => patchField({ address_line: text, latitude: null, longitude: null, place_id: null, place_provider: null })}
+        onSelect={item => {
+          // Tách phần phụ "Phường, Quận, Tỉnh" từ gợi ý để điền sẵn; Admin vẫn sửa được.
+          const parts = item.secondary_text.split(",").map(part => part.trim()).filter(Boolean);
+          fieldErrors.clear("address_line");
+          setForm(current => ({
+            ...current, address_line: item.main_text, latitude: item.latitude, longitude: item.longitude,
+            place_id: item.place_id ?? null, place_provider: item.provider,
+            province: parts.at(-1) ?? current.province, district: parts.at(-2) ?? current.district, ward: parts.length >= 3 ? parts.at(-3) ?? current.ward : current.ward,
+          }));
+        }}
