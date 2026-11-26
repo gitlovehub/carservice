@@ -130,3 +130,47 @@ export default function Invoices() {
       <PaneSection title="Lịch sử thanh toán" icon="card">
         {selected.payments.length ? <ul className="flex flex-col gap-2 text-small">
           {selected.payments.map(p => <li key={p.id} className="flex items-center gap-3 rounded-control border border-cs-border p-3">
+            <Icon name={methodInfo[p.method].icon} size={18} className="text-cs-muted"/>
+            <span className="min-w-0 flex-1"><b>{methodInfo[p.method].label}</b><span className="block text-caption text-cs-muted">{p.code} · {fmtDateTime(p.at)}</span></span>
+            <span className="text-right"><b className="tabular-nums">{vnd(p.amount)}</b><span className="mt-0.5 block"><StatusBadge domain="payment" status={p.status}/></span></span>
+          </li>)}
+        </ul> : <p className="text-small text-cs-muted">Chưa có giao dịch.</p>}
+      </PaneSection>
+    </>;
+
+  return <AdminPage title="Hoá đơn & thanh toán" description="Tra cứu hoá đơn, công nợ và giao dịch (tiền mặt, chuyển khoản, thẻ, ví điện tử, VNPAY)" demo={false}
+    actions={<Button variant="outline" icon="download" loading={exporting} loadingText="Đang xuất..." onClick={() => void exportCsv()}>Xuất Excel (CSV)</Button>}>
+    <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard icon="coins" tone="success" label="Tổng đã thu" value={summary ? vnd(summary.collected) : "—"}/>
+      <StatCard icon="invoice" tone="warning" label="Hoá đơn còn nợ" value={summary?.open ?? "—"}/>
+      <StatCard icon="alert" tone="danger" label="Công nợ còn lại" value={summary ? vnd(summary.debt) : "—"}/>
+      <StatCard icon="receipt" tone="neutral" label="Tổng số hoá đơn" value={summary?.total ?? "—"}/>
+    </div>
+    <div className="mb-4"><Tabs label="Chế độ xem" variant="segment" value={view} onChange={setView} items={[
+      { id: "invoices", label: "Hoá đơn", icon: "invoice" }, { id: "payments", label: "Giao dịch", icon: "card" },
+    ]}/></div>
+    {view === "invoices" ? <>
+        <Toolbar>
+          <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm số hoá đơn, mã phiếu, khách, biển số…"/>
+          <PeriodFilter period={period}/>
+          <FilterSelect label="Trạng thái" value={status} onChange={value => { setStatus(value); setPage(1); }} options={[
+            { value: "all", label: "Tất cả" }, { value: "UNPAID", label: "Chưa thanh toán" }, { value: "PARTIALLY_PAID", label: "Thanh toán một phần" },
+            { value: "PAID", label: "Đã thanh toán" }, { value: "CANCELLED", label: "Đã huỷ" },
+          ]}/>
+          <ClearFilters active={search !== "" || status !== "all" || !period.isDefault || !invoiceSort.isDefault} onClear={() => { setSearch(""); setStatus("all"); period.reset(); invoiceSort.reset(); setPage(1); }}/>
+        </Toolbar>
+        <DataTable evenColumns minWidth="1100px" sort={invoiceSort.sort} onSort={invoiceSort.toggle} caption="Danh sách hoá đơn" columns={invoiceColumns} rows={result?.data ?? []} rowKey={i => i.id}
+          loading={invoices.loading} error={invoices.error || undefined} onRetry={invoices.reload}
+          onRowClick={i => setSelectedId(i.id)} rowClassName={i => i.id === selectedId ? "bg-cs-soft/60" : ""}          footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={invoices.loading} onChange={setPage}/>}/>
+      </>
+      : <>
+        <Toolbar>
+          <SearchInput value={search} onChange={value => { setSearch(value); setPaymentPage(1); }} placeholder="Tìm mã giao dịch, số hoá đơn…"/>
+          <PeriodFilter period={period}/>
+          <ClearFilters active={search !== "" || !period.isDefault || !paymentSort.isDefault} onClear={() => { setSearch(""); period.reset(); paymentSort.reset(); setPaymentPage(1); }}/>
+        </Toolbar>
+        <DataTable evenColumns minWidth="1100px" sort={paymentSort.sort} onSort={paymentSort.toggle} caption="Danh sách giao dịch" columns={paymentColumns} rows={paymentResult?.data ?? []} rowKey={p => p.id}
+          loading={payments.loading} error={payments.error || undefined} onRetry={payments.reload}
+          onRowClick={setSelectedPayment} rowClassName={p => p.id === selectedPayment?.id ? "bg-cs-soft/60" : ""}
+          footer={paymentResult && <Pagination page={paymentResult.meta.current_page} totalPages={paymentResult.meta.last_page} totalItems={paymentResult.meta.total} pageSize={paymentResult.meta.per_page} disabled={payments.loading} onChange={setPaymentPage}/>}/>
+      </>}
