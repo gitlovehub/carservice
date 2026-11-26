@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {component,nodes} from './component-harness.mjs';
+const IconButton=()=>null;
+const {Pagination}=component('src/components/ui/Pagination.tsx',{'../../config/labels':{LABELS:{pagination:{navigation:'Nav',previous:'Prev',next:'Next',page:'Page'}}},'./Button':{IconButton},'./buttonClass':{buttonClass:()=>''}});
+const changes=[];
+const render=disabled=>Pagination({page:3,totalPages:8,disabled,onChange:x=>changes.push(x)});
+for(const n of nodes(render(true),n=>n.type===IconButton||n.type==='button')) n.props.onClick();
+assert.deepEqual(changes,[]);
+nodes(render(false),n=>n.type===IconButton)[1].props.onClick();
+assert.deepEqual(changes,[4]);
