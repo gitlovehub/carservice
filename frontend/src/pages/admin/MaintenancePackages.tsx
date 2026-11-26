@@ -129,3 +129,46 @@ export default function MaintenancePackages() {
       </div>
 
       <aside aria-label="Chi tiết gói" className="min-w-0 rounded-card border border-cs-border bg-cs-surface p-5 shadow-card xl:sticky xl:top-[84px]">
+        {!selected ? (currentId !== null && detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/>
+          : currentId !== null ? <LoadingState compact/> : <EmptyState title="Chọn một gói để xem chi tiết"/>)
+          : <PackageDetail p={selected} onEdit={() => setEditing(selected)}/>}
+      </aside>
+    </div>
+
+    {editing !== undefined && <PackageFormModal open key={editing?.id ?? "new"} pkg={editing} brands={brands.data ?? brands.stale ?? []}
+      onClose={() => setEditing(undefined)} onSaved={saved => { setEditing(undefined); setSelectedId(saved.id); reload(); }}/>}
+  </AdminPage>;
+}
+
+function PackageDetail({ p, onEdit }: { p: AdminPackage; onEdit: () => void }) {
+  const serviceTotal = p.services.reduce((sum, s) => sum + Number(s.base_price) * (s.pivot?.quantity ?? 1), 0);
+  const partTotal = p.parts.reduce((sum, x) => sum + Number(x.sell_price) * (x.pivot?.quantity ?? 1), 0);
+  const minutes = minutesOf(p);
+  const tiles: Array<{ icon: IconName; label: string; value: string; brand?: boolean }> = [
+    { icon: "gauge", label: "Mốc km", value: p.mileage_milestone ? `${n(p.mileage_milestone)} km` : "—" },
+    { icon: "calendar", label: "Mốc tháng", value: p.month_milestone ? `${p.month_milestone} tháng` : "—" },
+    { icon: "wrench", label: "Dịch vụ", value: String(p.services.length) },
+    { icon: "box", label: "Phụ tùng", value: String(p.parts.length) },
+    { icon: "coins", label: "Tổng ước tính", value: money(p.price), brand: true },
+  ];
+  return <>
+    <header className="flex flex-wrap items-start gap-3">
+      <BrandMark p={p} size={52}/>
+      <div className="min-w-0 flex-1">
+        <h2 className="text-heading font-bold text-cs-text">{p.name}</h2>
+        <p className="text-small text-cs-muted">{modelText(p)} · Gói bảo dưỡng định kỳ{minutes ? ` · khoảng ${minutes} phút` : ""}</p>
+      </div>
+      <Button variant="outline" icon="edit" onClick={onEdit}>Chỉnh sửa</Button>
+    </header>
+    <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.5fr)]">
+      {tiles.map(t => <div key={t.label} className={`rounded-control border px-3 py-2.5 ${t.brand ? "col-span-2 border-transparent bg-cs-soft sm:col-span-1" : "border-cs-border bg-cs-surface-2"}`}>
+        <dt className={`flex items-center gap-1.5 text-caption ${t.brand ? "text-cs-accent-text" : "text-cs-muted"}`}><Icon name={t.icon} size={14}/>{t.label}</dt>
+        <dd className={`mt-1 truncate text-subheading font-bold tabular-nums ${t.brand ? "text-cs-accent-text" : "text-cs-text"}`}>{t.value}</dd>
+      </div>)}
+    </dl>
+    {p.description && <p className="mt-4 rounded-control bg-cs-surface-2 px-3 py-2.5 text-small text-cs-text-2 font-medium">{p.description}</p>}
+
+    <section className="mt-5" aria-label="Dịch vụ trong gói">
+      <h3 className="mb-2 flex items-center gap-2 border-b-2 border-cs-accent pb-2 text-subheading font-semibold text-cs-accent-text">
+        <Icon name="wrench" size={18}/>Dịch vụ trong gói ({p.services.length})<span className="ml-auto text-small font-medium text-cs-text-2">{money(serviceTotal)}</span>
+      </h3>
