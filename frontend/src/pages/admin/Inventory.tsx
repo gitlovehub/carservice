@@ -190,3 +190,67 @@ export default function Inventory() {
       return <span className="block min-w-36"><span className="mb-1 flex justify-between text-small"><b className="tabular-nums">{num(p.stock)} / {num(p.min)}</b>
         {p.requested > 0 && <span className="text-caption font-semibold text-info-fg">Chờ về {num(p.requested)}</span>}
         {p.level !== "ok" && <span className={`text-caption font-semibold ${p.level === "out" ? "text-danger-fg" : "text-warning-fg"}`}>{p.level === "out" ? "Hết hàng" : "Sắp hết"}</span>}</span>
+        <Progress value={pct} tone={p.level === "out" || p.stock / Math.max(1, p.min) < 0.5 ? "danger" : p.level === "low" ? "warning" : "success"} label={`Tồn kho ${p.name}`}/></span>;
+    } },
+    { key: "value", sortKey: "value", header: "Giá trị tồn", align: "right", hideOnMobile: true, render: p => <span className="tabular-nums">{vnd(Math.max(0, p.stock) * p.cost)}</span> },
+    { key: "updated", sortKey: "updated", header: "Cập nhật lần cuối", hideOnMobile: true, render: p => <span className="whitespace-nowrap tabular-nums text-cs-text-2">{fmtDateTime(p.updated_at)}</span> },
+  ];
+  const moveColumns: Column<StockMove>[] = [
+    { key: "at", sortKey: "created", header: "Thời gian", render: m => <span className="whitespace-nowrap tabular-nums text-cs-text-2">{fmtDateTime(m.at)}</span> },
+    { key: "type", sortKey: "type", header: "Loại", render: m => <Pill tone={moveInfo[m.type].tone}>{moveInfo[m.type].label}</Pill> },
+    { key: "part", header: "Phụ tùng", primary: true, render: m => <span><b className="text-cs-text">{m.name ?? "—"}</b><span className="block text-caption text-cs-muted">{m.sku}</span></span> },
+    { key: "qty", sortKey: "qty", header: "Số lượng", align: "right", render: m => <b className={`tabular-nums ${m.type === "IN" ? "text-success-fg" : "text-danger-fg"}`}>{m.type === "IN" ? "+" : "−"}{num(m.quantity)}{m.unit ? ` ${m.unit}` : ""}</b> },
+    { key: "ref", header: "Chứng từ", render: m => <span><span className="font-medium">{m.ref}</span>{m.note && <span className="block text-caption text-cs-muted font-medium">{m.note}</span>}</span> },
+    { key: "by", header: "Người thực hiện", hideOnMobile: true, render: m => m.by },
+  ];
+
+  const editPane = editing && <div className="flex flex-col gap-4">
+    <Field label="SKU" required error={partErrors.errors.sku} hint="Chữ, số, dấu chấm, gạch ngang."><Input value={editing.sku} maxLength={50} className="uppercase" onChange={e => patchPart({ sku: e.target.value })}/></Field>
+    <Field label="Tên phụ tùng" required error={partErrors.errors.name}><Input value={editing.name} maxLength={150} onChange={e => patchPart({ name: e.target.value })}/></Field>
+    <div className="rounded-xl border border-cs-border bg-cs-surface-2 p-3">
+      <div className="mb-3 flex items-start gap-3">
+        {imagePreview || editing.image_url ? <img src={imagePreview ?? editing.image_url ?? undefined} alt="Xem trước ảnh phụ tùng" className="h-28 w-32 rounded-lg border border-cs-border bg-cs-surface object-cover"/>
+          : <div className="grid h-28 w-32 place-items-center rounded-lg border border-dashed border-cs-border bg-cs-surface text-cs-muted"><Icon name="box" size={36}/></div>}
+        <div className="min-w-0 flex-1">
+          <p className="text-small font-semibold text-cs-text">Ảnh phụ tùng</p>
+          <p className="mt-1 text-caption text-cs-muted">JPG, PNG, WebP · tối đa 4 MB. Chọn ảnh rồi bấm Lưu thay đổi.</p>
+          {editing.image_url && !imageFile && <button type="button" className="mt-2 text-caption font-semibold text-danger-fg underline" disabled={saving} onClick={() => void removeSavedImage()}>Xóa ảnh hiện tại</button>}
+        </div>
+      </div>
+      <input aria-label="Chọn ảnh phụ tùng" aria-invalid={!!partErrors.errors.image || undefined} type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} className="block w-full cursor-pointer text-small text-cs-text file:mr-3 file:rounded-lg file:border-0 file:bg-cs-soft file:px-3 file:py-2 file:font-semibold file:text-cs-accent-text" onChange={event => {
+        const file = event.currentTarget.files?.[0];
+        if (!file) return;
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { partErrors.mark({ image: "Chỉ nhận ảnh JPG, PNG hoặc WebP." }); event.currentTarget.value = ""; return; }
+        if (file.size > 4 * 1024 * 1024) { partErrors.mark({ image: "Ảnh quá 4 MB, vui lòng chọn ảnh nhỏ hơn." }); event.currentTarget.value = ""; return; }
+        setFormError(""); partErrors.clear("image"); setImageFile(file);
+      }}/>
+      <FieldError className="mt-1">{partErrors.errors.image}</FieldError>
+    </div>
+    <div className="grid grid-cols-2 gap-3">
+      <Field label="Danh mục" error={partErrors.errors.category}><Input list="part-categories" value={editing.category ?? ""} maxLength={100} placeholder="VD: Phanh" onChange={e => patchPart({ category: e.target.value })}/></Field>
+      <datalist id="part-categories">{(result?.categories ?? []).map(c => <option key={c} value={c}/>)}</datalist>
+      <Field label="Đơn vị" required error={partErrors.errors.unit}><Select value={editing.unit} onChange={e => patchPart({ unit: e.target.value })}>{(units.includes(editing.unit) ? units : [...units, editing.unit]).map(u => <option key={u}>{u}</option>)}</Select></Field>
+      <Field label="Giá vốn (₫)" required error={partErrors.errors.cost}><Input inputMode="numeric" value={num(editing.cost)} onChange={e => { partErrors.clear("price"); patchPart({ cost: Number(e.target.value.replace(/\D/g, "")) || 0 }); }}/></Field>
+      <Field label="Giá bán (₫)" required error={partErrors.errors.price}><Input inputMode="numeric" value={num(editing.price)} onChange={e => patchPart({ price: Number(e.target.value.replace(/\D/g, "")) || 0 })}/></Field>
+      <Field label="Tồn tối thiểu" error={partErrors.errors.min}><QuantityStepper label="Tồn tối thiểu" size="md" className="w-full" min={0} max={99999} unit={editing.unit} value={editing.min} onChange={v => patchPart({ min: v ?? 0 })}/></Field>
+      <Field label="Trạng thái"><Select value={editing.status} onChange={e => setEditing({ ...editing, status: e.target.value as Editing["status"] })}><option value="ACTIVE">Đang áp dụng</option><option value="INACTIVE">Ngừng</option></Select></Field>
+    </div>
+    {editing.id > 0 && <p className="rounded-control bg-cs-surface-2 px-3 py-2 text-small text-cs-text-2">Tồn hiện tại: <b className="tabular-nums text-cs-text">{num(editing.stock)} {editing.unit}</b> — nhập / xuất ở tab Tồn kho.</p>}
+    <Field label="Mô tả" error={partErrors.errors.description} hint={`${(editing.description ?? "").length}/500`}><Textarea maxLength={500} value={editing.description ?? ""} onChange={e => patchPart({ description: e.target.value })}/></Field>
+    <div>
+      <p className="mb-2 flex items-center gap-2 text-small font-semibold text-cs-text"><Icon name="car" size={17} className="text-cs-muted"/>Xe tương thích</p>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {editing.compat.length ? editing.compat.map(c => <span key={c.id} className="inline-flex items-center gap-1 rounded-full border border-cs-border bg-cs-surface-2 py-0.5 pl-3 pr-1 text-caption text-cs-text">
+          {c.name}<button type="button" aria-label={`Bỏ ${c.name}`} onClick={() => setEditing({ ...editing, compat: editing.compat.filter(x => x.id !== c.id) })} className="grid size-5 cursor-pointer place-items-center rounded-full text-cs-muted hover:bg-cs-hover hover:text-cs-text"><Icon name="close" size={11}/></button>
+        </span>) : <span className="text-caption text-cs-muted">Dùng chung mọi dòng xe.</span>}
+      </div>
+      <VehicleSelector columns={1} value={compatPick} onChange={setCompatPick}/>
+      <Button variant="outline" icon="plus" className="mt-2" disabled={compatPick.modelId === null || editing.compat.some(c => c.id === compatPick.modelId)}
+        onClick={() => { if (compatPick.modelId !== null) { setEditing({ ...editing, compat: [...editing.compat, { id: compatPick.modelId, name: `${compatPick.brandName} ${compatPick.modelName}` }] }); setCompatPick(emptySelection); } }}>Thêm dòng xe</Button>
+    </div>
+    <ToastError message={formError}/>
+  </div>;
+
+  const selectedStockPart = partOptions.data?.data.find(p => p.id === stockForm?.partId);
+
+  return <AdminPage title="Phụ tùng & kho" description="Danh mục phụ tùng, tồn kho, nhập/xuất và cảnh báo" demo={false}
