@@ -156,3 +156,82 @@ html[data-theme="dark"] .adv-appt { background: rgb(255 255 255 / 0.03); }
 .adv-ro-stat {
   display: flex; align-items: center; gap: 16px; min-height: 92px; padding: 14px 18px; text-align: left; cursor: pointer;
   transition: border-color var(--cs-duration) ease, box-shadow var(--cs-duration) ease;
+}
+.adv-ro-stat:hover { border-color: var(--cs-accent); }
+/* Thẻ đang lọc: cùng kiểu nổi bật với ô số liệu trang Lịch hẹn (viền vàng + nền nhấn + vòng trong). */
+.adv-ro-stat[aria-pressed="true"] { border-color: var(--cs-accent); background: var(--cs-soft); box-shadow: inset 0 0 0 1px var(--cs-accent); }
+.adv-ro-stat:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }
+.adv-ro-stat-icon {
+  display: grid; place-items: center; width: 58px; height: 58px; flex-shrink: 0; border-radius: 14px; color: #1e1810;
+  background: linear-gradient(135deg, var(--adv-gold-1), var(--adv-gold-3));
+}
+.adv-ro-stat-icon[data-tone="success"] { background: linear-gradient(135deg, #34c77b, #138a4a); color: #fff; }
+@media (max-width: 640px) {
+  .adv-ro-stat { gap: 10px; min-height: 80px; padding: 12px; }
+  .adv-ro-create { min-height: 56px; }
+  .adv-ro-stat-icon { width: 42px; height: 42px; border-radius: 12px; }
+  .adv-ro-stat-icon svg { width: 20px; height: 20px; }
+}
+/* Nút tạo mới cạnh thẻ số liệu: cao bằng thẻ (kéo giãn theo hàng), bo góc như thẻ. */
+.adv-ro-create { min-height: 92px; align-self: stretch; border-radius: 18px; justify-content: center; padding: 0 24px; font-size: 1.05rem; white-space: nowrap; grid-column: 1 / -1; }
+@media (min-width: 1100px) { .adv-ro-create { grid-column: auto; } }
+
+.adv-ro-layout { display: grid; gap: 20px; align-items: start; }
+@media (min-width: 1280px) { .adv-ro-layout { grid-template-columns: minmax(340px, 430px) minmax(0, 1fr); } }
+.adv-ro-preview { display: none; min-width: 0; }
+@media (min-width: 1280px) { .adv-ro-preview { display: block; position: sticky; top: 16px; } }
+.adv-ro-list { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.adv-ro-list-head {
+  padding: 18px 20px; color: #fff7e8;
+  background: linear-gradient(120deg, rgb(20 16 11 / 0.96), rgb(58 44 24 / 0.92));
+  border-bottom: 1px solid rgb(227 187 111 / 0.35);
+}
+.adv-ro-list-head h2 { font-size: 1.15rem; font-weight: 700; color: #fff7e8; }
+.adv-ro-range {
+  display: flex; flex: 1; min-width: 0; align-items: center; gap: 10px; min-height: 40px; padding: 0 14px; border-radius: 12px; cursor: pointer;
+  border: 1px solid var(--cs-border); background: var(--cs-surface); color: var(--cs-text); font-size: 14px; font-weight: 600;
+}
+.adv-ro-range:hover { border-color: var(--cs-accent); }
+.adv-ro-range:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }
+.adv-ro-search, .adv-ro-search input { width: 100%; max-width: none; }
+.adv-ro-filter-on { border-color: var(--cs-accent) !important; color: var(--cs-accent-text) !important; background: var(--cs-soft) !important; }
+.adv-ro-item { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding: 14px 16px; }
+.adv-ro-item[aria-current="true"] { box-shadow: inset 0 0 0 1px var(--cs-accent), 0 8px 22px -16px rgb(217 163 71 / 0.9); }
+
+.adv-ro-detail { display: grid; gap: 18px; padding: 22px; }
+/* Phần tử lưới mặc định min-width: auto → chữ dài (vd. danh sách hạng mục) đẩy khung tràn ngang. */
+.adv-ro-detail > * { min-width: 0; }
+@media (max-width: 640px) { .adv-ro-detail { padding: 16px; } }
+.adv-ro-doc-icon {
+  display: grid; place-items: center; width: 64px; height: 64px; flex-shrink: 0; border-radius: 16px; color: var(--adv-gold-3);
+  background: color-mix(in srgb, var(--adv-gold-1) 30%, transparent); border: 1px solid color-mix(in srgb, var(--adv-gold-2) 40%, transparent);
+}
+html[data-theme="dark"] .adv-ro-doc-icon { color: var(--adv-gold-1); }
+.adv-ro-vehicle {
+  display: grid; gap: 16px; align-items: center; padding: 16px 18px; border-radius: 16px;
+  border: 1px solid var(--cs-border); background: var(--cs-surface-2);
+}
+@media (min-width: 900px) { .adv-ro-vehicle { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; } }
+.adv-ro-tabs { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); gap: 8px; }
+.adv-ro-tab {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 10px; border-radius: 12px; cursor: pointer;
+  border: 1px solid var(--cs-border); background: var(--cs-surface-2); color: var(--cs-text-2); font-size: 14px; font-weight: 600;
+}
+.adv-ro-tab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adv-ro-tab:hover { border-color: var(--cs-accent); color: var(--cs-text); }
+.adv-ro-tab[aria-selected="true"] { background: linear-gradient(135deg, var(--adv-gold-1), var(--adv-gold-2)); border-color: transparent; color: #1e1810; }
+.adv-ro-tab:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }
+@media (max-width: 760px) { .adv-ro-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.adv-ro-footer {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px;
+  padding: 14px 18px; border-radius: 16px; border: 1px solid var(--cs-border); background: var(--cs-surface-2);
+}
+
+/* Xe của khách hàng: hàng thông số + dòng lịch sử dịch vụ (phiếu đang sửa tô vàng). */
+.adv-veh-facts { display: grid; gap: 14px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--cs-border); background: var(--cs-surface-2); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 1800px) { .adv-veh-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.adv-veh-row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 14px; border-radius: 14px; border: 1px solid var(--cs-border); font-size: 14px; transition: border-color var(--cs-duration) ease, background-color var(--cs-duration) ease; }
+.adv-veh-row:hover { border-color: var(--cs-accent); background: var(--cs-hover); }
+.adv-veh-row:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }
+.adv-veh-row-open { border-color: var(--adv-gold-2); background: color-mix(in srgb, var(--adv-gold-1) 18%, transparent); }
+@media (max-width: 900px) { .adv-veh-row { flex-wrap: wrap; } .adv-veh-row > .w-36, .adv-veh-row > .w-40 { width: auto; } }
