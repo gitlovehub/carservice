@@ -160,3 +160,57 @@ export function ComboChart({ labels, titles, bars, line, height = 250, format = 
   const xOf = (i: number) => pad.left + slot * i + slot / 2;
   const yBar = (v: number) => pad.top + inner - (v / leftMax) * inner;
   const yLine = (v: number) => pad.top + inner - (v / rightMax) * inner;
+  const path = line.values.map((v, i) => `${i ? "L" : "M"}${xOf(i)},${yLine(v)}`).join(" ");
+  return <div ref={ref} className="relative">
+    <svg viewBox={`0 0 ${W} ${height}`} className="h-auto w-full" role="img" aria-label={title} onMouseLeave={() => setActive(null)}>
+      <defs><linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={bars.color}/><stop offset="1" stopColor={bars.color} stopOpacity="0.35"/></linearGradient></defs>
+      {[0, 1, 2, 3, 4].map(i => {
+        const y = pad.top + inner - (inner * i) / 4;
+        return <g key={i}>
+          <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="var(--cs-chart-grid)" strokeDasharray={i ? "3 4" : undefined}/>
+          <text x={pad.left - 8} y={y + 4} textAnchor="end" fontSize="11" fill="var(--cs-muted)">{format((leftMax * i) / 4)}</text>
+          <text x={W - pad.right + 8} y={y + 4} fontSize="11" fill="var(--cs-muted)">{num((rightMax * i) / 4)}</text>
+        </g>;
+      })}
+      {labels.map((label, i) => <g key={`${label}-${i}`} tabIndex={0} className="outline-none" onMouseEnter={() => setActive(i)} onFocus={() => setActive(i)} onBlur={() => setActive(null)}>
+        <rect x={pad.left + slot * i} y={pad.top} width={slot} height={inner} fill="transparent"/>
+        <rect x={xOf(i) - barW / 2} y={yBar(bars.values[i])} width={barW} height={Math.max(0, pad.top + inner - yBar(bars.values[i]))} rx="3" fill={`url(#${gradientId})`} opacity={active === null || active === i ? 1 : 0.55}/>
+        {i % every === 0 && <text x={xOf(i)} y={height - 9} textAnchor="middle" fontSize="11" fill="var(--cs-muted)">{label}</text>}
+      </g>)}
+      <path d={path} fill="none" stroke={line.color} strokeWidth="2" strokeLinejoin="round" pointerEvents="none"/>
+      {line.values.map((v, i) => <g key={i} pointerEvents="none">
+        <circle cx={xOf(i)} cy={yLine(v)} r={active === i ? 5 : 3.5} fill={line.color} stroke="var(--cs-surface)" strokeWidth="1.5"/>
+        {labels.length <= 12 && v > 0 && <text x={xOf(i)} y={yLine(v) - 9} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--cs-text)">{num(v)}</text>}
+      </g>)}
+    </svg>
+    {active !== null && <Tooltip x={(xOf(active) / W) * 100} y={(Math.min(yBar(bars.values[active]), yLine(line.values[active])) / height) * 100 - 2}>
+      <p className="mb-1 font-semibold">{titles?.[active] ?? labels[active]}</p>
+      <p className="flex items-center gap-1.5"><span className="size-2 rounded-sm" style={{ background: bars.color }}/>{bars.label}: <b className="ml-auto tabular-nums">{format(bars.values[active])}</b></p>
+      <p className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: line.color }}/>{line.label}: <b className="ml-auto tabular-nums">{num(line.values[active])}</b></p>
+    </Tooltip>}
+  </div>;
+}
+
+/** Hai đường cong so sánh kỳ này với kỳ trước. */
+export function CompareChart({ current, previous, height = 120, format = num, title }: {
+  current: Series; previous: Series; height?: number; format?: (v: number) => string; title: string;
+}) {
+  const [active, setActive] = useState<number | null>(null);
+  const { ref, width: W } = useWidth();
+  const gradientId = `cs-compare-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  const count = Math.max(current.values.length, previous.values.length, 2);
+  const max = niceMax(Math.max(...current.values, ...previous.values, 0));
+  const pad = 6;
+  const step = (W - pad * 2) / (count - 1);
+  const xOf = (i: number) => pad + step * i;
+  const yOf = (v: number) => pad + (height - pad * 2) * (1 - v / max);
+  const curve = (values: number[]) => values.map((v, i) => {
+    if (!i) return `M${xOf(0)},${yOf(v)}`;
+    const mid = (xOf(i - 1) + xOf(i)) / 2;
+    return `C${mid},${yOf(values[i - 1])} ${mid},${yOf(v)} ${xOf(i)},${yOf(v)}`;
+  }).join(" ");
+  const last = current.values.length - 1;
+  const area = last > 0 ? `${curve(current.values)} L${xOf(last)},${height - pad} L${xOf(0)},${height - pad} Z` : "";
+  const onMove = (event: MouseEvent<SVGSVGElement>) => {
+    const box = event.currentTarget.getBoundingClientRect();
+    setActive(Math.max(0, Math.min(count - 1, Math.round((((event.clientX - box.left) / box.width) * W - pad) / step))));
