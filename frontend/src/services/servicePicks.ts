@@ -14,8 +14,8 @@ const EMPTY: ServicePicks = { ids: [], symptom: "" };
 export function readServicePicks(): ServicePicks {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || "null") as (ServicePicks & { savedAt: number }) | null;
-    if (!saved || Date.now() - saved.savedAt > TTL_MS) return EMPTY;
-    return { ids: Array.isArray(saved.ids) ? saved.ids.filter(Number.isInteger) : [], symptom: typeof saved.symptom === "string" ? saved.symptom : "" };
+    if (!saved || !Number.isFinite(saved.savedAt) || saved.savedAt > Date.now() || Date.now() - saved.savedAt > TTL_MS) return EMPTY;
+    return { ids: Array.isArray(saved.ids) ? [...new Set(saved.ids.filter(id => Number.isSafeInteger(id) && id > 0))] : [], symptom: typeof saved.symptom === "string" ? saved.symptom : "" };
   } catch {
     return EMPTY;
   }
