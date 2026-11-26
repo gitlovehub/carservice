@@ -10,5 +10,5 @@ export function useOverlayArea(): ShellArea {
   const shell = useContext(ShellContext);
   const { pathname } = useLocation();
   if (shell) return shell;
-  return pathname.startsWith("/advisor") ? "advisor" : pathname.startsWith("/admin") ? "admin" : "customer";
+  return (pathname === "/advisor" || pathname.startsWith("/advisor/")) ? "advisor" : (pathname === "/admin" || pathname.startsWith("/admin/")) ? "admin" : "customer";
 }
