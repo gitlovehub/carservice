@@ -689,36 +689,70 @@ export function HandoverEditor({ order, handover, type, onClose, onChanged }: {
     })) return;
     setWorking(true); setError("");
     try {
-      let current = id;
-      if (current) {
-        const { person_id_last4, ...rest } = form;
-        const keepSavedId = !person_id_last4 && form.person_relation !== "OWNER";
-        await handoverApi.update(current, keepSavedId ? rest as HandoverInput : { ...rest, person_id_last4 });
-      }
-      else { current = (await handoverApi.create(order.id, form, type)).id; setId(current); }
+      const current = await writeDraft();
       if (finish) {
         await handoverApi.submit(current);
         onClose();
         await onChanged(`Đã lưu biên bản ${noun}. Chờ chủ xe xác nhận.`);
       } else await onChanged(id ? "Đã lưu nháp biên bản." : "Đã lưu nháp. Có thể chụp / tải ảnh minh chứng ở phần Tình trạng xe.");
     } catch (err) {
-      // Lỗi từ máy chủ gắn được vào ô thì hiện dưới ô; lỗi chung mới hiện ở đầu form.
-      const serverErrors = apiFieldErrors(err);
-      if (serverErrors.photos) { notify(serverErrors.photos, "error"); setTab("condition"); }
-      const fromServer = Object.entries(serverErrors).flatMap(([key, message]): FormProblem[] => {
-        const itemNote = key.match(/^items\.(\d+)\.note$/);
-        if (itemNote) {
-          const category = form.items[Number(itemNote[1])]?.category;
-          return [{ tab: category === "EXTERIOR" || category === "INTERIOR" ? "condition" : "assets", field: `note-${itemNote[1]}`, message }];
-        }
-        const itemLabel = key.match(/^items\.(\d+)\.label$/);
-        if (itemLabel) return [{ tab: "assets", field: `item-${itemLabel[1]}`, message }];
-        return SERVER_INFO_FIELDS.includes(key) ? [{ tab: "info", field: key, message }] : [];
-      });
-      if (fromServer.length) showProblems(fromServer);
-      else if (!serverErrors.photos) notify(errorText(err), "error");
+      showSaveError(err);
     }
     finally { setWorking(false); }
+  }
+
+  /** Ghi nội dung form vào biên bản nháp (chưa có thì tạo) — trả về id biên bản. */
+  async function writeDraft(): Promise<number> {
+    if (id) {
+      const { person_id_last4, ...rest } = form;
+      const keepSavedId = !person_id_last4 && form.person_relation !== "OWNER";
+      await handoverApi.update(id, keepSavedId ? rest as HandoverInput : { ...rest, person_id_last4 });
+      return id;
+    }
+    const created = (await handoverApi.create(order.id, form, type)).id;
+    setId(created);
+    return created;
+  }
+
+  /**
+   * Chọn ảnh khi biên bản chưa lưu lần nào: tự lưu nháp để có chỗ gắn ảnh (không cần bấm "Lưu nháp").
+   * Form còn thiếu thông tin bắt buộc thì chỉ ra ô cần điền và không tải ảnh.
+   */
+  async function ensureDraftForPhotos(): Promise<number | null> {
+    if (id) return id;
+    const problems = validate(true);
+    if (problems.length) {
+      showProblems(problems);
+      notify("Điền đủ thông tin bắt buộc để hệ thống tự lưu nháp, sau đó thêm ảnh.", "warning");
+      return null;
+    }
+    setWorking(true); setError("");
+    try {
+      const created = await writeDraft();
+      await onChanged("Đã tự lưu nháp biên bản để gắn ảnh.");
+      return created;
+    } catch (err) {
+      showSaveError(err);
+      return null;
+    } finally { setWorking(false); }
+  }
+
+  /** Lỗi từ máy chủ gắn được vào ô thì hiện dưới ô; lỗi chung mới hiện ở đầu form. */
+  function showSaveError(err: unknown) {
+    const serverErrors = apiFieldErrors(err);
+    if (serverErrors.photos) { notify(serverErrors.photos, "error"); setTab("condition"); }
+    const fromServer = Object.entries(serverErrors).flatMap(([key, message]): FormProblem[] => {
+      const itemNote = key.match(/^items\.(\d+)\.note$/);
+      if (itemNote) {
+        const category = form.items[Number(itemNote[1])]?.category;
+        return [{ tab: category === "EXTERIOR" || category === "INTERIOR" ? "condition" : "assets", field: `note-${itemNote[1]}`, message }];
+      }
+      const itemLabel = key.match(/^items\.(\d+)\.label$/);
+      if (itemLabel) return [{ tab: "assets", field: `item-${itemLabel[1]}`, message }];
+      return SERVER_INFO_FIELDS.includes(key) ? [{ tab: "info", field: key, message }] : [];
+    });
+    if (fromServer.length) showProblems(fromServer);
+    else if (!serverErrors.photos) notify(errorText(err), "error");
   }
 
   const tabIndex = tabs.findIndex(t => t.id === tab);
@@ -847,8 +881,8 @@ export function HandoverEditor({ order, handover, type, onClose, onChanged }: {
           status={row.index >= 0 ? <CompareBadge before={prior} item={row.item}/> : <Badge tone="neutral">Chưa ghi</Badge>}/>; })}</ul></div>
       </section>; })}
       <Field label="Tình trạng xe khi trả" optional hint={compare.general_condition ? <>Khi nhận:<span className="font-medium text-cs-text">{compare.general_condition}</span></> : undefined}><Textarea rows={2} maxLength={2000} value={form.general_condition ?? ""} onChange={e => patch({ general_condition: e.target.value })} placeholder="VD: Xe đã rửa sạch, đèn check engine đã tắt"/></Field>
-      {id ? <PhotoUploader type="handover" id={id} title="Ảnh lúc trả xe (chọn vị trí trước khi chụp)" positions={VEHICLE_POSITIONS} positionValue={photoPosition} onPositionChange={setPhotoPosition}/>
-        : <p className="flex items-start gap-2 rounded-xl border border-dashed border-cs-border px-3 py-3 text-caption text-cs-muted"><Icon name="info" size={15} className="mt-0.5 shrink-0"/>Bấm “Lưu nháp” để chụp / tải ảnh lúc trả xe.</p>}
+      {/* Chưa lưu lần nào: chọn ảnh sẽ tự lưu nháp biên bản rồi tải ảnh lên. */}
+      <PhotoUploader type="handover" id={id} ensureId={ensureDraftForPhotos} title="Ảnh lúc trả xe (chọn vị trí trước khi chụp)" positions={VEHICLE_POSITIONS} positionValue={photoPosition} onPositionChange={setPhotoPosition}/>
     </div>}
 
     {tab === "condition" && !compare && <div className="space-y-5">
@@ -863,8 +897,8 @@ export function HandoverEditor({ order, handover, type, onClose, onChanged }: {
           </div>
           <Field label="Mô tả vị trí / vết hư hỏng" optional><Textarea rows={3} maxLength={500} value={selected?.note ?? ""} placeholder="VD: Xước 5 cm ở góc cản trước bên trái"
             onChange={e => upsert(i => i.category === "EXTERIOR" && i.position_code === position, exteriorBase(position), { note: e.target.value })}/></Field>
-          {id ? <PhotoUploader type="handover" id={id} title="Ảnh minh chứng (chọn vị trí trước khi chụp)" positions={VEHICLE_POSITIONS} positionValue={photoPosition} onPositionChange={setPhotoPosition}/>
-            : <p className="flex items-start gap-2 rounded-xl border border-dashed border-cs-border px-3 py-3 text-caption text-cs-muted"><Icon name="info" size={15} className="mt-0.5 shrink-0"/>Bấm “Lưu nháp” để chụp / tải ảnh minh chứng cho từng vị trí (dịch vụ nhanh cần đủ 4 góc).</p>}
+          {/* Chưa lưu lần nào: chọn ảnh sẽ tự lưu nháp biên bản rồi tải ảnh lên (dịch vụ nhanh cần đủ 4 góc). */}
+          <PhotoUploader type="handover" id={id} ensureId={ensureDraftForPhotos} title="Ảnh minh chứng (chọn vị trí trước khi chụp)" positions={VEHICLE_POSITIONS} positionValue={photoPosition} onPositionChange={setPhotoPosition}/>
         </div>
       </div>
       <div className="grid gap-5 md:grid-cols-2">

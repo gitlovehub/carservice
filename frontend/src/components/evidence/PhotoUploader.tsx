@@ -10,10 +10,11 @@ import { userErrorMessage } from "../../services/apiError";
 /**
  * Ảnh bằng chứng (P1B). Ảnh lưu private trên server; hiển thị bằng blob tải kèm token.
  * readOnly: chỉ xem (khách, hoặc chứng từ đã khóa).
+ * id = null (chứng từ chưa lưu): khi chọn ảnh gọi `ensureId` để tạo chứng từ (vd. tự lưu nháp biên bản) rồi mới tải ảnh lên.
  */
-export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằng chứng", positions, positionValue, onPositionChange }: {
-  type: MediaAttachableType; id: number; readOnly?: boolean; title?: string; positions?: Record<string, string>;
-  positionValue?: string; onPositionChange?: (value: string) => void;
+export function PhotoUploader({ type, id, ensureId, readOnly = false, title = "Ảnh bằng chứng", positions, positionValue, onPositionChange }: {
+  type: MediaAttachableType; id: number | null; ensureId?: () => Promise<number | null>; readOnly?: boolean; title?: string;
+  positions?: Record<string, string>; positionValue?: string; onPositionChange?: (value: string) => void;
 }) {
   const { confirm } = useAppFeedback();
   const [position, setPosition] = useState(positions ? Object.keys(positions)[0] : "");
@@ -25,9 +26,10 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
   const fileInput = useRef<HTMLInputElement>(null);
   const urlsRef = useRef<Record<number, string>>({});
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (forId: number | null = id) => {
+    if (forId === null) return;
     try {
-      const list = await mediaApi.list(type, id);
+      const list = await mediaApi.list(type, forId);
       setItems(list);
       for (const item of list) {
         if (urlsRef.current[item.id]) continue;
@@ -53,12 +55,15 @@ export function PhotoUploader({ type, id, readOnly = false, title = "Ảnh bằn
     if (!files?.length) return;
     setBusy(true); setError("");
     try {
+      // Chứng từ chưa có trên server → tạo trước (ensureId tự báo lỗi nếu chưa lưu được) rồi mới gắn ảnh.
+      const targetId = id ?? (ensureId ? await ensureId() : null);
+      if (targetId === null) return;
       for (const file of Array.from(files)) {
         const blob = await compressImage(file);
         const name = file.name.replace(/\.[^.]+$/, "") + (blob.type === "image/jpeg" ? ".jpg" : file.name.slice(file.name.lastIndexOf(".")));
-        await mediaApi.upload(type, id, blob, name, activePosition ? { position_code: activePosition } : {});
+        await mediaApi.upload(type, targetId, blob, name, activePosition ? { position_code: activePosition } : {});
       }
-      await load();
+      await load(targetId);
     } catch (err) {
       setError(userErrorMessage(err, "Không tải được ảnh lên."));
     } finally {
