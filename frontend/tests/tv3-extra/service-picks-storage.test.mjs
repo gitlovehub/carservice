@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {load,plain} from './loader.mjs';
+const store=new Map();
+const localStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)};
+const m=load('src/services/servicePicks.ts',{react:{}},{localStorage});
+const key='cs-service-picks';
+assert.deepEqual(plain(m.readServicePicks()),{ids:[],symptom:''});
+store.set(key,JSON.stringify({ids:[1,'2',3.5,4],symptom:'rung',savedAt:Date.now()}));
+assert.deepEqual(plain(m.readServicePicks()),{ids:[1,4],symptom:'rung'});
+m.syncServicePicks([4]);assert.deepEqual(plain(m.readServicePicks()),{ids:[4],symptom:'rung'});
+m.clearServicePicks();assert.equal(store.has(key),false);
+store.set(key,JSON.stringify({ids:[1],savedAt:Date.now()-8*86400000}));assert.deepEqual(plain(m.readServicePicks()),{ids:[],symptom:''});
+store.set(key,'broken json');assert.deepEqual(plain(m.readServicePicks()),{ids:[],symptom:''});
+console.log('PASS service-picks-storage');
