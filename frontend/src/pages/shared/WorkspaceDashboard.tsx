@@ -158,3 +158,56 @@ const adminTiles: Array<{ to: string; label: string; hint: string; icon: IconNam
   { to: "/admin/services", label: "Dịch vụ & gói", hint: "Danh mục, giá dịch vụ và gói bảo dưỡng", icon: "settings" },
   { to: "/admin/inventory", label: "Kho phụ tùng", hint: "Tồn kho và nhập xuất", icon: "box" },
   { to: "/admin/accounts", label: "Tài khoản", hint: "Nhân viên và phân quyền", icon: "shield" },
+  { to: "/admin/reports", label: "Báo cáo", hint: "Doanh thu và hiệu suất", icon: "chart" },
+];
+
+/** Hàng "Tiện ích": nút icon tròn 60px, nhãn bên dưới. */
+const adminUtilities: Array<{ to: string; label: string; icon: IconName }> = [
+  { to: "/admin/appointments", label: "Lịch hẹn", icon: "calendar" },
+  { to: "/admin/inventory", label: "Nhập kho", icon: "box" },
+  { to: "/admin/working-hours", label: "Giờ làm việc", icon: "clock" },
+  { to: "/admin/maintenance-packages", label: "Gói bảo dưỡng", icon: "clipboard" },
+];
+
+export default function WorkspaceDashboard({ role }: { role: Mode }) {
+  const [reloadKey, setReloadKey] = useState(0);
+  const retry = () => setReloadKey(key => key + 1);
+  useLiveRefresh(retry); // realtime thay nút "Làm mới"
+  const today = isoToday();
+  const advisor = role === "advisor";
+
+  // Lịch hẹn — dùng chung Advisor/Admin.
+  const pending = useLoad(() => getAdvisorAppointments({ per_page: 1, status: "PENDING" }).then(totalOf), reloadKey);
+  const confirmed = useLoad(() => getAdvisorAppointments({ per_page: 1, status: "CONFIRMED" }).then(totalOf), reloadKey);
+  const todayData = useLoad(() => getAdvisorAppointments({ per_page: 50, date: today }).then(page => ({ items: getItems(page), total: totalOf(page) })), reloadKey);
+  const todayList = mapLoad(todayData, data => data.items);
+  const todayTotal = mapLoad(todayData, data => data.total);
+  // Phiếu sửa chữa — API chỉ mở cho Advisor.
+  const orderTotal = (status: string) => () => listWorkflowOrders(1, status).then(page => page.total);
+  const inProgress = useLoad(orderTotal("IN_PROGRESS"), reloadKey, advisor);
+  const completed = useLoad(orderTotal("COMPLETED"), reloadKey, advisor);
+  const quoting = useLoad(orderTotal("QUOTING"), reloadKey, advisor);
+  const waitingApproval = useLoad(orderTotal("WAITING_APPROVAL"), reloadKey, advisor);
+  const waitingParts = useLoad(orderTotal("WAITING_FOR_PARTS"), reloadKey, advisor);
+  const recentOrders = useLoad(() => listWorkflowOrders(1).then(page => page.data), reloadKey, advisor);
+
+  const dateText = new Intl.DateTimeFormat("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date());
+  const base = `/${role}`;
+
+  return <div className="page-container">
+    <PageHeader
+      eyebrow={dateText}
+      title="Tổng quan"
+      description={advisor ? "Công việc cần xử lý trong ngày: lịch hẹn, tiếp nhận xe và phiếu sửa chữa." : "Tình hình lịch hẹn và lối tắt tới các danh mục quản trị."}
+      actions={<>
+        {advisor
+          ? <Link className={buttonClass({ variant: "primary" })} to="/advisor/reception"><Icon name="car" size={16}/>Tiếp nhận xe</Link>
+          : <Link className={buttonClass({ variant: "primary" })} to="/admin/appointments"><Icon name="calendar" size={16}/>Quản lý lịch hẹn</Link>}
+      </>}
+    />
+
+    <section aria-label="Chỉ số chính" className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard label="Lịch chờ xác nhận" load={pending} hint="Cần gọi xác nhận với khách" to={`${base}/appointments`} icon="calendar" highlight/>
+      <StatCard label="Lịch hẹn hôm nay" load={todayTotal} hint="Theo ngày hẹn" to={`${base}/appointments`} icon="clock"/>
+      {advisor ? <>
+        <StatCard label="Đang sửa chữa" load={inProgress} hint="Phiếu ở trạng thái đang sửa" to="/advisor/service-orders?status=IN_PROGRESS" icon="wrench"/>
