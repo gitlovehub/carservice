@@ -127,3 +127,45 @@ function ReportBody({ data, tab, setTab }: { data: ReportData; tab: Tab; setTab:
       <Panel title="Top 5 dịch vụ" icon="star" action={<PanelLink onClick={() => setTab("services")}>Xem chi tiết</PanelLink>}>
         <RankTable head={["#", "Tên dịch vụ", "Số lượt", "Doanh thu", "Tỷ trọng"]} rows={serviceRows.slice(0, 5)} empty="Chưa có doanh thu dịch vụ trong kỳ"/>
       </Panel>
+      <Panel title="Hiệu quả thu tiền" icon="receipt" subtitle="Hoá đơn phát hành trong kỳ" action={<PanelLink to="/admin/invoices">Hoá đơn</PanelLink>}>
+        {collection.invoices.value === 0 ? <EmptyState compact icon="receipt" title="Chưa phát hành hoá đơn nào trong kỳ"/> : <>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Figure icon="invoice" label="Số hoá đơn" value={num(collection.invoices.value)}
+              sub={collection.invoices.delta === null ? "Kỳ trước chưa có" : `${collection.invoices.delta >= 0 ? "+" : ""}${num(collection.invoices.delta)}% so với kỳ trước`}/>
+            <Figure icon="coins" tone="info" label="Giá trị trung bình / hoá đơn" value={vnd(collection.average_invoice.value)}
+              sub={collection.average_invoice.delta === null ? "Kỳ trước chưa có" : `${collection.average_invoice.delta >= 0 ? "+" : ""}${num(collection.average_invoice.delta)}% so với kỳ trước`}/>
+          </div>
+          <div className="mt-3">
+            <MetricRow label="Đã thu / tổng phát hành" value={pct(collection.collection_rate)} hint={`${vnd(collection.collected)} / ${vnd(collection.billed)}`}
+              percent={collection.collection_rate ?? 0} tone={(collection.collection_rate ?? 0) >= 90 ? "success" : (collection.collection_rate ?? 0) >= 70 ? "warning" : "danger"}/>
+          </div>
+          <p className={`mt-2 flex items-center justify-between gap-3 rounded-control px-4 py-3 text-small font-semibold ${collection.outstanding > 0 ? "bg-warning-soft text-warning-fg" : "bg-success-soft text-success-fg"}`}>
+            <span>{collection.outstanding > 0 ? `Còn phải thu · ${num(collection.unpaid_invoices)} hoá đơn` : "Đã thu đủ toàn bộ hoá đơn trong kỳ"}</span>
+            {collection.outstanding > 0 && <span className="tabular-nums">{vnd(collection.outstanding)}</span>}
+          </p>
+        </>}
+      </Panel>
+    </div>
+  </>;
+}
+
+/** Tab Vận hành: nhìn chung tình hình thực tế của ga-ra trong kỳ. */
+function Operations({ data }: { data: ReportData }) {
+  const { operations: ops } = data;
+  const { appointments: apt, customers, quotations, satisfaction } = ops;
+  const stars = [5, 4, 3, 2, 1] as const;
+
+  return <>
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard icon="car" tone="brand" label={`Lượt xe tiếp nhận · ${data.label}`} value={num(ops.received.value)} delta={ops.received.delta ?? undefined}/>
+      <StatCard icon="clock" tone="info" label="Thời gian xử lý trung bình" value={ops.turnaround_hours ? duration(ops.turnaround_hours.value) : "—"}
+        delta={ops.turnaround_hours?.delta ?? undefined} invertDelta/>
+      <StatCard icon="star" tone="warning" label="Điểm hài lòng trung bình" value={satisfaction.average ? `${num(satisfaction.average.value)} / 5` : "—"} delta={satisfaction.average?.delta ?? undefined}/>
+      <StatCard icon="users" tone="success" label="Tỷ lệ khách quay lại" value={pct(customers.return_rate)}/>
+    </div>
+
+    <div className="mt-5 grid gap-5 xl:grid-cols-3">
+      <Panel title="Luồng xe" icon="wrench" subtitle={data.label} action={<PanelLink to="/admin/repair-orders">Phiếu sửa chữa</PanelLink>}>
+        <div className="grid gap-3">
+          <Figure icon="car" label="Xe đã nhận" value={num(ops.received.value)} sub={ops.received.delta === null ? undefined : `Kỳ trước: ${num(ops.received.previous)}`}/>
+          <Figure icon="check" tone="success" label="Xe đã bàn giao" value={num(ops.delivered)}/>
