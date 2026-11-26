@@ -97,3 +97,35 @@ function RequestCard({ request, stock, onChanged }: { request: AdminPartRequest;
     {request.status === "ORDERED" && <p className="mt-1 text-caption text-cs-muted">Đã đặt {fmtDateTime(request.ordered_at)}{request.supplier_note ? <> · <span className="font-medium">{request.supplier_note}</span></> : ""}</p>}
 
     <div className="mt-3 grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)]">
+      <Field label="Ngày dự kiến về" required error={fieldErrors.errors.eta}><DateInput min={today()} value={eta} onChange={e => { setEta(e.target.value); fieldErrors.clear("eta"); }}/></Field>
+      <Field label="Nhà cung cấp" error={fieldErrors.errors.supplier}><Input maxLength={1000} value={supplier} onChange={e => { setSupplier(e.target.value); fieldErrors.clear("supplier"); }} placeholder="Không bắt buộc"/></Field>
+      <Button variant="outline" icon="calendar" className="sm:col-span-2 sm:justify-self-end" disabled={working} onClick={saveOrder}>
+        {request.status === "ORDERED" ? "Cập nhật" : "Đã đặt hàng"}
+      </Button>
+    </div>
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <Button variant="success" icon="box" disabled={working} onClick={() => void receive(false)}>Hàng đã về — nhập kho</Button>
+      {stock >= request.quantity && <Button variant="ghost" size="sm" disabled={working} onClick={() => void receive(true)}>Đã có trong kho</Button>}
+      <span className="flex-1"/>
+      {cancelReason === null
+        ? <Button variant="ghost" size="sm" tone="danger" icon="x" disabled={working} onClick={() => setCancelReason("")}>Huỷ yêu cầu</Button>
+        : <span className="flex w-full flex-wrap items-start gap-2">
+          <Field label="Lý do huỷ" required error={fieldErrors.errors.reason} className="min-w-48 flex-1"><Input minLength={5} maxLength={1000} value={cancelReason} onChange={e => { setCancelReason(e.target.value); fieldErrors.clear("reason"); }} placeholder="VD: khách tự mua, ngừng sản xuất"/></Field>
+          <Button size="sm" className="mt-6" disabled={working} onClick={() => { setCancelReason(null); fieldErrors.clear("reason"); }}>Đóng</Button>
+          <Button size="sm" variant="danger-outline" icon="x" className="mt-6" disabled={working} onClick={() => cancelRequest(cancelReason)}>Huỷ yêu cầu</Button>
+        </span>}
+    </div>
+  </li>;
+}
+
+export function PartOrders({ rows, loading, error, onRetry, onChanged }: {
+  rows: AdminPartRequest[]; loading: boolean; error?: string; onRetry: () => void; onChanged: () => void;
+}) {
+  const { notify } = useAppFeedback();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [openPart, setOpenPart] = useState<number | null>(null);
+  const groups = useMemo(() => groupByPart(rows), [rows]);
+  const needle = search.trim().toLowerCase();
+  const shown = groups.filter(g => (filter === "all" || g.stage === filter)
+    && (!needle || `${g.name} ${g.sku ?? ""} ${g.requests.map(r => `${r.repair_order?.repair_order_code} ${r.repair_order?.vehicle?.license_plate}`).join(" ")}`.toLowerCase().includes(needle)));
