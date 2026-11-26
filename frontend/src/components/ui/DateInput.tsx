@@ -67,6 +67,11 @@ export function DateInput({ value, min, max, onChange, className = "", wrapperCl
 export function DateTimeInput({ value, onChange, disabled }: { value: string; onChange: (value: string) => void; disabled?: boolean }) {
   const [date, savedTime = ""] = value.split("T");
   const [time, setTime] = useState(savedTime);
+  const [lastSavedTime, setLastSavedTime] = useState(savedTime);
+  if (savedTime !== lastSavedTime) {
+    setLastSavedTime(savedTime);
+    setTime(savedTime);
+  }
   const validTime = (text: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(text);
   const typeTime = (raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 4);
