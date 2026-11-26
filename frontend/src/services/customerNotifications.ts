@@ -17,7 +17,7 @@ export async function getCustomerNotifications(limit?: number): Promise<{items: 
   const response = await fetchApi<{data: CustomerNotification[]; unread_count: number}>(`/me/notifications${limit ? `?limit=${limit}` : ""}`);
   return {
     items: Array.isArray(response?.data) ? response.data : [],
-    unreadCount: Number(response?.unread_count ?? 0),
+    unreadCount: Number.isFinite(Number(response?.unread_count)) ? Math.max(0, Math.floor(Number(response?.unread_count))) : 0,
   };
 }
 
