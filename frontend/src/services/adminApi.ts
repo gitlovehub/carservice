@@ -183,3 +183,49 @@ export const adminApi = {
   dashboard: (range: string, signal?: AbortSignal) => fetchApi<{ data: DashboardData }>(`/admin/dashboard${query({ range })}`, { signal }).then(r => r.data),
   /** `period` (tháng / quý / năm) hoặc `date_from` + `date_to` (hôm nay, 7 ngày, tùy chỉnh). */
   reports: (params: Params, signal?: AbortSignal) => fetchApi<{ data: ReportData }>(`/admin/reports${query(params)}`, { signal }).then(r => r.data),
+
+  repairOrders: (params: Params, signal?: AbortSignal) => fetchApi<OrderList>(`/admin/repair-orders${query(params)}`, { signal }),
+  repairOrder: (id: number, signal?: AbortSignal) => fetchApi<{ data: AdminOrderDetail }>(`/admin/repair-orders/${id}`, { signal }).then(r => r.data),
+
+  invoices: (params: Params, signal?: AbortSignal) => fetchApi<InvoiceList>(`/admin/invoices${query(params)}`, { signal }),
+  invoice: (id: number, signal?: AbortSignal) => fetchApi<{ data: AdminInvoiceDetail }>(`/admin/invoices/${id}`, { signal }).then(r => r.data),
+  payments: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminPayment>>(`/admin/payments${query(params)}`, { signal }),
+
+  bookingSlots: (signal?: AbortSignal) => fetchApi<{ data: BookingSlots }>("/booking-slots", { signal }).then(r => r.data),
+  saveBookingSlots: (body: BookingSlots) => send<Message<BookingSlots>>("/admin/booking-slots", "PUT", body),
+  /** Giới hạn khách tự đổi lịch trên web: số lần tối đa mỗi lịch, hạn chót (giờ trước giờ hẹn). */
+  reschedulePolicy: (signal?: AbortSignal) => fetchApi<{ data: ReschedulePolicy }>("/admin/reschedule-policy", { signal }).then(r => r.data),
+  saveReschedulePolicy: (body: ReschedulePolicy) => send<Message<ReschedulePolicy>>("/admin/reschedule-policy", "PUT", body),
+
+  reviews: (params: Params, signal?: AbortSignal) => fetchApi<ReviewList>(`/admin/reviews${query(params)}`, { signal }),
+  replyReview: (id: number, reply: string) => send<Message<AdminReview>>(`/admin/reviews/${id}/reply`, "POST", { reply }),
+  editReviewReply: (id: number, reply: string, expectedReply: string) => send<Message<AdminReview>>(`/admin/reviews/${id}/reply`, "PUT", { reply, expected_reply: expectedReply }),
+  reviewReplyHistory: (id: number, signal?: AbortSignal) => fetchApi<{ data: ReviewReplyVersion[] }>(`/admin/reviews/${id}/reply-history`, { signal }).then(r => r.data),
+  hideReview: (id: number, hidden: boolean) => send<Message<AdminReview>>(`/admin/reviews/${id}`, "PATCH", { is_hidden: hidden }),
+
+  contactMessages: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminContactMessage, { new: number }>>(`/admin/contact-messages${query(params)}`, { signal }),
+  setContactMessageStatus: (id: number, status: ContactMessageStatus) => send<Message<AdminContactMessage>>(`/admin/contact-messages/${id}`, "PATCH", { status }),
+  auditLogs: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminAuditLog>>(`/admin/audit-logs${query(params)}`, { signal }),
+
+  customers: (params: Params, signal?: AbortSignal) => fetchApi<CustomerList>(`/admin/customers${query(params)}`, { signal }),
+  customer: (id: number, signal?: AbortSignal) => fetchApi<{ data: AdminCustomerDetail }>(`/admin/customers/${id}`, { signal }).then(r => r.data),
+  lockCustomer: (id: number, locked: boolean) => send<Message<AdminCustomer>>(`/admin/customers/${id}/lock`, "PATCH", { locked }),
+  emailCustomer: (id: number, body: { subject: string; message: string }) => send<{ message: string }>(`/admin/customers/${id}/email`, "POST", body),
+  createCustomer: (body: { full_name: string; phone: string; email: string | null; address: string | null }) => send<{ data: { id: number } }>("/customers", "POST", body),
+  updateCustomer: (id: number, body: { full_name: string; phone: string; email: string | null; address: string | null }) => send<{ data: { id: number } }>(`/customers/${id}`, "PATCH", body),
+  addVehicle: (body: { customer_id: number; model_id: number; trim_id: number | null; license_plate?: string | null; mileage?: number | null; year: number | null }) => send<{ data: { id: number } }>("/vehicles", "POST", body),
+
+  staff: (params: Params, signal?: AbortSignal) =>
+    fetchApi<{ data: AdminStaff[]; summary: { total: number; active: number; advisors: number; technicians: number } }>(`/admin/staff${query(params)}`, { signal }),
+  createStaff: (body: StaffPayload) => send<Message<AdminStaff>>("/admin/staff", "POST", body),
+  updateStaff: (id: number, body: StaffPayload) => send<Message<AdminStaff>>(`/admin/staff/${id}`, "PATCH", body),
+
+  accounts: (params: Params, signal?: AbortSignal) => fetchApi<Paged<AdminAccount> & { summary: Partial<Record<AccountRole, number>>; statuses: Partial<Record<AccountStatus, number>> }>(`/admin/accounts${query(params)}`, { signal }),
+  createAccount: (body: { email: string; name: string; phone: string | null; role: Exclude<AccountRole, "CUSTOMER">; send_invite: boolean }) => send<Message<AdminAccount>>("/admin/accounts", "POST", body),
+  setAccountStatus: (id: number, status: "ACTIVE" | "LOCKED") => send<Message<AdminAccount>>(`/admin/accounts/${id}/status`, "PATCH", { status }),
+  resetPassword: (id: number) => send<{ message: string }>(`/admin/accounts/${id}/reset-password`, "POST"),
+
+  parts: (params: Params, signal?: AbortSignal) => fetchApi<PartList>(`/admin/parts${query(params)}`, { signal }),
+  createPart: (body: PartPayload) => send<Message<AdminPart>>("/admin/parts", "POST", body),
+  updatePart: (id: number, body: PartPayload) => send<Message<AdminPart>>(`/admin/parts/${id}`, "PATCH", body),
+  uploadPartImage: async (id: number, image: File): Promise<Message<AdminPart>> => {
