@@ -14,3 +14,19 @@ export function AddressAutocomplete({ value, onChange, onSelect, label = "Địa
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const listId = useId();
+  const skipNext = useRef(false);
+
+  useEffect(() => {
+    if (skipNext.current) { skipNext.current = false; return; }
+    const query = value.trim();
+    if (query.length < 3) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setLoading(true); setError("");
+      garageApi.suggest(query, controller.signal)
+        .then(list => { setItems(list); setOpen(true); setActive(-1); })
+        .catch((err: unknown) => { if (!controller.signal.aborted) setError(userErrorMessage(err, "Không tải được gợi ý.")); })
+        .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    }, 300);
