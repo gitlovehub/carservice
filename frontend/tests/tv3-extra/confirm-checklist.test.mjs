@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {overlay,nodes} from './overlay-harness.mjs';
+let state=[false,false];const results=[];
+const {ConfirmDialog,Button}=overlay('src/components/ui/ConfirmDialog.tsx',{useState:()=>[state,f=>{state=f(state)}]});
+const render=()=>ConfirmDialog({options:{title:'Xóa',description:'Kiểm tra',variant:'danger',confirmText:'Xóa',checklist:['A','B']},area:'admin',onClose:v=>results.push(v)});
+const confirm=t=>nodes(t,n=>n.type===Button&&n.props.variant==='danger')[0].props;
+let t=render();assert.equal(confirm(t).disabled,true);assert.equal(confirm(t).icon,'trash');
+nodes(t,n=>n.type==='input')[0].props.onChange({target:{checked:true}});assert.equal(confirm(render()).disabled,true);
+nodes(render(),n=>n.type==='input')[1].props.onChange({target:{checked:true}});assert.equal(confirm(render()).disabled,false);confirm(render()).onClick();assert.deepEqual(results,[true]);
+nodes(render(),n=>n.type==='input')[0].props.onChange({target:{checked:false}});assert.equal(confirm(render()).disabled,true);
