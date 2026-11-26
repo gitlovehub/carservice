@@ -82,3 +82,22 @@ export function useAdminQuery<T>(key: string | null, load: (signal: AbortSignal)
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         if (slot) queryCache.delete(slot.id);
+        setState(current => ({ key: requestKey, data: current.data, error: errorMessage(error, "Không tải được dữ liệu.") }));
+      });
+    return () => controller.abort();
+    // `load` đổi theo mỗi lần render; chỉ tải lại khi khoá yêu cầu đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestKey]);
+
+  const ready = requestKey !== null && state.key === requestKey;
+  const slot = key === null || ready ? null : cacheSlot(key);
+  const cached = slot ? queryCache.get(slot.id) as T | undefined : undefined;
+  return {
+    data: ready && !state.error ? state.data : null,
+    /** Dữ liệu gần nhất để hiển thị trong lúc chờ. Tải lỗi thì trả null: không để dữ liệu cũ che mất thông báo lỗi. */
+    stale: ready && state.error ? null : cached ?? state.data,
+    loading: requestKey !== null && !ready,
+    error: ready ? state.error : "",
+    reload: () => setAttempt(n => n + 1),
+  };
+}
