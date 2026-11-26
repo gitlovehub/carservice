@@ -91,3 +91,49 @@ export type AdminInvoiceDetail = AdminInvoice & {
   lines: Array<{ type: "SERVICE" | "PART"; name: string; quantity: number; price: number; amount: number }>;
   payments: AdminPayment[];
 };
+export type InvoiceList = Paged<AdminInvoice, { total: number; open: number; debt: number; collected: number }>;
+
+/* ---------------------------------------------------------- Khung giờ đặt lịch */
+export type BookingSlots = { morning: string[]; afternoon: string[] };
+export type ReschedulePolicy = { limit: number; cutoff_hours: number };
+
+/* ------------------------------------------------------------------ Đánh giá */
+/** Khách đánh giá GA-RA sau một lần bảo dưỡng / sửa chữa (gắn với phiếu sửa chữa). */
+export type AdminReview = {
+  id: number; customer: string | null; phone: string | null; vehicle: string; plate: string | null;
+  order_id: number | null; order_code: string | null; visit_date: string | null; services: string[];
+  rating: number; comment: string; date: string | null; reply: string | null; replied_at: string | null; reply_edited_at: string | null; hidden: boolean;
+  /** Chỉ có ở API Cố vấn: phản hồi này do chính cố vấn đang đăng nhập tạo. */
+  can_edit_reply?: boolean;
+};
+/** Một phiên bản phản hồi. `edited_by` null: phản hồi có từ trước khi hệ thống ghi lịch sử. */
+export type ReviewReplyVersion = { version: number; content: string; old_content: string | null; edited_by: string | null; edited_at: string | null };
+export type ReviewList = Paged<AdminReview, {
+  average: number; recent_average: number | null; positive_rate: number | null; reply_rate: number | null;
+  visible: number; hidden: number; unreplied: number; low_unreplied: number; distribution: Record<string, number>;
+}>;
+
+/* ------------------------------------------------------------------- Nhật ký */
+export type AuditCategory = "CREATE" | "UPDATE" | "DELETE" | "STATUS";
+export type AdminAuditLog = { id: number; at: string | null; actor: string; role: string; category: AuditCategory; action: string; label: string; target: string; detail: string; ip: string | null };
+
+/* -------------------------------------------------------------- Khách hàng */
+export type AdminCustomer = {
+  id: number; name: string; phone: string | null; email: string | null; email_verified?: boolean; city: string | null; vehicles_count: number; visits: number;
+  last_visit: string | null; total_spent: number; has_account: boolean; locked: boolean;
+};
+export type AdminCustomerDetail = AdminCustomer & {
+  address: string | null; created_at: string | null;
+  vehicles: Array<{ id: number; brand: string | null; model: string | null; trim: string | null; plate: string | null; year: number | null; mileage: number | null; avatar_url: string | null }>;
+  history: Array<{ id: number; code: string; date: string | null; title: string; vehicle: string; amount: number; status: string }>;
+  last_review: { rating: number; date: string | null; comment: string } | null;
+};
+export type CustomerList = Paged<AdminCustomer, { total: number; with_account: number; new_this_month: number; returning: number }>;
+
+/* ----------------------------------------------------------------- Nhân sự */
+export type StaffRole = "ADVISOR" | "TECHNICIAN";
+export type StaffLevel = "JUNIOR" | "SENIOR" | "EXPERT";
+export type AdminStaff = {
+  id: number; account_id: number; name: string; email: string | null; phone: string | null; role: StaffRole;
+  specialty: string | null; level: StaffLevel | null; status: "ACTIVE" | "INACTIVE"; joined_at: string | null;
+};
