@@ -41,9 +41,9 @@ export function ErrorState({ title = LABELS.state.error, description, onRetry, a
     setRetrying(true);
     try {
       await onRetry();
-      // Hàm reload đồng bộ: giữ trạng thái chờ đủ lâu để không gửi trùng khi bấm liên tiếp.
-      await new Promise(resolve => setTimeout(resolve, RETRY_GUARD_MS));
     } catch { /* Lỗi mới do màn hình gọi hiển thị lại. */ } finally {
+      // Giữ khóa cả khi API thất bại ngay.
+      await new Promise(resolve => setTimeout(resolve, RETRY_GUARD_MS));
       busy.current = false;
       setRetrying(false);
     }
