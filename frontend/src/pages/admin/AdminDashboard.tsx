@@ -98,3 +98,51 @@ function PeriodPanels({ report }: { report: ReportData }) {
     { label: "Số phiếu", kpi: ops.received },
     { label: "Thời gian xử lý", kpi: ops.turnaround_hours, invert: true },
     { label: "Đánh giá KH", kpi: ops.satisfaction.average },
+  ];
+
+  return <>
+    <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+      <Panel title="Doanh thu theo thời gian" icon="chart" subtitle={`Tổng ${vnd(total)} · ${report.label} · theo hoá đơn phát hành`}
+        action={<Legend items={[{ label: "Doanh thu", color: chartColor.brand }, { label: "Số phiếu", color: "var(--cs-text)", line: true }]}/>}>
+        <ComboChart title="Doanh thu và số phiếu theo thời gian" format={shortVnd} labels={buckets.map(b => b.label)} titles={buckets.map(b => b.title)}
+          bars={{ label: "Doanh thu", values: buckets.map(b => b.revenue), color: chartColor.brand }}
+          line={{ label: "Số phiếu", values: buckets.map(b => b.orders), color: "var(--cs-text)" }}/>
+      </Panel>
+      <Panel title="Tình trạng phiếu sửa chữa" icon="clipboard" subtitle="Phiếu nhận trong kỳ" action={<PanelLink to="/admin/repair-orders">Xem phiếu</PanelLink>}>
+        {statusTotal === 0 ? <EmptyState compact icon="clipboard" title="Chưa có phiếu trong kỳ"/>
+          : <DonutChart title="Phiếu sửa chữa theo tình trạng" segments={statusSegments.filter(s => s.value > 0)} centerValue={statusTotal} centerLabel="phiếu"/>}
+      </Panel>
+    </div>
+
+    <div className="mt-5 grid gap-5 lg:grid-cols-2 2xl:grid-cols-3">
+      <Panel title="Doanh thu theo dịch vụ" icon="wrench" action={<PanelLink to="/admin/reports">Báo cáo</PanelLink>}>
+        {serviceRows.length === 0 ? <EmptyState compact icon="wrench" title="Chưa có doanh thu dịch vụ"/>
+          : <ul className="flex flex-col gap-3.5">{serviceRows.map(s => {
+            const share = percent(s.revenue, serviceTotal);
+            return <li key={s.name} title={vnd(s.revenue)}>
+              <span className="mb-1.5 flex items-center justify-between gap-3 text-small">
+                <span className="min-w-0 truncate text-cs-text">{s.name}</span>
+                <b className="shrink-0 tabular-nums text-cs-text-2">{share}%</b>
+              </span>
+              <Progress value={share} tone="brand" label={`${s.name}: ${share}%`}/>
+            </li>;
+          })}</ul>}
+      </Panel>
+      <Panel title="Doanh thu theo nhóm" icon="layers">
+        {total <= 0 ? <EmptyState compact icon="layers" title="Chưa có doanh thu"/>
+          : <DonutChart title="Doanh thu theo nhóm" segments={groups} centerValue={<span className="text-[1.35rem]">{shortVnd(total)}</span>} centerLabel="doanh thu" formatValue={shortVnd}/>}
+      </Panel>
+      <Panel title="Xu hướng hoạt động" icon="trend-up" subtitle="So với kỳ trước" className="lg:col-span-2 2xl:col-span-1">
+        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4 2xl:grid-cols-2">{trends.map(t => <TrendTile key={t.label} {...t}/>)}</dl>
+        <div className="mt-4">
+          <Legend items={[{ label: "Kỳ này", color: chartColor.brand }, { label: "Kỳ trước", color: chartColor.grey }]}/>
+          <div className="mt-2">
+            <CompareChart title="Doanh thu kỳ này so với kỳ trước" format={vnd}
+              current={{ label: "Kỳ này", values: report.series.map(p => p.service + p.parts), color: chartColor.brand }}
+              previous={{ label: "Kỳ trước", values: report.previous_series.map(p => p.revenue), color: chartColor.grey }}/>
+          </div>
+        </div>
+      </Panel>
+    </div>
+  </>;
+}
