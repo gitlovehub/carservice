@@ -1,0 +1,282 @@
+/*
+ * CarService Design Tokens — NGUỒN DUY NHẤT cho màu, chữ, khoảng cách, bo góc, bóng.
+ *
+ * Cách dùng:
+ *   - CSS:      var(--cs-surface), var(--cs-accent), var(--cs-success)...
+ *   - Tailwind: bg-cs-surface, text-cs-muted, border-cs-border, bg-success-soft, text-title...
+ *               (ánh xạ trong src/index.css, khối @theme).
+ *
+ * Quy tắc:
+ *   1. Không viết mã màu hex trong component; thêm token ở đây nếu thiếu.
+ *   2. Chế độ tối chỉ ghi đè giá trị token, không viết bộ giao diện thứ hai.
+ *   3. Vai trò (Customer / Advisor / Admin) chỉ đổi nhóm "accent" và "sidebar",
+ *      mọi màu nền, chữ, viền, trạng thái dùng chung.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ---- Thương hiệu ---- */
+  --cs-brand: #cf2935;
+  --cs-brand-hover: #b3222d;
+  --cs-brand-soft: #fff1f1;
+
+  /* ---- Nền & bề mặt ---- */
+  --cs-bg: #f7f7f6;           /* nền trang */
+  --cs-surface: #ffffff;      /* thẻ, bảng, modal */
+  --cs-surface-2: #f1f1ef;    /* nền phụ: ô nhập, khối thông tin */
+  --cs-hover: #ebebe8;        /* nền khi rê chuột lên dòng / mục */
+  --cs-overlay: rgb(10 11 13 / 0.6); /* nền mờ sau modal, drawer */
+  --cs-overlay-blur: 6px;             /* độ làm mờ nền phía sau mọi modal / drawer */
+
+  /* ---- Chữ ---- */
+  --cs-text: #191919;         /* chữ chính */
+  --cs-text-2: #3d4146;       /* chữ phụ: mô tả, nội dung thứ cấp */
+  --cs-muted: #686c71;        /* chú thích, nhãn mờ (AA trên nền trắng & surface-2) */
+
+  /* ---- Viền ---- */
+  --cs-border: #e5e5e2;
+  --cs-border-strong: #d2d3cf;
+  --cs-btn-border: var(--cs-border); /* viền nút secondary */
+
+  /* ---- Màu nhấn theo vai trò (mặc định: Customer = đỏ thương hiệu) ---- */
+  --cs-accent: var(--cs-brand);
+  --cs-accent-hover: var(--cs-brand-hover);
+  --cs-accent-contrast: #ffffff;   /* chữ đặt trên nền accent */
+  --cs-soft: var(--cs-brand-soft); /* nền nhạt của accent: pill, mục đang chọn, nút Tonal */
+  --cs-soft-hover: #ffe1e3;        /* nền Tonal khi hover */
+  --cs-on-soft: #a51f29;           /* chữ trên nền soft (nút Tonal) */
+  --cs-focus: var(--cs-accent);    /* viền focus bàn phím */
+  --cs-accent-text: var(--cs-accent); /* chữ màu nhấn trên nền surface (đạt AA ở cả hai theme) */
+  /* Nút chính: nền đặc màu nhấn (không gradient). */
+  --cs-accent-fill: var(--cs-accent);
+  --cs-accent-fill-hover: var(--cs-accent-hover);
+  --cs-btn-radius: 11px;           /* bo góc nút (chung mọi vai trò) */
+  --cs-card-radius: 16px;          /* bo góc card / section (chung mọi vai trò) */
+
+  /* ---- Trạng thái (dùng chung mọi vai trò) ---- */
+  --cs-success: #15803d;  --cs-success-soft: #e7f6ec;  --cs-success-fg: #166534;
+  --cs-warning: #b45309;  --cs-warning-soft: #fff4dc;  --cs-warning-fg: #854d0e;
+  --cs-danger:  #b91c1c;  --cs-danger-soft:  #fdecec;  --cs-danger-fg:  #991b1b;
+  --cs-info:    #1d4ed8;  --cs-info-soft:    #e8f0fe;  --cs-info-fg:    #1e40af;
+  --cs-neutral: #686c71;  --cs-neutral-soft: #f1f1ef;  --cs-neutral-fg: #3d4146;
+
+  /* Nền đặc cho nút Danger / Success (chữ trắng đạt AA ở cả sáng lẫn tối). */
+  --cs-danger-solid: #b91c1c;   --cs-danger-solid-hover: #991b1b;   --cs-danger-solid-active: #7f1d1d;
+  --cs-success-solid: #15803d;  --cs-success-solid-hover: #166534;  --cs-success-solid-active: #14532d;
+  /* Nút Warning: #b45309 thay vì #d97706 để chữ trắng đạt AA (≈5:1). */
+  --cs-warning-solid: #b45309;  --cs-warning-solid-hover: #92400e;  --cs-warning-solid-active: #78350f;
+  /* Nền đặc xanh dương (ô icon toast "Thông tin"); chữ trắng đạt AA ở cả hai theme. */
+  --cs-info-solid: #1d4ed8;
+  --cs-on-solid: #ffffff;
+  /* Màu khi nhấn (active) của nút chính — đậm hơn hover một bậc. */
+  --cs-brand-active: #991c27;
+  --cs-accent-active: var(--cs-brand-active);
+  /* Nút Success: nền xanh đặc chữ trắng cho mọi vai trò. */
+  --cs-success-btn-bg: var(--cs-success-solid);  --cs-success-btn-hover: var(--cs-success-solid-hover);
+  --cs-success-btn-fg: var(--cs-on-solid);       --cs-success-btn-border: var(--cs-success-solid);
+  /* Viền nút danger-outline (45% danger). */
+  --cs-danger-border: color-mix(in srgb, var(--cs-danger) 45%, transparent);
+
+  /* ---- Công tắc bật/tắt: xanh lá kiểu iOS (mọi vai trò) ---- */
+  --cs-switch-on: #34c759;
+  --cs-switch-off: #e3e3e0;
+  --cs-switch-knob: #ffffff;
+
+  /* ---- Vô hiệu ---- */
+  --cs-disabled-bg: #ecece9;
+  --cs-disabled-fg: #9a9da1;
+
+  /* ---- Thanh bên khu làm việc (Advisor/Admin) ---- */
+  --cs-sidebar-bg: #1f2125;
+  --cs-sidebar-fg: #f4f4f2;
+  --cs-sidebar-muted: #a7abaf;
+  --cs-sidebar-hover: rgb(255 255 255 / 0.07);
+  --cs-sidebar-border: rgb(255 255 255 / 0.09);
+  --cs-sidebar-accent: #f06a71; /* accent đọc được trên nền sidebar tối */
+
+  /* ---- Khoảng cách & bố cục ---- */
+  --cs-page-x: clamp(16px, 3vw, 44px);   /* lề ngang trang */
+  --cs-page-y: clamp(20px, 3vw, 36px);   /* lề dọc trang */
+  --cs-section-gap: clamp(20px, 2.4vw, 32px);
+  --cs-card-pad: clamp(16px, 2vw, 24px);
+  --cs-gap: 12px;                        /* khoảng cách mặc định giữa phần tử */
+
+  /* ---- Chuyển động ---- */
+  --cs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --cs-duration: 180ms;
+}
+
+/* ---------- Chế độ tối: chỉ đổi giá trị ---------- */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --cs-brand-soft: #3a2226;
+  --cs-soft-hover: #4a2a2f;
+  --cs-on-soft: #ffb3ba;
+
+  --cs-bg: #111214;
+  --cs-surface: #191b1e;
+  --cs-surface-2: #22252a;
+  --cs-hover: #2a2d32;
+  --cs-overlay: rgb(0 0 0 / 0.7);
+
+  --cs-text: #f5f5f4;
+  --cs-text-2: #d3d5d9;
+  --cs-muted: #a3a7ae;
+
+  --cs-border: #34373b;
+  --cs-border-strong: #474a4f;
+
+  --cs-success: #4ade80;  --cs-success-soft: #1c3a2a;  --cs-success-fg: #a7f0c4;
+  --cs-warning: #fbbf24;  --cs-warning-soft: #3a2f19;  --cs-warning-fg: #f6d48f;
+  --cs-danger:  #f87171;  --cs-danger-soft:  #44262b;  --cs-danger-fg:  #ffb3ba;
+  --cs-info:    #93c5fd;  --cs-info-soft:    #1d3049;  --cs-info-fg:    #b9d7ff;
+  --cs-neutral: #a3a7ae;  --cs-neutral-soft: #2a2d32;  --cs-neutral-fg: #d3d5d9;
+
+  --cs-danger-solid: #c42b2b;   --cs-danger-solid-hover: #d63a3a;   --cs-danger-solid-active: #a82424;
+
+  --cs-disabled-bg: #26292d;
+  --cs-disabled-fg: #6f747a;
+
+  --cs-switch-on: #30d158;
+  --cs-switch-off: #3a3d42;
+
+  --cs-sidebar-bg: #151619;
+  /* Đỏ thương hiệu làm màu chữ trên nền tối chỉ đạt 3.3:1 — dùng tông sáng hơn (≥ 5:1). */
+  --cs-accent-text: #ff7d85;
+}
+
+/* ---------- Màu nhấn theo vai trò ---------- */
+/* Biến tham chiếu accent phải khai báo lại tại phần tử có data-area, nếu không sẽ giữ giá trị tính ở :root. */
+[data-area] {
+  --cs-focus: var(--cs-accent);
+  --cs-accent-text: var(--cs-accent);
+  --cs-accent-fill: var(--cs-accent);
+  --cs-accent-fill-hover: var(--cs-accent-hover);
+  --cs-accent-active: var(--cs-accent-hover); /* vai trò không khai báo màu nhấn khi bấm: dùng màu hover */
+}
+html[data-theme="dark"] [data-area="customer"] {
+  --cs-accent-text: #ff7d85;
+}
+
+/* Customer: đỏ thương hiệu. */
+[data-area="customer"] {
+  --cs-accent: #cf2935;
+  --cs-accent-hover: #b3222d;
+  --cs-accent-active: #991c27;
+  --cs-accent-contrast: #ffffff;
+  --cs-soft: #fff1f1;
+  --cs-soft-hover: #ffe1e3;
+  --cs-on-soft: #a51f29;
+  --cs-btn-radius: 11px;
+}
+html[data-theme="dark"] [data-area="customer"] {
+  --cs-soft: #3a2226;
+  --cs-soft-hover: #4a2a2f;
+  --cs-on-soft: #ffb3ba;
+}
+
+/* Advisor: vàng đồng. */
+[data-area="advisor"] {
+  --cs-accent: #8f6624;       /* chữ trắng trên nền này đạt ~5:1 */
+  --cs-accent-hover: #7a561e;
+  --cs-accent-contrast: #ffffff;
+  --cs-soft: #fbf2de;
+  --cs-soft-hover: #f3e3bd;
+  --cs-on-soft: #6e4e1a;
+  --cs-btn-radius: 11px;
+  --cs-sidebar-bg: #211f1b;
+  --cs-sidebar-accent: #e3bb6f;
+  /* Hover tông vàng đồng (PO 16/11/2026): dòng bảng, danh sách, menu trong khu cố vấn + menu sidebar. */
+  --cs-hover: #faf1de;
+  --cs-sidebar-hover: rgb(227 187 111 / 0.13);
+}
+html[data-theme="dark"] [data-area="advisor"] {
+  --cs-accent: #e3bb6f;
+  --cs-accent-hover: #edca88;
+  --cs-accent-contrast: #1e1b14;
+  --cs-soft: #302719;
+  --cs-soft-hover: #3b301d;
+  --cs-on-soft: #f0d08f;
+  --cs-sidebar-bg: #181713;
+  --cs-hover: rgb(227 187 111 / 0.1);
+  /*
+   * PO 17/11/2026: mọi trang cố vấn ở theme tối cùng tông với Tổng quan — nâu đen ấm, viền ánh vàng đồng
+   * (thay bảng xám lạnh dùng chung). Ô nhập, bảng, tab, khung thông tin… đều ăn theo các token này.
+   * Tương phản: chữ phụ #ddd2bf / mờ #ab9f8a trên #1c1813 ≥ 4.5:1.
+   */
+  --cs-bg: #12100c;
+  --cs-surface: #1c1813;
+  --cs-surface-2: #252017;
+  --cs-border: #3a3124;
+  --cs-border-strong: #56472f;
+  --cs-text: #f7f1e6;
+  --cs-text-2: #ddd2bf;
+  --cs-muted: #ab9f8a;
+  --cs-neutral: #ab9f8a;  --cs-neutral-soft: #2b251b;  --cs-neutral-fg: #ddd2bf;
+  --cs-overlay: rgb(8 6 3 / 0.72);
+}
+
+/*
+ * Admin: hệ màu cơ bản giống Customer — nền/chữ/viền/trạng thái dùng token chung (theo html[data-theme]),
+ * màu nhấn đỏ thương hiệu, nút chính nền đỏ đặc chữ trắng. Sidebar theo theme: nền surface, mục đang chọn đỏ đặc.
+ */
+[data-area="admin"] {
+  --cs-accent: var(--cs-brand);
+  --cs-accent-hover: var(--cs-brand-hover);
+  --cs-accent-active: var(--cs-brand-active);
+  --cs-accent-contrast: #ffffff;
+  --cs-soft: var(--cs-brand-soft);
+  --cs-btn-radius: 10px;  /* Admin Button Kit: bo góc 10px */
+
+  --cs-sidebar-bg: var(--cs-surface);
+  --cs-sidebar-fg: var(--cs-text);
+  --cs-sidebar-muted: var(--cs-text-2);
+  --cs-sidebar-label: var(--cs-muted);
+  --cs-sidebar-hover: var(--cs-hover);
+  --cs-sidebar-border: var(--cs-border);
+  --cs-sidebar-accent: var(--cs-accent-text);
+  --cs-sidebar-active-bg: #cf2935;
+  --cs-sidebar-active-fg: #ffffff;
+
+  /* Bảng màu biểu đồ (pages/admin/kit/Charts.tsx). */
+  --cs-chart-1: #cf2935;
+  --cs-chart-2: #f4a3a9;
+  --cs-chart-3: #3b82f6;
+  --cs-chart-4: #f5c542;
+  --cs-chart-5: #8b7cf6;
+  --cs-chart-6: #4cb782;
+  --cs-chart-grid: var(--cs-border);
+  /* Nền nhạt của thẻ số liệu theo tông; tím cho chip "Kỹ thuật viên". */
+  --cs-tint-brand: #fff4f4;
+  --cs-tint-info: #f2f6ff;
+  --cs-tint-success: #f1faf4;
+  --cs-tint-warning: #fff8ec;
+  --cs-tint-violet: #f5f3ff;
+  --cs-violet: #6d4fd6; --cs-violet-soft: #efebff; --cs-violet-fg: #5b3fc4;
+
+  /* Admin Button Kit v3: nút viền trung tính (§02/§06) và nút icon trong bảng (§05). */
+  --cs-btn-outline-border: #d8dadd;
+  --cs-btn-outline-hover-bg: #f5f5f4;
+  --cs-btn-outline-hover-border: #9ca3af;
+  --cs-btn-icon-hover-bg: #fff1f1;
+  --cs-btn-icon-hover-border: #cf2935;
+  --cs-btn-icon-hover-fg: #cf2935;
+}
+html[data-theme="dark"] [data-area="admin"] {
+  --cs-btn-outline-border: #4b525b;
+  --cs-btn-outline-hover-bg: #383e46;
+  --cs-btn-outline-hover-border: #4b525b;
+  --cs-btn-icon-hover-bg: #431f28;
+  --cs-btn-icon-hover-border: #fb7185;
+  --cs-btn-icon-hover-fg: #ff96a3;
+  --cs-accent-text: #ff7d85;
+  --cs-chart-2: #7a3a40;
+  --cs-tint-brand: #221a1c;
+  --cs-tint-info: #19202b;
+  --cs-tint-success: #18221c;
+  --cs-tint-warning: #241f17;
+  --cs-tint-violet: #1f1c2b;
+  --cs-violet: #a596ff; --cs-violet-soft: #2a2540; --cs-violet-fg: #c9bfff;
+}
