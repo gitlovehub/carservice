@@ -48,3 +48,53 @@ export default function AdminDashboard() {
 
   return <AdminPage title="Tổng quan" description={`Tình hình hoạt động hôm nay · ${todayLabel()}`} demo={false}
     actions={<PeriodFilter period={period} allowAll={false}/>}>
+    {!data
+      ? (today.error ? <ErrorState description={today.error} onRetry={today.reload}/> : <LoadingState/>)
+      : <>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard icon="calendar" tone="info" label="Lịch hẹn hôm nay" value={num(data.kpis.appointments_today.value)} delta={data.kpis.appointments_today.delta ?? undefined} deltaLabel="so với hôm qua"/>
+          <StatCard icon="car" tone="success" label="Xe đang trong xưởng" value={num(data.kpis.in_shop.value)} delta={data.kpis.in_shop.delta ?? undefined} deltaLabel="so với hôm qua"/>
+          <StatCard icon="invoice" tone="warning" label="Hoá đơn chờ thu" value={num(data.kpis.unpaid_invoices.value)} delta={data.kpis.unpaid_invoices.delta ?? undefined} deltaLabel="so với tuần trước" invertDelta/>
+          <StatCard icon="coins" tone="brand" label={report ? `Doanh thu · ${report.label}` : "Doanh thu"} value={report ? vnd(report.revenue.total.value) : "—"} delta={report?.revenue.total.delta ?? undefined} deltaLabel="so với kỳ trước"/>
+        </div>
+        {reportQuery.error && !report
+          ? <div className="mt-5"><ErrorState description={reportQuery.error} onRetry={reportQuery.reload}/></div>
+          : report ? <PeriodPanels report={report}/> : <div className="mt-5"><LoadingState/></div>}
+        <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+          <UpcomingPanel data={data}/>
+          <TasksPanel data={data}/>
+        </div>
+        {report && <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+          <EfficiencyPanel report={report}/>
+          <LowStockPanel data={data}/>
+        </div>}
+      </>}
+  </AdminPage>;
+}
+
+function PeriodPanels({ report }: { report: ReportData }) {
+  const buckets = revenueBuckets(report.series);
+  const status = report.operations.order_status;
+  const statusSegments = [
+    { label: "Hoàn thành", value: status.completed, color: chartColor.green },
+    { label: "Đang sửa chữa", value: status.in_progress, color: chartColor.blue },
+    { label: "Chờ phụ tùng", value: status.waiting_parts, color: chartColor.yellow },
+    { label: "Chờ khách duyệt", value: status.waiting_approval, color: chartColor.violet },
+    { label: "Tiếp nhận, kiểm tra", value: status.inspecting, color: chartColor.brandSoft },
+    { label: "Đã đóng", value: status.closed, color: chartColor.grey },
+  ];
+  const statusTotal = statusSegments.reduce((sum, s) => sum + s.value, 0);
+  const total = report.revenue.total.value;
+  const groups = report.revenue_groups.map((g, i) => ({ label: g.name, value: g.revenue, color: GROUP_COLORS[i % GROUP_COLORS.length] }));
+
+  const serviceTotal = report.revenue.service.value;
+  const topServices = report.top_services.slice(0, 4);
+  const otherServices = Math.max(0, serviceTotal - topServices.reduce((sum, s) => sum + s.revenue, 0));
+  const serviceRows = [...topServices.map(s => ({ name: s.name, revenue: s.revenue })), ...(otherServices >= 1 ? [{ name: "Dịch vụ khác", revenue: otherServices }] : [])];
+
+  const ops = report.operations;
+  const trends: Array<{ label: string; kpi: Kpi | null; invert?: boolean }> = [
+    { label: "Doanh thu", kpi: report.revenue.total },
+    { label: "Số phiếu", kpi: ops.received },
+    { label: "Thời gian xử lý", kpi: ops.turnaround_hours, invert: true },
+    { label: "Đánh giá KH", kpi: ops.satisfaction.average },
