@@ -33,6 +33,7 @@ function writeServicePicks(picks: ServicePicks) {
  * ở bước 2 thì trang Dịch vụ / trang chi tiết cũng bỏ tick, không "sống lại" ở lần sau.
  */
 export function syncServicePicks(ids: number[]) {
+  ids = [...new Set(ids.filter(id => Number.isSafeInteger(id) && id > 0))];
   const current = readServicePicks();
   const same = current.ids.length === ids.length && ids.every(id => current.ids.includes(id));
   if (!same) writeServicePicks({ ...current, ids });
