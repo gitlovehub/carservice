@@ -174,3 +174,45 @@ export default function Invoices() {
           onRowClick={setSelectedPayment} rowClassName={p => p.id === selectedPayment?.id ? "bg-cs-soft/60" : ""}
           footer={paymentResult && <Pagination page={paymentResult.meta.current_page} totalPages={paymentResult.meta.last_page} totalItems={paymentResult.meta.total} pageSize={paymentResult.meta.per_page} disabled={payments.loading} onChange={setPaymentPage}/>}/>
       </>}
+    <Drawer open={selectedId !== null} onClose={() => setSelectedId(null)} title="Chi tiết hoá đơn"
+      footer={selected && selected.status !== "PAID" && selected.status !== "CANCELLED" ? <>
+        <Button icon="printer" onClick={() => window.print()}>In</Button>
+        <Button variant="primary" icon="cash" onClick={() => notify("Ghi nhận thanh toán do Cố vấn thực hiện khi bàn giao xe.", "info")}>Ghi nhận thu tiền</Button>
+      </> : undefined}>
+      {pane}
+    </Drawer>
+    <Drawer open={selectedPayment !== null} onClose={() => setSelectedPayment(null)} title="Chi tiết giao dịch"
+      footer={selectedPayment?.invoice_id ? <Button variant="primary" icon="invoice" onClick={() => { setSelectedId(selectedPayment.invoice_id); setSelectedPayment(null); setView("invoices"); }}>Xem hoá đơn</Button> : undefined}>
+      {selectedPayment && <PaymentDetail payment={selectedPayment}/>}
+    </Drawer>
+  </AdminPage>;
+}
+
+/** Ngăn chi tiết một giao dịch: bảng chỉ hiện phần cần lướt, đầy đủ thông tin đối soát nằm ở đây. */
+function PaymentDetail({ payment: p }: { payment: AdminPayment }) {
+  return <>
+    <div className="mb-4">
+      <p className="text-caption text-cs-muted">Số tiền</p>
+      <p className="mt-0.5 flex flex-wrap items-center gap-3 text-title font-bold tabular-nums text-cs-text">{vnd(p.amount)}<StatusBadge domain="payment" status={p.status}/></p>
+    </div>
+    <PaneSection title="Giao dịch" icon="card">
+      <InfoList items={[
+        { label: "Mã giao dịch", value: <b className="break-all">{p.code}</b> },
+        { label: "Phương thức", value: <span className="inline-flex items-center gap-2"><Icon name={methodInfo[p.method].icon} size={16} className="text-cs-muted"/>{methodInfo[p.method].label}</span> },
+        { label: "Thanh toán lúc", value: fmtDateTime(p.paid_at) },
+        { label: "Tạo lúc", value: fmtDateTime(p.created_at) },
+        { label: "Người thu", value: p.collector ?? "—" },
+        ...(p.gateway_ref && p.gateway_ref !== p.code ? [{ label: "Mã tham chiếu", value: <span className="break-all">{p.gateway_ref}</span> }] : []),
+        ...(p.bank_code ? [{ label: "Ngân hàng", value: p.bank_code }] : []),
+      ]}/>
+    </PaneSection>
+    <PaneSection title="Hoá đơn & khách hàng" icon="invoice">
+      <InfoList items={[
+        { label: "Số hoá đơn", value: <b className="text-cs-accent-text">{p.invoice ?? "—"}</b> },
+        { label: "Phiếu sửa chữa", value: p.order_code ?? "—" },
+        { label: "Khách hàng", value: p.customer ?? "—" },
+        { label: "Biển số", value: p.plate ?? "—" },
+      ]}/>
+    </PaneSection>
+  </>;
+}
