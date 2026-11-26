@@ -137,3 +137,49 @@ export type AdminStaff = {
   id: number; account_id: number; name: string; email: string | null; phone: string | null; role: StaffRole;
   specialty: string | null; level: StaffLevel | null; status: "ACTIVE" | "INACTIVE"; joined_at: string | null;
 };
+export type StaffPayload = { name: string; email: string; phone: string; role: StaffRole; specialty?: string | null; level?: StaffLevel | null; status?: "ACTIVE" | "INACTIVE"; send_invite?: boolean };
+
+/* --------------------------------------------------------------- Tài khoản */
+export type AccountRole = "ADMIN" | "ADVISOR" | "TECHNICIAN" | "CUSTOMER";
+export type AccountStatus = "ACTIVE" | "PENDING" | "LOCKED" | "INACTIVE";
+export type AdminAccount = { id: number; email: string; name: string; role: AccountRole; status: AccountStatus; verified: boolean; last_login_at: string | null; created_at: string | null };
+
+/* ------------------------------------------------------------ Phụ tùng & kho */
+export type AdminPart = {
+  id: number; sku: string; name: string; description: string | null; category: string | null; unit: string; cost: number; price: number;
+  image_url: string | null; stock: number; min: number; level: "ok" | "low" | "out"; status: "ACTIVE" | "INACTIVE"; updated_at: string | null; compat: Array<{ id: number; name: string }>;
+  /** Số lượng đang chờ đặt / chờ về cho phiếu sửa chữa (ADV-01). */
+  requested: number;
+};
+/** Yêu cầu phụ tùng cho phiếu (GET /api/part-requests — dạng Laravel paginate). */
+export type PartRequestStatus = "REQUESTED" | "ORDERED" | "RECEIVED" | "CANCELLED";
+export type AdminPartRequest = {
+  id: number; part_id: number; quantity: number; status: PartRequestStatus; request_note: string | null; supplier_note: string | null;
+  eta_date: string | null; ordered_at: string | null; received_at: string | null; created_at: string | null; quotation_item_id: number | null;
+  part: { id: number; sku: string | null; name: string; unit: string | null; inventory: { quantity: number } | null } | null;
+  repair_order: { id: number; repair_order_code: string; status: string; vehicle: { license_plate: string | null } | null; advisor: { full_name: string | null } | null } | null;
+  created_by: { email: string; employee: { full_name: string | null } | null } | null;
+};
+export type PartPayload = {
+  sku: string; name: string; category: string | null; unit: string; cost_price: number; sell_price: number; description: string | null;
+  status: "ACTIVE" | "INACTIVE"; min_quantity: number; compat_model_ids: number[];
+};
+export type PartList = Paged<AdminPart, { total: number; active: number; low: number; out: number; stock_value: number }> & { categories: string[]; units: string[] };
+export type StockMove = { id: number; at: string | null; type: "IN" | "OUT"; sku: string | null; name: string | null; unit: string | null; quantity: number; repair_order_id?: number | null; ref: string; note: string | null; by: string };
+
+/* -------------------------------------------------------------- Ngày nghỉ */
+export type HolidayRange = { ids: number[]; from: string; to: string; reason: string | null; days: number };
+
+type Message<T> = { message: string; data: T };
+
+/* ---------------------------------------------------------- Tin nhắn liên hệ */
+/** Tin khách gửi từ form trang Liên hệ (công khai). */
+export type ContactMessageStatus = "NEW" | "HANDLED";
+export type AdminContactMessage = { id: number; name: string; phone: string; email: string | null; message: string; status: ContactMessageStatus; handled_at: string | null; created_at: string };
+const send = <T>(path: string, method: "POST" | "PUT" | "PATCH" | "DELETE", body?: unknown) =>
+  fetchApi<T>(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
+
+export const adminApi = {
+  dashboard: (range: string, signal?: AbortSignal) => fetchApi<{ data: DashboardData }>(`/admin/dashboard${query({ range })}`, { signal }).then(r => r.data),
+  /** `period` (tháng / quý / năm) hoặc `date_from` + `date_to` (hôm nay, 7 ngày, tùy chỉnh). */
+  reports: (params: Params, signal?: AbortSignal) => fetchApi<{ data: ReportData }>(`/admin/reports${query(params)}`, { signal }).then(r => r.data),
