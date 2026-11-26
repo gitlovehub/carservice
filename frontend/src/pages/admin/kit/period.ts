@@ -102,3 +102,28 @@ export function periodRange({ preset, from, to }: PeriodValue, now = new Date())
   const send = (range: DayRange) => ({ date_from: range.from, date_to: range.to });
   switch (preset) {
     case "today": return send({ from: today, to: today });
+    case "yesterday": return send({ from: addDays(today, -1), to: addDays(today, -1) });
+    case "7d": return send({ from: addDays(today, -6), to: today });
+    case "week": return send(unitRange("week", today));
+    case "month": return send(unitRange("month", today));
+    case "custom": {
+      if (from && to && from > to) return { date_from: to, date_to: from };
+      return { ...(from ? { date_from: from } : {}), ...(to ? { date_to: to } : {}) };
+    }
+    default: return {};
+  }
+}
+
+/** Trạng thái bộ lọc kỳ của một trang. `onChange`: thường là đưa bảng về trang 1. */
+export function usePeriod(initial: PeriodPreset = "all", onChange?: () => void) {
+  const [value, setValue] = useState<PeriodValue>({ preset: initial, from: "", to: "" });
+  const change = (next: PeriodValue) => { setValue(next); onChange?.(); };
+  const params = periodRange(value);
+  return {
+    value, change, params,
+    isDefault: JSON.stringify(params) === JSON.stringify(periodRange({ preset: initial, from: "", to: "" })),
+    reset: () => change({ preset: initial, from: "", to: "" }),
+  };
+}
+
+export type PeriodState = ReturnType<typeof usePeriod>;
