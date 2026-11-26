@@ -314,3 +314,81 @@ html[data-theme="dark"] .cs-workspace input[type="checkbox"].adv-check:checked {
 .adv-vtrack > li .adv-track-dot { flex-shrink: 0; }
 .adv-vtrack > li[data-state="done"] .adv-track-dot { background: #22a565; border-color: #22a565; color: #fff; }
 .adv-vtrack > li[data-state="active"] .adv-track-dot { background: var(--cs-surface); border: 3px solid var(--adv-gold-2); }
+.adv-vtrack > li[data-state="active"] .adv-track-dot::after { content: ""; width: 10px; height: 10px; border-radius: 999px; background: var(--adv-gold-3); }
+
+.adv-ro-tabs-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 760px) { .adv-ro-tabs-3 { grid-template-columns: minmax(0, 1fr); } }
+/* Báo giá: nhãn loại dòng + khung tổng tiền. */
+.adv-kind { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.adv-kind[data-kind="service"] { background: var(--cs-info-soft); color: var(--cs-info-fg); }
+.adv-kind[data-kind="part"] { background: color-mix(in srgb, var(--adv-gold-1) 30%, transparent); color: var(--cs-accent-text); }
+.adv-quote-total { display: grid; gap: 8px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--cs-border); font-size: 14px; }
+.adv-quote-total > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--cs-text-2); }
+.adv-quote-total dd { font-variant-numeric: tabular-nums; color: var(--cs-text); font-weight: 600; }
+.adv-quote-grand { margin: 4px -16px 0; padding: 12px 16px; background: color-mix(in srgb, var(--adv-gold-1) 26%, transparent); }
+.adv-quote-grand dt { font-weight: 700; color: var(--cs-text); }
+.adv-quote-grand dd { font-size: 1.25rem; font-weight: 800 !important; }
+
+/* Thanh tiến trình 5 chặng: chấm + đường nối, chặng đang làm viền vàng. */
+.adv-track { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.adv-track-step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 4px; text-align: center; }
+.adv-track-step::before {
+  content: ""; position: absolute; top: 13px; right: 50%; width: 100%; height: 3px; border-radius: 3px; background: var(--cs-border);
+}
+.adv-track-step:first-child::before { display: none; }
+.adv-track-step:is([data-state="done"], [data-state="active"], [data-state="closed"])::before { background: #22a565; }
+.adv-track-dot {
+  position: relative; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 999px;
+  background: var(--cs-surface-2); border: 2px solid var(--cs-border-strong); color: var(--cs-muted);
+}
+.adv-track-step[data-state="done"] .adv-track-dot { background: #22a565; border-color: #22a565; color: #fff; }
+.adv-track-step[data-state="active"] .adv-track-dot { background: var(--cs-surface); border: 3px solid var(--adv-gold-2); box-shadow: 0 0 0 4px color-mix(in srgb, var(--adv-gold-1) 35%, transparent); }
+.adv-track-step[data-state="active"] .adv-track-dot::after { content: ""; width: 10px; height: 10px; border-radius: 999px; background: var(--adv-gold-3); }
+.adv-track-step[data-state="closed"] .adv-track-dot { background: var(--cs-surface-2); border-color: var(--cs-muted); }
+.adv-track-step b { font-size: 14px; line-height: 1.25; color: var(--cs-text); }
+.adv-track-step[data-state="todo"] b { color: var(--cs-text-2); font-weight: 600; }
+.adv-track-step small { font-size: 12px; color: var(--cs-text-2); }
+.adv-track-pill { padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--cs-warning-soft); color: var(--cs-warning-fg); }
+.adv-track-pill[data-tone="neutral"] { background: var(--cs-surface-2); color: var(--cs-text-2); }
+.adv-track-pill[data-tone="danger"] { background: var(--cs-danger-soft); color: var(--cs-danger-fg); }
+.adv-track-step[data-state="rejected"] .adv-track-dot { background: var(--cs-danger-soft); border-color: var(--cs-danger-fg); color: var(--cs-danger-fg); }
+.adv-track-step[data-state="rejected"]::before { background: #22a565; }
+.adv-ro-stat-icon[data-tone="danger"] { background: linear-gradient(135deg, #f0646a, #c3242f); color: #fff; }
+@media (max-width: 640px) { .adv-track-step b { font-size: 11px; } .adv-track-step small, .adv-track-pill { display: none; } }
+
+/* Điện thoại: ô tìm kiếm chiếm trọn một dòng của thanh lọc. */
+@media (max-width: 640px) { .adv-theme [data-ui="search"] { flex-basis: 100%; } }
+/* Nút thao tác trong bảng không xuống dòng (.cs-btn mặc định white-space: normal, đè tiện ích Tailwind). */
+.adv-theme [data-ui="table"] td .cs-btn { white-space: nowrap; }
+.adv-avatar {
+  display: grid; place-items: center; width: 38px; height: 38px; flex-shrink: 0; border-radius: 999px; font-size: 13px; font-weight: 700;
+  background: linear-gradient(135deg, var(--adv-gold-1), var(--adv-gold-3)); color: #1e1810;
+}
+
+/* Bố cục: 1 cột (điện thoại) → 2 cột (lịch + phiếu gần đây | donut + cần xử lý) → 3 cột như mockup khi đủ rộng. */
+.adv-main { display: grid; gap: 20px; align-items: start; grid-template-areas: "apt" "side" "recent"; }
+.adv-area-apt { grid-area: apt; }
+.adv-area-side { grid-area: side; }
+.adv-area-recent { grid-area: recent; }
+@media (min-width: 1280px) {
+  .adv-main { grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr); grid-template-areas: "apt side" "recent side";
+    /* Cột phải trải 2 hàng: hàng đầu chỉ cao vừa lịch hẹn, phần dư dồn xuống hàng dưới → không hở giữa lịch hẹn và phiếu gần đây. */
+    grid-template-rows: auto 1fr; }
+}
+@media (min-width: 1700px) {
+  .adv-main { grid-template-columns: minmax(0, 1.75fr) minmax(320px, 1fr) minmax(300px, 0.95fr); grid-template-areas: "apt side recent"; }
+}
+
+/* Danh sách lịch hẹn dạng dòng thời gian */
+.adv-timeline { position: relative; }
+.adv-timeline-row { display: grid; grid-template-columns: 64px 40px minmax(0, 1fr) minmax(0, 0.9fr) auto auto; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 12px; cursor: pointer; }
+.adv-timeline-row:hover { background: var(--cs-hover); }
+.adv-timeline-row:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: -2px; }
+.adv-time { display: grid; place-items: center; min-height: 36px; border-radius: 10px; background: var(--cs-surface-2); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--cs-text); }
+@media (max-width: 760px) {
+  .adv-timeline-row { grid-template-columns: 56px 36px minmax(0, 1fr) auto; }
+  .adv-timeline-row > .adv-request { display: none; }
+  .adv-timeline-row > .adv-status { grid-column: 3; justify-self: start; }
+}
+@media (max-width: 640px) {
+  .adv-hero { padding: 22px 20px; }}
