@@ -30,7 +30,51 @@ assert.match(reception, /confirmPendingAppointment/);
 assert.match(reception, /checkInConfirmedAppointment/);
 assert.match(reception, /receiveRepairOrder/);
 assert.match(reception, /Tạo phiếu sửa chữa/);
-assert.match(orders, /listWorkflowOrders/);
+// ADV-07 + mockup 17/11: danh sách thẻ dùng API có lọc nhiều trạng thái + tìm kiếm + số đếm; khung xem nhanh mở đúng bước chi tiết.
+assert.match(orders, /listRepairOrders\(query, signal\)/);
+assert.match(orders, /onClick=\{\(\) => openOrder\(o\)\}/);
+// PO 20/11: màn hẹp mở ngăn kéo xem nhanh (không chuyển trang); khung xem nhanh vẫn có link tới đúng bước chi tiết.
+assert.match(orders, /drawer\.show\(\)/);
+assert.match(orders, /<PreviewDrawer /);
+assert.match(orders, /orderStepPath\(order\.id/);
+assert.match(src('src/pages/advisor/repairOrderFlow.ts'), /\/advisor\/service-orders\/\$\{id\}/);
+assert.match(detail, /searchParams\.get\("step"\)/);
+// Báo giá & phê duyệt (mockup 17/11): danh sách GET /quotations; nhân viên không duyệt thay khách (D-008).
+const quotes = src('src/pages/advisor/AdvisorQuotations.tsx');
+assert.match(routes, /path="quotations" element=\{<AdvisorQuotations\/>\}/);
+assert.match(quotes, /listQuotations\(query, signal\)/);
+assert.match(apiRoutes, /Route::get\('quotations', 'index'\)/);
+assert.doesNotMatch(quotes, /Đánh dấu đã phê duyệt|\/respond/, 'Advisor must not approve on behalf of the customer');
+// Tiến độ sửa chữa (mockup 17/11): danh sách kèm % công việc; hoàn thành chỉ khi mọi công việc xong.
+const progress = src('src/pages/advisor/AdvisorRepairProgress.tsx');
+assert.match(routes, /path="repair-progress" element=\{<AdvisorRepairProgress\/>\}/);
+assert.match(progress, /withProgress: true/);
+assert.match(progress, /disabled=\{working \|\| unfinished > 0\}/);
+assert.match(progress, /workflowApi\.transition\(order\.id, "complete"\)/);
+// Phụ tùng (mockup 17/11) — chỉ xem theo D-020: không gọi API nhập/xuất/điều chỉnh tồn của Admin.
+const partsPage = src('src/pages/advisor/AdvisorParts.tsx');
+assert.match(routes, /path="parts" element=\{<AdvisorParts\/>\}/);
+assert.match(partsPage, /workflowApi\.reportPartShortage\(/);
+assert.doesNotMatch(partsPage, /adjustStock|\/admin\/parts/, 'Advisor must not adjust stock (D-020)');
+assert.match(apiRoutes, /Route::get\('advisor\/parts'/);
+// Kiểm tra & bàn giao (mockup 17/11): kiểm tra sau sửa bắt buộc; bàn giao chỉ khi đủ điều kiện; không nhân viên ký thay khách.
+const deliveryPage = src('src/pages/advisor/AdvisorDelivery.tsx');
+assert.match(routes, /path="delivery" element=\{<AdvisorDelivery\/>\}/);
+assert.match(deliveryPage, /disabled=\{working \|\| state !== "ready"\}/);
+// Thu tiền / bàn giao chỉ làm ở trang Thanh toán / Kiểm tra & bàn giao; chi tiết phiếu chỉ có một nút dẫn tới đó (PO 18/11).
+assert.match(src('src/pages/advisor/repairOrderFlow.ts'), /if \(!order\.quality_checked_at\) return "check";/);
+assert.match(src('src/pages/advisor/RepairOrderPanels.tsx'), /\/advisor\/payments\?order=\$\{order\.id\}/);
+assert.doesNotMatch(src('src/pages/advisor/RepairOrderPanels.tsx'), /"hand-over"|payCash/, 'Chi tiết phiếu không còn nút thu tiền / bàn giao trùng với trang riêng');
+assert.match(apiRoutes, /Route::post\('quality-check', 'qualityCheck'\)/);
+// Thanh toán (mockup 17/11): 4 phương thức thu tại quầy, trừ tiền mặt phải có mã giao dịch.
+const billingPage = src('src/pages/advisor/AdvisorBilling.tsx');
+assert.match(routes, /path="payments" element=\{<AdvisorBilling\/>\}/);
+assert.match(billingPage, /workflowApi\.payAtCounter\(invoice\.id, method, amountValue, method === "DIRECT" \? undefined : code\.trim\(\)\)/);
+assert.match(billingPage, /method !== "DIRECT" && !code\.trim\(\)/);
+// Khách hàng (mockup 17/11): nhóm khách lọc qua API, tổng chi tiêu từ backend (không tự cộng ở giao diện).
+const customersPage = src('src/pages/advisor/Customers.tsx');
+assert.match(customersPage, /customerDirectoryApi\.customers\(query, signal\)/);
+assert.match(customersPage, /formatVnd\(c\.total_spent \?\? 0\)/);
 const panels = src('src/pages/advisor/RepairOrderPanels.tsx');
 assert.match(detail, /window\.print\(\)/);
 assert.match(detail, /<InspectionPanel /, "Advisor records inspection on the repair order page (no technician hand-off)");
