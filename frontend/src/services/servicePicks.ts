@@ -45,7 +45,8 @@ export function clearServicePicks() {
 /** Link đặt lịch mang theo dịch vụ đã chọn + mô tả tình trạng. */
 export function bookingLinkFor(picks: ServicePicks): string {
   const params = new URLSearchParams();
-  if (picks.ids.length) params.set("services", picks.ids.join(","));
+  const ids = [...new Set(picks.ids.filter(id => Number.isSafeInteger(id) && id > 0))];
+  if (ids.length) params.set("services", ids.join(","));
   if (picks.symptom) params.set("symptom", picks.symptom);
   const query = params.toString();
   return query ? `/booking?${query}` : "/booking";
