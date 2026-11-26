@@ -53,3 +53,58 @@ function Sparkline({ values, days, label }: { values: number[]; days: string[]; 
     <path d={`${path} L${x(last)} ${h - pad} L${x(0)} ${h - pad} Z`} fill="var(--cs-accent)" opacity="0.1"/>
     <path d={path} fill="none" stroke="var(--cs-accent)" strokeOpacity="0.55" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
     <circle cx={x(last)} cy={y(values[last])} r="4" fill="var(--cs-accent)" stroke="var(--cs-surface)" strokeWidth="2"/>
+    {values.map((v, i) => <rect key={i} x={x(i) - 8} y="0" width="16" height={h} fill="transparent"><title>{`${dayLabel(days[i])}: ${v}`}</title></rect>)}
+  </svg>;
+}
+
+function Delta({ value, previous }: { value: number; previous: number }) {
+  if (previous === 0 && value === 0) return <span className="adv-delta" data-dir="flat">=</span>;
+  if (previous === 0) return <span className="adv-delta" data-dir="up"><Icon name="trend-up" size={12}/>+{value}</span>;
+  const pct = Math.round(((value - previous) / previous) * 100);
+  const dir = pct > 0 ? "up" : pct < 0 ? "down" : "flat";
+  return <span className="adv-delta" data-dir={dir}>{dir === "up" ? <Icon name="trend-up" size={12}/> : dir === "down" ? <Icon name="trend-down" size={12}/> : null}{pct > 0 ? "+" : ""}{pct}%</span>;
+}
+
+function Kpi({ to, icon, label, value, extra, caption, series, days, seriesLabel }: {
+  to: string; icon: IconName; label: string; value: number; extra?: ReactNode; caption: string; series: number[]; days: string[]; seriesLabel: string;
+}) {
+  return <Link to={to} className="adv-card adv-kpi">
+    <div className="flex items-center gap-3">
+      <span className="adv-kpi-icon" aria-hidden="true"><Icon name={icon} size={22}/></span>
+      <p className="min-w-0 flex-1 text-small font-semibold text-cs-text">{label}</p>
+    </div>
+    <div className="flex items-end justify-between gap-3">
+      <p className="flex flex-wrap items-center gap-2"><span className="adv-kpi-value">{value.toLocaleString("vi-VN")}</span>{extra}</p>
+      <Sparkline values={series} days={days} label={seriesLabel}/>
+    </div>
+    <p className="text-caption text-cs-muted">{caption}</p>
+  </Link>;
+}
+
+function Panel({ title, icon, action, children, className = "" }: { title: ReactNode; icon?: IconName; action?: ReactNode; children: ReactNode; className?: string }) {
+  return <section className={`adv-card min-w-0 overflow-hidden ${className}`}>
+    <header className="flex items-center justify-between gap-3 px-5 pb-2 pt-4">
+      <h2 className="flex items-center gap-2 text-subheading font-semibold text-cs-text">{icon && <Icon name={icon} size={18} className="text-cs-accent-text"/>}{title}</h2>
+      {action}
+    </header>
+    {children}
+  </section>;
+}
+
+const seeAll = (to: string) => <Link to={to} className="inline-flex items-center gap-1 text-caption font-semibold text-cs-text-2 hover:text-cs-accent-text">Xem tất cả<Icon name="arrow-right" size={14}/></Link>;
+
+type AppointmentTab = "yesterday" | "today" | "upcoming";
+const appointmentTabs = [
+  { id: "yesterday", label: "Hôm qua", key: "appointments_yesterday", empty: "Hôm qua không có lịch hẹn" },
+  { id: "today", label: "Hôm nay", key: "appointments_today", empty: "Hôm nay chưa có lịch hẹn" },
+  { id: "upcoming", label: "Sắp tới", key: "appointments_upcoming", empty: "Chưa có lịch trong 7 ngày tới" },
+] as const satisfies ReadonlyArray<{ id: AppointmentTab; label: string; key: keyof Data; empty: string }>;
+
+function AppointmentRows({ items, tab }: { items: DashboardAppointment[]; tab: AppointmentTab }) {
+  const navigate = useNavigate();
+  const showDate = tab === "upcoming";
+  if (!items.length) return <EmptyState compact icon="calendar" title={appointmentTabs.find(t => t.id === tab)!.empty} description="Lịch khách đặt và lịch đặt hộ sẽ hiện ở đây."/>;
+  const open = (a: DashboardAppointment) => navigate(`/advisor/reception?appointment=${a.id}`);
+  return <ul className="adv-timeline space-y-0.5 px-2 pb-3">
+    {items.map(a => <li key={a.id} className="adv-timeline-row" role="link" tabIndex={0} onClick={() => open(a)}
+      onKeyDown={(e: KeyboardEvent) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); open(a); } }}>
