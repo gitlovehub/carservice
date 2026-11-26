@@ -100,3 +100,54 @@ export function PeriodFilter({ period, allowAll = true, allowFuture = false }: {
   };
   const moveCursor = (direction: -1 | 1) => {
     if (!draft) return;
+    const c = draft.cursor;
+    const cursor = draft.unit === "day" || draft.unit === "week" ? new Date(c.getFullYear(), c.getMonth() + direction, 1)
+      : new Date(c.getFullYear() + direction * (draft.unit === "year" ? 12 : 1), c.getMonth(), 1);
+    setDraft({ ...draft, cursor });
+  };
+
+  const hasRange = !!draft?.from && !!draft.to;
+  const reversed = hasRange && draft.to < draft.from;
+  const canApply = !!draft && (draft.all || (hasRange && !reversed));
+  const apply = () => {
+    if (!draft || !canApply) return;
+    change(draft.all ? { preset: "all", from: "", to: "" } : { preset: "custom", from: draft.from, to: draft.to });
+    close();
+  };
+
+  const cellClass = (cell: DayRange, muted = false) => {
+    const blocked = !!maxDay && cell.from > maxDay;
+    const inRange = !!draft && !draft.all && hasRange && cell.from >= draft.from && cell.to <= draft.to;
+    const edge = inRange && (cell.from === draft.from || cell.to === draft.to);
+    if (blocked) return "cursor-not-allowed text-cs-muted opacity-40";
+    if (edge) return "cursor-pointer bg-cs-accent font-semibold text-cs-accent-contrast hover:bg-cs-accent-hover";
+    if (inRange) return "cursor-pointer bg-cs-soft font-medium text-cs-accent-text hover:bg-cs-soft-hover";
+    return `cursor-pointer hover:bg-cs-soft-hover hover:text-cs-on-soft ${muted ? "text-cs-muted" : "text-cs-text"}`;
+  };
+  const gridCell = (key: string, label: string, cell: DayRange) => <button key={key} type="button" disabled={!!maxDay && cell.from > maxDay} onClick={() => pickCell(cell)}
+    className={`h-10 rounded-control border border-cs-border text-small tabular-nums transition-colors ${cellClass(cell)}`}>{label}</button>;
+
+  const picker = () => {
+    if (!draft) return null;
+    const y = draft.cursor.getFullYear();
+    if (draft.unit === "month") return <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+      {Array.from({ length: 12 }, (_, m) => gridCell(`m${m}`, `T${m + 1}`, unitRange("month", isoDay(new Date(y, m, 1)))))}
+    </div>;
+    if (draft.unit === "quarter") return <div className="grid grid-cols-2 gap-2">
+      {[0, 1, 2, 3].map(q => gridCell(`q${q}`, `Quý ${q + 1}`, unitRange("quarter", isoDay(new Date(y, q * 3, 1)))))}
+    </div>;
+    if (draft.unit === "year") {
+      const first = Math.floor(y / 12) * 12;
+      return <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {Array.from({ length: 12 }, (_, i) => gridCell(`y${i}`, String(first + i), unitRange("year", isoDay(new Date(first + i, 0, 1)))))}
+      </div>;
+    }
+    const weeks = monthWeeks(draft.cursor);
+    return <div>
+      <div className="grid grid-cols-7 text-center text-caption font-semibold text-cs-muted">{WEEKDAYS.map(d => <span key={d} className="py-1">{d}</span>)}</div>
+      <div className="grid gap-0.5">
+        {weeks.map(days => {
+          const outside = (d: Date) => d.getMonth() !== draft.cursor.getMonth();
+          if (draft.unit === "week") {
+            const cell = unitRange("week", isoDay(days[0]));
+            return <button key={cell.from} type="button" disabled={!!maxDay && cell.from > maxDay} onClick={() => pickCell(cell)} aria-label={`Tuần ${rangeLabel(cell)}`}
