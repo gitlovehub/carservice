@@ -83,3 +83,47 @@ export default function Reports() {
     {!data ? (query.error ? <ErrorState description={query.error} onRetry={query.reload}/> : <LoadingState/>) : <ReportBody data={data} tab={tab} setTab={setTab}/>}
   </AdminPage>;
 }
+
+function ReportBody({ data, tab, setTab }: { data: ReportData; tab: Tab; setTab: (tab: Tab) => void }) {
+  const serviceTotal = data.top_services.reduce((s, r) => s + r.revenue, 0) || 1;
+  const partTotal = data.top_parts.reduce((s, r) => s + r.revenue, 0) || 1;
+  const labels = data.series.map(point => point.label);
+  const unitText = GRANULARITY_TEXT[data.granularity];
+  const serviceRows = data.top_services.map((s, i) => ({ key: `${s.name}-${i}`, share: (s.revenue / serviceTotal) * 100, cells: [i + 1, s.name, num(s.count), vnd(s.revenue)] }));
+
+  if (tab === "services") {
+    return <Panel title="Doanh thu theo dịch vụ" icon="wrench" subtitle={data.label}>
+      <RankTable head={["#", "Tên dịch vụ", "Số lượt", "Doanh thu", "Tỷ trọng"]} rows={serviceRows} empty="Chưa có doanh thu dịch vụ trong kỳ"/>
+    </Panel>;
+  }
+  if (tab === "parts") {
+    return <Panel title="Phụ tùng bán chạy" icon="box" subtitle={data.label}>
+      <RankTable head={["#", "Phụ tùng", "Số lượng", "Doanh thu", "Tỷ trọng"]} empty="Chưa bán phụ tùng nào trong kỳ"
+        rows={data.top_parts.map((p, i) => ({ key: `${p.sku ?? p.name}-${i}`, share: (p.revenue / partTotal) * 100, cells: [i + 1, <span key="n"><b>{p.name}</b>{p.sku && <span className="block text-caption text-cs-muted">{p.sku}</span>}</span>, num(p.quantity), vnd(p.revenue)] }))}/>
+    </Panel>;
+  }
+  if (tab === "operations") return <Operations data={data}/>;
+
+  const { revenue, collection } = data;
+  return <>
+    <div className="grid gap-4 md:grid-cols-3">
+      <StatCard icon="coins" tone="brand" label={`Tổng doanh thu · ${data.label}`} value={vnd(revenue.total.value)} delta={revenue.total.delta ?? undefined}/>
+      <StatCard icon="wrench" tone="info" label="Doanh thu dịch vụ" value={vnd(revenue.service.value)} delta={revenue.service.delta ?? undefined}/>
+      <StatCard icon="box" tone="warning" label="Doanh thu phụ tùng" value={vnd(revenue.parts.value)} delta={revenue.parts.delta ?? undefined}/>
+    </div>
+    <div className="mt-5 grid gap-5 xl:grid-cols-2">
+      <Panel title={`Doanh thu theo ${unitText}`} icon="chart"
+        action={<Legend items={[{ label: "Dịch vụ", color: chartColor.brand }, { label: "Phụ tùng", color: chartColor.brandSoft }]}/>}>
+        <BarChart title={`Doanh thu theo ${unitText}`} labels={labels} format={shortVnd}
+          bars={[{ label: "Dịch vụ", values: data.series.map(point => point.service), color: chartColor.brand }, { label: "Phụ tùng", values: data.series.map(point => point.parts), color: chartColor.brandSoft }]}
+          tooltipTitle={i => data.series[i].title}/>
+      </Panel>
+      <Panel title={`Số phiếu sửa chữa theo ${unitText}`} icon="clipboard">
+        <AreaChart title={`Số phiếu sửa chữa theo ${unitText}`} labels={labels} tooltipTitle={i => data.series[i].title}
+          series={{ label: "Số phiếu", values: data.series.map(point => point.orders), color: chartColor.brand }}/>
+      </Panel>
+    </div>
+    <div className="mt-5 grid gap-5 xl:grid-cols-2">
+      <Panel title="Top 5 dịch vụ" icon="star" action={<PanelLink onClick={() => setTab("services")}>Xem chi tiết</PanelLink>}>
+        <RankTable head={["#", "Tên dịch vụ", "Số lượt", "Doanh thu", "Tỷ trọng"]} rows={serviceRows.slice(0, 5)} empty="Chưa có doanh thu dịch vụ trong kỳ"/>
+      </Panel>
