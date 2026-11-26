@@ -83,3 +83,44 @@ export default function Services() {
     if (!accepted) return;
     try {
       notify((await catalogAdminApi.deleteServicePermanently(s.id)).message, "success");
+      if (rows.length === 1 && page > 1) setPage(page - 1);
+      reload();
+    } catch (e) {
+      notify(errorMessage(e, "Không xóa được dịch vụ."), "error");
+      reload();
+    }
+  };
+
+  const currentCategoryId = typeof category === "number" ? category : null;
+  const categoryOptions = [
+    { value: "all", label: "Tất cả danh mục" }, ...categories.map(c => ({ value: String(c.id), label: c.name })),
+    ...(meta?.uncategorized ? [{ value: "none", label: "Chưa phân loại" }] : []),
+  ];
+
+  return <AdminPage demo={false} title="Dịch vụ" description="Danh mục dịch vụ hiển thị khi khách đặt lịch"
+    actions={<>
+      <Button variant="outline" icon="tag" onClick={() => setShowCategories(true)}>Xem danh mục dịch vụ</Button>
+      <Button variant="primary" icon="plus" onClick={() => setEditing(null)}>Thêm dịch vụ</Button>
+    </>}>
+    {meta && <dl className="mb-4 grid gap-3 sm:grid-cols-3">
+      {([
+        ["Tổng dịch vụ", meta.total, "grid"], ["Đang áp dụng", meta.active, "check"], ["Hiển thị cho khách", meta.visible, "eye"],
+      ] as const).map(([label, value, icon]) => <div key={label} className="flex items-center gap-3 rounded-card border border-cs-border bg-cs-surface px-4 py-3 shadow-card">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-cs-soft text-cs-accent-text" aria-hidden="true"><Icon name={icon} size={18}/></span>
+        <span className="min-w-0">
+          <dt className="truncate text-caption text-cs-muted">{label}</dt>
+          <dd className="text-subheading font-bold tabular-nums text-cs-text">{value ?? "—"}</dd>
+        </span>
+      </div>)}
+    </dl>}
+
+    <section aria-label="Danh sách dịch vụ" className="min-w-0 rounded-card border border-cs-border bg-cs-surface shadow-card">
+      <div className="flex flex-wrap items-center gap-3 border-b border-cs-border p-4">
+        <SearchInput className="sm:max-w-sm" value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Tìm theo tên dịch vụ…"/>
+        <FilterSelect label="Danh mục" value={String(category)} onChange={v => pick(v === "all" || v === "none" ? v : Number(v))} options={categoryOptions}/>
+        <FilterSelect label="Trạng thái" value={status} onChange={v => { setStatus(v); setPage(1); }} options={[
+          { value: "", label: "Tất cả trạng thái" }, { value: "ACTIVE", label: "Đang áp dụng" }, { value: "INACTIVE", label: "Nháp / Ngừng" },
+        ]}/>
+        <ClearFilters active={search !== "" || category !== "all" || status !== "" || !tableSort.isDefault}
+          onClear={() => { setSearch(""); setCategory("all"); setStatus(""); tableSort.reset(); setPage(1); }}/>
+      </div>
