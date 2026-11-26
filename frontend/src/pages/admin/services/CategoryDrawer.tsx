@@ -91,3 +91,34 @@ export function CategoryDrawer({ open, categories, icons, total, uncategorized, 
     {viewItem("all", "Tất cả dịch vụ", "grid", total)}
     {categories.map(c => viewItem(c.id, c.name, c.icon as IconName, c.services_count, `${c.active_services_count} đang áp dụng`, c))}
     {uncategorized > 0 && viewItem("none", "Chưa phân loại", "tag", uncategorized)}
+  </ul>;
+
+  const form = editing && <div className="flex flex-col gap-4">
+    <button type="button" onClick={back} disabled={busy !== null}
+      className="inline-flex w-fit cursor-pointer items-center gap-1.5 text-small font-medium text-cs-accent-text hover:underline disabled:opacity-50">
+      <Icon name="arrow-left" size={15}/>Quay lại danh sách
+    </button>
+    <div className="flex items-center justify-between gap-2">
+      <h3 className="text-subheading font-semibold">{isNew ? "Danh mục mới" : "Sửa danh mục"}</h3>
+      {current && <span className="text-caption text-cs-muted">{current.services_count} dịch vụ · {current.active_services_count} đang áp dụng</span>}
+    </div>
+    <Field label="Tên danh mục" required error={fieldErrors.errors.name}>
+      <Input value={editing.name} maxLength={100} placeholder="Ví dụ: Lốp – mâm" onChange={e => set({ name: e.target.value })}/>
+    </Field>
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-2 text-label text-cs-text-2">Icon <span className="font-normal text-cs-muted">— bấm để chọn</span></legend>
+      <div role="radiogroup" aria-label="Icon danh mục" className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {iconList.map(i => {
+          const on = editing.icon === i;
+          return <button key={i} type="button" role="radio" aria-checked={on} onClick={() => set({ icon: i })}
+            className={`relative flex cursor-pointer flex-col items-center gap-1.5 rounded-control border px-2 py-3 text-center transition-colors ${on
+              ? "border-cs-accent bg-cs-soft text-cs-accent-text"
+              : "border-cs-border bg-cs-surface text-cs-text-2 hover:border-cs-border-strong hover:bg-cs-hover hover:text-cs-text"}`}>
+            {on && <span className="absolute right-1.5 top-1.5 grid size-4 place-items-center rounded-full bg-cs-accent text-cs-accent-contrast" aria-hidden="true"><Icon name="check" size={11}/></span>}
+            <Icon name={i as IconName} size={24}/>
+            <span className="text-caption font-medium leading-tight">{ICON_LABEL[i] ?? i}</span>
+          </button>;
+        })}
+      </div>
+    </fieldset>
+    <div className="rounded-control bg-cs-surface-2 p-3">
