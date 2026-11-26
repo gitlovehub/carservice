@@ -129,3 +129,34 @@ export function PartOrders({ rows, loading, error, onRetry, onChanged }: {
   const needle = search.trim().toLowerCase();
   const shown = groups.filter(g => (filter === "all" || g.stage === filter)
     && (!needle || `${g.name} ${g.sku ?? ""} ${g.requests.map(r => `${r.repair_order?.repair_order_code} ${r.repair_order?.vehicle?.license_plate}`).join(" ")}`.toLowerCase().includes(needle)));
+  const selected = groups.find(g => g.partId === openPart) ?? null;
+
+  const columns: Column<Group>[] = [
+    { key: "part", header: "Phụ tùng", primary: true, render: g => <span><b className="text-cs-text">{g.name}</b><span className="block text-caption text-cs-muted">{g.sku}</span></span> },
+    { key: "needed", header: "Cần", align: "right", render: g => <b className="tabular-nums">{num(g.needed)}{g.unit ? ` ${g.unit}` : ""}</b> },
+    { key: "stock", header: "Tồn kho", align: "right", hideOnMobile: true, render: g => <span className={`tabular-nums ${g.stock >= g.needed ? "text-success-fg" : "text-cs-text-2"}`}>{num(g.stock)}</span> },
+    { key: "orders", header: "Cho phiếu", render: g => <span className="text-small">{g.requests.map(r => r.repair_order?.repair_order_code).join(", ")}</span> },
+    { key: "stage", header: "Trạng thái", render: g => <span className="flex flex-col items-start gap-0.5"><Pill tone={STAGE[g.stage].tone}>{STAGE[g.stage].label}</Pill>{g.eta && <span className="text-caption text-cs-muted">về {fmtDay(g.eta)}</span>}</span> },
+  ];
+
+  const changed = (message: string) => { notify(message, "success"); onChanged(); };
+
+  return <SplitView paneOpen={!!selected} onClose={() => setOpenPart(null)} paneWidth={460}
+    paneTitle={<span className="flex items-center gap-2 text-cs-accent-text"><Icon name="box" size={18}/>{selected?.name}</span>}
+    pane={selected && <div className="space-y-3">
+      <p className="text-small text-cs-text-2">Cần <b className="text-cs-text">{num(selected.needed)} {selected.unit}</b> cho {selected.requests.length} phiếu · tồn kho hiện tại <b className="text-cs-text">{num(selected.stock)}</b>.</p>
+      <ul className="space-y-3">{selected.requests.map(r => <RequestCard key={`${r.id}:${r.status}:${r.eta_date}`} request={r} stock={selected.stock} onChanged={changed}/>)}</ul>
+    </div>}
+    list={<>
+      <Toolbar>
+        <SearchInput value={search} onChange={setSearch} placeholder="Tìm phụ tùng, mã phiếu, biển số…"/>
+        <FilterSelect label="Trạng thái" value={filter} onChange={setFilter} options={[
+          { value: "all", label: "Tất cả" }, { value: "REQUESTED", label: "Cần đặt" }, { value: "OVERDUE", label: "Quá hạn" }, { value: "ORDERED", label: "Đã đặt" },
+        ]}/>
+        <ClearFilters active={search !== "" || filter !== "all"} onClear={() => { setSearch(""); setFilter("all"); }}/>
+      </Toolbar>
+      <DataTable caption="Phụ tùng cần đặt hàng" columns={columns} rows={shown} rowKey={g => g.partId} loading={loading} error={error} onRetry={onRetry}
+        onRowClick={g => setOpenPart(g.partId)} rowClassName={g => g.partId === openPart ? "bg-cs-soft/60" : g.stage === "OVERDUE" ? "bg-danger-soft/40" : ""}
+        empty={<EmptyState icon="check" title={groups.length ? "Không có phụ tùng ở trạng thái này" : "Không có phụ tùng cần đặt"} description={groups.length ? undefined : "Khi cố vấn báo thiếu phụ tùng cho phiếu sửa chữa, yêu cầu sẽ hiện ở đây."}/>}/>
+    </>}/>;
+}
