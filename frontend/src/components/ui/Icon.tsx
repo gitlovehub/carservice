@@ -1,7 +1,16 @@
 import type { ReactNode } from "react";
 import type { ShellNavItem } from "../../layouts/navigation";
 
-type IconName = ShellNavItem["icon"] | "sun" | "moon" | "menu" | "close" | "logout" | "arrow" | "plus";
+export type IconName = ShellNavItem["icon"] | "sun" | "moon" | "crown" | "menu" | "close" | "logout" | "arrow" | "plus"
+  | "search" | "chevron-left" | "chevron-right" | "chevron-down" | "edit" | "trash" | "more" | "check"
+  | "alert" | "info" | "eye" | "filter" | "user" | "refresh" | "sidebar" | "card" | "star" | "file"
+  | "arrow-right" | "arrow-left" | "x" | "send" | "cash" | "printer" | "download" | "lock" | "key" | "grid"
+  | "phone" | "mail" | "pin" | "trend-up" | "trend-down" | "coins" | "x-circle" | "upload" | "drag" | "list"
+  | "bank" | "qr" | "reply" | "eye-off" | "bell"
+  // Danh mục dịch vụ / loại yêu cầu.
+  | "minus" | "sort" | "sort-asc" | "sort-desc" | "engine" | "snowflake" | "tire" | "bolt" | "disc" | "droplet" | "sparkle" | "battery" | "tools" | "gauge" | "ban" | "coffee"
+  // Biên bản giao nhận.
+  | "diamond" | "fuel" | "seat" | "image";
 type Props = { name: IconName; size?: number; className?: string };
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-6h6v6"/></>,
@@ -23,6 +32,80 @@ const paths: Record<IconName, ReactNode> = {
   logout: <><path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10"/></>,
   arrow: <path d="M5 12h14m-6-6 6 6-6 6"/>,
   plus: <path d="M12 5v14M5 12h14"/>,
+  search: <><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></>,
+  "chevron-left": <path d="m15 5-7 7 7 7"/>,
+  "chevron-right": <path d="m9 5 7 7-7 7"/>,
+  "chevron-down": <path d="m5 9 7 7 7-7"/>,
+  edit: <><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></>,
+  trash: <><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></>,
+  more: <><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></>,
+  check: <path d="m5 12.5 4.5 4.5L19 7.5"/>,
+  alert: <><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/></>,
+  info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.5v.01"/></>,
+  eye: <><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="2.8"/></>,
+  filter: <path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>,
+  user: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
+  refresh: <><path d="M20 11a8 8 0 0 0-14.6-4.5M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5M20 20v-4h-4"/></>,
+  sidebar: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></>,
+  card: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></>,
+  bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 9h18c0-1-3-2-3-9"/><path d="M10 21h4"/></>,
+  // Cùng hình sao đánh giá dùng chung (Rating.tsx): sao đặc, góc bo tròn.
+  star: <path d="M12 3.2 14.7 8.7 20.8 9.6 16.4 13.9 17.4 19.9 12 17.1 6.6 19.9 7.6 13.9 3.2 9.6 9.3 8.7Z" fill="currentColor" strokeWidth="2.4"/>,
+  // Đồng tiền có ký hiệu $ — biểu tượng Báo giá.
+  dollar: <><circle cx="12" cy="12" r="9"/><path d="M12 6.5v11M14.8 9.3c-.3-1-1.4-1.8-2.8-1.8-1.6 0-2.8.9-2.8 2.1s1.1 1.7 2.8 2.1 2.8.9 2.8 2.1-1.2 2.1-2.8 2.1c-1.5 0-2.6-.8-2.9-1.9"/></>,
+  file: <><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></>,
+  "arrow-right": <path d="M5 12h14m-6-6 6 6-6 6"/>,
+  "arrow-left": <path d="M19 12H5m6-6-6 6 6 6"/>,
+  x: <path d="M6 6l12 12M18 6 6 18"/>,
+  send: <><path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4z"/></>,
+  cash: <><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9.5v.01M18 14.5v.01"/></>,
+  printer: <><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></>,
+  download: <><path d="M12 4v11m-5-5 5 5 5-5"/><path d="M4 19h16"/></>,
+  lock: <><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></>,
+  key: <><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9m-3 3 3 3m-6 0 2 2"/></>,
+  crown: <><path d="M3 7.5 7.5 11 12 4.5l4.5 6.5L21 7.5 19 18H5z"/><path d="M5 21h14"/></>,
+  dashboard: <><rect x="3" y="3" width="8" height="9" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/></>,
+  layers: <><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></>,
+  "id-card": <><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.5a3.4 3.4 0 0 1 6.4 0M14.5 10h4M14.5 13.5h3"/></>,
+  history: <><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4h4M12 8v4.5l3 1.8"/></>,
+  store: <><path d="M4 10v10h16V10"/><path d="M3 10 5 4h14l2 6c0 1.4-1.2 2.5-2.7 2.5S15.7 11.4 15.6 10c0 1.4-1.2 2.5-2.7 2.5h-1.8C9.6 12.5 8.4 11.4 8.4 10 8.3 11.4 7.2 12.5 5.7 12.5S3 11.4 3 10Z"/><path d="M10 20v-4h4v4"/></>,
+  invoice: <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></>,
+  tag: <><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></>,
+  phone: <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>,
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></>,
+  pin: <><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></>,
+  "trend-up": <path d="M4 17 10 11l4 4 6-7M15 8h5v5"/>,
+  "trend-down": <path d="M4 7l6 6 4-4 6 7M15 16h5v-5"/>,
+  coins: <><ellipse cx="9" cy="7" rx="6" ry="2.5"/><path d="M3 7v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V7"/><path d="M9 13.5v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4c0-1.4-2.7-2.5-6-2.5"/></>,
+  "x-circle": <><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></>,
+  upload: <><path d="M12 16V5m-5 5 5-5 5 5"/><path d="M4 19h16"/></>,
+  drag: <><circle cx="9" cy="6" r="1.1"/><circle cx="15" cy="6" r="1.1"/><circle cx="9" cy="12" r="1.1"/><circle cx="15" cy="12" r="1.1"/><circle cx="9" cy="18" r="1.1"/><circle cx="15" cy="18" r="1.1"/></>,
+  list: <path d="M9 6h11M9 12h11M9 18h11M4.5 6v.01M4.5 12v.01M4.5 18v.01"/>,
+  bank: <><path d="m3 9 9-5 9 5M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/></>,
+  qr: <><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></>,
+  reply: <path d="M10 8 4 13l6 5M4 13h10a6 6 0 0 1 6 6"/>,
+  "eye-off": <><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3 3.6M6.3 7.6C3.9 9.3 2.5 12 2.5 12S6 18 12 18c1.6 0 3-.4 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></>,
+  grid: <><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></>,
+  minus: <path d="M5 12h14"/>,
+  sort: <path d="m8 9 4-4 4 4M8 15l4 4 4-4"/>,
+  "sort-asc": <><path d="m8 9 4-4 4 4"/><path d="m8 15 4 4 4-4" opacity=".3"/></>,
+  "sort-desc": <><path d="m8 9 4-4 4 4" opacity=".3"/><path d="m8 15 4 4 4-4"/></>,
+  engine: <><path d="M4 10v6M4 13h2M6 9h3l1-2h4l1 2h2l2 2h2v5h-2l-2 2H9l-3-3V9z"/><path d="M10 7V5h4v2"/></>,
+  snowflake: <><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7"/><path d="m9 4 3 2 3-2M9 20l3-2 3 2M4.5 10.5l3-.5-1-3M19.5 13.5l-3 .5 1 3M4.5 13.5l3 .5-1 3M19.5 10.5l-3-.5 1-3"/></>,
+  tire: <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v5M12 16v5M3 12h5M16 12h5"/></>,
+  bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7z"/>,
+  disc: <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/></>,
+  droplet: <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>,
+  sparkle: <><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/></>,
+  battery: <><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M7 7V5h3v2M14 7V5h3v2M7 13h3M15.5 11.5v3M14 13h3"/></>,
+  tools: <><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12"/></>,
+  gauge: <><path d="M4 18a8 8 0 1 1 16 0"/><path d="m12 14 4-5"/><circle cx="12" cy="14" r="1.2"/></>,
+  ban: <><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></>,
+  coffee: <><path d="M4 9h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M12 3v3"/></>,
+  diamond: <><path d="M6 4h12l3.5 5L12 21 2.5 9z"/><path d="M2.5 9h19M9.5 4 8 9l4 12 4-12-1.5-5"/></>,
+  fuel: <><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M6.5 8h5"/><path d="M14 11h1.5a1.5 1.5 0 0 1 1.5 1.5V17a1.5 1.5 0 0 0 3 0V8.5L17 6"/></>,
+  seat: <><path d="M7 4h7a2 2 0 0 1 2 2v7H8a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1z"/><path d="M5 13h13a2 2 0 0 1 2 2v1H6a2 2 0 0 1-2-2zM8 16v4M17 16v4"/></>,
+  image: <><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="m21 16-5-5-9 9"/></>,
 };
 export function Icon({ name, size = 18, className }: Props) {
   return <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
