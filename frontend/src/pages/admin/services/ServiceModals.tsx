@@ -88,3 +88,48 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
   const blockers = [
     ...(form.name.trim() ? [] : ["nhập tên dịch vụ"]),
     ...(form.base_price === "" ? ["nhập giá cơ bản"] : []),
+    ...(form.estimated_minutes && !/^[1-9]\d*$/.test(form.estimated_minutes) ? ["thời gian ước tính phải là số phút lớn hơn 0"] : []),
+    ...(form.status && missing.length ? [`Đang áp dụng cần ${missing.join(", ")}`] : []),
+  ];
+  const requestClose = async () => {
+    if (saving) return;
+    if (dirty && !await confirm({ title: "Bỏ thay đổi chưa lưu?", description: "Các thông tin vừa nhập sẽ không được lưu.", confirmText: "Bỏ thay đổi", variant: "danger" })) return;
+    onClose();
+  };
+
+  const submit = async () => {
+    if (!dirty || blockers.length) return;
+    const price = Number(form.base_price);
+    const minutes = form.estimated_minutes ? Number(form.estimated_minutes) : null;
+    const problems: FieldErrors = {};
+    if (!form.name.trim()) problems.name = "Nhập tên dịch vụ.";
+    if (form.base_price === "" || !Number.isFinite(price) || price < 0) problems.base_price = "Giá cơ bản phải là số không âm.";
+    if (minutes !== null && (!Number.isInteger(minutes) || minutes <= 0)) problems.estimated_minutes = "Thời gian ước tính phải là số phút lớn hơn 0.";
+    setError("");
+    if (fieldErrors.show(problems)) return;
+    const payload: ServicePayload = {
+      name: form.name.trim(), category_id: form.category_id ? Number(form.category_id) : null, description: form.description.trim() || null,
+      base_price: price, estimated_minutes: minutes, status: form.status ? "ACTIVE" : "INACTIVE", is_visible: form.is_visible,
+      service_level: form.service_level,
+    };
+    setSaving(true);
+    try {
+      // Sửa: chỉ gửi tên khi thật sự đổi — tránh lỗi "tên đã tồn tại" khi chỉ bật/tắt trạng thái, đổi giá…
+      const { name, ...rest } = payload;
+      const res = service
+        ? await catalogAdminApi.updateService(service.id, name === service.name ? rest : payload)
+        : await catalogAdminApi.createService(payload);
+      let saved = res.data;
+      if (imageFile) {
+        // Thông tin đã lưu; ảnh lỗi thì báo rõ để admin thử lại, không mất phần đã nhập.
+        try {
+          saved = (await catalogAdminApi.uploadServiceImage(saved.id, imageFile)).data;
+        } catch (e) {
+          onSaved(saved);
+          throw new Error(`Đã lưu dịch vụ nhưng ảnh chưa được tải lên: ${errorMessage(e)}. Mở lại dịch vụ để thử tải ảnh.`, { cause: e });
+        }
+      }
+      notify(service ? `Đã cập nhật dịch vụ “${payload.name}” (${money(price)}).` : `Đã thêm dịch vụ “${payload.name}” (${money(price)}).`, "success");
+      onSaved(saved);
+    } catch (e) {
+      fieldErrors.showApi(e, { name: "name", category_id: "category_id", description: "description", base_price: "base_price", estimated_minutes: "estimated_minutes", service_level: "service_level", image: "image" });
