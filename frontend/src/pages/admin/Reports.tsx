@@ -169,3 +169,44 @@ function Operations({ data }: { data: ReportData }) {
         <div className="grid gap-3">
           <Figure icon="car" label="Xe đã nhận" value={num(ops.received.value)} sub={ops.received.delta === null ? undefined : `Kỳ trước: ${num(ops.received.previous)}`}/>
           <Figure icon="check" tone="success" label="Xe đã bàn giao" value={num(ops.delivered)}/>
+          <Figure icon="clipboard" tone="warning" label="Xe đang trong xưởng (cuối kỳ)" value={num(ops.in_shop)}/>
+        </div>
+      </Panel>
+
+      <Panel title="Lịch hẹn" icon="calendar" subtitle={`${num(apt.total)} lịch trong kỳ`} action={<PanelLink to="/admin/appointments">Lịch hẹn</PanelLink>}>
+        {apt.total === 0 ? <EmptyState compact icon="calendar" title="Chưa có lịch hẹn trong kỳ"/> : <>
+          <p className="mb-1 text-small text-cs-text-2">Tỷ lệ khách đến đúng hẹn <b className="ml-1 text-section tabular-nums text-cs-text">{pct(apt.show_rate)}</b></p>
+          <MetricRow label="Đã đến xưởng" value={num(apt.arrived)} percent={share(apt.arrived, apt.total)} tone="success"/>
+          <MetricRow label="Đã huỷ" value={num(apt.cancelled)} percent={share(apt.cancelled, apt.total)} tone="warning"/>
+          <MetricRow label="Không đến" value={num(apt.no_show)} percent={share(apt.no_show, apt.total)} tone="danger"/>
+          <MetricRow label="Chờ đến (đã đặt / đã xác nhận)" value={num(apt.upcoming)} percent={share(apt.upcoming, apt.total)} tone="info"/>
+        </>}
+      </Panel>
+
+      <Panel title="Khách hàng & báo giá" icon="users" subtitle={data.label}>
+        <MetricRow label="Khách quay lại" value={num(customers.returning)} hint={`/ ${num(customers.total)} khách`} percent={share(customers.returning, customers.total)} tone="success"/>
+        <MetricRow label="Khách mới" value={num(customers.new)} percent={share(customers.new, customers.total)} tone="brand"/>
+        <div className="my-2 border-t border-cs-border"/>
+        {quotations.decided === 0 ? <p className="py-2.5 text-small text-cs-muted">Chưa có báo giá được khách phản hồi trong kỳ.</p>
+          : <MetricRow label="Báo giá được khách duyệt" value={pct(quotations.approval_rate)} hint={`${num(quotations.approved)} / ${num(quotations.decided)}`}
+            percent={quotations.approval_rate ?? 0} tone={(quotations.approval_rate ?? 0) >= 70 ? "success" : (quotations.approval_rate ?? 0) >= 50 ? "warning" : "danger"}/>}
+      </Panel>
+    </div>
+
+    <div className="mt-5">
+      <Panel title="Mức hài lòng của khách" icon="star" subtitle={`${num(satisfaction.count)} lượt đánh giá sau bảo dưỡng`} action={<PanelLink to="/admin/reviews">Đánh giá</PanelLink>}>
+        {satisfaction.count === 0 ? <EmptyState compact icon="star" title="Chưa có đánh giá trong kỳ"/> : <div className="grid gap-6 md:grid-cols-[14rem_1fr] md:items-center">
+          <div className="text-center md:border-r md:border-cs-border md:pr-6">
+            <p className="text-title font-bold tabular-nums text-cs-text">{satisfaction.average ? num(satisfaction.average.value) : "—"}</p>
+            {satisfaction.average && <Stars value={satisfaction.average.value} size={18}/>}
+            <p className="mt-2 text-small text-cs-text-2"><b className="text-success">{pct(satisfaction.positive_rate)}</b> khách hài lòng (4–5 sao)</p>
+          </div>
+          <div>
+            {stars.map(star => <MetricRow key={star} label={<span className="inline-flex items-center gap-1">{star}<StarIcon size={13}/></span>}
+              value={num(satisfaction.distribution[star])} percent={share(satisfaction.distribution[star], satisfaction.count)} tone={star >= 4 ? "success" : star === 3 ? "warning" : "danger"}/>)}
+          </div>
+        </div>}
+      </Panel>
+    </div>
+  </>;
+}
