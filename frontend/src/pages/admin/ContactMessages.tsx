@@ -28,3 +28,13 @@ export default function ContactMessages() {
     </>} size={32}/> },
     { key: "message", header: "Nội dung", render: m => <p className="max-w-[460px] whitespace-pre-line text-cs-text">{m.message}</p> },
     { key: "status", header: "Trạng thái", render: m => m.status === "NEW"
+      ? <Pill tone="warning">Chưa xử lý</Pill>
+      : <Pill tone="success">Đã xử lý{m.handled_at ? ` · ${fmtDateTime(m.handled_at)}` : ""}</Pill> },
+    { key: "act", header: "", render: m => <Button variant={m.status === "NEW" ? "primary" : "outline"} size="sm" disabled={busy === m.id} onClick={() => toggle(m)}>
+      {m.status === "NEW" ? "Đánh dấu đã xử lý" : "Mở lại"}</Button> },
+  ];
+
+  return <AdminPage title="Tin nhắn liên hệ" description={`Yêu cầu khách gửi từ trang Liên hệ${result ? ` — ${result.summary.new} tin chưa xử lý` : ""}`} demo={false}>
+    <Toolbar>
+      <FilterSelect label="Trạng thái" value={status} onChange={value => { setStatus(value); setPage(1); }} options={[
+        { value: "NEW", label: "Chưa xử lý" }, { value: "HANDLED", label: "Đã xử lý" }, { value: "all", label: "Tất cả" },
