@@ -26,3 +26,8 @@ export const chartColor = {
   brand: "var(--cs-chart-1)",
   brandSoft: "var(--cs-chart-2)",
   blue: "var(--cs-chart-3)",
+  yellow: "var(--cs-chart-4)",
+  violet: "var(--cs-chart-5)",
+  green: "var(--cs-chart-6)",
+  grey: "var(--cs-border-strong)",
+};
