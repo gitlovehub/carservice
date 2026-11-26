@@ -1,936 +1,210 @@
+import { useState } from "react";
+import { Button, Dropdown, EmptyState, ErrorState, Icon, LoadingState, NEWEST_FIRST, Pagination, SearchInput, SortHeader, Switch, ariaSort, useTableSort, type IconName } from "../../components/ui";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
-import AdminHubNav from "../../components/AdminHubNav";
-import { useEffect, useState, type FormEvent } from "react";
-import AdminSidebar from "./AdminSidebar";
-import AdminTopbar from "./AdminTopbar";
-import { fetchApi } from "../../services/api";
+import { errorMessage } from "../../services/adminApi";
+import { CATEGORY_TONE, catalogAdminApi, money, serviceActivationProblems, type AdminService } from "../../services/catalogAdminApi";
+import { AdminPage, ClearFilters, FilterSelect, Pill } from "./kit/AdminKit";
+import { useAdminQuery } from "./kit/useAdminQuery";
+import { useDebounced } from "./kit/useDebounced";
+import { CategoryDrawer, type CategoryFilter } from "./services/CategoryDrawer";
+import { ServiceDetailModal, ServiceFormModal } from "./services/ServiceModals";
 
-type ServiceStatus = "ACTIVE" | "INACTIVE";
+const PER_PAGE = 8;
+type StatusFilter = "" | "ACTIVE" | "INACTIVE";
 
-type Service = {
-  id: number;
-  name: string;
-  category: string | null;
-  description: string | null;
-  base_price: string;
-  estimated_minutes: number | null;
-  status: ServiceStatus;
-};
+const iconOf = (s: AdminService): IconName => (s.service_category?.icon ?? "wrench") as IconName;
 
-type ServiceForm = {
-  name: string;
-  category: string;
-  description: string;
-  base_price: string;
-  estimated_minutes: string;
-  status: ServiceStatus;
-};
+/** Cột bảng dịch vụ: [khoá sắp xếp | null, tiêu đề, căn lề]. */
+const COLUMNS: Array<[string | null, string, "left" | "right" | "center"]> = [
+  [null, "Tên dịch vụ", "left"], ["category", "Danh mục", "left"], ["price", "Giá cơ bản", "right"],
+  ["minutes", "Thời gian", "center"], ["status", "Trạng thái", "left"],
+];
+const alignClass = { left: "text-left", right: "text-right", center: "text-center" } as const;
 
-type ServiceIndexResponse = {
-  data: {
-    data: Service[];
-    current_page: number;
-    last_page: number;
-    total: number;
-  };
-};
-
-type ServiceResponse = {
-  data: Service;
-};
-
-const emptyForm: ServiceForm = {
-  name: "",
-  category: "",
-  description: "",
-  base_price: "",
-  estimated_minutes: "",
-  status: "ACTIVE",
-};
-
-const fieldClass =
-  "w-full rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#1F2933] focus:ring-2 focus:ring-[#D6A85F]/20";
-
-function formatPrice(price: string | number): string {
-  const value = Number(price);
-
-  if (!Number.isFinite(value)) return "Chưa có giá";
-
-  return `${new Intl.NumberFormat("vi-VN").format(value)} đ`;
-}
-
-function Services() {
-  const { confirm } = useAppFeedback();
-  const [services, setServices] = useState<Service[]>([]);
+/** Dịch vụ — thống kê, bộ lọc và bảng dịch vụ; danh mục mở trong ngăn kéo bên phải. */
+export default function Services() {
+  const { confirm, notify } = useAppFeedback();
+  const [category, setCategory] = useState<CategoryFilter>("all");
+  const [status, setStatus] = useState<StatusFilter>("");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [lastPage, setLastPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [searchInput, setSearchInput] = useState("");
-  const [filters, setFilters] = useState({
-    search: "",
-    category: "",
-    status: "",
-  });
-  const [reloadKey, setReloadKey] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [modal, setModal] = useState<"form" | "detail" | null>(null);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [form, setForm] = useState<ServiceForm>(emptyForm);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [formError, setFormError] = useState("");
+  const [editing, setEditing] = useState<AdminService | null | undefined>(undefined); // undefined = đóng, null = thêm mới
+  const [viewing, setViewing] = useState<AdminService | null>(null);
+  const [showCategories, setShowCategories] = useState(false);
+  const [overrides, setOverrides] = useState<Record<number, Partial<AdminService>>>({});
+  const term = useDebounced(search.trim());
+  const tableSort = useTableSort(NEWEST_FIRST, () => setPage(1));
+  const { sort } = tableSort;
 
-  useEffect(() => {
-    let active = true;
-    const query = new URLSearchParams({ page: String(page) });
+  const params = {
+    page, per_page: PER_PAGE, search: term, status: status || undefined,
+    category_id: typeof category === "number" ? category : undefined,
+    uncategorized: category === "none" ? 1 : undefined,
+    ...tableSort.params,
+  };
+  const cats = useAdminQuery("service-categories", signal => catalogAdminApi.categories(signal));
+  const list = useAdminQuery(`services:${JSON.stringify(params)}`, signal => catalogAdminApi.services(params, signal));
+  const result = list.data ?? list.stale;
+  const categories = (cats.data ?? cats.stale)?.data ?? [];
+  const meta = (cats.data ?? cats.stale)?.meta;
+  const rows = (result?.data ?? []).map(s => ({ ...s, ...overrides[s.id] }));
 
-    if (filters.search) query.set("search", filters.search);
-    if (filters.category) query.set("category", filters.category);
-    if (filters.status) query.set("status", filters.status);
+  const reload = () => { setOverrides({}); list.reload(); cats.reload(); };
+  const pick = (c: CategoryFilter) => { setCategory(c); setPage(1); };
 
-    setIsLoading(true);
-    setError("");
-
-    fetchApi(`/admin/services?${query.toString()}`)
-      .then((response: ServiceIndexResponse) => {
-        if (!active) return;
-
-        const result = response.data;
-
-        setServices(Array.isArray(result.data) ? result.data : []);
-        setLastPage(Math.max(1, Number(result.last_page) || 1));
-        setTotal(Number(result.total) || 0);
-
-        if (page > Math.max(1, Number(result.last_page) || 1)) {
-          setPage(Math.max(1, Number(result.last_page) || 1));
-        }
-      })
-      .catch((requestError: unknown) => {
-        if (!active) return;
-
-        setServices([]);
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Không thể tải danh sách dịch vụ.",
-        );
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [filters, page, reloadKey]);
-
-  const activeCount = services.filter(
-    (service) => service.status === "ACTIVE",
-  ).length;
-
-  const inactiveCount = services.filter(
-    (service) => service.status === "INACTIVE",
-  ).length;
-
-  const openCreateModal = () => {
-    setSelectedService(null);
-    setForm(emptyForm);
-    setFormError("");
-    setModal("form");
+  const patch = async (s: AdminService, change: Partial<Pick<AdminService, "is_visible" | "status">>, message: string) => {
+    setOverrides(o => ({ ...o, [s.id]: { ...o[s.id], ...change } }));
+    try {
+      await catalogAdminApi.updateService(s.id, change);
+      notify(message, "success");
+      cats.reload();
+    } catch (e) {
+      setOverrides(o => { const next = { ...o }; delete next[s.id]; return next; });
+      notify(errorMessage(e, "Không cập nhật được dịch vụ."), "error");
+    }
   };
 
-  const openEditModal = (service: Service) => {
-    setSelectedService(service);
-    setForm({
-      name: service.name,
-      category: service.category ?? "",
-      description: service.description ?? "",
-      base_price: String(service.base_price ?? ""),
-      estimated_minutes: service.estimated_minutes?.toString() ?? "",
-      status: service.status,
+  const stop = async (s: AdminService) => {
+    const packages = s.active_packages_count ?? 0;
+    const accepted = await confirm({
+      title: `Ngừng áp dụng “${s.name}”?`,
+      description: `Dịch vụ sẽ tắt cả 2 trạng thái, khách không đặt được và không thêm được vào báo giá mới.${packages ? ` ${packages} gói bảo dưỡng đang bán sẽ tự bỏ qua dịch vụ này.` : ""}`,
+      confirmText: "Ngừng áp dụng", variant: "danger", confirmIcon: "ban",
     });
-    setFormError("");
-    setModal("form");
+    if (accepted) await patch(s, { status: "INACTIVE", is_visible: false }, `Đã ngừng dịch vụ “${s.name}”.`);
   };
 
-  const openDetailModal = async (service: Service) => {
-    setError("");
-    setNotice("");
-    setSelectedService(service);
-    setModal("detail");
-    setIsLoadingDetail(true);
+  const deleteBlocker = (s: AdminService) => s.status === "ACTIVE"
+    ? (s.is_visible ? "tắt cả 2 trạng thái trước" : "tắt Đang áp dụng trước")
+    : s.is_in_use ? "đã có trong lịch sử" : null;
 
+  const removePermanently = async (s: AdminService) => {
+    const accepted = await confirm({ title: `Xóa vĩnh viễn “${s.name}”?`, description: "Dịch vụ chưa từng được sử dụng nên không ảnh hưởng lịch sử. Thao tác này không thể hoàn tác.", confirmText: "Xóa vĩnh viễn", variant: "danger", confirmIcon: "trash" });
+    if (!accepted) return;
     try {
-      const response: ServiceResponse = await fetchApi(
-        `/admin/services/${service.id}`,
-      );
-      setSelectedService(response.data);
-    } catch (requestError: unknown) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Không thể tải thông tin dịch vụ.",
-      );
-    } finally {
-      setIsLoadingDetail(false);
+      notify((await catalogAdminApi.deleteServicePermanently(s.id)).message, "success");
+      if (rows.length === 1 && page > 1) setPage(page - 1);
+      reload();
+    } catch (e) {
+      notify(errorMessage(e, "Không xóa được dịch vụ."), "error");
+      reload();
     }
   };
 
-  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setPage(1);
-    setFilters((current) => ({
-      ...current,
-      search: searchInput.trim(),
-    }));
-    setNotice("");
-  };
+  const currentCategoryId = typeof category === "number" ? category : null;
+  const categoryOptions = [
+    { value: "all", label: "Tất cả danh mục" }, ...categories.map(c => ({ value: String(c.id), label: c.name })),
+    ...(meta?.uncategorized ? [{ value: "none", label: "Chưa phân loại" }] : []),
+  ];
 
-  const clearFilters = () => {
-    setSearchInput("");
-    setPage(1);
-    setFilters({ search: "", category: "", status: "" });
-    setError("");
-    setNotice("");
-  };
+  return <AdminPage demo={false} title="Dịch vụ" description="Danh mục dịch vụ hiển thị khi khách đặt lịch"
+    actions={<>
+      <Button variant="outline" icon="tag" onClick={() => setShowCategories(true)}>Xem danh mục dịch vụ</Button>
+      <Button variant="primary" icon="plus" onClick={() => setEditing(null)}>Thêm dịch vụ</Button>
+    </>}>
+    {meta && <dl className="mb-4 grid gap-3 sm:grid-cols-3">
+      {([
+        ["Tổng dịch vụ", meta.total, "grid"], ["Đang áp dụng", meta.active, "check"], ["Hiển thị cho khách", meta.visible, "eye"],
+      ] as const).map(([label, value, icon]) => <div key={label} className="flex items-center gap-3 rounded-card border border-cs-border bg-cs-surface px-4 py-3 shadow-card">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-cs-soft text-cs-accent-text" aria-hidden="true"><Icon name={icon} size={18}/></span>
+        <span className="min-w-0">
+          <dt className="truncate text-caption text-cs-muted">{label}</dt>
+          <dd className="text-subheading font-bold tabular-nums text-cs-text">{value ?? "—"}</dd>
+        </span>
+      </div>)}
+    </dl>}
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFormError("");
-    setNotice("");
-
-    const name = form.name.trim();
-    const basePrice = Number(form.base_price);
-    const estimatedMinutes = form.estimated_minutes
-      ? Number(form.estimated_minutes)
-      : null;
-
-    if (!name) {
-      setFormError("Vui lòng nhập tên dịch vụ.");
-      return;
-    }
-
-    if (
-      form.base_price.trim() === "" ||
-      !Number.isFinite(basePrice) ||
-      basePrice < 0
-    ) {
-      setFormError("Giá dịch vụ phải là số hợp lệ và không âm.");
-      return;
-    }
-
-    if (
-      estimatedMinutes !== null &&
-      (!Number.isInteger(estimatedMinutes) || estimatedMinutes <= 0)
-    ) {
-      setFormError("Thời gian phải là số nguyên lớn hơn 0.");
-      return;
-    }
-
-    const payload = {
-      name,
-      category: form.category.trim() || null,
-      description: form.description.trim() || null,
-      base_price: basePrice,
-      estimated_minutes: estimatedMinutes,
-      status: form.status,
-    };
-
-    setIsSaving(true);
-
-    try {
-      await fetchApi(
-        selectedService
-          ? `/admin/services/${selectedService.id}`
-          : "/admin/services",
-        {
-          method: selectedService ? "PATCH" : "POST",
-          body: JSON.stringify(payload),
-        },
-      );
-
-      setModal(null);
-      setPage(1);
-      setSearchInput("");
-      setFilters({ search: "", category: "", status: "" });
-      setNotice(
-        selectedService
-          ? "Cập nhật dịch vụ thành công."
-          : "Thêm dịch vụ thành công.",
-      );
-      setReloadKey((current) => current + 1);
-    } catch (requestError: unknown) {
-      setFormError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Không thể lưu dịch vụ.",
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async (service: Service) => {
-    if (isDeleting) return;
-
-    const confirmed = await confirm({ title: "Ẩn dịch vụ", description: `Dịch vụ “${service.name}” sẽ không còn xuất hiện trong danh mục hoạt động.`, confirmText: "Ẩn dịch vụ" });
-
-    if (!confirmed) return;
-
-    setError("");
-    setNotice("");
-    setIsDeleting(true);
-    setDeletingId(service.id);
-
-    try {
-      await fetchApi(`/admin/services/${service.id}`, {
-        method: "DELETE",
-      });
-
-      setNotice(`Đã xử lý yêu cầu ẩn dịch vụ "${service.name}".`);
-
-      if (services.length === 1 && page > 1) {
-        setPage((current) => current - 1);
-      } else {
-        setReloadKey((current) => current + 1);
-      }
-    } catch (requestError: unknown) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Không thể ẩn dịch vụ.",
-      );
-    } finally {
-      setIsDeleting(false);
-      setDeletingId(null);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdminSidebar />
-
-      <div className="lg:ml-[250px]">
-        <AdminTopbar />
-
-        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-[1200px]">
-            <div className="mb-8">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#B68A43]">
-                KHÔNG GIAN LÀM VIỆC / QUẢN TRỊ VIÊN
-              </p>
-
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F2933] text-sm font-bold text-white">
-                    AD
-                  </div>
-
-                  <div>
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                      Quản lý dịch vụ
-                    </h1>
-                    <p className="mt-1 text-xs text-[#66717C]">
-                      Quản lý thông tin, giá và trạng thái dịch vụ sửa chữa.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={openCreateModal}
-                  className="cs-btn cs-btn-primary"
-                >
-                  + Thêm dịch vụ
-                </button>
-              </div>
-            </div>
-
-            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-[#66717C]">
-                    Tổng dịch vụ
-                  </p>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3E8D2] text-sm font-bold text-[#6D542A]">
-                    T
-                  </span>
-                </div>
-                <p className="mt-4 text-2xl font-bold">
-                  {isLoading ? "—" : total}
-                </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Tổng số kết quả theo bộ lọc
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-[#66717C]">
-                    Đang hoạt động
-                  </p>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E7F3E8] text-sm font-bold text-[#397044]">
-                    ✓
-                  </span>
-                </div>
-                <p className="mt-4 text-2xl font-bold">
-                  {isLoading ? "—" : activeCount}
-                </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Trên trang đang hiển thị
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5 sm:col-span-2 xl:col-span-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-[#66717C]">
-                    Ngừng hoạt động
-                  </p>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F2F3] text-sm font-bold text-[#66717C]">
-                    —
-                  </span>
-                </div>
-                <p className="mt-4 text-2xl font-bold">
-                  {isLoading ? "—" : inactiveCount}
-                </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Trên trang đang hiển thị
-                </p>
-              </div>
-            </div>
-
-            <AdminHubNav />
-
-            <section className="mb-6 rounded-2xl border border-[#E1E4E6] bg-white p-4 sm:p-6">
-              <div className="mb-4">
-                <h2 className="text-sm font-bold">Tìm kiếm và lọc</h2>
-                <p className="mt-1 text-xs text-[#8A949E]">
-                  Nhập thông tin hoặc chọn trạng thái để tìm dịch vụ.
-                </p>
-              </div>
-
-              <form onSubmit={handleSearch} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <input
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  type="search"
-                  placeholder="Tên dịch vụ..."
-                  className={fieldClass}
-                />
-
-                <input
-                  value={filters.category}
-                  onChange={(event) => {
-                    setPage(1);
-                    setFilters((current) => ({
-                      ...current,
-                      category: event.target.value,
-                    }));
-                  }}
-                  type="text"
-                  placeholder="Danh mục..."
-                  className={fieldClass}
-                />
-
-                <select
-                  value={filters.status}
-                  onChange={(event) => {
-                    setPage(1);
-                    setFilters((current) => ({
-                      ...current,
-                      status: event.target.value,
-                    }));
-                  }}
-                  className={fieldClass}
-                >
-                  <option value="">Tất cả trạng thái</option>
-                  <option value="ACTIVE">Đang hoạt động</option>
-                  <option value="INACTIVE">Ngừng hoạt động</option>
-                </select>
-
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="cs-btn cs-btn-primary flex-1"
-                  >
-                    Tìm kiếm
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="rounded-xl border border-[#D9DDE1] px-4 py-3 text-xs font-semibold transition hover:bg-[#F3F4F2]"
-                  >
-                    Xóa lọc
-                  </button>
-                </div>
-              </form>
-            </section>
-
-            {notice && (
-              <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-[#D8E8D9] bg-[#F0F7F0] px-4 py-3 text-sm text-[#35633B]">
-                <p>{notice}</p>
-                <button
-                  type="button"
-                  onClick={() => setNotice("")}
-                  className="font-bold"
-                  aria-label="Đóng thông báo"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
-            <section className="overflow-hidden rounded-2xl border border-[#E1E4E6] bg-white">
-              <div className="flex flex-col justify-between gap-2 border-b border-[#EEF0F2] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#B68A43]">
-                    SERVICE MANAGEMENT
-                  </p>
-                  <h2 className="mt-1 text-base font-bold">
-                    Danh sách dịch vụ
-                  </h2>
-                </div>
-
-                <p className="text-xs text-[#8A949E]">
-                  {total} kết quả
-                </p>
-              </div>
-
-              {error && (
-                <div
-                  role="alert"
-                  className="m-5 flex items-start justify-between gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-700"
-                >
-                  <p>{error}</p>
-                  <button
-                    type="button"
-                    onClick={() => setError("")}
-                    className="font-bold"
-                    aria-label="Đóng thông báo lỗi"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-
-              {isLoading ? (
-                <div className="p-10 text-center">
-                  <p className="text-sm font-medium text-[#66717C]">
-                    Đang tải dịch vụ...
-                  </p>
-                </div>
-              ) : services.length === 0 ? (
-                <div className="px-5 py-14 text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F3F4F2] text-lg">
-                    —
-                  </div>
-                  <p className="mt-4 text-sm font-semibold">
-                    Không tìm thấy dịch vụ
-                  </p>
-                  <p className="mt-1 text-xs text-[#8A949E]">
-                    Thử thay đổi từ khóa hoặc xóa bộ lọc.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="mt-4 rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-xs font-semibold hover:bg-[#F3F4F2]"
-                  >
-                    Xóa bộ lọc
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3 p-4 sm:p-5">
-                  {services.map((service, index) => (
-                    <article
-                      key={service.id}
-                      className="rounded-2xl border border-[#E5E8EA] bg-[#FAFAF8] p-4 transition hover:border-[#D5D9DC] sm:p-5"
-                    >
-                      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1F2933] text-[10px] font-bold text-white">
-                            {String((page - 1) * 10 + index + 1).padStart(2, "0")}
-                          </div>
-
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="break-words text-sm font-bold">
-                                {service.name}
-                              </h3>
-                              <span
-                                className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${
-                                  service.status === "ACTIVE"
-                                    ? "bg-[#F3E8D2] text-[#3A3020]"
-                                    : "bg-[#F1F2F3] text-[#66717C]"
-                                }`}
-                              >
-                                {service.status === "ACTIVE"
-                                  ? "Đang hoạt động"
-                                  : "Ngừng hoạt động"}
-                              </span>
-                            </div>
-
-                            <p className="mt-1 text-[10px] text-[#8A949E]">
-                              DV-{String(service.id).padStart(3, "0")}
-                              {service.category ? ` · ${service.category}` : ""}
-                            </p>
-
-                            <p className="mt-2 max-w-md break-words text-xs leading-5 text-[#66717C]">
-                              {service.description || "Chưa có mô tả."}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 xl:min-w-[330px]">
-                          <div>
-                            <p className="text-[10px] text-[#8A949E]">
-                              GIÁ THAM KHẢO
-                            </p>
-                            <p className="mt-1 text-xs font-bold">
-                              {formatPrice(service.base_price)}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] text-[#8A949E]">
-                              THỜI GIAN
-                            </p>
-                            <p className="mt-1 text-xs font-semibold">
-                              {service.estimated_minutes
-                                ? `${service.estimated_minutes} phút`
-                                : "Chưa xác định"}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] text-[#8A949E]">
-                              MÃ DỊCH VỤ
-                            </p>
-                            <p className="mt-1 text-xs font-semibold">
-                              DV-{String(service.id).padStart(3, "0")}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => void openDetailModal(service)}
-                            disabled={isLoadingDetail}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[10px] font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-50"
-                          >
-                            Chi tiết
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(service)}
-                            className="rounded-xl border border-[#D9DDE1] bg-white px-4 py-2.5 text-[10px] font-semibold transition hover:bg-[#F3F4F2]"
-                          >
-                            Chỉnh sửa
-                          </button>
-
-                          {service.status === "ACTIVE" && (
-                            <button
-                              type="button"
-                              disabled={isDeleting}
-                              onClick={() => void handleDelete(service)}
-                              className="cs-btn cs-btn-danger-outline"
-                            >
-                              {deletingId === service.id
-                                ? "Đang xử lý..."
-                                : "Ẩn dịch vụ"}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex flex-col gap-3 border-t border-[#EEF0F2] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-xs text-[#66717C]">
-                  Trang {page} / {lastPage} · {total} dịch vụ
-                </span>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={page <= 1 || isLoading}
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-40"
-                  >
-                    Trước
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={page >= lastPage || isLoading}
-                    onClick={() =>
-                      setPage((current) => Math.min(lastPage, current + 1))
-                    }
-                    className="rounded-lg border border-[#D9DDE1] px-4 py-2 text-xs font-semibold transition hover:bg-[#F3F4F2] disabled:opacity-40"
-                  >
-                    Tiếp
-                  </button>
-                </div>
-              </div>
-            </section>
-          </div>
-        </main>
+    <section aria-label="Danh sách dịch vụ" className="min-w-0 rounded-card border border-cs-border bg-cs-surface shadow-card">
+      <div className="flex flex-wrap items-center gap-3 border-b border-cs-border p-4">
+        <SearchInput className="sm:max-w-sm" value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Tìm theo tên dịch vụ…"/>
+        <FilterSelect label="Danh mục" value={String(category)} onChange={v => pick(v === "all" || v === "none" ? v : Number(v))} options={categoryOptions}/>
+        <FilterSelect label="Trạng thái" value={status} onChange={v => { setStatus(v); setPage(1); }} options={[
+          { value: "", label: "Tất cả trạng thái" }, { value: "ACTIVE", label: "Đang áp dụng" }, { value: "INACTIVE", label: "Nháp / Ngừng" },
+        ]}/>
+        <ClearFilters active={search !== "" || category !== "all" || status !== "" || !tableSort.isDefault}
+          onClear={() => { setSearch(""); setCategory("all"); setStatus(""); tableSort.reset(); setPage(1); }}/>
       </div>
 
-      {modal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-4"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget && !isSaving) {
-              setModal(null);
-            }
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="service-modal-title"
-            className="my-auto max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6"
-          >
-            {modal === "form" ? (
-              <>
-                <h2 id="service-modal-title" className="mb-5 text-xl font-bold">
-                  {selectedService ? "Cập nhật dịch vụ" : "Thêm dịch vụ"}
-                </h2>
+      {list.error ? <ErrorState description={list.error} onRetry={list.reload}/>
+        : list.loading && !rows.length ? <LoadingState/>
+        : !rows.length ? <EmptyState title="Không có dịch vụ" description={term || status ? "Thử đổi từ khoá hoặc bộ lọc." : "Bấm “Thêm dịch vụ” để tạo dịch vụ đầu tiên của danh mục này."}/>
+        : <div className="overflow-x-auto" aria-busy={list.loading || undefined}>
+          <table data-ui="table" className="w-full min-w-[760px] table-fixed border-collapse text-small">
+            <caption className="sr-only">Danh sách dịch vụ — bấm tiêu đề cột để sắp xếp</caption>
+            <colgroup><col className="w-[30%]"/><col/><col/><col/><col/><col className="w-[88px]"/></colgroup>
+            <thead>
+              <tr className="bg-cs-surface-2 text-cs-text-2">
+                {COLUMNS.map(([key, label, align]) => <th key={label} scope="col" aria-sort={key ? ariaSort(sort, key) : undefined}
+                  className={`whitespace-nowrap px-3 py-3 font-semibold ${alignClass[align]}`}>
+                  {key ? <SortHeader label={label} sortKey={key} sort={sort} onSort={tableSort.toggle} align={align}/> : label}
+                </th>)}
+                <th scope="col" className="whitespace-nowrap px-3 py-3 text-right font-semibold">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(s => {
+                const active = s.status === "ACTIVE";
+                const missing = serviceActivationProblems(s);
+                const isDraft = !active && missing.length > 0;
+                const blocker = deleteBlocker(s);
+                const tone = CATEGORY_TONE[s.service_category?.icon ?? "wrench"] ?? "neutral";
+                return <tr key={s.id} className={`border-t border-cs-border transition-colors hover:bg-cs-hover/60 ${active ? "" : "text-cs-muted"}`}>
+                  <td className="px-3 py-3">
+                    <span className="flex min-w-0 items-center gap-3">
+                      {s.image_url
+                        ? <img src={s.image_url} alt="" className={`size-10 shrink-0 rounded-control border border-cs-border object-cover ${active ? "" : "opacity-60"}`} loading="lazy"/>
+                        : <span className={`grid size-10 shrink-0 place-items-center rounded-control ${active ? "bg-cs-soft text-cs-accent-text" : "bg-cs-surface-2 text-cs-muted"}`}><Icon name={iconOf(s)} size={20}/></span>}
+                      <span className="min-w-0">
+                        <button type="button" onClick={() => setViewing(s)} className="block max-w-full cursor-pointer truncate text-left font-semibold text-cs-text hover:underline">{s.name}</button>
+                        <span className="block truncate text-caption text-cs-muted font-medium">{s.description || "Chưa có mô tả"}</span>
+                      </span>
+                    </span>
+                  </td>
+                  <td className="px-3 py-3">{s.service_category ? <Pill tone={tone}>{s.service_category.name}</Pill> : <span className="text-caption text-cs-muted">Chưa phân loại</span>}</td>
+                  <td className="whitespace-nowrap px-3 py-3 text-right font-semibold tabular-nums text-cs-text">{money(s.base_price)}</td>
+                  <td className="whitespace-nowrap px-3 py-3 text-center tabular-nums text-cs-text-2">{s.estimated_minutes ? `${s.estimated_minutes} phút` : "—"}</td>
+                  <td className="whitespace-nowrap px-3 py-3">
+                    <span className="inline-flex items-center gap-2.5">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-caption font-semibold ${active ? "bg-success-soft text-success-fg" : isDraft ? "bg-warning-soft text-warning-fg" : "bg-neutral-soft text-neutral-fg"}`}>
+                        <span className={`size-1.5 rounded-full ${active ? "bg-success" : isDraft ? "bg-warning" : "bg-cs-muted"}`} aria-hidden="true"/>{active ? "Áp dụng" : isDraft ? "Nháp" : "Ngừng"}
+                      </span>
+                      <Switch checked={active && s.is_visible} disabled={!active} label={active ? `Hiển thị “${s.name}” cho khách khi đặt lịch` : `Bật Đang áp dụng cho “${s.name}” trước khi hiển thị`}
+                        onChange={v => void patch(s, { is_visible: v }, v ? `“${s.name}” đã hiện trên trang đặt lịch của khách.` : `Đã ẩn “${s.name}” khỏi trang đặt lịch (nhân viên vẫn dùng được khi báo giá).`)}/>
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    <Dropdown label={`Thao tác dịch vụ ${s.name}`} items={[
+                      { label: "Chỉnh sửa", icon: "edit", onSelect: () => setEditing(s) },
+                      { label: "Chi tiết & bước chuẩn", icon: "eye", onSelect: () => setViewing(s) },
+                      { type: "separator" },
+                      active
+                        ? { label: "Ngừng áp dụng", icon: "ban", danger: true, onSelect: () => void stop(s) }
+                        : { label: missing.length ? `Áp dụng (thiếu ${missing.join(", ")})` : "Áp dụng lại", icon: "check", disabled: missing.length > 0,
+                          onSelect: () => void patch(s, { status: "ACTIVE" }, `Đã áp dụng “${s.name}”. Bật Hiển thị nếu muốn khách thấy dịch vụ.`) },
+                      { label: blocker ? `Xóa vĩnh viễn (${blocker})` : "Xóa vĩnh viễn", icon: "trash", danger: true, disabled: blocker !== null, onSelect: () => void removePermanently(s) },
+                    ]}/>
+                  </td>
+                </tr>;
+              })}
+            </tbody>
+          </table>
+        </div>}
+      {result && result.last_page > 1 && <div className="border-t border-cs-border px-4 pb-4">
+        <Pagination page={result.current_page} totalPages={result.last_page} totalItems={result.total} pageSize={result.per_page}
+          disabled={list.loading} onChange={setPage}/>
+      </div>}
+    </section>
 
-                <form
-                  onSubmit={(event) => void handleSubmit(event)}
-                  className="space-y-4"
-                >
-                  <label className="block text-xs font-semibold">
-                    Tên dịch vụ *
-                    <input
-                      required
-                      maxLength={150}
-                      value={form.name}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          name: event.target.value,
-                        }))
-                      }
-                      className={`${fieldClass} mt-2 font-normal`}
-                    />
-                  </label>
-
-                  <label className="block text-xs font-semibold">
-                    Danh mục
-                    <input
-                      maxLength={100}
-                      value={form.category}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          category: event.target.value,
-                        }))
-                      }
-                      className={`${fieldClass} mt-2 font-normal`}
-                    />
-                  </label>
-
-                  <label className="block text-xs font-semibold">
-                    Mô tả
-                    <textarea
-                      rows={3}
-                      maxLength={1000}
-                      value={form.description}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          description: event.target.value,
-                        }))
-                      }
-                      className={`${fieldClass} mt-2 font-normal`}
-                    />
-                  </label>
-
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <label className="block text-xs font-semibold">
-                      Giá tham khảo *
-                      <input
-                        required
-                        min="0"
-                        step="0.01"
-                        type="number"
-                        value={form.base_price}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            base_price: event.target.value,
-                          }))
-                        }
-                        className={`${fieldClass} mt-2 font-normal`}
-                      />
-                    </label>
-
-                    <label className="block text-xs font-semibold">
-                      Thời gian (phút)
-                      <input
-                        min="1"
-                        step="1"
-                        type="number"
-                        value={form.estimated_minutes}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            estimated_minutes: event.target.value,
-                          }))
-                        }
-                        className={`${fieldClass} mt-2 font-normal`}
-                      />
-                    </label>
-
-                    <label className="block text-xs font-semibold">
-                      Trạng thái
-                      <select
-                        value={form.status}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            status:
-                              event.target.value === "INACTIVE"
-                                ? "INACTIVE"
-                                : "ACTIVE",
-                          }))
-                        }
-                        className={`${fieldClass} mt-2 font-normal`}
-                      >
-                        <option value="ACTIVE">Đang hoạt động</option>
-                        <option value="INACTIVE">Ngừng hoạt động</option>
-                      </select>
-                    </label>
-                  </div>
-
-                  {formError && (
-                    <p
-                      role="alert"
-                      className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
-                    >
-                      {formError}
-                    </p>
-                  )}
-
-                  <div className="flex flex-wrap justify-end gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setModal(null)}
-                      disabled={isSaving}
-                      className="rounded-xl border border-[#D9DDE1] px-4 py-2.5 text-xs font-semibold disabled:opacity-50"
-                    >
-                      Hủy
-                    </button>
-
-                    <button
-                      type="submit"
-                      disabled={isSaving}
-                      className="cs-btn cs-btn-primary"
-                    >
-                      {isSaving ? "Đang lưu..." : "Lưu dịch vụ"}
-                    </button>
-                  </div>
-                </form>
-              </>
-            ) : (
-              <>
-                <h2 id="service-modal-title" className="mb-5 text-xl font-bold">
-                  Chi tiết dịch vụ
-                </h2>
-
-                {isLoadingDetail ? (
-                  <p className="py-8 text-center text-sm text-[#66717C]">
-                    Đang tải thông tin...
-                  </p>
-                ) : selectedService ? (
-                  <dl className="space-y-4 text-sm">
-                    <div>
-                      <dt className="text-xs text-[#8A949E]">Mã dịch vụ</dt>
-                      <dd className="mt-1 font-semibold">
-                        DV-{String(selectedService.id).padStart(3, "0")}
-                      </dd>
-                    </div>
-
-                    <div>
-                      <dt className="text-xs text-[#8A949E]">Tên dịch vụ</dt>
-                      <dd className="mt-1 font-semibold">
-                        {selectedService.name}
-                      </dd>
-                    </div>
-
-                    <div>
-                      <dt className="text-xs text-[#8A949E]">Danh mục</dt>
-                      <dd className="mt-1">
-                        {selectedService.category || "Chưa phân loại"}
-                      </dd>
-                    </div>
-
-                    <div>
-                      <dt className="text-xs text-[#8A949E]">Mô tả</dt>
-                      <dd className="mt-1 whitespace-pre-wrap">
-                        {selectedService.description || "Chưa có mô tả."}
-                      </dd>
-                    </div>
-
-                    <div>
-                      <dt className="text-xs text-[#8A949E]">Giá tham khảo</dt>
-                      <dd className="mt-1 font-semibold">
-                        {formatPrice(selectedService.base_price)}
-                      </dd>
-                    </div>
-
-                    <div>
-                      <dt className="text-xs text-[#8A949E]">Thời gian dự kiến</dt>
-                      <dd className="mt-1">
-                        {selectedService.estimated_minutes
-                          ? `${selectedService.estimated_minutes} phút`
-                          : "Chưa xác định"}
-                      </dd>
-                    </div>
-
-                    <div>
-                      <dt className="text-xs text-[#8A949E]">Trạng thái</dt>
-                      <dd className="mt-1">
-                        {selectedService.status === "ACTIVE"
-                          ? "Đang hoạt động"
-                          : "Ngừng hoạt động"}
-                      </dd>
-                    </div>
-                  </dl>
-                ) : (
-                  <p className="py-6 text-sm text-[#66717C]">
-                    Không có thông tin dịch vụ.
-                  </p>
-                )}
-
-                <div className="mt-6 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setModal(null)}
-                    className="cs-btn cs-btn-primary"
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </>
-            )}
-          </section>
-        </div>
-      )}
-    </div>
-  );
+    {editing !== undefined && <ServiceFormModal open key={editing?.id ?? "new"} service={editing} categories={categories} defaultCategoryId={currentCategoryId}
+      onClose={() => setEditing(undefined)} onSaved={() => { setEditing(undefined); reload(); }}/>}
+    <ServiceDetailModal service={viewing} onClose={() => setViewing(null)}
+      onStepsSaved={(minutes, stepsCount) => {
+        if (!viewing) return;
+        const change = { steps_count: stepsCount, ...(minutes !== null ? { estimated_minutes: minutes } : {}) };
+        setViewing({ ...viewing, ...change });
+        setOverrides(o => ({ ...o, [viewing.id]: { ...o[viewing.id], ...change } }));
+      }}/>
+    <CategoryDrawer open={showCategories} categories={categories} icons={meta?.icons ?? []} total={meta?.total ?? 0} uncategorized={meta?.uncategorized ?? 0}
+      filter={category} onFilter={pick} onClose={() => setShowCategories(false)} onChanged={() => { cats.reload(); list.reload(); }}/>
+  </AdminPage>;
 }
-
-export default Services;
