@@ -72,3 +72,39 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
     if (brandId && !modelId) problems.model = "Chọn dòng xe, hoặc để “Dùng chung mọi dòng xe”.";
     if (kmN !== null && (!Number.isInteger(kmN) || kmN <= 0)) problems.km = "Mốc km phải là số nguyên lớn hơn 0.";
     if (monthsN !== null && (!Number.isInteger(monthsN) || monthsN <= 0)) problems.months = "Mốc tháng phải là số nguyên lớn hơn 0.";
+    if (!Object.keys(picked).length) problems.services = "Chọn ít nhất một dịch vụ trong gói.";
+    setError("");
+    if (fieldErrors.show(problems)) return;
+    const payload: PackagePayload = {
+      name: name.trim(), vehicle_model_id: modelId ? Number(modelId) : null, mileage_milestone: kmN, month_milestone: monthsN,
+      description: description.trim() || null, status: active ? "ACTIVE" : "INACTIVE",
+      services: Object.entries(picked).map(([id, quantity]) => ({ service_id: Number(id), quantity })),
+      parts: parts.map(p => ({ part_id: p.part_id, quantity: p.quantity })),
+    };
+    setSaving(true);
+    setError("");
+    try {
+      const res = pkg ? await catalogAdminApi.updatePackage(pkg.id, payload) : await catalogAdminApi.createPackage(payload);
+      notify(`${pkg ? "Đã cập nhật" : "Đã tạo"} gói “${payload.name}”: ${payload.services.length} dịch vụ, ${payload.parts.length} phụ tùng, ước tính ${money(res.data.price)}.`, "success");
+      onSaved(res.data);
+    } catch (e) {
+      fieldErrors.showApi(e, { name: "name", vehicle_model_id: "model", mileage_milestone: "km", month_milestone: "months", description: "description", services: "services" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const qty = (value: number, onChange: (n: number) => void, label: string) => <QuantityStepper value={value} onChange={n => onChange(n ?? 1)} label={label}/>;
+
+  return <Modal open={open} onClose={onClose} dismissible={!saving} size="lg" title={pkg ? "Chỉnh sửa gói bảo dưỡng" : "Tạo gói bảo dưỡng"}
+    footer={<>
+      <span className="mr-auto text-small text-cs-muted">Tổng ước tính <b className="text-subheading tabular-nums text-cs-accent-text">{money(serviceTotal + partTotal)}</b></span>
+      <Button disabled={saving} onClick={onClose}>Huỷ</Button>
+      <Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void submit()}>{pkg ? "Lưu thay đổi" : "Tạo gói"}</Button>
+    </>}>
+    <div className="grid gap-4 md:grid-cols-2">
+      <Field label="Tên gói" required error={fieldErrors.errors.name} className="md:col-span-2"><Input value={name} maxLength={150} placeholder="Ví dụ: Bảo dưỡng 10.000 km – Toyota Vios" onChange={e => { setName(e.target.value); fieldErrors.clear("name"); }}/></Field>
+      <Field label="Hãng xe">
+        <Select value={brandId} onChange={e => { setBrandId(e.target.value); setModelId(""); setModels([]); fieldErrors.clear("model"); }}>
+          <option value="">Dùng chung mọi dòng xe</option>
+          {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
