@@ -19,3 +19,10 @@ export const shortVnd = (value: number) => value >= 1_000_000 ? `${num(Math.roun
 export function initials(name: string) {
   const parts = name.trim().split(/\s+/);
   return (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : parts[0].slice(0, 2)).toUpperCase();
+}
+
+/** Màu biểu đồ (token --cs-chart-*). */
+export const chartColor = {
+  brand: "var(--cs-chart-1)",
+  brandSoft: "var(--cs-chart-2)",
+  blue: "var(--cs-chart-3)",
