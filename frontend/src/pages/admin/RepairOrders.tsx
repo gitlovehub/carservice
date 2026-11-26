@@ -29,3 +29,34 @@ export default function RepairOrders() {
 
   const tableSort = useTableSort(NEWEST_FIRST, () => setPage(1));
   const period = usePeriod("all", () => setPage(1));
+  const params = { group, technician_id: tech, search: term, page, ...period.params, ...tableSort.params };
+  const list = useAdminQuery(`orders:${JSON.stringify(params)}`, signal => adminApi.repairOrders(params, signal));
+  const detail = useAdminQuery(selectedId === null ? null : `order:${selectedId}`, signal => adminApi.repairOrder(selectedId as number, signal));
+  const result = list.data ?? list.stale;
+  const rows = result?.data ?? [];
+  const summary = result?.summary;
+  const selected = detail.data;
+
+  const resetPage = <T,>(set: (value: T) => void) => (value: T) => { set(value); setPage(1); };
+
+  const columns: Column<AdminOrder>[] = [
+    { key: "code", sortKey: "code", header: "Mã phiếu", primary: true, render: o => <span className="whitespace-nowrap font-semibold text-cs-accent-text">{o.code}</span> },
+    { key: "vehicle", header: "Xe / Khách", render: o => <span className="block min-w-36"><b className="block whitespace-nowrap text-cs-text">{o.vehicle || "—"}</b><span className="block whitespace-nowrap text-caption text-cs-muted">{o.plate ?? "Chưa có biển"} · {o.customer ?? "—"}</span></span> },
+    { key: "promised", sortKey: "promised", header: "Hẹn trả", render: o => o.estimated_ready_at ? <span className="whitespace-nowrap tabular-nums">{fmtTime(o.estimated_ready_at)}<span className="block text-caption text-cs-muted">{fmtDate(o.estimated_ready_at)}</span></span> : <span className="text-cs-muted">—</span> },
+    { key: "tech", header: "Kỹ thuật viên", hideOnMobile: true, render: o => <span className="whitespace-nowrap">{o.technician ?? <span className="text-cs-muted">Chưa phân công</span>}</span> },
+    { key: "estimate", header: "Dự kiến", align: "right", render: o => o.estimate ? <b className="tabular-nums">{vnd(o.estimate)}</b> : <span className="text-cs-muted">—</span> },
+    { key: "status", sortKey: "status", header: "Trạng thái", render: o => <StatusBadge domain="repair" status={o.status}/> },
+  ];
+
+  const pane = selectedId === null ? null : !selected
+    ? (detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact/>)
+    : <>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-subheading font-bold text-cs-accent-text">{selected.code}</span>
+        <StatusBadge domain="repair" status={selected.status}/>
+      </div>
+      <PaneSection title="Xe & khách hàng" icon="car">
+        <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+          <InfoList items={[
+            { label: "Xe", value: <b>{selected.vehicle || "—"}</b> },
+            { label: "Biển số", value: <b className="tabular-nums">{selected.plate ?? "Chưa có biển"}</b> },
