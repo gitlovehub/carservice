@@ -20,3 +20,24 @@ const person = (row?: { email?: string; employee?: { full_name?: string } | null
 function DocumentPreview({ id, kind, label }: { id: number; kind: "id-document" | "registration"; label: string }) {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { notify } = useAppFeedback();
+  useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
+
+  return <div className="min-w-0 rounded-xl border border-cs-border p-3">
+    <p className="mb-2 text-caption font-semibold text-cs-muted">{label}</p>
+    {url
+      ? <a href={url} target="_blank" rel="noreferrer"><img src={url} alt={label} className="h-44 w-full rounded-lg object-contain"/></a>
+      : <Button size="sm" variant="outline" icon="eye" loading={loading} onClick={() => {
+        setLoading(true);
+        handoverExceptionApi.file(id, kind).then(blob => setUrl(URL.createObjectURL(blob)))
+          .catch(() => notify("Không tải được ảnh giấy tờ.", "error")).finally(() => setLoading(false));
+      }}>Xem ảnh</Button>}
+  </div>;
+}
+
+function ExceptionCard({ row, onChanged }: { row: HandoverExceptionRow; onChanged: () => void }) {
+  const { confirm, notify } = useAppFeedback();
+  const [note, setNote] = useState("");
+  const [working, setWorking] = useState(false);
+  const fieldErrors = useFieldErrors();
+  const vehicle = row.handover?.vehicle;
