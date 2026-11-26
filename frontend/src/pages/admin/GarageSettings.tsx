@@ -20,3 +20,25 @@ export default function GarageSettings() {
       <EmptyState icon="wrench" title="Trang đang nâng cấp, bảo trì"
         description="Chức năng chỉnh sửa thông tin gara tạm thời chưa sử dụng được. Thông tin hiện tại vẫn hiển thị bình thường cho khách. Vui lòng quay lại sau."/>
     </div>
+  </main>;
+  return <GarageSettingsForm/>;
+}
+
+/** Form thông tin gara. Địa chỉ chọn từ gợi ý bản đồ để có tọa độ chính xác. */
+function GarageSettingsForm() {
+  const [form, setForm] = useState<Form>(empty);
+  const [saved, setSaved] = useState<Form>(empty); // bản đã lưu — dùng khi bấm Huỷ
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { notify } = useAppFeedback();
+  const fieldErrors = useFieldErrors();
+  const patchField = (patch: Partial<Form>) => { fieldErrors.clear(...Object.keys(patch)); setForm(current => ({ ...current, ...patch })); };
+
+  useEffect(() => {
+    let active = true;
+    void garageApi.get().then(data => { if (active && data) { setForm({ ...empty, ...data }); setSaved({ ...empty, ...data }); } });
+    return () => { active = false; };
+  }, []);
+
+  async function save(event: FormEvent) {
+    event.preventDefault();
