@@ -1,572 +1,394 @@
+import { useMemo, useState, type ReactNode } from "react";
+import { Button, DataTable, Dropdown, ErrorState, Icon, IconButton, LoadingState, NEWEST_FIRST, Pagination, SearchInput, useTableSort, type Column, type DropdownItem } from "../../components/ui";
+import { StatusBadge } from "../../components/ui/Badge";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { getStatus } from "../../config/status";
+import { errorMessage } from "../../services/adminApi";
+import {
+  catalogAdminApi, dmy, hhmm, money, weekRange,
+  type AppointmentRow, type AppointmentStatus,
+} from "../../services/catalogAdminApi";
+import { capacityApi, sendAppointmentConfirmationEmail } from "../../services/workflowService";
+import { capacityText, confirmAppointmentOptions, sendEmailConfirmOptions } from "../advisor/workflowFormat";
+import { AdminPage, ClearFilters, PaneSection, SplitView, Tabs, Toolbar } from "./kit/AdminKit";
+import type { Tone } from "./kit/format";
+import { PeriodFilter } from "./kit/PeriodFilter";
+import { usePeriod } from "./kit/period";
+import { useAdminQuery } from "./kit/useAdminQuery";
+import { useDebounced } from "./kit/useDebounced";
+import { CancelAppointmentModal, CreateAppointmentModal } from "./appointments/AppointmentModals";
 
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import AdminSidebar from "./AdminSidebar";
-import AdminTopbar from "./AdminTopbar";
-import { fetchApi } from "../../services/api";
-
-type Appointment = {
-  recordId: number;
-  id: string;
-  time: string;
-  customer: string;
-  phone: string;
-  plate: string;
-  service: string;
-  status: "Chờ xác nhận" | "Đã xác nhận" | "Đã tiếp nhận" | "Đã hủy";
-};
-
-type ApiAppointment = {
-  id: number;
-  appointment_code: string;
-  appointment_date: string;
-  appointment_time: string;
-  status: string;
-  customer?: { full_name?: string; phone?: string } | null;
-  vehicle?: { license_plate?: string | null } | null;
-  services?: { name: string }[];
-  packages?: { name: string }[];
-};
-
-const statuses: Appointment["status"][] = [
-  "Chờ xác nhận",
-  "Đã xác nhận",
-  "Đã tiếp nhận",
-  "Đã hủy",
+type StatusFilter = "ALL" | AppointmentStatus;
+type View = "list" | "week";
+const STATUS_CHIPS: Array<{ id: StatusFilter; label: string; icon: "list" | "clock" | "check" | "car" | "x" | "ban"; tone: Tone }> = [
+  { id: "ALL", label: "Tất cả", icon: "list", tone: "neutral" },
+  { id: "PENDING", label: "Chờ xác nhận", icon: "clock", tone: "warning" },
+  { id: "CONFIRMED", label: "Đã xác nhận", icon: "check", tone: "info" },
+  { id: "CHECKED_IN", label: "Đã tiếp nhận xe", icon: "car", tone: "success" },
+  { id: "CANCELLED", label: "Đã huỷ", icon: "x", tone: "danger" },
+  { id: "NO_SHOW", label: "Không đến", icon: "ban", tone: "neutral" },
 ];
+const WEEKDAY = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+const PER_PAGE = 10;
+/** Lịch hẹn nhìn cả tương lai nên mặc định là tuần này. */
 
-function formatStatus(status: string): Appointment["status"] {
-  if (status === "CONFIRMED") return "Đã xác nhận";
-  if (status === "CHECKED_IN") return "Đã tiếp nhận";
-  if (status === "CANCELLED") return "Đã hủy";
-  return "Chờ xác nhận";
+const vehicleName = (a: AppointmentRow) => [a.vehicle?.model?.brand?.name, a.vehicle?.model?.name].filter(Boolean).join(" ") || "Chưa rõ dòng xe";
+/** Giờ hẹn khách chọn (không hiện giờ kết thúc — đó chỉ là ước tính của hệ thống). */
+const timeOf = (a: AppointmentRow) => hhmm(a.appointment_time);
+const itemNames = (a: AppointmentRow) => [...a.packages.map(p => p.name), ...a.services.map(s => s.name)];
+const isPast = (a: AppointmentRow) => new Date(`${a.appointment_date.slice(0, 10)}T${hhmm(a.appointment_time)}:00`).getTime() <= Date.now();
+
+/** Ô xe: dòng xe + biển số (chỉ chữ, không icon). */
+function VehicleCell({ a }: { a: AppointmentRow }) {
+  return <span className="block min-w-0">
+    <span className="block truncate font-semibold text-cs-text">{vehicleName(a)}</span>
+    <span className="block whitespace-nowrap text-caption font-medium tabular-nums text-cs-text-2">{a.vehicle?.license_plate ?? "Chưa có biển"}</span>
+  </span>;
 }
 
-function mapAppointment(item: ApiAppointment): Appointment {
-  const serviceNames = [...(item.services ?? []), ...(item.packages ?? [])]
-    .map((entry) => entry.name)
-    .join(", ");
-
-  const date = new Date(
-    `${item.appointment_date}T00:00:00`,
-  ).toLocaleDateString("vi-VN");
-
-  return {
-    recordId: item.id,
-    id: item.appointment_code,
-    time: `${date} · ${item.appointment_time.slice(0, 5)}`,
-    customer: item.customer?.full_name || "Khách hàng",
-    phone: item.customer?.phone || "",
-    plate: item.vehicle?.license_plate || "Chưa có biển số",
-    service: serviceNames || "Chưa chọn dịch vụ",
-    status: formatStatus(item.status),
-  };
-}
-
-function AdminAppointments() {
-  const { confirm } = useAppFeedback();
-  const navigate = useNavigate();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+/** Lịch hẹn — danh sách / lịch tuần, lọc theo trạng thái và tuần; ngăn chi tiết để xác nhận, tiếp nhận, huỷ. */
+export default function AdminAppointments() {
+  const { notify, confirm } = useAppFeedback();
+  const [view, setView] = useState<View>("list");
+  const [status, setStatus] = useState<StatusFilter>("ALL");
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("Tất cả");
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [anchor, setAnchor] = useState(() => new Date());
+  const [page, setPage] = useState(1);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [checked, setChecked] = useState<number[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  // ?create=1 (vd từ thông báo ở trang Đặt lịch khi nhân viên mở nhầm) → mở sẵn form tạo lịch hẹn hộ khách.
+  const [creating, setCreating] = useState(() => new URLSearchParams(window.location.search).get("create") === "1");
+  const [cancelling, setCancelling] = useState<AppointmentRow | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const term = useDebounced(search.trim());
+  const week = useMemo(() => weekRange(anchor), [anchor]);
 
-  const loadAppointments = useCallback(async (): Promise<boolean> => {
-    setLoading(true);
+  // Bảng: mặc định lịch mới tạo lên đầu. Lịch tuần luôn xếp theo giờ hẹn trong từng ngày.
+  const tableSort = useTableSort(NEWEST_FIRST, () => { setPage(1); setChecked([]); });
+  const period = usePeriod("week", () => { setPage(1); setChecked([]); });
+  // Danh sách lọc theo Kỳ; lịch tuần luôn xem trọn tuần đang chọn.
+  const range = view === "week" ? { date_from: week.from, date_to: week.to } : period.params;
+  const filters = {
+    ...range, search: term,
+    status: status === "ALL" ? undefined : status,
+    ...tableSort.params,
+  };
+  const listParams = view === "list" ? { ...filters, page, per_page: PER_PAGE } : { ...filters, sort: "time", dir: "asc", per_page: 500 };
+  const list = useAdminQuery(`appointments:${view}:${JSON.stringify(listParams)}`, signal => catalogAdminApi.appointments(listParams, signal));
+  const detail = useAdminQuery(selectedId === null ? null : `appointment:${selectedId}`, signal => catalogAdminApi.appointment(selectedId as number, signal));
+  const result = list.data ?? list.stale;
+  const rows = result?.data ?? [];
+  const counts = result?.counts ?? {};
+  const selected = detail.data;
 
+  const refresh = () => { list.reload(); detail.reload(); };
+  const resetPage = () => { setPage(1); setChecked([]); };
+  const shiftWeek = (weeks: number) => { setAnchor(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() + weeks * 7)); resetPage(); };
+
+  const run = async (key: string, task: () => Promise<{ message?: string } | void>, success: string) => {
+    setBusy(key);
     try {
-      const response = await fetchApi("/advisor/appointments?per_page=100");
-      setAppointments((response?.data ?? []).map(mapAppointment));
-      setError("");
-      return true;
-    } catch (requestError) {
-      if ((requestError as { status?: number })?.status === 401) {
-        localStorage.removeItem("isLoggedIn");
-        localStorage.removeItem("role");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/login");
-        return false;
-      }
-
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Không thể tải danh sách lịch hẹn.",
-      );
-      return false;
+      await task();
+      notify(success, "success");
+      refresh();
+    } catch (e) {
+      notify(errorMessage(e, "Không cập nhật được lịch hẹn."), "error");
     } finally {
-      setLoading(false);
+      setBusy(null);
     }
-  }, [navigate]);
-
-  useEffect(() => {
-    void loadAppointments();
-  }, [loadAppointments]);
-
-  const normalizedSearch = search.trim().toLowerCase();
-
-  const filteredAppointments = appointments.filter((appointment) => {
-    const matchesSearch = [
-      appointment.id,
-      appointment.customer,
-      appointment.phone,
-      appointment.plate,
-      appointment.service,
-    ].some((value) => value.toLowerCase().includes(normalizedSearch));
-
-    const matchesStatus =
-      status === "Tất cả" || appointment.status === status;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const pendingCount = appointments.filter(
-    (item) => item.status === "Chờ xác nhận",
-  ).length;
-
-  const confirmedCount = appointments.filter(
-    (item) => item.status === "Đã xác nhận",
-  ).length;
-
-  const checkedInCount = appointments.filter(
-    (item) => item.status === "Đã tiếp nhận",
-  ).length;
-
-  const cancelledCount = appointments.filter(
-    (item) => item.status === "Đã hủy",
-  ).length;
-
-  const handleStatusChange = async (
-    appointment: Appointment,
-    newStatus: Appointment["status"],
-  ) => {
-    if (updatingId !== null) return;
-
-    if (newStatus === "Đã hủy" && !await confirm({ title: "Xác nhận hủy lịch hẹn", description: `Bạn sắp hủy lịch #${appointment.id}. Hãy kiểm tra lại thông tin và quyền thực hiện.`, variant: "danger", confirmText: "Hủy lịch" })) return;
-
-    setUpdatingId(appointment.recordId);
-    setError("");
-    setMessage("");
-
-    const endpoint =
-      newStatus === "Đã xác nhận"
-        ? `/advisor/appointments/${appointment.recordId}/confirm`
-        : newStatus === "Đã tiếp nhận"
-          ? `/advisor/appointments/${appointment.recordId}/check-in`
-          : `/advisor/appointments/${appointment.recordId}/cancel`;
-
+  };
+  const who = (a: AppointmentRow) => a.customer?.full_name ?? "khách";
+  const sendConfirmEmail = async (a: AppointmentRow) => {
+    if (!await confirm(sendEmailConfirmOptions(a))) return;
+    await run(`email:${a.id}`, async () => { await sendAppointmentConfirmationEmail(a.id); }, `Đã gửi email xác nhận lịch ${a.appointment_code} cho ${who(a)}.`);
+  };
+  /** Cùng hộp xác minh với khu Cố vấn: gọi khách, hoặc gửi email để khách tự xác nhận. */
+  const confirmOne = async (a: AppointmentRow) => {
+    let capacityWarning: string | undefined;
     try {
-      await fetchApi(endpoint, {
-        method: "POST",
-        ...(newStatus === "Đã hủy"
-          ? {
-              body: JSON.stringify({
-                cancel_reason: "Admin hủy lịch hẹn",
-              }),
-            }
-          : {}),
-      });
+      const day = await capacityApi.day(a.appointment_date.slice(0, 10));
+      if (day?.over_capacity) capacityWarning = `Ngày này đã vượt công suất gara (${capacityText(day.load_minutes, day.capacity_minutes)}). Vẫn xác nhận được nếu khách đồng ý chờ lâu hơn.`;
+    } catch { /* Không lấy được công suất thì vẫn cho xác nhận. */ }
+    if (!await confirm(confirmAppointmentOptions(a, capacityWarning, a.customer?.email ? () => void sendConfirmEmail(a) : undefined))) return;
+    await run(`confirm:${a.id}`, () => catalogAdminApi.confirmAppointment(a.id),
+      `Đã xác nhận lịch ${a.appointment_code} của ${who(a)} (${hhmm(a.appointment_time)} - ${dmy(a.appointment_date)}).`);
+  };
+  const checkIn = (a: AppointmentRow) => run(`checkin:${a.id}`, () => catalogAdminApi.checkInAppointment(a.id),
+    `Đã tiếp nhận xe ${a.vehicle?.license_plate ?? ""} theo lịch ${a.appointment_code}.`);
+  const noShow = (a: AppointmentRow) => run(`noshow:${a.id}`, () => catalogAdminApi.noShowAppointment(a.id),
+    `Đã đánh dấu ${who(a)} không đến lịch ${a.appointment_code}.`);
 
-      const refreshed = await loadAppointments();
+  const confirmChecked = async () => {
+    const pending = rows.filter(r => checked.includes(r.id) && r.status === "PENDING");
+    if (!pending.length) return notify("Các lịch đã chọn không có lịch nào đang chờ xác nhận.", "info");
+    if (!await confirm({
+      title: `Xác nhận ${pending.length} lịch hẹn?`, description: "Chỉ xác nhận khi đã gọi và được từng khách đồng ý. Cần gửi email cho khách thì xác nhận từng lịch.",
+      confirmText: "Xác nhận các lịch", variant: "success", cancelText: "Để sau",
+      checklist: ["Tôi đã xác minh các lịch này với khách hàng."],
+    })) return;
+    setBusy("bulk");
+    const results = await Promise.allSettled(pending.map(r => catalogAdminApi.confirmAppointment(r.id)));
+    const ok = results.filter(r => r.status === "fulfilled").length;
+    setBusy(null);
+    setChecked([]);
+    notify(ok === pending.length ? `Đã xác nhận ${ok} lịch hẹn đang chờ.` : `Đã xác nhận ${ok}/${pending.length} lịch; ${pending.length - ok} lịch không xác nhận được.`, ok === pending.length ? "success" : "warning");
+    refresh();
+  };
 
-      if (refreshed) {
-        setMessage(`Đã cập nhật lịch hẹn ${appointment.id}.`);
-      } else {
-        setMessage(
-          "Thao tác đã gửi thành công, nhưng chưa thể tải lại danh sách.",
-        );
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const all: AppointmentRow[] = [];
+      for (let p = 1, last = 1; p <= last && p <= 20; p++) {
+        const chunk = await catalogAdminApi.appointments({ ...filters, page: p, per_page: 200 });
+        all.push(...chunk.data);
+        last = chunk.pagination.last_page;
       }
-    } catch (requestError) {
-      if ((requestError as { status?: number })?.status === 401) {
-        localStorage.removeItem("isLoggedIn");
-        localStorage.removeItem("role");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/login");
-        return;
-      }
-
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Không thể cập nhật lịch hẹn.",
-      );
+      const data = checked.length ? all.filter(a => checked.includes(a.id)) : all;
+      const escape = (cell: string | number) => `"${String(cell).replace(/"/g, '""')}"`;
+      const lines = [
+        ["Mã lịch", "Khách hàng", "Số điện thoại", "Xe", "Biển số", "Ngày hẹn", "Giờ hẹn", "Dịch vụ", "Dự kiến (₫)", "Trạng thái"],
+        ...data.map(a => [a.appointment_code, a.customer?.full_name ?? "", a.customer?.phone ?? "", vehicleName(a), a.vehicle?.license_plate ?? "",
+          dmy(a.appointment_date), timeOf(a), itemNames(a).join("; "),
+          Math.round(a.estimated_total ?? 0), getStatus("appointment", a.status, "staff").label]),
+      ];
+      const blob = new Blob(["﻿" + lines.map(r => r.map(escape).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const fileRange = range.date_from || range.date_to ? `${range.date_from ?? ""}-${range.date_to ?? ""}` : "tat-ca";
+      Object.assign(document.createElement("a"), { href: url, download: `lich-hen-${fileRange}.csv` }).click();
+      URL.revokeObjectURL(url);
+      const rangeText = range.date_from && range.date_to ? ` (${dmy(range.date_from)} – ${dmy(range.date_to)})` : "";
+      notify(`Đã xuất ${data.length} lịch hẹn${rangeText} ra file Excel (CSV).`, "success");
+    } catch (e) {
+      notify(errorMessage(e, "Không xuất được file."), "error");
     } finally {
-      setUpdatingId(null);
+      setExporting(false);
     }
   };
 
-  const getStatusStyle = (appointmentStatus: Appointment["status"]) => {
-    if (appointmentStatus === "Chờ xác nhận") {
-      return "bg-[#FFF6E6] text-[#9A6B22]";
-    }
+  const menu = (a: AppointmentRow): DropdownItem[] => [
+    { label: "Xem chi tiết", icon: "eye", onSelect: () => setSelectedId(a.id) },
+    ...(a.status === "PENDING" ? [{ label: "Xác nhận lịch", icon: "check" as const, onSelect: () => void confirmOne(a) }] : []),
+    ...(a.status === "PENDING" && !isPast(a) && a.customer?.email ? [{ label: "Gửi email xác nhận", icon: "mail" as const, onSelect: () => void sendConfirmEmail(a) }] : []),
+    ...(a.status === "CONFIRMED" ? [{ label: "Tiếp nhận xe", icon: "car" as const, onSelect: () => void checkIn(a) }] : []),
+    ...((a.status === "PENDING" || a.status === "CONFIRMED") && isPast(a) ? [{ label: "Khách không đến", icon: "ban" as const, onSelect: () => void noShow(a) }] : []),
+    ...(a.status === "PENDING" || a.status === "CONFIRMED" ? [{ type: "separator" as const }, { label: "Huỷ lịch", icon: "x" as const, danger: true, onSelect: () => setCancelling(a) }] : []),
+  ];
 
-    if (appointmentStatus === "Đã xác nhận") {
-      return "bg-[#EEF4FA] text-[#46627A]";
-    }
+  const paneOpen = selectedId !== null;
+  const allOnPage = rows.length > 0 && rows.every(r => checked.includes(r.id));
+  const columns: Column<AppointmentRow>[] = [
+    {
+      key: "check", width: "44px", hideOnMobile: true,
+      header: <input type="checkbox" className="size-4 cursor-pointer accent-[var(--cs-accent)]" aria-label="Chọn tất cả lịch trên trang" checked={allOnPage}
+        onChange={() => setChecked(allOnPage ? [] : rows.map(r => r.id))}/>,
+      render: a => <input type="checkbox" className="size-4 cursor-pointer accent-[var(--cs-accent)]" aria-label={`Chọn lịch ${a.appointment_code}`}
+        checked={checked.includes(a.id)} onClick={e => e.stopPropagation()}
+        onChange={() => setChecked(c => c.includes(a.id) ? c.filter(id => id !== a.id) : [...c, a.id])}/>,
+    },
+    { key: "customer", header: "Khách hàng", primary: true, render: a => <span className="block min-w-0">
+      <b className="block truncate text-cs-text">{a.customer?.full_name ?? "—"}</b>
+      <span className="inline-flex items-center gap-1 whitespace-nowrap text-caption text-cs-muted"><Icon name="phone" size={12}/>{a.customer?.phone ?? "—"}</span>
+    </span> },
+    { key: "vehicle", header: "Xe / Biển số", render: a => <VehicleCell a={a}/> },
+    { key: "time", sortKey: "time", header: "Ngày giờ hẹn", render: a => <span className="block whitespace-nowrap font-medium tabular-nums text-cs-text">{timeOf(a)} - {dmy(a.appointment_date)}</span> },
+    ...(paneOpen ? [] : [{ key: "services", header: "Dịch vụ khách chọn", hideOnMobile: true, render: (a: AppointmentRow) => {
+      const names = itemNames(a);
+      return names.length ? <span className="inline-flex max-w-[200px] items-center gap-1.5">
+        <span className="truncate rounded-full border border-cs-border bg-cs-surface-2 px-2.5 py-0.5 text-caption text-cs-text-2" title={names.join(", ")}>{names[0]}</span>
+        {names.length > 1 && <span className="shrink-0 text-caption text-cs-muted">+{names.length - 1}</span>}
+      </span> : <span className="text-caption text-cs-muted">Chưa chọn</span>;
+    } },
+    { key: "estimate", header: "Tạm tính", align: "right" as const, hideOnMobile: true, render: (a: AppointmentRow) => a.estimated_total
+      ? <span className="whitespace-nowrap font-semibold tabular-nums text-cs-text">{money(a.estimated_total)}</span>
+      : <span className="text-caption text-cs-muted">—</span> }]),
+    { key: "status", sortKey: "status", header: "Trạng thái", render: a => <StatusBadge domain="appointment" status={a.status}/> },
+  ];
 
-    if (appointmentStatus === "Đã tiếp nhận") {
-      return "bg-[#EEF7EF] text-[#3F7047]";
-    }
+  const pane: ReactNode = selectedId === null ? null : !selected
+    ? (detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact/>)
+    : <AppointmentDetail a={selected}/>;
 
-    return "bg-[#FDEEEE] text-[#A24A4A]";
-  };
+  // Ba nút cùng hàng trong ngăn 380px: cỡ nhỏ, không xuống dòng.
+  const paneButton = "min-w-0 whitespace-nowrap !px-2";
+  const paneFooter = selected && (selected.status === "PENDING" || selected.status === "CONFIRMED") ? <>
+    {selected.status === "PENDING"
+      ? <Button size="sm" className={paneButton} variant="success" icon="check" loading={busy === `confirm:${selected.id}`} onClick={() => void confirmOne(selected)}>Xác nhận</Button>
+      : <Button size="sm" className={paneButton} variant="primary" icon="car" loading={busy === `checkin:${selected.id}`} onClick={() => void checkIn(selected)}>Tiếp nhận xe</Button>}
+    {isPast(selected) && <Button size="sm" className={paneButton} icon="ban" loading={busy === `noshow:${selected.id}`} onClick={() => void noShow(selected)}>Không đến</Button>}
+    <Button size="sm" className={paneButton} variant="danger-outline" icon="x" onClick={() => setCancelling(selected)}>Huỷ lịch</Button>
+  </> : undefined;
 
-  return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdminSidebar />
-
-      <div className="lg:ml-[250px]">
-        <AdminTopbar />
-
-        <main className="px-6 py-8 lg:px-8">
-          <div className="mx-auto max-w-[1200px]">
-            <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <div>
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
-                  QUẢN TRỊ HỆ THỐNG / LỊCH HẸN
-                </p>
-
-                <h1 className="text-3xl font-bold tracking-tight">
-                  Quản lý lịch hẹn
-                </h1>
-
-                <p className="mt-2 text-xs text-[#66717C]">
-                  Theo dõi và quản lý lịch hẹn của khách hàng trong toàn hệ thống.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => void loadAppointments()}
-                disabled={loading}
-                className="flex items-center justify-center gap-2 rounded-xl border border-[#D9DDE1] bg-white px-4 py-3 text-xs font-semibold transition hover:bg-[#F3F4F2] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span>{loading ? "Đang tải..." : "↻ Tải lại danh sách"}</span>
-              </button>
-            </div>
-
-            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {[
-                {
-                  label: "Tổng lịch hẹn",
-                  value: appointments.length,
-                  description: "Lịch hẹn trong danh sách",
-                },
-                {
-                  label: "Chờ xác nhận",
-                  value: pendingCount,
-                  description: "Đang chờ xử lý",
-                },
-                {
-                  label: "Đã tiếp nhận",
-                  value: checkedInCount,
-                  description: "Đã tiếp nhận tại gara",
-                },
-                {
-                  label: "Đã hủy",
-                  value: cancelledCount,
-                  description: "Lịch hẹn đã hủy",
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-[#E1E4E6] bg-white p-5"
-                >
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                    {item.label}
-                  </p>
-                  <p className="mt-4 text-2xl font-bold">{item.value}</p>
-                  <p className="mt-1 text-[10px] text-[#8A949E]">
-                    {item.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mb-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Đã xác nhận
-                </p>
-                <p className="mt-3 text-2xl font-bold">{confirmedCount}</p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Chờ khách hàng đến gara
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Kết quả hiện tại
-                </p>
-                <p className="mt-3 text-2xl font-bold">
-                  {filteredAppointments.length}
-                </p>
-                <p className="mt-1 text-[10px] text-[#8A949E]">
-                  Lịch hẹn phù hợp với tìm kiếm và bộ lọc
-                </p>
-              </div>
-            </div>
-
-            {message && (
-              <div
-                role="status"
-                className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[#D9E8D8] bg-[#F0F7EF] px-4 py-3 text-xs text-[#315B35]"
-              >
-                <p>{message}</p>
-                <button
-                  type="button"
-                  onClick={() => setMessage("")}
-                  className="font-bold"
-                >
-                  Đóng
-                </button>
-              </div>
-            )}
-
-            {error && (
-              <div
-                role="alert"
-                className="mb-4 flex flex-col justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 sm:flex-row sm:items-center"
-              >
-                <p>{error}</p>
-                <button
-                  type="button"
-                  onClick={() => void loadAppointments()}
-                  disabled={loading}
-                  className="shrink-0 font-semibold underline underline-offset-4 disabled:opacity-50"
-                >
-                  Thử tải lại
-                </button>
-              </div>
-            )}
-
-            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-6">
-              <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                    DANH SÁCH
-                  </p>
-
-                  <h2 className="mt-1 text-base font-bold">
-                    Lịch hẹn toàn hệ thống
-                  </h2>
-                </div>
-
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Tìm mã, tên, SĐT, biển số..."
-                    className="w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-4 py-2.5 text-xs outline-none transition focus:border-[#D6A85F] sm:w-[270px]"
-                  />
-
-                  <select
-                    value={status}
-                    onChange={(event) => setStatus(event.target.value)}
-                    className="cursor-pointer rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-3 py-2.5 text-xs outline-none focus:border-[#D6A85F]"
-                  >
-                    <option value="Tất cả">Tất cả trạng thái</option>
-                    {statuses.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearch("");
-                      setStatus("Tất cả");
-                    }}
-                    className="cs-btn cs-btn-secondary"
-                  >
-                    Xóa lọc
-                  </button>
-                </div>
-              </div>
-
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[10px] text-[#8A949E]">
-                  Hiển thị {filteredAppointments.length} / {appointments.length} lịch hẹn
-                </p>
-
-                {updatingId !== null && (
-                  <p className="text-[10px] font-semibold text-[#9A6B22]">
-                    Đang cập nhật lịch hẹn...
-                  </p>
-                )}
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1000px]">
-                  <thead>
-                    <tr className="border-b border-[#E1E4E6] text-left">
-                      {[
-                        "Mã lịch",
-                        "Thời gian",
-                        "Khách hàng",
-                        "Xe",
-                        "Dịch vụ",
-                        "Trạng thái",
-                        "Thao tác",
-                      ].map((heading) => (
-                        <th
-                          key={heading}
-                          className="px-3 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]"
-                        >
-                          {heading}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {filteredAppointments.map((appointment) => {
-                      const isUpdating = updatingId === appointment.recordId;
-
-                      return (
-                        <tr
-                          key={appointment.recordId}
-                          className="border-b border-[#F0F1EF] last:border-b-0 hover:bg-transparent cs-readable-row"
-                        >
-                          <td className="px-3 py-4 text-xs font-semibold">
-                            {appointment.id}
-                          </td>
-
-                          <td className="px-3 py-4 text-xs text-[#66717C]">
-                            {appointment.time}
-                          </td>
-
-                          <td className="px-3 py-4">
-                            <p className="text-xs font-semibold">
-                              {appointment.customer}
-                            </p>
-                            <p className="mt-1 text-[10px] text-[#8A949E]">
-                              {appointment.phone || "Chưa có số điện thoại"}
-                            </p>
-                          </td>
-
-                          <td className="px-3 py-4">
-                            <span className="text-xs font-semibold">
-                              {appointment.plate}
-                            </span>
-                          </td>
-
-                          <td className="max-w-[200px] px-3 py-4 text-xs text-[#66717C]">
-                            {appointment.service}
-                          </td>
-
-                          <td className="px-3 py-4">
-                            <span
-                              className={`inline-flex whitespace-nowrap rounded-full px-3 py-1.5 text-[10px] font-semibold ${getStatusStyle(appointment.status)}`}
-                            >
-                              {appointment.status}
-                            </span>
-                          </td>
-
-                          <td className="px-3 py-4">
-                            {appointment.status === "Chờ xác nhận" && (
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  disabled={updatingId !== null}
-                                  onClick={() =>
-                                    void handleStatusChange(
-                                      appointment,
-                                      "Đã xác nhận",
-                                    )
-                                  }
-                                  className="rounded-xl bg-[#1F2933] px-3 py-2 text-[10px] font-semibold text-white transition hover:bg-[#151D24] disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  {isUpdating ? "Đang xử lý..." : "Duyệt"}
-                                </button>
-
-                                <button
-                                  type="button"
-                                  disabled={updatingId !== null}
-                                  onClick={() =>
-                                    void handleStatusChange(
-                                      appointment,
-                                      "Đã hủy",
-                                    )
-                                  }
-                                  className="rounded-xl border border-[#E1E4E6] px-3 py-2 text-[10px] font-semibold text-[#A24A4A] transition hover:bg-[#FDEEEE] disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  Hủy
-                                </button>
-                              </div>
-                            )}
-
-                            {appointment.status === "Đã xác nhận" && (
-                              <button
-                                type="button"
-                                disabled={updatingId !== null}
-                                onClick={() =>
-                                  void handleStatusChange(
-                                    appointment,
-                                    "Đã tiếp nhận",
-                                  )
-                                }
-                                className="whitespace-nowrap rounded-xl border border-[#E1E4E6] px-3 py-2 text-[10px] font-semibold text-[#66717C] transition hover:border-[#D6A85F] hover:bg-[#F7F7F5] disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                {isUpdating ? "Đang xử lý..." : "Tiếp nhận"}
-                              </button>
-                            )}
-
-                            {appointment.status === "Đã tiếp nhận" && (
-                              <span className="text-[10px] font-medium text-[#8A949E]">
-                                Đã tiếp nhận
-                              </span>
-                            )}
-
-                            {appointment.status === "Đã hủy" && (
-                              <span className="text-[10px] font-medium text-[#8A949E]">
-                                Đã kết thúc
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-
-                {loading && appointments.length === 0 && (
-                  <div className="py-12 text-center">
-                    <p className="text-sm font-semibold text-[#20252B]">
-                      Đang tải lịch hẹn...
-                    </p>
-                    <p className="mt-2 text-xs text-[#8A949E]">
-                      Vui lòng chờ trong giây lát.
-                    </p>
-                  </div>
-                )}
-
-                {!loading && filteredAppointments.length === 0 && (
-                  <div className="py-12 text-center">
-                    <p className="text-sm font-semibold text-[#20252B]">
-                      Không tìm thấy lịch hẹn
-                    </p>
-                    <p className="mt-2 text-xs text-[#8A949E]">
-                      Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc trạng thái.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
+  const filtersActive = status !== "ALL" || term !== "";
+  const thisWeek = weekRange(new Date());
+  const onThisWeek = week.from === thisWeek.from;
+  const rangeChanged = view === "week" ? !onThisWeek : !period.isDefault;
+  const toolbar = <>
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <Tabs label="Chế độ xem" variant="segment" value={view} onChange={v => { setView(v); setChecked([]); }} items={[
+        { id: "list", label: "Danh sách", icon: "list" }, { id: "week", label: "Lịch tuần", icon: "calendar" },
+      ]}/>
     </div>
-  );
+    <div className="mb-4">
+      <Tabs label="Lọc theo trạng thái" variant="chips" value={status} onChange={v => { setStatus(v); resetPage(); }}
+        items={STATUS_CHIPS.map(c => ({ id: c.id, label: c.label, icon: c.icon, tone: c.tone, count: counts[c.id] ?? 0 }))}/>
+    </div>
+    <Toolbar>
+      <SearchInput value={search} onChange={v => { setSearch(v); resetPage(); }} placeholder="Tìm theo mã lịch, khách hàng, SĐT, biển số…"/>
+      {view === "list" ? <PeriodFilter period={period} allowFuture/> : <>
+        <Button size="sm" variant={onThisWeek ? "primary" : "outline"} aria-pressed={onThisWeek}
+          onClick={() => { setAnchor(new Date()); resetPage(); }}>Tuần này</Button>
+        <div className="inline-flex items-center gap-1 rounded-control border border-cs-border bg-cs-surface p-1" role="group" aria-label="Chọn tuần">
+          <IconButton icon="chevron-left" size="sm" label="Tuần trước" onClick={() => shiftWeek(-1)}/>
+          <span className="inline-flex items-center gap-2 px-2 text-small font-medium tabular-nums text-cs-text">
+            <Icon name="calendar" size={15} className="text-cs-muted"/>{dmy(week.from)} – {dmy(week.to)}
+          </span>
+          <IconButton icon="chevron-right" size="sm" label="Tuần sau" onClick={() => shiftWeek(1)}/>
+        </div>
+      </>}
+      <ClearFilters active={filtersActive || rangeChanged || !tableSort.isDefault}
+        onClear={() => { setStatus("ALL"); setSearch(""); setAnchor(new Date()); period.reset(); tableSort.reset(); resetPage(); }}/>
+    </Toolbar>
+    {checked.length > 0 && view === "list" && <div className="mb-3 flex flex-wrap items-center gap-2 rounded-control border border-cs-border bg-cs-surface-2 px-3 py-2 text-small">
+      <b>Đã chọn {checked.length} lịch</b>
+      <span className="flex-1"/>
+      <Button size="sm" variant="success" icon="check" loading={busy === "bulk"} loadingText="Đang xác nhận..." onClick={() => void confirmChecked()}>Xác nhận các lịch chờ</Button>
+      <Button size="sm" icon="download" loading={exporting} onClick={() => void exportCsv()}>Xuất lịch đã chọn</Button>
+      <Button size="sm" variant="ghost" onClick={() => setChecked([])}>Bỏ chọn</Button>
+    </div>}
+  </>;
+
+  const listView = <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Danh sách lịch hẹn" columns={columns} rows={rows} rowKey={a => a.id}
+    loading={list.loading} error={list.error || undefined} onRetry={list.reload}
+    onRowClick={a => setSelectedId(a.id)} rowClassName={a => a.id === selectedId ? "bg-cs-soft/70" : ""}
+    actions={a => <Dropdown label={`Thao tác lịch ${a.appointment_code}`} items={menu(a)}/>}
+    footer={result && <Pagination page={result.pagination.current_page} totalPages={result.pagination.last_page} totalItems={result.pagination.total}
+      pageSize={result.pagination.per_page} disabled={list.loading} onChange={p => { setPage(p); setChecked([]); }}/>}/>;
+
+  const weekView = <WeekBoard days={week.days} rows={rows} loading={list.loading && !rows.length} selectedId={selectedId} onSelect={setSelectedId}/>;
+
+  return <AdminPage demo={false} title="Lịch hẹn" description="Theo dõi và điều phối lịch hẹn của khách"
+    actions={<>
+      <Button variant="outline" icon="download" loading={exporting} loadingText="Đang xuất..." onClick={() => void exportCsv()}>Xuất Excel</Button>
+      <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Tạo lịch hẹn</Button>
+    </>}>
+    {toolbar}
+    <SplitView paneWidth={380} paneOpen={selectedId !== null} onClose={() => setSelectedId(null)} paneTitle="Chi tiết lịch hẹn"
+      pane={pane} paneFooter={paneFooter} list={view === "list" ? listView : weekView}/>
+    <CreateAppointmentModal open={creating} onClose={() => setCreating(false)} onCreated={a => {
+      setCreating(false);
+      setAnchor(new Date(`${a.appointment_date.slice(0, 10)}T00:00:00`));
+      // Luôn thấy lịch vừa tạo, kể cả khi ngày hẹn nằm ngoài kỳ đang lọc.
+      period.change({ preset: "custom", from: a.appointment_date.slice(0, 10), to: a.appointment_date.slice(0, 10) });
+      setStatus("ALL");
+      resetPage();
+      setSelectedId(a.id);
+    }}/>
+    <CancelAppointmentModal appointment={cancelling} onClose={() => setCancelling(null)} onDone={() => { setCancelling(null); refresh(); }}/>
+  </AdminPage>;
 }
 
-export default AdminAppointments;
+/** Lịch tuần: 7 cột Thứ hai → Chủ nhật, mỗi lịch là một thẻ theo giờ. */
+function WeekBoard({ days, rows, loading, selectedId, onSelect }: {
+  days: Date[]; rows: AppointmentRow[]; loading: boolean; selectedId: number | null; onSelect: (id: number) => void;
+}) {
+  if (loading) return <div className="rounded-card border border-cs-border bg-cs-surface shadow-card"><LoadingState/></div>;
+  const today = new Date().toDateString();
+  return <div className="overflow-x-auto rounded-card border border-cs-border bg-cs-surface shadow-card">
+    <div className="grid min-w-[980px] grid-cols-7 divide-x divide-cs-border">
+      {days.map(day => {
+        const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+        const items = rows.filter(r => r.appointment_date.slice(0, 10) === key).sort((a, b) => a.appointment_time.localeCompare(b.appointment_time));
+        const isToday = day.toDateString() === today;
+        return <section key={key} aria-label={`${WEEKDAY[day.getDay()]} ${day.getDate()}/${day.getMonth() + 1}`} className="flex min-h-[420px] flex-col">
+          <header className={`flex items-baseline justify-between border-b border-cs-border px-3 py-2.5 ${isToday ? "bg-cs-soft" : "bg-cs-surface-2"}`}>
+            <span className={`text-small font-semibold ${isToday ? "text-cs-accent-text" : "text-cs-text"}`}>{WEEKDAY[day.getDay()]} <span className="tabular-nums">{day.getDate()}/{day.getMonth() + 1}</span></span>
+            <span className="text-caption text-cs-muted">{items.length} lịch</span>
+          </header>
+          <ul className="flex flex-1 flex-col gap-2 p-2">
+            {items.map(a => {
+              const tone = getStatus("appointment", a.status, "staff").tone;
+              const dot = { warning: "bg-warning", info: "bg-info", success: "bg-success", danger: "bg-danger", neutral: "bg-cs-muted", accent: "bg-cs-accent" }[tone];
+              return <li key={a.id}>
+                <button type="button" onClick={() => onSelect(a.id)}
+                  className={`w-full cursor-pointer rounded-control border p-2.5 text-left transition-colors ${a.id === selectedId ? "border-cs-accent bg-cs-soft" : "border-cs-border bg-cs-surface hover:border-cs-border-strong hover:bg-cs-hover"}`}>
+                  <span className="flex items-center gap-1.5 text-caption font-semibold tabular-nums text-cs-text"><span className={`size-2 shrink-0 rounded-full ${dot}`} aria-hidden="true"/>{timeOf(a)}</span>
+                  <span className="mt-1 block truncate text-small font-semibold text-cs-text">{a.customer?.full_name ?? "—"}</span>
+                  <span className="block truncate text-caption text-cs-muted">{a.vehicle?.license_plate ?? "—"} · {vehicleName(a)}</span>
+                  <span className="sr-only">{getStatus("appointment", a.status, "staff").label}</span>
+                </button>
+              </li>;
+            })}
+            {!items.length && <li className="mt-6 text-center text-caption text-cs-muted">Không có lịch</li>}
+          </ul>
+        </section>;
+      })}
+    </div>
+  </div>;
+}
+
+/** Nội dung ngăn chi tiết lịch hẹn. */
+function AppointmentDetail({ a }: { a: AppointmentRow }) {
+  const lines = [
+    ...a.packages.map(p => ({ key: `p${p.id}`, name: p.name, note: "Gói bảo dưỡng", price: Number(p.pivot?.estimated_price ?? 0) })),
+    ...a.services.map(s => ({ key: `s${s.id}`, name: s.name, note: s.estimated_minutes ? `${s.estimated_minutes} phút` : "", price: Number(s.pivot?.estimated_price ?? s.base_price) })),
+  ];
+  const total = a.estimated_total ?? lines.reduce((sum, l) => sum + l.price, 0);
+  const row = (label: string, value: ReactNode) => <div className="flex gap-3 py-1"><dt className="w-28 shrink-0 text-cs-muted">{label}</dt><dd className="min-w-0 flex-1 text-cs-text">{value}</dd></div>;
+  return <>
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      <span className="text-subheading font-bold text-cs-accent-text">{a.appointment_code}</span>
+      <StatusBadge domain="appointment" status={a.status}/>
+    </div>
+    <PaneSection title="Thông tin khách hàng" icon="user">
+      <ul className="flex flex-col gap-1.5 text-small">
+        <li className="flex items-center gap-2"><Icon name="user" size={15} className="text-cs-muted"/><b>{a.customer?.full_name ?? "—"}</b></li>
+        <li className="flex items-center gap-2"><Icon name="phone" size={15} className="text-cs-muted"/>{a.customer?.phone ? <a href={`tel:${a.customer.phone}`} className="tabular-nums text-cs-text hover:underline">{a.customer.phone}</a> : "—"}</li>
+        <li className="flex items-center gap-2"><Icon name="mail" size={15} className="text-cs-muted"/><span className="truncate">{a.customer?.email ?? "Chưa có email"}</span></li>
+      </ul>
+    </PaneSection>
+    <PaneSection title="Thông tin xe" icon="car">
+      <div className="flex items-start gap-3">
+        <span className="grid size-14 shrink-0 place-items-center rounded-control bg-cs-surface-2 text-cs-muted"><Icon name="car" size={28}/></span>
+        <dl className="min-w-0 flex-1 text-small">
+          <p className="mb-1 font-semibold text-cs-text">{vehicleName(a)}{a.vehicle?.variant ? ` ${a.vehicle.variant}` : ""}</p>
+          {row("Biển số", <b className="tabular-nums">{a.vehicle?.license_plate ?? "—"}</b>)}
+          {row("Năm sản xuất", a.vehicle?.year ?? "—")}
+          {row("Số km hiện tại", a.vehicle?.mileage != null ? `${new Intl.NumberFormat("vi-VN").format(a.vehicle.mileage)} km` : "—")}
+        </dl>
+      </div>
+    </PaneSection>
+    <PaneSection title="Thông tin lịch hẹn" icon="calendar">
+      <dl className="text-small">
+        {row("Ngày giờ hẹn", <span className="tabular-nums">{timeOf(a)} - {dmy(a.appointment_date)}</span>)}
+        {row("Trạng thái", <StatusBadge domain="appointment" status={a.status}/>)}
+        {a.handled_by && row("Người xử lý", a.handled_by.employee?.full_name ?? a.handled_by.email ?? "—")}
+        {a.status === "CANCELLED" && a.cancel_reason && row("Lý do huỷ", a.cancel_reason)}
+      </dl>
+    </PaneSection>
+    <PaneSection title="Mô tả triệu chứng / yêu cầu" icon="file">
+      <p className="whitespace-pre-wrap rounded-control bg-cs-surface-2 px-3 py-2.5 text-small text-cs-text-2 font-medium">{a.symptom_description?.trim() || "—"}</p>
+    </PaneSection>
+    <PaneSection title="Ghi chú" icon="clipboard">
+      <p className="whitespace-pre-wrap rounded-control bg-cs-surface-2 px-3 py-2.5 text-small text-cs-text-2 font-medium">{a.note?.trim() || "—"}</p>
+    </PaneSection>
+    <PaneSection title="Danh sách dịch vụ (dự kiến)" icon="wrench">
+      {lines.length ? <div className="overflow-hidden rounded-control border border-cs-border">
+        <table className="w-full text-small">
+          <thead><tr className="bg-cs-surface-2 text-left text-caption text-cs-muted"><th className="px-3 py-2 font-semibold">Dịch vụ</th><th className="px-3 py-2 text-right font-semibold">Đơn giá</th></tr></thead>
+          <tbody>
+            {lines.map(l => <tr key={l.key} className="border-t border-cs-border">
+              <td className="px-3 py-2 text-cs-text">{l.name}{l.note && <span className="block text-caption text-cs-muted font-medium">{l.note}</span>}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{money(l.price)}</td>
+            </tr>)}
+          </tbody>
+          <tfoot><tr className="border-t border-cs-border bg-cs-soft">
+            <td className="px-3 py-2.5 font-semibold text-cs-accent-text">Tổng dự kiến</td>
+            <td className="px-3 py-2.5 text-right text-subheading font-bold tabular-nums text-cs-accent-text">{money(total)}</td>
+          </tr></tfoot>
+        </table>
+      </div> : <p className="text-small text-cs-muted">Khách chưa chọn dịch vụ — cố vấn sẽ tư vấn khi tiếp nhận.</p>}
+    </PaneSection>
+  </>;
+}
