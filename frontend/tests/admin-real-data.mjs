@@ -32,3 +32,14 @@ assert.doesNotMatch(query, /useEffect\(\(\) => \{\s*set/, 'Không setState đồ
 for (const page of ['RepairOrders.tsx', 'Invoices.tsx', 'AdminCustomers.tsx', 'Accounts.tsx', 'Inventory.tsx', 'AuditLogs.tsx']) {
   const source = read(`src/pages/admin/${page}`);
   assert.match(source, /useDebounced/, `${page} tìm kiếm có debounce`);
+  assert.match(source, /meta\.last_page/, `${page} phân trang theo API`);
+}
+
+// Bộ lọc: select gốc phủ trong suốt (không bị CSS theme tối tô nền lệch), lọc đang áp dụng có màu nhấn.
+const kit = read('src/pages/admin/kit/AdminKit.tsx');
+assert.match(kit, /data-ui="filter"[\s\S]*?absolute inset-0[^"]*opacity-0/, 'FilterSelect phủ select trong suốt');
+assert.match(kit, /data-active=\{active \|\| undefined\}/, 'FilterSelect báo trạng thái đang lọc');
+// Lề đồng nhất: AdminPage và các trang cũ dùng page-container, không còn khung riêng.
+assert.match(kit, /<main className="page-container">/, 'AdminPage dùng page-container');
+for (const page of ['Services.tsx', 'MaintenancePackages.tsx', 'WorkingHours.tsx', 'AdminAppointments.tsx']) {
+  const source = read(`src/pages/admin/${page}`);
