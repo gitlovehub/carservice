@@ -163,3 +163,58 @@ function CustomerUpdates({ now }: { now: Date }) {
             <span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${t.tone}`} aria-hidden="true"><Icon name={t.icon} size={15}/></span>
             <span className="min-w-0 flex-1">
               <span className="flex items-baseline justify-between gap-2"><b className="truncate text-small text-cs-text">{u.customer_name || "Khách hàng"}</b><span className="shrink-0 text-caption text-cs-muted">{ago(u.at, now)}</span></span>
+              <span className="block truncate text-caption text-cs-text-2">{t.label} · <span className="tabular-nums">{when}</span></span>
+              <span className="block truncate text-caption text-cs-muted">{[a.vehicle, a.license_plate || "xxx.xx"].filter(Boolean).join(" · ")}</span>
+            </span>
+          </button></li>;
+        })}
+      </ul>}
+  </Panel>;
+}
+
+function TodoRow({ to, icon, label, count, highlight }: { to: string; icon: IconName; label: string; count: number; highlight?: boolean }) {
+  return <li><Link to={to} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-cs-hover">
+    <Icon name={icon} size={18} className="shrink-0 text-cs-accent-text"/>
+    <span className="min-w-0 flex-1 truncate text-small text-cs-text">{label}</span>
+    <span className={`min-w-8 rounded-full px-2.5 py-0.5 text-center text-small font-semibold ${count > 0 && highlight ? "bg-cs-accent text-cs-accent-contrast" : count > 0 ? "bg-cs-soft text-cs-on-soft" : "bg-cs-surface-2 text-cs-muted"}`}>{count}</span>
+  </Link></li>;
+}
+
+function DashboardBody({ data, name }: { data: Data; name: string }) {
+  const [tab, setTab] = useState<AppointmentTab>("today");
+  const now = useNow();
+  const { kpis, todo, days } = data;
+  const openOrders = data.stages.reduce((sum, s) => sum + s.value, 0);
+  const tabClass = (on: boolean) => `relative -mb-px cursor-pointer border-b-2 px-1 pb-2.5 text-small font-semibold transition-colors ${on ? "border-cs-accent text-cs-accent-text" : "border-transparent text-cs-muted hover:text-cs-text"}`;
+
+  return <>
+    <section className="adv-hero mb-5" aria-label="Chào mừng">
+      <div className="min-w-0 max-w-xl">
+        <h1>{greeting(now.getHours())}, {name}!</h1>
+        <p className="mt-2 text-small">Cùng quản lý lịch hẹn, tiếp nhận xe và theo dõi tiến độ sửa chữa hôm nay.</p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Link to="/advisor/reception" className="adv-btn-gold"><Icon name="plus" size={18}/>Tiếp nhận xe mới</Link>
+          <Link to="/advisor/appointments" className="adv-btn-ghost"><Icon name="calendar" size={18}/>Xem lịch hẹn</Link>
+        </div>
+      </div>    </section>
+
+    <section aria-label="Chỉ số chính" className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+      <Kpi to="/advisor/reception" icon="calendar" label="Lịch chờ xác nhận" value={kpis.pending.value}
+        caption={`${kpis.pending.series.reduce((a, b) => a + b, 0)} lịch mới đặt trong 7 ngày`} series={kpis.pending.series} days={days} seriesLabel="Lịch mới đặt mỗi ngày"/>
+      <Kpi to="/advisor/appointments" icon="clock" label="Lịch hẹn hôm nay" value={kpis.today.value} extra={<Delta value={kpis.today.value} previous={kpis.today.previous}/>}
+        caption={`So với hôm qua (${kpis.today.previous} lịch)`} series={kpis.today.series} days={days} seriesLabel="Số lịch hẹn mỗi ngày"/>
+      <Kpi to="/advisor/repair-progress" icon="wrench" label="Đang sửa chữa" value={kpis.repairing.value}
+        caption={kpis.repairing.waiting_parts ? `Trong đó ${kpis.repairing.waiting_parts} xe chờ phụ tùng` : "Không có xe chờ phụ tùng"} series={kpis.repairing.series} days={days} seriesLabel="Xe bắt đầu sửa mỗi ngày"/>
+      <Kpi to="/advisor/service-orders?group=deliver" icon="check" label="Chờ thanh toán & bàn giao" value={kpis.delivery.value}
+        caption={`Đã bàn giao hôm nay: ${kpis.delivery.handed_today} xe`} series={kpis.delivery.series} days={days} seriesLabel="Xe bàn giao mỗi ngày"/>
+    </section>
+
+    <div className="adv-main">
+      <section className="adv-card adv-area-apt min-w-0 overflow-hidden">
+        <header className="flex items-end justify-between gap-3 border-b border-cs-border px-5 pt-4">
+          <div className="flex gap-5 sm:gap-6" role="tablist" aria-label="Lịch hẹn">
+            {appointmentTabs.map(t => <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={tabClass(tab === t.id)} onClick={() => setTab(t.id)}>
+              {t.label} <span className="text-cs-muted">({data[t.key].length})</span>
+            </button>)}
+          </div>
+          <span className="pb-2.5">{seeAll("/advisor/appointments")}</span>
