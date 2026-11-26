@@ -62,3 +62,67 @@ export default function Inventory() {
   const moveSort = useTableSort(NEWEST_FIRST, () => setMovePage(1));
   const partParams = { search: term, category, status, page, ...partSort.params };
   const parts = useAdminQuery(tab !== "moves" ? `parts:${JSON.stringify(partParams)}` : null, signal => adminApi.parts(partParams, signal));
+  // ADV-01: yêu cầu phụ tùng đang mở (cố vấn báo thiếu) — dùng cho tab "Cần đặt hàng" và số trên tab.
+  const [requestsVersion, setRequestsVersion] = useState(0);
+  const requests = useAdminQuery(`part-requests:${requestsVersion}`, signal => adminApi.partRequests({ status: "OPEN", per_page: 100 }, signal));
+  const openRequests = (requests.data ?? requests.stale)?.data ?? [];
+  const moves = useAdminQuery(tab === "moves" ? `moves:${term}:${movePage}:${moveSort.sort.key}:${moveSort.sort.dir}` : null, signal => adminApi.stockMoves({ search: term, page: movePage, ...moveSort.params }, signal));
+  const partOptions = useAdminQuery(stockForm ? "parts:all" : null, signal => adminApi.parts({ per_page: 100, sort: "name", dir: "asc" }, signal));
+  const result = parts.data ?? parts.stale;
+  const moveResult = moves.data ?? moves.stale;
+  const summary = result?.summary;
+  const units = [...new Set([...(result?.units ?? []), ...DEFAULT_UNITS])];
+
+  const partErrors = useFieldErrors();
+  const stockErrors = useFieldErrors();
+  const patchPart = (patch: Partial<Editing>) => { partErrors.clear(...Object.keys(patch)); setEditing(current => current && { ...current, ...patch }); };
+  const switchTab = (id: Tab) => { setParams(id === "catalog" ? {} : { tab: id }, { replace: true }); setStatus("all"); setPage(1); setEditing(null); };
+  const startEdit = (part: AdminPart | null) => {
+    setFormError(""); partErrors.reset(); setCompatPick(emptySelection); setImageFile(null); setImagePreview(null);
+    setEditing(part ? { ...part, description: part.description ?? "" } : { ...blankPart });
+  };
+  // Revoke browser object URLs to avoid leaking memory while the editor stays open.
+  useEffect(() => {
+    if (!imageFile) { setImagePreview(null); return; }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+  const removeSavedImage = async () => {
+    if (!editing?.id || !editing.image_url) return;
+    setSaving(true); setFormError("");
+    try {
+      const response = await adminApi.deletePartImage(editing.id);
+      setEditing(prev => prev ? { ...prev, image_url: response.data.image_url } : prev);
+      setImageFile(null); notify(response.message, "success"); parts.reload();
+    } catch (error) { partErrors.showApi(error); }
+    finally { setSaving(false); }
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    const problems: FieldErrors = {};
+    if (!editing.sku.trim()) problems.sku = "Nhập mã SKU.";
+    if (!editing.name.trim()) problems.name = "Nhập tên phụ tùng.";
+    if (editing.price < editing.cost) problems.price = "Giá bán không được thấp hơn giá vốn.";
+    setFormError("");
+    if (partErrors.show(problems)) return;
+    const body: PartPayload = {
+      sku: editing.sku.trim(), name: editing.name.trim(), category: editing.category?.trim() || null, unit: editing.unit, cost_price: editing.cost, sell_price: editing.price,
+      description: editing.description?.trim() || null, status: editing.status, min_quantity: editing.min, compat_model_ids: editing.compat.map(c => c.id),
+    };
+    setSaving(true);
+    try {
+      const response = editing.id ? await adminApi.updatePart(editing.id, body) : await adminApi.createPart(body);
+      if (imageFile) {
+        // Save metadata before upload. If upload fails, keep this item open for retry.
+        setEditing({ ...editing, id: response.data.id, image_url: response.data.image_url });
+        try {
+          await adminApi.uploadPartImage(response.data.id, imageFile);
+        } catch (error) {
+          parts.reload();
+          throw new Error(`Đã lưu thông tin phụ tùng nhưng ảnh chưa được tải lên: ${errorMessage(error)}. Bấm Lưu thay đổi để thử lại.`);
+        }
+      }
+      notify(imageFile ? "Đã lưu phụ tùng và ảnh." : response.message, "success");
+      setImageFile(null); setImagePreview(null); setEditing(null);
