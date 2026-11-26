@@ -81,6 +81,30 @@ class LiveSyncTest extends TestCase
         Event::assertDispatched(LiveChanged::class, fn (LiveChanged $event) => $event->accountIds === [$owner->id]);
     }
 
+    public function test_unreachable_websocket_server_does_not_block_later_requests(): void
+    {
+        // Reverb tắt: cổng không có máy chủ nào nghe.
+        config([
+            'broadcasting.default' => 'reverb',
+            'broadcasting.connections.reverb.options.host' => '127.0.0.1',
+            'broadcasting.connections.reverb.options.port' => 1,
+            'broadcasting.connections.reverb.options.scheme' => 'http',
+        ]);
+        $before = LiveStamp::current();
+        usleep(2000);
+
+        LiveStamp::bump();
+        $this->assertNotSame($before, LiveStamp::current(), 'Dấu thời gian vẫn đổi → trang tự cập nhật qua /api/live');
+
+        // Trong thời gian tạm ngừng: không thử kết nối lại, chỉ ghi dấu thời gian.
+        Event::fake([LiveChanged::class]);
+        $second = LiveStamp::current();
+        usleep(2000);
+        LiveStamp::bump();
+        Event::assertNotDispatched(LiveChanged::class);
+        $this->assertNotSame($second, LiveStamp::current());
+    }
+
     public function test_customer_can_clear_and_read_all_own_notifications_only(): void
     {
         $account = Account::factory()->create();

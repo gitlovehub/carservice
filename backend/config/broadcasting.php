@@ -43,6 +43,9 @@ return [
             ],
             'client_options' => [
                 // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
+                // Phát sự kiện chạy trong request của người dùng: máy chủ Reverb tắt / chậm thì bỏ nhanh, không giữ request.
+                'connect_timeout' => (float) env('REVERB_CONNECT_TIMEOUT', 0.5),
+                'timeout' => (float) env('REVERB_TIMEOUT', 2),
             ],
         ],
 

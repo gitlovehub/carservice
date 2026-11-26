@@ -4,8 +4,11 @@ namespace App\Support;
 
 use App\Events\LiveChanged;
 use App\Models\Account;
+use App\Models\ConfirmationOtp;
 use App\Models\Customer;
+use App\Models\EmailVerificationOtp;
 use App\Models\Notification;
+use App\Models\PasswordResetOtp;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -25,9 +28,9 @@ class LiveStamp
 
     /** Model không phản ánh dữ liệu người dùng nhìn thấy (mã OTP…). Token Sanctum không thuộc App\Models nên tự bị bỏ qua. */
     private const IGNORED = [
-        \App\Models\ConfirmationOtp::class,
-        \App\Models\EmailVerificationOtp::class,
-        \App\Models\PasswordResetOtp::class,
+        ConfirmationOtp::class,
+        EmailVerificationOtp::class,
+        PasswordResetOtp::class,
     ];
 
     /** Danh sách tài khoản khách bị ảnh hưởng trong request này (nằm trong container: mỗi app / mỗi test riêng). */
@@ -65,15 +68,25 @@ class LiveStamp
         self::bump($accounts);
     }
 
+    /** Reverb không kết nối được → tạm ngừng phát trong khoảng này (giây), để mỗi request không phải chờ kết nối lại. */
+    private const BROADCAST_PAUSE_SECONDS = 30;
+
+    private const BROADCAST_DOWN_KEY = 'live:broadcast-down';
+
     /** @param list<int> $accountIds */
     public static function bump(array $accountIds = []): void
     {
         $stamp = (string) now()->getPreciseTimestamp(3);
+        // Ghi dấu thời gian TRƯỚC: đường dự phòng (GET /api/live) luôn thấy thay đổi ngay, kể cả khi không phát được.
         Cache::forever(self::KEY, $stamp);
+        if (Cache::has(self::BROADCAST_DOWN_KEY)) {
+            return;
+        }
         try {
             broadcast(new LiveChanged($accountIds, $stamp));
         } catch (Throwable $e) {
             // Máy chủ WebSocket chưa chạy (`php artisan reverb:start`) → trình duyệt vẫn tự cập nhật nhờ hỏi định kỳ.
+            Cache::put(self::BROADCAST_DOWN_KEY, true, self::BROADCAST_PAUSE_SECONDS);
             Log::debug('Realtime broadcast skipped: '.$e->getMessage());
         }
     }
