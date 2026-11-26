@@ -33,7 +33,7 @@ export function Field({ label, hint, error, required, optional, className = "", 
   const shownError = error || browserError;
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = hasErrorText(shownError) ? `${id}-error` : undefined;
-  const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
+  const describedBy = errorId ?? hintId;
   return <FieldContext.Provider value={{ id, "aria-describedby": describedBy, "aria-invalid": shownError ? true : undefined, required }}>
     <div data-field="" className={`flex flex-col gap-1.5 ${className}`}
       onInvalidCapture={event => {
