@@ -12,3 +12,10 @@ export const toneSoft: Record<Tone, string> = {
 };
 /* ---------- Định dạng ---------- */
 const vndFormatter = new Intl.NumberFormat("vi-VN");
+export const vnd = (value: number) => `${vndFormatter.format(Math.round(value))}\u00a0₫`;
+export const num = (value: number) => vndFormatter.format(value);
+export const shortVnd = (value: number) => value >= 1_000_000 ? `${num(Math.round(value / 100_000) / 10)}tr` : num(value);
+
+export function initials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : parts[0].slice(0, 2)).toUpperCase();
