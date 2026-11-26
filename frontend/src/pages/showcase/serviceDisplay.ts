@@ -18,7 +18,7 @@ export const byPopularity = (a: Service, b: Service) =>
   || b.id - a.id;
 
 export const money = (n: number | string | null | undefined) =>
-  n == null || n === '' || !Number.isFinite(Number(n))
+  n == null || (typeof n === 'string' && !n.trim()) || !Number.isFinite(Number(n)) || Number(n) < 0
     ? 'Liên hệ tư vấn'
     : 'Từ ' + new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Number(n));
 
