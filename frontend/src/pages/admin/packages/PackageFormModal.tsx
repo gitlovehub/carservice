@@ -108,3 +108,39 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
         <Select value={brandId} onChange={e => { setBrandId(e.target.value); setModelId(""); setModels([]); fieldErrors.clear("model"); }}>
           <option value="">Dùng chung mọi dòng xe</option>
           {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </Select>
+      </Field>
+      <Field label="Dòng xe" required={Boolean(brandId)} error={fieldErrors.errors.model}>
+        <Select value={modelId} disabled={!brandId} onChange={e => { setModelId(e.target.value); fieldErrors.clear("model"); }}>
+          <option value="">{brandId ? "Chọn dòng xe" : "—"}</option>
+          {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+        </Select>
+      </Field>
+      <Field label="Mốc km" error={fieldErrors.errors.km}><KmInput label="Mốc km" value={km} placeholder="Ví dụ: 10.000" onChange={value => { setKm(value); fieldErrors.clear("km"); }}/></Field>
+      <Field label="Mốc tháng" error={fieldErrors.errors.months}><QuantityStepper label="Mốc tháng" size="md" className="w-full" unit="tháng" min={1} max={240} allowEmpty placeholder="Ví dụ: 6" value={months === "" ? null : Number(months)} onChange={v => { setMonths(v === null ? "" : String(v)); fieldErrors.clear("months"); }}/></Field>
+      <Field label="Mô tả" optional error={fieldErrors.errors.description} className="md:col-span-2"><Textarea rows={2} value={description} maxLength={1000} onChange={e => { setDescription(e.target.value); fieldErrors.clear("description"); }}/></Field>
+      <div className="flex items-center gap-3 rounded-control border border-cs-border px-3 py-2.5 md:col-span-2">
+        <span className="min-w-0 flex-1"><span className="block text-small font-medium">Đang áp dụng</span><span className="block text-caption text-cs-muted">Tắt = tạm ngừng: khách không chọn được gói khi đặt lịch.</span></span>
+        <Switch checked={active} onChange={setActive} label="Gói đang áp dụng"/>
+      </div>
+
+      <section className="flex flex-col gap-2 md:col-span-2" aria-label="Dịch vụ trong gói">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="flex items-center gap-2 text-small font-semibold"><Icon name="wrench" size={16} className="text-cs-accent-text"/>Dịch vụ trong gói ({Object.keys(picked).length})</h3>
+          <span className="text-caption text-cs-muted">{money(serviceTotal)}</span>
+        </div>
+        <SearchInput className="sm:max-w-none" value={serviceSearch} onChange={setServiceSearch} placeholder="Lọc dịch vụ theo tên hoặc danh mục…" label="Lọc dịch vụ"/>
+        <ul aria-invalid={!!fieldErrors.errors.services || undefined} className={`max-h-56 overflow-y-auto rounded-control border p-1 ${fieldErrors.errors.services ? "border-danger" : "border-cs-border"}`}>
+          {shownServices.map(s => {
+            const on = picked[s.id] !== undefined;
+            return <li key={s.id} className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-small ${on ? "bg-cs-soft" : "hover:bg-cs-hover"}`}>
+              <input type="checkbox" id={`pkg-s-${s.id}`} className="size-4 cursor-pointer accent-[var(--cs-accent)]" checked={on}
+                onChange={() => { fieldErrors.clear("services"); setPicked(p => { const next = { ...p }; if (on) delete next[s.id]; else next[s.id] = 1; return next; }); }}/>
+              <label htmlFor={`pkg-s-${s.id}`} className="min-w-0 flex-1 cursor-pointer"><span className="block truncate">{s.name}</span>
+                <span className="block text-caption text-cs-muted">{s.category ?? "Chưa phân loại"}{s.estimated_minutes ? ` · ${s.estimated_minutes} phút` : ""}</span></label>
+              {on && qty(picked[s.id], n => setPicked(p => ({ ...p, [s.id]: n })), `Số lượng ${s.name}`)}
+              <span className="w-28 shrink-0 text-right tabular-nums text-cs-text-2">
+                {on && picked[s.id] > 1 ? <><span className="block font-semibold text-cs-text">{money(Number(s.base_price) * picked[s.id])}</span>
+                  <span className="block text-caption text-cs-muted">{new Intl.NumberFormat("vi-VN").format(Number(s.base_price))} × {picked[s.id]}</span></> : money(s.base_price)}
+              </span>
+            </li>;
