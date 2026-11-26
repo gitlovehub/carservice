@@ -18,3 +18,23 @@ function stepProblem(step: Step, index: number, steps: Step[]): string | null {
 }
 
 /**
+ * Bước chuẩn + phút chuẩn của dịch vụ (P5). Khi bắt đầu sửa, mỗi bước thành một công việc;
+ * giờ dự kiến xong tính từ tổng phút chuẩn. Không ảnh hưởng giá.
+ */
+export function ServiceStepsEditor({ serviceId, onSaved, onDirtyChange }: {
+  serviceId: number; onSaved?: (estimatedMinutes: number | null, stepsCount: number) => void; onDirtyChange?: (dirty: boolean) => void;
+}) {
+  const [steps, setSteps] = useState<Step[]>([]);
+  const [savedSteps, setSavedSteps] = useState<Step[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const { notify } = useAppFeedback();
+
+  useEffect(() => {
+    let active = true;
+    fetchApi<{ data: Step[] }>(`/admin/services/${serviceId}/steps`)
+      .then(response => {
+        if (!active) return;
+        const rows = response.data.map(({ name, standard_minutes, requires_photo }) => ({ name, standard_minutes, requires_photo }));
