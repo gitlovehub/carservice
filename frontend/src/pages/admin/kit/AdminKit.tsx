@@ -139,3 +139,50 @@ export function Tabs<T extends string>({ items, value, onChange, variant = "unde
         {item.icon && <Icon name={item.icon} size={16}/>}{item.label}
         {item.count !== undefined && <span className="text-caption">({item.count})</span>}
       </button>;
+    })}
+  </div>;
+}
+
+/* ---------- Bộ lọc ---------- */
+export function FilterSelect<T extends string>({ label, value, onChange, options, className = "", hideLabel = false }: {
+  label: string; value: T; onChange: (value: T) => void; options: Array<{ value: T; label: string }>; className?: string;
+  /** Ẩn chữ nhãn trên giao diện (vẫn giữ cho trình đọc màn hình qua aria-label). */
+  hideLabel?: boolean;
+}) {
+  const current = options.find(option => option.value === value) ?? options[0];
+  // Lựa chọn đầu tiên là mặc định ("Tất cả"); chọn khác → bộ lọc đang áp dụng, tô màu nhấn.
+  const active = options.length > 0 && value !== options[0].value;
+  return <div data-ui="filter" data-active={active || undefined}
+    className={`relative inline-flex min-h-10 min-w-0 max-w-full shrink-0 items-center gap-2 rounded-control border px-3 text-small transition-colors focus-within:border-cs-accent max-sm:min-h-11 ${active
+      ? "border-cs-accent/50 bg-cs-soft text-cs-accent-text"
+      : "border-cs-border bg-cs-surface text-cs-text hover:border-cs-border-strong hover:bg-cs-hover"} ${className}`}>
+    <Icon name="filter" size={14} className={`shrink-0 ${active ? "" : "text-cs-muted"}`}/>
+    {!hideLabel && <span className={`shrink-0 ${active ? "" : "text-cs-muted"}`}>{label}</span>}
+    <span className="min-w-0 truncate font-semibold">{current?.label}</span>
+    <Icon name="chevron-down" size={15} className="ml-auto shrink-0 opacity-70"/>
+    {/* Select gốc phủ trong suốt: giữ bàn phím, trình đọc màn hình và danh sách chọn của hệ điều hành. */}
+    <select aria-label={label} value={value} onChange={event => onChange(event.target.value as T)}
+      className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0">
+      {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+    </select>
+  </div>;
+}
+
+/** Nút "Xoá bộ lọc" — chỉ hiện khi đang có bộ lọc / từ khoá / cách sắp khác mặc định; bấm để đưa bảng về mặc định. */
+export function ClearFilters({ active, onClear }: { active: boolean; onClear: () => void }) {
+  if (!active) return null;
+  return <Button variant="ghost" size="sm" icon="refresh" onClick={onClear}>Xoá bộ lọc</Button>;
+}
+
+export function Toolbar({ children }: { children: ReactNode }) {
+  return <div className="mb-4 flex flex-wrap items-center gap-3 [&>[data-ui=search]]:sm:max-w-sm [&>[data-ui=search]]:flex-1">{children}</div>;
+}
+
+/* ---------- Hiển thị nhỏ ---------- */
+const avatarTones: Tone[] = ["brand", "info", "success", "warning", "violet"];
+export function Avatar({ name, size = 36, tone }: { name: string; size?: number; tone?: Tone }) {
+  const hash = [...name].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const t = tone ?? avatarTones[hash % avatarTones.length];
+  return <span aria-hidden="true" style={{ width: size, height: size, fontSize: Math.round(size * 0.36) }}
+    className={`grid shrink-0 place-items-center rounded-full font-semibold ${toneSoft[t]}`}>{initials(name)}</span>;
+}
