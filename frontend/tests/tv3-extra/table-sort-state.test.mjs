@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { load, plain } from './loader.mjs';
+let state, changes = 0;
+const useState = initial => { state ??= initial; return [state, next => {state = typeof next === 'function' ? next(state) : next;}]; };
+const { useTableSort } = load('src/components/ui/tableSort.ts', {react:{useState}});
+const render = () => useTableSort(undefined, () => changes++);
+assert.deepEqual(plain(render().params), {sort:'created',dir:'desc'});
+render().reset(); assert.equal(changes,0);
+render().toggle('name'); assert.deepEqual(plain(render().params),{sort:'name',dir:'asc'});
+render().toggle('name'); assert.equal(render().sort.dir,'desc');
+render().toggle('price'); assert.equal(render().sort.dir,'desc');
+render().toggle('price','asc'); assert.equal(render().sort.dir,'asc');
+render().reset(); assert.equal(render().isDefault,true);
+assert.equal(changes,5);
