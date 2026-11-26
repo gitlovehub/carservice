@@ -29,3 +29,34 @@ export function CategoryDrawer({ open, categories, icons, total, uncategorized, 
   const [busy, setBusy] = useState<"save" | "delete" | null>(null);
   const [error, setError] = useState("");
   const fieldErrors = useFieldErrors();
+
+  const current = editing?.id != null ? categories.find(c => c.id === editing.id) ?? null : null;
+  const isNew = editing !== null && editing.id === null;
+  const dirty = editing !== null && (isNew ? editing.name.trim() !== "" : !!current && (editing.name.trim() !== current.name || editing.icon !== current.icon));
+  const iconList = icons.length ? icons : Object.keys(ICON_LABEL);
+
+  const edit = (c: ServiceCategory | null) => { setError(""); fieldErrors.reset(); setEditing(c ? { id: c.id, name: c.name, icon: c.icon } : { id: null, name: "", icon: "wrench" }); };
+  const back = () => { setError(""); fieldErrors.reset(); setEditing(null); };
+  const set = (patch: Partial<Editing>) => { setEditing(e => e && { ...e, ...patch }); setError(""); fieldErrors.clear(...Object.keys(patch)); };
+
+  const save = async () => {
+    if (!editing) return;
+    setError("");
+    if (fieldErrors.show(editing.name.trim() ? {} : { name: "Nhập tên danh mục." })) return;
+    setBusy("save");
+    try {
+      const body = { name: editing.name.trim(), icon: editing.icon };
+      const res = editing.id === null ? await catalogAdminApi.createCategory(body) : await catalogAdminApi.updateCategory(editing.id, body);
+      notify(res.message, "success");
+      onChanged();
+      setEditing(null);
+    } catch (e) {
+      fieldErrors.showApi(e, { name: "name" });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const remove = async () => {
+    if (!current) return;
+    if (!await confirm({ title: "Xoá danh mục", description: `Xoá danh mục “${current.name}”? Thao tác không hoàn tác được.`, variant: "danger", confirmText: "Xoá danh mục" })) return;
