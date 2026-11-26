@@ -122,3 +122,32 @@ export default function RepairOrders() {
   return <AdminPage title="Phiếu sửa chữa" description="Theo dõi toàn bộ xe trong xưởng: đang ở bước nào, ai phụ trách" demo={false}>
     <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard icon="car" tone="brand" label="Xe trong xưởng" value={summary?.in_shop ?? "—"}/>
+      <StatCard icon="dollar" tone="warning" label="Báo giá / chờ duyệt" value={summary?.groups.quote ?? "—"}/>
+      <StatCard icon="box" tone="violet" label="Chờ phụ tùng" value={summary?.groups.parts ?? "—"}/>
+      <StatCard icon="check" tone="success" label="Đã hoàn tất" value={summary?.groups.done ?? "—"}/>
+    </div>
+    <>
+        <div className="mb-4">
+          <Tabs label="Lọc theo giai đoạn" variant="chips" value={group} onChange={resetPage(setGroup)} items={[
+            { id: "all", label: "Tất cả", count: summary?.total },
+            ...(Object.keys(groupLabels) as OrderGroup[]).map(id => ({ id, label: groupLabels[id], count: summary?.groups[id] })),
+          ]}/>
+        </div>
+        <Toolbar>
+          <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm mã phiếu, khách, SĐT, biển số…"/>
+          <PeriodFilter period={period}/>
+          <FilterSelect label="Kỹ thuật viên" value={tech} onChange={resetPage(setTech)} options={[
+            { value: "all", label: "Tất cả" },
+            ...(result?.technicians ?? []).map(t => ({ value: String(t.id), label: t.name ?? `KTV #${t.id}` })),
+          ]}/>
+          <ClearFilters active={search !== "" || tech !== "all" || group !== "all" || !period.isDefault || !tableSort.isDefault}
+            onClear={() => { setSearch(""); setTech("all"); setGroup("all"); period.reset(); tableSort.reset(); setPage(1); }}/>
+        </Toolbar>
+        <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Danh sách phiếu sửa chữa" columns={columns} rows={rows} rowKey={o => o.id}
+          loading={list.loading} error={list.error || undefined} onRetry={list.reload}
+          onRowClick={o => setSelectedId(o.id)} rowClassName={o => o.id === selectedId ? "bg-cs-soft/60" : ""}          footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={list.loading} onChange={setPage}/>}/>
+        <p className="mt-3 flex items-center gap-2 text-caption text-cs-muted"><Icon name="info" size={14}/>Tiếp nhận, báo giá, phân công kỹ thuật viên do Cố vấn dịch vụ thực hiện; Admin theo dõi tại đây.</p>
+    </>
+    <Drawer open={selectedId !== null} onClose={() => setSelectedId(null)} title="Chi tiết phiếu sửa chữa" width="lg">{pane}</Drawer>
+  </AdminPage>;
+}
