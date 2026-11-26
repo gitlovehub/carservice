@@ -60,3 +60,34 @@ export default function RepairOrders() {
           <InfoList items={[
             { label: "Xe", value: <b>{selected.vehicle || "—"}</b> },
             { label: "Biển số", value: <b className="tabular-nums">{selected.plate ?? "Chưa có biển"}</b> },
+            { label: "Khách hàng", value: selected.customer ?? "—" },
+            { label: "Điện thoại", value: selected.phone ? <a href={`tel:${selected.phone}`} className="tabular-nums hover:underline">{selected.phone}</a> : "—" },
+          ]}/>
+          <InfoList items={[
+            { label: "Cố vấn", value: selected.advisor ?? "—" },
+            { label: "Kỹ thuật viên", value: selected.technician ?? "Chưa phân công" },
+            { label: "Tiếp nhận", value: <span className="whitespace-nowrap tabular-nums">{fmtDateTime(selected.received_at)}</span> },
+            { label: "Hẹn trả xe", value: <span className="whitespace-nowrap tabular-nums">{fmtDateTime(selected.estimated_ready_at)}</span> },
+          ]}/>
+        </div>
+      </PaneSection>
+      {selected.quotation_items.length > 0 && <PaneSection title="Báo giá" icon="receipt">
+        <ul className="flex flex-col gap-2 text-small">
+          {selected.quotation_items.map((item, i) => <li key={`${item.name}-${i}`} className="flex items-center gap-3">
+            <span className="min-w-0 flex-1 text-cs-text">{item.name}<ServiceStoppedTag status={item.service_status} className="ml-2"/><span className="block text-caption text-cs-muted">{item.type === "PART" ? "Phụ tùng" : "Dịch vụ"} · Số lượng {item.quantity}</span></span>
+            <Pill tone={item.approved ? "success" : "neutral"}>{item.approved ? "Đã duyệt" : "Chưa duyệt"}</Pill>
+            <span className="w-28 shrink-0 text-right tabular-nums text-cs-text-2">{vnd(item.amount)}</span>
+          </li>)}
+        </ul>
+        <p className="mt-3 flex justify-between border-t border-cs-border pt-2 text-small font-semibold text-cs-text">Tổng báo giá<span className="tabular-nums">{vnd(selected.estimate)}</span></p>
+      </PaneSection>}
+      <PaneSection title="Hạng mục công việc" icon="wrench">
+        {selected.items.length === 0
+          ? <p className="text-small text-cs-muted">{selected.quotation_items.length ? "Báo giá chưa được duyệt, chưa tạo công việc." : "Chưa có báo giá."}</p>
+          : <ul className="flex flex-col gap-2 text-small">
+            {selected.items.map((item, i) => <li key={`${item.name}-${i}`} className="flex items-center gap-3">
+              <Icon name={item.status === "COMPLETED" ? "check" : item.status === "IN_PROGRESS" ? "refresh" : "clock"} size={16}
+                className={item.status === "COMPLETED" ? "text-success" : item.status === "IN_PROGRESS" ? "text-cs-accent-text" : "text-cs-muted"}/>
+              <span className="min-w-0 flex-1 text-cs-text">{item.name}<ServiceStoppedTag status={item.service_status} className="ml-2"/><span className="block text-caption text-cs-muted">{workItemLabel[item.status]}{item.technician ? ` · ${item.technician}` : ""}</span></span>
+              {item.price > 0 && <span className="tabular-nums text-cs-text-2">{vnd(item.price)}</span>}
+            </li>)}
