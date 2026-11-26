@@ -211,3 +211,55 @@ export default function WorkspaceDashboard({ role }: { role: Mode }) {
       <StatCard label="Lịch hẹn hôm nay" load={todayTotal} hint="Theo ngày hẹn" to={`${base}/appointments`} icon="clock"/>
       {advisor ? <>
         <StatCard label="Đang sửa chữa" load={inProgress} hint="Phiếu ở trạng thái đang sửa" to="/advisor/service-orders?status=IN_PROGRESS" icon="wrench"/>
+        <StatCard label="Chờ thanh toán & bàn giao" load={completed} hint="Đã sửa xong, chờ thu tiền" to="/advisor/service-orders?status=COMPLETED" icon="receipt"/>
+      </> : <>
+        <StatCard label="Đã xác nhận, chờ xe đến" load={confirmed} hint="Lịch đã xác nhận" to="/admin/appointments" icon="check"/>
+        <StatCard label="Tổng lịch đang mở" load={combineLoad(pending, confirmed, (a, b) => a + b)}
+          hint="Chờ xác nhận + đã xác nhận" to="/admin/appointments" icon="clipboard"/>
+      </>}
+    </section>
+
+    {!advisor && <section aria-label="Lối tắt quản trị" className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2" data-testid="admin-shortcut-tiles">
+      {adminTiles.map(tile => <Link key={tile.to} to={tile.to} className="cs-admin-tile">
+        <span className="min-w-0">
+          <span className="block text-section text-cs-text">{tile.label}</span>
+          <span className="mt-1 block text-small text-cs-text-2">{tile.hint}</span>
+        </span>
+        <span className="cs-admin-tile-icon" aria-hidden="true"><Icon name={tile.icon} size={22}/></span>
+      </Link>)}
+    </section>}
+
+    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+      <Panel title="Lịch hẹn hôm nay" description="Sắp xếp theo giờ hẹn"
+        action={<Link className={buttonClass({ variant: "ghost", size: "sm" })} to={`${base}/appointments`}>Xem tất cả<Icon name="chevron-right" size={14}/></Link>}>
+        <TodayAppointments load={todayList} role={role} onRetry={retry}/>
+      </Panel>
+
+      <div className="grid gap-5">
+        {advisor ? <>
+          <Panel title="Cần xử lý" description="Phiếu sửa chữa đang chờ thao tác">
+            <ul className="divide-y divide-cs-border">
+              <TaskLink to="/advisor/service-orders?status=QUOTING" label="Lập báo giá" hint="Đã chẩn đoán, chưa gửi báo giá" load={quoting}/>
+              <TaskLink to="/advisor/service-orders?status=WAITING_APPROVAL" label="Chờ khách duyệt" hint="Báo giá đã gửi khách" load={waitingApproval}/>
+              <TaskLink to="/advisor/service-orders?status=WAITING_FOR_PARTS" label="Chờ phụ tùng" hint="Tạm dừng sửa chữa" load={waitingParts}/>
+              <TaskLink to="/advisor/appointments" label="Đã xác nhận, chờ xe đến" hint="Sẵn sàng tiếp nhận" load={confirmed}/>
+            </ul>
+          </Panel>
+          <Panel title="Phiếu sửa chữa gần đây"
+            action={<Link className={buttonClass({ variant: "ghost", size: "sm" })} to="/advisor/service-orders">Xem tất cả<Icon name="chevron-right" size={14}/></Link>}>
+            <RecentOrders load={recentOrders} onRetry={retry}/>
+          </Panel>
+        </> : <Panel title="Tiện ích" description="Mở nhanh các màn hình hay dùng">
+          <ul className="grid grid-cols-4 gap-2 px-4 py-5" data-testid="admin-utilities">
+            {adminUtilities.map(item => <li key={item.label}>
+              <Link to={item.to} className="cs-admin-utility">
+                <span className="cs-admin-utility-icon" aria-hidden="true"><Icon name={item.icon} size={22}/></span>
+                <span className="text-caption text-cs-text-2">{item.label}</span>
+              </Link>
+            </li>)}
+          </ul>
+        </Panel>}
+      </div>
+    </div>
+  </div>;
+}
