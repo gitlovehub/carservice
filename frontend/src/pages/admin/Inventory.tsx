@@ -254,3 +254,66 @@ export default function Inventory() {
   const selectedStockPart = partOptions.data?.data.find(p => p.id === stockForm?.partId);
 
   return <AdminPage title="Phụ tùng & kho" description="Danh mục phụ tùng, tồn kho, nhập/xuất và cảnh báo" demo={false}
+    actions={<>
+      <Button variant="outline" icon="upload" onClick={() => openStock("OUT")}>Xuất kho</Button>
+      {tab === "catalog"
+        ? <Button variant="primary" icon="plus" onClick={() => startEdit(null)}>Thêm phụ tùng</Button>
+        : <Button variant="primary" icon="plus" onClick={() => openStock("IN")}>Nhập kho</Button>}
+    </>}>
+    <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard icon="box" tone="brand" label="Tổng mã phụ tùng" value={summary ? num(summary.total) : "—"}/>
+      <StatCard icon="coins" tone="neutral" label="Giá trị tồn kho (giá vốn)" value={summary ? vnd(summary.stock_value) : "—"}/>
+      <StatCard icon="alert" tone="warning" label="Sắp hết hàng" value={summary?.low ?? "—"}/>
+      <StatCard icon="x-circle" tone="danger" label="Hết hàng" value={summary?.out ?? "—"}/>
+    </div>
+    <div className="mb-4">
+      <Tabs label="Phụ tùng & kho" value={tab} onChange={switchTab} items={[
+        { id: "catalog", label: "Danh mục phụ tùng", icon: "tag" }, { id: "stock", label: "Tồn kho", icon: "box" },
+        { id: "orders", label: "Cần đặt hàng", icon: "clock", count: openRequests.length || undefined, tone: "warning" },
+        { id: "moves", label: "Lịch sử nhập xuất", icon: "history" },
+      ]}/>
+    </div>
+
+    {tab === "catalog" && <SplitView paneOpen={!!editing} onClose={() => setEditing(null)} paneWidth={420}
+      paneTitle={<span className="flex items-center gap-2 text-cs-accent-text"><Icon name="edit" size={18}/>{editing?.id ? "Chỉnh sửa phụ tùng" : "Thêm phụ tùng"}</span>}
+      paneFooter={<><Button disabled={saving} onClick={() => setEditing(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void saveEdit()}>Lưu thay đổi</Button></>}
+      pane={editPane}
+      list={<>{filters}<DataTable sort={partSort.sort} onSort={partSort.toggle} caption="Danh mục phụ tùng" columns={catalogColumns} rows={result?.data ?? []} rowKey={p => p.id}
+        loading={parts.loading} error={parts.error || undefined} onRetry={parts.reload}
+        onRowClick={startEdit} rowClassName={p => p.id === editing?.id ? "bg-cs-soft/60" : ""}
+        footer={pager}/></>}/>}
+
+    {tab === "stock" && <>{filters}<DataTable sort={partSort.sort} onSort={partSort.toggle} caption="Tồn kho" columns={stockColumns} rows={result?.data ?? []} rowKey={p => p.id}
+      loading={parts.loading} error={parts.error || undefined} onRetry={parts.reload}
+      empty={<EmptyState icon="box" title={status === "all" ? "Chưa có phụ tùng" : "Không có phụ tùng ở mức này"}/>}
+      rowClassName={p => p.level === "out" ? "bg-danger-soft/40" : p.level === "low" ? "bg-warning-soft/40" : ""}
+      onRowClick={p => openStock("IN", p)}
+      footer={pager}/></>}
+
+    {tab === "orders" && <PartOrders rows={openRequests} loading={requests.loading && !requests.stale} error={requests.error || undefined} onRetry={requests.reload}
+      onChanged={() => { setRequestsVersion(n => n + 1); moves.reload(); }}/>}
+
+    {tab === "moves" && <>{filters}<DataTable sort={moveSort.sort} onSort={moveSort.toggle} caption="Lịch sử nhập xuất" columns={moveColumns} rows={moveResult?.data ?? []} rowKey={m => m.id}
+      loading={moves.loading} error={moves.error || undefined} onRetry={moves.reload}
+      empty={<EmptyState icon="history" title="Chưa có giao dịch nhập xuất"/>}
+      footer={moveResult && <Pagination page={moveResult.meta.current_page} totalPages={moveResult.meta.last_page} totalItems={moveResult.meta.total} pageSize={moveResult.meta.per_page} disabled={moves.loading} onChange={setMovePage}/>}/></>}
+
+    <Modal open={!!stockForm} onClose={() => setStockForm(null)} dismissible={!saving} title={stockForm?.type === "IN" ? "Nhập kho" : "Xuất kho"}
+      footer={<><Button disabled={saving} onClick={() => setStockForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void saveStock()}>Xác nhận</Button></>}>
+      {stockForm && <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+        <SearchableSelect label="Phụ tùng" placeholder="Tìm SKU, tên phụ tùng…" required error={stockErrors.errors.part} loading={partOptions.loading} loadError={partOptions.error} onRetry={partOptions.reload}
+          options={(partOptions.data?.data ?? []).map(p => ({ value: p.id, label: `${p.sku} — ${p.name}`, hint: `tồn ${num(p.stock)}` }))}
+          value={stockForm.partId} onChange={option => { stockErrors.clear("part"); setStockForm({ ...stockForm, partId: option?.value ?? null }); }}/>
+        <Field label="Số lượng" required error={stockErrors.errors.qty} hint={stockForm.type === "OUT" && selectedStockPart ? `Tối đa ${num(selectedStockPart.stock)}` : undefined}>
+          <QuantityStepper label="Số lượng" size="md" className="w-full" min={1} max={stockForm.type === "OUT" && selectedStockPart ? Math.max(1, selectedStockPart.stock) : 99999} value={stockForm.qty || 1} onChange={v => { stockErrors.clear("qty"); setStockForm({ ...stockForm, qty: v ?? 1 }); }}/>
+        </Field>
+        {stockForm.type === "IN" && selectedStockPart && selectedStockPart.requested > 0 && <div role="note" className="rounded-control border border-warning/40 bg-warning-soft p-3 text-small text-warning-fg sm:col-span-2">
+          Phụ tùng này đang có <b>{num(selectedStockPart.requested)} {selectedStockPart.unit}</b> chờ về cho phiếu sửa chữa. Nếu đây là hàng đặt cho phiếu, hãy nhập ở tab <b>Cần đặt hàng</b> (bấm "Hàng đã về") để không cộng kho hai lần và khách được báo.
+          <Button size="sm" variant="outline" className="mt-2" onClick={() => { setStockForm(null); switchTab("orders"); }}>Mở Cần đặt hàng</Button>
+        </div>}
+        <Field label={stockForm.type === "IN" ? "Nhà cung cấp / ghi chú" : "Lý do xuất"} optional error={stockErrors.errors.note} className="sm:col-span-2"><Input value={stockForm.note} maxLength={255} onChange={e => { stockErrors.clear("note"); setStockForm({ ...stockForm, note: e.target.value }); }}/></Field>
+        <ToastError message={formError}/>
+      </div>}
+    </Modal>
+  </AdminPage>;
+}
