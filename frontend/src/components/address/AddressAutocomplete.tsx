@@ -45,3 +45,20 @@ export function AddressAutocomplete({ value, onChange, onSelect, label = "Địa
     }
     onSelect({ ...item, latitude, longitude });
   }
+
+  return <div className="relative">
+    <label className="block text-xs font-semibold text-cs-muted">{label}
+      <input
+        role="combobox" aria-expanded={open} aria-controls={listId} aria-autocomplete="list"
+        aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
+        className="mt-1 w-full rounded-xl border border-cs-border bg-cs-surface-2 px-3 py-2.5 text-sm text-cs-text outline-none focus:border-cs-accent focus:ring-2 focus:ring-cs-accent/20"
+        value={value} required={required} autoComplete="off" placeholder="Gõ số nhà, tên đường… để chọn từ gợi ý"
+        onChange={e => { onChange(e.target.value); if (e.target.value.trim().length < 3) { setItems([]); setOpen(false); } }}
+        onFocus={() => { if (items.length) setOpen(true); }}
+        onBlur={() => window.setTimeout(() => setOpen(false), 150)}
+        onKeyDown={e => {
+          if (!open || !items.length) return;
+          if (e.key === "ArrowDown") { e.preventDefault(); setActive(i => (i + 1) % items.length); }
+          else if (e.key === "ArrowUp") { e.preventDefault(); setActive(i => (i <= 0 ? items.length - 1 : i - 1)); }
+          else if (e.key === "Enter" && active >= 0) { e.preventDefault(); void choose(items[active]); }
+          else if (e.key === "Escape") setOpen(false);
