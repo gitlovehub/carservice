@@ -167,3 +167,44 @@ export default function Services() {
                     <span className="inline-flex items-center gap-2.5">
                       <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-caption font-semibold ${active ? "bg-success-soft text-success-fg" : isDraft ? "bg-warning-soft text-warning-fg" : "bg-neutral-soft text-neutral-fg"}`}>
                         <span className={`size-1.5 rounded-full ${active ? "bg-success" : isDraft ? "bg-warning" : "bg-cs-muted"}`} aria-hidden="true"/>{active ? "Áp dụng" : isDraft ? "Nháp" : "Ngừng"}
+                      </span>
+                      <Switch checked={active && s.is_visible} disabled={!active} label={active ? `Hiển thị “${s.name}” cho khách khi đặt lịch` : `Bật Đang áp dụng cho “${s.name}” trước khi hiển thị`}
+                        onChange={v => void patch(s, { is_visible: v }, v ? `“${s.name}” đã hiện trên trang đặt lịch của khách.` : `Đã ẩn “${s.name}” khỏi trang đặt lịch (nhân viên vẫn dùng được khi báo giá).`)}/>
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    <Dropdown label={`Thao tác dịch vụ ${s.name}`} items={[
+                      { label: "Chỉnh sửa", icon: "edit", onSelect: () => setEditing(s) },
+                      { label: "Chi tiết & bước chuẩn", icon: "eye", onSelect: () => setViewing(s) },
+                      { type: "separator" },
+                      active
+                        ? { label: "Ngừng áp dụng", icon: "ban", danger: true, onSelect: () => void stop(s) }
+                        : { label: missing.length ? `Áp dụng (thiếu ${missing.join(", ")})` : "Áp dụng lại", icon: "check", disabled: missing.length > 0,
+                          onSelect: () => void patch(s, { status: "ACTIVE" }, `Đã áp dụng “${s.name}”. Bật Hiển thị nếu muốn khách thấy dịch vụ.`) },
+                      { label: blocker ? `Xóa vĩnh viễn (${blocker})` : "Xóa vĩnh viễn", icon: "trash", danger: true, disabled: blocker !== null, onSelect: () => void removePermanently(s) },
+                    ]}/>
+                  </td>
+                </tr>;
+              })}
+            </tbody>
+          </table>
+        </div>}
+      {result && result.last_page > 1 && <div className="border-t border-cs-border px-4 pb-4">
+        <Pagination page={result.current_page} totalPages={result.last_page} totalItems={result.total} pageSize={result.per_page}
+          disabled={list.loading} onChange={setPage}/>
+      </div>}
+    </section>
+
+    {editing !== undefined && <ServiceFormModal open key={editing?.id ?? "new"} service={editing} categories={categories} defaultCategoryId={currentCategoryId}
+      onClose={() => setEditing(undefined)} onSaved={() => { setEditing(undefined); reload(); }}/>}
+    <ServiceDetailModal service={viewing} onClose={() => setViewing(null)}
+      onStepsSaved={(minutes, stepsCount) => {
+        if (!viewing) return;
+        const change = { steps_count: stepsCount, ...(minutes !== null ? { estimated_minutes: minutes } : {}) };
+        setViewing({ ...viewing, ...change });
+        setOverrides(o => ({ ...o, [viewing.id]: { ...o[viewing.id], ...change } }));
+      }}/>
+    <CategoryDrawer open={showCategories} categories={categories} icons={meta?.icons ?? []} total={meta?.total ?? 0} uncategorized={meta?.uncategorized ?? 0}
+      filter={category} onFilter={pick} onClose={() => setShowCategories(false)} onChanged={() => { cats.reload(); list.reload(); }}/>
+  </AdminPage>;
+}
