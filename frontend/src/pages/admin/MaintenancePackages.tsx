@@ -42,3 +42,47 @@ export default function MaintenancePackages() {
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [editing, setEditing] = useState<AdminPackage | null | undefined>(undefined);
+
+  const brands = useAdminQuery("catalog-brands", signal => catalogAdminApi.brands(signal));
+  const models = useAdminQuery(brand !== "all" && brand !== "general" ? `catalog-models:${brand}` : null, signal => catalogAdminApi.models(Number(brand), signal));
+  const params = {
+    page, per_page: PER_PAGE, status: status || undefined,
+    brand_id: brand === "all" ? undefined : brand, vehicle_model_id: model === "all" ? undefined : model,
+  };
+  const list = useAdminQuery(`packages:${JSON.stringify(params)}`, signal => catalogAdminApi.packages(params, signal));
+  const result = list.data ?? list.stale;
+  const rows = result?.data ?? [];
+  const currentId = selectedId ?? rows[0]?.id ?? null; // mặc định chọn gói đầu trang
+  const detail = useAdminQuery(currentId === null ? null : `package:${currentId}`, signal => catalogAdminApi.package(currentId as number, signal));
+  const selected = detail.data ?? (detail.stale?.id === currentId ? detail.stale : rows.find(r => r.id === currentId)) ?? null;
+
+  const reload = () => { list.reload(); detail.reload(); };
+  const setStatusOf = async (p: AdminPackage, next: "ACTIVE" | "INACTIVE") => {
+    try {
+      await catalogAdminApi.updatePackage(p.id, { status: next });
+      notify(next === "ACTIVE" ? `Đã áp dụng lại gói “${p.name}”.` : `Đã tạm ngừng gói “${p.name}” — khách không chọn được khi đặt lịch.`, "success");
+      reload();
+    } catch (e) {
+      notify(errorMessage(e, "Không cập nhật được gói."), "error");
+    }
+  };
+
+  const brandOptions = [
+    { value: "all", label: "Tất cả" }, { value: "general", label: "Dùng chung" },
+    ...(brands.data ?? brands.stale ?? []).map(b => ({ value: String(b.id), label: b.name })),
+  ];
+  const modelOptions = [{ value: "all", label: "Tất cả" }, ...(models.data ?? []).map(m => ({ value: String(m.id), label: m.name }))];
+
+  return <AdminPage demo={false} title="Gói bảo dưỡng" description="Gói định kỳ theo dòng xe và mốc km/tháng"
+    actions={<Button variant="primary" icon="plus" onClick={() => setEditing(null)}>Tạo gói</Button>}>
+    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+      <div className="min-w-0">
+        <div className="mb-4 grid gap-3 sm:grid-cols-3 [&>*]:w-full">
+          <FilterSelect label="Hãng" value={brand} onChange={v => { setBrand(v); setModel("all"); setPage(1); setSelectedId(null); }} options={brandOptions}/>
+          <FilterSelect label="Dòng xe" value={model} onChange={v => { setModel(v); setPage(1); setSelectedId(null); }} options={modelOptions}
+            className={brand === "all" || brand === "general" ? "pointer-events-none opacity-60" : ""}/>
+          <FilterSelect label="Trạng thái" value={status} onChange={v => { setStatus(v); setPage(1); setSelectedId(null); }} options={[
+            { value: "", label: "Tất cả" }, { value: "ACTIVE", label: "Đang áp dụng" }, { value: "INACTIVE", label: "Tạm ngừng" },
+          ]}/>        </div>
+
+        {list.error ? <div className="rounded-card border border-cs-border bg-cs-surface"><ErrorState description={list.error} onRetry={list.reload}/></div>
