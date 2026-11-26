@@ -58,3 +58,22 @@ export function ServiceStepsEditor({ serviceId, onSaved, onDirtyChange }: {
         method: "PUT", body: JSON.stringify({ steps: next }),
       });
       setSteps(next); setSavedSteps(next);
+      onSaved?.(response.service.estimated_minutes, next.length);
+      notify(`Đã lưu ${next.length} bước chuẩn của dịch vụ (tổng ${next.reduce((sum, step) => sum + step.standard_minutes, 0)} phút).`, "success");
+    } catch (error) {
+      notify(userErrorMessage(error, "Không lưu được các bước chuẩn."), "error");
+    } finally { setSaving(false); }
+  }
+
+  const set = (index: number, patch: Partial<Step>) => setSteps(steps.map((step, i) => i === index ? { ...step, ...patch } : step));
+  const field = "rounded-lg border border-cs-border bg-cs-surface-2 px-2 py-1.5 text-sm";
+  const retry = () => { setLoadFailed(false); setLoaded(false); setAttempt(n => n + 1); };
+
+  return <div className="border-t border-cs-border pt-3" data-testid="service-steps-editor">
+    <dt className="text-xs text-cs-muted">Quy trình chuẩn (bước + phút)</dt>
+    {!loaded ? <p className="mt-1 text-xs text-cs-muted">Đang tải…</p>
+      : loadFailed ? <dd className="mt-2 flex flex-wrap items-center gap-2">
+        <p role="alert" className="text-small text-danger-fg">Không tải được quy trình. Tải lại trước khi chỉnh sửa.</p>
+        <Button size="sm" variant="tonal" icon="refresh" onClick={retry}>Thử lại</Button>
+      </dd>
+      : <dd className="mt-2 space-y-2">
