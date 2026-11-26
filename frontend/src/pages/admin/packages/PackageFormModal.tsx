@@ -144,3 +144,38 @@ export function PackageFormModal({ open, pkg, brands, onClose, onSaved }: {
                   <span className="block text-caption text-cs-muted">{new Intl.NumberFormat("vi-VN").format(Number(s.base_price))} × {picked[s.id]}</span></> : money(s.base_price)}
               </span>
             </li>;
+          })}
+        </ul>
+        <FieldError>{fieldErrors.errors.services}</FieldError>
+      </section>
+
+      <section className="flex flex-col gap-2 md:col-span-2" aria-label="Phụ tùng đi kèm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="flex items-center gap-2 text-small font-semibold"><Icon name="box" size={16} className="text-cs-accent-text"/>Phụ tùng đi kèm ({parts.length})</h3>
+          <span className="text-caption text-cs-muted">{money(partTotal)}</span>
+        </div>
+        <SearchInput className="sm:max-w-none" value={partSearch} onChange={setPartSearch} placeholder="Tìm phụ tùng trong kho theo tên hoặc mã SKU (từ 2 ký tự)…" label="Tìm phụ tùng"/>
+        {partTerm.length >= 2 && <ul className="max-h-40 overflow-y-auto rounded-control border border-cs-border p-1">
+          {partResults.filter(p => !parts.some(x => x.part_id === p.id)).map(p => <li key={p.id}>
+            <button type="button" className="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-small hover:bg-cs-hover"
+              onClick={() => { setParts(list => [...list, { part_id: p.id, name: p.name, sku: p.sku, price: Number(p.price), quantity: 1 }]); setPartSearch(""); }}>
+              <Icon name="plus" size={14} className="text-cs-accent-text"/>
+              <span className="min-w-0 flex-1 truncate">{p.name} <span className="text-caption text-cs-muted">· {p.sku}</span></span>
+              <span className="tabular-nums text-cs-text-2">{money(p.price)}</span>
+            </button>
+          </li>)}
+          {!partResults.length && <li className="px-2.5 py-1.5 text-small text-cs-muted">Không tìm thấy phụ tùng đang kinh doanh.</li>}
+        </ul>}
+        {parts.length > 0 && <ul className="flex flex-col divide-y divide-cs-border rounded-control border border-cs-border">
+          {parts.map(p => <li key={p.part_id} className="flex items-center gap-2.5 px-2.5 py-1.5 text-small">
+            <span className="min-w-0 flex-1 truncate">{p.name} <span className="text-caption text-cs-muted">· {p.sku}</span></span>
+            {qty(p.quantity, n => setParts(list => list.map(x => x.part_id === p.part_id ? { ...x, quantity: n } : x)), `Số lượng ${p.name}`)}
+            <span className="w-24 shrink-0 text-right tabular-nums">{money(p.price * p.quantity)}</span>
+            <IconButton icon="x" size="sm" tone="danger" label={`Bỏ ${p.name}`} onClick={() => setParts(list => list.filter(x => x.part_id !== p.part_id))}/>
+          </li>)}
+        </ul>}
+      </section>
+      <ToastError message={error}/>
+    </div>
+  </Modal>;
+}
