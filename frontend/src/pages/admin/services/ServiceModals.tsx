@@ -177,3 +177,46 @@ export function ServiceFormModal({ open, service, categories, defaultCategoryId,
       <div className="flex flex-col divide-y divide-cs-border rounded-control border border-cs-border sm:col-span-2">
         {([
           { key: "status", label: "Đang áp dụng", locked: !form.status && missing.length > 0, hint: !form.status && missing.length ? `Cần bổ sung ${missing.join(", ")}.` : "Tắt = ngừng dịch vụ: không dùng được khi đặt lịch và báo giá.", change: changeStatus },
+          { key: "is_visible", label: "Hiển thị cho khách khi đặt lịch", locked: !form.status, hint: form.status ? "Tắt = chỉ nhân viên thấy (báo giá, phát sinh)." : "Bật Đang áp dụng trước.", change: (on: boolean) => set({ is_visible: on }) },
+        ] as const).map(({ key, label, locked, hint, change }) => <div key={key} className="flex items-center gap-3 px-3 py-2.5">
+          <span className="min-w-0 flex-1"><span className="block text-small font-medium text-cs-text">{label}</span><span className="block text-caption text-cs-muted">{hint}</span></span>
+          <Switch checked={form[key]} disabled={locked || saving} onChange={change} label={label}/>
+        </div>)}
+      </div>
+      {service?.status === "ACTIVE" && !form.category_id && <p className="rounded-control bg-warning-soft px-3 py-2 text-small text-warning-fg sm:col-span-2">
+        Bỏ danh mục sẽ tắt cả 2 trạng thái. Sau khi lưu, dịch vụ không còn trên trang đặt lịch và không dùng được cho báo giá mới.
+      </p>}
+      {dirty && blockers.length > 0 && <p className="rounded-control bg-cs-surface-2 px-3 py-2 text-small text-cs-text-2 sm:col-span-2">Chưa lưu được: {blockers.join("; ")}.</p>}
+      {!form.status && (service?.active_packages_count ?? 0) > 0 && <p className="rounded-control bg-warning-soft px-3 py-2 text-small text-warning-fg sm:col-span-2">
+        Dịch vụ đang nằm trong {service?.active_packages_count} gói bảo dưỡng; khi ngừng, các gói này sẽ không tính dịch vụ này.
+      </p>}
+      <ToastError message={error}/>
+    </div>
+  </Modal>;
+}
+
+/** Chi tiết + bước chuẩn của dịch vụ (phút chuẩn cho kỹ thuật viên). */
+export function ServiceDetailModal({ service, onClose, onStepsSaved }: { service: AdminService | null; onClose: () => void; onStepsSaved: (minutes: number | null, stepsCount: number) => void }) {
+  const { confirm } = useAppFeedback();
+  const [stepsDirty, setStepsDirty] = useState(false);
+  const requestClose = async () => {
+    if (stepsDirty && !await confirm({ title: "Bỏ thay đổi quy trình?", description: "Các bước vừa sửa chưa được lưu.", confirmText: "Bỏ thay đổi", variant: "danger" })) return;
+    setStepsDirty(false);
+    onClose();
+  };
+  return <Modal open={service !== null} onClose={() => void requestClose()} size="md" title={service?.name ?? "Chi tiết dịch vụ"}
+    description={service ? `DV-${String(service.id).padStart(3, "0")} · ${service.category ?? "Chưa phân loại"}` : undefined}
+    footer={<Button onClick={() => void requestClose()}>Đóng</Button>}>
+    {service && <div className="flex flex-col gap-4 text-small">
+      <dl className="grid grid-cols-2 gap-3 rounded-control bg-cs-surface-2 p-3">
+        <div><dt className="text-caption text-cs-muted">Giá cơ bản</dt><dd className="font-semibold tabular-nums">{money(service.base_price)}</dd></div>
+        <div><dt className="text-caption text-cs-muted">Thời gian ước tính</dt><dd className="font-semibold">{service.estimated_minutes ? `${service.estimated_minutes} phút` : "Chưa xác định"}</dd></div>
+        <div><dt className="text-caption text-cs-muted">Mức dịch vụ</dt><dd>{LEVEL_TEXT[service.service_level ?? "STANDARD"]}</dd></div>
+        <div><dt className="text-caption text-cs-muted">Trong gói bảo dưỡng</dt><dd>{service.active_packages_count ?? 0} gói</dd></div>
+      </dl>
+      {service.description && <p className="text-cs-text-2 font-medium">{service.description}</p>}
+      <ServiceStepsEditor key={service.id} serviceId={service.id} onSaved={onStepsSaved} onDirtyChange={setStepsDirty}/>
+    </div>}
+  </Modal>;
+}
+
