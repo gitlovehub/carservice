@@ -124,3 +124,46 @@ export default function Services() {
         <ClearFilters active={search !== "" || category !== "all" || status !== "" || !tableSort.isDefault}
           onClear={() => { setSearch(""); setCategory("all"); setStatus(""); tableSort.reset(); setPage(1); }}/>
       </div>
+
+      {list.error ? <ErrorState description={list.error} onRetry={list.reload}/>
+        : list.loading && !rows.length ? <LoadingState/>
+        : !rows.length ? <EmptyState title="Không có dịch vụ" description={term || status ? "Thử đổi từ khoá hoặc bộ lọc." : "Bấm “Thêm dịch vụ” để tạo dịch vụ đầu tiên của danh mục này."}/>
+        : <div className="overflow-x-auto" aria-busy={list.loading || undefined}>
+          <table data-ui="table" className="w-full min-w-[760px] table-fixed border-collapse text-small">
+            <caption className="sr-only">Danh sách dịch vụ — bấm tiêu đề cột để sắp xếp</caption>
+            <colgroup><col className="w-[30%]"/><col/><col/><col/><col/><col className="w-[88px]"/></colgroup>
+            <thead>
+              <tr className="bg-cs-surface-2 text-cs-text-2">
+                {COLUMNS.map(([key, label, align]) => <th key={label} scope="col" aria-sort={key ? ariaSort(sort, key) : undefined}
+                  className={`whitespace-nowrap px-3 py-3 font-semibold ${alignClass[align]}`}>
+                  {key ? <SortHeader label={label} sortKey={key} sort={sort} onSort={tableSort.toggle} align={align}/> : label}
+                </th>)}
+                <th scope="col" className="whitespace-nowrap px-3 py-3 text-right font-semibold">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(s => {
+                const active = s.status === "ACTIVE";
+                const missing = serviceActivationProblems(s);
+                const isDraft = !active && missing.length > 0;
+                const blocker = deleteBlocker(s);
+                const tone = CATEGORY_TONE[s.service_category?.icon ?? "wrench"] ?? "neutral";
+                return <tr key={s.id} className={`border-t border-cs-border transition-colors hover:bg-cs-hover/60 ${active ? "" : "text-cs-muted"}`}>
+                  <td className="px-3 py-3">
+                    <span className="flex min-w-0 items-center gap-3">
+                      {s.image_url
+                        ? <img src={s.image_url} alt="" className={`size-10 shrink-0 rounded-control border border-cs-border object-cover ${active ? "" : "opacity-60"}`} loading="lazy"/>
+                        : <span className={`grid size-10 shrink-0 place-items-center rounded-control ${active ? "bg-cs-soft text-cs-accent-text" : "bg-cs-surface-2 text-cs-muted"}`}><Icon name={iconOf(s)} size={20}/></span>}
+                      <span className="min-w-0">
+                        <button type="button" onClick={() => setViewing(s)} className="block max-w-full cursor-pointer truncate text-left font-semibold text-cs-text hover:underline">{s.name}</button>
+                        <span className="block truncate text-caption text-cs-muted font-medium">{s.description || "Chưa có mô tả"}</span>
+                      </span>
+                    </span>
+                  </td>
+                  <td className="px-3 py-3">{s.service_category ? <Pill tone={tone}>{s.service_category.name}</Pill> : <span className="text-caption text-cs-muted">Chưa phân loại</span>}</td>
+                  <td className="whitespace-nowrap px-3 py-3 text-right font-semibold tabular-nums text-cs-text">{money(s.base_price)}</td>
+                  <td className="whitespace-nowrap px-3 py-3 text-center tabular-nums text-cs-text-2">{s.estimated_minutes ? `${s.estimated_minutes} phút` : "—"}</td>
+                  <td className="whitespace-nowrap px-3 py-3">
+                    <span className="inline-flex items-center gap-2.5">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-caption font-semibold ${active ? "bg-success-soft text-success-fg" : isDraft ? "bg-warning-soft text-warning-fg" : "bg-neutral-soft text-neutral-fg"}`}>
+                        <span className={`size-1.5 rounded-full ${active ? "bg-success" : isDraft ? "bg-warning" : "bg-cs-muted"}`} aria-hidden="true"/>{active ? "Áp dụng" : isDraft ? "Nháp" : "Ngừng"}
