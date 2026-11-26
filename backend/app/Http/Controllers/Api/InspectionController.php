@@ -12,6 +12,7 @@ use App\Models\TechnicianProfile;
 use App\Services\RepairOrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class InspectionController extends Controller
 {
@@ -111,15 +112,16 @@ class InspectionController extends Controller
         $data = $request->validated();
 
         if (! empty($data['recommendations']) && is_array($data['recommendations'])) {
-            $created = [];
-            foreach ($data['recommendations'] as $rec) {
-                $created[] = $this->service->addInspectionRecommendation($inspection, $rec);
-            }
+            // Một dòng lỗi (vd. thiếu lý do bổ sung) → không lưu dòng nào.
+            $created = DB::transaction(fn () => array_map(
+                fn (array $rec) => $this->service->addInspectionRecommendation($inspection, $rec, $request->user()),
+                $data['recommendations'],
+            ));
 
             return response()->json($created, 201);
         }
 
-        $recommendation = $this->service->addInspectionRecommendation($inspection, $data);
+        $recommendation = $this->service->addInspectionRecommendation($inspection, $data, $request->user());
 
         return response()->json($recommendation, 201);
     }

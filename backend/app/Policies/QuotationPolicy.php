@@ -28,10 +28,15 @@ class QuotationPolicy
             ], true);
     }
 
+    /**
+     * Chỉ CHỦ phiếu được duyệt báo giá — kể cả Admin/Cố vấn dùng tài khoản như khách cho xe của chính họ.
+     * Nhân viên không bao giờ duyệt thay khách khác (không có hồ sơ khách trùng).
+     */
     public function respond(Account $account, Quotation $quotation): bool
     {
-        return $account->hasRole(Account::ROLE_CUSTOMER)
-            && (int) $quotation->repairOrder?->customer_id === (int) $account->customer?->id;
+        $customerId = $account->customer?->id;
+
+        return $customerId !== null && (int) $quotation->repairOrder?->customer_id === (int) $customerId;
     }
 
     private function canManageAll(Account $account): bool
