@@ -58,8 +58,13 @@ export function RatingInput({ value, onChange, onPreview, label, size = 44 }: {
   return (
     <div className="inline-flex items-center gap-1.5" role="radiogroup" aria-label={label} onMouseLeave={() => preview(0)}
       onKeyDown={(event) => {
-        if (event.key === "ArrowRight" || event.key === "ArrowUp") { event.preventDefault(); onChange(Math.min(5, value + 1)); }
-        if (event.key === "ArrowLeft" || event.key === "ArrowDown") { event.preventDefault(); onChange(Math.max(1, value - 1)); }
+        let next: number;
+        if (event.key === "ArrowRight" || event.key === "ArrowUp") next = Math.min(5, value + 1);
+        else if (event.key === "ArrowLeft" || event.key === "ArrowDown") next = Math.max(1, value - 1);
+        else return;
+        event.preventDefault();
+        onChange(next);
+        event.currentTarget?.querySelectorAll<HTMLButtonElement>('button[role="radio"]')[next - 1]?.focus();
       }}>
       {[1, 2, 3, 4, 5].map((star) => {
         const lit = star <= shown;
