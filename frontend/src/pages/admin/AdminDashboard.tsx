@@ -196,3 +196,51 @@ function TasksPanel({ data }: { data: DashboardData }) {
     <ul className="flex flex-col gap-2">{sorted.map(task => <li key={task.label}>
       <Link to={task.to} className={`group flex items-center gap-3 rounded-control border border-cs-border px-3 py-2 no-underline transition-colors hover:bg-cs-hover ${task.count ? "" : "opacity-60"}`}>
         <span className={`grid size-9 shrink-0 place-items-center rounded-control ${toneSoft[task.tone]}`}><Icon name={task.icon} size={17}/></span>
+        <span className="min-w-0 flex-1 truncate text-small font-semibold text-cs-text">{task.label}</span>
+        <b className={`min-w-8 rounded-full px-2 py-0.5 text-center text-small tabular-nums ${task.count ? toneSoft[task.tone] : "text-cs-muted"}`}>{num(task.count)}</b>
+        <Icon name="chevron-right" size={16} className="shrink-0 text-cs-muted transition-colors group-hover:text-cs-accent-text"/>
+      </Link>
+    </li>)}</ul>
+  </Panel>;
+}
+
+/** Bổ sung cho gara: tiền còn phải thu và các tỷ lệ vận hành của kỳ. */
+function EfficiencyPanel({ report }: { report: ReportData }) {
+  const { collection, operations: ops } = report;
+  const rates: Array<{ label: string; value: number | null; hint: string }> = [
+    { label: "Tỷ lệ thu tiền", value: collection.collection_rate, hint: `${vnd(collection.collected)} / ${vnd(collection.billed)}` },
+    { label: "Khách đến đúng hẹn", value: ops.appointments.show_rate, hint: `${ops.appointments.arrived} đến · ${ops.appointments.no_show} không đến · ${ops.appointments.cancelled} huỷ` },
+    { label: "Báo giá được duyệt", value: ops.quotations.approval_rate, hint: `${ops.quotations.approved}/${ops.quotations.decided} báo giá` },
+    { label: "Khách quay lại", value: ops.customers.return_rate, hint: `${ops.customers.returning} cũ · ${ops.customers.new} mới` },
+  ];
+  const facts: Array<[string, string]> = [
+    ["Công nợ trong kỳ", vnd(collection.outstanding)],
+    ["Giá trị TB / hoá đơn", vnd(collection.average_invoice.value)],
+    ["Xe đã bàn giao", num(ops.delivered)],
+    ["Thời gian xử lý TB", ops.turnaround_hours ? `${num(ops.turnaround_hours.value)} giờ` : "—"],
+  ];
+  return <Panel title="Hiệu quả vận hành" icon="gauge" subtitle={report.label} action={<PanelLink to="/admin/reports">Xem báo cáo</PanelLink>}>
+    <dl className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">{facts.map(([label, value]) => <div key={label} className="rounded-control bg-cs-surface-2 px-3 py-2.5">
+      <dt className="truncate text-caption text-cs-muted">{label}</dt>
+      <dd className="mt-0.5 truncate font-bold tabular-nums text-cs-text">{value}</dd>
+    </div>)}</dl>
+    <ul className="grid gap-x-8 gap-y-4 md:grid-cols-2">{rates.map(r => <li key={r.label}>
+      <span className="mb-1.5 flex items-center justify-between gap-3 text-small"><span className="text-cs-text">{r.label}</span><b className="tabular-nums text-cs-text">{r.value === null ? "—" : `${num(r.value)}%`}</b></span>
+      <Progress value={r.value ?? 0} label={r.label}/>
+      <span className="mt-1 block truncate text-caption text-cs-muted">{r.value === null ? "Chưa có dữ liệu trong kỳ" : r.hint}</span>
+    </li>)}</ul>
+  </Panel>;
+}
+
+function LowStockPanel({ data }: { data: DashboardData }) {
+  return <Panel title="Phụ tùng sắp hết" icon="box" action={<PanelLink to="/admin/inventory?tab=stock">Kho</PanelLink>}>
+    {data.low_stock.length === 0 ? <EmptyState compact icon="box" title="Tồn kho đang đủ"/>
+      : <ul className="flex flex-col gap-3.5">{data.low_stock.map(p => <li key={p.part_id}>
+        <span className="mb-1.5 flex items-center justify-between gap-3 text-small">
+          <span className="min-w-0 truncate text-cs-text" title={p.name ?? undefined}>{p.name ?? p.sku ?? "Phụ tùng"}</span>
+          <span className="shrink-0 tabular-nums text-cs-muted"><b className="text-danger-fg">{num(p.quantity)}</b> / {num(p.min_quantity)}</span>
+        </span>
+        <Progress value={percent(p.quantity, p.min_quantity)} tone="danger" label={`${p.name ?? "Phụ tùng"}: còn ${p.quantity}, tối thiểu ${p.min_quantity}`}/>
+      </li>)}</ul>}
+  </Panel>;
+}
