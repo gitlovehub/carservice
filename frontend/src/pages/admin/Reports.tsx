@@ -41,3 +41,45 @@ function MetricRow({ label, value, percent, tone = "brand", hint }: { label: Rea
       <span className="tabular-nums font-semibold text-cs-text">{value}{hint && <span className="ml-1.5 font-normal text-cs-muted">{hint}</span>}</span>
     </div>
     <Progress value={percent} tone={tone}/>
+  </div>;
+}
+
+/** Ô số lớn có chú thích, dùng trong panel. */
+function Figure({ icon, label, value, sub, tone = "brand" }: { icon: IconName; label: string; value: ReactNode; sub?: ReactNode; tone?: Tone }) {
+  const tint: Record<Tone, string> = {
+    brand: "bg-cs-soft text-cs-accent-text", info: "bg-info-soft text-info", success: "bg-success-soft text-success",
+    warning: "bg-warning-soft text-warning", danger: "bg-danger-soft text-danger", violet: "bg-cs-soft text-cs-accent-text", neutral: "bg-cs-surface-2 text-cs-text-2",
+  };
+  return <div className="flex items-start gap-3 rounded-control border border-cs-border p-3.5">
+    <span className={`grid size-9 shrink-0 place-items-center rounded-full ${tint[tone]}`} aria-hidden="true"><Icon name={icon} size={17}/></span>
+    <div className="min-w-0">
+      <p className="text-caption text-cs-muted">{label}</p>
+      <p className="mt-0.5 text-body font-semibold tabular-nums text-cs-text">{value}</p>
+      {sub && <p className="mt-0.5 text-caption text-cs-text-2">{sub}</p>}
+    </div>
+  </div>;
+}
+
+/** Báo cáo — số liệu thật từ GET /api/admin/reports?period=. */
+export default function Reports() {
+  const [tab, setTab] = useState<Tab>("revenue");
+  // Giữ nguyên khoảng thời gian khi chuyển giữa các tab báo cáo.
+  const period = usePeriod("month");
+  const params = period.params;
+  const query = useAdminQuery(`reports:${JSON.stringify(params)}`, signal => adminApi.reports(params, signal));
+  const data = query.data ?? query.stale;
+
+  return <AdminPage title="Báo cáo" description="Doanh thu, dịch vụ và tình hình vận hành của ga-ra" demo={false}
+    actions={<>
+      <PeriodFilter period={period} allowAll={false}/>
+      <Button variant="outline" icon="printer" onClick={() => window.print()}>In báo cáo</Button>
+    </>}>
+    <div className="mb-5">
+      <Tabs label="Loại báo cáo" variant="segment" value={tab} onChange={setTab} items={[
+        { id: "revenue", label: "Doanh thu", icon: "chart" }, { id: "services", label: "Dịch vụ", icon: "wrench" },
+        { id: "parts", label: "Phụ tùng", icon: "box" }, { id: "operations", label: "Vận hành", icon: "dashboard" },
+      ]}/>
+    </div>
+    {!data ? (query.error ? <ErrorState description={query.error} onRetry={query.reload}/> : <LoadingState/>) : <ReportBody data={data} tab={tab} setTab={setTab}/>}
+  </AdminPage>;
+}
