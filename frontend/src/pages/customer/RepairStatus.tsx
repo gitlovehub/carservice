@@ -1,152 +1,259 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  getMyRepairOrders,
-  getMyRepairOrderDetail,
-  getVehicleName,
-  repairStatusLabel,
-  type CustomerRepairOrder,
-} from "../../services/customerApi";
+import { ToastError } from "../../components/ui/ToastError";
+import { useEffect, useState, type ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useLiveRefresh } from "../../services/liveSync";
+import { formatDate, formatDateTime, type CustomerRepairOrder } from "../../services/customerApi";
+import { Badge, StatusBadge } from "../../components/ui/Badge";
+import { getStatus } from "../../config/status";
+import { Button } from "../../components/ui/Button";
+import { DateTimeInput } from "../../components/ui/DateInput";
+import { Icon, type IconName } from "../../components/ui/Icon";
+import { controlClass } from "../../components/ui/fieldContext";
+import { PhotoUploader } from "../../components/evidence/PhotoUploader";
+import { HandoverViewModal } from "../advisor/CheckInPanel";
+import { comparedCheckIn, type CheckInRef } from "../advisor/handoverText";
+import { handoverApi, pickupAuthorizationApi } from "../../services/evidenceService";
+import type { PickupAuthorization, WorkflowHandover } from "../../services/workflowService";
+import { userErrorMessage } from "../../services/apiError";
 
-// Presentation stages follow the ATELIER timeline, mapped to the actual Laravel
-// repair-order state machine. No demo statuses are sent to the backend.
-const stages = [
-  { status: "RECEIVED", label: "Đã tiếp nhận", color: "blue" },
-  { status: "INSPECTING", label: "Đang chẩn đoán", color: "blue" },
-  { status: "WAITING_APPROVAL", label: "Chờ khách duyệt", color: "amber" },
-  { status: "IN_PROGRESS", label: "Đang sửa chữa", color: "blue" },
-  { status: "COMPLETED", label: "Sẵn sàng bàn giao", color: "green" },
-  { status: "HANDED_OVER", label: "Đã bàn giao", color: "green" },
-  { status: "CLOSED", label: "Đã đóng phiếu", color: "muted" },
-] as const;
+/**
+ * Giấy tờ của một phiếu sửa chữa phía khách (PO 18/11/2026): biên bản nhận / trả xe (xem & tự xác nhận),
+ * kết quả chẩn đoán (kèm ảnh), ủy quyền nhận xe. Hiện ngay trong chi tiết phiếu ở "Tra cứu tiến độ" (/repair-status) —
+ * trang riêng /customer/repair-status/manage cũ (lặp tiến độ, nhật ký) chỉ còn chuyển hướng về đó.
+ */
 
-function stageIndex(status: string): number {
-  if (status === "QUOTING") return 1;
-  if (status === "WAITING_FOR_PARTS" || status === "REVIEW_TEST") return 3;
-  return stages.findIndex(stage => stage.status === status);
-}
-
-function statusColor(status: string) {
-  if (status === "WAITING_APPROVAL" || status === "WAITING_FOR_PARTS" || status === "QUOTING") return "amber";
-  if (status === "COMPLETED" || status === "HANDED_OVER") return "green";
-  if (status === "CLOSED") return "muted";
-  return "blue";
-}
-
-const statusColorClasses: Record<"blue" | "amber" | "green" | "muted", string> = {
-  blue: "bg-[#e5effe] text-[#275184] dark:bg-[#263d5d] dark:text-[#a9ccff]",
-  amber: "bg-[#fff0dc] text-[#955c12] dark:bg-[#4b3522] dark:text-[#f4be69]",
-  green: "bg-[#e3f5e9] text-[#276044] dark:bg-[#203f32] dark:text-[#96d9ae]",
-  muted: "bg-[#eceff3] text-[#535e6d] dark:bg-[#2a3039] dark:text-[#b1b8c5]",
-};
-
-function formatEventTime(date?: string | null) {
-  if (!date) return "";
-  const parsed = new Date(date);
-  return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleString("vi-VN");
-}
-
-function TrackingCard({ order }: { order: CustomerRepairOrder }) {
-  const [detail, setDetail] = useState<CustomerRepairOrder | null>(null);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const [historyError, setHistoryError] = useState(false);
-  useEffect(() => {
-    let active = true;
-    setLoadingHistory(true);
-    setHistoryError(false);
-    getMyRepairOrderDetail(order.id)
-      .then(data => { if (active) setDetail(data); })
-      .catch(() => { if (active) setHistoryError(true); })
-      .finally(() => { if (active) setLoadingHistory(false); });
-    return () => { active = false; };
-  }, [order.id]);
-
-  const status = detail?.status ?? order.status;
-  const current = stageIndex(status);
-  const history = (detail?.statusHistory ?? detail?.status_history ?? [])
-    .slice()
-    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))
-    .slice(0, 5);
-  const recordedStatuses = new Set(history.map(item => item.status));
-  const isEarlyClosed = status === "CLOSED" && !recordedStatuses.has("COMPLETED") && !recordedStatuses.has("HANDED_OVER");
-
-  return (
-    <article className="mb-5 rounded-[18px] border bg-[var(--cs-surface,#fff)] border-[var(--cs-border,#e9e9e6)] p-5 sm:p-7">
-      <div className="flex flex-wrap items-center justify-between gap-5 border-b border-[var(--cs-border,#e9e9e6)] pb-6 [&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:tracking-tight">
-        <div>
-          <p className="mb-2 text-[13px] font-extrabold tracking-[0.11em] text-[#cf2935]">{order.repair_order_code}</p>
-          <h2>{getVehicleName(order.vehicle)}</h2>
-          <p className="mt-1 text-[13px] text-[var(--cs-muted,#757575)]">
-            {order.vehicle?.license_plate ?? "Chưa có biển số"}
-            {order.received_at ? ` · Tiếp nhận ${formatEventTime(order.received_at)}` : ""}
-          </p>
-        </div>
-        <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-2 text-[11px] font-extrabold ${statusColorClasses[statusColor(status)]}`}>
-          ● {repairStatusLabel[status] ?? status}
-        </span>
-      </div>
-      <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12 [&_h3]:mb-5 [&_h3]:text-[17px] [&_h3]:font-extrabold">
-        <section aria-label="Tiến độ công việc">
-          <h3>Tiến độ công việc</h3>
-          {status === "WAITING_FOR_PARTS" && <p className="mb-5 rounded-lg border-l-[3px] border-[#cf2935] bg-[var(--cs-soft,#fff1f1)] px-3.5 py-3 text-xs leading-6">Đang tạm dừng do chờ phụ tùng. Gara sẽ tiếp tục khi có vật tư.</p>}
-          {status === "QUOTING" && <p className="mb-5 rounded-lg border-l-[3px] border-[#cf2935] bg-[var(--cs-soft,#fff1f1)] px-3.5 py-3 text-xs leading-6">Gara đang lập báo giá để bạn xem xét.</p>}
-          <ol className="m-0 list-none p-0">
-            {stages.map((stage, index) => {
-              const isCurrent = stage.status === status || (status === "QUOTING" && stage.status === "INSPECTING") ||
-                ((status === "WAITING_FOR_PARTS" || status === "REVIEW_TEST") && stage.status === "IN_PROGRESS");
-              const isPast = current > index && !(isEarlyClosed && index > 0) && !["CLOSED"].includes(status);
-              const isVisible = isCurrent || isPast;
-              return <li key={stage.status} className={`relative min-h-11 border-l border-[var(--cs-border,#e9e9e6)] pb-5 pl-7 last:border-l-transparent before:absolute before:left-[-6px] before:top-1 before:size-3 before:rounded-full before:border-2 before:border-[#cf2935] before:bg-[var(--cs-surface,#fff)] ${isVisible ? "before:bg-[#cf2935]" : "opacity-50"} [&_small]:mt-2 [&_small]:block [&_small]:text-xs [&_small]:text-[var(--cs-muted,#757575)]`}>
-                <span className={`inline-flex w-fit max-w-full items-center rounded-full px-3 py-1.5 text-xs font-extrabold leading-5 ${statusColorClasses[stage.color]}`}>{stage.label}</span>
-                {isCurrent && <small>{status === "WAITING_FOR_PARTS" ? "Đang chờ phụ tùng" : status === "REVIEW_TEST" ? "Đang kiểm tra lại" : "Đang ở bước này"}</small>}
-              </li>;
-            })}
-          </ol>
-        </section>
-        <section aria-label="Nhật ký gần đây" >
-          <h3>Nhật ký gần đây</h3>
-          {loadingHistory && <p className="text-sm leading-relaxed text-[var(--cs-muted,#757575)]">Đang tải nhật ký...</p>}
-          {!loadingHistory && historyError && <p className="text-sm leading-relaxed text-[var(--cs-muted,#757575)]">Chưa tải được nhật ký. Vui lòng thử tải lại trang.</p>}
-          {!loadingHistory && !historyError && history.length === 0 && <p className="text-sm leading-relaxed text-[var(--cs-muted,#757575)]">Chưa có cập nhật mới.</p>}
-          {!loadingHistory && !historyError && history.map(event => <div className="mb-3 flex flex-col gap-1.5 border-b border-[var(--cs-border,#e9e9e6)] py-1 pb-4 last:border-0 [&_strong]:break-words [&_strong]:text-[13px] [&_strong]:leading-6 [&_span]:text-xs [&_span]:text-[var(--cs-muted,#757575)]" key={event.id}>
-            <strong>{event.note?.trim() || repairStatusLabel[event.status] || "Cập nhật trạng thái phiếu"}</strong>
-            <span>{formatEventTime(event.created_at)}</span>
-          </div>)}
-          {!loadingHistory && !historyError && !history.length && (detail?.note || order.note) &&
-            <p className="text-sm leading-relaxed text-[var(--cs-muted,#757575)]">{detail?.note || order.note}</p>}
-        </section>
-      </div>
-    </article>
-  );
-}
-
-export default function RepairStatus() {
-  const [orders, setOrders] = useState<CustomerRepairOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [reload, setReload] = useState(0);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    getMyRepairOrders()
-      .then(data => { if (active) { setOrders(data); setError(""); } })
-      .catch((err: unknown) => { if (active) setError(err instanceof Error ? err.message : "Không thể tải tiến độ xe."); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [reload]);
-
-  return <section className="min-h-[calc(100dvh-180px)] px-5 py-12 sm:px-6 sm:pb-16 bg-[var(--cs-bg,#f7f7f6)] text-[var(--cs-text,#191919)] ">
-    <div className="mx-auto w-full max-w-[1200px]">
-      <header className="mb-7 flex flex-wrap items-end justify-between gap-5 [&_h1]:text-[clamp(29px,4vw,46px)] [&_h1]:font-extrabold [&_h1]:tracking-[-0.055em] [&_h1]:leading-[1.16] [&_p:not(:first-child)]:mt-2.5 [&_p:not(:first-child)]:text-sm [&_p:not(:first-child)]:text-[var(--cs-muted,#757575)]"><div>
-        <p className="mb-2.5 text-xs font-extrabold tracking-[0.16em] text-[#cf2935]">MY GARAGE / TRACKING</p>
-        <h1>Hành trình sửa chữa</h1>
-        <p>Biết xe đang ở công đoạn nào và công việc tiếp theo là gì.</p>
-      </div></header>
-      {loading && <div className="my-4 rounded-[18px] border bg-[var(--cs-surface,#fff)] border-[var(--cs-border,#e9e9e6)] px-5 py-12 text-center text-[var(--cs-muted,#757575)] [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-extrabold [&_h2]:text-[var(--cs-text,#191919)] [&_a]:mt-5">Đang tải hành trình sửa chữa...</div>}
-      {error && <div role="alert" className="my-3.5 flex items-center justify-between gap-4 rounded-xl border border-[#426c4d] bg-[#20362a] px-4 py-3 text-[#b8eac3] [&_button]:cursor-pointer [&_button]:rounded-lg [&_button]:border [&_button]:border-current [&_button]:px-3 [&_button]:py-1.5 border-[#a64753] bg-[#45272d] text-[#ffb1b9]"><span>{error}</span><button type="button" onClick={() => setReload(x => x + 1)}>Thử lại</button></div>}
-      {!loading && !error && orders.length === 0 && <div className="my-4 rounded-[18px] border bg-[var(--cs-surface,#fff)] border-[var(--cs-border,#e9e9e6)] px-5 py-12 text-center text-[var(--cs-muted,#757575)] [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-extrabold [&_h2]:text-[var(--cs-text,#191919)] [&_a]:mt-5"><h2>Chưa có phiếu sửa chữa</h2><p>Khi gara tiếp nhận xe, trạng thái công việc sẽ xuất hiện tại đây.</p><Link to="/customer/appointments" className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#cf2935] bg-[#cf2935] px-5 py-3 text-[13px] font-extrabold text-white transition-colors hover:bg-[#af1f2b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935]">Xem lịch hẹn của tôi</Link></div>}
-      {!loading && !error && orders.map(order => <TrackingCard key={order.id} order={order} />)}
+function Card({ id, title, icon, badge, children }: { id?: string; title: string; icon: IconName; badge?: ReactNode; children: ReactNode }) {
+  return <section id={id} aria-label={title} className="scroll-mt-24 rounded-2xl border border-cs-border bg-cs-surface p-5">
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <h3 className="flex items-center gap-2 text-base font-extrabold text-cs-text"><span className="text-cs-accent-text"><Icon name={icon} size={18}/></span>{title}</h3>
+      {badge}
     </div>
+    {children}
   </section>;
+}
+
+/** Biên bản nhận / trả xe gara gửi: xem lại và tự xác nhận trong tài khoản (P2). Biên bản chờ xác nhận mở sẵn, đã xác nhận thu gọn. */
+function CustomerHandoverBlock({ handovers, code, onConfirmed }: { handovers: WorkflowHandover[]; code?: string | null; onConfirmed: () => void }) {
+  const shown = handovers.filter(h => h.status === "SUBMITTED" || h.status === "CONFIRMED");
+  const waiting = shown.some(h => h.status === "SUBMITTED");
+  if (!shown.length) return null;
+  return <Card id="bien-ban" title="Biên bản giao nhận xe" icon="file" badge={waiting ? <Badge tone="warning">Chờ bạn xác nhận</Badge> : <Badge tone="success">Đã xác nhận</Badge>}>
+    <div className="space-y-3">{shown.map(h => <HandoverItem key={h.id} handover={h} checkIn={comparedCheckIn(h, handovers)} code={code} onConfirmed={onConfirmed}/>)}</div>
+  </Card>;
+}
+
+/**
+ * Một biên bản phía khách: dòng gọn + nút "Xem biên bản" mở modal (cùng modal khu cố vấn, tông đỏ của khách, sáng / tối theo theme).
+ * Biên bản chờ xác nhận: khung nổi bật; modal có ô ghi chú + "Xác nhận đúng tình trạng". Vào từ thông báo (#bien-ban) → tự mở.
+ */
+function HandoverItem({ handover, checkIn, code, onConfirmed }: { handover: WorkflowHandover; checkIn: CheckInRef | null; code?: string | null; onConfirmed: () => void }) {
+  const { hash } = useLocation();
+  const waiting = handover.status === "SUBMITTED";
+  const [open, setOpen] = useState(waiting && hash === "#bien-ban");
+  const [comment, setComment] = useState("");
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
+  const noun = handover.type === "CHECK_OUT" ? "trả xe" : "nhận xe";
+  const confirmation = handover.confirmations?.[0];
+
+  function confirm() {
+    setWorking(true); setError("");
+    handoverApi.confirmAsCustomer(handover.id, comment.trim() || undefined).then(() => { setOpen(false); onConfirmed(); })
+      .catch((err: unknown) => setError(userErrorMessage(err, "Không xác nhận được.")))
+      .finally(() => setWorking(false));
+  }
+
+  return <>
+    <div className={`flex flex-wrap items-center gap-3 rounded-xl p-4 ${waiting ? "border-2 border-warning/60 bg-warning-soft/30" : "border border-cs-border"}`}>
+      <span className={`grid size-9 shrink-0 place-items-center rounded-full ${waiting ? "bg-warning-soft text-warning-fg" : "bg-success-soft text-success-fg"}`}><Icon name={waiting ? "info" : "check"} size={16}/></span>
+      <span className="min-w-0 flex-1 text-sm"><b className="block text-cs-text">Biên bản {noun}</b>
+        <span className="text-xs text-cs-muted">{waiting
+          ? `Chờ bạn xác nhận — kiểm tra số km, tình trạng xe, tài sản và ảnh lúc ${handover.type === "CHECK_OUT" ? "nhận lại xe" : "giao xe cho gara"}.`
+          : `Bạn đã xác nhận${confirmation ? ` lúc ${formatDateTime(confirmation.confirmed_at)}` : ""}.`}</span></span>
+      <Button size="sm" variant={waiting ? "primary" : "outline"} icon="eye" onClick={() => setOpen(true)}>{waiting ? "Xem & xác nhận biên bản" : "Xem biên bản"}</Button>
+    </div>
+
+    {open && <HandoverViewModal code={code} handover={handover} checkIn={checkIn} onClose={() => setOpen(false)} dismissible={!working}
+      statusText={waiting ? "Chờ bạn xác nhận" : handover.status === "CONFIRMED" ? "Bạn đã xác nhận" : undefined}
+      footer={waiting
+        ? <><p className="mr-auto text-xs text-cs-muted">Thấy sai? Liên hệ gara để lập lại biên bản trước khi xác nhận.</p>
+          <Button variant="secondary" disabled={working} onClick={() => setOpen(false)}>Để sau</Button>
+          <Button variant="primary" icon="check" loading={working} onClick={confirm}>Xác nhận đúng tình trạng</Button></>
+        : <Button variant="secondary" onClick={() => setOpen(false)}>Đóng</Button>}>
+      {waiting && <div className="mt-5 space-y-2 border-t border-cs-border pt-4">
+        <label className="block text-xs font-semibold text-cs-muted">Ghi chú cho gara (không bắt buộc)
+          <textarea className={`mt-1.5 ${controlClass}`} rows={2} maxLength={1000} value={comment} onChange={event => setComment(event.target.value)} placeholder="VD: Đúng tình trạng, lưu ý vết xước cửa sau đã có từ trước"/></label>
+        <ToastError message={error}/>
+      </div>}
+    </HandoverViewModal>}
+  </>;
+}
+
+type CustomerInspection = NonNullable<CustomerRepairOrder["inspections"]>[number];
+type InspectionRecommendation = NonNullable<CustomerInspection["recommendations"]>[number];
+
+const toneOf = (status?: string | null) => status ? getStatus("inspection", status, "customer").tone : "neutral";
+const SEVERITY: Record<string, number> = { danger: 0, warning: 1 };
+const RESULT_STYLE: Record<string, { icon: IconName; className: string }> = {
+  success: { icon: "check", className: "bg-success-soft text-success-fg" },
+  warning: { icon: "alert", className: "bg-warning-soft text-warning-fg" },
+  danger: { icon: "alert", className: "bg-danger-soft text-danger-fg" },
+};
+const NEUTRAL_RESULT = { icon: "info" as IconName, className: "bg-neutral-soft text-neutral-fg" };
+
+function DiagnosisHeading({ icon, title, count }: { icon: IconName; title: string; count?: number }) {
+  return <h4 className="mb-2.5 flex items-center gap-2 text-sm font-bold text-cs-text">
+    <span className="text-cs-muted"><Icon name={icon} size={16}/></span>{title}
+    {count !== undefined && <span className="rounded-full bg-cs-surface-2 px-2 py-0.5 text-xs font-semibold tabular-nums text-cs-muted">{count}</span>}
+  </h4>;
+}
+
+function RecommendationGroup({ title, icon, items }: { title: string; icon: IconName; items: InspectionRecommendation[] }) {
+  if (!items.length) return null;
+  return <div className="min-w-0 rounded-xl border border-cs-border">
+    <p className="flex items-center gap-2 border-b border-cs-border bg-cs-surface-2 px-4 py-2.5 text-xs font-bold text-cs-text-2 first:rounded-t-xl">
+      <span className="text-cs-accent-text"><Icon name={icon} size={15}/></span>{title} ({items.length})
+    </p>
+    <ul className="divide-y divide-cs-border">{items.map(rec => <li key={rec.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
+      <span className="min-w-0 break-words font-medium text-cs-text">{rec.part?.name || rec.service?.name || "—"}</span>
+      <span className="shrink-0 text-xs text-cs-muted">SL <b className="tabular-nums text-cs-text">{rec.quantity ?? 1}</b></span>
+    </li>)}</ul>
+  </div>;
+}
+
+/** Kết quả chẩn đoán gara ghi nhận (P3): khách xem trước khi duyệt báo giá. Hạng mục cần xử lý được xếp lên đầu. */
+function CustomerDiagnosisBlock({ inspection }: { inspection: CustomerInspection }) {
+  const items = [...(inspection.items ?? [])].sort((a, b) => (SEVERITY[toneOf(a.condition_status)] ?? 2) - (SEVERITY[toneOf(b.condition_status)] ?? 2));
+  const count = (tone: string) => items.filter(item => toneOf(item.condition_status) === tone).length;
+  const passed = count("success"), warning = count("warning"), danger = count("danger");
+  const attention = warning + danger;
+  const recommendations = inspection.recommendations ?? [];
+  const notes = ([
+    ["clipboard", "Tình trạng xe ghi nhận", inspection.condition_description],
+    ["search", "Kết luận của gara", inspection.diagnosis],
+  ] as Array<[IconName, string, string | null | undefined]>).filter(([, , text]) => text?.trim());
+  const badge = attention ? <Badge tone={danger ? "danger" : "warning"}>{attention} mục cần chú ý</Badge>
+    : items.length && passed === items.length ? <Badge tone="success">Tất cả đạt</Badge> : undefined;
+
+  return <Card title="Kết quả chẩn đoán" icon="search" badge={badge}>
+    <div className="space-y-5">
+      {inspection.inspected_at && <p className="-mt-2 flex items-center gap-1.5 text-xs text-cs-muted"><Icon name="clock" size={14}/>Hoàn tất lúc {formatDateTime(inspection.inspected_at)}</p>}
+
+      {notes.length > 0 && <div className={`grid gap-3 ${notes.length > 1 ? "md:grid-cols-2" : ""}`}>
+        {notes.map(([icon, title, text]) => <div key={title} className="min-w-0 rounded-xl bg-cs-surface-2 px-4 py-3">
+          <p className="flex items-center gap-2 text-xs font-bold text-cs-muted"><Icon name={icon} size={14}/>{title}</p>
+          <p className="mt-1.5 whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-cs-text">{text}</p>
+        </div>)}
+      </div>}
+
+      {items.length > 0 && <div>
+        <DiagnosisHeading icon="list" title="Hạng mục đã kiểm tra" count={items.length}/>
+        <dl className="mb-3 grid grid-cols-3 gap-2">
+          {([["Đạt", passed, "success"], ["Cần lưu ý", warning, "warning"], ["Cần xử lý", danger, "danger"]] as const).map(([label, value, tone]) =>
+            <div key={label} className={`rounded-xl px-3 py-2 ${value ? RESULT_STYLE[tone].className : "bg-cs-surface-2 text-cs-muted"}`}>
+              <dt className="truncate text-xs font-semibold">{label}</dt>
+              <dd className="text-lg font-extrabold tabular-nums">{value}</dd>
+            </div>)}
+        </dl>
+        <ul className="divide-y divide-cs-border rounded-xl border border-cs-border">{items.map(item => {
+          const style = RESULT_STYLE[toneOf(item.condition_status)] ?? NEUTRAL_RESULT;
+          return <li key={item.id} className="flex items-start gap-3 px-4 py-3 text-sm">
+            <span className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-full ${style.className}`} aria-hidden="true"><Icon name={style.icon} size={14}/></span>
+            <span className="min-w-0 flex-1">
+              <span className="block break-words font-semibold text-cs-text">{item.item_name}</span>
+              {item.condition_description && <span className="mt-0.5 block whitespace-pre-wrap break-words text-xs font-medium leading-relaxed text-cs-muted">{item.condition_description}</span>}
+            </span>
+            {item.condition_status ? <StatusBadge domain="inspection" status={item.condition_status} audience="customer" className="shrink-0"/>
+              : <span className="shrink-0 text-xs text-cs-muted">Chưa đánh giá</span>}
+          </li>;
+        })}</ul>
+      </div>}
+
+      {recommendations.length > 0 && <div>
+        <DiagnosisHeading icon="wrench" title="Gara đề xuất" count={recommendations.length}/>
+        <div className="grid items-start gap-3 md:grid-cols-2">
+          <RecommendationGroup title="Dịch vụ" icon="wrench" items={recommendations.filter(rec => rec.item_type !== "PART")}/>
+          <RecommendationGroup title="Phụ tùng" icon="box" items={recommendations.filter(rec => rec.item_type === "PART")}/>
+        </div>
+        <p className="mt-3 flex items-start gap-2 rounded-xl bg-info-soft px-3 py-2 text-xs font-medium text-info-fg">
+          <span className="mt-px shrink-0"><Icon name="info" size={14}/></span>Gara chỉ thực hiện các đề xuất bạn đồng ý trong báo giá.
+        </p>
+      </div>}
+
+      <div className="border-t border-cs-border pt-4"><PhotoUploader type="inspection" id={inspection.id} readOnly title="Ảnh chẩn đoán"/></div>
+    </div>
+  </Card>;
+}
+
+/** Ủy quyền nhận xe (P4, N9): chủ xe khai báo trước người được nhận xe thay; gara đối chiếu 4 số cuối giấy tờ. */
+function CustomerPickupBlock({ orderId }: { orderId: number }) {
+  const [items, setItems] = useState<PickupAuthorization[]>([]);
+  const [form, setForm] = useState({ full_name: "", phone: "", id_last4: "", valid_until: "" });
+  const [open, setOpen] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    pickupAuthorizationApi.list(orderId).then(list => { if (active) setItems(list); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [orderId, reloadKey]);
+  useLiveRefresh(() => setReloadKey(key => key + 1));
+
+  async function act(task: () => Promise<unknown>) {
+    setWorking(true); setError("");
+    try { await task(); setReloadKey(key => key + 1); return true; }
+    catch (err) { setError(userErrorMessage(err, "Không thực hiện được.")); return false; }
+    finally { setWorking(false); }
+  }
+  const active = items.filter(item => item.status === "ACTIVE");
+  const label = "flex flex-col gap-1.5 text-xs font-semibold text-cs-muted";
+  const req = <span className="text-danger">*</span>;
+
+  return <Card title="Ủy quyền nhận xe" icon="users" badge={active.length ? <Badge tone="info">{active.length} người</Badge> : undefined}>
+    <p className="text-sm text-cs-muted">Nhờ người khác nhận xe? Khai báo trước tại đây. Gara chỉ giao xe khi người nhận có tên trong danh sách và khớp 4 số cuối giấy tờ.</p>
+    {active.length > 0 && <ul className="mt-3 divide-y divide-cs-border rounded-xl border border-cs-border">{active.map(item => <li key={item.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
+      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-cs-soft text-cs-accent-text"><Icon name="user" size={15}/></span>
+      <span className="min-w-0 flex-1"><b className="block text-cs-text">{item.full_name}</b>
+        <span className="text-xs text-cs-muted">{item.phone} · đã khai báo giấy tờ{item.valid_until ? ` · hiệu lực đến ${formatDateTime(item.valid_until)}` : ""}</span></span>
+      <Button variant="danger-outline" icon="x" disabled={working} onClick={() => void act(() => pickupAuthorizationApi.revoke(item.id))}>Thu hồi</Button>
+    </li>)}</ul>}
+    <ToastError message={error}/>
+    {!open ? <div className="mt-4"><Button variant="secondary" icon="plus" onClick={() => setOpen(true)}>Thêm người được ủy quyền</Button></div>
+      : <form className="mt-4 grid gap-3 rounded-xl border border-cs-border bg-cs-surface-2 p-4 sm:grid-cols-2" onSubmit={event => {
+        event.preventDefault();
+        void act(() => pickupAuthorizationApi.create(orderId, { ...form, valid_until: form.valid_until ? new Date(form.valid_until).toISOString() : null }))
+          .then(ok => { if (ok) { setOpen(false); setForm({ full_name: "", phone: "", id_last4: "", valid_until: "" }); } });
+      }}>
+        <label className={label}><span>Họ tên {req}</span><input className={controlClass} required maxLength={150} value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })}/></label>
+        <label className={label}><span>Số điện thoại {req}</span><input className={controlClass} required inputMode="tel" maxLength={20} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}/></label>
+        <label className={label}><span>4 số cuối CCCD / giấy tờ {req}</span><input className={controlClass} required inputMode="numeric" pattern="\d{4}" maxLength={4} value={form.id_last4} onChange={e => setForm({ ...form, id_last4: e.target.value.replace(/\D/g, "") })}/></label>
+        <label className={label}><span>Hiệu lực đến <span className="font-normal">(không bắt buộc)</span></span><DateTimeInput value={form.valid_until} onChange={valid_until => setForm({ ...form, valid_until })}/></label>
+        <div className="flex justify-end gap-2 sm:col-span-2"><Button variant="secondary" onClick={() => setOpen(false)}>Hủy</Button><Button type="submit" variant="primary" icon="check" loading={working}>Lưu ủy quyền</Button></div>
+      </form>}
+  </Card>;
+}
+
+/** Phần giấy tờ trong chi tiết phiếu (Tra cứu tiến độ): phụ tùng chờ, biên bản, chẩn đoán, ủy quyền nhận xe. */
+export function OrderPaperwork({ order, onChanged }: { order: CustomerRepairOrder; onChanged: () => void }) {
+  const waitingParts = (order.part_requests ?? []).filter(r => ["REQUESTED", "ORDERED"].includes(r.status));
+  const finished = ["HANDED_OVER", "CLOSED"].includes(order.status);
+  return <>
+    {!!order.handovers?.length && <CustomerHandoverBlock handovers={order.handovers} code={order.repair_order_code} onConfirmed={onChanged}/>}
+    {waitingParts.length > 0 && <Card title="Phụ tùng đang chờ" icon="box">
+      <ul className="divide-y divide-cs-border rounded-xl border border-cs-border">{waitingParts.map(r => <li key={r.id} className="flex flex-wrap justify-between gap-3 px-4 py-2.5 text-sm">
+        <span className="text-cs-text">{r.part?.name ?? "Phụ tùng"} × {r.quantity}</span>
+        <span className="text-xs text-cs-muted">{r.eta_date ? `Dự kiến về ${formatDate(r.eta_date)}` : "Gara đang đặt hàng"}</span>
+      </li>)}</ul>
+    </Card>}
+    {!!order.inspections?.[0]?.inspected_at && <CustomerDiagnosisBlock inspection={order.inspections[0]}/>}
+    {!finished && <CustomerPickupBlock orderId={order.id}/>}
+  </>;
+}
+
+/** Link cũ /customer/repair-status/manage → Tra cứu tiến độ (giữ ?orderId= và #bien-ban). */
+export default function RepairStatus() {
+  const { search, hash } = useLocation();
+  return <Navigate to={`/repair-status${search}${hash || "#bien-ban"}`} replace/>;
 }
