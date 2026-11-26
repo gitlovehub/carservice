@@ -229,3 +229,48 @@ export const adminApi = {
   createPart: (body: PartPayload) => send<Message<AdminPart>>("/admin/parts", "POST", body),
   updatePart: (id: number, body: PartPayload) => send<Message<AdminPart>>(`/admin/parts/${id}`, "PATCH", body),
   uploadPartImage: async (id: number, image: File): Promise<Message<AdminPart>> => {
+    const form = new FormData();
+    form.append('image', image);
+    const response = await apiClient.post<Message<AdminPart>>(`/admin/parts/${id}/image`, form);
+    return response.data;
+  },
+  deletePartImage: async (id: number): Promise<Message<AdminPart>> => {
+    const response = await apiClient.delete<Message<AdminPart>>(`/admin/parts/${id}/image`);
+    return response.data;
+  },
+  adjustStock: (id: number, body: { type: "IN" | "OUT"; quantity: number; note: string | null }) => send<Message<AdminPart>>(`/admin/parts/${id}/stock`, "POST", body),
+  stockMoves: (params: Params, signal?: AbortSignal) => fetchApi<Paged<StockMove>>(`/admin/stock-moves${query(params)}`, { signal }),
+  /** ADV-01 (D-020): kho đặt hàng + nhận hàng cho phụ tùng cố vấn báo thiếu. */
+  partRequests: (params: Params, signal?: AbortSignal) =>
+    fetchApi<{ data: AdminPartRequest[]; total: number }>(`/part-requests${query(params)}`, { signal }),
+  orderPartRequest: (id: number, body: { eta_date: string; supplier_note: string | null }) => send<AdminPartRequest>(`/part-requests/${id}/order`, "POST", body),
+  receivePartRequest: (id: number, alreadyInStock = false) => send<AdminPartRequest>(`/part-requests/${id}/receive`, "POST", { already_in_stock: alreadyInStock }),
+  cancelPartRequest: (id: number, reason: string) => send<AdminPartRequest>(`/part-requests/${id}/cancel`, "POST", { reason }),
+
+  holidays: (signal?: AbortSignal) => fetchApi<{ data: HolidayRange[] }>("/admin/holidays", { signal }).then(r => r.data),
+  saveHoliday: (body: { from: string; to: string | null; reason: string; replace_ids?: number[] }) => send<Message<HolidayRange> & { affected_appointments: number }>("/admin/holidays", "POST", body),
+
+  deleteHoliday: (ids: number[]) => send<{ message: string }>("/admin/holidays", "DELETE", { ids }),
+};
+
+/* ------------------------------------------------------------ Định dạng ngày */
+const pad = (n: number) => String(n).padStart(2, "0");
+/** "08/11/2026" */
+export const fmtDate = (iso: string | null | undefined) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "—" : `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+};
+/** "14:30 - 08/11/2026" */
+export const fmtDateTime = (iso: string | null | undefined) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "—" : `${pad(d.getHours())}:${pad(d.getMinutes())} - ${fmtDate(iso)}`;
+};
+/** "14:30" */
+export const fmtTime = (iso: string | null | undefined) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "—" : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+export const errorMessage = (error: unknown, fallback = "Không thể xử lý yêu cầu. Vui lòng thử lại sau giây lát.") => (userErrorMessage(error, fallback));
