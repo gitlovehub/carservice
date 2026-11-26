@@ -232,3 +232,48 @@ export function InfoList({ items }: { items: Array<{ icon?: IconName; label?: st
 }
 
 export function PaneSection({ title, icon, action, children }: { title: ReactNode; icon?: IconName; action?: ReactNode; children: ReactNode }) {
+  return <section className="border-t border-cs-border py-4 first:border-t-0 first:pt-0">
+    <div className="mb-3 flex items-center justify-between gap-2">
+      <h3 className="flex items-center gap-2 text-small font-semibold text-cs-text">{icon && <Icon name={icon} size={17} className="text-cs-muted"/>}{title}</h3>
+      {action}
+    </div>
+    {children}
+  </section>;
+}
+
+/* ---------- Ngăn chi tiết ---------- */
+function useWide(query = "(min-width: 1280px)") {
+  const [wide, setWide] = useState(() => typeof window !== "undefined" && window.matchMedia(query).matches);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const onChange = () => setWide(media.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, [query]);
+  return wide;
+}
+
+/**
+ * Bố cục danh sách + ngăn chi tiết: màn hình rộng (≥ 1280px) ngăn chi tiết nằm cạnh danh sách,
+ * màn hình hẹp hơn mở thành Drawer.
+ */
+export function SplitView({ list, pane, paneOpen, onClose, paneTitle, paneFooter, paneWidth = 360 }: {
+  list: ReactNode; pane: ReactNode; paneOpen: boolean; onClose: () => void; paneTitle: ReactNode; paneFooter?: ReactNode; paneWidth?: number;
+}) {
+  const wide = useWide();
+  if (!wide) return <>
+    {list}
+    <Drawer open={paneOpen} onClose={onClose} title={paneTitle} footer={paneFooter}>{pane}</Drawer>
+  </>;
+  return <div className="grid items-start gap-5" style={{ gridTemplateColumns: paneOpen ? `minmax(0,1fr) ${paneWidth}px` : "minmax(0,1fr)" }}>
+    <div className="min-w-0">{list}</div>
+    {paneOpen && <aside className="sticky top-[84px] flex max-h-[calc(100dvh-100px)] flex-col overflow-hidden rounded-card border border-cs-border bg-cs-surface shadow-card">
+      <header className="flex items-start justify-between gap-3 border-b border-cs-border px-5 py-4">
+        <h2 className="min-w-0 text-section text-cs-text">{paneTitle}</h2>
+        <IconButton icon="close" label="Đóng ngăn chi tiết" size="sm" onClick={onClose} className="-mr-1.5"/>
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{pane}</div>
+      {paneFooter && <footer className="cs-btn-row border-t border-cs-border px-5 py-3.5 [&>*]:flex-1">{paneFooter}</footer>}
+    </aside>}
+  </div>;
+}
