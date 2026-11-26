@@ -8,3 +8,4 @@ export function useDebounced<T>(value: T, delay = 300): T {
     return () => window.clearTimeout(timer);
   }, [value, delay]);
   return debounced;
+}
