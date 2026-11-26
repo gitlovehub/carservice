@@ -214,3 +214,55 @@ export function CompareChart({ current, previous, height = 120, format = num, ti
   const onMove = (event: MouseEvent<SVGSVGElement>) => {
     const box = event.currentTarget.getBoundingClientRect();
     setActive(Math.max(0, Math.min(count - 1, Math.round((((event.clientX - box.left) / box.width) * W - pad) / step))));
+  };
+  return <div ref={ref} className="relative">
+    <svg viewBox={`0 0 ${W} ${height}`} className="h-auto w-full" role="img" aria-label={title} onMouseMove={onMove} onMouseLeave={() => setActive(null)}>
+      <defs><linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={current.color} stopOpacity="0.4"/><stop offset="1" stopColor={current.color} stopOpacity="0"/></linearGradient></defs>
+      {area && <path d={area} fill={`url(#${gradientId})`}/>}
+      <path d={curve(previous.values)} fill="none" stroke={previous.color} strokeWidth="1.8"/>
+      <path d={curve(current.values)} fill="none" stroke={current.color} strokeWidth="2.2"/>
+      {active !== null && <line x1={xOf(active)} x2={xOf(active)} y1={pad} y2={height - pad} stroke="var(--cs-border-strong)" strokeDasharray="3 3"/>}
+    </svg>
+    {active !== null && <Tooltip x={(xOf(active) / W) * 100} y={30}>
+      <p className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: current.color }}/>{current.label}: <b className="ml-auto tabular-nums">{current.values[active] === undefined ? "—" : format(current.values[active])}</b></p>
+      <p className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: previous.color }}/>{previous.label}: <b className="ml-auto tabular-nums">{previous.values[active] === undefined ? "—" : format(previous.values[active])}</b></p>
+    </Tooltip>}
+  </div>;
+}
+
+/** Biểu đồ vành khuyên kèm chú thích. */
+export function DonutChart({ segments, centerValue, centerLabel, title, size = "md", formatValue = String }: {
+  segments: Array<{ label: string; value: number; color: string }>; centerValue: ReactNode; centerLabel: string; title: string;
+  /** "lg" = vòng 208px (lòng trong rộng hơn cho nhãn giữa dài). */
+  size?: "md" | "lg";
+  /** Cách hiện giá trị ở chú thích (ví dụ tiền rút gọn). */
+  formatValue?: (value: number) => string;
+}) {
+  const total = segments.reduce((sum, s) => sum + s.value, 0) || 1;
+  const r = 15.9155; // chu vi = 100
+  const offsets = segments.reduce<number[]>((acc, _s, i) => [...acc, (i ? acc[i - 1] : 25) - (i ? (segments[i - 1].value / total) * 100 : 0)], []);
+  return <div className="flex flex-wrap items-center gap-6">
+    <div className={`relative mx-auto shrink-0 ${size === "lg" ? "size-52" : "size-44"}`}>
+      <svg viewBox="0 0 42 42" className="size-full" role="img" aria-label={title}>
+        <circle cx="21" cy="21" r={r} fill="none" stroke="var(--cs-surface-2)" strokeWidth="7"/>
+        {segments.map((s, i) => {
+          const pct = (s.value / total) * 100;
+          return <circle key={s.label} cx="21" cy="21" r={r} fill="none" stroke={s.color} strokeWidth="7"
+            strokeDasharray={`${Math.max(0, pct - 0.6)} ${100 - pct + 0.6}`} strokeDashoffset={offsets[i]}/>;
+        })}
+      </svg>
+      <div className="absolute inset-0 grid place-content-center text-center">
+        <span className="text-[1.9rem] font-bold leading-none text-cs-text tabular-nums">{centerValue}</span>
+        <span className="mt-1 text-caption text-cs-muted">{centerLabel}</span>
+      </div>
+    </div>
+    <ul className="flex min-w-48 flex-1 flex-col gap-2.5 text-small">
+      {segments.map(s => <li key={s.label} className="flex items-center gap-2.5">
+        <span className="size-3 shrink-0 rounded-sm" style={{ background: s.color }}/>
+        <span className="min-w-0 flex-1 text-cs-text-2">{s.label}</span>
+        <span className="font-semibold text-cs-text tabular-nums">{formatValue(s.value)}</span>
+        <span className="w-12 text-right text-cs-muted tabular-nums">({Math.round((s.value / total) * 100)}%)</span>
+      </li>)}
+    </ul>
+  </div>;
+}
