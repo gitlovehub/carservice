@@ -83,3 +83,23 @@ function ExceptionCard({ row, onChanged }: { row: HandoverExceptionRow; onChange
           <Button variant="danger-outline" icon="x" disabled={working} onClick={() => void decide(false)}>Từ chối</Button>
           <Button variant="primary" icon="check" loading={working} onClick={() => void decide(true)}>Duyệt ngoại lệ</Button>
         </div>
+      </div>
+      : <p className="mt-3 text-small text-cs-text-2">{person(row.decided_by)}{row.decided_at ? ` · ${fmtDateTime(row.decided_at)}` : ""}: <span className="font-medium">{row.decision_note}</span></p>}
+  </li>;
+}
+
+/** Admin duyệt ngoại lệ khi chủ xe mất email và đến trực tiếp với giấy tờ. Người lập yêu cầu không tự duyệt được. */
+export default function HandoverExceptions() {
+  const [status, setStatus] = useState<Status>("PENDING");
+  const [version, setVersion] = useState(0);
+  const list = useAdminQuery(`handover-exceptions:${status}:${version}`, signal => handoverExceptionApi.list(status, signal));
+  const rows = list.data ?? [];
+
+  return <AdminPage title="Duyệt ngoại lệ biên bản" description="Chủ xe mất quyền truy cập email, đến trực tiếp với CCCD và giấy đăng ký xe" demo={false}>
+    <div className="mb-4"><Tabs label="Trạng thái" value={status} onChange={setStatus} items={(Object.keys(STATUS) as Status[]).map(id => ({ id, label: STATUS[id].label }))}/></div>
+    {list.error ? <ErrorState description={list.error} onRetry={list.reload}/>
+      : !list.data ? <LoadingState/>
+      : !rows.length ? <EmptyState icon="shield" title="Không có yêu cầu" description="Yêu cầu do cố vấn lập sẽ hiện ở đây."/>
+      : <ul className="space-y-4">{rows.map(row => <ExceptionCard key={row.id} row={row} onChanged={() => setVersion(v => v + 1)}/>)}</ul>}
+  </AdminPage>;
+}
