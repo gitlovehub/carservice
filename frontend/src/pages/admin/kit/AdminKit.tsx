@@ -186,3 +186,49 @@ export function Avatar({ name, size = 36, tone }: { name: string; size?: number;
   return <span aria-hidden="true" style={{ width: size, height: size, fontSize: Math.round(size * 0.36) }}
     className={`grid shrink-0 place-items-center rounded-full font-semibold ${toneSoft[t]}`}>{initials(name)}</span>;
 }
+
+export function Person({ name, sub, size = 36 }: { name: string; sub?: ReactNode; size?: number }) {
+  return <span className="flex min-w-0 items-center gap-3">
+    <Avatar name={name} size={size}/>
+    <span className="min-w-0">
+      <span className="block truncate font-semibold text-cs-text">{name}</span>
+      {sub && <span className="block truncate text-caption text-cs-muted">{sub}</span>}
+    </span>
+  </span>;
+}
+
+export function Pill({ tone = "neutral", children, icon }: { tone?: Tone; children: ReactNode; icon?: IconName }) {
+  return <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-caption font-semibold ${toneSoft[tone]}`}>
+    {icon && <Icon name={icon} size={13}/>}{children}
+  </span>;
+}
+
+export function Progress({ value, tone, label }: { value: number; tone?: Tone; label?: string }) {
+  const pct = Math.max(0, Math.min(100, value));
+  const t = tone ?? (pct < 35 ? "danger" : pct < 60 ? "warning" : "success");
+  return <span className="block h-1.5 w-full min-w-16 overflow-hidden rounded-full bg-cs-surface-2" role="progressbar"
+    aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
+    <span className={`block h-full rounded-full ${toneBar[t]}`} style={{ width: `${pct}%` }}/>
+  </span>;
+}
+
+/** Công tắc bật/tắt — dùng chung `Switch` (xanh lá kiểu iOS). Giữ tên Toggle cho các trang Admin cũ. */
+export const Toggle = Switch;
+
+/** Sao đánh giá của Admin = sao dùng chung toàn hệ thống (components/ui/Rating). */
+export function Stars({ value, size = 16 }: { value: number; size?: number }) {
+  return <RatingStars value={value} size={size}/>;
+}
+
+/** Danh sách nhãn – giá trị trong ngăn chi tiết. */
+export function InfoList({ items }: { items: Array<{ icon?: IconName; label?: string; value: ReactNode }> }) {
+  return <dl className="flex flex-col gap-2 text-small">
+    {items.map((item, i) => <div key={i} className="flex items-start gap-2.5">
+      {item.icon && <Icon name={item.icon} size={16} className="mt-0.5 shrink-0 text-cs-muted"/>}
+      {item.label && <dt className="w-28 shrink-0 text-cs-muted">{item.label}</dt>}
+      <dd className="min-w-0 flex-1 text-cs-text">{item.value}</dd>
+    </div>)}
+  </dl>;
+}
+
+export function PaneSection({ title, icon, action, children }: { title: ReactNode; icon?: IconName; action?: ReactNode; children: ReactNode }) {
