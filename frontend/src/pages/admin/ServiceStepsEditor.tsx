@@ -77,3 +77,21 @@ export function ServiceStepsEditor({ serviceId, onSaved, onDirtyChange }: {
         <Button size="sm" variant="tonal" icon="refresh" onClick={retry}>Thử lại</Button>
       </dd>
       : <dd className="mt-2 space-y-2">
+      {steps.map((step, index) => <div key={index}>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="w-5 text-xs text-cs-muted">{index + 1}.</span>
+          <input className={`${field} min-w-40 flex-1`} aria-label="Tên bước" aria-invalid={!!problems[index] || undefined} maxLength={150} value={step.name} onChange={e => set(index, { name: e.target.value })}/>
+          <input className={`${field} w-20`} aria-label="Phút chuẩn" aria-invalid={!!problems[index] || undefined} type="number" min={1} max={1440} value={step.standard_minutes} onChange={e => set(index, { standard_minutes: Number(e.target.value) || 0 })}/>
+          <span className="text-xs text-cs-muted">phút</span>
+          <IconButton size="sm" icon="trash" tone="danger" label="Xóa bước" onClick={() => setSteps(steps.filter((_, i) => i !== index))}/>
+        </div>
+        {problems[index] && <p role="alert" className="ml-7 mt-1 text-caption text-danger-fg">{problems[index]}</p>}
+      </div>)}
+      {!steps.length && <p className="text-xs text-cs-muted">Chưa có bước. Công việc sẽ dùng "Thời gian dự kiến" của dịch vụ.</p>}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="tonal" icon="plus" onClick={() => setSteps([...steps, { name: "", standard_minutes: 15 }])}>Thêm bước</Button>
+        <Button size="sm" variant="primary" loading={saving} disabled={!dirty || invalid || saving} onClick={() => void save()}>Lưu quy trình</Button>
+      </div>
+    </dd>}
+  </div>;
+}
