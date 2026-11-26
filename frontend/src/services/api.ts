@@ -7,6 +7,13 @@ import { apiErrorKind, apiErrorMessage, type ApiErrorBody, type ApiErrorKind } f
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
 
 export type { ApiErrorBody };
+/** Khoá chống gửi trùng (header Idempotency-Key) — server trả lại kết quả cũ nếu gửi lại cùng khoá + cùng nội dung. */
+export function newIdempotencyKey(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 /** Cờ (sessionStorage) báo trang Đăng nhập rằng phiên trước đã hết hạn. */
 export const SESSION_EXPIRED_KEY = "carservice_session_expired";
 export class ApiClientError extends Error {

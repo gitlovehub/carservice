@@ -230,6 +230,22 @@ class RepairFlowTest extends TestCase
         $this->assertSame(8, $inventory->fresh()->quantity);
     }
 
+    public function test_used_part_ignores_client_price_and_rejects_work_item_of_another_order(): void
+    {
+        $this->approveAndStartRepair();
+        Inventory::query()->create(['part_id' => $this->part->id, 'quantity' => 5]);
+        $url = "/api/repair-orders/{$this->repairOrder->id}/used-parts";
+        $foreignWorkItem = WorkItem::query()->whereKeyNot(
+            WorkItem::query()->where('repair_order_id', $this->repairOrder->id)->pluck('id')
+        )->value('id') ?? 999999;
+
+        $this->actingAs($this->advisor)->postJson($url, ['part_id' => $this->part->id, 'quantity' => 1, 'work_item_id' => $foreignWorkItem])
+            ->assertUnprocessable()->assertJsonValidationErrors('work_item_id');
+
+        $this->actingAs($this->advisor)->postJson($url, ['part_id' => $this->part->id, 'quantity' => 1, 'unit_price' => 1])
+            ->assertCreated()->assertJsonPath('unit_price', '450000.00');
+    }
+
     public function test_technician_uses_approved_part_and_stock_is_exported(): void
     {
         $this->approveAndStartRepair();

@@ -6,7 +6,7 @@ import { Icon, type IconName } from "../../components/ui/Icon";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import confetti from "canvas-confetti";
-import { fetchApi } from "../../services/api";
+import { fetchApi, newIdempotencyKey } from "../../services/api";
 import {
   getBookingCatalog,
   indexCatalogItems,
@@ -608,6 +608,9 @@ export default function Booking() {
     goToStep(2);
   };
 
+  // Khoá chống gửi trùng cho lần gửi lịch hiện tại (gắn với đúng nội dung đã gửi).
+  const bookingAttemptRef = useRef<{ body: string; key: string } | null>(null);
+
   const completeBooking = async () => {
     if (!isLoggedIn) {
       goLoginToFinish();
@@ -625,9 +628,7 @@ export default function Booking() {
     const packageIds = selectedItems.filter((item) => item.type === "package").map((item) => item.id);
 
     try {
-      const response = await fetchApi("/appointments", {
-        method: "POST",
-        body: JSON.stringify({
+      const body = JSON.stringify({
           ...(selectedSavedVehicleId
             ? { vehicle_id: selectedSavedVehicleId }
             : {
@@ -646,8 +647,15 @@ export default function Booking() {
           package_ids: packageIds,
           symptom_description: hasSymptom ? symptom.trim() : null,
           note: customerNotes.trim() || null,
-        }),
+        });
+      // Bấm lại (mạng chập chờn, hết thời gian chờ) với cùng nội dung → cùng khoá → server trả lại lịch đã tạo, không tạo lịch thứ hai.
+      if (bookingAttemptRef.current?.body !== body) bookingAttemptRef.current = { body, key: newIdempotencyKey() };
+      const response = await fetchApi("/appointments", {
+        method: "POST",
+        headers: { "Idempotency-Key": bookingAttemptRef.current.key },
+        body,
       });
+      bookingAttemptRef.current = null;
       const finalCode = response?.data?.appointment_code;
       if (!finalCode) {
         throw new Error("Chưa nhận được mã lịch hẹn. Vui lòng thử lại.");

@@ -368,11 +368,8 @@ class AdminPeopleController extends Controller
             'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
         ]);
 
-        $lastLogin = DB::table('personal_access_tokens')->selectRaw('MAX(COALESCE(last_used_at, created_at))')
-            ->where('tokenable_type', Account::class)->whereColumn('tokenable_id', 'accounts.id');
-
+        // last_login_at ghi lúc đăng nhập (AuthController::login) — không mất khi đăng xuất / token hết hạn.
         $page = Account::query()
-            ->select('accounts.*')->selectSub($lastLogin, 'last_login_at')
             ->with(['employee:id,account_id,full_name', 'customer:id,account_id,full_name'])
             ->when($filters['role'] ?? null, fn (Builder $q, string $r) => $q->where('role', $r))
             ->when($filters['status'] ?? null, fn (Builder $q, string $s) => $q->where('status', $s))
@@ -382,7 +379,7 @@ class AdminPeopleController extends Controller
                 ->orWhereHas('customer', fn (Builder $c) => $c->where('full_name', 'like', $like))))
             ->tap(fn (Builder $q) => $this->applySort($q, $request, [
                 'created' => 'accounts.created_at', 'email' => 'accounts.email', 'role' => 'accounts.role',
-                'status' => 'accounts.status', 'login' => 'last_login_at',
+                'status' => 'accounts.status', 'login' => 'accounts.last_login_at',
             ], tieBreaker: 'accounts.id'))
             ->paginate($filters['per_page'] ?? 10);
 

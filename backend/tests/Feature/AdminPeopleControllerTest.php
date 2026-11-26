@@ -130,11 +130,14 @@ class AdminPeopleControllerTest extends TestCase
     {
         $customer = Account::factory()->customer()->create(['email' => 'khach@gmail.com']);
         Customer::factory()->create(['account_id' => $customer->id, 'full_name' => 'Đỗ Thành Nam']);
-        $customer->createToken('web');
+        $customer->forceFill(['last_login_at' => now()->subHour()])->save();
 
         $rows = $this->getJson('/api/admin/accounts?role=CUSTOMER')->assertOk()->json('data');
         $this->assertSame('Đỗ Thành Nam', $rows[0]['name']);
         $this->assertNotNull($rows[0]['last_login_at']);
+        // Đăng xuất (xoá token) không làm mất "Đăng nhập gần nhất".
+        $customer->tokens()->delete();
+        $this->assertNotNull($this->getJson('/api/admin/accounts?role=CUSTOMER')->json('data.0.last_login_at'));
         $this->getJson('/api/admin/accounts?search=thành nam')->assertJsonPath('meta.total', 1);
 
         $this->postJson('/api/admin/accounts', ['email' => 'quanly@carservice.vn', 'name' => 'Trần Văn Quản', 'role' => 'ADMIN', 'send_invite' => false])

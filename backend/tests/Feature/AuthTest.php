@@ -546,6 +546,54 @@ class AuthTest extends TestCase
         $this->assertTrue(Hash::check('NewSecret123', $account->getAuthPassword()));
     }
 
+    public function test_technician_account_cannot_log_in_and_receives_no_token(): void
+    {
+        $this->createAccount(email: 'ktv@example.com', role: Account::ROLE_TECHNICIAN);
+
+        $this->postJson('/api/login', ['email' => 'ktv@example.com', 'password' => 'correct-password'])
+            ->assertUnprocessable()->assertJsonValidationErrors('email');
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    public function test_login_records_last_login_time(): void
+    {
+        $account = $this->createAccount();
+        $this->assertNull($account->last_login_at);
+
+        $this->postJson('/api/login', ['email' => 'advisor@example.com', 'password' => 'correct-password'])->assertOk();
+
+        $this->assertNotNull($account->fresh()->last_login_at);
+    }
+
+    public function test_avatar_accepts_image_data_or_https_url_only(): void
+    {
+        $account = $this->createAccount(role: Account::ROLE_CUSTOMER);
+        Customer::query()->create(['account_id' => $account->id, 'full_name' => 'Khách', 'phone' => '0912000555']);
+        $token = $account->createToken('web')->plainTextToken;
+        $profile = fn (?string $avatar) => $this->withToken($token)->patchJson('/api/me/profile', ['avatar' => $avatar]);
+
+        $profile('https://images.unsplash.com/photo-1?w=300')->assertOk();
+        $profile('data:image/jpeg;base64,/9j/4AAQSkZJRg==')->assertOk();
+        $profile(null)->assertOk();
+        foreach (['javascript:alert(1)', 'http://example.com/a.png', 'data:text/html;base64,PHNjcmlwdD4=', 'data:image/png;base64,<script>'] as $bad) {
+            $profile($bad)->assertUnprocessable()->assertJsonValidationErrors('avatar');
+        }
+        $profile('data:image/png;base64,'.str_repeat('A', 7_000_100))->assertUnprocessable()->assertJsonValidationErrors('avatar');
+    }
+
+    public function test_weak_passwords_are_rejected_on_register_and_reset_like_on_change(): void
+    {
+        Mail::fake();
+        $this->postJson('/api/register', [...$this->registerPayload('yeu@example.com', '0912000999'), 'password' => 'matkhau123', 'password_confirmation' => 'matkhau123'])
+            ->assertUnprocessable()->assertJsonValidationErrors('password');
+
+        $account = $this->createAccount(email: 'khach@example.com', role: Account::ROLE_CUSTOMER);
+        PasswordResetOtp::query()->create(['account_id' => $account->id, 'otp_hash' => Hash::make('123456'), 'expires_at' => now()->addMinutes(5)]);
+        $this->postJson('/api/reset-password', ['email' => 'khach@example.com', 'otp' => '123456', 'password' => 'matkhau123', 'password_confirmation' => 'matkhau123'])
+            ->assertUnprocessable()->assertJsonValidationErrors('password');
+        $this->assertTrue(Hash::check('correct-password', $account->fresh()->getAuthPassword()));
+    }
+
     public function test_registration_rejects_a_phone_owned_by_another_customer(): void
     {
         Mail::fake();

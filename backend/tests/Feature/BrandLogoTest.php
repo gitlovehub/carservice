@@ -118,6 +118,15 @@ class BrandLogoTest extends TestCase
             ->assertUnprocessable()->assertJsonValidationErrors('logo_png');
     }
 
+    public function test_rejects_image_larger_than_5mb_from_url(): void
+    {
+        Sanctum::actingAs(Account::factory()->admin()->create());
+        Http::fake(['93.184.216.34/*' => Http::response(str_repeat('x', 5 * 1024 * 1024 + 10), 200, ['Content-Type' => 'image/png'])]);
+
+        $this->postJson('/api/admin/vehicle-brands/logo-preview', ['url' => 'http://93.184.216.34/huge.png'])
+            ->assertUnprocessable()->assertJsonValidationErrors('logo_url');
+    }
+
     public function test_only_admin_can_preview(): void
     {
         Sanctum::actingAs(Account::factory()->create());

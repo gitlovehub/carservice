@@ -96,15 +96,30 @@ class BrandLogoProcessor
         if (! in_array($scheme, ['http', 'https'], true) || $host === '') {
             $this->fail('Link phải bắt đầu bằng http:// hoặc https://');
         }
-        $this->assertPublicHost($host);
+        $ip = $this->resolvePublicIp($host);
+        $port = (int) ($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
+        $bareHost = trim($host, '[]');
 
+        $tooLarge = false;
         try {
             $response = Http::timeout(15)->connectTimeout(6)
                 ->withHeaders(['Accept' => 'image/*', 'User-Agent' => 'CarService-LogoFetcher/1.0'])
-                ->withOptions(['allow_redirects' => false])
+                ->withOptions([
+                    'allow_redirects' => false,
+                    // Ghim đúng IP vừa kiểm tra (chống DNS rebinding: tên miền đổi sang IP nội bộ sau bước kiểm tra).
+                    // Giữ trình tải cURL (không dùng 'stream' — sẽ chuyển sang PHP stream và bỏ qua tuỳ chọn này).
+                    'curl' => [CURLOPT_RESOLVE => ["{$bareHost}:{$port}:".(str_contains($ip, ':') ? "[{$ip}]" : $ip)]],
+                    // Dừng tải ngay khi vượt 5MB (không đợi tải hết file lớn).
+                    'progress' => function ($downloadTotal, $downloaded) use (&$tooLarge): void {
+                        if ($downloadTotal > self::MAX_BYTES || $downloaded > self::MAX_BYTES) {
+                            $tooLarge = true;
+                            throw new \RuntimeException('Ảnh lớn hơn 5MB.');
+                        }
+                    },
+                ])
                 ->get($url);
         } catch (Throwable) {
-            $this->fail('Không tải được ảnh từ link này.');
+            $this->fail($tooLarge ? 'Ảnh rỗng hoặc lớn hơn 5MB.' : 'Không tải được ảnh từ link này.');
         }
 
         // Tự theo chuyển hướng (tối đa 3 lần), kiểm tra lại địa chỉ ở mỗi lần.
@@ -124,11 +139,23 @@ class BrandLogoProcessor
         return $body;
     }
 
-    /** Chỉ tải từ địa chỉ Internet công khai (chặn localhost, mạng nội bộ — tránh dùng link để dò máy chủ). */
-    private function assertPublicHost(string $host): void
+    /**
+     * Chỉ tải từ địa chỉ Internet công khai (chặn localhost, mạng nội bộ — tránh dùng link để dò máy chủ).
+     * Kiểm cả IPv4 và IPv6 của tên miền; trả về một IP công khai để ghim kết nối.
+     */
+    private function resolvePublicIp(string $host): string
     {
         $host = trim($host, '[]');
-        $ips = filter_var($host, FILTER_VALIDATE_IP) ? [$host] : (gethostbynamel($host) ?: []);
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            $ips = [$host];
+        } else {
+            $ips = gethostbynamel($host) ?: [];
+            foreach (@dns_get_record($host, DNS_AAAA) ?: [] as $record) {
+                if (! empty($record['ipv6'])) {
+                    $ips[] = $record['ipv6'];
+                }
+            }
+        }
         if ($ips === []) {
             $this->fail('Không tìm thấy máy chủ của link ảnh.');
         }
@@ -137,6 +164,8 @@ class BrandLogoProcessor
                 $this->fail('Link ảnh trỏ tới địa chỉ nội bộ, không được phép.');
             }
         }
+
+        return $ips[0];
     }
 
     /* ------------------------------------------------------------------ Đọc ảnh */

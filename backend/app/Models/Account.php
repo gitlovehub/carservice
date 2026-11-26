@@ -56,6 +56,7 @@ class Account extends Authenticatable
         return [
             'password_hash' => 'hashed',
             'email_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
         ];
     }
 

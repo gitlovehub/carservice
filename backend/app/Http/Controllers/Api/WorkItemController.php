@@ -8,6 +8,7 @@ use App\Models\WorkItem;
 use App\Services\RepairOrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class WorkItemController extends Controller
 {
@@ -39,12 +40,12 @@ class WorkItemController extends Controller
     {
         $this->authorize('update', $repairOrder);
 
+        // Đơn giá luôn theo báo giá khách đã duyệt (RepairOrderService::recordUsedPart) — không nhận giá từ client.
         $data = $request->validate([
-            'work_item_id' => ['nullable', 'integer', 'exists:work_items,id'],
+            'work_item_id' => ['nullable', 'integer', Rule::exists('work_items', 'id')->where('repair_order_id', $repairOrder->id)],
             'part_id' => ['required', 'integer', 'exists:parts,id'],
             'quantity' => ['required', 'integer', 'min:1'],
-            'unit_price' => ['nullable', 'numeric', 'min:0'],
-        ]);
+        ], ['work_item_id.exists' => 'Công việc không thuộc phiếu sửa chữa này.']);
 
         $usedPart = $this->service->recordUsedPart($repairOrder, $data);
 

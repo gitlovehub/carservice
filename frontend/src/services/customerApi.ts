@@ -1,4 +1,4 @@
-import { fetchApi } from "./api";
+import { fetchApi, newIdempotencyKey } from "./api";
 import { statusLabels } from "../config/status";
 
 /* ---------- Kiểu dữ liệu theo API_Documentation & backend thực tế ---------- */
@@ -501,13 +501,9 @@ export type VnpayReturnResponse = {
 
 /** Backend tự tính số tiền còn phải trả; Frontend chỉ gửi mã hóa đơn. */
 export async function createVnpayPayment(invoiceId: number): Promise<VnpayCreateResponse> {
-  const idempotencyKey = typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
   return fetchApi<VnpayCreateResponse>(`/me/invoices/${invoiceId}/vnpay`, {
     method: "POST",
-    headers: { "Idempotency-Key": idempotencyKey },
+    headers: { "Idempotency-Key": newIdempotencyKey() },
   });
 }
 

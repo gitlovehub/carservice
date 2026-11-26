@@ -129,15 +129,26 @@ class AdminInsightsController extends Controller
             $end = $now;
         }
 
-        $current = $this->invoicedSplit($start, $end);
-        $previous = $this->invoicedSplit($prevStart, $prevEnd);
+        // Nạp dòng hoá đơn MỘT lần cho mọi khoảng cần (kỳ này, kỳ trước, 8 tháng) rồi lọc trong bộ nhớ —
+        // trước đây mỗi khoảng một truy vấn (~12 lần / request). Kết quả giữ nguyên.
+        $lastMonth = $end->startOfMonth();
+        $firstMonth = $lastMonth->subMonthsNoOverflow(7);
+        $allItems = $this->periodItems(
+            min($start, $prevStart, $firstMonth),
+            max($end, $prevEnd, $lastMonth->endOfMonth()),
+        );
+        $itemsBetween = fn (CarbonImmutable $from, CarbonImmutable $to): Collection => $allItems
+            ->filter(fn (InvoiceItem $item): bool => $item->invoice->created_at->betweenIncluded($from, $to))
+            ->values();
+
+        $current = $this->invoicedSplit($itemsBetween($start, $end));
+        $previous = $this->invoicedSplit($itemsBetween($prevStart, $prevEnd));
 
         // 8 tháng gần nhất tính đến tháng cuối của kỳ.
-        $lastMonth = $end->startOfMonth();
         $monthly = [];
         for ($i = 7; $i >= 0; $i--) {
             $m = $lastMonth->subMonthsNoOverflow($i);
-            $split = $this->invoicedSplit($m, $m->endOfMonth());
+            $split = $this->invoicedSplit($itemsBetween($m, $m->endOfMonth()));
             $monthly[] = [
                 'month' => $m->format('Y-m'),
                 'service' => $split['service'],
@@ -146,9 +157,9 @@ class AdminInsightsController extends Controller
             ];
         }
 
-        $items = $this->periodItems($start, $end);
+        $items = $itemsBetween($start, $end);
         ['granularity' => $granularity, 'points' => $series] = $this->reportSeries($start, $end, $items);
-        $previousPoints = $this->reportSeries($prevStart, $prevEnd, $this->periodItems($prevStart, $prevEnd))['points'];
+        $previousPoints = $this->reportSeries($prevStart, $prevEnd, $itemsBetween($prevStart, $prevEnd))['points'];
 
         return response()->json(['data' => [
             'granularity' => $granularity,
@@ -227,12 +238,16 @@ class AdminInsightsController extends Controller
     /** Hoá đơn chưa thu đủ tại một thời điểm. */
     private function unpaidAt(CarbonImmutable $at): int
     {
+        // Đếm bằng SQL (không nạp toàn bộ hoá đơn vào bộ nhớ).
+        $paidThen = Payment::query()->selectRaw('COALESCE(SUM(amount), 0)')
+            ->whereColumn('payments.invoice_id', 'invoices.id')
+            ->where('status', Payment::SUCCESS)
+            ->where('paid_at', '<=', $at);
+
         return Invoice::query()
             ->where('created_at', '<=', $at)
             ->where('status', '!=', Invoice::CANCELLED)
-            ->withSum(['payments as paid_then' => fn ($q) => $q->where('status', Payment::SUCCESS)->where('paid_at', '<=', $at)], 'amount')
-            ->get(['id', 'total_amount'])
-            ->filter(fn (Invoice $inv) => (float) $inv->paid_then < (float) $inv->total_amount - 0.01)
+            ->whereRaw('(invoices.total_amount - 0.01) > ('.$paidThen->toSql().')', $paidThen->getBindings())
             ->count();
     }
 
@@ -431,11 +446,12 @@ class AdminInsightsController extends Controller
         return $groups->take(4)->when($rest > 0, fn (Collection $top) => $top->push(['name' => 'Khác', 'revenue' => $rest]))->values()->all();
     }
 
-    /** @return array{service: float, parts: float} */
-    private function invoicedSplit(CarbonImmutable $from, CarbonImmutable $to): array
+    /**
+     * @param  Collection<int, InvoiceItem>  $items  dòng hoá đơn của một khoảng (đã tính `net`)
+     * @return array{service: float, parts: float}
+     */
+    private function invoicedSplit(Collection $items): array
     {
-        $items = $this->periodItems($from, $to);
-
         return [
             'service' => round((float) $items->where('item_type', 'SERVICE')->sum('net'), 2),
             'parts' => round((float) $items->where('item_type', 'PART')->sum('net'), 2),

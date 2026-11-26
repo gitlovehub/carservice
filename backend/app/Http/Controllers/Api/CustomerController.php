@@ -263,6 +263,17 @@ class CustomerController extends Controller
             ], 404);
         }
 
+        // Chỉ xoá hồ sơ trống (tạo nhầm): còn tài khoản web, xe, lịch hẹn hay phiếu sửa chữa thì giữ để không mất lịch sử.
+        if ($customer->account_id !== null
+            || $customer->vehicles()->withTrashed()->exists()
+            || $customer->appointments()->exists()
+            || $customer->repairOrders()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa khách hàng đã có tài khoản, xe, lịch hẹn hoặc phiếu sửa chữa. Hãy khóa tài khoản nếu cần ngừng phục vụ.',
+            ], 422);
+        }
+
         $customer->delete();
 
         return response()->json([

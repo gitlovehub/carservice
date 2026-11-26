@@ -813,7 +813,7 @@ class RepairOrderService
                 'work_item_id' => $data['work_item_id'] ?? null,
                 'part_id' => $data['part_id'],
                 'quantity' => $quantity,
-                'unit_price' => $data['unit_price'] ?? $approvedItem->unit_price,
+                'unit_price' => $approvedItem->unit_price,
                 'used_at' => now(),
             ]);
 

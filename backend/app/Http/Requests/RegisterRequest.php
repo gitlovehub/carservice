@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Support\CustomerPhone;
+use App\Support\PasswordPolicy;
 use Illuminate\Foundation\Http\FormRequest;
 
 class RegisterRequest extends FormRequest
@@ -46,7 +47,7 @@ class RegisterRequest extends FormRequest
                     ->orWhereRaw('LOWER(email) <> ?', [(string) $this->input('email')])),
             ],
             'email' => ['required', 'email', 'max:150', 'unique:accounts,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed', 'max:255'],
+            'password' => ['required', ...PasswordPolicy::rules(), 'confirmed'],
             'device_name' => ['nullable', 'string', 'max:100'],
             'accept_terms' => ['required', 'accepted'],
         ];
@@ -63,7 +64,7 @@ class RegisterRequest extends FormRequest
             'email.email' => 'Email không đúng định dạng.',
             'email.unique' => 'Email này đã được sử dụng.',
             'password.required' => 'Mật khẩu không được để trống.',
-            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
+            ...PasswordPolicy::messages('password'),
             'password.confirmed' => 'Mật khẩu xác nhận không khớp.',
             'accept_terms.required' => 'Bạn phải đồng ý với điều khoản sử dụng.',
             'accept_terms.accepted' => 'Bạn phải đồng ý với điều khoản sử dụng.',

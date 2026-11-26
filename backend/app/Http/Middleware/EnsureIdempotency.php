@@ -70,6 +70,14 @@ class EnsureIdempotency
         try {
             $response = $next($request);
 
+            // Chỉ ghi nhớ kết quả thành công. Lỗi (422 khung giờ đầy, 409, 5xx…) thì xoá khoá để người dùng
+            // sửa / thử lại với cùng khoá, không bị trả lại lỗi cũ hay báo "khoá đã dùng cho request khác".
+            if (! $response->isSuccessful()) {
+                DB::table('idempotency_keys')->where($attributes)->delete();
+
+                return $response;
+            }
+
             DB::table('idempotency_keys')
                 ->where($attributes)
                 ->update([

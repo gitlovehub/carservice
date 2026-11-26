@@ -12,6 +12,8 @@ use App\Models\PasswordResetOtp;
 use App\Services\AccountEmailService;
 use App\Services\PasswordResetService;
 use App\Support\CustomerPhone;
+use App\Support\PasswordPolicy;
+use Closure;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,6 +26,9 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
+    /** Data URL của ảnh 5MB sau base64 (~4/3) cộng phần đầu "data:image/...;base64,". */
+    private const AVATAR_MAX_DATA_URL_LENGTH = 7_000_100;
+
     public function __construct(private readonly AccountEmailService $accountEmails) {}
 
     public function register(RegisterRequest $request): JsonResponse
@@ -86,6 +91,15 @@ class AuthController extends Controller
             ]);
         }
 
+        // Khu vực KTV đã bỏ (cố vấn ghi kết quả kiểm tra): không cấp phiên cho tài khoản kỹ thuật viên.
+        if ($account->role === Account::ROLE_TECHNICIAN) {
+            throw ValidationException::withMessages([
+                'email' => ['Tài khoản kỹ thuật viên không có màn hình riêng. Kết quả kiểm tra do cố vấn ghi trên phiếu sửa chữa.'],
+            ]);
+        }
+
+        $account->forceFill(['last_login_at' => now()])->save();
+
         $token = null;
 
         if (EnsureFrontendRequestsAreStateful::fromFrontend($request) && $request->hasSession()) {
@@ -140,7 +154,7 @@ class AuthController extends Controller
             'full_name' => ['sometimes', 'nullable', 'string', 'max:100'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:20', ...$phoneRules],
             'address' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'avatar' => ['sometimes', 'nullable', 'string'],
+            'avatar' => ['sometimes', 'nullable', 'string', self::avatarRule()],
         ], [
             'full_name.max' => 'Họ và tên không được vượt quá 100 ký tự.',
             'phone.max' => 'Số điện thoại không được vượt quá 20 ký tự.',
@@ -214,15 +228,7 @@ class AuthController extends Controller
 
         $validated = $request->validate([
             'current_password' => ['required', 'string'],
-            'new_password' => [
-                'required',
-                'string',
-                'min:8',
-                'confirmed',
-                'regex:/[a-z]/',
-                'regex:/[A-Z]/',
-                'regex:/[0-9]/',
-            ],
+            'new_password' => ['required', ...PasswordPolicy::rules(), 'confirmed'],
             'new_password_confirmation' => ['required', 'string'],
         ], [
             'current_password.required' => 'Vui lòng nhập mật khẩu hiện tại.',
@@ -258,6 +264,28 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Đổi mật khẩu thành công. Các thiết bị khác đã được đăng xuất.',
         ]);
+    }
+
+    /**
+     * Ảnh đại diện: ảnh mẫu (URL https) hoặc ảnh tải lên dạng data URL PNG / JPG / WebP / GIF,
+     * tối đa ~5MB như giới hạn chọn ảnh ở Frontend.
+     */
+    private static function avatarRule(): Closure
+    {
+        return static function (string $attribute, mixed $value, Closure $fail): void {
+            if (! is_string($value)) {
+                return;
+            }
+            $isHttpsUrl = strlen($value) <= 2048 && str_starts_with($value, 'https://') && filter_var($value, FILTER_VALIDATE_URL) !== false;
+            // Phần đầu kiểm bằng regex, phần base64 kiểm bằng strspn (chuỗi rất dài — tránh giới hạn PCRE).
+            $isImageData = strlen($value) <= self::AVATAR_MAX_DATA_URL_LENGTH
+                && preg_match('#^data:image/(png|jpe?g|webp|gif);base64,#', $value, $head) === 1
+                && strlen($value) > strlen($head[0])
+                && strspn($value, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=', strlen($head[0])) === strlen($value) - strlen($head[0]);
+            if (! $isHttpsUrl && ! $isImageData) {
+                $fail('Ảnh đại diện không hợp lệ. Chọn ảnh PNG, JPG, WebP hoặc GIF tối đa 5MB.');
+            }
+        };
     }
 
     private function authenticatedAccount(Request $request): Account
@@ -365,8 +393,8 @@ class AuthController extends Controller
         $request->validate([
             'email' => ['required', 'email'],
             'otp' => ['required', 'digits:6'],
-            'password' => ['required', 'string', 'min:8', 'max:255', 'confirmed'],
-        ]);
+            'password' => ['required', ...PasswordPolicy::rules(), 'confirmed'],
+        ], PasswordPolicy::messages('password'));
 
         $account = Account::whereRaw('LOWER(email) = ?', [
             strtolower($request->email),

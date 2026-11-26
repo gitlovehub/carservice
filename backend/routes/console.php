@@ -13,3 +13,6 @@ Schedule::command('handover-exceptions:purge-documents')->dailyAt('02:00')->with
 
 // Token đăng nhập quá hạn 24 giờ (config/sanctum.php) không còn dùng được — xóa khỏi bảng cho gọn.
 Schedule::command('sanctum:prune-expired', ['--hours' => 24])->dailyAt('02:30')->withoutOverlapping();
+
+// Giao dịch VNPay còn "chờ" quá hạn thanh toán 24 giờ → huỷ (hỏi cổng lần cuối nếu bật VNPAY_QUERY_ON_RETURN).
+Schedule::command('payments:expire-vnpay')->hourly()->withoutOverlapping();

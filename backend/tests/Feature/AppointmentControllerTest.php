@@ -501,6 +501,30 @@ class AppointmentControllerTest extends TestCase
         $this->assertDatabaseCount('idempotency_keys', 1);
     }
 
+    public function test_failed_booking_is_not_replayed_so_the_same_key_can_retry(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        $customer = $this->createAuthenticatedCustomer();
+        $vehicle = Vehicle::factory()->create(['customer_id' => $customer['customer']->id]);
+        $headers = ['Idempotency-Key' => 'booking-retry-1'];
+        $payload = [
+            'vehicle_id' => $vehicle->id,
+            'appointment_date' => now()->addDays(2)->toDateString(),
+            'appointment_time' => '12:00',
+            'request_type' => 'MAINTENANCE',
+            'symptom_description' => 'Kiểm tra tổng quát',
+        ];
+
+        // Lần đầu thiếu dữ liệu → 422, không giữ khoá.
+        $this->withToken($customer['token'])->withHeaders($headers)->postJson('/api/appointments', [...$payload, 'appointment_time' => null])
+            ->assertUnprocessable();
+        $this->assertDatabaseCount('idempotency_keys', 0);
+
+        // Sửa lại và gửi cùng khoá → được xử lý bình thường.
+        $this->withToken($customer['token'])->withHeaders($headers)->postJson('/api/appointments', $payload)->assertCreated();
+        $this->assertDatabaseCount('appointments', 1);
+    }
+
     public function test_idempotency_key_cannot_be_reused_for_a_different_booking(): void
     {
         $this->travelTo(now()->startOfDay());
