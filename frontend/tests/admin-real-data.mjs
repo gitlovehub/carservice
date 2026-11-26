@@ -10,3 +10,14 @@ for (const page of pages) {
   const source = read(`src/pages/admin/${page}`);
   assert.doesNotMatch(source, /mocks\/admin/, `${page} không import dữ liệu giả`);
   if (source.includes('<AdminPage ')) assert.match(source, /demo=\{false\}/, `${page} không gắn nhãn "Dữ liệu demo"`);
+}
+
+const api = read('src/services/adminApi.ts');
+const wiring = {
+  'AdminDashboard.tsx': 'adminApi.dashboard', 'Reports.tsx': 'adminApi.reports', 'RepairOrders.tsx': 'adminApi.repairOrders',
+  'Invoices.tsx': 'adminApi.invoices', 'Reviews.tsx': 'adminApi.reviews', 'AuditLogs.tsx': 'adminApi.auditLogs',
+  'AdminCustomers.tsx': 'adminApi.customers', 'Staff.tsx': 'adminApi.staff', 'Accounts.tsx': 'adminApi.accounts',
+  'Inventory.tsx': 'adminApi.parts', 'HolidaysPanel.tsx': 'adminApi.holidays',
+};
+for (const [page, call] of Object.entries(wiring)) assert.ok(read(`src/pages/admin/${page}`).includes(call), `${page} gọi ${call}`);
+for (const path of ['/admin/dashboard', '/admin/reports', '/admin/repair-orders', '/admin/invoices', '/admin/payments', '/admin/reviews', '/admin/audit-logs',
