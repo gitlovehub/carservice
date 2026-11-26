@@ -25,6 +25,8 @@ export default function ServicesMegaMenu({ id, open, panelRef, showBooking, onNa
   const [failed, setFailed] = useState(false);
   const shouldLoad = open && services === null && !failed;
 
+  useEffect(() => { if (!open) setFailed(false); }, [open]);
+
   useEffect(() => {
     if (!shouldLoad) return;
     let alive = true;
