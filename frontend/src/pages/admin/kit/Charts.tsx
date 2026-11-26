@@ -106,3 +106,57 @@ export function BarChart({ labels, bars, line, height = 260, format = num, tickE
       {[...bars].reverse().map(s => <p key={s.label} className="flex items-center gap-1.5"><span className="size-2 rounded-sm" style={{ background: s.color }}/>{s.label}: <b className="ml-auto tabular-nums">{format(s.values[active])}</b></p>)}
       {line && <p className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: line.color }}/>{line.label}: <b className="ml-auto tabular-nums">{format(line.values[active])}</b></p>}
       {bars.length > 1 && <p className="mt-1 border-t border-cs-border pt-1">Tổng: <b className="tabular-nums">{format(totals[active])}</b></p>}
+    </Tooltip>}
+  </div>;
+}
+
+/** Đường có vùng tô. */
+export function AreaChart({ labels, series, height = 260, title, format = num, tooltipTitle }: {
+  labels: string[]; series: Series; height?: number; title: string; format?: (v: number) => string; tooltipTitle?: (index: number) => string;
+}) {
+  const [active, setActive] = useState<number | null>(null);
+  const { ref, width: W } = useWidth();
+  const max = niceMax(Math.max(...series.values));
+  const inner = height - PAD.top - PAD.bottom;
+  const step = (W - PAD.left - PAD.right - 24) / Math.max(1, labels.length - 1);
+  const xOf = (i: number) => PAD.left + 12 + step * i;
+  const yOf = (v: number) => PAD.top + inner - (v / max) * inner;
+  const every = Math.max(1, Math.ceil(52 / step));
+  const path = series.values.map((v, i) => `${i ? "L" : "M"}${xOf(i)},${yOf(v)}`).join(" ");
+  const area = `${path} L${xOf(labels.length - 1)},${PAD.top + inner} L${xOf(0)},${PAD.top + inner} Z`;
+  return <div ref={ref} className="relative">
+    <svg viewBox={`0 0 ${W} ${height}`} className="h-auto w-full" role="img" aria-label={title} onMouseLeave={() => setActive(null)}>
+      <Axis max={max} height={height} format={format} W={W}/>
+      <path d={area} fill={series.color} opacity="0.1"/>
+      <path d={path} fill="none" stroke={series.color} strokeWidth="2.4" strokeLinejoin="round"/>
+      {labels.map((label, i) => <g key={label} tabIndex={0} className="outline-none" onMouseEnter={() => setActive(i)} onFocus={() => setActive(i)} onBlur={() => setActive(null)}>
+        <rect x={xOf(i) - step / 2} y={PAD.top} width={step} height={inner} fill="transparent"/>
+        <circle cx={xOf(i)} cy={yOf(series.values[i])} r={active === i ? 6 : 4} fill="var(--cs-surface)" stroke={series.color} strokeWidth="2.2"/>
+        {i % every === 0 && <text x={xOf(i)} y={height - 9} textAnchor="middle" fontSize="11" fill="var(--cs-muted)">{label}</text>}
+      </g>)}
+      {active !== null && <line x1={xOf(active)} x2={xOf(active)} y1={yOf(series.values[active])} y2={PAD.top + inner} stroke={series.color} strokeDasharray="3 3"/>}
+    </svg>
+    {active !== null && <Tooltip x={(xOf(active) / W) * 100} y={(yOf(series.values[active]) / height) * 100 - 3}>
+      <p className="font-semibold">{tooltipTitle ? tooltipTitle(active) : labels[active]}</p>
+      <p>{series.label}: <b className="tabular-nums">{format(series.values[active])}</b></p>
+    </Tooltip>}
+  </div>;
+}
+
+/** Cột doanh thu (trục trái) + đường số phiếu (trục phải, có số trên từng điểm). */
+export function ComboChart({ labels, titles, bars, line, height = 250, format = num, title }: {
+  labels: string[]; titles?: string[]; bars: Series; line: Series; height?: number; format?: (v: number) => string; title: string;
+}) {
+  const [active, setActive] = useState<number | null>(null);
+  const { ref, width: W } = useWidth();
+  const gradientId = `cs-combo-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  const pad = { top: 24, right: 40, bottom: 30, left: 58 };
+  const inner = height - pad.top - pad.bottom;
+  const leftMax = niceMax(Math.max(...bars.values, 0));
+  const rightMax = Math.max(4, Math.ceil(Math.max(...line.values, 0) / 4) * 4);
+  const slot = (W - pad.left - pad.right) / Math.max(1, labels.length);
+  const barW = Math.max(6, Math.min(64, slot * 0.46));
+  const every = Math.max(1, Math.ceil(64 / slot));
+  const xOf = (i: number) => pad.left + slot * i + slot / 2;
+  const yBar = (v: number) => pad.top + inner - (v / leftMax) * inner;
+  const yLine = (v: number) => pad.top + inner - (v / rightMax) * inner;
