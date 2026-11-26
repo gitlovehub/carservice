@@ -41,3 +41,45 @@ export default function Services() {
     category_id: typeof category === "number" ? category : undefined,
     uncategorized: category === "none" ? 1 : undefined,
     ...tableSort.params,
+  };
+  const cats = useAdminQuery("service-categories", signal => catalogAdminApi.categories(signal));
+  const list = useAdminQuery(`services:${JSON.stringify(params)}`, signal => catalogAdminApi.services(params, signal));
+  const result = list.data ?? list.stale;
+  const categories = (cats.data ?? cats.stale)?.data ?? [];
+  const meta = (cats.data ?? cats.stale)?.meta;
+  const rows = (result?.data ?? []).map(s => ({ ...s, ...overrides[s.id] }));
+
+  const reload = () => { setOverrides({}); list.reload(); cats.reload(); };
+  const pick = (c: CategoryFilter) => { setCategory(c); setPage(1); };
+
+  const patch = async (s: AdminService, change: Partial<Pick<AdminService, "is_visible" | "status">>, message: string) => {
+    setOverrides(o => ({ ...o, [s.id]: { ...o[s.id], ...change } }));
+    try {
+      await catalogAdminApi.updateService(s.id, change);
+      notify(message, "success");
+      cats.reload();
+    } catch (e) {
+      setOverrides(o => { const next = { ...o }; delete next[s.id]; return next; });
+      notify(errorMessage(e, "Không cập nhật được dịch vụ."), "error");
+    }
+  };
+
+  const stop = async (s: AdminService) => {
+    const packages = s.active_packages_count ?? 0;
+    const accepted = await confirm({
+      title: `Ngừng áp dụng “${s.name}”?`,
+      description: `Dịch vụ sẽ tắt cả 2 trạng thái, khách không đặt được và không thêm được vào báo giá mới.${packages ? ` ${packages} gói bảo dưỡng đang bán sẽ tự bỏ qua dịch vụ này.` : ""}`,
+      confirmText: "Ngừng áp dụng", variant: "danger", confirmIcon: "ban",
+    });
+    if (accepted) await patch(s, { status: "INACTIVE", is_visible: false }, `Đã ngừng dịch vụ “${s.name}”.`);
+  };
+
+  const deleteBlocker = (s: AdminService) => s.status === "ACTIVE"
+    ? (s.is_visible ? "tắt cả 2 trạng thái trước" : "tắt Đang áp dụng trước")
+    : s.is_in_use ? "đã có trong lịch sử" : null;
+
+  const removePermanently = async (s: AdminService) => {
+    const accepted = await confirm({ title: `Xóa vĩnh viễn “${s.name}”?`, description: "Dịch vụ chưa từng được sử dụng nên không ảnh hưởng lịch sử. Thao tác này không thể hoàn tác.", confirmText: "Xóa vĩnh viễn", variant: "danger", confirmIcon: "trash" });
+    if (!accepted) return;
+    try {
+      notify((await catalogAdminApi.deleteServicePermanently(s.id)).message, "success");
