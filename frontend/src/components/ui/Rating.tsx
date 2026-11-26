@@ -61,6 +61,8 @@ export function RatingInput({ value, onChange, onPreview, label, size = 44 }: {
         let next: number;
         if (event.key === "ArrowRight" || event.key === "ArrowUp") next = Math.min(5, value + 1);
         else if (event.key === "ArrowLeft" || event.key === "ArrowDown") next = Math.max(1, value - 1);
+        else if (event.key === "Home") next = 1;
+        else if (event.key === "End") next = 5;
         else return;
         event.preventDefault();
         onChange(next);
