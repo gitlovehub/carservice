@@ -1,0 +1,429 @@
+/*
+ * Bố cục khu vực làm việc dùng chung cho Advisor và Admin (AppShell → WorkLayout).
+ * Chỉ khác menu và màu nhấn (token theo data-area); mọi kích thước dùng chung.
+ *
+ *   ≥ 1024px : sidebar cố định, thu gọn được (data-sidebar="collapsed", lưu localStorage).
+ *   < 1024px : sidebar thành ngăn kéo trượt từ trái (data-open), có lớp phủ.
+ *
+ * Giữ tên class cs-work-sidebar / cs-work-top / cs-work-main / cs-work-content vì
+ * quy tắc in phiếu sửa chữa (index.css @media print) dựa vào chúng.
+ */
+.cs-workspace {
+  --ws-sidebar: 256px;
+  --ws-sidebar-collapsed: 76px;
+  --ws-topbar: 64px;
+  /* Chiều cao chung: chân sidebar = footer nội dung, để hai đường viền trên thẳng hàng. */
+  --ws-footer: 64px;
+  display: grid;
+  grid-template-columns: var(--ws-sidebar) minmax(0, 1fr);
+  min-height: 100vh;
+  color-scheme: light;
+  transition: grid-template-columns var(--cs-duration) var(--cs-ease);
+}
+html[data-theme="dark"] .cs-workspace { color-scheme: dark; }
+.cs-workspace[data-sidebar="collapsed"] { grid-template-columns: var(--ws-sidebar-collapsed) minmax(0, 1fr); }
+.cs-workspace :is(input, select, textarea) { accent-color: var(--cs-accent); }
+
+/* Liên kết bỏ qua điều hướng cho bàn phím. */
+.cs-skip-link {
+  position: fixed; left: 12px; top: -60px; z-index: 200;
+  padding: 10px 14px; border-radius: var(--radius-control);
+  background: var(--cs-accent); color: var(--cs-accent-contrast); font-weight: 600;
+}
+.cs-skip-link:focus { top: 12px; }
+
+/* ---------- Sidebar ---------- */
+.cs-work-sidebar {
+  position: sticky; top: 0; z-index: 60;
+  display: flex; flex-direction: column;
+  height: 100vh; height: 100dvh;
+  overflow: hidden;
+  background: var(--cs-sidebar-bg);
+  color: var(--cs-sidebar-fg);
+}
+.cs-ws-brand {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: var(--ws-topbar); padding: 0 16px 0 18px;
+  border-bottom: 1px solid var(--cs-sidebar-border);
+}
+.cs-ws-brand a { display: inline-flex; align-items: center; gap: 10px; min-width: 0; color: inherit; }
+.cs-ws-brand-mark {
+  display: grid; place-items: center; flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--cs-accent); color: var(--cs-accent-contrast);
+  font-size: 17px; font-weight: 700; transform: rotate(-9deg);
+}
+/* Logo chính thức khi sidebar mở rộng; khi thu gọn chỉ còn biểu tượng vuông. */
+.cs-ws-logo { display: block; height: 38px; width: auto; max-width: 160px; object-fit: contain; }
+.cs-ws-logo-mark { display: none; }
+/* Đầu sidebar Admin + Cố vấn: biểu tượng | CarService / tên khu (vừa sidebar 256px). */
+.cs-admin-brand { display: inline-flex; align-items: center; gap: 10px; }
+.cs-admin-brand-mark { width: 48px; height: auto; flex-shrink: 0; }
+.cs-admin-brand-gear { color: var(--cs-sidebar-muted); }
+.cs-admin-brand-divider { align-self: stretch; width: 1px; margin: 4px 0; background: var(--cs-sidebar-border); }
+.cs-admin-brand-name { display: block; font-size: 22px; font-weight: 800; font-style: italic; letter-spacing: -0.02em; line-height: 1.05; color: var(--cs-sidebar-fg); }
+.cs-admin-brand-name span { color: #e01b28; }
+.cs-ws-brand-text.cs-admin-brand small { margin-top: 3px; font-size: 12.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--cs-sidebar-muted); }
+.cs-ws-brand-text { min-width: 0; font-size: 18px; font-weight: 700; line-height: 1.1; white-space: nowrap; }
+.cs-ws-brand-text small {
+  display: block; margin-top: 2px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em;
+  color: var(--cs-sidebar-muted); text-transform: uppercase;
+}
+
+.cs-ws-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 12px 16px; scrollbar-width: thin; }
+.cs-ws-group + .cs-ws-group { margin-top: 14px; }
+.cs-ws-group-label {
+  padding: 6px 12px 6px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--cs-sidebar-muted); white-space: nowrap;
+}
+.cs-ws-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+
+.cs-ws-link {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  min-height: 40px; padding: 8px 12px; border-radius: var(--radius-control);
+  color: var(--cs-sidebar-muted); font-size: 13.5px; font-weight: 500;
+  transition: background-color var(--cs-duration) ease, color var(--cs-duration) ease;
+}
+.cs-ws-link > svg { flex-shrink: 0; }
+.cs-ws-link:hover { background: var(--cs-sidebar-hover); color: var(--cs-sidebar-fg); }
+.cs-ws-link:focus-visible { outline: 2px solid var(--cs-sidebar-accent); outline-offset: -2px; }
+.cs-ws-link.is-active {
+  background: color-mix(in srgb, var(--cs-sidebar-accent) 14%, transparent);
+  color: var(--cs-sidebar-accent); font-weight: 600;
+}
+.cs-ws-link.is-active::before {
+  content: ""; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 3px;
+  border-radius: 0 3px 3px 0; background: var(--cs-sidebar-accent);
+}
+/* Nhãn dài (kèm "Sắp có") được xuống dòng thay vì bị cắt "…". */
+.cs-ws-label { flex: 1; min-width: 0; line-height: 1.3; overflow-wrap: anywhere; }
+.cs-ws-soon {
+  flex-shrink: 0; padding: 2px 7px; border-radius: 999px;
+  border: 1px solid var(--cs-sidebar-border); color: var(--cs-sidebar-muted);
+  font-size:11px; font-weight: 500;
+}
+
+.cs-ws-foot {
+  box-sizing: border-box; flex-shrink: 0; display: flex; align-items: center;
+  height: var(--ws-footer); padding: 0 12px; border-top: 1px solid var(--cs-sidebar-border);
+}
+.cs-ws-foot > .cs-ws-link { flex: 1; }
+/* Nút trong sidebar nền tối dùng màu chữ của sidebar. */
+.cs-work-sidebar .cs-btn-ghost {
+  --btn-fg: var(--cs-sidebar-muted);
+  --btn-hover-bg: var(--cs-sidebar-hover);
+  --btn-hover-fg: var(--cs-sidebar-fg);
+}
+
+/* Thu gọn (chỉ desktop): còn icon; nhãn vẫn đọc được bởi trình đọc màn hình và hiện làm tooltip (title). */
+@media (min-width: 1024px) {
+  .cs-workspace[data-sidebar="collapsed"] .cs-ws-brand { justify-content: center; padding: 0; }
+  .cs-workspace[data-sidebar="collapsed"] .cs-ws-logo { display: none; }
+  .cs-workspace[data-sidebar="collapsed"] .cs-ws-logo-mark { display: inline-flex; align-items: center; justify-content: center; }
+  .cs-workspace[data-sidebar="collapsed"] :is(.cs-ws-brand-text, .cs-ws-soon) { display: none; }
+  .cs-workspace[data-sidebar="collapsed"] .cs-ws-label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  .cs-workspace[data-sidebar="collapsed"] .cs-ws-group-label { height: 1px; padding: 0; margin: 6px 10px; overflow: hidden; color: transparent; background: var(--cs-sidebar-border); }
+  .cs-workspace[data-sidebar="collapsed"] .cs-ws-link { justify-content: center; padding: 8px; }
+  .cs-workspace[data-sidebar="collapsed"] .cs-ws-link.is-active::before { left: -12px; }
+  .cs-ws-mobile-only { display: none !important; }
+}
+
+/* ---------- Topbar ---------- */
+.cs-work-main { min-width: 0; background: var(--cs-bg); min-height: 100vh; display: flex; flex-direction: column; }
+.cs-work-top {
+  position: sticky; top: 0; z-index: 45;
+  display: flex; align-items: center; gap: 12px;
+  min-height: var(--ws-topbar); padding: 10px var(--cs-page-x);
+  background: color-mix(in srgb, var(--cs-surface) 92%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--cs-border);
+}
+.cs-ws-crumbs { flex: 1; min-width: 0; }
+.cs-ws-crumbs ol { display: flex; align-items: center; gap: 6px; margin: 0; padding: 0; list-style: none; min-width: 0; }
+.cs-ws-crumbs li { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; color: var(--cs-muted); white-space: nowrap; }
+.cs-ws-crumbs li:last-child { overflow: hidden; }
+.cs-ws-crumbs li:last-child span { overflow: hidden; text-overflow: ellipsis; color: var(--cs-text); font-weight: 600; }
+.cs-ws-crumbs a { color: var(--cs-muted); }
+.cs-ws-crumbs a:hover { color: var(--cs-text); text-decoration: underline; text-underline-offset: 3px; }
+.cs-ws-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+/* Đồng hồ giờ Việt Nam cạnh nút sáng/tối (Admin). */
+.cs-ws-clock {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px;
+  border: 1px solid var(--cs-border); border-radius: 999px; background: var(--cs-surface);
+  color: var(--cs-text); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer;
+  font-family: inherit; transition: background-color var(--cs-duration) ease;
+}
+.cs-ws-clock:hover { background: var(--cs-hover); }
+.cs-ws-clock:focus-visible { outline: 2px solid var(--cs-focus); outline-offset: 2px; }
+.cs-ws-clock svg { color: var(--cs-accent-text); flex-shrink: 0; }
+.cs-ws-clock-sep { width: 1px; height: 14px; margin: 0 4px; background: var(--cs-border); }
+/* Giữ bề rộng khi giây chạy, đổi thứ trong tuần hoặc đổi 12/24 giờ để header không bị xô. */
+.cs-ws-clock-date { display: inline-block; min-width: 174px; text-align: left; }
+.cs-ws-clock-time { display: inline-block; min-width: 92px; text-align: left; }
+/* Nút sáng/tối hình tròn, cao bằng ô đồng hồ. */
+.cs-work-top .cs-ws-theme-toggle {
+  width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding: 0;
+  border-radius: 999px; border: 1px solid var(--cs-border); background: var(--cs-surface);
+}
+/*
+ * Admin: đồng hồ, nút sáng/tối (đã theo luật nút icon trong buttons.css) và nút tài khoản
+ * hover giống nút thu gọn thanh điều hướng — viền đỏ, nền đỏ nhạt, chữ/icon đỏ (token --cs-btn-icon-hover-*).
+ */
+[data-area="admin"] .cs-ws-clock:hover,
+[data-area="admin"] .cs-ws-account:hover,
+[data-area="admin"] .cs-ws-account[aria-expanded="true"] {
+  background: var(--cs-btn-icon-hover-bg);
+  border-color: var(--cs-btn-icon-hover-border);
+  color: var(--cs-btn-icon-hover-fg);
+}
+[data-area="admin"] .cs-ws-clock svg { transition: color var(--cs-duration) ease; }
+[data-area="admin"] .cs-ws-account { transition: background-color var(--cs-duration) ease, border-color var(--cs-duration) ease, color var(--cs-duration) ease; }
+[data-area="admin"] .cs-ws-account:hover > svg,
+[data-area="admin"] .cs-ws-account[aria-expanded="true"] > svg { color: currentColor; }
+.cs-ws-account {
+  display: inline-flex; align-items: center; gap: 9px; max-width: 240px;
+  min-height: 40px; padding: 4px 8px 4px 4px; border-radius: var(--radius-control);
+  border: 1px solid transparent; background: transparent; color: var(--cs-text); cursor: pointer;
+}
+.cs-ws-account:hover, .cs-ws-account[aria-expanded="true"] { background: var(--cs-hover); }
+.cs-ws-avatar {
+  display: grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: 999px;
+  background: var(--cs-accent); color: var(--cs-accent-contrast); font-size:13px; font-weight: 600; letter-spacing: 0.02em;
+}
+.cs-ws-account-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 500; }
+
+.cs-work-content { min-width: 0; padding-bottom: 45px; flex: 1 0 auto; }
+
+/* ---------- Chân trang (Admin): đẩy xuống đáy khi nội dung ngắn ---------- */
+.cs-work-footer { box-sizing: border-box; height: var(--ws-footer); border-top: 1px solid var(--cs-border); background: var(--cs-surface); }
+.cs-work-footer-inner {
+  display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 10px 24px;
+  height: 100%; max-width: 95rem; margin-inline: auto; padding: 0 var(--cs-page-x);
+  font-size: 13px; color: var(--cs-muted);
+}
+.cs-work-footer-brand { display: flex; align-items: center; gap: 10px; margin: 0; min-width: 0; }
+.cs-work-footer-brand > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-work-footer-brand b { color: var(--cs-text); font-weight: 600; }
+.cs-work-footer-links { flex-shrink: 0; }
+.cs-work-footer-brand .cs-ws-brand-mark { width: 26px; height: 26px; font-size: 13px; border-radius: 8px; flex-shrink: 0; }
+.cs-work-footer-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; margin: 0; padding: 0; list-style: none; }
+.cs-work-footer-links a { display: inline-flex; align-items: center; gap: 6px; color: var(--cs-muted); min-height: 32px; }
+.cs-work-footer-links a:hover { color: var(--cs-text); text-decoration: underline; text-underline-offset: 3px; }
+/* Điện thoại: sidebar là ngăn kéo nên không cần thẳng hàng — footer cao theo nội dung (2 dòng). */
+@media (max-width: 640px) {
+  .cs-work-footer { height: auto; }
+  .cs-work-footer-inner { flex-direction: column; flex-wrap: wrap; align-items: flex-start; justify-content: center; padding-block: 14px; }
+  .cs-work-footer-brand > span:last-child { white-space: normal; }
+}
+/* Trang cũ tự chừa lề 250px cho sidebar riêng; shell đã lo phần này. */
+@media (min-width: 1024px) {
+  .cs-work-content .lg\:ml-\[250px\] { margin-left: 0 !important; }
+}
+
+/* ---------- < 1024px: ngăn kéo ---------- */
+@media (max-width: 1023.98px) {
+  .cs-workspace, .cs-workspace[data-sidebar="collapsed"] { display: block; }
+  .cs-work-sidebar {
+    position: fixed; inset: 0 auto 0 0; z-index: 101;
+    width: min(296px, 86vw);
+    transform: translateX(-100%); visibility: hidden;
+    box-shadow: var(--shadow-overlay);
+    transition: transform 240ms var(--cs-ease), visibility 0s linear 240ms;
+  }
+  .cs-work-sidebar[data-open="true"] { transform: none; visibility: visible; transition: transform 240ms var(--cs-ease); }
+  .cs-ws-scrim { position: fixed; inset: 0; z-index: 100; background: var(--cs-overlay); animation: cs-fade-in var(--cs-duration) ease both; }
+  .cs-ws-desktop-only { display: none !important; }
+}
+@media (max-width: 640px) {
+  .cs-ws-account-name, .cs-ws-account > svg { display: none; }
+  .cs-ws-account { padding: 4px; }
+  .cs-ws-clock { display: none; }
+  .cs-ws-crumbs li:not(:last-child) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-workspace, .cs-work-sidebar, .cs-work-sidebar[data-open="true"] { transition: none; }
+}
+@media print {
+  .cs-work-sidebar, .cs-work-top, .cs-work-footer { display: none !important; }
+  .cs-workspace { display: block; }
+  .cs-work-main { background: white !important; }
+}
+
+/* ---------- Khu Admin: sidebar theo theme, mục đang chọn nền đỏ đặc ---------- */
+[data-area="admin"] .cs-work-sidebar { border-right: 1px solid var(--cs-sidebar-border); }
+[data-area="admin"] .cs-ws-group-label { color: var(--cs-sidebar-label); }
+[data-area="admin"] .cs-ws-link { color: var(--cs-sidebar-muted); font-size: 14px; border-radius: 10px; }
+[data-area="admin"] .cs-ws-link:hover { color: var(--cs-sidebar-fg); }
+[data-area="admin"] .cs-ws-link.is-active,
+[data-area="admin"] .cs-ws-link.is-active:hover { background: var(--cs-sidebar-active-bg); color: var(--cs-sidebar-active-fg); box-shadow: 0 6px 16px -10px var(--cs-sidebar-active-bg); }
+[data-area="admin"] .cs-ws-link.is-active::before { display: none; }
+[data-area="admin"] .cs-ws-link:focus-visible { outline-color: var(--cs-focus); }
+/* Bảng dữ liệu Admin: tiêu đề cột không viết hoa, đệm ngang gọn để vừa khi mở ngăn chi tiết. */
+[data-area="admin"] [data-ui="table"] :is(th, td) { padding-inline: 12px; }
+[data-area="admin"] [data-ui="table"] th { text-transform: none; font-weight: 600; color: var(--cs-text-2); font-size: 13.5px; }
+
+/* Dashboard Admin: thẻ lối tắt (thẻ trung tính, icon đỏ trên nền soft) + hàng "Tiện ích" (nút tròn 60px). */
+.cs-admin-tile {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 112px; padding: 20px 22px; border-radius: var(--cs-card-radius);
+  background: var(--cs-surface); border: 1px solid var(--cs-border);
+  transition: border-color var(--cs-duration) ease, background-color var(--cs-duration) ease;
+}
+.cs-admin-tile:hover { border-color: var(--cs-border-strong); background: var(--cs-hover); }
+.cs-admin-tile:focus-visible { outline: 2px solid var(--cs-focus); outline-offset: 2px; }
+.cs-admin-tile-icon {
+  display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 12px;
+  background: var(--cs-soft); color: var(--cs-accent-text);
+}
+.cs-admin-utility { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; border-radius: 12px; padding: 4px; }
+.cs-admin-utility-icon {
+  display: grid; place-items: center; width: 60px; height: 60px; border-radius: 999px;
+  background: var(--cs-soft); color: var(--cs-accent-text);
+  transition: background-color var(--cs-duration) ease;
+}
+.cs-admin-utility:hover .cs-admin-utility-icon { background: var(--cs-soft-hover); }
+.cs-admin-utility:focus-visible { outline: 2px solid var(--cs-focus); outline-offset: 2px; }
+@media (max-width: 420px) { .cs-admin-utility-icon { width: 52px; height: 52px; } }
+
+/* Khu Admin: mọi trang dùng chung khung page-container (lề token), rộng hơn để chứa ngăn chi tiết bên phải. */
+[data-area="admin"] .page-container { max-width: 95rem; }
+
+/* ---------- Khu Cố vấn (mockup PO 16/11/2026): sidebar nâu đen, mục chọn gradient vàng đồng ---------- */
+[data-area="advisor"] .page-container { max-width: 100rem; }
+[data-area="advisor"] .cs-work-sidebar {
+  background:
+    radial-gradient(120% 60% at 0% 100%, rgb(227 187 111 / 0.16), transparent 60%),
+    linear-gradient(180deg, #1d1a15 0%, var(--cs-sidebar-bg) 55%, #15130f 100%);
+  border-right: 1px solid rgb(227 187 111 / 0.12);
+}
+[data-area="advisor"] .cs-ws-link { font-size: 14px; border-radius: 12px; }
+[data-area="advisor"] .cs-ws-link:hover { color: #f2cf86; }
+[data-area="advisor"] .cs-ws-link.is-active,
+[data-area="advisor"] .cs-ws-link.is-active:hover {
+  background: linear-gradient(135deg, #f2cf86 0%, #d9a347 55%, #b8822c 100%);
+  color: #1e1810; font-weight: 600;
+  box-shadow: 0 10px 22px -14px rgb(227 187 111 / 0.9), inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+[data-area="advisor"] .cs-ws-link.is-active::before { display: none; }
+[data-area="advisor"] .cs-ws-brand-mark { background: linear-gradient(135deg, #f2cf86, #b8822c); color: #1e1810; }
+.cs-adv-logo { width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; object-fit: cover; }
+.cs-work-footer-brand .cs-adv-logo { width: 26px; height: 26px; border-radius: 8px; }
+/*
+ * Giao diện tối (PO 17/11/2026): mọi khung nội dung khu cố vấn dùng cùng kiểu thẻ với Tổng quan —
+ * nền kính nâu (gradient), viền ánh vàng đồng — kể cả panel trang chi tiết phiếu, thẻ trong danh sách, ô số liệu.
+ */
+html[data-theme="dark"] [data-area="advisor"] :is(.adv-panel, .adv-card) {
+  background: linear-gradient(160deg, rgb(52 43 30 / 0.78), rgb(24 21 17 / 0.9)) !important;
+  border-color: rgb(227 187 111 / 0.22) !important;
+  box-shadow: 0 16px 36px -28px rgb(0 0 0 / 0.8);
+  backdrop-filter: blur(8px);
+}
+html[data-theme="dark"] [data-area="advisor"] :is(.adv-appt, .adv-stat, .adv-veh-row) { background: rgb(242 207 134 / 0.04); border-color: rgb(227 187 111 / 0.16); }
+html[data-theme="dark"] [data-area="advisor"] :is(.adv-appt, .adv-stat, .adv-veh-row):hover { background: rgb(242 207 134 / 0.09); border-color: rgb(227 187 111 / 0.45); }
+/* Ô / thẻ số liệu đang được chọn để lọc: phải thắng nền + viền !important của .adv-card ở trên. */
+html[data-theme="dark"] [data-area="advisor"] :is(.adv-stat, .adv-ro-stat)[aria-pressed="true"] {
+  background: linear-gradient(160deg, rgb(242 207 134 / 0.2), rgb(184 130 44 / 0.1)) !important;
+  border-color: #e3bb6f !important;
+  box-shadow: inset 0 0 0 1px #e3bb6f, 0 14px 30px -22px rgb(227 187 111 / 0.7);
+}
+html[data-theme="dark"] [data-area="advisor"] .adv-ro-stat:hover:not([aria-pressed="true"]) { border-color: rgb(227 187 111 / 0.5) !important; }
+html[data-theme="dark"] [data-area="advisor"] :is(.adv-ro-vehicle, .adv-ro-footer, .adv-veh-facts, .adv-quote-total) { background: rgb(242 207 134 / 0.045); border-color: rgb(227 187 111 / 0.16); }
+html[data-theme="dark"] [data-area="advisor"] .adv-ro-tab:not([aria-selected="true"]) { background: rgb(242 207 134 / 0.05); border-color: rgb(227 187 111 / 0.16); }
+html[data-theme="dark"] [data-area="advisor"] .cs-work-top { background: rgb(18 16 12 / 0.82); border-bottom-color: rgb(227 187 111 / 0.14); backdrop-filter: blur(10px); }
+/*
+ * Modal xem biên bản (mockup PO 18/11). Màu theo khu (data-area trên lớp phủ):
+ * mặc định = token --cs-accent (khách: đỏ, sáng / tối theo theme); khu cố vấn ghi đè vàng đồng + ảnh xưởng.
+ */
+.adv-hv { background: var(--cs-surface); border-color: var(--cs-border); }
+.adv-hv-head { border-bottom: 1px solid var(--cs-border); overflow: hidden; }
+.adv-hv-head::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(60% 140% at 85% 30%, color-mix(in srgb, var(--cs-accent) 22%, transparent), transparent 70%);
+}
+.adv-hv-head > * { position: relative; z-index: 1; }
+.adv-hv-tile {
+  display: grid; place-items: center; width: 64px; height: 64px; flex-shrink: 0; border-radius: 16px; color: var(--cs-accent-contrast, #fff);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--cs-accent) 75%, #fff), var(--cs-accent));
+  box-shadow: 0 12px 26px -14px color-mix(in srgb, var(--cs-accent) 90%, transparent);
+}
+.adv-hv-rule { align-self: stretch; width: 2px; margin: 6px 0; border-radius: 2px; background: var(--cs-accent); }
+/*
+ * Responsive đầu khung (PO 20/11): theo độ rộng THẬT của khung (container query) — ngăn kéo / modal / màn hẹp.
+ * Hẹp: ô biểu tượng nhỏ lại, bỏ vạch dọc, tiêu đề chiếm hết hàng, badge + nút phụ xuống hàng riêng; mã không bị cắt giữa.
+ */
+.adv-ro-detail, .adv-hv { container-type: inline-size; }
+.adv-hv-code { white-space: nowrap; }
+@container (max-width: 560px) {
+  .adv-hv-head { display: grid !important; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px 14px !important; }
+  .adv-hv-head > .adv-hv-rule { display: none; }
+  /* Badge / nút phụ (khung xem nhanh) xuống hàng riêng; nút Đóng của modal giữ góc phải hàng đầu. */
+  .adv-hv-head > :nth-child(n+4):not([aria-label="Đóng"]) { grid-column: 1 / -1; justify-self: start; }
+  .adv-hv-head > [aria-label="Đóng"] { grid-column: 3; grid-row: 1; align-self: start; }
+  .adv-hv-tile { width: 48px; height: 48px; border-radius: 12px; }
+  .adv-hv-tile svg { width: 24px; height: 24px; }
+  .adv-hv-head h2 { font-size: 1.2rem !important; }
+}
+/* Ngăn kéo xem nhanh: chừa chỗ cho nút đóng nổi ở góc phải đầu khung. */
+.adv-preview-drawer .adv-ro-detail > header { padding-right: 56px; }
+/* Khu cố vấn: vàng đồng. */
+html[data-theme="dark"] [data-area="advisor"] .adv-hv { background: linear-gradient(170deg, #211d17, #15130f 60%); border-color: rgb(227 187 111 / 0.28); }
+[data-area="advisor"] .adv-hv-head::before { background: radial-gradient(60% 140% at 85% 30%, rgb(227 187 111 / 0.28), transparent 70%); }
+html[data-theme="dark"] [data-area="advisor"] .adv-hv-head::after {
+  content: ""; position: absolute; inset: 0 0 0 45%; pointer-events: none; opacity: .55;
+  background: url("/advisor/advisor-garage.jpg") 70% 50% / cover;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 60%); mask-image: linear-gradient(90deg, transparent, #000 60%);
+}
+[data-area="advisor"] .adv-hv-tile { color: #1e1810; background: linear-gradient(135deg, #f2cf86, #d9a347 60%, #b8822c); box-shadow: 0 12px 26px -14px rgb(227 187 111 / 0.9); }
+[data-area="advisor"] .adv-hv-rule { background: linear-gradient(#f2cf86, #b8822c); }
+/* Modal gửi báo giá: thẻ kênh khách nhận (web / email). Màu theo token khu. */
+.sq-channel { border-color: var(--cs-border); background: var(--cs-surface); }
+.sq-channel[data-on="true"] { border-color: color-mix(in srgb, var(--cs-accent) 40%, var(--cs-border)); background: color-mix(in srgb, var(--cs-accent) 6%, var(--cs-surface)); }
+.sq-channel-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; color: var(--cs-muted); background: var(--cs-surface-2); }
+.sq-channel[data-on="true"] .sq-channel-icon { color: var(--cs-accent-text); background: var(--cs-soft); }
+html[data-theme="dark"] [data-area="advisor"] .sq-channel[data-on="true"] { background: rgb(242 207 134 / 0.05); border-color: rgb(227 187 111 / 0.3); }
+
+/* Modal sửa báo giá (mockup PO 18/11): dòng đánh số, nút thêm dòng viền nhấn, chân có ánh màu. Màu theo token khu. */
+.qe-line { background: var(--cs-surface-2); }
+html[data-theme="dark"] [data-area="advisor"] .qe-line { background: rgb(242 207 134 / 0.035); border-color: rgb(227 187 111 / 0.16); }
+.qe-no {
+  display: grid; place-items: center; width: 36px; height: 40px; border-radius: 10px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--cs-accent-text); background: var(--cs-soft); border: 1px solid color-mix(in srgb, var(--cs-accent) 45%, transparent);
+}
+.qe-del { width: 44px; height: 40px; }
+.qe-add {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 12px; cursor: pointer; font-weight: 700;
+  color: var(--cs-accent-text); background: var(--cs-soft); border: 1px solid color-mix(in srgb, var(--cs-accent) 55%, transparent);
+  transition: background-color var(--cs-duration, 180ms) ease, border-color var(--cs-duration, 180ms) ease;
+}
+.qe-add:hover { border-color: var(--cs-accent); background: color-mix(in srgb, var(--cs-accent) 18%, transparent); }
+.qe-add:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }
+.qe-foot { background: radial-gradient(70% 160% at 0% 100%, color-mix(in srgb, var(--cs-accent) 16%, transparent), transparent 70%), var(--cs-surface-2); }
+[data-area="advisor"] .qe-foot { background: radial-gradient(70% 160% at 0% 100%, rgb(227 187 111 / 0.16), transparent 70%), var(--cs-surface-2); }
+html[data-theme="dark"] [data-area="advisor"] .qe-foot { background: radial-gradient(70% 160% at 0% 100%, rgb(227 187 111 / 0.16), transparent 70%), rgb(24 21 17 / 0.9); }
+
+/*
+ * Nội dung biên bản dùng chung (HandoverSummary): cố vấn, trang Biên bản, trang Tiến độ xe của khách.
+ * Màu nhấn theo token --cs-accent của từng khu (khách đỏ, cố vấn vàng đồng).
+ */
+.hv-facts { border: 1px solid var(--cs-border); border-radius: 16px; background: var(--cs-surface-2); }
+.hv-facts > div + div { border-left: 1px solid var(--cs-border); }
+@media (max-width: 1023px) { .hv-facts > div:nth-child(3) { border-left: 0; } .hv-facts > div:nth-child(n+3) { border-top: 1px solid var(--cs-border); } }
+.hv-no {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  font-variant-numeric: tabular-nums; color: var(--cs-accent-text); background: var(--cs-soft);
+  border: 1px solid color-mix(in srgb, var(--cs-accent) 40%, transparent);
+}
+.hv-line { background: linear-gradient(90deg, var(--cs-accent), transparent); }
+/* Khu cố vấn: tông vàng đồng cho dải thông tin + viên xước/móp. */
+html[data-theme="dark"] [data-area="advisor"] .hv-facts { background: rgb(242 207 134 / 0.04); border-color: rgb(227 187 111 / 0.16); }
+[data-area="advisor"] .hv-line { background: linear-gradient(90deg, #d9a347, rgb(217 163 71 / 0.05)); }
+[data-area="advisor"] .hv-pill-warn { border-color: color-mix(in srgb, var(--cs-accent) 50%, transparent); background: var(--cs-soft); color: var(--cs-accent-text); }
+@media (max-width: 639px) { .adv-hv-tile { width: 48px; height: 48px; border-radius: 12px; } .adv-hv-tile svg { width: 24px; height: 24px; } }
+/* Giao diện tối: nền vân sóng vàng (ảnh PO gửi) phía sau nội dung. */
+html[data-theme="dark"] [data-area="advisor"] .cs-work-main {
+  background: linear-gradient(rgb(17 15 12 / 0.55), rgb(17 15 12 / 0.55)), url("/advisor/advisor-bg.jpg") center top / cover fixed, var(--cs-bg);
+}

@@ -1,0 +1,54 @@
+/** Phase 4 — bố cục chung Advisor/Admin. Kiểm tra tĩnh; hành vi thực tế kiểm ở Phase 6 trên trình duyệt. */
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+const read = file => readFileSync(new URL('../src/' + file, import.meta.url), 'utf8');
+const shell = read('layouts/AppShell.tsx');
+const nav = read('layouts/navigation.ts');
+const css = read('layouts/workspace.css');
+
+// Một bố cục cho cả hai vai trò, chỉ khác menu.
+assert.match(shell, /export function AdvisorLayout\(\) \{ return <WorkLayout area="advisor"\/>; \}/);
+assert.match(shell, /export function AdminLayout\(\) \{ return <WorkLayout area="admin"\/>; \}/);
+
+// Sidebar: nhóm nghiệp vụ, thu gọn có lưu, ngăn kéo trên điện thoại.
+assert.match(shell, /navGroups\(area\)/);
+assert.match(shell, /localStorage\.setItem\(SIDEBAR_KEY/, 'Trạng thái thu gọn phải được lưu');
+assert.match(shell, /data-sidebar=\{collapsed \? "collapsed" : "expanded"\}/);
+assert.match(shell, /aria-expanded=\{mobileOpen\} aria-controls="cs-workspace-sidebar"/);
+assert.match(shell, /"Escape"/);
+assert.match(shell, /aria-current=\{current \? "page" : undefined\}/, 'Mục đang mở phải có aria-current');
+assert.match(css, /data-sidebar="collapsed"/);
+assert.match(css, /max-width: 1023\.98px/);
+assert.match(css, /visibility: hidden/, 'Ngăn kéo đóng không được nhận focus bàn phím');
+
+// Topbar: breadcrumb, sáng/tối, menu tài khoản. Không có chuông/tìm kiếm toàn cục (chưa có API).
+assert.match(shell, /<Breadcrumbs area=\{area\}\/>/);
+assert.match(shell, /<ThemeToggle\/>/);
+assert.match(shell, /<Dropdown label="Menu tài khoản"/);
+assert.doesNotMatch(shell, /bell|notification|thông báo mới/i);
+assert.match(nav, /export function crumbs\(/);
+
+// Menu: nhóm, tên trang tổng quan thống nhất, trang khung gắn nhãn "Sắp có".
+// Cố vấn: nhóm theo mockup PO 17/11/2026 (Điều hành · Quản lý sửa chữa · Thanh toán & bàn giao · Khách hàng).
+for (const group of ['Điều hành', 'Quản lý sửa chữa', 'Thanh toán & bàn giao', 'Khách hàng', 'Con người', 'Danh mục', 'Hệ thống']) assert.ok(nav.includes(`group: "${group}"`), `Thiếu nhóm ${group}`);
+assert.match(nav, /\{ label: "Tổng quan", path: "\/advisor"/);
+assert.match(nav, /\{ label: "Tổng quan", path: "\/admin"/);
+assert.doesNotMatch(nav, /Bàn điều hành|Trung tâm điều hành/);
+// ADV-04: "Đặt lịch hộ" có trang thật; từ 17/11 không nằm trong menu (mockup PO) mà mở từ Lịch hẹn + Khách hàng.
+assert.doesNotMatch(nav, /path: "\/advisor\/[^"]*"[^}]*soon: true/);
+const advisorAppointments = readFileSync(new URL('../src/pages/advisor/Appointments.tsx', import.meta.url), 'utf8');
+assert.match(advisorAppointments, /\/advisor\/create-booking/, 'Lịch hẹn phải có nút mở Đặt lịch hộ');
+// Admin: sidebar mới — mọi mục đều có trang thật; "Sắp có" chỉ cho Khuyến mãi (PO yêu cầu 11/11/2026, task PROMO-01).
+for (const path of ['/admin/staff', '/admin/repair-orders', '/admin/invoices', '/admin/reviews', '/admin/vehicle-brands', '/admin/audit-logs']) assert.match(nav, new RegExp(`path: "${path}"`));
+const adminNav = nav.slice(nav.indexOf('admin: ['));
+assert.match(adminNav, /path: "\/admin\/promotions"[^}]*soon: true/);
+assert.equal((adminNav.match(/soon: true/g) ?? []).length, 1, 'Admin chỉ được có 1 mục "Sắp có" (Khuyến mãi)');
+
+// Không còn chữ trang trí tiếng Anh trong shell.
+assert.doesNotMatch(shell + css, /SERVICE WORKSPACE|BUSINESS CONTROL|WORKSPACE"/);
+
+// Sidebar/topbar cũ (luôn trả null trong shell) đã gỡ.
+for (const file of ['pages/admin/AdminSidebar.tsx', 'pages/admin/AdminTopbar.tsx', 'pages/advisor/AdvisorSidebar.tsx', 'pages/advisor/AdvisorTopbar.tsx']) {
+  assert.ok(!existsSync(new URL('../src/' + file, import.meta.url)), `${file} là code chết, phải được gỡ`);
+}
+console.log('PASS Phase 4: shared Advisor/Admin layout — grouped & collapsible sidebar, mobile drawer, breadcrumb, theme, account menu.');

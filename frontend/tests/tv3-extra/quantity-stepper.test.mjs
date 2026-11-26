@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {component,nodes} from './component-harness.mjs';
+const {QuantityStepper,KmInput}=component('src/components/ui/QuantityStepper.tsx',{react:{useState:x=>[x,()=>{}]},'./fieldContext':{useFieldControl:()=>null},'./Icon':{Icon:()=>null}});
+const changes=[];const render=props=>QuantityStepper({label:'Số lượng',value:2,onChange:x=>changes.push(x),...props});
+const buttons=t=>nodes(t,n=>n.type==='button').map(n=>n.props);
+const input=t=>nodes(t,n=>n.type==='input')[0].props;
+assert.equal(buttons(render({value:1}))[0].disabled,true);
+assert.equal(buttons(render({value:999}))[1].disabled,true);
+buttons(render({value:12345,step:1000,max:2000000}))[1].onClick();assert.equal(changes.at(-1),13000);
+buttons(render({value:12345,step:1000,max:2000000}))[0].onClick();assert.equal(changes.at(-1),12000);
+input(render({max:10})).onBlur({target:{value:'99'}});assert.equal(changes.at(-1),10);
+input(render({allowEmpty:true})).onBlur({target:{value:''}});assert.equal(changes.at(-1),null);
+input(render({})).onBlur({target:{value:''}});assert.equal(changes.at(-1),1);
+const km=KmInput({value:'invalid',label:'ODO',onChange:x=>changes.push(x)});assert.equal(km.props.value,null);km.props.onChange(12000);assert.equal(changes.at(-1),'12000');km.props.onChange(null);assert.equal(changes.at(-1),'');

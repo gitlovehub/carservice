@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {component,nodes} from './component-harness.mjs';
+const IconButton=()=>null;
+const {Pagination}=component('src/components/ui/Pagination.tsx',{'../../config/labels':{LABELS:{pagination:{navigation:'Phân trang',previous:'Trước',next:'Sau',page:'Trang'}}},'./Button':{IconButton},'./buttonClass':{buttonClass:()=>''}});
+const changes=[];const render=props=>Pagination({page:10,totalPages:20,onChange:x=>changes.push(x),...props});
+assert.equal(render({totalPages:1}),null);
+const tree=render({});const pages=nodes(tree,n=>n.type==='button').map(n=>n.props);
+assert.deepEqual(Array.from(pages,p=>p.children),[1,9,10,11,20]);assert.equal(pages.filter(p=>p['aria-current']==='page').length,1);
+pages[2].onClick();assert.equal(changes.length,0);pages[3].onClick();assert.equal(changes.at(-1),11);
+const arrows=t=>nodes(t,n=>n.type===IconButton).map(n=>n.props);
+assert.equal(arrows(render({page:1}))[0].disabled,true);assert.equal(arrows(render({page:20}))[1].disabled,true);assert.ok(arrows(render({disabled:true})).every(p=>p.disabled));

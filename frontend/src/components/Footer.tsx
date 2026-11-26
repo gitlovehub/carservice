@@ -1,8 +1,13 @@
 import { useInAppShell } from "../layouts/ShellContext";
 import { Link } from "react-router-dom";
 import BrandLogo from "./common/BrandLogo";
+import { formatGarageAddress, useGarageHotline, useGarageInfo } from "../services/garageService";
 
 function Footer() {
+  // Địa chỉ do Admin cấu hình (Thông tin gara); chưa cấu hình thì giữ nội dung cũ.
+  const garageAddress = formatGarageAddress(useGarageInfo());
+  // Hotline do Admin cấu hình — không viết cứng số.
+  const hotline = useGarageHotline();
   const inShell = useInAppShell();
   if (inShell) return null;
 
@@ -21,7 +26,7 @@ function Footer() {
 
             <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-[11px] font-medium text-slate-600">
+              <span className="text-[12px] font-medium text-slate-600">
                 Chứng chỉ kỹ thuật tiêu chuẩn OEM
               </span>
             </div>
@@ -99,15 +104,15 @@ function Footer() {
             </p>
 
             <div className="mt-4 space-y-3 text-xs text-slate-600">
-              <div>
-                <p className="font-semibold text-slate-800">Hotline hỗ trợ kỹ thuật</p>
+              {hotline && <div>
+                <p className="font-semibold text-slate-800">Đường dây nóng hỗ trợ kỹ thuật</p>
                 <a
-                  href="tel:0332405972"
+                  href={`tel:${hotline.tel}`}
                   className="mt-0.5 block font-mono text-sm font-semibold text-slate-900 transition hover:text-amber-600"
                 >
-                  033 240 5972
+                  {hotline.display}
                 </a>
-              </div>
+              </div>}
 
               <div>
                 <p className="font-semibold text-slate-800">Email tiếp nhận</p>
@@ -116,7 +121,7 @@ function Footer() {
 
               <div>
                 <p className="font-semibold text-slate-800">Địa chỉ trung tâm</p>
-                <p className="mt-0.5">Hà Nội, Việt Nam</p>
+                <p className="mt-0.5">{garageAddress ?? "Hà Nội, Việt Nam"}</p>
               </div>
 
               <div>

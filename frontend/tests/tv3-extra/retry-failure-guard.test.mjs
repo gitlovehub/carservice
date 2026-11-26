@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import {resolve} from 'node:path';
+import vm from 'node:vm';
+const ts=createRequire(resolve('package.json'))('typescript');
+const module={exports:{}}, timers=[], states=[];let calls=0;
+const jsx=(type,props)=>({type,props});
+const deps={'react/jsx-runtime':{jsx,jsxs:jsx},react:{useRef:x=>({current:x}),useState:x=>[x,v=>states.push(v)]},'../../config/labels':{LABELS:{state:{error:'Error'},action:{retry:'Retry'}}},'./Button':{Button:()=>null},'./Icon':{}};
+const code=ts.transpileModule(readFileSync('src/components/ui/States.tsx','utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS}}).outputText;
+vm.runInNewContext(code,{module,exports:module.exports,require:n=>deps[n],setTimeout:(fn,ms)=>timers.push({fn,ms})});
+const click=module.exports.ErrorState({onRetry:()=>{calls++;throw Error('offline');}}).props.action.props.onClick;
+click();click();assert.equal(calls,1);assert.equal(timers.length,1);assert.equal(timers[0].ms,500);assert.deepEqual(states,[true]);timers.shift().fn();await Promise.resolve();await Promise.resolve();assert.deepEqual(states,[true,false]);click();assert.equal(calls,2);timers.shift().fn();
