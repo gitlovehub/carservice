@@ -65,7 +65,7 @@ export function Dropdown({ items, label = LABELS.action.more, align = "end", tri
   useEffect(() => {
     if (!open) return;
     const nodes = itemNodes();
-    (focusFirst.current === "last" ? nodes[nodes.length - 1] : nodes[0])?.focus({ preventScroll: true });
+    ( (focusFirst.current === "last" ? nodes[nodes.length - 1] : nodes[0]) ?? menuRef.current)?.focus({ preventScroll: true });
   }, [open]);
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export function Dropdown({ items, label = LABELS.action.more, align = "end", tri
   const onMenuKey = (event: KeyboardEvent) => {
     const nodes = itemNodes();
     const index = nodes.indexOf(document.activeElement as HTMLButtonElement);
-    const move = (next: number) => { event.preventDefault(); nodes[(next + nodes.length) % nodes.length]?.focus(); };
+    const move = (next: number) => { event.preventDefault(); if (nodes.length) nodes[(next + nodes.length) % nodes.length]?.focus(); };
     if (event.key === "ArrowDown") move(index + 1);
     else if (event.key === "ArrowUp") move(index - 1);
     else if (event.key === "Home") move(0);
@@ -117,7 +117,7 @@ export function Dropdown({ items, label = LABELS.action.more, align = "end", tri
       {trigger ? <TriggerSlot render={trigger} {...triggerProps}/> : <IconButton icon="more" label={label} {...triggerProps}/>}
     </span>
     {open && position && createPortal(
-      <div ref={menuRef} id={menuId} role="menu" aria-label={label} data-area={area} onKeyDown={onMenuKey}
+      <div ref={menuRef} id={menuId} role="menu" tabIndex={-1} aria-label={label} data-area={area} onKeyDown={onMenuKey}
         style={{ top: position.top, left: position.left, right: position.right }}
         className="cs-feedback-layer cs-menu-panel fixed z-[350] min-w-[200px] max-w-[min(320px,calc(100vw-16px))] overflow-hidden rounded-card border border-cs-border bg-cs-surface text-cs-text shadow-raised">
         {header && <div className="border-b border-cs-border px-3.5 py-2.5">{header}</div>}
