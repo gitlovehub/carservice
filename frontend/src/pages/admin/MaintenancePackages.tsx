@@ -172,3 +172,45 @@ function PackageDetail({ p, onEdit }: { p: AdminPackage; onEdit: () => void }) {
       <h3 className="mb-2 flex items-center gap-2 border-b-2 border-cs-accent pb-2 text-subheading font-semibold text-cs-accent-text">
         <Icon name="wrench" size={18}/>Dịch vụ trong gói ({p.services.length})<span className="ml-auto text-small font-medium text-cs-text-2">{money(serviceTotal)}</span>
       </h3>
+      {p.services.length ? <table className="w-full text-small">
+        <thead><tr className="bg-cs-surface-2 text-left text-caption text-cs-text-2">
+          <th className="w-8 px-2 py-2 font-semibold">#</th><th className="px-2 py-2 font-semibold">Tên dịch vụ</th>
+          <th className="px-2 py-2 text-right font-semibold">Thời gian</th><th className="px-2 py-2 text-right font-semibold">Đơn giá</th>
+        </tr></thead>
+        <tbody>{p.services.map((s, i) => <tr key={s.id} className="border-b border-cs-border last:border-0">
+          <td className="px-2 py-2 text-cs-muted">{i + 1}</td>
+          <td className="px-2 py-2 text-cs-text">{s.name}{(s.pivot?.quantity ?? 1) > 1 && <span className="ml-1 text-caption text-cs-muted">× {s.pivot?.quantity}</span>}</td>
+          <td className="whitespace-nowrap px-2 py-2 text-right text-cs-text-2">{s.estimated_minutes ? `${s.estimated_minutes} phút` : "—"}</td>
+          <td className="whitespace-nowrap px-2 py-2 text-right tabular-nums">{money(Number(s.base_price) * (s.pivot?.quantity ?? 1))}</td>
+        </tr>)}</tbody>
+      </table> : <p className="text-small text-cs-muted">Gói chưa có dịch vụ.</p>}
+    </section>
+
+    <section className="mt-5" aria-label="Phụ tùng đi kèm">
+      <h3 className="mb-2 flex items-center gap-2 border-b border-cs-border pb-2 text-subheading font-semibold text-cs-text">
+        <Icon name="box" size={18} className="text-cs-accent-text"/>Phụ tùng đi kèm ({p.parts.length})<span className="ml-auto text-small font-medium text-cs-text-2">{money(partTotal)}</span>
+      </h3>
+      {p.parts.length ? <table className="w-full text-small">
+        <thead><tr className="bg-cs-surface-2 text-left text-caption text-cs-text-2">
+          <th className="w-8 px-2 py-2 font-semibold">#</th><th className="px-2 py-2 font-semibold">Tên phụ tùng</th><th className="px-2 py-2 text-center font-semibold">Số lượng</th>
+          <th className="px-2 py-2 text-right font-semibold">Đơn giá</th><th className="px-2 py-2 text-right font-semibold">Thành tiền</th>
+        </tr></thead>
+        <tbody>{p.parts.map((x, i) => {
+          const q = x.pivot?.quantity ?? 1;
+          return <tr key={x.id} className="border-b border-cs-border last:border-0">
+            <td className="px-2 py-2 text-cs-muted">{i + 1}</td>
+            <td className="px-2 py-2 text-cs-text">{x.name}<span className="block text-caption text-cs-muted">{x.sku}</span></td>
+            <td className="px-2 py-2 text-center tabular-nums">{q}</td>
+            <td className="whitespace-nowrap px-2 py-2 text-right tabular-nums text-cs-text-2">{money(x.sell_price)}</td>
+            <td className="whitespace-nowrap px-2 py-2 text-right tabular-nums">{money(Number(x.sell_price) * q)}</td>
+          </tr>;
+        })}</tbody>
+      </table> : <p className="text-small text-cs-muted">Gói không kèm phụ tùng.</p>}
+    </section>
+
+    <div className="mt-5 flex items-center justify-between rounded-control bg-cs-soft px-4 py-3">
+      <span className="text-subheading font-semibold text-cs-accent-text">Tổng cộng (ước tính)</span>
+      <span className="text-heading font-bold tabular-nums text-cs-accent-text">{money(p.price)}</span>
+    </div>
+  </>;
+}
