@@ -1,4 +1,5 @@
 import { fetchApi } from "./api";
+import { statusLabels } from "../config/status";
 
 /* ---------- Kiểu dữ liệu theo API_Documentation & backend thực tế ---------- */
 
@@ -10,7 +11,17 @@ export type CustomerVehicle = {
   variant?: string | null;
   year?: number | null;
   mileage?: number | null;
+  model_id?: number;
+  trim_id?: number | null;
   model?: { id?: number; name?: string; brand?: VehicleBrand } | null;
+  trim?: { id: number; name: string; status?: string } | null;
+  created_at?: string | null;
+  vin?: string | null;
+  note?: string | null;
+  /** Ảnh đại diện xe (tùy chọn, do gara quản lý); khách chỉ xem. */
+  avatar_url?: string | null;
+  /** Số phiếu sửa chữa của xe; > 0 → đã có lịch sử, không đổi được hãng/dòng/phiên bản/năm. */
+  repair_orders_count?: number;
 };
 
 export type AppointmentStatus =
@@ -34,6 +45,8 @@ export type CustomerAppointment = {
   vehicle?: CustomerVehicle | null;
   services?: { id: number; name: string; base_price?: string | number; estimated_minutes?: number }[];
   packages?: { id: number; name: string; mileage_milestone?: number }[];
+  /** Chỉ có ở chi tiết: khách còn tự đổi lịch được không (tối đa N lần, trước giờ hẹn ≥ H giờ). */
+  reschedule?: { limit: number; cutoff_hours: number; used: number; left: number; deadline: string; allowed: boolean; message: string | null };
 };
 
 export type Pagination = {
@@ -72,12 +85,20 @@ export type QuotationItem = {
   unit_price: number | string;
   amount: number | string;
   is_approved?: boolean | null;
+  /** Hạng mục bắt buộc: từ chối = từ chối toàn bộ báo giá (PO 19/11). */
+  is_required?: boolean;
+  required_reason?: string | null;
 };
 
 export type CustomerQuotation = {
   id: number;
   repair_order_id: number;
   quotation_code: string;
+  /** P3: SUPPLEMENT = phát sinh khi đang sửa (cộng thêm, không thay thế báo giá gốc). */
+  type?: "INITIAL" | "SUPPLEMENT";
+  reason?: string | null;
+  /** Gara báo trước xe phải lưu xưởng qua đêm (không tính phí). */
+  stays_overnight?: boolean;
   version: number;
   subtotal: number | string;
   discount_amount: number | string;
@@ -88,8 +109,26 @@ export type CustomerQuotation = {
   items?: QuotationItem[];
 };
 
+export type CustomerWorkItem = {
+  id: number; description?: string | null; status?: string; started_at?: string | null; completed_at?: string | null;
+  service?: { id: number; name?: string; status?: string } | null;
+  technician?: { id: number; employee?: { id: number; full_name: string } | null } | null;
+};
+
 export type CustomerRepairOrder = {
   id: number;
+  /** Biên bản giao nhận đã gửi khách (P2). */
+  handovers?: import("./workflowService").WorkflowHandover[];
+  /** Phụ tùng đang chờ (P6). */
+  part_requests?: Array<{ id: number; quantity: number; status: "REQUESTED" | "ORDERED" | "RECEIVED" | "CANCELLED"; eta_date?: string | null; part?: { name?: string; unit?: string | null } | null }>;
+  /** Giờ dự kiến xong (P5) theo phút chuẩn. */
+  estimated_ready_at?: string | null;
+  /** Kết quả chẩn đoán (P3) — chỉ cột công khai. */
+  inspections?: Array<{
+    id: number; condition_description?: string | null; diagnosis?: string | null; inspected_at?: string | null;
+    items?: Array<{ id: number; item_name: string; condition_status?: string | null; condition_description?: string | null }>;
+    recommendations?: Array<{ id: number; item_type: "SERVICE" | "PART"; quantity?: number | null; service?: { name?: string } | null; part?: { name?: string } | null }>;
+  }>;
   repair_order_code: string;
   vehicle_id: number;
   mileage_received?: number | null;
@@ -97,13 +136,22 @@ export type CustomerRepairOrder = {
   received_at?: string | null;
   completed_at?: string | null;
   handed_over_at?: string | null;
-  note?: string | null;
   vehicle?: CustomerVehicle | null;
   statusHistory?: { id: number; status: string; note?: string | null; created_at?: string | null }[];
   status_history?: { id: number; status: string; note?: string | null; created_at?: string | null }[];
-  work_items?: { id: number; description?: string | null; status?: string }[];
-  workItems?: { id: number; description?: string | null; status?: string }[];
+  work_items?: CustomerWorkItem[];
+  workItems?: CustomerWorkItem[];
   quotations?: CustomerQuotation[];
+  /** Màn chi tiết lịch sử dịch vụ: chỉ tên người phụ trách (không có SĐT/tài khoản nhân viên). */
+  advisor?: { id: number; full_name: string } | null;
+  used_parts?: Array<{ id: number; work_item_id?: number | null; quantity: number | string; unit_price: number | string; used_at?: string | null; part?: { id: number; name: string; unit?: string | null } | null }>;
+  appointment?: {
+    id: number; appointment_code?: string; request_type?: string; symptom_description?: string | null;
+    services?: { id: number; name: string }[]; packages?: { id: number; name: string }[];
+  } | null;
+  initial_condition?: string | null;
+  /** Lời khách kể / yêu cầu thêm tại quầy. */
+  customer_request?: string | null;
   invoice?: {
     id: number;
     invoice_code: string;
@@ -111,8 +159,9 @@ export type CustomerRepairOrder = {
     subtotal?: number | string;
     discount_amount?: number | string;
     status: "UNPAID" | "PARTIALLY_PAID" | "PAID" | "CANCELLED" | string;
+    created_at?: string | null;
     items?: InvoiceItem[];
-    payments?: { id: number; amount: number | string; status: string; payment_date?: string; payment_method?: string }[];
+    payments?: { id: number; amount: number | string; status: string; payment_date?: string; paid_at?: string | null; created_at?: string | null; payment_method?: string }[];
   } | null;
 };
 
@@ -125,8 +174,9 @@ export async function getMyVehicles(): Promise<CustomerVehicle[]> {
 
 export async function addMyVehicle(data: {
   model_id?: number;
+  trim_id?: number | null;
   model_name?: string;
-  license_plate: string;
+  license_plate?: string | null;
   mileage?: number;
   year?: number;
 }) {
@@ -139,7 +189,9 @@ export async function addMyVehicle(data: {
 export async function updateMyVehicle(
   id: number,
   data: {
-    license_plate?: string;
+    model_id?: number;
+    trim_id?: number | null;
+    license_plate?: string | null;
     mileage?: number;
     year?: number;
     note?: string;
@@ -210,6 +262,12 @@ export async function getMyRepairOrders(): Promise<CustomerRepairOrder[]> {
   return Array.isArray(res?.data) ? res.data : [];
 }
 
+/** Phiếu kèm báo giá đã gửi + hóa đơn + thanh toán — MỘT request cho trang Báo giá / Hóa đơn / Thanh toán. */
+export async function getMyBillingOrders(): Promise<CustomerRepairOrder[]> {
+  const res = await fetchApi("/me/repair-orders?include=billing&per_page=100");
+  return Array.isArray(res?.data) ? res.data : [];
+}
+
 export async function getMyRepairOrderDetail(id: number): Promise<CustomerRepairOrder> {
   return fetchApi(`/me/repair-orders/${id}`);
 }
@@ -234,6 +292,7 @@ export type CustomerReview = {
   comment?: string | null;
   reply?: string | null;
   replied_at?: string | null;
+  reply_edited_at?: string | null;
   created_at?: string | null;
   repair_order?: CustomerRepairOrder | null;
   repairOrder?: CustomerRepairOrder | null;
@@ -247,8 +306,6 @@ export async function getMyReviews(): Promise<CustomerReview[]> {
 export async function submitReview(data: {
   repair_order_id: number;
   overall_rating: number;
-  advisor_rating?: number;
-  technician_rating?: number;
   comment?: string;
 }) {
   return fetchApi("/me/reviews", {
@@ -259,29 +316,13 @@ export async function submitReview(data: {
 
 /* ---------- Hiển thị ---------- */
 
-export const quotationStatusLabel: Record<string, string> = {
-  DRAFT: "Bản nháp",
-  SENT: "Chờ bạn duyệt",
-  APPROVED: "Đã duyệt toàn bộ",
-  PARTIALLY_APPROVED: "Đã duyệt một phần",
-  REJECTED: "Đã từ chối",
-  CANCELLED: "Đã hủy",
-};
-
-export const invoiceStatusLabel: Record<string, string> = {
-  UNPAID: "Chưa thanh toán",
-  PARTIALLY_PAID: "Thanh toán một phần",
-  PAID: "Đã thanh toán",
-  CANCELLED: "Đã hủy",
-};
-
-export const appointmentStatusLabel: Record<string, string> = {
-  PENDING: "Chờ xác nhận",
-  CONFIRMED: "Đã xác nhận",
-  CHECKED_IN: "Đã tiếp nhận xe",
-  CANCELLED: "Đã hủy",
-  NO_SHOW: "Không đến",
-};
+// Nhãn trạng thái lấy từ nguồn chung config/status.ts (góc nhìn khách hàng) — không khai báo lại ở đây.
+export const quotationStatusLabel = statusLabels("quotation", "customer");
+export const invoiceStatusLabel = statusLabels("invoice", "customer");
+/** CREATED là mã cũ cùng nghĩa PENDING — bỏ khỏi danh sách để bộ lọc không lặp "Chờ xác nhận". */
+export const appointmentStatusLabel = Object.fromEntries(
+  Object.entries(statusLabels("appointment", "customer")).filter(([code]) => code !== "CREATED"),
+);
 
 export const requestTypeLabel: Record<string, string> = {
   DIAGNOSIS: "Kiểm tra / chẩn đoán",
@@ -290,25 +331,14 @@ export const requestTypeLabel: Record<string, string> = {
   REPLACEMENT: "Thay thế phụ tùng",
 };
 
-export const repairStatusLabel: Record<string, string> = {
-  RECEIVED: "Đã tiếp nhận",
-  INSPECTING: "Đang kiểm tra",
-  QUOTING: "Đang lập báo giá",
-  REVIEW_TEST: "Đang kiểm tra lại",
-  WAITING_APPROVAL: "Chờ khách duyệt báo giá",
-  WAITING_FOR_PARTS: "Chờ phụ tùng",
-  IN_PROGRESS: "Đang sửa chữa",
-  COMPLETED: "Đã hoàn tất",
-  HANDED_OVER: "Đã bàn giao",
-  CLOSED: "Đã đóng phiếu",
-};
+export const repairStatusLabel = statusLabels("repair", "customer");
 
 export const FINISHED_REPAIR_STATUSES = ["COMPLETED", "HANDED_OVER", "CLOSED"];
 
 export function getVehicleName(vehicle?: CustomerVehicle | null): string {
   if (!vehicle) return "Xe chưa xác định";
   return (
-    [vehicle.model?.brand?.name, vehicle.model?.name, vehicle.variant]
+    [vehicle.model?.brand?.name, vehicle.model?.name, vehicle.trim?.name || vehicle.variant]
       .filter(Boolean)
       .join(" ") || "Xe của bạn"
   );
@@ -319,14 +349,37 @@ export function formatMoney(value: number | string | null | undefined): string {
   return `${(Number.isFinite(n) ? n : 0).toLocaleString("vi-VN")} đ`;
 }
 
-export function formatDate(value?: string | null): string {
-  if (!value) return "—";
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString("vi-VN");
+/*
+ * Định dạng ngày giờ DÙNG CHUNG cho toàn web khách — luôn 24 giờ, không hiện giây, ngày có số 0 đầu:
+ *   ngày: 09/11/2026 · giờ: 07:05 · ngày giờ: 07:05 - 09/11/2026
+ * (hourCycle h23 để 0 giờ là "00", không phụ thuộc cài đặt 12/24 giờ của máy.)
+ */
+const DATE_FMT = new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+const TIME_FMT = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const toDate = (value?: string | Date | null) => {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+/** "09/11/2026"; trống/sai → "—". */
+export function formatDate(value?: string | Date | null): string {
+  const d = toDate(value);
+  return d ? DATE_FMT.format(d) : typeof value === "string" && value ? value : "—";
 }
 
-export function formatTime(value?: string | null): string {
-  return value ? value.slice(0, 5) : "—";
+/** Giờ 24h "HH:mm": nhận "09:00:00" (cột TIME) hoặc ngày giờ đầy đủ. */
+export function formatTime(value?: string | Date | null): string {
+  if (!value) return "—";
+  if (typeof value === "string" && /^\d{1,2}:\d{2}/.test(value)) return value.slice(0, 5).padStart(5, "0");
+  const d = toDate(value);
+  return d ? TIME_FMT.format(d) : "—";
+}
+
+/** "07:05 - 09/11/2026"; trống/sai → "—". */
+export function formatDateTime(value?: string | Date | null): string {
+  const d = toDate(value);
+  return d ? `${TIME_FMT.format(d)} - ${DATE_FMT.format(d)}` : "—";
 }
 export type AdvisorCustomer = {
   id: number;
@@ -406,3 +459,71 @@ export async function getAdvisorCustomerDetail(
 
   return res.data;
 }
+
+
+/* ---------- Thanh toán VNPay ---------- */
+
+export type VnpayCreateResponse = {
+  payment_id: number;
+  txn_ref: string;
+  amount: number | string;
+  status: string;
+  expires_at: string | null;
+  payment_url: string;
+};
+
+export type VnpayPaymentResult = "PENDING" | "SUCCESS" | "FAILED" | "CANCELLED";
+
+export type VnpayReturnResponse = {
+  result: VnpayPaymentResult;
+  message: string;
+  /** Khách trả từ email: link mở lại hoá đơn khi giao dịch lỗi / huỷ (do Backend cấp). */
+  retry_url?: string | null;
+  vnp_response_code: string;
+  payment: {
+    id: number;
+    txn_ref: string;
+    amount: number | string;
+    status: VnpayPaymentResult;
+    transaction_code: string | null;
+    bank_code: string | null;
+    paid_at: string | null;
+    expires_at: string | null;
+  };
+  invoice: {
+    id: number;
+    invoice_code: string;
+    repair_order_id: number;
+    total_amount: number | string;
+    status: string;
+  };
+};
+
+/** Backend tự tính số tiền còn phải trả; Frontend chỉ gửi mã hóa đơn. */
+export async function createVnpayPayment(invoiceId: number): Promise<VnpayCreateResponse> {
+  const idempotencyKey = typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  return fetchApi<VnpayCreateResponse>(`/me/invoices/${invoiceId}/vnpay`, {
+    method: "POST",
+    headers: { "Idempotency-Key": idempotencyKey },
+  });
+}
+
+/** Chuyển nguyên query string VNPay trả về cho Backend xác thực chữ ký và đọc trạng thái từ Database. */
+export async function getVnpayReturnResult(search: string): Promise<VnpayReturnResponse> {
+  const query = search.startsWith("?") ? search.slice(1) : search;
+  return fetchApi<VnpayReturnResponse>(`/payments/vnpay/return?${query}`);
+}
+
+export const paymentMethodLabel: Record<string, string> = {
+  DIRECT: "Tiền mặt tại quầy",
+  QR: "Chuyển khoản QR",
+  TRANSFER: "Chuyển khoản tại quầy",
+  CARD: "Thẻ ngân hàng",
+  EWALLET: "Ví điện tử",
+  VNPAY: "VNPay",
+};
+
+export const paymentStatusLabel = statusLabels("payment", "customer");

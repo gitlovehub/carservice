@@ -1,0 +1,9 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { sandbox, mountFinal, ui, tick } from './final-harness.mjs';
+function setup(token,response,fail){const requests=[],live=[];const x=mountFinal('contexts/AuthContext.tsx','AuthProvider',{initialStorage:{...(token?{token}:{}),user:JSON.stringify({id:99,role:'ADMIN'}),role:'ADMIN'},props:{children:'child'},modules:{'../services/api':{fetchApi:async path=>{requests.push(path);if(fail)throw fail;return response;}},'../services/liveSync':{startLiveSync:a=>{live.push(a);return ()=>{};}},'./authSession':{AuthContext:{Provider:'Provider'}}}});return {...x,requests,live};}
+async function verify(x){assert.equal(x.render().props.value.status,'checking');x.runEffects();await tick();return x.render().props.value;}
+test('local role alone cannot authorize an unauthenticated browser',async()=>{for(const token of [undefined,'session_authenticated']){const x=setup(token);assert.deepEqual(await verify(x),{status:'guest',account:null});assert.deepEqual(x.requests,[]);}});
+test('active server account establishes the actual role instead of trusting cached role',async()=>{const account={id:7,role:'CUSTOMER',status:'ACTIVE'};const x=setup('token',{account});assert.deepEqual(await verify(x),{status:'authenticated',account});assert.deepEqual(x.requests,['/me']);assert.equal(x.storage.get('role'),'CUSTOMER');assert.deepEqual(JSON.parse(x.storage.get('user')),account);});
+test('locked or malformed server account does not authenticate',async()=>{for(const account of [{role:'ADMIN',status:'LOCKED'},{status:'ACTIVE'},null]){const x=setup('token',{account});assert.deepEqual(await verify(x),{status:'guest',account:null});}});
+test('unauthorized and transient server failures yield different safe states',async()=>{assert.equal((await verify(setup('token',null,{status:401}))).status,'guest');assert.equal((await verify(setup('token',null,{status:503}))).status,'error');});

@@ -1,362 +1,262 @@
-import { useAppFeedback } from "../../components/ui/feedbackContext";
-
+import { ToastError } from "../../components/ui/ToastError";
 import { useState } from "react";
-import AdminSidebar from "./AdminSidebar";
-import AdminTopbar from "./AdminTopbar";
+import { Button, DataTable, Drawer, ErrorState, Field, Input, LoadingState, Modal, NEWEST_FIRST, Pagination, SearchInput, Textarea, buttonClass, useTableSort, type Column } from "../../components/ui";
+import { Icon } from "../../components/ui/Icon";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { VehicleAvatar } from "../../components/vehicle/VehicleAvatar";
+import { VehicleAvatarControls } from "../../components/vehicle/VehicleAvatarControls";
+import { VehicleSelector } from "../../components/vehicle/VehicleSelector";
+import { adminApi, errorMessage, fmtDate, type AdminCustomer, type AdminCustomerDetail } from "../../services/adminApi";
+import { emptySelection, type VehicleSelection } from "../../services/vehicleCatalog";
+import { getStatus } from "../../config/status";
+import { AdminPage, ClearFilters, FilterSelect, InfoList, PaneSection, Person, Pill, StatCard, Stars, Toolbar } from "./kit/AdminKit";
+import { vnd } from "./kit/format";
+import { useAdminQuery } from "./kit/useAdminQuery";
+import { useDebounced } from "./kit/useDebounced";
+import { useFieldErrors, type FieldErrors } from "../../components/ui/useFieldErrors";
+import { OwnerEmailVerify } from "../advisor/OwnerEmailVerify";
+import { SendEmailChangeLink } from "../advisor/SendEmailChangeLink";
+import { FieldError } from "../../components/ui/Field";
 
-type Customer = {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
-  cars: number;
-  status: "Hoạt động" | "Tạm khóa";
-};
+type CarFilter = "all" | "has" | "none";
+type Draft = { name: string; phone: string; email: string; address: string };
+const emptyDraft: Draft = { name: "", phone: "", email: "", address: "" };
+/** Hồ sơ khách: số xe / lần dịch vụ hiện sẵn, phần còn lại bấm Xem thêm. */
+const PREVIEW_COUNT = 3;
+const vehicleLabel = (v: AdminCustomerDetail["vehicles"][number]) => [v.brand, v.model, v.trim].filter(Boolean).join(" ") || "Xe chưa rõ dòng";
 
-const initialCustomers: Customer[] = [
-  {
-    id: "KH001",
-    name: "Nguyễn Văn An",
-    phone: "0901234567",
-    email: "nguyenan@gmail.com",
-    cars: 2,
-    status: "Hoạt động",
-  },
-  {
-    id: "KH002",
-    name: "Trần Thị Bình",
-    phone: "0912345678",
-    email: "tranbinh@gmail.com",
-    cars: 1,
-    status: "Hoạt động",
-  },
-  {
-    id: "KH003",
-    name: "Lê Minh Cường",
-    phone: "0987654321",
-    email: "lecuong@gmail.com",
-    cars: 3,
-    status: "Tạm khóa",
-  },
-  {
-    id: "KH004",
-    name: "Phạm Thu Hà",
-    phone: "0934567890",
-    email: "phamha@gmail.com",
-    cars: 1,
-    status: "Hoạt động",
-  },
-];
-
-function AdminCustomers() {
-  const { confirm } = useAppFeedback();
-  const [customers, setCustomers] = useState(initialCustomers);
+/** Khách hàng — dữ liệu thật: /api/admin/customers (danh sách, hồ sơ, khoá), /api/customers và /api/vehicles (thêm/sửa). */
+export default function AdminCustomers() {
+  const { notify, confirm } = useAppFeedback();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("Tất cả");
-  const [message, setMessage] = useState("");
+  const [cars, setCars] = useState<CarFilter>("all");
+  const [page, setPage] = useState(1);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [form, setForm] = useState<{ id: number | null; draft: Draft } | null>(null);
+  const [vehicleForm, setVehicleForm] = useState<{ selection: VehicleSelection; mileage: string; year: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [showAllCars, setShowAllCars] = useState(false);
+  const [avatars, setAvatars] = useState<Record<number, string | null>>({});
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const [mailForm, setMailForm] = useState<{ subject: string; message: string } | null>(null);
+  const [sendingMail, setSendingMail] = useState(false);
+  const term = useDebounced(search.trim());
 
-  const activeCustomers = customers.filter(
-    (customer) => customer.status === "Hoạt động",
-  ).length;
+  const tableSort = useTableSort(NEWEST_FIRST, () => setPage(1));
+  const params = { search: term, cars, page, ...tableSort.params };
+  const list = useAdminQuery(`customers:${JSON.stringify(params)}`, signal => adminApi.customers(params, signal));
+  const detail = useAdminQuery(selectedId === null ? null : `customer:${selectedId}`, signal => adminApi.customer(selectedId as number, signal));
+  const result = list.data ?? list.stale;
+  const selected = detail.data;
+  const refresh = () => { list.reload(); detail.reload(); };
+  const openProfile = (id: number) => { setSelectedId(id); setShowAllCars(false); setShowAllHistory(false); setAvatars({}); };
+  // Đổi ảnh cập nhật ngay tại dòng xe, không tải lại cả hồ sơ.
+  const avatarOf = (v: AdminCustomerDetail["vehicles"][number]) => v.id in avatars ? avatars[v.id] : v.avatar_url;
 
-  const lockedCustomers = customers.filter(
-    (customer) => customer.status === "Tạm khóa",
-  ).length;
+  const columns: Column<AdminCustomer>[] = [
+    { key: "name", header: "Khách hàng", primary: true, render: c => <span className="flex items-center gap-2"><Person name={c.name} sub={c.email ?? (c.has_account ? undefined : "Khách vãng lai")}/>{c.locked && <Icon name="lock" size={14} className="shrink-0 text-danger"/>}</span> },
+    { key: "phone", header: "SĐT", render: c => <span className="whitespace-nowrap tabular-nums">{c.phone ?? "—"}</span> },
+    { key: "cars", sortKey: "cars", header: "Số xe", render: c => <span className="whitespace-nowrap">{c.vehicles_count} xe</span> },
+    { key: "last", header: "Lần sửa gần nhất", hideOnMobile: true, render: c => <span className="tabular-nums">{fmtDate(c.last_visit)}</span> },
+    { key: "spent", sortKey: "spent", header: "Tổng chi tiêu", align: "right", render: c => <b className="whitespace-nowrap tabular-nums">{vnd(c.total_spent)}</b> },
+  ];
 
-  const totalCars = customers.reduce(
-    (total, customer) => total + customer.cars,
-    0,
-  );
+  const customerErrors = useFieldErrors();
+  const vehicleErrors = useFieldErrors();
+  const mailErrors = useFieldErrors();
 
-  const filteredCustomers = customers.filter((customer) => {
-    const keyword = search.trim().toLowerCase();
-
-    const matchesSearch =
-      customer.id.toLowerCase().includes(keyword) ||
-      customer.name.toLowerCase().includes(keyword) ||
-      customer.phone.includes(keyword) ||
-      customer.email.toLowerCase().includes(keyword);
-
-    const matchesStatus =
-      statusFilter === "Tất cả" || customer.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const handleToggleStatus = async (customer: Customer) => {
-    const nextStatus =
-      customer.status === "Hoạt động" ? "Tạm khóa" : "Hoạt động";
-
-    const confirmed = await confirm({ title: nextStatus === "Tạm khóa" ? "Khóa khách hàng" : "Mở khóa khách hàng", description: `Xác nhận đổi trạng thái tài khoản khách hàng ${customer.name} sang “${nextStatus}”?`, variant: nextStatus === "Tạm khóa" ? "danger" : "info", confirmText: "Xác nhận thay đổi" });
-
-    if (!confirmed) return;
-
-    setCustomers((current) =>
-      current.map((item) =>
-        item.id === customer.id
-          ? { ...item, status: nextStatus }
-          : item,
-      ),
-    );
-
-    setMessage(
-      `${customer.name} đã được ${
-        nextStatus === "Tạm khóa" ? "tạm khóa" : "mở khóa"
-      }.`,
-    );
+  const sendMail = async () => {
+    if (!mailForm || selectedId === null) return;
+    const problems: FieldErrors = {};
+    if (!mailForm.subject.trim()) problems.subject = "Nhập tiêu đề email.";
+    if (!mailForm.message.trim()) problems.message = "Nhập nội dung email.";
+    if (mailErrors.show(problems)) return;
+    setSendingMail(true);
+    try {
+      notify((await adminApi.emailCustomer(selectedId, { subject: mailForm.subject.trim(), message: mailForm.message.trim() })).message, "success");
+      setMailForm(null);
+    } catch (error) {
+      mailErrors.showApi(error, { subject: "subject", message: "message", email: "subject" });
+    } finally {
+      setSendingMail(false);
+    }
   };
 
-  const handleResetFilter = () => {
-    setSearch("");
-    setStatusFilter("Tất cả");
-    setMessage("");
+  const toggleLock = async (customer: AdminCustomer) => {
+    if (!customer.locked && !await confirm({ title: `Khóa khách hàng ${customer.name}?`, description: "Khách sẽ không đăng nhập và đặt lịch online được, mọi phiên đăng nhập bị thu hồi. Lịch sử sửa chữa vẫn được giữ nguyên.", confirmText: "Khóa khách hàng", variant: "danger", confirmIcon: "lock", phone: customer.phone ?? undefined })) return;
+    try {
+      const response = await adminApi.lockCustomer(customer.id, !customer.locked);
+      notify(response.message, "success");
+      refresh();
+    } catch (error) {
+      notify(errorMessage(error), "error");
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-[#F7F7F5] text-[#20252B]">
-      <AdminSidebar />
+  const saveCustomer = async () => {
+    if (!form) return;
+    const { draft } = form;
+    const problems: FieldErrors = {};
+    if (!draft.name.trim()) problems.name = "Nhập họ tên.";
+    if (!/^0\d{9,10}$/.test(draft.phone.trim())) problems.phone = "Số điện thoại gồm 10–11 số, bắt đầu bằng 0.";
+    if (draft.email.trim() && !/^\S+@\S+\.\S+$/.test(draft.email.trim())) problems.email = "Email không hợp lệ.";
+    setFormError("");
+    if (customerErrors.show(problems)) return;
+    setSaving(true);
+    const body = { full_name: draft.name.trim(), phone: draft.phone.trim(), email: draft.email.trim() || null, address: draft.address.trim() || null };
+    try {
+      const response = form.id === null ? await adminApi.createCustomer(body) : await adminApi.updateCustomer(form.id, body);
+      notify(form.id === null ? "Đã thêm khách hàng." : "Đã cập nhật khách hàng.", "success");
+      setForm(null);
+      if (response.data.id !== selectedId) openProfile(response.data.id);
+      refresh();
+    } catch (error) {
+      customerErrors.showApi(error, { full_name: "name", phone: "phone", email: "email" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
-      <div className="lg:ml-[250px]">
-        <AdminTopbar />
+  const saveVehicle = async () => {
+    if (!vehicleForm || selectedId === null) return;
+    const odo = vehicleForm.mileage.trim();
+    const problems: FieldErrors = {};
+    if (vehicleForm.selection.modelId === null) problems.model = "Chọn hãng và dòng xe.";
+    if (odo && (!/^\d+$/.test(odo) || Number(odo) > 9_999_999)) problems.mileage = "ODO phải là số km (số nguyên không âm).";
+    const year = vehicleForm.year.trim();
+    if (year && (!/^\d{4}$/.test(year) || Number(year) < 1990 || Number(year) > new Date().getFullYear() + 1)) problems.year = "Năm sản xuất không hợp lệ.";
+    setFormError("");
+    if (vehicleErrors.show(problems) || vehicleForm.selection.modelId === null) return;
+    setSaving(true);
+    try {
+      await adminApi.addVehicle({ customer_id: selectedId, model_id: vehicleForm.selection.modelId, trim_id: vehicleForm.selection.trimId, mileage: odo ? Number(odo) : null, year: vehicleForm.year ? Number(vehicleForm.year) : null });
+      notify("Đã thêm xe cho khách hàng.", "success");
+      setVehicleForm(null);
+      refresh();
+    } catch (error) {
+      vehicleErrors.showApi(error, { model_id: "model", trim_id: "model", mileage: "mileage", year: "year" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
-        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-[1200px]">
-            <div className="mb-8">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#D6A85F]">
-                QUẢN TRỊ HỆ THỐNG / KHÁCH HÀNG
-              </p>
-
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Quản lý khách hàng
-              </h1>
-
-              <p className="mt-2 text-xs text-[#66717C]">
-                Theo dõi thông tin, số lượng xe và trạng thái khách hàng
-                trong hệ thống.
-              </p>
-            </div>
-
-            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Tổng khách hàng
-                </p>
-                <p className="mt-4 text-2xl font-bold">
-                  {customers.length}
-                </p>
-                <p className="mt-2 text-[10px] text-[#66717C]">
-                  Khách hàng trong danh sách
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Đang hoạt động
-                </p>
-                <p className="mt-4 text-2xl font-bold text-[#3F7047]">
-                  {activeCustomers}
-                </p>
-                <p className="mt-2 text-[10px] text-[#66717C]">
-                  Khách hàng đang hoạt động
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Tạm khóa
-                </p>
-                <p className="mt-4 text-2xl font-bold text-[#A24A4A]">
-                  {lockedCustomers}
-                </p>
-                <p className="mt-2 text-[10px] text-[#66717C]">
-                  Khách hàng đang bị khóa
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A949E]">
-                  Tổng số xe
-                </p>
-                <p className="mt-4 text-2xl font-bold">{totalCars}</p>
-                <p className="mt-2 text-[10px] text-[#66717C]">
-                  Xe đã đăng ký trong danh sách
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-[#E1E4E6] bg-white p-4 sm:p-6">
-              <div className="mb-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#D6A85F]">
-                  DANH SÁCH
-                </p>
-
-                <h2 className="mt-1 text-base font-bold">
-                  Khách hàng
-                </h2>
-
-                <p className="mt-1 text-xs text-[#8A949E]">
-                  Hiển thị {filteredCustomers.length} / {customers.length}{" "}
-                  khách hàng
-                </p>
-              </div>
-
-              <div className="mb-5 flex flex-col gap-3 lg:flex-row">
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setMessage("");
-                  }}
-                  placeholder="Tìm mã KH, tên, số điện thoại, email..."
-                  className="w-full rounded-xl border border-[#E1E4E6] bg-[#F7F7F5] px-4 py-3 text-xs outline-none transition focus:border-[#D6A85F] lg:flex-1"
-                />
-
-                <select
-                  value={statusFilter}
-                  onChange={(event) => {
-                    setStatusFilter(event.target.value);
-                    setMessage("");
-                  }}
-                  className="rounded-xl border border-[#E1E4E6] bg-white px-4 py-3 text-xs outline-none transition focus:border-[#D6A85F] lg:w-[190px]"
-                >
-                  <option value="Tất cả">Tất cả trạng thái</option>
-                  <option value="Hoạt động">Hoạt động</option>
-                  <option value="Tạm khóa">Tạm khóa</option>
-                </select>
-
-                <button
-                  type="button"
-                  onClick={handleResetFilter}
-                  className="cs-btn cs-btn-secondary"
-                >
-                  Đặt lại
-                </button>
-              </div>
-
-              {message && (
-                <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[#DCEBDD] bg-[#EEF7EF] px-4 py-3">
-                  <p className="text-xs text-[#3F7047]">{message}</p>
-                  <button
-                    type="button"
-                    onClick={() => setMessage("")}
-                    className="text-xs font-semibold text-[#3F7047]"
-                  >
-                    Đóng
-                  </button>
-                </div>
-              )}
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[850px]">
-                  <thead>
-                    <tr className="border-b border-[#E1E4E6] text-left">
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
-                        Mã KH
-                      </th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
-                        Khách hàng
-                      </th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
-                        Liên hệ
-                      </th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
-                        Số xe
-                      </th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
-                        Trạng thái
-                      </th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A949E]">
-                        Thao tác
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {filteredCustomers.map((customer) => (
-                      <tr
-                        key={customer.id}
-                        className="border-b border-[#F0F1EF] last:border-b-0 hover:bg-transparent cs-readable-row"
-                      >
-                        <td className="px-3 py-4 text-xs font-semibold">
-                          {customer.id}
-                        </td>
-
-                        <td className="px-3 py-4">
-                          <p className="text-xs font-semibold">
-                            {customer.name}
-                          </p>
-                        </td>
-
-                        <td className="px-3 py-4">
-                          <p className="text-xs text-[#66717C]">
-                            {customer.phone}
-                          </p>
-                          <p className="mt-1 text-[10px] text-[#8A949E]">
-                            {customer.email}
-                          </p>
-                        </td>
-
-                        <td className="px-3 py-4 text-xs text-[#66717C]">
-                          {customer.cars} xe
-                        </td>
-
-                        <td className="px-3 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-[10px] font-semibold ${
-                              customer.status === "Hoạt động"
-                                ? "bg-[#EEF7EF] text-[#3F7047]"
-                                : "bg-[#FDEEEE] text-[#A24A4A]"
-                            }`}
-                          >
-                            {customer.status}
-                          </span>
-                        </td>
-
-                        <td className="px-3 py-4">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleStatus(customer)}
-                            className={`rounded-xl border px-3 py-2 text-[10px] font-semibold transition ${
-                              customer.status === "Hoạt động"
-                                ? "border-[#F0D6D6] text-[#A24A4A] hover:bg-[#FDEEEE]"
-                                : "border-[#DCEBDD] text-[#3F7047] hover:bg-[#EEF7EF]"
-                            }`}
-                          >
-                            {customer.status === "Hoạt động"
-                              ? "Khóa"
-                              : "Mở khóa"}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {filteredCustomers.length === 0 && (
-                  <div className="py-12 text-center">
-                    <p className="text-sm font-semibold text-[#66717C]">
-                      Không tìm thấy khách hàng
-                    </p>
-                    <p className="mt-2 text-xs text-[#8A949E]">
-                      Hãy thử từ khóa khác hoặc thay đổi bộ lọc.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleResetFilter}
-                      className="cs-btn cs-btn-primary mt-4"
-                    >
-                      Xóa bộ lọc
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </main>
+  const pane = selectedId === null ? null : !selected
+    ? (detail.error ? <ErrorState compact description={detail.error} onRetry={detail.reload}/> : <LoadingState compact/>)
+    : <>
+      <div className="mb-4 flex items-center gap-3">
+        <Person name={selected.name} size={52} sub={selected.has_account ? "Khách hàng có tài khoản" : "Khách vãng lai"}/>
+        <span className="ml-auto flex gap-1.5">{selected.locked && <Pill tone="danger" icon="lock">Đã khoá</Pill>}</span>
       </div>
-    </div>
-  );
-}
+      <div className="cs-btn-row mb-4">
+        {selected.phone && <a href={`tel:${selected.phone}`} className={buttonClass({ variant: "primary", size: "sm" })}><Icon name="phone" size={14}/>Gọi {selected.phone}</a>}
+        <Button variant="outline" size="sm" icon="mail" disabled={!selected.email && !selected.has_account}
+          title={!selected.email && !selected.has_account ? "Khách chưa có email" : undefined}
+          onClick={() => { mailErrors.reset(); setMailForm({ subject: "", message: "" }); }}>Gửi email</Button>
+        {(selected.has_account || selected.locked) && (selected.locked
+          ? <Button variant="outline" size="sm" icon="key" onClick={() => void toggleLock(selected)}>Mở khóa</Button>
+          : <Button variant="outline" size="sm" icon="lock" onClick={() => void toggleLock(selected)}>Khóa khách hàng</Button>)}
+      </div>
+      <PaneSection title="Thông tin liên hệ" icon="user" action={<Button variant="ghost" size="sm" icon="edit"
+        onClick={() => { setFormError(""); customerErrors.reset(); setForm({ id: selected.id, draft: { name: selected.name, phone: selected.phone ?? "", email: selected.email ?? "", address: selected.address ?? "" } }); }}>Chỉnh sửa</Button>}>
+        <InfoList items={[{ icon: "phone", value: selected.phone ?? "—" }, { icon: "mail", value: selected.email ?? "—" },
+          { label: "Khách từ", value: fmtDate(selected.created_at) }, { label: "Số lần sửa", value: `${selected.visits} lần · ${vnd(selected.total_spent)}` }]}/>
+      </PaneSection>
+      <PaneSection title={`Danh sách xe (${selected.vehicles.length})`} icon="car" action={<Button variant="ghost" size="sm" icon="plus"
+        onClick={() => { setFormError(""); vehicleErrors.reset(); setVehicleForm({ selection: emptySelection, mileage: "", year: "" }); }}>Thêm xe</Button>}>
+        {selected.vehicles.length ? <ul className="flex flex-col gap-2">
+          {(showAllCars ? selected.vehicles : selected.vehicles.slice(0, PREVIEW_COUNT)).map(v => <li key={v.id} className="flex items-center gap-3 rounded-control border border-cs-border p-3">
+            <VehicleAvatar path={avatarOf(v)} name={vehicleLabel(v)} iconSize={24} className="h-12 w-16 rounded-control"/>
+            <span className="min-w-0 flex-1 text-small">
+              <b className="block text-cs-text">{vehicleLabel(v)}</b>
+              <span className="text-cs-muted">Biển số: <span className="text-cs-text">{v.plate ?? "—"}</span>{v.year ? ` · Năm ${v.year}` : ""}{v.mileage ? ` · ${v.mileage.toLocaleString("vi-VN")} km` : ""}</span>
+            </span>
+            <VehicleAvatarControls compact vehicleId={v.id} hasImage={!!avatarOf(v)} name={vehicleLabel(v)} onChanged={url => setAvatars(current => ({ ...current, [v.id]: url }))}/>
+          </li>)}
+        </ul> : <p className="text-small text-cs-muted">Khách chưa đăng ký xe.</p>}
+        {selected.vehicles.length > PREVIEW_COUNT && <Button variant="ghost" size="sm" className="mt-2" aria-expanded={showAllCars} onClick={() => setShowAllCars(value => !value)}>
+          {showAllCars ? "Thu gọn" : `Xem thêm ${selected.vehicles.length - PREVIEW_COUNT} xe`}</Button>}
+      </PaneSection>
+      <PaneSection title="Lịch sử dịch vụ" icon="history">
+        {selected.history.length ? <ol className="relative ml-1.5 border-l-2 border-cs-border pl-5">
+          {(showAllHistory ? selected.history : selected.history.slice(0, PREVIEW_COUNT)).map((h, i) => <li key={h.id} className="relative pb-3.5 last:pb-0">
+            <span className={`absolute -left-[27px] top-1 size-3 rounded-full border-2 ${i ? "border-cs-accent bg-cs-surface" : "border-cs-accent bg-cs-accent"}`}/>
+            <div className="flex items-start justify-between gap-3 text-small">
+              <div className="min-w-0"><p className="text-caption text-cs-muted">{fmtDate(h.date)} · {h.code} · {getStatus("repair", h.status, "staff").label}</p><p className="font-semibold text-cs-text">{h.title}</p><p className="text-caption text-cs-muted">{h.vehicle}</p></div>
+              <b className="shrink-0 tabular-nums text-cs-text">{h.amount ? vnd(h.amount) : "—"}</b>
+            </div>
+          </li>)}
+        </ol> : <p className="text-small text-cs-muted">Chưa có lần sửa chữa nào.</p>}
+        {selected.history.length > PREVIEW_COUNT && <Button variant="ghost" size="sm" className="mt-2" aria-expanded={showAllHistory} onClick={() => setShowAllHistory(value => !value)}>
+          {showAllHistory ? "Thu gọn" : `Xem đầy đủ (${selected.history.length} lần)`}</Button>}
+      </PaneSection>
+      {selected.last_review && <PaneSection title="Đánh giá gần nhất" icon="star" action={<span className="text-caption text-cs-muted">{fmtDate(selected.last_review.date)}</span>}>
+        <div className="rounded-control bg-cs-surface-2 p-3.5">
+          <p className="mb-1.5 flex items-center gap-2"><Stars value={selected.last_review.rating}/><b className="text-small">{selected.last_review.rating.toFixed(1)}</b></p>
+          {selected.last_review.comment && <p className="text-small italic text-cs-text-2">“{selected.last_review.comment}”</p>}
+        </div>
+      </PaneSection>}
+    </>;
 
-export default AdminCustomers;
+  const setDraft = (patch: Partial<Draft>) => { customerErrors.clear(...Object.keys(patch)); setForm(current => current && { ...current, draft: { ...current.draft, ...patch } }); };
+
+  return <AdminPage title="Khách hàng" description="Hồ sơ khách và xe đã đăng ký" demo={false}
+    actions={<Button variant="primary" icon="plus" onClick={() => { setFormError(""); customerErrors.reset(); setForm({ id: null, draft: emptyDraft }); }}>Thêm khách hàng</Button>}>
+    <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard icon="users" tone="brand" label="Tổng khách hàng" value={result?.summary.total ?? "—"}/>
+      <StatCard icon="user" tone="info" label="Có tài khoản" value={result?.summary.with_account ?? "—"}/>
+      <StatCard icon="plus" tone="success" label="Khách mới tháng này" value={result?.summary.new_this_month ?? "—"}/>
+      <StatCard icon="refresh" tone="violet" label="Khách quay lại" value={result?.summary.returning ?? "—"}/>
+    </div>
+    <Toolbar>
+      <SearchInput value={search} onChange={value => { setSearch(value); setPage(1); }} placeholder="Tìm theo tên, SĐT, email, biển số…"/>
+      <FilterSelect label="Xe" value={cars} onChange={value => { setCars(value); setPage(1); }} options={[{ value: "all", label: "Tất cả" }, { value: "has", label: "Có xe" }, { value: "none", label: "Chưa có xe" }]}/>
+      <ClearFilters active={search !== "" || cars !== "all" || !tableSort.isDefault} onClear={() => { setSearch(""); setCars("all"); tableSort.reset(); setPage(1); }}/>
+    </Toolbar>
+    <DataTable sort={tableSort.sort} onSort={tableSort.toggle} caption="Danh sách khách hàng" columns={columns} rows={result?.data ?? []} rowKey={c => c.id}
+      loading={list.loading} error={list.error || undefined} onRetry={list.reload}
+      onRowClick={c => openProfile(c.id)} rowClassName={c => c.id === selectedId ? "bg-cs-soft/60" : ""}
+      footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={list.loading} onChange={setPage}/>}/>
+    <Drawer open={selectedId !== null} onClose={() => setSelectedId(null)} title="Hồ sơ khách hàng" width="lg">{pane}</Drawer>
+
+    <Modal open={mailForm !== null} onClose={() => setMailForm(null)} dismissible={!sendingMail} title="Gửi email cho khách"
+      description={selected ? `${selected.name}${selected.email ? ` · ${selected.email}` : ""}` : undefined}
+      footer={<><Button disabled={sendingMail} onClick={() => setMailForm(null)}>Huỷ</Button><Button variant="primary" icon="send" loading={sendingMail} loadingText="Đang gửi..." onClick={() => void sendMail()}>Gửi email</Button></>}>
+      {mailForm && <div className="flex flex-col gap-4">
+        <Field label="Tiêu đề" required error={mailErrors.errors.subject}><Input value={mailForm.subject} maxLength={150} placeholder="VD: Nhắc lịch bảo dưỡng xe" onChange={e => { mailErrors.clear("subject"); setMailForm({ ...mailForm, subject: e.target.value }); }}/></Field>
+        <Field label="Nội dung" required error={mailErrors.errors.message} hint="Email tự có lời chào theo tên khách và chữ ký CarService."><Textarea rows={7} maxLength={5000} value={mailForm.message} onChange={e => { mailErrors.clear("message"); setMailForm({ ...mailForm, message: e.target.value }); }}/></Field>
+      </div>}
+    </Modal>
+
+    <Modal open={form !== null} onClose={() => setForm(null)} dismissible={!saving} title={form?.id ? "Sửa thông tin khách hàng" : "Thêm khách hàng"}
+      description={form?.id ? undefined : "Hồ sơ khách tại quầy (khách tự tạo tài khoản khi đăng ký online)."}
+      footer={<><Button disabled={saving} onClick={() => setForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void saveCustomer()}>Lưu</Button></>}>
+      {form && <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Họ tên" required error={customerErrors.errors.name} className="sm:col-span-2"><Input value={form.draft.name} maxLength={100} onChange={e => setDraft({ name: e.target.value })}/></Field>
+        <Field label="Số điện thoại" required error={customerErrors.errors.phone}><Input inputMode="tel" value={form.draft.phone} maxLength={11} onChange={e => setDraft({ phone: e.target.value })}/></Field>
+        {form.id !== null && selected?.has_account
+          ? <div className="sm:col-span-2"><SendEmailChangeLink customerId={form.id} currentEmail={selected.email ?? ""}/></div>
+          : form.id !== null && selected?.email_verified
+          ? <div className="sm:col-span-2"><OwnerEmailVerify customerId={form.id} currentEmail={selected.email ?? ""} title={`Email đã xác minh: ${selected.email ?? ""}`}
+              description="Chỉ đổi khi chủ xe yêu cầu. Mã gửi tới email mới, email cũ sẽ nhận thông báo." actionLabel="Gửi mã tới email mới" clearEmail
+              onVerified={() => { notify("Đã đổi email chủ xe.", "success"); setForm(null); refresh(); }}/></div>
+          : <Field label="Email" optional error={customerErrors.errors.email}><Input type="email" value={form.draft.email} onChange={e => setDraft({ email: e.target.value })}/></Field>}        <ToastError message={formError}/>
+      </div>}
+    </Modal>
+
+    <Modal open={vehicleForm !== null} onClose={() => setVehicleForm(null)} dismissible={!saving} title="Thêm xe cho khách" description={selected?.name}
+      footer={<><Button disabled={saving} onClick={() => setVehicleForm(null)}>Huỷ</Button><Button variant="primary" icon="check" loading={saving} loadingText="Đang lưu..." onClick={() => void saveVehicle()}>Lưu xe</Button></>}>
+      {vehicleForm && <div className="flex flex-col gap-4">
+        <div role="group" aria-label="Hãng và dòng xe" aria-invalid={!!vehicleErrors.errors.model || undefined} className={vehicleErrors.errors.model ? "rounded-control border border-danger p-3" : undefined}>
+          <VehicleSelector columns={1} value={vehicleForm.selection} disabled={saving} onChange={selection => { vehicleErrors.clear("model"); setVehicleForm(current => current && { ...current, selection }); }}/>
+          <FieldError className="mt-1.5">{vehicleErrors.errors.model}</FieldError>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="ODO hiện tại (km)" optional error={vehicleErrors.errors.mileage}><Input type="number" inputMode="numeric" min={0} step={1} value={vehicleForm.mileage} placeholder="VD: 45000" onChange={e => { vehicleErrors.clear("mileage"); setVehicleForm(current => current && { ...current, mileage: e.target.value }); }}/></Field>
+          <Field label="Năm sản xuất" optional error={vehicleErrors.errors.year}><Input type="number" min={1990} max={new Date().getFullYear() + 1} value={vehicleForm.year} onChange={e => { vehicleErrors.clear("year"); setVehicleForm(current => current && { ...current, year: e.target.value }); }}/></Field>
+        </div>
+        <ToastError message={formError}/>
+      </div>}
+    </Modal>
+  </AdminPage>;
+}

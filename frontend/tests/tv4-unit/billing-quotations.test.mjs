@@ -1,0 +1,11 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { sandbox, mountFinal, ui, tick } from './final-harness.mjs';
+const e=sandbox();
+const status=e.load('config/status.ts');
+const customer=e.load('services/customerApi.ts',{'./api':{fetchApi:async()=>{throw Error('Unexpected request');}},'../config/status':status});
+const b=e.load('pages/customer/account/useDetailedOrders.ts',{'react':{},'../../../services/customerApi':customer,'../../../services/liveSync':{},'../../../services/apiError':{}});
+test('quotation rows flatten orders and sort newest first without losing the parent order',()=>{const a={id:1,quotations:[{id:2},{id:8}]}, c={id:2,quotations:[{id:5}]};const r=b.quotationRows([a,{id:3},c]);assert.deepEqual(r.map(x=>[x.quotation.id,x.order.id]),[[8,1],[5,2],[2,1]]);assert.deepEqual(a.quotations.map(q=>q.id),[2,8]);});
+test('only sent quotations await a customer response',()=>{for(const s of ['DRAFT','APPROVED','REJECTED','EXPIRED'])assert.equal(b.awaitsResponse({status:s}),false);assert.equal(b.awaitsResponse({status:'SENT'}),true);});
+test('initial and supplemental quotation rounds are numbered separately',()=>{const quotations=[{id:8,type:'SUPPLEMENT'},{id:4},{id:1,type:'INITIAL'},{id:9,type:'SUPPLEMENT'}];const order={quotations};assert.equal(b.quotationRoundLabel(order,quotations[1]),' lần 2');assert.equal(b.quotationRoundLabel(order,quotations[2]),' lần 1');assert.equal(b.quotationRoundLabel(order,quotations[3]),' lần 2');assert.equal(b.quotationRoundLabel({quotations:[quotations[0]]},quotations[0]),'');});
+test('quotation total counts only explicitly selected items and converts numeric strings',()=>{const q={items:[{id:1,amount:'125000'},{id:2,amount:35000},{id:3,amount:500}]};assert.equal(b.selectedItemsTotal(q,{1:true,2:false,3:true}),125500);assert.equal(b.selectedItemsTotal(q,{}),0);assert.equal(b.selectedItemsTotal({},{}),0);});

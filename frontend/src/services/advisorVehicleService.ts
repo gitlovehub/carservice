@@ -82,6 +82,8 @@ export async function deleteAdvisorVehicle(id: number): Promise<void> {
 export type AdvisorVehicleInput = {
   customer_id: number;
   model_id: number;
+  /** Phiên bản (bộ chọn hãng → dòng → phiên bản). */
+  trim_id?: number | null;
   license_plate?: string | null;
   variant?: string | null;
   year?: number | null;

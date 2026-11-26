@@ -1,0 +1,10 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { sandbox, mountFinal, ui, tick } from './final-harness.mjs';
+const e=sandbox();
+const status=e.load('config/status.ts');
+const customer=e.load('services/customerApi.ts',{'./api':{fetchApi:async()=>{throw Error('Unexpected request');}},'../config/status':status});
+const b=e.load('pages/customer/account/useDetailedOrders.ts',{'react':{},'../../../services/customerApi':customer,'../../../services/liveSync':{},'../../../services/apiError':{}});
+test('money formatter handles numeric strings and invalid numbers',()=>{assert.equal(customer.formatMoney('1250000'),'1.250.000 đ');for(const v of [null,undefined,'not-a-number',Infinity])assert.equal(customer.formatMoney(v),'0 đ');});
+test('date helpers use local date and time consistently and handle missing inputs',()=>{const d=new Date(2026,0,9,0,5);assert.equal(customer.formatDate(d),'09/01/2026');assert.equal(customer.formatTime(d),'00:05');assert.equal(customer.formatDateTime(d),'00:05 - 09/01/2026');assert.equal(customer.formatTime('09:15:45'),'09:15');assert.equal(customer.formatDateTime('not-a-date'),'—');assert.equal(customer.formatDate(null),'—');});
+test('vehicle display uses brand model and trim and falls back for missing records',()=>{assert.equal(customer.getVehicleName({model:{brand:{name:'Toyota'},name:'Vios'},trim:{name:'G'},variant:'Old'}),'Toyota Vios G');assert.equal(customer.getVehicleName({variant:'Legacy'}),'Legacy');assert.equal(customer.getVehicleName({}),'Xe của bạn');assert.equal(customer.getVehicleName(null),'Xe chưa xác định');});

@@ -1,0 +1,9 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { sandbox, mountFinal, ui, tick } from './final-harness.mjs';
+function setup(fail=false){const requests=[],sent=[];const x=mountFinal('components/customer/ChangeEmailModal.tsx','default',{props:{currentEmail:'old@example.test',onClose(){},onSent:m=>sent.push(m)},modules:{'../../services/api':{fetchApi:async (...a)=>{requests.push(a);if(fail)throw Error('rejected');return {message:'sent'};}}}});return {...x,requests,sent};}
+const email=n=>n.type==='Input'&&n.props.type==='email', password=n=>n.type==='PasswordInput';
+test('email change rejects malformed email and missing password',async()=>{const x=setup();x.change(email,'bad');await x.submit();assert.equal(x.requests.length,0);assert.ok(x.errors.email);assert.ok(x.errors.current_password);});
+test('email change rejects current email even when casing differs',async()=>{const x=setup();x.change(email,' OLD@example.test ');x.change(password,'Current123');await x.submit();assert.equal(x.requests.length,0);assert.ok(x.errors.email);});
+test('valid change requests verification using trimmed email and current password',async()=>{const x=setup();x.change(email,' new@example.test ');x.change(password,'Current123');await x.submit();assert.deepEqual(x.requests,[['/me/email-change',{method:'POST',body:JSON.stringify({email:'new@example.test',current_password:'Current123'})}]]);assert.deepEqual(x.sent,['sent']);assert.equal(x.storage.size,0);});
+test('failed change keeps modal dismissible and never calls success callback',async()=>{const x=setup(true);x.change(email,'new@example.test');x.change(password,'Current123');await x.submit();assert.deepEqual(x.sent,[]);assert.equal(x.render().props.dismissible,true);assert.equal(x.calls[0][0],'fieldError');});

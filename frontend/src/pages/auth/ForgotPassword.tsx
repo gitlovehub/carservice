@@ -1,23 +1,30 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { fetchApi } from "../../services/api";
 import OtpInput from "../../components/auth/OtpInput";
+import { LostEmailLink } from "../../components/auth/VerifyEmailPrompt";
 import Toast, { type ToastType } from "../../components/auth/Toast";
 import PasswordStrengthIndicator from "../../components/auth/PasswordStrengthIndicator";
-import { AtelierAuthError, AtelierAuthLayout, AtelierField } from "../../components/AtelierPublic";
+import { GarageAuthLayout, GarageField } from "../../components/GaragePublic";
+import { AuthSwitchLink, PasswordInput } from "../../components/auth/PasswordInput";
+import { authFieldClass, authLinkRowClass, authPrimaryClass } from "../../components/auth/authStyles";
+import { Icon } from "../../components/ui/Icon";
+import { useAppFeedback } from "../../components/ui/feedbackContext";
+import { focusFirstInvalid } from "../../components/ui/focusInvalid";
+import { API_ERROR_MARK, splitApiErrors } from "../../components/ui/formValidation";
 
 function ForgotPassword() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { notify } = useAppFeedback();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [step, setStep] = useState<"FORGOT" | "RESET" | "SUCCESS">("FORGOT");
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [fieldError, setFieldError] = useState<{ email?: string; otp?: string; password?: string; confirm?: string }>({});
 
   // Countdown timer cho gửi lại OTP (60s)
   const [resendCountdown, setResendCountdown] = useState(0);
@@ -39,20 +46,29 @@ function ForgotPassword() {
     setToast({ message, type });
   };
 
+  /** Lỗi từ server: lỗi nhập liệu về dưới ô, lỗi nghiệp vụ ra một toast, rồi đưa người dùng tới ô sai. */
+  const failWith = (error: unknown, fallback: string) => {
+    const { fields, toast } = splitApiErrors(error, { email: "email", otp: "otp", password: "password", password_confirmation: "confirm" }, fallback);
+    const invalid = toast && /OTP/i.test(toast) ? { ...fields, otp: fields.otp ?? API_ERROR_MARK } : fields;
+    setFieldError(invalid);
+    if (toast) notify(toast, "error");
+    if (Object.keys(invalid).length) focusFirstInvalid();
+  };
+
   const handleForgotSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!email.trim()) {
-      setErrorMsg("Vui lòng nhập địa chỉ email đã đăng ký.");
+      setFieldError({ email: "Vui lòng nhập địa chỉ email đã đăng ký." });
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setErrorMsg("Email không đúng định dạng.");
+      setFieldError({ email: "Email không đúng định dạng." });
       return;
     }
 
     setIsLoading(true);
-    setErrorMsg("");
+    setFieldError({});
 
     try {
       await fetchApi("/forgot-password", {
@@ -61,10 +77,9 @@ function ForgotPassword() {
       });
       setResendCountdown(60);
       setStep("RESET");
-      showToast("Mã OTP đặt lại mật khẩu đã được gửi đến email của bạn.", "info");
+      showToast("Đã gửi mã OTP. Vui lòng kiểm tra hộp thư email của bạn.", "success");
     } catch (err: unknown) {
-      const error = err as { data?: { message?: string } };
-      setErrorMsg(error.data?.message || "Đã xảy ra sự cố kết nối. Vui lòng thử lại.");
+      failWith(err, "Không thể gửi mã OTP. Vui lòng thử lại sau giây lát.");
     } finally {
       setIsLoading(false);
     }
@@ -77,37 +92,37 @@ function ForgotPassword() {
     const passwordNumber = /[0-9]/;
 
     if (!otp || otp.length !== 6) {
-      setErrorMsg("Vui lòng nhập đủ 6 chữ số mã OTP.");
+      setFieldError({ otp: "Vui lòng nhập đủ 6 chữ số mã OTP." });
       return;
     }
 
     if (!newPassword) {
-      setErrorMsg("Vui lòng nhập mật khẩu mới.");
+      setFieldError({ password: "Vui lòng nhập mật khẩu mới." });
       return;
     } else if (newPassword.length < 8) {
-      setErrorMsg("Mật khẩu mới phải có ít nhất 8 ký tự.");
+      setFieldError({ password: "Mật khẩu mới phải có ít nhất 8 ký tự." });
       return;
     } else if (!passwordUppercase.test(newPassword)) {
-      setErrorMsg("Mật khẩu mới phải có ít nhất 1 chữ cái viết hoa.");
+      setFieldError({ password: "Mật khẩu mới phải có ít nhất 1 chữ cái viết hoa." });
       return;
     } else if (!passwordLowercase.test(newPassword)) {
-      setErrorMsg("Mật khẩu mới phải có ít nhất 1 chữ cái viết thường.");
+      setFieldError({ password: "Mật khẩu mới phải có ít nhất 1 chữ cái viết thường." });
       return;
     } else if (!passwordNumber.test(newPassword)) {
-      setErrorMsg("Mật khẩu mới phải có ít nhất 1 chữ số.");
+      setFieldError({ password: "Mật khẩu mới phải có ít nhất 1 chữ số." });
       return;
     }
 
     if (!confirmPassword) {
-      setErrorMsg("Vui lòng xác nhận lại mật khẩu mới.");
+      setFieldError({ confirm: "Vui lòng xác nhận lại mật khẩu mới." });
       return;
     } else if (newPassword !== confirmPassword) {
-      setErrorMsg("Mật khẩu xác nhận không trùng khớp.");
+      setFieldError({ confirm: "Mật khẩu xác nhận không trùng khớp." });
       return;
     }
 
     setIsLoading(true);
-    setErrorMsg("");
+    setFieldError({});
 
     try {
       await fetchApi("/reset-password", {
@@ -122,18 +137,7 @@ function ForgotPassword() {
       setStep("SUCCESS");
       showToast("Đặt lại mật khẩu thành công!", "success");
     } catch (err: unknown) {
-      const error = err as {
-        data?: {
-          message?: string;
-          errors?: Record<string, string[]>;
-        };
-      };
-      setErrorMsg(
-        error.data?.errors?.password?.[0] || 
-        error.data?.errors?.otp?.[0] || 
-        error.data?.message || 
-        "Đặt lại mật khẩu thất bại. Vui lòng kiểm tra lại mã OTP."
-      );
+      failWith(err, "Không thể đặt lại mật khẩu. Vui lòng kiểm tra lại mã OTP.");
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +147,7 @@ function ForgotPassword() {
     if (resendCountdown > 0) return;
 
     setIsLoading(true);
-    setErrorMsg("");
+    setFieldError({});
 
     try {
       await fetchApi("/forgot-password", {
@@ -151,33 +155,32 @@ function ForgotPassword() {
         body: JSON.stringify({ email: email.trim() }),
       });
       setResendCountdown(60);
-      showToast("Mã OTP mới đã được gửi lại vào email của bạn.", "success");
+      showToast("Đã gửi lại mã OTP. Vui lòng kiểm tra hộp thư email của bạn.", "success");
     } catch (err: unknown) {
-      const error = err as { data?: { message?: string } };
-      setErrorMsg(error.data?.message || "Không thể gửi lại mã OTP lúc này.");
+      failWith(err, "Không thể gửi lại mã OTP. Vui lòng thử lại sau giây lát.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  return <AtelierAuthLayout title={step === "FORGOT" ? "Khôi phục mật khẩu" : step === "RESET" ? "Đặt lại mật khẩu" : "Hoàn tất xác thực"} description={step === "FORGOT" ? "Nhập email đã đăng ký để nhận mã OTP đặt lại mật khẩu." : step === "RESET" ? `Mã OTP đã gửi tới ${email}.` : "Mật khẩu của bạn đã được cập nhật thành công."}>
+  return <GarageAuthLayout title={step === "FORGOT" ? "Khôi phục mật khẩu" : step === "RESET" ? "Đặt lại mật khẩu" : "Hoàn tất xác thực"} description={step === "FORGOT" ? "Nhập email đã đăng ký để nhận mã OTP đặt lại mật khẩu." : step === "RESET" ? `Mã OTP đã gửi tới ${email}.` : "Mật khẩu của bạn đã được cập nhật thành công."}>
     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    {errorMsg && <AtelierAuthError message={errorMsg} />}
-    {step === "FORGOT" && <><form className="grid gap-4" onSubmit={handleForgotSubmit}>
-      <AtelierField label="Email đã đăng ký"><input type="email" className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => {setEmail(e.target.value); setErrorMsg("");}} /></AtelierField>
-      <button type="submit" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold !font-semibold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-transparent bg-[#cf2935] text-white hover:bg-[#b92430] min-h-14 px-6 py-4 text-sm w-full" disabled={isLoading || !email.trim()}>{isLoading ? "Đang gửi mã..." : "Gửi mã xác thực OTP →"}</button></form>
-      <p className="mt-5 mb-3 text-base text-[#757575] [&_a]:font-extrabold [&_a]:text-[#cf2935] [&_a]:hover:underline">Nhớ mật khẩu? <Link to="/login">Đăng nhập ngay</Link></p>
+    {step === "FORGOT" && <><form className="grid gap-4" onSubmit={handleForgotSubmit} noValidate>
+      <GarageField htmlFor="fp-email" label="Email đã đăng ký" error={fieldError.email}><input id="fp-email" type="email" className={authFieldClass} autoComplete="email" placeholder="you@example.com" value={email} onChange={e => {setEmail(e.target.value); setFieldError({});}} /></GarageField>
+      <button type="submit" className={authPrimaryClass} disabled={isLoading || !email.trim()} aria-busy={isLoading || undefined}>{isLoading ? "Đang gửi mã..." : "Gửi mã xác thực OTP →"}</button></form>
+      <p className="mt-3 text-center"><LostEmailLink/></p>
+      <AuthSwitchLink text="Nhớ mật khẩu?" to="/login" label="Đăng nhập ngay" state={location.state}/>
     </>}
-    {step === "RESET" && <><form className="grid gap-4" onSubmit={handleResetSubmit}>
-      <AtelierField label="Mã OTP 6 số"><OtpInput value={otp} onChange={setOtp} disabled={isLoading} hasError={!!errorMsg}/></AtelierField>
-      <AtelierField label="Mật khẩu mới"><div className="relative"><input className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" type={showPassword ? "text" : "password"} autoComplete="new-password" placeholder="Ít nhất 8 ký tự" value={newPassword} onChange={e => {setNewPassword(e.target.value);setErrorMsg("");}}/><button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-[#757575] hover:text-[#cf2935]" onClick={() => setShowPassword(s => !s)}>{showPassword ? "Ẩn" : "Hiện"}</button></div></AtelierField>
+    {step === "RESET" && <><form className="grid gap-4" onSubmit={handleResetSubmit} noValidate>
+      <GarageField label="Mã OTP 6 số" error={fieldError.otp}><OtpInput value={otp} onChange={value => { setOtp(value); setFieldError({}); }} disabled={isLoading} hasError={!!fieldError.otp}/></GarageField>
+      <GarageField htmlFor="fp-new-password" label="Mật khẩu mới" error={fieldError.password}><PasswordInput id="fp-new-password" autoComplete="new-password" placeholder="Ít nhất 8 ký tự" value={newPassword} onChange={e => {setNewPassword(e.target.value);setFieldError({});}}/></GarageField>
       <PasswordStrengthIndicator password={newPassword}/>
-      <AtelierField label="Nhập lại mật khẩu"><div className="relative"><input className="block w-full min-w-0 min-h-12 rounded-xl border border-[#e9e9e6] bg-white px-3.5 py-3 text-sm text-[#191919] outline-none placeholder:text-[#999] focus:border-[#cf2935] focus:ring-[3px] focus:ring-[#cf2935]/10 aria-invalid:border-[#d34953] dark:border-[#34373a] dark:bg-[#191b1e] dark:text-[#f5f5f4]" type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" placeholder="Nhập lại mật khẩu mới" value={confirmPassword} onChange={e => {setConfirmPassword(e.target.value);setErrorMsg("");}}/><button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-bold text-[#757575] hover:text-[#cf2935]" onClick={() => setShowConfirmPassword(s => !s)}>{showConfirmPassword ? "Ẩn" : "Hiện"}</button></div></AtelierField>
-      <button type="submit" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-transparent bg-[#cf2935] text-white hover:bg-[#b92430] min-h-14 px-6 py-4 text-sm w-full" disabled={isLoading || otp.length !== 6 || !newPassword}>{isLoading ? "Đang đặt lại mật khẩu..." : "Lưu mật khẩu mới →"}</button></form>
-      <div className="mt-5 grid gap-3 text-xs text-[#757575] [&_button]:cursor-pointer [&_button]:text-left [&_button]:font-extrabold [&_button]:text-[#cf2935] [&_button:disabled]:cursor-not-allowed">{resendCountdown > 0 ? <span>Gửi lại mã sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại mã OTP</button>}<button type="button" onClick={() => {setStep("FORGOT");setOtp("");setErrorMsg("");}}>← Thay đổi email</button></div>
+      <GarageField htmlFor="fp-confirm-password" label="Nhập lại mật khẩu" error={fieldError.confirm}><PasswordInput id="fp-confirm-password" autoComplete="new-password" placeholder="Nhập lại mật khẩu mới" value={confirmPassword} onChange={e => {setConfirmPassword(e.target.value);setFieldError({});}}/></GarageField>
+      <button type="submit" className={authPrimaryClass} disabled={isLoading || otp.length !== 6 || !newPassword} aria-busy={isLoading || undefined}>{isLoading ? "Đang đặt lại mật khẩu..." : "Lưu mật khẩu mới →"}</button></form>
+      <div className={authLinkRowClass}>{resendCountdown > 0 ? <span>Gửi lại mã sau {resendCountdown}s</span> : <button type="button" onClick={handleResendOtp} disabled={isLoading}>Gửi lại mã OTP</button>}<button type="button" onClick={() => {setStep("FORGOT");setOtp("");setFieldError({});}}>← Thay đổi email</button></div>
     </>}
-    {step === "SUCCESS" && <><div className="mb-5 rounded-xl border border-[#70ae8a] bg-[#e8f7ed] p-4 font-extrabold text-[#191919]">✓ Mật khẩu đã cập nhật thành công.</div><button type="button" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-bold no-underline transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cf2935] cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 border-transparent bg-[#cf2935] text-white hover:bg-[#b92430] min-h-14 px-6 py-4 text-sm w-full" onClick={() => navigate('/login')}>Đăng nhập vào hệ thống →</button></>}
-  </AtelierAuthLayout>;
+    {step === "SUCCESS" && <><div className="mb-5 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 font-bold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200" role="status"><Icon name="check" size={18}/>Mật khẩu đã cập nhật thành công.</div><button type="button" className={authPrimaryClass} onClick={() => navigate('/login', { state: location.state })}>Đăng nhập vào hệ thống →</button></>}
+  </GarageAuthLayout>;
 
 }
 
