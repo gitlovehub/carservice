@@ -1,0 +1,7 @@
+import assert from 'node:assert/strict';
+import {component,nodes} from './component-harness.mjs';
+const provider=()=>null; let state=false; const ref={};
+const field={id:'field-1','aria-describedby':'hint-1','aria-invalid':true,required:true};
+const {Field,FieldError,Input,PasswordInput,Select,Textarea,SearchInput}=component('src/components/ui/Field.tsx',{react:{forwardRef:f=>p=>f(p,ref),useId:()=> 'field-1',useState:x=>[typeof x==='boolean'?state:x,v=>{state=typeof v==='function'?v(state):v;}]},'../../config/labels':{LABELS:{form:{optional:'không bắt buộc'},action:{search:'Tìm kiếm'}}},'./Icon':{Icon:()=>null},'./fieldContext':{FieldContext:{Provider:provider},controlClass:'control',useFieldControl:()=>field},'./focusInvalid':{focusFirstInvalid:()=>{}},'./formValidation':{isFormControl:()=>false,validityMessage:()=>''}});
+for(const control of [Input,Select,Textarea]){const n=control({className:'custom',disabled:true});assert.equal(n.props.ref,ref);assert.equal(n.props.id,'field-1');assert.equal(n.props['aria-invalid'],true);assert.equal(n.props.required,true);assert.equal(n.props.disabled,true);assert.match(n.props.className,/custom/);}
+assert.equal(Input({id:'override',required:false}).props.id,'override');assert.equal(Input({required:false}).props.required,false);assert.equal(Textarea({}).props.rows,3);assert.equal(Textarea({rows:7}).props.rows,7);assert.equal(Select({children:'option'}).props.children,'option');
