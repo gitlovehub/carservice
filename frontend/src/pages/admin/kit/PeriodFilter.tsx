@@ -151,3 +151,53 @@ export function PeriodFilter({ period, allowAll = true, allowFuture = false }: {
           if (draft.unit === "week") {
             const cell = unitRange("week", isoDay(days[0]));
             return <button key={cell.from} type="button" disabled={!!maxDay && cell.from > maxDay} onClick={() => pickCell(cell)} aria-label={`Tuần ${rangeLabel(cell)}`}
+              className={`grid h-8 grid-cols-7 place-items-center rounded-control text-small tabular-nums transition-colors ${cellClass(cell)}`}>
+              {days.map(d => <span key={isoDay(d)} className={outside(d) ? "opacity-50" : ""}>{d.getDate()}</span>)}
+            </button>;
+          }
+          return <div key={isoDay(days[0])} className="grid grid-cols-7 gap-0.5">
+            {days.map(d => {
+              const iso = isoDay(d);
+              return <button key={iso} type="button" disabled={!!maxDay && iso > maxDay} onClick={() => pickCell({ from: iso, to: iso })} aria-label={iso.split("-").reverse().join("/")}
+                className={`h-8 rounded-md text-small tabular-nums transition-colors ${iso === today ? "ring-1 ring-inset ring-cs-accent" : ""} ${cellClass({ from: iso, to: iso }, outside(d))}`}>{d.getDate()}</button>;
+            })}
+          </div>;
+        })}
+      </div>
+    </div>;
+  };
+  const cursorLabel = () => {
+    if (!draft) return "";
+    const y = draft.cursor.getFullYear();
+    if (draft.unit === "day" || draft.unit === "week") return `Tháng ${String(draft.cursor.getMonth() + 1).padStart(2, "0")}/${y}`;
+    if (draft.unit === "year") { const first = Math.floor(y / 12) * 12; return `${first} – ${first + 11}`; }
+    return String(y);
+  };
+  const quickClass = (active: boolean) => `flex w-full cursor-pointer items-center justify-between gap-2 whitespace-nowrap rounded-control px-3 py-1.5 text-left text-small transition-colors ${active ? "bg-cs-soft font-semibold text-cs-accent-text" : "text-cs-text hover:bg-cs-soft-hover hover:text-cs-on-soft"}`;
+  const selection = draft?.all ? "Tất cả thời gian" : hasRange && !reversed && draft ? rangeLabel({ from: draft.from, to: draft.to }) : "Chưa chọn đủ ngày";
+
+  return <>
+    <div data-period-trigger className="inline-flex max-w-full items-center gap-0.5 rounded-control border border-cs-border bg-cs-surface p-1" role="group" aria-label="Bộ lọc thời gian">
+      <IconButton icon="chevron-left" size="sm" label="Kỳ trước" disabled={!applied} onClick={() => { if (applied) { const r = shiftRange(applied, -1); change({ preset: "custom", ...r }); } }}/>
+      <button ref={triggerRef} type="button" aria-haspopup="dialog" aria-expanded={isOpen} aria-controls={panelId} onClick={() => { if (isOpen) close(false); else open(); }}
+        className="inline-flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-small font-semibold text-cs-text transition-colors hover:bg-cs-soft-hover hover:text-cs-on-soft">
+        <Icon name="calendar" size={15} className="shrink-0 text-cs-accent-text"/>
+        <span className="truncate tabular-nums">{applied ? rangeLabel(applied) : "Tất cả thời gian"}</span>
+        <Icon name="chevron-down" size={14} className="shrink-0 text-cs-muted"/>
+      </button>
+      <IconButton icon="chevron-right" size="sm" label="Kỳ sau" disabled={!nextRange || (!!maxDay && nextRange.from > maxDay)} onClick={() => { if (nextRange) change({ preset: "custom", ...nextRange }); }}/>
+    </div>
+    {draft && createPortal(
+      <div ref={panelRef} id={panelId} role="dialog" aria-label="Chọn khoảng thời gian" data-area={area}
+        onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); } }}
+        style={{ top: position.top, bottom: position.bottom, left: position.left, width: position.width, maxHeight: position.maxHeight }}
+        className="cs-feedback-layer fixed z-[350] flex flex-col overflow-hidden rounded-card border border-cs-border bg-cs-surface text-cs-text shadow-raised">
+        <div role="tablist" aria-label="Đơn vị thời gian" className="flex shrink-0 gap-1 overflow-x-auto border-b border-cs-border p-2">
+          {UNITS.map(u => <button key={u.id} type="button" role="tab" aria-selected={draft.unit === u.id}
+            onClick={() => setDraft({ ...draft, unit: u.id, picking: false, custom: false, cursor: parseDay(draft.from || today) })}
+            className={`inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-control px-3 py-2 text-small font-semibold transition-colors ${draft.unit === u.id ? "bg-cs-accent text-cs-accent-contrast hover:bg-cs-accent-hover" : "text-cs-text-2 hover:bg-cs-soft-hover hover:text-cs-on-soft"}`}>
+            <Icon name={u.icon} size={15} className="max-sm:hidden"/>{u.label}
+          </button>)}
+        </div>
+        <div className="grid min-h-0 flex-1 overflow-y-auto sm:grid-cols-[11rem_minmax(0,1fr)]">
+          <div className="border-cs-border p-3 max-sm:border-b sm:border-r">
