@@ -16,6 +16,8 @@ export function validityMessage(control: FormControl): string {
     if (control instanceof HTMLInputElement && ["checkbox", "radio"].includes(control.type)) return "Vui lòng chọn mục này.";
     return "Vui lòng nhập thông tin này.";
   }
+  if (validity.badInput) return "Vui lòng nhập giá trị hợp lệ.";
+  if (validity.stepMismatch) return "Giá trị không đúng bước cho phép.";
   if (validity.typeMismatch) return control.type === "email" ? "Email không hợp lệ." : "Giá trị không hợp lệ.";
   if (validity.tooShort && !(control instanceof HTMLSelectElement)) return `Cần ít nhất ${control.minLength} ký tự.`;
   if (validity.tooLong && !(control instanceof HTMLSelectElement)) return `Tối đa ${control.maxLength} ký tự.`;
