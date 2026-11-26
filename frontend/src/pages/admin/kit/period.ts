@@ -50,3 +50,29 @@ export function shiftRange(range: DayRange, direction: -1 | 1): DayRange {
     const days = dayCount(range.from, range.to) * direction;
     return { from: addDays(range.from, days), to: addDays(range.to, days) };
   }
+  const months = monthCount(range.from, range.to);
+  const start = parseDay(range.from);
+  const moved = new Date(start.getFullYear(), start.getMonth() + months * direction, 1);
+  return span(moved, new Date(moved.getFullYear(), moved.getMonth() + months, 0));
+}
+
+/** Nhãn ngắn của khoảng đang chọn: "Tháng 11/2026", "Quý 4/2026", "01/11/2026 – 07/11/2026". */
+export function rangeLabel(range: DayRange, now = new Date()): string {
+  const { from, to } = range;
+  const today = isoDay(now);
+  if (from === to) {
+    if (from === today) return `Hôm nay · ${displayDay(from)}`;
+    if (from === addDays(today, -1)) return `Hôm qua · ${displayDay(from)}`;
+    return displayDay(from);
+  }
+  const f = parseDay(from), t = parseDay(to);
+  const unit = detectUnit(range);
+  const months = monthCount(from, to);
+  const quarter = (d: Date) => Math.floor(d.getMonth() / 3) + 1;
+  if (unit === "year") return months === 12 ? `Năm ${f.getFullYear()}` : `Năm ${f.getFullYear()} – ${t.getFullYear()}`;
+  if (unit === "quarter") return months === 3 ? `Quý ${quarter(f)}/${f.getFullYear()}` : `Quý ${quarter(f)}/${f.getFullYear()} – Quý ${quarter(t)}/${t.getFullYear()}`;
+  if (unit === "month") return months === 1 ? `Tháng ${pad(f.getMonth() + 1)}/${f.getFullYear()}` : `Tháng ${pad(f.getMonth() + 1)}/${f.getFullYear()} – ${pad(t.getMonth() + 1)}/${t.getFullYear()}`;
+  return `${displayDay(from)} – ${displayDay(to)}`;
+}
+
+/** Các lựa chọn nhanh của từng tab. */
