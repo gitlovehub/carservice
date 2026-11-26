@@ -73,7 +73,12 @@ export default function CustomerNotificationBell() {
     const onOutside = (event: PointerEvent) => {
       if (holderRef.current && !holderRef.current.contains(event.target as Node)) setOpen(false);
     };
-    const onEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false); };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        holderRef.current?.querySelector<HTMLButtonElement>('.v3ref-notification-trigger')?.focus();
+      }
+    };
     document.addEventListener('pointerdown', onOutside);
     document.addEventListener('keydown', onEscape);
     return () => {
