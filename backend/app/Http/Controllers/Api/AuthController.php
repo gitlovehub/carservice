@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\PasswordResetOtp;
 use App\Services\AccountEmailService;
 use App\Services\PasswordResetService;
+use App\Support\CustomerPhone;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -131,15 +132,19 @@ class AuthController extends Controller
     public function updateProfile(Request $request): JsonResponse
     {
         $account = $this->authenticatedAccount($request);
+        // SĐT khách không được trùng hồ sơ khác (nhân viên không thuộc bảng khách nên không áp).
+        $phoneRules = $account->role !== Account::ROLE_CUSTOMER ? []
+            : ($account->customer ? CustomerPhone::uniqueWhenChanged($account->customer, $request->input('phone')) : [CustomerPhone::unique()]);
 
         $validated = $request->validate([
             'full_name' => ['sometimes', 'nullable', 'string', 'max:100'],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:20', ...$phoneRules],
             'address' => ['sometimes', 'nullable', 'string', 'max:255'],
             'avatar' => ['sometimes', 'nullable', 'string'],
         ], [
             'full_name.max' => 'Họ và tên không được vượt quá 100 ký tự.',
             'phone.max' => 'Số điện thoại không được vượt quá 20 ký tự.',
+            'phone.unique' => CustomerPhone::TAKEN_MESSAGE,
             'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.',
         ]);
 
@@ -243,9 +248,15 @@ class AuthController extends Controller
         $account->password_hash = Hash::make($validated['new_password']);
         $account->save();
 
+        // Đổi mật khẩu → đăng xuất mọi thiết bị khác, giữ phiên đang dùng.
+        $currentToken = $account->currentAccessToken();
+        $account->tokens()
+            ->when($currentToken instanceof PersonalAccessToken, fn ($query) => $query->whereKeyNot($currentToken->getKey()))
+            ->delete();
+
         return response()->json([
             'success' => true,
-            'message' => 'Đổi mật khẩu thành công.',
+            'message' => 'Đổi mật khẩu thành công. Các thiết bị khác đã được đăng xuất.',
         ]);
     }
 
@@ -386,10 +397,14 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Kiểm tra OTP
+        // Kiểm tra OTP — sai quá số lần cho phép thì huỷ mã (chống dò 6 số).
         if (! Hash::check($request->otp, $passwordResetOtp->otp_hash)) {
+            $locked = app(PasswordResetService::class)->registerFailedAttempt($account, $passwordResetOtp);
+
             return response()->json([
-                'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn.',
+                'message' => $locked
+                    ? 'Bạn đã nhập sai mã quá nhiều lần. Vui lòng yêu cầu mã OTP mới.'
+                    : 'Mã OTP không hợp lệ hoặc đã hết hạn.',
             ], 422);
         }
 
@@ -412,6 +427,7 @@ class AuthController extends Controller
             // Đăng xuất tất cả thiết bị/token cũ
             $account->tokens()->delete();
         });
+        app(PasswordResetService::class)->clearAttempts($account);
 
         return response()->json([
             'message' => 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.',

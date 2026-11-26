@@ -71,6 +71,23 @@ function ProfileGlyph({ name }: { name: "user" | "phone" | "mail" | "pin" | "loc
 
 type ProfileTab = "profile" | "security" | "notifications";
 
+/** Tài khoản + hồ sơ khách mới nhất từ máy chủ; lỗi mạng thì giữ dữ liệu đang có trong localStorage. */
+async function fetchAccountDetails(): Promise<{ account?: AccountInfo; customer?: CustomerProfile }> {
+  try {
+    const accountResponse = await fetchApi("/me");
+    if (!accountResponse?.account) return {};
+    const account = accountResponse.account as AccountInfo;
+    localStorage.setItem("user", JSON.stringify(account));
+    if (account.role !== "CUSTOMER") return { account };
+
+    const [customerResult] = await Promise.allSettled([fetchApi("/me/customer/")]);
+    const customer = customerResult.status === "fulfilled" && customerResult.value?.data ? customerResult.value.data as CustomerProfile : undefined;
+    return { account, customer };
+  } catch {
+    return {};
+  }
+}
+
 function Account() {
   const [account, setAccount] = useState<AccountInfo | null>(() => {
     try {
@@ -128,29 +145,14 @@ function Account() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch account data
-  const loadAccountDetails = async () => {
-    try {
-      const accountResponse = await fetchApi("/me");
-      if (accountResponse?.account) {
-        const currentAccount = accountResponse.account as AccountInfo;
-        setAccount(currentAccount);
-        localStorage.setItem("user", JSON.stringify(currentAccount));
-
-        if (currentAccount.role === "CUSTOMER") {
-          const [customerResult] = await Promise.allSettled([fetchApi("/me/customer/")]);
-
-          if (customerResult.status === "fulfilled" && customerResult.value?.data) {
-            setCustomer(customerResult.value.data as CustomerProfile);
-          }
-        }
-      }
-    } catch {
-      // Keep existing data in localStorage if offline
-    }
-  };
-
   useEffect(() => {
-    void loadAccountDetails();
+    let active = true;
+    void fetchAccountDetails().then(({ account: currentAccount, customer: profile }) => {
+      if (!active) return;
+      if (currentAccount) setAccount(currentAccount);
+      if (profile) setCustomer(profile);
+    });
+    return () => { active = false; };
   }, []);
 
   const fullName =

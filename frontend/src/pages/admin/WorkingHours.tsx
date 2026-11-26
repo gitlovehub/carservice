@@ -191,11 +191,11 @@ function WorkingHours() {
   const [technicians, setTechnicians] = useState(0);
   const fieldErrors = useFieldErrors();
 
+  // Làm mới / Thử lại: bật trạng thái đang tải ngay lúc bấm, effect chỉ tải dữ liệu.
+  const reload = () => { setIsLoading(true); setError(""); setReloadKey((current) => current + 1); };
+
   useEffect(() => {
     let active = true;
-
-    setIsLoading(true);
-    setError("");
 
     fetchApi("/admin/working-hours")
       .then((response: { data: WorkingHour[]; meta?: { technicians?: number } }) => {
@@ -309,7 +309,7 @@ function WorkingHours() {
         <main className="page-container">
           <div>
             <PageHeader title="Lịch làm việc" description="Khung giờ nhận lịch, số lịch tối đa mỗi khung giờ và ngày nghỉ của xưởng."
-              actions={<Button variant="outline" icon="refresh" loading={isLoading} onClick={() => setReloadKey((current) => current + 1)}>Làm mới</Button>}/>
+              actions={<Button variant="outline" icon="refresh" loading={isLoading} onClick={reload}>Làm mới</Button>}/>
 
             <div className="mb-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-[#E1E4E6] bg-white p-5">
@@ -338,7 +338,7 @@ function WorkingHours() {
             {error && (
               <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-[#E7C5C5] bg-[#FBEFEF] px-5 py-4 text-sm text-[#A24A4A]">
                 <span>{error}</span>
-                <Button size="sm" variant="secondary" icon="refresh" onClick={() => setReloadKey((current) => current + 1)}>Thử lại</Button>
+                <Button size="sm" variant="secondary" icon="refresh" onClick={reload}>Thử lại</Button>
               </div>
             )}
 

@@ -50,7 +50,8 @@ return [
     |
     */
 
-    'expiration' => null,
+    // PO 26/11/2026: token đăng nhập hết hạn sau 24 giờ → đăng nhập lại (token cũ dọn hằng ngày, routes/console.php).
+    'expiration' => (int) env('SANCTUM_EXPIRATION', 1440),
 
     /*
     |--------------------------------------------------------------------------

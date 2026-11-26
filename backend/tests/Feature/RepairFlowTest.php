@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Models\Inspection;
 use App\Models\InspectionRecommendation;
 use App\Models\Inventory;
+use App\Models\Invoice;
 use App\Models\MaintenancePackage;
 use App\Models\Notification;
 use App\Models\Part;
@@ -276,6 +277,30 @@ class RepairFlowTest extends TestCase
         $this->assertSame(RepairOrder::COMPLETED, $this->repairOrder->fresh()->status);
     }
 
+    public function test_work_items_are_locked_once_the_order_is_completed(): void
+    {
+        $this->approveAndStartRepair();
+        $workItem = WorkItem::query()->where('repair_order_id', $this->repairOrder->id)->firstOrFail();
+        $this->actingAs($this->technicianAccount)->patchJson("/api/work-items/{$workItem->id}/status", ['status' => WorkItem::COMPLETED])->assertOk();
+        $this->assertNotNull($workItem->fresh()->completed_at);
+        $this->actingAs($this->advisor)->postJson("/api/repair-orders/{$this->repairOrder->id}/complete")->assertOk();
+
+        $this->actingAs($this->advisor)
+            ->patchJson("/api/work-items/{$workItem->id}/status", ['status' => WorkItem::PENDING])
+            ->assertUnprocessable();
+        $this->assertSame(WorkItem::COMPLETED, $workItem->fresh()->status);
+    }
+
+    public function test_reopening_a_work_item_clears_its_completion_time(): void
+    {
+        $this->approveAndStartRepair();
+        $workItem = WorkItem::query()->where('repair_order_id', $this->repairOrder->id)->firstOrFail();
+        $this->actingAs($this->advisor)->patchJson("/api/work-items/{$workItem->id}/status", ['status' => WorkItem::COMPLETED])->assertOk();
+
+        $this->actingAs($this->advisor)->patchJson("/api/work-items/{$workItem->id}/status", ['status' => WorkItem::IN_PROGRESS])->assertOk();
+        $this->assertNull($workItem->fresh()->completed_at);
+    }
+
     /**
      * Đưa phiếu đến COMPLETED và xuất hóa đơn, trả về id hóa đơn.
      */
@@ -356,6 +381,24 @@ class RepairFlowTest extends TestCase
             ->assertUnprocessable();
 
         $this->assertDatabaseCount('payments', 0);
+    }
+
+    public function test_manual_qr_confirmation_endpoint_is_removed(): void
+    {
+        $this->actingAs($this->advisor)->postJson('/api/payments/1/confirm-qr', ['success' => true])->assertNotFound();
+    }
+
+    public function test_cancelled_invoice_cannot_receive_a_payment(): void
+    {
+        $invoiceId = $this->completeAndInvoice();
+        Invoice::query()->whereKey($invoiceId)->update(['status' => Invoice::CANCELLED]);
+
+        $this->actingAs($this->advisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments", ['amount' => 1000])
+            ->assertUnprocessable();
+
+        $this->assertDatabaseCount('payments', 0);
+        $this->assertSame(Invoice::CANCELLED, Invoice::query()->findOrFail($invoiceId)->status);
     }
 
     public function test_order_detail_includes_what_the_customer_requested_when_booking(): void

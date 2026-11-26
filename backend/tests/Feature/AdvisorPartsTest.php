@@ -62,6 +62,15 @@ class AdvisorPartsTest extends TestCase
         $this->assertSame(['PT-2'], $this->skus("?model_id={$model->id}"));
     }
 
+    public function test_shared_parts_catalog_never_exposes_cost_price(): void
+    {
+        $response = $this->actingAs($this->advisor)->getJson('/api/parts')->assertOk();
+
+        $this->assertNotEmpty($response->json());
+        $this->assertArrayNotHasKey('cost_price', $response->json('0'));
+        $this->assertArrayHasKey('sell_price', $response->json('0'));
+    }
+
     public function test_advisor_reads_stock_moves_but_cannot_adjust_stock(): void
     {
         $this->actingAs($this->advisor)->getJson('/api/advisor/stock-moves')->assertOk();

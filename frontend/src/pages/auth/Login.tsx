@@ -1,7 +1,7 @@
 import { ToastError } from "../../components/ui/ToastError";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { fetchApi } from "../../services/api";
+import { fetchApi, SESSION_EXPIRED_KEY } from "../../services/api";
 import { readReturnLocation, resolveReturnPath, setUserRole } from "./auth";
 import { LostEmailLink, VerifyEmailPrompt } from "../../components/auth/VerifyEmailPrompt";
 import Toast, { type ToastType } from "../../components/auth/Toast";
@@ -63,8 +63,12 @@ function Login() {
   const [searchParams] = useSearchParams();
   const linkedEmail = searchParams.get("email")?.trim() ?? "";
   // Về từ nút xác thực trong email: điền sẵn email và báo kết quả.
+  // Phiên trước hết hạn (token 24 giờ) → báo một lần rồi xoá cờ.
+  const [sessionExpired] = useState(() => typeof window !== "undefined" && sessionStorage.getItem(SESSION_EXPIRED_KEY) === "1");
+  useEffect(() => { sessionStorage.removeItem(SESSION_EXPIRED_KEY); }, []);
   const linkNotice = searchParams.has("verified") ? "Xác thực thành công. Nhập mật khẩu để đăng nhập."
-    : searchParams.has("email_changed") ? "Đã đổi email. Vui lòng đăng nhập bằng email mới." : "";
+    : searchParams.has("email_changed") ? "Đã đổi email. Vui lòng đăng nhập bằng email mới."
+    : sessionExpired ? "Phiên đăng nhập đã hết hạn sau 24 giờ. Vui lòng đăng nhập lại." : "";
 
   // Tài khoản đúng mật khẩu nhưng chưa bấm nút xác thực trong email.
   const [pendingEmail, setPendingEmail] = useState("");

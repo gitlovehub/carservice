@@ -4,6 +4,7 @@ use App\Exceptions\ApiExceptionRenderer;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Http\Middleware\EnsureAccountRole;
 use App\Http\Middleware\EnsureIdempotency;
+use App\Http\Middleware\ThrottleRequestsPerRoute;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,6 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
     // Realtime (Reverb): xác thực kênh riêng bằng token Sanctum như mọi API → POST /api/broadcasting/auth.
     ->withBroadcasting(__DIR__.'/../routes/channels.php', ['prefix' => 'api', 'middleware' => ['api', 'auth:sanctum']])
     ->withMiddleware(function (Middleware $middleware): void {
+        // Chạy sau reverse proxy (Railway / nginx): tin proxy kết nối trực tiếp để request()->ip() là IP người dùng,
+        // nếu không mọi giới hạn số lần thử (đăng nhập, OTP, tra cứu) bị tính chung cho cả hệ thống.
+        // TRUSTED_PROXIES = "REMOTE_ADDR" (mặc định: chỉ tin máy kết nối trực tiếp, IP giả client tự chèn bị bỏ qua)
+        // hoặc danh sách IP/CIDR cách nhau bởi dấu phẩy khi có nhiều tầng proxy. Không dùng "*" (Laravel tin mọi IP → giả mạo được).
+        $middleware->trustProxies(at: array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', 'REMOTE_ADDR'))));
+
         $middleware->validateCsrfTokens(except: [
             'api/*',
             // Link xác nhận lịch từ email: chữ ký trong URL là quyền truy cập, khách không có phiên đăng nhập.
@@ -36,6 +43,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureAccountRole::class,
             'idempotency' => EnsureIdempotency::class,
+            // Hạn mức `throttle:X,Y` tính riêng cho từng route (mặc định Laravel dùng chung một bộ đếm cho mọi route).
+            'throttle' => ThrottleRequestsPerRoute::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

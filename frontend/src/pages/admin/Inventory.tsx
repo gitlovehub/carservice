@@ -1,5 +1,5 @@
 import { ToastError } from "../../components/ui/ToastError";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button, DataTable, EmptyState, Field, Input, Modal, Pagination, QuantityStepper, SearchInput, Select, Textarea, type Column, NEWEST_FIRST, useTableSort } from "../../components/ui";
 import { Badge } from "../../components/ui/Badge";
@@ -55,7 +55,7 @@ export default function Inventory() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const term = useDebounced(search.trim());
 
   const partSort = useTableSort(NEWEST_FIRST, () => setPage(1));
@@ -78,16 +78,12 @@ export default function Inventory() {
   const patchPart = (patch: Partial<Editing>) => { partErrors.clear(...Object.keys(patch)); setEditing(current => current && { ...current, ...patch }); };
   const switchTab = (id: Tab) => { setParams(id === "catalog" ? {} : { tab: id }, { replace: true }); setStatus("all"); setPage(1); setEditing(null); };
   const startEdit = (part: AdminPart | null) => {
-    setFormError(""); partErrors.reset(); setCompatPick(emptySelection); setImageFile(null); setImagePreview(null);
+    setFormError(""); partErrors.reset(); setCompatPick(emptySelection); setImageFile(null);
     setEditing(part ? { ...part, description: part.description ?? "" } : { ...blankPart });
   };
-  // Revoke browser object URLs to avoid leaking memory while the editor stays open.
-  useEffect(() => {
-    if (!imageFile) { setImagePreview(null); return; }
-    const url = URL.createObjectURL(imageFile);
-    setImagePreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [imageFile]);
+  // Ảnh xem trước suy ra từ file đã chọn; thu hồi object URL cũ khi đổi file / đóng form để không rò bộ nhớ.
+  const imagePreview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile]);
+  useEffect(() => () => { if (imagePreview) URL.revokeObjectURL(imagePreview); }, [imagePreview]);
   const removeSavedImage = async () => {
     if (!editing?.id || !editing.image_url) return;
     setSaving(true); setFormError("");
@@ -121,11 +117,11 @@ export default function Inventory() {
           await adminApi.uploadPartImage(response.data.id, imageFile);
         } catch (error) {
           parts.reload();
-          throw new Error(`Đã lưu thông tin phụ tùng nhưng ảnh chưa được tải lên: ${errorMessage(error)}. Bấm Lưu thay đổi để thử lại.`);
+          throw new Error(`Đã lưu thông tin phụ tùng nhưng ảnh chưa được tải lên: ${errorMessage(error)}. Bấm Lưu thay đổi để thử lại.`, { cause: error });
         }
       }
       notify(imageFile ? "Đã lưu phụ tùng và ảnh." : response.message, "success");
-      setImageFile(null); setImagePreview(null); setEditing(null);
+      setImageFile(null); setEditing(null);
       parts.reload();
     } catch (error) {
       partErrors.showApi(error, { sku: "sku", name: "name", category: "category", unit: "unit", cost_price: "cost", sell_price: "price", description: "description", min_quantity: "min", image: "image" });

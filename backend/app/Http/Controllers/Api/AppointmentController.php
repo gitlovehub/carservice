@@ -14,6 +14,7 @@ use App\Services\AppointmentSlotService;
 use App\Services\CustomerActivityFeed;
 use App\Services\CustomerReschedulePolicy;
 use App\Support\VehicleCatalogSelection;
+use App\Support\VehicleIdentity;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -77,9 +78,10 @@ class AppointmentController extends Controller
                     // khách chọn "Một xe khác" (separate) thì luôn tạo xe mới — VD hai xe mới giống hệt nhau chưa có biển.
                     $reusePlateless = $plate === null && empty($input['separate']);
 
-                    // Biển số đã có: nếu là xe của chính khách (kể cả đã xóa mềm) thì dùng lại,
-                    // nếu thuộc khách khác thì từ chối để không đặt lịch trên xe của người khác.
-                    $existingVehicle = $plate === null ? null : Vehicle::withTrashed()
+                    // Biển số đang thuộc xe hoạt động của khách khác → từ chối (không đặt lịch trên xe người khác).
+                    // Xe của chính khách (kể cả đã xóa mềm) thì dùng lại / khôi phục kèm lịch sử.
+                    // Xe đã xóa của khách khác (xe đã bán) không chặn: tạo xe mới cho chủ mới (VehicleIdentity).
+                    $existingVehicle = $plate === null ? null : Vehicle::query()
                         ->where('license_plate', $plate)
                         ->lockForUpdate()
                         ->first();
@@ -90,9 +92,11 @@ class AppointmentController extends Controller
                         ]);
                     }
 
+                    $existingVehicle ??= $plate === null ? null : VehicleIdentity::findDeletedOwned($customer->id, $plate, null);
+
                     if ($existingVehicle) {
                         if ($existingVehicle->trashed()) {
-                            $existingVehicle->restore();
+                            VehicleIdentity::restore($existingVehicle, ['plate' => 'new_vehicle.license_plate', 'vin' => 'new_vehicle.license_plate']);
                         }
                         $vehicle = $existingVehicle;
                     } elseif (! empty($input['model_id'])) {

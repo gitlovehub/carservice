@@ -28,7 +28,6 @@ export default function Services() {
 
   useEffect(() => {
     let alive = true;
-    setLoading(readPageCache("public:services") === null); setError(false);
     const save = pageCacheSaver<Service[]>("public:services");
     fetchApi<Service[] | { data: Service[] }>("/services")
       .then(res => {
@@ -85,7 +84,7 @@ export default function Services() {
             <div className="h-3 w-1/3 rounded bg-[#f1f1ef] dark:bg-[#22252a]" /><div className="h-5 w-4/5 rounded bg-[#f1f1ef] dark:bg-[#22252a]" /><div className="h-12 rounded bg-[#f1f1ef] dark:bg-[#22252a]" /><div className="mt-auto h-10 rounded-xl bg-[#f1f1ef] dark:bg-[#22252a]" />
           </div>)}
         </div> :
-        error ? <div role="alert" className={stateBox}>Không tải được dịch vụ từ máy chủ. <button onClick={() => setRefresh(v => v + 1)}>Thử lại</button></div> :
+        error ? <div role="alert" className={stateBox}>Không tải được dịch vụ từ máy chủ. <button onClick={() => { setLoading(readPageCache("public:services") === null); setError(false); setRefresh(v => v + 1); }}>Thử lại</button></div> :
         items.length === 0 ? <div className={stateBox}>Hiện chưa có dịch vụ đang hoạt động.</div> :
         filtered.length === 0 ? <div className={stateBox}>Không tìm thấy dịch vụ phù hợp. <button onClick={() => { setQuery(""); setCategory(ALL); }}>Xóa bộ lọc</button></div> :
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">{filtered.map((service, i) =>

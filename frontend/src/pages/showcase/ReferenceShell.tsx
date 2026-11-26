@@ -23,9 +23,6 @@ const menu = [
   { to:'/about', label:'Về chúng tôi' },
   { to:'/contact', label:'Liên hệ' },
 ];
-// Năm trang mẫu dùng layout full-width. Những trang nghiệp vụ khác giữ nguyên CSS và API,
-// nhưng cùng header/footer, không chuyển qua header cũ khi bấm menu.
-export const referenceRoutes = new Set(['/', '/services', '/about', '/contact', '/repair-status']);
 
 function activeMenu(to: string, pathname: string) {
   if (to === '/') return pathname === '/';
@@ -122,7 +119,9 @@ export function ReferenceHeader() {
     if (next && !megaPanelRef.current?.contains(next) && next !== megaButtonRef.current) setMegaOpen(false);
   };
 
-  useEffect(() => { setMobileOpen(false); setAccountOpen(false); setMegaOpen(false); }, [location.pathname]);
+  // Đổi trang → đóng các menu ngay khi render (không cần effect).
+  const [menuPath, setMenuPath] = useState(location.pathname);
+  if (menuPath !== location.pathname) { setMenuPath(location.pathname); setMobileOpen(false); setAccountOpen(false); setMegaOpen(false); }
   useEffect(() => {
     const escape = (e:KeyboardEvent) => {
       if(e.key!=='Escape') return;

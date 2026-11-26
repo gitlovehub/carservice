@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\CustomerPhone;
 use Illuminate\Foundation\Http\FormRequest;
 
 class RegisterRequest extends FormRequest
@@ -39,6 +40,10 @@ class RegisterRequest extends FormRequest
                 'string',
                 'regex:/^(0|\+84)[3|5|7|8|9][0-9]{8}$/',
                 'max:20',
+                // Không trùng hồ sơ khác — trừ hồ sơ vãng lai cùng email: hồ sơ đó được gộp vào tài khoản sau khi xác thực email.
+                CustomerPhone::unique()->where(fn ($query) => $query->whereNotNull('account_id')
+                    ->orWhereNull('email')
+                    ->orWhereRaw('LOWER(email) <> ?', [(string) $this->input('email')])),
             ],
             'email' => ['required', 'email', 'max:150', 'unique:accounts,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed', 'max:255'],
@@ -53,6 +58,7 @@ class RegisterRequest extends FormRequest
             'full_name.required' => 'Họ và tên không được để trống.',
             'phone.required' => 'Số điện thoại không được để trống.',
             'phone.regex' => 'Số điện thoại không đúng định dạng Việt Nam.',
+            'phone.unique' => CustomerPhone::TAKEN_MESSAGE,
             'email.required' => 'Email không được để trống.',
             'email.email' => 'Email không đúng định dạng.',
             'email.unique' => 'Email này đã được sử dụng.',

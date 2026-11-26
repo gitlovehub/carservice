@@ -86,6 +86,14 @@ function buildServiceInfo(orders: CustomerRepairOrder[]): Map<number, ServiceInf
   return map;
 }
 
+/** Xe + lịch sử sửa chữa (chỉ để hiện ngày bảo dưỡng — lỗi thì vẫn trả danh sách xe); lưu cache trang. */
+async function fetchCars(): Promise<CarsCache> {
+  const save = pageCacheSaver<CarsCache>(CARS_CACHE);
+  const [cars, orders] = await Promise.all([getMyVehicles(), getMyRepairOrders().catch(() => [])]);
+  save({ cars, orders });
+  return { cars, orders };
+}
+
 function Cars() {
   const [cars, setCars] = useState<CustomerVehicle[]>(() => readPageCache<CarsCache>(CARS_CACHE)?.cars ?? []);
   const [serviceInfo, setServiceInfo] = useState<Map<number, ServiceInfo>>(() => buildServiceInfo(readPageCache<CarsCache>(CARS_CACHE)?.orders ?? []));
@@ -96,6 +104,8 @@ function Cars() {
   const currentPage = Math.min(page, totalPages);
   const pagedCars = cars.slice((currentPage - 1) * CARS_PER_PAGE, currentPage * CARS_PER_PAGE);
   const [loading, setLoading] = useState(() => readPageCache(CARS_CACHE) === null);
+  // Mốc "hôm nay" để so hạn bảo dưỡng — lấy một lần, render phải thuần.
+  const [now] = useState(() => Date.now());
   const [error, setError] = useState("");
 
   // Form Thêm xe
@@ -129,17 +139,17 @@ function Cars() {
   const addPlateErrors = useFieldErrors();
   const editPlateErrors = useFieldErrors();
 
+  const applyVehicles = ({ cars: data, orders }: CarsCache) => {
+    setCars(data);
+    setServiceInfo(buildServiceInfo(orders));
+    setRepairOrders(orders);
+  };
+
   const loadVehicles = async (silent = false) => {
     if (!silent) setLoading(true);
     setError("");
-    const save = pageCacheSaver<CarsCache>(CARS_CACHE);
     try {
-      // Lịch sử sửa chữa chỉ để hiện ngày bảo dưỡng — lỗi thì vẫn hiện danh sách xe.
-      const [data, orders] = await Promise.all([getMyVehicles(), getMyRepairOrders().catch(() => [])]);
-      save({ cars: data, orders });
-      setCars(data);
-      setServiceInfo(buildServiceInfo(orders));
-      setRepairOrders(orders);
+      applyVehicles(await fetchCars());
     } catch (err) {
       setError(userErrorMessage(err, "Không thể tải danh sách xe."));
     } finally {
@@ -147,8 +157,14 @@ function Cars() {
     }
   };
 
+  // Lần đầu: trạng thái tải đã lấy từ cache (useState), effect chỉ cập nhật khi có kết quả.
   useEffect(() => {
-    void loadVehicles(readPageCache(CARS_CACHE) !== null);
+    let active = true;
+    fetchCars()
+      .then(result => { if (active) applyVehicles(result); })
+      .catch(err => { if (active) setError(userErrorMessage(err, "Không thể tải danh sách xe.")); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
   useLiveRefresh(() => void loadVehicles(true));
 
@@ -314,7 +330,7 @@ function Cars() {
               const info = serviceInfo.get(car.id);
               const lastServiceAt = info?.lastServiceAt ?? null;
               const nextServiceAt = lastServiceAt ? addMonths(lastServiceAt, SERVICE_INTERVAL_MONTHS) : null;
-              const nextServiceDue = nextServiceAt !== null && nextServiceAt.getTime() <= Date.now();
+              const nextServiceDue = nextServiceAt !== null && nextServiceAt.getTime() <= now;
               return (
                 <article key={car.id} data-testid="customer-car-card" className="grid min-w-0 grid-cols-[200px_minmax(0,1fr)_minmax(330px,1.15fr)_auto] items-center gap-5 rounded-[18px] border border-cs-border bg-cs-surface p-4 shadow-[0_2px_10px_rgb(15_23_42/4%)] transition-colors hover:border-[#cf29358c] max-[1180px]:grid-cols-[170px_minmax(0,1fr)_auto] max-[670px]:grid-cols-1 max-[670px]:gap-4">
                   {/* Ảnh đại diện do gara quản lý: khách chỉ xem, chưa có ảnh thì hiện biểu tượng ô tô. */}
@@ -642,14 +658,16 @@ function VehicleDetailModal({ vehicle, orders, onClose, onEdit, onNoteSaved }: {
   const [noteDraft, setNoteDraft] = useState(vehicle.note ?? "");
   const [savingNote, setSavingNote] = useState(false);
   const [noteError, setNoteError] = useState("");
+  // Mốc "hôm nay" lấy một lần khi mở modal (render phải thuần — không gọi Date.now() mỗi lần vẽ).
+  const [now] = useState(() => Date.now());
 
   const brand = vehicle.model?.brand?.name || "Phương tiện";
   const trim = vehicle.trim?.name || vehicle.variant;
   const info = buildServiceInfo(orders).get(vehicle.id);
   const lastServiceAt = info?.lastServiceAt ?? null;
   const nextServiceAt = lastServiceAt ? addMonths(lastServiceAt, SERVICE_INTERVAL_MONTHS) : null;
-  const nextServiceDue = nextServiceAt !== null && nextServiceAt.getTime() <= Date.now();
-  const daysUntilNext = nextServiceAt ? Math.ceil((nextServiceAt.getTime() - Date.now()) / 86_400_000) : null;
+  const nextServiceDue = nextServiceAt !== null && nextServiceAt.getTime() <= now;
+  const daysUntilNext = nextServiceAt ? Math.ceil((nextServiceAt.getTime() - now) / 86_400_000) : null;
   const finishedCount = orders.filter((order) => FINISHED_ORDER_STATUSES.has(order.status)).length;
   const activeOrder = orders.find((order) => !LEFT_GARAGE_STATUSES.has(order.status));
   const sortedOrders = [...orders].sort((a, b) => new Date(b.received_at ?? 0).getTime() - new Date(a.received_at ?? 0).getTime());

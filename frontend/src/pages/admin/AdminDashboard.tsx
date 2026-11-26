@@ -117,9 +117,10 @@ function PeriodPanels({ report }: { report: ReportData }) {
     <div className="mt-5 grid gap-5 lg:grid-cols-2 2xl:grid-cols-3">
       <Panel title="Doanh thu theo dịch vụ" icon="wrench" action={<PanelLink to="/admin/reports">Báo cáo</PanelLink>}>
         {serviceRows.length === 0 ? <EmptyState compact icon="wrench" title="Chưa có doanh thu dịch vụ"/>
-          : <ul className="flex flex-col gap-3.5">{serviceRows.map(s => {
+          : <ul className="flex flex-col gap-3.5">{serviceRows.map((s, index) => {
             const share = percent(s.revenue, serviceTotal);
-            return <li key={s.name} title={vnd(s.revenue)}>
+            // Hai dịch vụ khác nhau có thể cùng tên trên hoá đơn cũ → key kèm vị trí (giống trang Báo cáo).
+            return <li key={`${s.name}-${index}`} title={vnd(s.revenue)}>
               <span className="mb-1.5 flex items-center justify-between gap-3 text-small">
                 <span className="min-w-0 truncate text-cs-text">{s.name}</span>
                 <b className="shrink-0 tabular-nums text-cs-text-2">{share}%</b>

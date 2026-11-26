@@ -77,7 +77,7 @@ for (const needle of ['icon="send"', 'iconRight="arrow-right"', 'variant="tonal"
 const delivery = read('../src/pages/advisor/AdvisorDelivery.tsx');
 assert(delivery.includes('disabled={working || state !== "ready"}'), 'Bàn giao: nút chỉ bấm được khi đủ điều kiện');
 const adminDashboard = read('../src/pages/admin/AdminDashboard.tsx');
-assert(adminDashboard.includes('StatCard') && adminDashboard.includes('variant="segment"'), 'Dashboard Admin: thẻ số liệu + bộ chọn khoảng thời gian');
+assert(adminDashboard.includes('<StatCard') && adminDashboard.includes('<PeriodFilter'), 'Dashboard Admin: thẻ số liệu + bộ chọn khoảng thời gian');
 const accounts = read('../src/pages/admin/Accounts.tsx');
 assert(accounts.includes('icon: "key"') && accounts.includes('icon: "lock", danger: true') && accounts.includes('variant="primary" icon="plus"'), 'Tài khoản: Đặt lại mật khẩu, Khóa (danger), Tạo tài khoản primary');
 

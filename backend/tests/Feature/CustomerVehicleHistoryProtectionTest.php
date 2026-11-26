@@ -10,6 +10,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -143,12 +144,63 @@ class CustomerVehicleHistoryProtectionTest extends TestCase
         $this->assertSame(1, Vehicle::withTrashed()->where('license_plate', '30A-123.45')->count());
     }
 
-    public function test_plate_of_another_customers_deleted_vehicle_is_still_rejected(): void
+    public function test_new_owner_can_register_a_sold_vehicle_while_old_owner_keeps_history(): void
     {
-        $other = Vehicle::factory()->create(['license_plate' => '51K-888.88']);
-        $other->delete();
+        // Chủ cũ đã xoá xe (đã bán) — xe cũ còn lịch sử của chủ cũ.
+        $old = Vehicle::factory()->create(['license_plate' => '51K-888.88', 'vin' => 'RLA1234567890ABCD']);
+        $old->delete();
+
+        $this->postJson('/api/me/vehicles', ['model_id' => $this->vios->id, 'license_plate' => '51K-888.88', 'vin' => 'RLA1234567890ABCD'])
+            ->assertCreated()
+            ->assertJsonMissingPath('restored');
+
+        $this->assertSoftDeleted($old);
+        $this->assertNotSame($this->customer->id, $old->fresh()->customer_id);
+        $this->assertSame(1, Vehicle::query()->where('license_plate', '51K-888.88')->where('customer_id', $this->customer->id)->count());
+    }
+
+    public function test_plate_of_another_customers_active_vehicle_is_still_rejected(): void
+    {
+        Vehicle::factory()->create(['license_plate' => '51K-888.88']);
 
         $this->postJson('/api/me/vehicles', ['model_id' => $this->vios->id, 'license_plate' => '51K-888.88'])
             ->assertJsonValidationErrors('license_plate');
+    }
+
+    public function test_adding_vin_of_own_deleted_vehicle_restores_it(): void
+    {
+        $this->vehicle->update(['license_plate' => null, 'vin' => 'RLA1234567890ABCD']);
+        $this->vehicle->delete();
+
+        $this->postJson('/api/me/vehicles', ['model_id' => $this->vios->id, 'vin' => 'rla1234567890abcd'])
+            ->assertOk()->assertJsonPath('restored', true)->assertJsonPath('data.id', $this->vehicle->id);
+    }
+
+    public function test_restoring_is_blocked_when_the_plate_now_belongs_to_another_active_vehicle(): void
+    {
+        $this->vehicle->delete();
+        Vehicle::factory()->create(['license_plate' => '30A-123.45']);
+
+        $this->postJson('/api/me/vehicles', ['model_id' => $this->vios->id, 'license_plate' => '30A-123.45'])
+            ->assertUnprocessable()->assertJsonValidationErrors('license_plate');
+        $this->assertSoftDeleted($this->vehicle);
+    }
+
+    public function test_advisor_adding_a_customers_deleted_vehicle_restores_it(): void
+    {
+        $this->repairOrder(RepairOrder::HANDED_OVER);
+        $this->vehicle->delete();
+        Sanctum::actingAs(Account::factory()->advisor()->create());
+
+        $this->postJson('/api/vehicles', ['customer_id' => $this->customer->id, 'model_id' => $this->vios->id, 'license_plate' => '30A-123.45'])
+            ->assertOk()->assertJsonPath('restored', true)->assertJsonPath('data.id', $this->vehicle->id);
+        $this->assertNotSoftDeleted($this->vehicle);
+    }
+
+    public function test_database_rejects_two_active_vehicles_with_the_same_plate(): void
+    {
+        $this->expectException(QueryException::class);
+
+        Vehicle::factory()->create(['license_plate' => '30A-123.45']);
     }
 }

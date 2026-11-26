@@ -49,7 +49,7 @@ assert.doesNotMatch(quotes, /Đánh dấu đã phê duyệt|\/respond/, 'Advisor
 const progress = src('src/pages/advisor/AdvisorRepairProgress.tsx');
 assert.match(routes, /path="repair-progress" element=\{<AdvisorRepairProgress\/>\}/);
 assert.match(progress, /withProgress: true/);
-assert.match(progress, /disabled=\{working \|\| unfinished > 0\}/);
+assert.match(progress, /disabled=\{busy \|\| unfinished > 0\}/);
 assert.match(progress, /workflowApi\.transition\(order\.id, "complete"\)/);
 // Phụ tùng (mockup 17/11) — chỉ xem theo D-020: không gọi API nhập/xuất/điều chỉnh tồn của Admin.
 const partsPage = src('src/pages/advisor/AdvisorParts.tsx');

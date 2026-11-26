@@ -39,25 +39,25 @@ export default function CustomerNotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<CustomerNotification[]>([]);
   const [unread, setUnread] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const holderRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await getCustomerNotifications();
+  // Làm mới nền (lúc vào trang, định kỳ, realtime): không bật lại "Đang tải" để chuông không nháy.
+  // State chỉ đổi trong callback khi có kết quả (không đổi đồng bộ lúc gọi).
+  const refresh = useCallback(() => getCustomerNotifications()
+    .then(response => {
       setItems(response.items);
       setUnread(response.unreadCount);
-    } catch (cause) {
-      setError(userErrorMessage(cause, 'Không thể lấy thông báo.'));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      setError('');
+    })
+    .catch((cause: unknown) => setError(userErrorMessage(cause, 'Không thể lấy thông báo.')))
+    .finally(() => setLoading(false)), []);
+
+  // Người dùng chủ động tải lại (mở chuông / Thử lại): hiện trạng thái đang tải.
+  const reload = () => { setLoading(true); setError(''); void refresh(); };
 
   // Đọc số lượng khi vào website và tự làm mới mỗi phút (chỉ khi tab đang mở) — không tạo badge giả nếu Backend lỗi.
   useEffect(() => { void refresh(); }, [refresh]);
@@ -67,7 +67,9 @@ export default function CustomerNotificationBell() {
   }, [refresh]);
   // Có thông báo mới / đọc ở trang Hồ sơ → số chuông cập nhật ngay.
   useLiveRefresh(() => void refresh());
-  useEffect(() => { setOpen(false); }, [location.pathname]);
+  // Đổi trang → đóng chuông ngay khi render (không cần effect).
+  const [menuPath, setMenuPath] = useState(location.pathname);
+  if (menuPath !== location.pathname) { setMenuPath(location.pathname); setOpen(false); }
   useEffect(() => {
     if (!open) return;
     const onOutside = (event: PointerEvent) => {
@@ -111,7 +113,7 @@ export default function CustomerNotificationBell() {
   return <div className="v3ref-notification" ref={holderRef}>
     <button type="button" className="v3ref-notification-trigger" title="Thông báo của bạn"
       aria-label={unread ? `Thông báo (${unread} chưa đọc)` : 'Thông báo'} aria-expanded={open}
-      aria-haspopup="dialog" onClick={() => { setOpen(value => !value); if (!open) void refresh(); }}>
+      aria-haspopup="dialog" onClick={() => { setOpen(value => !value); if (!open) reload(); }}>
       {/* Còn tin chưa đọc → chuông lắc theo nhịp; đang mở bảng thì tạm dừng; đọc hết (unread = 0) thì thôi lắc. */}
       <span className={`v3ref-notification-bell${unread > 0 && !open ? ' is-ringing' : ''}`}><Icon name="bell" size={21}/></span>
       {unread > 0 && <span className="v3ref-notification-count">{unread > 9 ? '9+' : unread}</span>}
@@ -122,7 +124,7 @@ export default function CustomerNotificationBell() {
         {unread > 0 && <button type="button" onClick={() => void readAll()}>Đánh dấu đã đọc hết</button>}
       </div>
       {loading && items.length === 0 ? <p className="v3ref-notification-empty">Đang tải thông báo...</p>
-        : error && items.length === 0 ? <p className="v3ref-notification-error" role="alert">{error} <button type="button" onClick={() => void refresh()}>Thử lại</button></p>
+        : error && items.length === 0 ? <p className="v3ref-notification-error" role="alert">{error} <button type="button" onClick={reload}>Thử lại</button></p>
         : items.length === 0 ? <div className="v3ref-notification-empty"><span className="v3ref-notification-empty-icon"><Icon name="bell" size={23}/></span><strong>Chưa có thông báo</strong><p>Khi gara xác nhận lịch, gửi báo giá, sửa xong xe hay lập hóa đơn, tin mới sẽ xuất hiện ở đây.</p></div>
         : <div className="v3ref-notification-list">
           {items.map(item => {

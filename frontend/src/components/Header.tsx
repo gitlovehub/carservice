@@ -101,10 +101,13 @@ function Header() {
     };
   }, [location.pathname]);
 
-  useEffect(() => {
+  // Đổi trang → đóng menu. Điều chỉnh state ngay khi render (không cần effect, tránh render thừa).
+  const [menuPath, setMenuPath] = useState(location.pathname);
+  if (menuPath !== location.pathname) {
+    setMenuPath(location.pathname);
     setOpen(false);
     setMobileOpen(false);
-  }, [location.pathname]);
+  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

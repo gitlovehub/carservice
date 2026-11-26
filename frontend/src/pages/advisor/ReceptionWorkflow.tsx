@@ -402,6 +402,7 @@ export default function ReceptionWorkflow() {
   const select = (id: number) => setSearchParams({ appointment: String(id) });
 
   return <div className="page-container adv-theme">
+    <h1 className="sr-only">Tiếp nhận xe</h1>
     <Stepper current={walkIn ? 1 : selectedId ? step : 0}/>
     <div className="grid items-start gap-5 xl:grid-cols-[minmax(340px,0.85fr)_minmax(0,1.6fr)]">
       <AppointmentQueue selectedId={selectedId} onSelect={select} walkIn={walkIn} version={version}

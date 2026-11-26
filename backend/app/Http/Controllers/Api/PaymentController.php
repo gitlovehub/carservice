@@ -44,18 +44,4 @@ class PaymentController extends Controller
 
         return response()->json(['message' => "Đã gửi hoá đơn và link thanh toán tới {$email}.", 'emailed_to' => $email]);
     }
-
-    public function confirmQr(Request $request, Payment $payment): JsonResponse
-    {
-        $this->authorize('update', $payment);
-
-        $data = $request->validate([
-            'success' => ['required', 'boolean'],
-            'transaction_code' => ['nullable', 'string'],
-        ]);
-
-        $payment = $this->service->confirmQrPayment($payment, $data['success'], $data['transaction_code'] ?? null);
-
-        return response()->json($payment);
-    }
 }

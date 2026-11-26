@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\RepairOrder;
 use App\Models\Vehicle;
+use App\Support\CustomerPhone;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -109,7 +110,7 @@ class CustomerController extends Controller
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('customers', 'phone'),
+                CustomerPhone::unique(),
             ],
 
             'email' => [
@@ -120,7 +121,7 @@ class CustomerController extends Controller
             ],
 
             'address' => ['nullable', 'string', 'max:255'],
-        ]);
+        ], ['phone.unique' => CustomerPhone::TAKEN_MESSAGE]);
 
         $customer = Customer::create($validated);
 
@@ -207,7 +208,7 @@ class CustomerController extends Controller
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('customers', 'phone')->ignore($customer->id),
+                ...CustomerPhone::uniqueWhenChanged($customer, $request->input('phone')),
             ],
 
             'email' => [
@@ -224,7 +225,7 @@ class CustomerController extends Controller
                 'string',
                 'max:255',
             ],
-        ]);
+        ], ['phone.unique' => CustomerPhone::TAKEN_MESSAGE]);
 
         // Email nhận mã xác nhận không đổi qua form thường: email đã xác minh phải đi qua luồng xác minh, chỉ admin được đổi.
         if (array_key_exists('email', $validated) && mb_strtolower((string) $validated['email']) !== mb_strtolower((string) $customer->email)) {
@@ -330,7 +331,7 @@ class CustomerController extends Controller
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('customers', 'phone')->ignore($customer->id),
+                ...CustomerPhone::uniqueWhenChanged($customer, $request->input('phone')),
             ],
 
             'email' => [
@@ -347,7 +348,7 @@ class CustomerController extends Controller
                 'string',
                 'max:255',
             ],
-        ]);
+        ], ['phone.unique' => CustomerPhone::TAKEN_MESSAGE]);
 
         // Email là email đăng nhập: chỉ đổi qua "Bảo mật & Đăng nhập" (mật khẩu + nút xác thực gửi tới email mới).
         if (array_key_exists('email', $validated) && mb_strtolower((string) $validated['email']) !== mb_strtolower((string) $customer->email)) {

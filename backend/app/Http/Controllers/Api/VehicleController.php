@@ -11,6 +11,7 @@ use App\Services\VehicleAvatarService;
 use App\Support\GarageDay;
 use App\Support\LicensePlate;
 use App\Support\VehicleCatalogSelection;
+use App\Support\VehicleIdentity;
 use App\Support\VehicleVin;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -127,6 +128,17 @@ class VehicleController extends Controller
     {
         $this->normalizeVinInput($request);
 
+        // Thêm lại xe khách đã xoá (cùng biển số / VIN) → khôi phục hồ sơ cũ kèm lịch sử, không tạo bản trùng.
+        $customerId = (int) $request->input('customer_id');
+        if ($customerId > 0 && ($restored = $this->restoreDeletedVehicleByPlate($request, $customerId))) {
+            return response()->json([
+                'success' => true,
+                'restored' => true,
+                'message' => 'Đã khôi phục xe của khách cùng toàn bộ lịch sử bảo dưỡng.',
+                'data' => $restored->load('customer'),
+            ]);
+        }
+
         $validated = $request->validate([
             'customer_id' => [
                 'required',
@@ -160,14 +172,14 @@ class VehicleController extends Controller
                 'nullable',
                 'string',
                 'max:20',
-                'unique:vehicles,license_plate',
+                VehicleIdentity::plateUnique(),
             ],
 
             'vin' => [
                 'nullable',
                 'string',
                 'regex:'.VehicleVin::PATTERN,
-                'unique:vehicles,vin',
+                VehicleIdentity::vinUnique(),
             ],
 
             'mileage' => [
@@ -266,16 +278,14 @@ class VehicleController extends Controller
                 'nullable',
                 'string',
                 'max:20',
-                Rule::unique('vehicles', 'license_plate')
-                    ->ignore($vehicle->id),
+                VehicleIdentity::plateUnique($vehicle->id),
             ],
 
             'vin' => [
                 'nullable',
                 'string',
                 VehicleVin::rule($vehicle->vin),
-                Rule::unique('vehicles', 'vin')
-                    ->ignore($vehicle->id),
+                VehicleIdentity::vinUnique($vehicle->id),
             ],
 
             'mileage' => [
@@ -523,14 +533,14 @@ class VehicleController extends Controller
                 'string',
                 'max:20',
                 LicensePlate::rule(),
-                'unique:vehicles,license_plate',
+                VehicleIdentity::plateUnique(),
             ],
 
             'vin' => [
                 'nullable',
                 'string',
                 'regex:'.VehicleVin::PATTERN,
-                'unique:vehicles,vin',
+                VehicleIdentity::vinUnique(),
             ],
 
             'mileage' => [
@@ -648,16 +658,14 @@ class VehicleController extends Controller
                 'string',
                 'max:20',
                 LicensePlate::rule($vehicle->license_plate),
-                Rule::unique('vehicles', 'license_plate')
-                    ->ignore($vehicle->id),
+                VehicleIdentity::plateUnique($vehicle->id),
             ],
 
             'vin' => [
                 'nullable',
                 'string',
                 VehicleVin::rule($vehicle->vin),
-                Rule::unique('vehicles', 'vin')
-                    ->ignore($vehicle->id),
+                VehicleIdentity::vinUnique($vehicle->id),
             ],
 
             'mileage' => [
@@ -786,20 +794,12 @@ class VehicleController extends Controller
     }
 
     /**
-     * Biển số trùng với xe đã xóa (mềm) của chính khách này → khôi phục xe đó,
-     * cập nhật ODO (chỉ khi tăng) và ghi chú nếu có gửi kèm.
+     * Biển số (hoặc VIN) trùng với xe đã xóa (mềm) của chính khách này → khôi phục xe đó kèm lịch sử,
+     * cập nhật ODO (chỉ khi tăng) và ghi chú nếu có gửi kèm. Xe đã xoá của khách KHÁC không ảnh hưởng (VehicleIdentity).
      */
     private function restoreDeletedVehicleByPlate(Request $request, int $customerId): ?Vehicle
     {
-        $plate = strtoupper(trim((string) $request->input('license_plate', '')));
-        if ($plate === '') {
-            return null;
-        }
-
-        $vehicle = Vehicle::onlyTrashed()
-            ->where('customer_id', $customerId)
-            ->where('license_plate', $plate)
-            ->first();
+        $vehicle = VehicleIdentity::findDeletedOwned($customerId, $request->input('license_plate'), $request->input('vin'));
         if (! $vehicle) {
             return null;
         }
@@ -809,7 +809,7 @@ class VehicleController extends Controller
             'note' => ['nullable', 'string'],
         ]);
 
-        $vehicle->restore();
+        VehicleIdentity::restore($vehicle);
 
         $mileage = $request->input('mileage');
         if ($mileage !== null && (int) $mileage > (int) ($vehicle->mileage ?? 0)) {

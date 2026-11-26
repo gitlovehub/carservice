@@ -6,9 +6,11 @@ use App\Mail\AccountVerificationMail;
 use App\Models\Account;
 use App\Models\Customer;
 use App\Models\Employee;
+use App\Models\PasswordResetOtp;
 use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
 use App\Services\AccountEmailService;
+use App\Services\PasswordResetService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -387,13 +389,13 @@ class AuthTest extends TestCase
             'address' => '123 Ha Noi',
         ]);
 
+        // PO 26/11/2026: SĐT không được trùng → đăng ký bằng số của hồ sơ khác (khác email) bị chặn ngay.
         $this->postJson('/api/register', $this->registerPayload('attacker@example.com', '0988776655'))
-            ->assertCreated();
-
-        $this->verifyEmailWithSentLink('attacker@example.com');
+            ->assertUnprocessable()->assertJsonValidationErrors('phone');
 
         $this->assertNull($victim->fresh()->account_id);
-        $this->assertDatabaseCount('customers', 2);
+        $this->assertDatabaseCount('customers', 1);
+        $this->assertDatabaseMissing('accounts', ['email' => 'attacker@example.com']);
     }
 
     public function test_walkin_customer_is_linked_only_after_matching_email_is_verified(): void
@@ -542,6 +544,90 @@ class AuthTest extends TestCase
 
         $account->refresh();
         $this->assertTrue(Hash::check('NewSecret123', $account->getAuthPassword()));
+    }
+
+    public function test_registration_rejects_a_phone_owned_by_another_customer(): void
+    {
+        Mail::fake();
+        $owner = $this->createAccount(email: 'chu@example.com', role: Account::ROLE_CUSTOMER);
+        Customer::query()->create(['account_id' => $owner->id, 'full_name' => 'Chủ số', 'phone' => '0912000111', 'email' => 'chu@example.com']);
+
+        $this->postJson('/api/register', $this->registerPayload('nguoi-moi@example.com', '0912000111'))
+            ->assertUnprocessable()->assertJsonValidationErrors('phone');
+        $this->assertDatabaseMissing('accounts', ['email' => 'nguoi-moi@example.com']);
+    }
+
+    public function test_registration_allows_the_phone_of_the_walk_in_profile_with_the_same_email(): void
+    {
+        Mail::fake();
+        Customer::query()->create(['full_name' => 'Khách vãng lai', 'phone' => '0912000222', 'email' => 'vanglai@example.com']);
+
+        $this->postJson('/api/register', $this->registerPayload('vanglai@example.com', '0912000222'))->assertCreated();
+        $this->postJson('/api/register', $this->registerPayload('nguoi-khac@example.com', '0912000222'))
+            ->assertUnprocessable()->assertJsonValidationErrors('phone');
+    }
+
+    public function test_profile_phone_cannot_take_another_customers_number_but_unchanged_number_still_saves(): void
+    {
+        $other = Customer::query()->create(['full_name' => 'Người khác', 'phone' => '0912000333']);
+        $account = $this->createAccount(email: 'khach@example.com', role: Account::ROLE_CUSTOMER);
+        Customer::query()->create(['account_id' => $account->id, 'full_name' => 'Khách', 'phone' => '0912000333', 'email' => 'khach@example.com']);
+        $token = $account->createToken('web')->plainTextToken;
+
+        // Dữ liệu cũ đang trùng số: giữ nguyên số vẫn sửa được thông tin khác.
+        $this->withToken($token)->patchJson('/api/me/profile', ['full_name' => 'Khách Mới', 'phone' => '0912000333'])->assertOk();
+        $this->withToken($token)->patchJson('/api/me/profile', ['phone' => '0912000444'])->assertOk();
+        $this->withToken($token)->patchJson('/api/me/profile', ['phone' => $other->phone])
+            ->assertUnprocessable()->assertJsonValidationErrors('phone');
+    }
+
+    public function test_login_token_expires_after_24_hours(): void
+    {
+        $token = $this->createAccount()->createToken('web')->plainTextToken;
+
+        $this->travel(23)->hours();
+        $this->withToken($token)->getJson('/api/me')->assertOk();
+
+        $this->travel(2)->hours();
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token)->getJson('/api/me')->assertUnauthorized();
+    }
+
+    public function test_changing_password_signs_out_other_devices_but_keeps_current_one(): void
+    {
+        $account = $this->createAccount();
+        $current = $account->createToken('dang-dung')->plainTextToken;
+        $account->createToken('may-khac');
+
+        $this->withToken($current)->postJson('/api/me/change-password', [
+            'current_password' => 'correct-password',
+            'new_password' => 'NewSecret123',
+            'new_password_confirmation' => 'NewSecret123',
+        ])->assertOk();
+
+        $this->assertSame(['dang-dung'], $account->tokens()->pluck('name')->all());
+    }
+
+    public function test_password_reset_otp_is_revoked_after_too_many_wrong_guesses(): void
+    {
+        $account = $this->createAccount(email: 'khach@example.com', role: Account::ROLE_CUSTOMER);
+        PasswordResetOtp::query()->create([
+            'account_id' => $account->id,
+            'otp_hash' => Hash::make('123456'),
+            'expires_at' => now()->addMinutes(PasswordResetService::TTL_MINUTES),
+        ]);
+        // Mỗi lần thử từ một IP khác: giới hạn phải tính theo mã, không chỉ theo IP.
+        $attempt = fn (string $otp, int $i) => $this->withServerVariables(['REMOTE_ADDR' => "198.51.100.{$i}"])
+            ->postJson('/api/reset-password', ['email' => 'khach@example.com', 'otp' => $otp, 'password' => 'MatKhauMoi1', 'password_confirmation' => 'MatKhauMoi1']);
+
+        foreach (range(1, PasswordResetService::MAX_ATTEMPTS - 1) as $i) {
+            $attempt('000000', $i)->assertUnprocessable()->assertJsonPath('message', 'Mã OTP không hợp lệ hoặc đã hết hạn.');
+        }
+        $attempt('000000', 50)->assertUnprocessable()->assertJsonPath('message', 'Bạn đã nhập sai mã quá nhiều lần. Vui lòng yêu cầu mã OTP mới.');
+
+        // Mã đúng cũng không còn dùng được sau khi bị huỷ.
+        $attempt('123456', 51)->assertUnprocessable();
+        $this->assertTrue(Hash::check('correct-password', $account->fresh()->getAuthPassword()));
     }
 
     private function registerPayload(string $email, string $phone): array

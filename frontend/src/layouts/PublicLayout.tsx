@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 import PageTransition from "../components/PageTransition";
-import { ReferenceHeader, ReferenceFooter, referenceRoutes } from "../pages/showcase/ReferenceShell";
+import { ReferenceHeader, ReferenceFooter } from "../pages/showcase/ReferenceShell";
+import { referenceRoutes } from "../pages/showcase/referenceRoutes";
 
 /** Một header/footer xuyên suốt khu khách hàng, kể cả các trang nghiệp vụ cũ.
  * Không đổi giao diện đột ngột khi vào Đặt lịch, Báo giá, Quản lý xe hay Đăng nhập. */

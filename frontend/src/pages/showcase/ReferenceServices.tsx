@@ -62,7 +62,7 @@ export default function ReferenceServices(){
   const timer=window.setTimeout(()=>setSearchParams(prev=>{const copy=new URLSearchParams(prev);if(next)copy.set('search',next);else copy.delete('search');copy.delete('page');return copy},{replace:true}),300);
   return()=>window.clearTimeout(timer);
  },[draft,query,setSearchParams]);
- useEffect(()=>{let alive=true;setLoading(true);setError('');fetchApi<Service[]|{data:Service[]}>('/services').then(r=>{if(alive)setItems(Array.isArray(r)?r:Array.isArray(r?.data)?r.data:[])}).catch(e=>{if(alive)setError(userErrorMessage(e, 'Không tải được danh mục dịch vụ'))}).finally(()=>{if(alive)setLoading(false)});return()=>{alive=false}},[retry]);
+ useEffect(()=>{let alive=true;fetchApi<Service[]|{data:Service[]}>('/services').then(r=>{if(alive)setItems(Array.isArray(r)?r:Array.isArray(r?.data)?r.data:[])}).catch(e=>{if(alive)setError(userErrorMessage(e, 'Không tải được danh mục dịch vụ'))}).finally(()=>{if(alive)setLoading(false)});return()=>{alive=false}},[retry]);
  // Danh mục + icon do admin chọn (/service-categories, theo thứ tự admin). Lỗi API → suy từ danh sách dịch vụ, icon mặc định.
  const apiCategories=useApi<{data:{id:number;name:string;icon:string;services_count:number}[]}>('/service-categories')?.data;
  const categories=useMemo(()=>{
@@ -110,7 +110,7 @@ export default function ReferenceServices(){
    {filtersOn&&<button type="button" className="v3ref-sv-clear" onClick={()=>setSearchParams(prev=>{const c=new URLSearchParams(prev);['search','price','sort','page'].forEach(k=>c.delete(k));return c},{replace:true})}>Xoá bộ lọc</button>}
    {!loading&&!error&&filtered.length>0&&<small className="v3ref-sv-count">Hiển thị {(page-1)*PAGE_SIZE+1}–{Math.min(page*PAGE_SIZE,filtered.length)} / {filtered.length} dịch vụ</small>}
   </div>
- {loading?<p className="v3ref-empty">Đang tải danh mục dịch vụ…</p>:error?<div className="v3ref-empty" role="alert">{error}<br/><button onClick={()=>setRetry(v=>v+1)}>Thử tải lại</button></div>:filtered.length===0?<p className="v3ref-empty">Không có dịch vụ phù hợp với bộ lọc.</p>:<div className="v3ref-service-grid">{shown.map(service=>{
+ {loading?<p className="v3ref-empty">Đang tải danh mục dịch vụ…</p>:error?<div className="v3ref-empty" role="alert">{error}<br/><button onClick={()=>{setLoading(true);setError('');setRetry(v=>v+1)}}>Thử tải lại</button></div>:filtered.length===0?<p className="v3ref-empty">Không có dịch vụ phù hợp với bộ lọc.</p>:<div className="v3ref-service-grid">{shown.map(service=>{
   // Không còn ô tick (PO 18/11): bấm "Đặt lịch" để thêm dịch vụ vào lựa chọn rồi sang đặt lịch.
   const on=picks.ids.includes(service.id);
   return <article className={`v3ref-service-card ${on?'ring-2 ring-[#e11d2e]':''}`} key={service.id}><ServicePhoto service={service}/><div className="v3ref-card-body">

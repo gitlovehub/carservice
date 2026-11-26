@@ -7,6 +7,8 @@ import { apiErrorKind, apiErrorMessage, type ApiErrorBody, type ApiErrorKind } f
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
 
 export type { ApiErrorBody };
+/** Cờ (sessionStorage) báo trang Đăng nhập rằng phiên trước đã hết hạn. */
+export const SESSION_EXPIRED_KEY = "carservice_session_expired";
 export class ApiClientError extends Error {
   readonly status: number;
   readonly data: ApiErrorBody | null;
@@ -47,6 +49,8 @@ apiClient.interceptors.response.use(
     const message = apiErrorMessage(kind, data);
     // Backend enforces role/ownership; 401 invalidates the cached session.
     if (status === 401) {
+      // Đang có phiên mà bị 401 = token hết hạn (24 giờ) / bị thu hồi → trang Đăng nhập báo cho người dùng.
+      if (localStorage.getItem("token")) sessionStorage.setItem(SESSION_EXPIRED_KEY, "1");
       localStorage.removeItem("token");
       localStorage.removeItem("authToken");
       localStorage.removeItem("user");

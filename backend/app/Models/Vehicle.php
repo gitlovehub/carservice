@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'mileage',
     'note',
 ])]
+// Cột ảo do DB tính (unique biển số / VIN trong xe đang hoạt động) — không đưa ra API.
+#[Hidden(['active_license_plate', 'active_vin'])]
 class Vehicle extends Model
 {
     use HasFactory, SoftDeletes;

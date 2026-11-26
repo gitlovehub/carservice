@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['sku', 'name', 'category', 'description', 'image_path', 'unit', 'cost_price', 'sell_price', 'status'])]
+// D-023: giá vốn chỉ Admin thấy — API của Admin trả `cost` tường minh (AdminInventoryController), mọi JSON khác không kèm.
+#[Hidden(['cost_price'])]
 class Part extends Model
 {
     protected function casts(): array

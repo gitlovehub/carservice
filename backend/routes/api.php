@@ -591,7 +591,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::controller(PaymentController::class)->group(function (): void {
 
-            // Ghi nhận thanh toán DIRECT / QR
+            // Ghi nhận thu tại quầy: tiền mặt / chuyển khoản / thẻ / ví (VNPay do khách tự thanh toán).
             Route::post(
                 'invoices/{invoice}/payments',
                 'store'
@@ -599,12 +599,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
             // Cố vấn đồng ý gửi hoá đơn kèm link thanh toán qua email
             Route::post('invoices/{invoice}/payment-email', 'sendPaymentEmail')->middleware('throttle:6,1');
-
-            // Tạm thời Advisor xác nhận QR
-            Route::post(
-                'payments/{payment}/confirm-qr',
-                'confirmQr'
-            );
         });
     });
 

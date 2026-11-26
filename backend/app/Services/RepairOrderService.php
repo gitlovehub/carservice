@@ -738,15 +738,19 @@ class RepairOrderService
             throw InvalidStatusTransitionException::because('Trạng thái hạng mục công việc không hợp lệ.');
         }
 
+        // Chỉ cập nhật công việc khi phiếu đang sửa / chờ phụ tùng (giống màn hình cố vấn) — phiếu đã xong, bàn giao, đóng thì khóa.
+        $orderStatus = $item->repairOrder()->value('status');
+        if (! in_array($orderStatus, [RepairOrder::IN_PROGRESS, RepairOrder::WAITING_FOR_PARTS], true)) {
+            throw InvalidStatusTransitionException::because('Chỉ cập nhật công việc khi phiếu đang sửa chữa hoặc chờ phụ tùng.');
+        }
+
         $item->status = $status;
 
         if ($status === WorkItem::IN_PROGRESS) {
             $item->started_at ??= now();
         }
 
-        if ($status === WorkItem::COMPLETED) {
-            $item->completed_at = now();
-        }
+        $item->completed_at = $status === WorkItem::COMPLETED ? now() : null;
 
         $item->save();
 
@@ -946,18 +950,17 @@ class RepairOrderService
     }
 
     /**
-     * DIRECT => coi như thu tiền ngay tại quầy, đánh SUCCESS luôn.
-     * QR     => chờ cổng thanh toán xác nhận, tạo ở trạng thái PENDING.
+     * Thu tại quầy (tiền mặt / chuyển khoản / thẻ / ví): cố vấn xác nhận đã nhận tiền → SUCCESS ngay.
+     * VNPay do khách tự thanh toán (VnpayPaymentService). Giao dịch QR cũ chỉ còn trong lịch sử.
      */
     public function recordPayment(Invoice $invoice, string $method, float $amount, ?string $transactionCode = null, ?Account $actor = null): Payment
     {
-        if (! in_array($method, [...Payment::COUNTER_METHODS, Payment::QR], true)) {
+        if (! in_array($method, Payment::COUNTER_METHODS, true)) {
             throw InvalidStatusTransitionException::because('Phương thức thanh toán không hợp lệ.');
         }
         // PO 17/11/2026: chuyển khoản / thẻ / ví thu tại quầy phải có mã giao dịch để đối soát, không ghi trùng mã.
         $transactionCode = $transactionCode === null ? null : trim($transactionCode);
-        $counter = in_array($method, Payment::COUNTER_METHODS, true);
-        if ($counter && $method !== Payment::DIRECT) {
+        if ($method !== Payment::DIRECT) {
             if ($transactionCode === null || $transactionCode === '') {
                 throw InvalidStatusTransitionException::because('Nhập mã giao dịch (mã chuyển khoản / mã chuẩn chi POS / mã ví) để đối soát.');
             }
@@ -966,11 +969,15 @@ class RepairOrderService
             }
         }
 
-        return DB::transaction(function () use ($invoice, $method, $amount, $transactionCode, $counter, $actor) {
+        return DB::transaction(function () use ($invoice, $method, $amount, $transactionCode, $actor) {
             $invoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->id);
 
             if ($invoice->status === Invoice::PAID) {
                 throw InvalidStatusTransitionException::because('Hóa đơn đã thanh toán đủ.');
+            }
+
+            if ($invoice->status === Invoice::CANCELLED) {
+                throw InvalidStatusTransitionException::because('Hóa đơn đã bị hủy, không thể thanh toán.');
             }
 
             $remaining = (float) $invoice->total_amount - (float) $invoice->totalPaid();
@@ -982,19 +989,15 @@ class RepairOrderService
                 'invoice_id' => $invoice->id,
                 'amount' => $amount,
                 'payment_method' => $method,
-                'transaction_code' => $counter && $method !== Payment::DIRECT ? $transactionCode : null,
-                'qr_reference' => $method === Payment::QR ? Str::upper(Str::random(12)) : null,
-                // Thu tại quầy: cố vấn xác nhận đã nhận tiền → thành công ngay; QR chờ cổng xác nhận.
-                'status' => $counter ? Payment::SUCCESS : Payment::PENDING,
-                'paid_at' => $counter ? now() : null,
-                'recorded_by' => $counter ? $actor?->id : null,
+                'transaction_code' => $method !== Payment::DIRECT ? $transactionCode : null,
+                // Thu tại quầy: cố vấn xác nhận đã nhận tiền → thành công ngay.
+                'status' => Payment::SUCCESS,
+                'paid_at' => now(),
+                'recorded_by' => $actor?->id,
             ]);
 
             $this->refreshInvoiceStatus($invoice);
-            // Tiền mặt tại quầy (thu ngay) → báo khách; QR chờ cổng xác nhận rồi mới báo.
-            if ($payment->status === Payment::SUCCESS) {
-                $this->notifyPayment($invoice, (float) $amount);
-            }
+            $this->notifyPayment($invoice, (float) $amount);
 
             return $payment;
         });
@@ -1003,34 +1006,6 @@ class RepairOrderService
     private function notifyPayment(Invoice $invoice, float $amount): void
     {
         $this->notifier->paymentReceived($invoice->repairOrder, $amount, $invoice->status === Invoice::PAID);
-    }
-
-    /**
-     * Webhook / xác nhận thủ công khi cổng thanh toán QR báo kết quả.
-     */
-    public function confirmQrPayment(Payment $payment, bool $success, ?string $transactionCode = null): Payment
-    {
-        if ($payment->payment_method !== Payment::QR) {
-            throw InvalidStatusTransitionException::because('Chỉ xác nhận cho giao dịch QR.');
-        }
-
-        if ($payment->status !== Payment::PENDING) {
-            throw InvalidStatusTransitionException::because('Giao dịch này không còn ở trạng thái PENDING.');
-        }
-
-        return DB::transaction(function () use ($payment, $success, $transactionCode) {
-            $payment->status = $success ? Payment::SUCCESS : Payment::FAILED;
-            $payment->transaction_code = $transactionCode;
-            $payment->paid_at = $success ? now() : null;
-            $payment->save();
-
-            $this->refreshInvoiceStatus($payment->invoice);
-            if ($success) {
-                $this->notifyPayment($payment->invoice, (float) $payment->amount);
-            }
-
-            return $payment;
-        });
     }
 
     public function refreshInvoiceStatus(Invoice $invoice): void

@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\Vehicle;
+use App\Support\CustomerPhone;
 use App\Support\VehicleCatalogSelection;
+use App\Support\VehicleIdentity;
 use App\Support\VehicleVin;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -27,13 +29,13 @@ class CounterRecordService
             'customer_id' => ['required_without:customer', 'nullable', 'integer', 'exists:customers,id'],
             'customer' => ['required_without:customer_id', 'prohibits:customer_id', 'array'],
             'customer.full_name' => ['required_with:customer', 'string', 'max:100'],
-            'customer.phone' => ['required_with:customer', 'string', 'max:20', 'regex:/^[0-9+\s.\-]{8,20}$/', Rule::unique('customers', 'phone')],
+            'customer.phone' => ['required_with:customer', 'string', 'max:20', 'regex:/^[0-9+\s.\-]{8,20}$/', CustomerPhone::unique()],
             'customer.email' => ['nullable', 'email', 'max:150', Rule::unique('customers', 'email')],
             'vehicle_id' => ['required_without:vehicle', 'nullable', 'integer', 'exists:vehicles,id'],
             'vehicle' => ['required_without:vehicle_id', 'prohibits:vehicle_id', 'array'],
             'vehicle.model_id' => ['required_with:vehicle', 'integer', 'exists:vehicle_models,id'],
             'vehicle.trim_id' => ['nullable', 'integer'],
-            'vehicle.license_plate' => ['required_with:vehicle', 'string', 'max:20', Rule::unique('vehicles', 'license_plate')],
+            'vehicle.license_plate' => ['required_with:vehicle', 'string', 'max:20', VehicleIdentity::plateUnique()],
             'vehicle.year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 1)],
         ];
     }
@@ -50,11 +52,11 @@ class CounterRecordService
 
         return [
             'mileage_received' => ['required', 'integer', 'min:0'],
-            'vehicle.license_plate' => ['nullable', 'string', 'max:20', Rule::unique('vehicles', 'license_plate')],
+            'vehicle.license_plate' => ['nullable', 'string', 'max:20', VehicleIdentity::plateUnique()],
             'vehicle.year' => ['required_with:vehicle', 'integer', 'min:1900', "max:{$maxYear}"],
-            'vehicle.vin' => ['required_with:vehicle', 'string', 'regex:'.VehicleVin::PATTERN, Rule::unique('vehicles', 'vin')],
+            'vehicle.vin' => ['required_with:vehicle', 'string', 'regex:'.VehicleVin::PATTERN, VehicleIdentity::vinUnique()],
             'vehicle_year' => ['nullable', 'integer', 'min:1900', "max:{$maxYear}"],
-            'vehicle_vin' => ['nullable', 'string', 'regex:'.VehicleVin::PATTERN, Rule::unique('vehicles', 'vin')],
+            'vehicle_vin' => ['nullable', 'string', 'regex:'.VehicleVin::PATTERN, VehicleIdentity::vinUnique()],
             'customer_request' => ['nullable', 'string', 'max:2000'],
         ];
     }
