@@ -18,3 +18,13 @@ export default function ContactMessages() {
   const toggle = async (m: AdminContactMessage) => {
     setBusy(m.id);
     try { await adminApi.setContactMessageStatus(m.id, m.status === "NEW" ? "HANDLED" : "NEW"); list.reload(); }
+    finally { setBusy(null); }
+  };
+
+  const columns: Column<AdminContactMessage>[] = [
+    { key: "at", header: "Thời gian", render: m => <span className="whitespace-nowrap tabular-nums text-cs-text-2">{fmtDateTime(m.created_at)}</span> },
+    { key: "who", header: "Khách", primary: true, render: m => <Person name={m.name} sub={<>
+      <a href={`tel:${m.phone.replace(/[^\d+]/g, "")}`} className="tabular-nums">{m.phone}</a>{m.email && <> · <a href={`mailto:${m.email}`}>{m.email}</a></>}
+    </>} size={32}/> },
+    { key: "message", header: "Nội dung", render: m => <p className="max-w-[460px] whitespace-pre-line text-cs-text">{m.message}</p> },
+    { key: "status", header: "Trạng thái", render: m => m.status === "NEW"
