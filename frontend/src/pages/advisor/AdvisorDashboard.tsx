@@ -108,3 +108,58 @@ function AppointmentRows({ items, tab }: { items: DashboardAppointment[]; tab: A
   return <ul className="adv-timeline space-y-0.5 px-2 pb-3">
     {items.map(a => <li key={a.id} className="adv-timeline-row" role="link" tabIndex={0} onClick={() => open(a)}
       onKeyDown={(e: KeyboardEvent) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); open(a); } }}>
+      <span className="adv-time">{showDate ? <span className="text-center text-[11px] leading-tight"><b className="text-small">{a.time}</b><br/>{dayLabel(a.date)}</span> : a.time}</span>
+      <VehicleBrandLogo brand={a.brand} size={36}/>
+      <span className="min-w-0"><b className="block truncate text-small text-cs-text">{a.customer || "Khách hàng"}</b>
+        <span className="block truncate text-caption text-cs-muted">{a.plate || "xxx.xx"}{a.brand || a.model ? ` · ${[a.brand, a.model].filter(Boolean).join(" ")}` : ""}</span></span>
+      <span className="adv-request flex min-w-0 items-center gap-1.5 text-caption text-cs-text-2"><Icon name="wrench" size={14} className="shrink-0 text-cs-accent-text"/><span className="truncate">{a.request || "Chưa chọn dịch vụ"}{a.more ? ` +${a.more}` : ""}</span></span>
+      <span className="adv-status"><StatusBadge domain="appointment" status={a.status}/></span>
+      <span onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+        <Dropdown label={`Thao tác lịch ${a.code}`} items={[
+          { label: a.status === "PENDING" ? "Xác nhận với khách" : a.status === "CONFIRMED" ? "Tiếp nhận xe" : "Mở lịch hẹn", icon: a.status === "CONFIRMED" ? "car" : "calendar", onSelect: () => open(a) },
+          { label: "Danh sách lịch hẹn", icon: "list", onSelect: () => navigate("/advisor/appointments") },
+        ]}/>
+      </span>
+    </li>)}
+  </ul>;
+}
+
+const UPDATE_TYPES: Record<CustomerUpdate["type"], { label: string; icon: IconName; tone: string }> = {
+  BOOKED: { label: "Đặt lịch mới", icon: "plus", tone: "bg-info-soft text-info-fg" },
+  RESCHEDULED: { label: "Tự đổi lịch", icon: "refresh", tone: "bg-warning-soft text-warning-fg" },
+  CONFIRMED: { label: "Xác nhận qua email", icon: "check", tone: "bg-success-soft text-success-fg" },
+  CANCELLED: { label: "Tự hủy lịch", icon: "x", tone: "bg-danger-soft text-danger-fg" },
+};
+const slotDate = (iso: string) => { const [y, m, d] = iso.slice(0, 10).split("-"); return `${d}/${m}/${y}`; };
+/** "vừa xong", "15 phút trước", "3 giờ trước", quá 1 ngày → HH:mm - dd/mm/yyyy. */
+function ago(iso: string | null, now: Date) {
+  if (!iso) return "";
+  const at = new Date(iso);
+  const minutes = Math.floor((now.getTime() - at.getTime()) / 60_000);
+  if (minutes < 1) return "vừa xong";
+  if (minutes < 60) return `${minutes} phút trước`;
+  if (minutes < 24 * 60) return `${Math.floor(minutes / 60)} giờ trước`;
+  return `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")} - ${String(at.getDate()).padStart(2, "0")}/${String(at.getMonth() + 1).padStart(2, "0")}/${at.getFullYear()}`;
+}
+
+/** Cập nhật từ khách: khu nhân viên chưa có chuông thông báo — những việc khách tự làm với lịch hẹn hiện ở đây. Bấm dòng → mở lịch. */
+function CustomerUpdates({ now }: { now: Date }) {
+  const navigate = useNavigate();
+  const query = useAdminQuery("advisor-customer-updates", signal => customerUpdatesApi(signal));
+  const items = query.data ?? query.stale;
+  const open = (u: CustomerUpdate) => navigate(["PENDING", "CONFIRMED"].includes(u.appointment.status)
+    ? `/advisor/reception?appointment=${u.appointment.id}` : "/advisor/appointments");
+  return <Panel title="Cập nhật từ khách" icon="bell">
+    {!items ? (query.error ? <ErrorState compact description={query.error} onRetry={query.reload}/> : <LoadingState compact/>)
+      : !items.length ? <EmptyState compact icon="bell" title="Chưa có cập nhật" description="Khi khách đặt, đổi, xác nhận hoặc hủy lịch, thông tin sẽ hiện ở đây."/>
+      : <ul className="space-y-0.5 px-2 pb-3">
+        {items.map(u => {
+          const t = UPDATE_TYPES[u.type];
+          const a = u.appointment;
+          const when = u.type === "RESCHEDULED" && u.old_date && u.old_time
+            ? `${u.old_time} - ${slotDate(u.old_date)} → ${a.appointment_time} - ${slotDate(a.appointment_date)}`
+            : `${a.appointment_time} - ${slotDate(a.appointment_date)}`;
+          return <li key={u.key}><button type="button" onClick={() => open(u)} className="flex w-full cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-cs-hover">
+            <span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${t.tone}`} aria-hidden="true"><Icon name={t.icon} size={15}/></span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-baseline justify-between gap-2"><b className="truncate text-small text-cs-text">{u.customer_name || "Khách hàng"}</b><span className="shrink-0 text-caption text-cs-muted">{ago(u.at, now)}</span></span>
