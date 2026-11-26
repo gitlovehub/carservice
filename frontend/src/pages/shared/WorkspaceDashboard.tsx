@@ -105,3 +105,56 @@ function Panel({ title, description, action, children }: { title: string; descri
 function TodayAppointments({ load, role, onRetry }: { load: Load<Appointment[]>; role: Mode; onRetry: () => void }) {
   if (load.state === "loading") return <LoadingState compact label="Đang tải lịch hẹn..."/>;
   if (load.state === "error") return <ErrorState compact description="Không tải được lịch hẹn hôm nay." onRetry={onRetry}/>;
+  const items = [...load.value].sort((a, b) => (a.appointment_time ?? "").localeCompare(b.appointment_time ?? ""));
+  if (!items.length) return <EmptyState compact icon="calendar" title="Hôm nay chưa có lịch hẹn" description="Lịch hẹn mới sẽ xuất hiện tại đây."/>;
+  return <ul className="divide-y divide-cs-border">
+    {items.slice(0, 8).map(item => <li key={item.id} className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3 max-sm:grid-cols-[48px_minmax(0,1fr)]">
+      <span className="text-subheading font-semibold text-cs-text">{item.appointment_time?.slice(0, 5) || "—"}</span>
+      <div className="min-w-0">
+        <p className="truncate text-small font-medium text-cs-text">{item.customer?.full_name || "Khách hàng"}</p>
+        <p className="truncate text-caption text-cs-muted">{item.vehicle?.license_plate || "Chưa có biển số"} · {item.appointment_code || `#${item.id}`}</p>
+      </div>
+      <StatusBadge domain="appointment" status={item.status} className="max-sm:col-start-2 max-sm:justify-self-start"/>
+    </li>)}
+    {items.length > 8 && <li className="px-5 py-3 text-caption text-cs-muted">
+      và {items.length - 8} lịch khác — <Link className="font-medium text-cs-accent-text hover:underline" to={`/${role}/appointments`}>xem tất cả</Link>
+    </li>}
+  </ul>;
+}
+
+function RecentOrders({ load, onRetry }: { load: Load<WorkflowOrder[]>; onRetry: () => void }) {
+  if (load.state === "loading") return <LoadingState compact label="Đang tải phiếu sửa chữa..."/>;
+  if (load.state === "error") return <ErrorState compact description="Không tải được phiếu sửa chữa." onRetry={onRetry}/>;
+  if (!load.value.length) return <EmptyState compact icon="clipboard" title="Chưa có phiếu sửa chữa" description="Phiếu được tạo khi tiếp nhận xe."/>;
+  return <ul className="divide-y divide-cs-border">
+    {load.value.slice(0, 5).map(order => <li key={order.id}>
+      <Link to={`/advisor/service-orders/${order.id}`} className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-cs-hover">
+        <div className="min-w-0">
+          <p className="truncate text-small font-medium text-cs-text">{order.repair_order_code || `Phiếu #${order.id}`}</p>
+          <p className="truncate text-caption text-cs-muted">{order.customer?.full_name || "Khách hàng"} · {order.vehicle?.license_plate || "Chưa có biển số"}</p>
+        </div>
+        <StatusBadge domain="repair" status={order.status}/>
+      </Link>
+    </li>)}
+  </ul>;
+}
+
+function TaskLink({ to, label, hint, load }: { to: string; label: string; hint: string; load: Load<number> }) {
+  return <li>
+    <Link to={to} className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-cs-hover">
+      <div className="min-w-0">
+        <p className="text-small font-medium text-cs-text">{label}</p>
+        <p className="text-caption text-cs-muted">{hint}</p>
+      </div>
+      <span className="min-w-8 rounded-full bg-cs-surface-2 px-2.5 py-1 text-center text-small font-semibold text-cs-text">
+        {load.state === "ready" ? load.value : load.state === "error" ? "—" : "…"}
+      </span>
+    </Link>
+  </li>;
+}
+
+/** Thẻ lối tắt Admin (2 cột, thẻ trung tính, icon màu nhấn) — chỉ trỏ tới route có sẵn. */
+const adminTiles: Array<{ to: string; label: string; hint: string; icon: IconName }> = [
+  { to: "/admin/services", label: "Dịch vụ & gói", hint: "Danh mục, giá dịch vụ và gói bảo dưỡng", icon: "settings" },
+  { to: "/admin/inventory", label: "Kho phụ tùng", hint: "Tồn kho và nhập xuất", icon: "box" },
+  { to: "/admin/accounts", label: "Tài khoản", hint: "Nhân viên và phân quyền", icon: "shield" },
