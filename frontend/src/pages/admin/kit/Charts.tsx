@@ -52,3 +52,57 @@ function Tooltip({ x, y, children }: { x: number; y: number; children: ReactNode
 export function Legend({ items }: { items: Array<{ label: string; color: string; line?: boolean }> }) {
   return <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-cs-text-2">
     {items.map(item => <li key={item.label} className="flex items-center gap-1.5">
+      {item.line
+        ? <span className="relative h-0.5 w-4 rounded" style={{ background: item.color }}><span className="absolute left-1/2 top-1/2 size-2 -translate-1/2 rounded-full border-2 bg-cs-surface" style={{ borderColor: item.color }}/></span>
+        : <span className="size-2.5 rounded-sm" style={{ background: item.color }}/>}
+      {item.label}
+    </li>)}
+  </ul>;
+}
+
+type Series = { label: string; values: number[]; color: string };
+
+/** Cột (có thể chồng nhiều chuỗi) + đường tuỳ chọn. */
+export function BarChart({ labels, bars, line, height = 260, format = num, tickEvery = 1, title, tooltipTitle }: {
+  labels: string[]; bars: Series[]; line?: Series; height?: number; format?: (v: number) => string;
+  tickEvery?: number; title: string; tooltipTitle?: (index: number) => string;
+}) {
+  const [active, setActive] = useState<number | null>(null);
+  const { ref, width: W } = useWidth();
+  const totals = labels.map((_, i) => bars.reduce((sum, s) => sum + s.values[i], 0));
+  const max = niceMax(Math.max(...totals, ...(line?.values ?? [0])));
+  const inner = height - PAD.top - PAD.bottom;
+  const slot = (W - PAD.left - PAD.right) / labels.length;
+  const barW = Math.max(4, Math.min(34, slot * 0.62));
+  const every = Math.max(tickEvery, Math.ceil(52 / slot));
+  const yOf = (v: number) => PAD.top + inner - (v / max) * inner;
+  const xOf = (i: number) => PAD.left + slot * i + slot / 2;
+  const linePath = line?.values.map((v, i) => `${i ? "L" : "M"}${xOf(i)},${yOf(v)}`).join(" ");
+  return <div ref={ref} className="relative">
+    <svg viewBox={`0 0 ${W} ${height}`} className="h-auto w-full" role="img" aria-label={title} onMouseLeave={() => setActive(null)}>
+      <Axis max={max} height={height} format={format} W={W}/>
+      {labels.map((label, i) => {
+        let acc = 0;
+        return <g key={label + i} tabIndex={0} onMouseEnter={() => setActive(i)} onFocus={() => setActive(i)} onBlur={() => setActive(null)} className="outline-none">
+          <rect x={PAD.left + slot * i} y={PAD.top} width={slot} height={inner} fill="transparent"/>
+          {bars.map((s, si) => {
+            const h = (s.values[i] / max) * inner;
+            const y = PAD.top + inner - acc - h;
+            acc += h;
+            const top = si === bars.length - 1;
+            return <rect key={s.label} x={xOf(i) - barW / 2} y={y} width={barW} height={Math.max(0, h)} rx={top ? 3 : 0} fill={s.color} opacity={active === null || active === i ? 1 : 0.55}/>;
+          })}
+          {i % every === 0 && <text x={xOf(i)} y={height - 9} textAnchor="middle" fontSize="11" fill="var(--cs-muted)">{label}</text>}
+        </g>;
+      })}
+      {line && <>
+        <path d={linePath} fill="none" stroke={line.color} strokeWidth="2.2" strokeLinejoin="round"/>
+        {line.values.map((v, i) => <circle key={i} cx={xOf(i)} cy={yOf(v)} r={active === i ? 5 : 2.6} fill={active === i ? "var(--cs-surface)" : line.color} stroke={line.color} strokeWidth="2"/>)}
+      </>}
+      {active !== null && <line x1={xOf(active)} x2={xOf(active)} y1={PAD.top} y2={PAD.top + inner} stroke="var(--cs-accent)" strokeDasharray="3 3" opacity="0.6"/>}
+    </svg>
+    {active !== null && <Tooltip x={(xOf(active) / W) * 100} y={(Math.min(yOf(totals[active]), line ? yOf(line.values[active]) : Infinity) / height) * 100 - 2}>
+      <p className="mb-1 font-semibold">{tooltipTitle ? tooltipTitle(active) : labels[active]}</p>
+      {[...bars].reverse().map(s => <p key={s.label} className="flex items-center gap-1.5"><span className="size-2 rounded-sm" style={{ background: s.color }}/>{s.label}: <b className="ml-auto tabular-nums">{format(s.values[active])}</b></p>)}
+      {line && <p className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: line.color }}/>{line.label}: <b className="ml-auto tabular-nums">{format(line.values[active])}</b></p>}
+      {bars.length > 1 && <p className="mt-1 border-t border-cs-border pt-1">Tổng: <b className="tabular-nums">{format(totals[active])}</b></p>}
