@@ -102,7 +102,10 @@ export default function CustomerNotificationBell() {
     navigate(notificationTarget(item).to);
   }
 
+  const readingAllRef = useRef(false);
   async function readAll() {
+    if (readingAllRef.current) return;
+    readingAllRef.current = true;
     try {
       await readAllCustomerNotifications();
       const now = new Date().toISOString();
@@ -110,6 +113,8 @@ export default function CustomerNotificationBell() {
       setUnread(0);
     } catch (cause) {
       setError(userErrorMessage(cause, 'Không thể đánh dấu đã đọc.'));
+    } finally {
+      readingAllRef.current = false;
     }
   }
 
