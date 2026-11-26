@@ -60,3 +60,34 @@ export function CategoryDrawer({ open, categories, icons, total, uncategorized, 
   const remove = async () => {
     if (!current) return;
     if (!await confirm({ title: "Xoá danh mục", description: `Xoá danh mục “${current.name}”? Thao tác không hoàn tác được.`, variant: "danger", confirmText: "Xoá danh mục" })) return;
+    setBusy("delete");
+    try {
+      const res = await catalogAdminApi.deleteCategory(current.id);
+      notify(res.message, "success");
+      if (filter === current.id) onFilter("all");
+      onChanged();
+      setEditing(null);
+    } catch (e) {
+      fieldErrors.showApi(e);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const viewItem = (id: CategoryFilter, name: string, icon: IconName, count: number, sub?: string, c?: ServiceCategory) => {
+    const on = filter === id;
+    return <li key={String(id)} className={`flex items-center gap-3 rounded-control border px-3 py-2.5 transition-colors ${on ? "border-cs-accent bg-cs-soft" : "border-cs-border"}`}>
+      <span className={`grid size-10 shrink-0 place-items-center rounded-control ${on ? "bg-cs-surface text-cs-accent-text" : "bg-cs-surface-2 text-cs-text-2"}`}><Icon name={icon} size={19}/></span>
+      <span className="min-w-0 flex-1">
+        <b className={`block truncate text-small ${on ? "text-cs-accent-text" : "text-cs-text"}`}>{name}</b>
+        <span className="block text-caption text-cs-muted">{count} dịch vụ{sub ? ` · ${sub}` : ""}</span>
+      </span>
+      <Button size="sm" variant={on ? "tonal" : "ghost"} onClick={() => { onFilter(id); onClose(); }}>{on ? "Đang xem" : "Xem dịch vụ"}</Button>
+      {c && <IconButton icon="edit" size="sm" label={`Sửa danh mục ${c.name}`} onClick={() => edit(c)}/>}
+    </li>;
+  };
+
+  const list = <ul className="flex flex-col gap-2" aria-label="Danh mục dịch vụ">
+    {viewItem("all", "Tất cả dịch vụ", "grid", total)}
+    {categories.map(c => viewItem(c.id, c.name, c.icon as IconName, c.services_count, `${c.active_services_count} đang áp dụng`, c))}
+    {uncategorized > 0 && viewItem("none", "Chưa phân loại", "tag", uncategorized)}
