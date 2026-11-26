@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useAppFeedback } from "../../components/ui/feedbackContext";
 import {
   formatVnd, latestQuotation, toNumber, workflowApi,
@@ -52,6 +52,8 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
   const [services, setServices] = useState<CatalogService[]>([]);
   const [parts, setParts] = useState<CatalogPart[]>([]);
   const [working, setWorking] = useState(false);
+  const [startingRepair, setStartingRepair] = useState(false);
+  const startRepairInFlight = useRef(false);
   const [error, setError] = useState("");
   const [discount, setDiscount] = useState("0");
   const [approvals, setApprovals] = useState<Record<number, boolean>>({});
@@ -135,8 +137,21 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
   }
 
   async function startRepair() {
-    if (!await confirm({ title: "Bắt đầu sửa chữa", description: "Tạo danh sách công việc từ các dịch vụ khách đã duyệt và chuyển phiếu sang đang sửa chữa.", confirmText: "Bắt đầu sửa" })) return;
-    await run(() => workflowApi.transition(order.id, "start-repair"), "Đã bắt đầu sửa chữa. Cập nhật từng công việc ở Bước 4.");
+    if (startRepairInFlight.current) return;
+    startRepairInFlight.current = true;
+    setStartingRepair(true);
+    try {
+      if (!await confirm({ title: "Bắt đầu sửa chữa", description: "Tạo danh sách công việc từ các dịch vụ khách đã duyệt và chuyển phiếu sang đang sửa chữa.", confirmText: "Bắt đầu sửa" })) return;
+      await run(async () => {
+        const updatedOrder = await workflowApi.transition(order.id, "start-repair");
+        if (updatedOrder.status !== "IN_PROGRESS") {
+          throw new Error(`Không thể bắt đầu sửa chữa: trạng thái phiếu hiện tại là ${updatedOrder.status}.`);
+        }
+      }, "Đã đồng bộ trạng thái sửa chữa. Nếu yêu cầu đã được xử lý trước đó, công việc không bị tạo lặp.");
+    } finally {
+      startRepairInFlight.current = false;
+      setStartingRepair(false);
+    }
   }
 
   async function closeDeclined() {
@@ -159,7 +174,7 @@ export function QuotationPanel({ order, onChanged }: PanelProps) {
       <button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void recordResponse()}>Ghi nhận phản hồi tại quầy</button>
     </div>}
     {quotation && ["APPROVED", "PARTIALLY_APPROVED"].includes(quotation.status) && order.status === "WAITING_APPROVAL" &&
-      <div className="mt-5"><button type="button" className={action} disabled={working} aria-busy={working} onClick={() => void startRepair()}>Bắt đầu sửa chữa →</button></div>}
+      <div className="mt-5"><button type="button" className={action} disabled={working || startingRepair} aria-busy={working || startingRepair} onClick={() => void startRepair()}>{startingRepair ? "Đang bắt đầu sửa chữa…" : "Bắt đầu sửa chữa →"}</button></div>}
     {quotation?.status === "REJECTED" && order.status === "WAITING_APPROVAL" && <div className="mt-5 flex flex-wrap gap-3">
       <Notice tone="error">Khách từ chối toàn bộ báo giá. Lập báo giá mới bên dưới hoặc đóng phiếu.</Notice>
       <button type="button" className={danger} disabled={working} onClick={() => void closeDeclined()}>Đóng phiếu (khách từ chối)</button>
@@ -349,6 +364,7 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
   const [services, setServices] = useState<CatalogService[]>([]);
   const [parts, setParts] = useState<CatalogPart[]>([]);
   const [working, setWorking] = useState(false);
+  const recordInFlight = useRef(false);
   const [error, setError] = useState("");
   const [condition, setCondition] = useState(order.initial_condition ?? "");
   const [diagnosis, setDiagnosis] = useState("");
@@ -388,6 +404,7 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
 
   async function record(event: FormEvent) {
     event.preventDefault();
+    if (recordInFlight.current) return;
     const items = checks.filter(row => row.item_name.trim()).map(row => ({
       item_name: row.item_name.trim(), status: row.status,
       ...(row.condition_description.trim() ? { condition_description: row.condition_description.trim() } : {}),
@@ -395,11 +412,16 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
     if (!items.length) { setError("Ghi ít nhất một hạng mục đã kiểm tra."); return; }
     const recommendations = toRecommendations(recs);
     if (!recommendations) { setError("Mỗi đề xuất cần chọn dịch vụ/phụ tùng và số lượng nguyên dương."); return; }
-    await run(() => workflowApi.recordInspection(order.id, {
-      ...(condition.trim() ? { condition_description: condition.trim() } : {}),
-      ...(diagnosis.trim() ? { diagnosis: diagnosis.trim() } : {}),
-      inspection_items: items, recommendations,
-    }), "Đã lưu kết quả kiểm tra. Rà soát đề xuất rồi hoàn tất chẩn đoán.");
+    recordInFlight.current = true;
+    try {
+      await run(() => workflowApi.recordInspection(order.id, {
+        ...(condition.trim() ? { condition_description: condition.trim() } : {}),
+        ...(diagnosis.trim() ? { diagnosis: diagnosis.trim() } : {}),
+        inspection_items: items, recommendations,
+      }), "Đã đồng bộ kết quả kiểm tra. Phiếu kiểm tra đã tồn tại sẽ được giữ nguyên.");
+    } finally {
+      recordInFlight.current = false;
+    }
   }
 
   async function addMore(event: FormEvent) {
@@ -484,7 +506,7 @@ export function InspectionPanel({ order, onChanged }: PanelProps) {
         <button type="button" className={`${outline} cs-btn-sm`} onClick={() => setChecks(previous => [...previous, blankCheck(Date.now())])}>+ Thêm hạng mục</button>
       </div>
       <div className="space-y-3"><h3 className="text-sm font-bold text-cs-text">Đề xuất dịch vụ / phụ tùng</h3>{recEditor}</div>
-      <div className="cs-btn-row cs-btn-row-end"><button type="submit" className={action} disabled={working} aria-busy={working}>Lưu kết quả kiểm tra</button></div>
+      <div className="cs-btn-row cs-btn-row-end"><button type="submit" className={action} disabled={working} aria-busy={working}>{working ? "Đang lưu kết quả..." : "Lưu kết quả kiểm tra"}</button></div>
     </form>}
 
     {!inspection && !canRecord && <p className="text-sm text-cs-muted">Phiếu không có kết quả kiểm tra.</p>}

@@ -30,8 +30,9 @@ class QuotationPolicy
 
     public function respond(Account $account, Quotation $quotation): bool
     {
-        return $account->hasRole(Account::ROLE_CUSTOMER)
-            && (int) $quotation->repairOrder?->customer_id === (int) $account->customer?->id;
+        return $this->canManageAll($account)
+            || ($account->hasRole(Account::ROLE_CUSTOMER)
+                && (int) $quotation->repairOrder?->customer_id === (int) $account->customer?->id);
     }
 
     private function canManageAll(Account $account): bool

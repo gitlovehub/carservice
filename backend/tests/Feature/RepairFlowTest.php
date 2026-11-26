@@ -12,6 +12,7 @@ use App\Models\Inventory;
 use App\Models\Part;
 use App\Models\Quotation;
 use App\Models\RepairOrder;
+use App\Models\RepairOrderStatusHistory;
 use App\Models\Service;
 use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
@@ -138,6 +139,48 @@ class RepairFlowTest extends TestCase
         );
     }
 
+    public function test_advisor_can_record_customer_response_at_the_counter(): void
+    {
+        $quotation = $this->sendQuotation();
+
+        $this->actingAs($this->advisor)
+            ->postJson("/api/quotations/{$quotation->id}/respond", [
+                'responses' => $quotation->items
+                    ->map(fn ($item) => ['item_id' => $item->id, 'is_approved' => false])
+                    ->all(),
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', Quotation::REJECTED);
+    }
+
+    public function test_admin_can_record_customer_response_at_the_counter(): void
+    {
+        $quotation = $this->sendQuotation();
+        $admin = Account::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->postJson("/api/quotations/{$quotation->id}/respond", [
+                'responses' => $quotation->items
+                    ->map(fn ($item) => ['item_id' => $item->id, 'is_approved' => true])
+                    ->all(),
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', Quotation::APPROVED);
+    }
+
+    public function test_technician_cannot_record_customer_response_at_the_counter(): void
+    {
+        $quotation = $this->sendQuotation();
+
+        $this->actingAs($this->technicianAccount)
+            ->postJson("/api/quotations/{$quotation->id}/respond", [
+                'responses' => $quotation->items
+                    ->map(fn ($item) => ['item_id' => $item->id, 'is_approved' => true])
+                    ->all(),
+            ])
+            ->assertForbidden();
+    }
+
     public function test_customer_partial_approval_creates_work_items_only_for_approved_services(): void
     {
         $quotation = $this->sendQuotation();
@@ -167,6 +210,37 @@ class RepairFlowTest extends TestCase
         $this->actingAs($this->advisor)
             ->postJson("/api/repair-orders/{$this->repairOrder->id}/start-repair")
             ->assertUnprocessable();
+
+        $this->assertDatabaseCount('work_items', 0);
+        $this->assertDatabaseMissing('repair_order_status_history', [
+            'repair_order_id' => $this->repairOrder->id,
+            'status' => RepairOrder::IN_PROGRESS,
+        ]);
+    }
+
+    public function test_repeated_start_repair_requests_do_not_duplicate_work_items_or_status_history(): void
+    {
+        $quotation = $this->approveAndStartRepair();
+        $workItemCount = WorkItem::query()->where('repair_order_id', $this->repairOrder->id)->count();
+
+        $this->actingAs($this->advisor)
+            ->postJson("/api/repair-orders/{$this->repairOrder->id}/start-repair")
+            ->assertOk()
+            ->assertJsonPath('status', RepairOrder::IN_PROGRESS)
+            ->assertJsonCount($workItemCount, 'work_items');
+
+        $this->assertSame(
+            $workItemCount,
+            WorkItem::query()->where('repair_order_id', $this->repairOrder->id)->count()
+        );
+        $this->assertSame(
+            1,
+            RepairOrderStatusHistory::query()
+                ->where('repair_order_id', $this->repairOrder->id)
+                ->where('status', RepairOrder::IN_PROGRESS)
+                ->count()
+        );
+        $this->assertSame(Quotation::APPROVED, $quotation->fresh()->status);
     }
 
     public function test_technician_uses_approved_part_and_stock_is_exported(): void
