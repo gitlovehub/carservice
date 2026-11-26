@@ -21,3 +21,14 @@ const wiring = {
 };
 for (const [page, call] of Object.entries(wiring)) assert.ok(read(`src/pages/admin/${page}`).includes(call), `${page} gọi ${call}`);
 for (const path of ['/admin/dashboard', '/admin/reports', '/admin/repair-orders', '/admin/invoices', '/admin/payments', '/admin/reviews', '/admin/audit-logs',
+  '/admin/customers', '/admin/staff', '/admin/accounts', '/admin/parts', '/admin/stock-moves', '/admin/holidays']) {
+  assert.ok(api.includes(`"${path}`) || api.includes(`\`${path}`), `adminApi có ${path}`);
+}
+
+// Trạng thái tải / lỗi / phân trang ở server.
+const query = read('src/pages/admin/kit/useAdminQuery.ts');
+assert.match(query, /AbortController/, 'Huỷ request cũ khi đổi bộ lọc');
+assert.doesNotMatch(query, /useEffect\(\(\) => \{\s*set/, 'Không setState đồng bộ trong effect');
+for (const page of ['RepairOrders.tsx', 'Invoices.tsx', 'AdminCustomers.tsx', 'Accounts.tsx', 'Inventory.tsx', 'AuditLogs.tsx']) {
+  const source = read(`src/pages/admin/${page}`);
+  assert.match(source, /useDebounced/, `${page} tìm kiếm có debounce`);
