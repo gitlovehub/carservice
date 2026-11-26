@@ -49,3 +49,54 @@ export function PeriodFilter({ period, allowAll = true, allowFuture = false }: {
 
   const place = () => {
     const rect = triggerRef.current?.closest("[data-period-trigger]")?.getBoundingClientRect();
+    if (!rect) return;
+    const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+    const width = Math.min(POPOVER_WIDTH, viewportWidth - 16);
+    // Đủ chỗ thì canh trái theo nút, nút nằm sát phải thì canh phải theo nút.
+    const preferred = rect.left + width <= viewportWidth - 8 ? rect.left : rect.right - width;
+    const left = Math.min(Math.max(8, preferred), viewportWidth - width - 8);
+    // Luôn bám sát nút, không che header: thiếu chỗ thì nội dung tự cuộn bên trong.
+    const spaceBelow = window.innerHeight - rect.bottom - 14;
+    const spaceAbove = rect.top - 14;
+    setPosition(spaceBelow >= MIN_SPACE_BELOW || spaceBelow >= spaceAbove
+      ? { top: rect.bottom + 6, left, width, maxHeight: spaceBelow }
+      : { bottom: window.innerHeight - rect.top + 6, left, width, maxHeight: spaceAbove });
+  };
+  const close = (returnFocus = true) => {
+    setDraft(null);
+    if (returnFocus) triggerRef.current?.focus({ preventScroll: true });
+  };
+  const open = () => {
+    place();
+    const unit = applied ? detectUnit(applied) : "month";
+    setDraft({ unit, from: applied?.from ?? "", to: applied?.to ?? "", all: !applied, picking: false, custom: false, cursor: parseDay(applied?.from ?? today) });
+  };
+
+  const isOpen = draft !== null;
+  useEffect(() => {
+    if (!isOpen) return;
+    panelRef.current?.querySelector<HTMLElement>("[role=tab][aria-selected=true]")?.focus({ preventScroll: true });
+    const onPointer = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (!panelRef.current?.contains(target) && !triggerRef.current?.closest("[data-period-trigger]")?.contains(target)) setDraft(null);
+    };
+    const onScroll = (event: Event) => { if (!panelRef.current?.contains(event.target as Node)) setDraft(null); };
+    const onResize = () => setDraft(null);
+    document.addEventListener("mousedown", onPointer);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [isOpen]);
+
+  const pickCell = (cell: DayRange) => {
+    if (!draft) return;
+    setDraft(draft.picking
+      ? { ...draft, from: cell.from < draft.from ? cell.from : draft.from, to: cell.to > draft.to ? cell.to : draft.to, picking: false, all: false, custom: false }
+      : { ...draft, from: cell.from, to: cell.to, picking: true, all: false, custom: false });
+  };
+  const moveCursor = (direction: -1 | 1) => {
+    if (!draft) return;
