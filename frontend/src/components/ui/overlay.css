@@ -1,0 +1,43 @@
+/* Hiệu ứng mở/đóng dùng chung cho Modal, Drawer, Dropdown (components/ui). */
+.cs-overlay-backdrop { animation: cs-fade-in var(--cs-duration) ease both; }
+/* Mọi lớp phủ sau modal / drawer / hộp xác nhận: làm mờ nền phía sau (độ blur chung --cs-overlay-blur). */
+.cs-overlay-backdrop, .cs-ws-scrim, .cs-service-drawer-scrim, .at-customer-modal-backdrop, .cs-modal-scrim {
+  -webkit-backdrop-filter: blur(var(--cs-overlay-blur));
+  backdrop-filter: blur(var(--cs-overlay-blur));
+}
+.cs-overlay[data-state="closing"] .cs-overlay-backdrop { animation: cs-fade-out var(--cs-duration) ease both; }
+
+.cs-modal-panel { animation: cs-modal-in 220ms var(--cs-ease) both; }
+.cs-overlay[data-state="closing"] .cs-modal-panel { animation: cs-modal-out var(--cs-duration) ease both; }
+
+.cs-drawer-panel { animation: cs-drawer-in 260ms var(--cs-ease) both; }
+.cs-overlay[data-state="closing"] .cs-drawer-panel { animation: cs-drawer-out var(--cs-duration) ease both; }
+.cs-drawer-panel[data-side="left"] { animation-name: cs-drawer-in-left; }
+.cs-overlay[data-state="closing"] .cs-drawer-panel[data-side="left"] { animation-name: cs-drawer-out-left; }
+
+.cs-menu-panel { animation: cs-menu-in 140ms var(--cs-ease) both; }
+
+@keyframes cs-fade-in { from { opacity: 0; } }
+@keyframes cs-fade-out { to { opacity: 0; } }
+@keyframes cs-modal-in { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
+@keyframes cs-modal-out { to { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@keyframes cs-drawer-in { from { transform: translateX(100%); } }
+@keyframes cs-drawer-out { to { transform: translateX(100%); } }
+@keyframes cs-drawer-in-left { from { transform: translateX(-100%); } }
+@keyframes cs-drawer-out-left { to { transform: translateX(-100%); } }
+@keyframes cs-menu-in { from { opacity: 0; transform: translateY(-4px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-overlay-backdrop, .cs-modal-panel, .cs-drawer-panel, .cs-menu-panel { animation: none !important; }
+}
+
+/* Toast: trượt vào từ mép phải, tự đóng sau 3 giây (thanh tiến trình), trượt ra khi đóng. */
+@keyframes cs-toast-in { from { opacity: 0; transform: translateX(calc(100% + 24px)); } to { opacity: 1; transform: none; } }
+@keyframes cs-toast-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(calc(100% + 24px)); } }
+@keyframes cs-toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.cs-toast { animation: cs-toast-in .32s cubic-bezier(.2, .9, .25, 1) both; }
+.cs-toast[data-leaving] { animation: cs-toast-out .22s ease-in both; }
+.cs-toast-progress { transform-origin: left; animation: cs-toast-progress var(--cs-toast-duration, 3s) linear both; }
+@media (prefers-reduced-motion: reduce) {
+  .cs-toast, .cs-toast[data-leaving] { animation-duration: 1ms; }
+}
