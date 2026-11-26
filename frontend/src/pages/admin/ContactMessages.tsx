@@ -38,3 +38,11 @@ export default function ContactMessages() {
     <Toolbar>
       <FilterSelect label="Trạng thái" value={status} onChange={value => { setStatus(value); setPage(1); }} options={[
         { value: "NEW", label: "Chưa xử lý" }, { value: "HANDLED", label: "Đã xử lý" }, { value: "all", label: "Tất cả" },
+      ]}/>
+    </Toolbar>
+    <DataTable caption="Tin nhắn liên hệ" columns={columns} rows={result?.data ?? []} rowKey={m => m.id}
+      loading={list.loading} error={list.error || undefined} onRetry={list.reload}
+      empty={<EmptyState icon="mail" title={status === "NEW" ? "Không có tin nhắn mới" : "Chưa có tin nhắn nào"}/>}
+      footer={result && <Pagination page={result.meta.current_page} totalPages={result.meta.last_page} totalItems={result.meta.total} pageSize={result.meta.per_page} disabled={list.loading} onChange={setPage}/>}/>
+  </AdminPage>;
+}
