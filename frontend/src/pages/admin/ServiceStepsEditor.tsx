@@ -38,3 +38,23 @@ export function ServiceStepsEditor({ serviceId, onSaved, onDirtyChange }: {
       .then(response => {
         if (!active) return;
         const rows = response.data.map(({ name, standard_minutes, requires_photo }) => ({ name, standard_minutes, requires_photo }));
+        setSteps(rows); setSavedSteps(rows); setLoaded(true);
+      })
+      // Tải lỗi thì không mở trình sửa: danh sách rỗng mà lưu sẽ xóa mất các bước đang có.
+      .catch(() => { if (active) { setLoadFailed(true); setLoaded(true); } });
+    return () => { active = false; };
+  }, [serviceId, attempt]);
+
+  const dirty = loaded && !loadFailed && JSON.stringify(clean(steps)) !== JSON.stringify(clean(savedSteps));
+  const problems = steps.map(stepProblem);
+  const invalid = problems.some(Boolean);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
+
+  async function save() {
+    const next = clean(steps);
+    setSaving(true);
+    try {
+      const response = await fetchApi<{ service: { estimated_minutes: number | null } }>(`/admin/services/${serviceId}/steps`, {
+        method: "PUT", body: JSON.stringify({ steps: next }),
+      });
+      setSteps(next); setSavedSteps(next);
