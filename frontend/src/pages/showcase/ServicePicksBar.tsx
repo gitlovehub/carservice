@@ -18,7 +18,7 @@ export default function ServicePicksBar({ picks, services, onClear }: { picks: S
       <div className="min-w-0">
         {/* Tiêu đề to + giá nổi bật (màu nhấn), tên dịch vụ ở dòng phụ. */}
         <p className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-          <span className="text-[19px] font-extrabold leading-tight text-cs-text">Đã chọn {picks.ids.length} dịch vụ</span>
+          <span className="text-[19px] font-extrabold leading-tight text-cs-text">Đã chọn {picked.length || picks.ids.length} dịch vụ</span>
           {total > 0
             ? <span className="inline-flex items-baseline gap-1.5"><span className="text-[14px] font-semibold text-cs-muted">Tạm tính từ</span><span className="text-[19px] font-extrabold leading-tight text-cs-accent-text">{vnd(total)}</span></span>
             : <span className="text-[14px] font-semibold text-cs-muted">Cố vấn kiểm tra và báo giá trước khi làm</span>}

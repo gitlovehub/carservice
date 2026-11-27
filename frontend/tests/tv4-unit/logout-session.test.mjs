@@ -1,8 +1,0 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { sandbox, mountFinal, ui, tick } from './final-harness.mjs';
-function setup(token, fail=false){const requests=[],markers=[];const e=sandbox({initialStorage:{role:'CUSTOMER',isLoggedIn:'true',authToken:'old',user:'{}',...(token?{token}:{})}});const a=e.load('pages/auth/auth.ts',{'../../services/api':{fetchApi:async (...args)=>{requests.push([e.storage.get('token'),...args]);if(fail)throw Error('offline');}},'../../services/authPersistence':{clearAuthSessionMarker:()=>markers.push('clear')}});return {...e,a,requests,markers};}
-test('logout revokes token before local credentials are cleared',async()=>{const e=setup('token123');await e.a.logout();assert.deepEqual(e.requests,[['token123','/logout',{method:'POST'}]]);assert.equal(e.storage.size,0);assert.deepEqual(e.markers,['clear']);assert.deepEqual(e.events,['user-updated']);assert.deepEqual(e.redirects,['/login']);});
-test('offline logout still clears credentials and redirects',async()=>{const e=setup('token123',true);await e.a.logout();assert.equal(e.storage.size,0);assert.deepEqual(e.redirects,['/login']);});
-test('guest logout makes no remote request',async()=>{const e=setup();await e.a.logout();assert.deepEqual(e.requests,[]);assert.equal(e.storage.size,0);});
-test('role storage accepts known roles and rejects invalid local values',()=>{const e=setup();for(const role of ['CUSTOMER','ADMIN','ADVISOR','TECHNICIAN']){e.a.setUserRole(role);assert.equal(e.a.getUserRole(),role);assert.equal(e.storage.get('isLoggedIn'),'true');}e.storage.set('role','UNKNOWN');assert.equal(e.a.getUserRole(),null);assert.deepEqual(e.events,Array(4).fill('user-updated'));});

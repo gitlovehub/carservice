@@ -35,7 +35,7 @@ export function useFieldErrors() {
   const showApi = useCallback((error: unknown, fieldByApiKey: Record<string, string> = {}) => {
     const { fields, toast } = splitApiErrors(error, fieldByApiKey);
     if (toast) general(toast);
-    show(fields);
+    if (Object.keys(fields).length) show(fields);
   }, [general, show]);
   return { errors, show, mark, clear, reset, showApi, general };
 }

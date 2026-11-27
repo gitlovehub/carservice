@@ -48,6 +48,7 @@ class ReceiveVehicleFlowTest extends TestCase
             'appointment_id' => $appointment->id,
             'customer_id' => $appointment->customer_id,
             'vehicle_id' => $appointment->vehicle_id,
+            'mileage_received' => 1000,
         ];
     }
 
@@ -92,6 +93,7 @@ class ReceiveVehicleFlowTest extends TestCase
                 'appointment_id' => $appointment->id,
                 'customer_id' => $appointment->customer_id,
                 'vehicle_id' => $otherVehicle->id,
+                'mileage_received' => 1000,
             ])
             ->assertUnprocessable();
 
@@ -102,7 +104,7 @@ class ReceiveVehicleFlowTest extends TestCase
     {
         $advisor = $this->createAdvisor();
         $vehicle = Vehicle::factory()->create();
-        $payload = ['customer_id' => $vehicle->customer_id, 'vehicle_id' => $vehicle->id];
+        $payload = ['customer_id' => $vehicle->customer_id, 'vehicle_id' => $vehicle->id, 'mileage_received' => 1000];
 
         $this->actingAs($advisor)->postJson('/api/repair-orders', $payload)->assertCreated();
         $this->actingAs($advisor)->postJson('/api/repair-orders', $payload)->assertUnprocessable();

@@ -22,7 +22,7 @@ export function Pagination({ page, totalPages, onChange, totalItems, pageSize, d
   showSummary?: boolean;
 }) {
   if (totalPages <= 1) return null;
-  const go = (p: number) => { if (!disabled && p >= 1 && p <= totalPages && p !== page) onChange(p); };
+  const go = (p: number) => { if (p >= 1 && p <= totalPages && p !== page) onChange(p); };
   const from = totalItems && pageSize ? (page - 1) * pageSize + 1 : 0;
   const to = totalItems && pageSize ? Math.min(page * pageSize, totalItems) : 0;
   return <nav aria-label={LABELS.pagination.navigation} className={`flex flex-wrap items-center justify-between gap-3 ${className}`}>

@@ -65,11 +65,7 @@ export function DataTable<T>({ columns, rows, rowKey, caption, loading, error, o
   const rest = columns.filter(c => c !== primary && !c.hideOnMobile);
   // Bấm cả dòng để mở chi tiết; Tab tới dòng rồi Enter / Space cho người dùng bàn phím.
   const rowProps = (row: T) => onRowClick ? {
-    onClick: (event: import("react").MouseEvent) => {
-      const target = event.target as Element;
-      if (target.closest?.('button, a, input, select, textarea, label, [role="button"], [role="menuitem"], [contenteditable="true"]')) return;
-      onRowClick(row);
-    },
+    onClick: () => onRowClick(row),
     onKeyDown: (event: KeyboardEvent) => {
       if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
       event.preventDefault();

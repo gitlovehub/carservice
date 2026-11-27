@@ -1,4 +1,4 @@
-import { forwardRef, useId, useRef, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { LABELS } from "../../config/labels";
 import { Icon } from "./Icon";
 import { FieldContext, controlClass, useFieldControl } from "./fieldContext";
@@ -33,7 +33,7 @@ export function Field({ label, hint, error, required, optional, className = "", 
   const shownError = error || browserError;
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = hasErrorText(shownError) ? `${id}-error` : undefined;
-  const describedBy = errorId ?? hintId;
+  const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
   return <FieldContext.Provider value={{ id, "aria-describedby": describedBy, "aria-invalid": shownError ? true : undefined, required }}>
     <div data-field="" className={`flex flex-col gap-1.5 ${className}`}
       onInvalidCapture={event => {
@@ -88,12 +88,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 export function SearchInput({ value, onChange, placeholder = LABELS.action.search, label = LABELS.action.search, className = "" }: {
   value: string; onChange: (value: string) => void; placeholder?: string; label?: string; className?: string;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
   return <div data-ui="search" className={`relative w-full sm:max-w-xs ${className}`}>
     <Icon name="search" size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-cs-muted"/>
-    <input ref={inputRef} type="search" value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} aria-label={label}
+    <input type="search" value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} aria-label={label}
       className={`${controlClass} pl-9 pr-9 [&::-webkit-search-cancel-button]:hidden`}/>
-    {value && <button type="button" onClick={() => { onChange(""); inputRef.current?.focus(); }} aria-label="Xóa nội dung tìm kiếm" title="Xóa nội dung tìm kiếm"
+    {value && <button type="button" onClick={() => onChange("")} aria-label="Xóa nội dung tìm kiếm" title="Xóa nội dung tìm kiếm"
       className="absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-md text-cs-muted hover:bg-cs-hover hover:text-cs-text">
       <Icon name="close" size={14}/>
     </button>}

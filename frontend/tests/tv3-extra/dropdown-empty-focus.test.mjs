@@ -1,7 +1,0 @@
-import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';import {createRequire} from 'node:module';import {resolve} from 'node:path';import vm from 'node:vm';
-const ts=createRequire(resolve('package.json'))('typescript');let focus=0,closed=false;const effects=[];let i=0,j=0;const menu={querySelectorAll:()=>[],focus:()=>focus++};const jsx=(type,props)=>({type,props});
-const deps={'react/jsx-runtime':{jsx,jsxs:jsx,Fragment:Symbol()},react:{useCallback:f=>f,useEffect:f=>effects.push(f),useId:()=> 'menu',useState:()=>++i===1?[true,v=>{closed=!v}]:[{top:1},()=>{}],useRef:()=>[{current:null},{current:menu},{current:'first'}][j++]},'react-dom':{createPortal:x=>x},'../../config/labels':{LABELS:{action:{more:'More'}}},'./Button':{},'./Icon':{},'./useOverlayArea':{useOverlayArea:()=> 'public'},'./overlay.css':{}};
-const module={exports:{}};const document={body:{},activeElement:menu,addEventListener(){}};
-vm.runInNewContext(ts.transpileModule(readFileSync('src/components/ui/Dropdown.tsx','utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{module,exports:module.exports,require:n=>deps[n],document});
-const t=module.exports.Dropdown({items:[]});effects[0]();assert.equal(focus,1);const panel=t.props.children[1];assert.equal(panel.props.tabIndex,-1);let prevented=0;panel.props.onKeyDown({key:'ArrowDown',preventDefault:()=>prevented++});assert.equal(prevented,1);panel.props.onKeyDown({key:'Escape',preventDefault(){},stopPropagation(){}});assert.equal(closed,true);

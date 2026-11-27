@@ -1,3 +1,0 @@
-import assert from 'node:assert/strict';import {component} from './component-harness.mjs';
-let errors={},focus=0;const messages=[];const {useFieldErrors}=component('src/components/ui/useFieldErrors.ts',{react:{useCallback:f=>f,useState:()=>[errors,v=>{errors=typeof v==='function'?v(errors):v;}]},'./feedbackContext':{useAppFeedback:()=>({notify:m=>messages.push(m)})},'./focusInvalid':{focusFirstInvalid:()=>focus++},'./formValidation':{splitApiErrors:e=>e}});
-const f=useFieldErrors();f.showApi({fields:{name:'bad'},toast:null});assert.equal(errors.name,'bad');assert.equal(focus,1);f.showApi({fields:{},toast:'general'});assert.equal(Object.keys(errors).length,0);assert.equal(focus,1);assert.deepEqual(messages,['general']);

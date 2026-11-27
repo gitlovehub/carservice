@@ -2,14 +2,16 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Account;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreAppointmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null && $this->user()->role === 'CUSTOMER';
+        return $this->user() !== null && $this->user()->role === Account::ROLE_CUSTOMER;
     }
 
     public function rules(): array
@@ -28,20 +30,50 @@ class StoreAppointmentRequest extends FormRequest
                 'array',
             ],
 
-            'new_vehicle.brand' => ['required_with:new_vehicle', 'string', 'max:100'],
-            'new_vehicle.model' => ['required_with:new_vehicle', 'string', 'max:100'],
-            'new_vehicle.vehicle_type' => ['required_with:new_vehicle', Rule::in(['Sedan / Hatchback (4-5 chỗ)', 'SUV / Crossover (5-7 chỗ)', 'MPV', 'PICKUP'])],
-            'new_vehicle.license_plate' => ['nullable', 'string', 'max:20', 'unique:vehicles,license_plate'],
+            // Chọn từ danh mục (model_id, trim_id tùy chọn) hoặc gửi tên hãng/dòng xe như trước.
+            'new_vehicle.model_id' => ['nullable', 'integer'],
+            'new_vehicle.trim_id' => ['nullable', 'integer'],
+            'new_vehicle.brand' => [Rule::requiredIf($this->needsVehicleNames()), 'nullable', 'string', 'max:100'],
+            'new_vehicle.model' => [Rule::requiredIf($this->needsVehicleNames()), 'nullable', 'string', 'max:100'],
+            'new_vehicle.license_plate' => ['nullable', 'string', 'max:20'],
+            // Khách xác nhận đây là xe KHÁC (dù trùng dòng xe + phiên bản với xe chưa biển số đã lưu) → luôn tạo xe mới.
+            'new_vehicle.separate' => ['nullable', 'boolean'],
+            // Số km khách nhập ở bước Dịch vụ: lưu vào hồ sơ xe (chỉ khi lớn hơn số đang lưu).
+            'mileage' => ['nullable', 'integer', 'min:0', 'max:2000000'],
             'appointment_date' => ['required', 'date_format:Y-m-d'],
             'appointment_time' => ['required', 'date_format:H:i'],
-            'request_type' => ['required', Rule::in(['DIAGNOSIS', 'REPAIR', 'MAINTENANCE', 'REPLACEMENT'])],
+            'request_type' => ['sometimes', Rule::in(['DIAGNOSIS', 'REPAIR', 'MAINTENANCE', 'REPLACEMENT'])],
             'symptom_description' => ['nullable', 'string', 'max:5000'],
             'note' => ['nullable', 'string', 'max:5000'],
             'service_ids' => ['sometimes', 'array'],
-            'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('status', 'ACTIVE')],
-            'package_ids' => ['sometimes', 'array'],
-            'package_ids.*' => ['integer', 'distinct', 'exists:maintenance_packages,id'],
-            'service_name' => ['sometimes', Rule::in(['Bảo dưỡng định kỳ', 'Kiểm tra tổng quát', 'Thay dầu động cơ'])],
+            'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('status', 'ACTIVE')->where('is_visible', true)],
+            'package_ids' => ['sometimes', 'array', 'max:1'],
+            'package_ids.*' => ['integer', 'distinct', Rule::exists('maintenance_packages', 'id')->where('status', 'ACTIVE')],
+        ];
+    }
+
+    private function needsVehicleNames(): bool
+    {
+        return $this->has('new_vehicle') && ! $this->filled('new_vehicle.model_id');
+    }
+
+    /**
+     * Khách phải chọn ít nhất một gói, một dịch vụ, hoặc mô tả triệu chứng.
+     *
+     * @return array<int, \Closure>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $hasNeed = ! empty($this->input('service_ids'))
+                    || ! empty($this->input('package_ids'))
+                    || trim((string) $this->input('symptom_description')) !== '';
+
+                if (! $hasNeed) {
+                    $validator->errors()->add('service_ids', 'Vui lòng chọn dịch vụ, gói bảo dưỡng hoặc mô tả tình trạng xe.');
+                }
+            },
         ];
     }
 
@@ -57,10 +89,10 @@ class StoreAppointmentRequest extends FormRequest
             'vehicle_id.exists' => 'Xe không tồn tại hoặc đã bị xóa.',
             'new_vehicle.required_without' => 'Vui lòng chọn xe có sẵn hoặc khai báo xe mới.',
             'new_vehicle.prohibited_unless' => 'Chỉ chọn xe có sẵn hoặc khai báo xe mới, không chọn cả hai.',
-            'new_vehicle.brand.required_with' => 'Vui lòng nhập hãng xe.',
-            'new_vehicle.model.required_with' => 'Vui lòng nhập dòng xe.',
-            'new_vehicle.vehicle_type.required_with' => 'Vui lòng chọn loại xe.',
-            'new_vehicle.vehicle_type.in' => 'Loại xe không hợp lệ.',
+            'new_vehicle.brand.required' => 'Vui lòng chọn hãng xe.',
+            'new_vehicle.model.required' => 'Vui lòng chọn dòng xe.',
+            'new_vehicle.model_id.integer' => 'Dòng xe đã chọn không hợp lệ.',
+            'new_vehicle.trim_id.integer' => 'Phiên bản đã chọn không hợp lệ.',
             'new_vehicle.license_plate.unique' => 'Biển số đã tồn tại.',
             'new_vehicle.license_plate.max' => 'Biển số không được quá 20 ký tự.',
             'appointment_date.required' => 'Vui lòng chọn ngày hẹn.',
@@ -71,12 +103,15 @@ class StoreAppointmentRequest extends FormRequest
             'request_type.required' => 'Vui lòng chọn loại yêu cầu.',
             'request_type.in' => 'Loại yêu cầu không hợp lệ.',
             'symptom_description.max' => 'Mô tả triệu chứng quá dài.',
+            'mileage.integer' => 'Số km phải là số nguyên.',
+            'mileage.min' => 'Số km không hợp lệ.',
+            'mileage.max' => 'Số km không hợp lệ.',
             'note.max' => 'Ghi chú quá dài.',
             'service_ids.*.exists' => 'Dịch vụ đã chọn không tồn tại hoặc ngừng hoạt động.',
             'service_ids.*.distinct' => 'Dịch vụ bị chọn trùng.',
-            'package_ids.*.exists' => 'Gói bảo dưỡng đã chọn không tồn tại.',
+            'package_ids.max' => 'Mỗi lịch hẹn chỉ chọn một gói bảo dưỡng.',
+            'package_ids.*.exists' => 'Gói bảo dưỡng không tồn tại hoặc đã ngừng áp dụng.',
             'package_ids.*.distinct' => 'Gói bảo dưỡng bị chọn trùng.',
-            'service_name.in' => 'Dịch vụ đã chọn không hợp lệ.',
         ];
     }
 }

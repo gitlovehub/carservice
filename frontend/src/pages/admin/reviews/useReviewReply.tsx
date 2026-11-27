@@ -42,7 +42,6 @@ export function useReviewReply({ create, update, onSaved, onFailed, firstReplyTi
     if (trimmedReply.length > REPLY_MAX) { setReplyError(`Phản hồi tối đa ${num(REPLY_MAX)} ký tự.`); return; }
     if (unchanged) { setReplyError("Nội dung phản hồi chưa có thay đổi."); return; }
     sendingRef.current = true;
-    setSending(true);
     try {
       if (replying.reply) {
         const accepted = await confirm({ title: "Lưu thay đổi phản hồi?", description: "Khách hàng sẽ thấy nội dung mới kèm nhãn “Đã chỉnh sửa”. Nội dung cũ được lưu trong lịch sử chỉnh sửa.", confirmText: "Lưu thay đổi", cancelText: "Xem lại", variant: "info", confirmIcon: "check" });
@@ -51,7 +50,7 @@ export function useReviewReply({ create, update, onSaved, onFailed, firstReplyTi
         const accepted = await confirm({ title: "Gửi phản hồi cho khách?", description: "Khách hàng sẽ nhận được thông báo và thấy phản hồi này dưới đánh giá của mình.", confirmText: "Gửi phản hồi", cancelText: "Xem lại", variant: "info", confirmIcon: "send" });
         if (!accepted) return;
       }
-
+      setSending(true);
       setReplyError("");
       const response = replying.reply
         ? await update(replying.id, trimmedReply, replying.reply)

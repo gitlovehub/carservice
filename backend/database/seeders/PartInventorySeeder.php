@@ -24,7 +24,7 @@ class PartInventorySeeder extends Seeder
             ['sku' => 'BAT-12V-60', 'name' => 'Ắc quy 12V 60Ah', 'category' => 'Điện', 'unit' => 'Bình', 'cost_price' => 1600000, 'sell_price' => 2100000, 'stock' => 6],
             ['sku' => 'WPR-BLD-01', 'name' => 'Lưỡi gạt mưa (cặp)', 'category' => 'Phụ kiện', 'unit' => 'Cặp', 'cost_price' => 180000, 'sell_price' => 300000, 'stock' => 15],
             ['sku' => 'CLT-01', 'name' => 'Nước làm mát (1 lít)', 'category' => 'Dầu nhớt', 'unit' => 'Chai', 'cost_price' => 80000, 'sell_price' => 140000, 'stock' => 25],
-            ['sku' => 'SPK-PLG-01', 'name' => 'Bugi đánh lửa', 'category' => 'Động cơ', 'unit' => 'Cái', 'cost_price' => 120000, 'sell_price' => 190000, 'stock' => 2],
+            ['sku' => 'SPK-PLG-01', 'name' => 'Bugi đánh lửa', 'category' => 'Động cơ', 'unit' => 'Cái', 'cost_price' => 120000, 'sell_price' => 190000, 'stock' => 20],
         ];
 
         foreach ($parts as $data) {

@@ -9,7 +9,6 @@ const EXIT_MS = 200;
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 /** Lớp phủ đang mở, lớp cuối là lớp trên cùng — chỉ lớp trên cùng phản hồi Esc. */
 const stack: string[] = [];
-let originalOverflow = "";
 
 type OverlayProps = {
   open: boolean;
@@ -45,7 +44,7 @@ function useOverlay({ open, onClose, initialFocus, dismissible = true }: Pick<Ov
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
-    if (!stack.length) originalOverflow = document.body.style.overflow;
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     stack.push(id);
 
@@ -73,10 +72,9 @@ function useOverlay({ open, onClose, initialFocus, dismissible = true }: Pick<Ov
     return () => {
       document.removeEventListener("keydown", onKey);
       const index = stack.lastIndexOf(id);
-      const wasTop = index === stack.length - 1;
       if (index >= 0) stack.splice(index, 1);
-      if (!stack.length) document.body.style.overflow = originalOverflow;
-      if (wasTop && previous && document.contains(previous)) previous.focus({ preventScroll: true });
+      if (!stack.length) document.body.style.overflow = previousOverflow;
+      if (previous && document.contains(previous)) previous.focus({ preventScroll: true });
     };
   }, [open, id, initialFocus]);
 

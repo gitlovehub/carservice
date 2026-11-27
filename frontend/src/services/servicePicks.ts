@@ -14,8 +14,8 @@ const EMPTY: ServicePicks = { ids: [], symptom: "" };
 export function readServicePicks(): ServicePicks {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || "null") as (ServicePicks & { savedAt: number }) | null;
-    if (!saved || !Number.isFinite(saved.savedAt) || saved.savedAt > Date.now() || Date.now() - saved.savedAt > TTL_MS) return EMPTY;
-    return { ids: Array.isArray(saved.ids) ? [...new Set(saved.ids.filter(id => Number.isSafeInteger(id) && id > 0))] : [], symptom: typeof saved.symptom === "string" ? saved.symptom : "" };
+    if (!saved || Date.now() - saved.savedAt > TTL_MS) return EMPTY;
+    return { ids: Array.isArray(saved.ids) ? saved.ids.filter(Number.isInteger) : [], symptom: typeof saved.symptom === "string" ? saved.symptom : "" };
   } catch {
     return EMPTY;
   }
@@ -33,7 +33,6 @@ function writeServicePicks(picks: ServicePicks) {
  * ở bước 2 thì trang Dịch vụ / trang chi tiết cũng bỏ tick, không "sống lại" ở lần sau.
  */
 export function syncServicePicks(ids: number[]) {
-  ids = [...new Set(ids.filter(id => Number.isSafeInteger(id) && id > 0))];
   const current = readServicePicks();
   const same = current.ids.length === ids.length && ids.every(id => current.ids.includes(id));
   if (!same) writeServicePicks({ ...current, ids });
@@ -46,8 +45,7 @@ export function clearServicePicks() {
 /** Link đặt lịch mang theo dịch vụ đã chọn + mô tả tình trạng. */
 export function bookingLinkFor(picks: ServicePicks): string {
   const params = new URLSearchParams();
-  const ids = [...new Set(picks.ids.filter(id => Number.isSafeInteger(id) && id > 0))];
-  if (ids.length) params.set("services", ids.join(","));
+  if (picks.ids.length) params.set("services", picks.ids.join(","));
   if (picks.symptom) params.set("symptom", picks.symptom);
   const query = params.toString();
   return query ? `/booking?${query}` : "/booking";

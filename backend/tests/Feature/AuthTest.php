@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Mail\EmailVerificationOtpMail;
+use App\Mail\AccountVerificationMail;
 use App\Models\Account;
 use App\Models\Customer;
-use App\Models\EmailVerificationOtp;
 use App\Models\Employee;
 use App\Models\TechnicianProfile;
 use App\Models\Vehicle;
+use App\Services\AccountEmailService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -54,16 +54,18 @@ class AuthTest extends TestCase
         $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 
-    public function test_verified_account_can_still_receive_a_fresh_otp_for_login(): void
+    public function test_otp_login_routes_are_gone_and_resend_only_targets_pending_accounts(): void
     {
+        Mail::fake();
         $account = $this->createAccount(status: Account::STATUS_ACTIVE);
         $account->forceFill(['email_verified_at' => now()])->save();
 
-        $this->postJson('/api/resend-email-otp', [
-            'email' => $account->email,
-        ])
-            ->assertOk()
-            ->assertJsonPath('message', 'Mã OTP mới đã được gửi đến email.');
+        $this->postJson('/api/verify-email-otp', ['email' => $account->email, 'otp' => '123456'])->assertNotFound();
+        $this->postJson('/api/resend-email-otp', ['email' => $account->email])->assertNotFound();
+        $this->postJson('/api/resend-verification', ['email' => $account->email])->assertOk();
+        Mail::assertNothingSent();
+
+        $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 
     public function test_inactive_account_cannot_log_in(): void
@@ -240,10 +242,10 @@ class AuthTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('email', 'customer_new@example.com')
-            ->assertJsonPath('message', 'Đăng ký thành công. Vui lòng kiểm tra email để lấy mã OTP.');
+            ->assertJsonPath('message', 'Đăng ký thành công. Vui lòng mở email và bấm nút xác thực tài khoản.');
 
         $this->assertNull($response->json('token'));
-        Mail::assertSent(EmailVerificationOtpMail::class);
+        Mail::assertSent(AccountVerificationMail::class);
         $this->assertDatabaseHas('accounts', [
             'email' => 'customer_new@example.com',
             'role' => Account::ROLE_CUSTOMER,
@@ -257,7 +259,7 @@ class AuthTest extends TestCase
         ]);
     }
 
-    public function test_customer_can_verify_email_with_the_otp_sent_during_registration(): void
+    public function test_customer_verifies_email_with_the_button_and_is_not_logged_in(): void
     {
         Mail::fake();
         $email = 'customer_verified@example.com';
@@ -268,19 +270,14 @@ class AuthTest extends TestCase
             ->assertJsonPath('email', $email);
         $this->assertNull($response->json('token'));
 
-        $this->verifyEmailWithSentOtp($email);
+        $this->verifyEmailWithSentLink($email);
 
         $account = Account::query()->where('email', $email)->firstOrFail();
 
         $this->assertSame(Account::STATUS_ACTIVE, $account->status);
         $this->assertNotNull($account->email_verified_at);
-        $this->assertDatabaseCount('personal_access_tokens', 1);
-        $this->assertNotNull(
-            EmailVerificationOtp::query()
-                ->where('account_id', $account->id)
-                ->sole()
-                ->used_at
-        );
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+
     }
 
     public function test_email_verification_links_walk_in_customer_by_verified_email_when_account_has_no_customer(): void
@@ -297,16 +294,8 @@ class AuthTest extends TestCase
             'email' => 'WALKIN_VERIFIED@example.com',
             'address' => '123 Ha Noi',
         ]);
-        EmailVerificationOtp::query()->create([
-            'account_id' => $account->id,
-            'otp_hash' => Hash::make('123456'),
-            'expires_at' => now()->addMinutes(5),
-        ]);
 
-        $this->postJson('/api/verify-email-otp', [
-            'email' => $account->email,
-            'otp' => '123456',
-        ])->assertOk();
+        $this->post(app(AccountEmailService::class)->verificationUrl($account))->assertRedirect();
 
         $walkInCustomer->refresh();
         $this->assertSame($account->id, $walkInCustomer->account_id);
@@ -333,16 +322,8 @@ class AuthTest extends TestCase
             'phone' => '0922222222',
             'email' => $account->email,
         ]);
-        EmailVerificationOtp::query()->create([
-            'account_id' => $account->id,
-            'otp_hash' => Hash::make('123456'),
-            'expires_at' => now()->addMinutes(5),
-        ]);
 
-        $this->postJson('/api/verify-email-otp', [
-            'email' => $account->email,
-            'otp' => '123456',
-        ])->assertOk();
+        $this->post(app(AccountEmailService::class)->verificationUrl($account))->assertRedirect();
 
         $this->assertDatabaseMissing('customers', ['id' => $existingCustomer->id]);
         $this->assertSame($account->id, $walkInCustomer->refresh()->account_id);
@@ -370,16 +351,8 @@ class AuthTest extends TestCase
             'email' => $account->email,
         ]);
         Vehicle::factory()->for($existingCustomer)->create()->delete();
-        EmailVerificationOtp::query()->create([
-            'account_id' => $account->id,
-            'otp_hash' => Hash::make('123456'),
-            'expires_at' => now()->addMinutes(5),
-        ]);
 
-        $this->postJson('/api/verify-email-otp', [
-            'email' => $account->email,
-            'otp' => '123456',
-        ])->assertOk();
+        $this->post(app(AccountEmailService::class)->verificationUrl($account))->assertRedirect();
 
         $this->assertSame($account->id, $existingCustomer->refresh()->account_id);
         $this->assertNull($walkInCustomer->refresh()->account_id);
@@ -402,7 +375,7 @@ class AuthTest extends TestCase
             ->assertJsonValidationErrors(['full_name', 'phone', 'email', 'password']);
     }
 
-    public function test_verifying_otp_does_not_link_walkin_customer_matched_only_by_phone(): void
+    public function test_verifying_email_does_not_link_walkin_customer_matched_only_by_phone(): void
     {
         Mail::fake();
 
@@ -417,7 +390,7 @@ class AuthTest extends TestCase
         $this->postJson('/api/register', $this->registerPayload('attacker@example.com', '0988776655'))
             ->assertCreated();
 
-        $this->verifyEmailWithSentOtp('attacker@example.com');
+        $this->verifyEmailWithSentLink('attacker@example.com');
 
         $this->assertNull($victim->fresh()->account_id);
         $this->assertDatabaseCount('customers', 2);
@@ -440,7 +413,7 @@ class AuthTest extends TestCase
 
         $this->assertNull($walkInCustomer->fresh()->account_id);
 
-        $this->verifyEmailWithSentOtp('khach@example.com');
+        $this->verifyEmailWithSentLink('khach@example.com');
 
         $account = Account::query()->where('email', 'khach@example.com')->firstOrFail();
         $walkInCustomer->refresh();
@@ -476,7 +449,7 @@ class AuthTest extends TestCase
         $this->assertNull($response->json('token'));
         $this->assertGuest('web');
         $this->assertDatabaseCount('personal_access_tokens', 0);
-        Mail::assertSent(EmailVerificationOtpMail::class);
+        Mail::assertSent(AccountVerificationMail::class);
     }
 
     public function test_authenticated_account_can_update_profile_and_avatar(): void
@@ -583,23 +556,22 @@ class AuthTest extends TestCase
         ];
     }
 
-    /** Lấy OTP thật từ mail đã gửi để xác thực email trong test. */
-    private function verifyEmailWithSentOtp(string $email): void
+    /** Bấm đúng nút xác thực trong email đã gửi. */
+    private function verifyEmailWithSentLink(string $email): void
     {
-        $otp = null;
-        Mail::assertSent(EmailVerificationOtpMail::class, function ($mail) use ($email, &$otp) {
+        $url = null;
+        Mail::assertSent(AccountVerificationMail::class, function (AccountVerificationMail $mail) use ($email, &$url) {
             if (! $mail->hasTo($email)) {
                 return false;
             }
 
-            $otp = $mail->otp;
+            $url = $mail->url;
 
             return true;
         });
 
-        $this->assertNotNull($otp);
-
-        $this->postJson('/api/verify-email-otp', ['email' => $email, 'otp' => (string) $otp])->assertOk();
+        $this->assertNotNull($url);
+        $this->post($url)->assertRedirect();
     }
 
     private function createAccount(

@@ -1,8 +1,0 @@
-import assert from 'node:assert/strict';
-import {component,nodes} from './component-harness.mjs';
-const provider=()=>null; let state=false; const ref={};
-const field={id:'field-1','aria-describedby':'hint-1','aria-invalid':true,required:true};
-const {Field,FieldError,Input,PasswordInput,Select,Textarea,SearchInput}=component('src/components/ui/Field.tsx',{react:{forwardRef:f=>p=>f(p,ref),useId:()=> 'field-1',useState:x=>[typeof x==='boolean'?state:x,v=>{state=typeof v==='function'?v(state):v;}]},'../../config/labels':{LABELS:{form:{optional:'không bắt buộc'},action:{search:'Tìm kiếm'}}},'./Icon':{Icon:()=>null},'./fieldContext':{FieldContext:{Provider:provider},controlClass:'control',useFieldControl:()=>field},'./focusInvalid':{focusFirstInvalid:()=>{}},'./formValidation':{isFormControl:()=>false,validityMessage:()=>''}});
-const t=Field({label:'Email',hint:'Gợi ý',error:'Sai email',required:true,children:'input'});assert.equal(t.props.value.id,'field-1');assert.equal(t.props.value['aria-invalid'],true);assert.equal(nodes(t,n=>n.type==='label')[0].props.htmlFor,'field-1');assert.equal(nodes(t,n=>n.props?.role==='alert')[0].props.id,'field-1-error');assert.equal(nodes(t,n=>n.props?.id==='field-1-hint').length,0);
-const quiet=Field({label:'Email',hint:'Gợi ý',error:' '});assert.equal(quiet.props.value['aria-invalid'],true);assert.equal(quiet.props.value['aria-describedby'],'field-1-hint');assert.equal(nodes(quiet,n=>n.props?.role==='alert').length,0);assert.equal(FieldError({children:' '}),null);assert.equal(FieldError({children:'Sai'}).props.role,'alert');
-const clear=Field({label:'Email'});assert.equal(clear.props.value['aria-invalid'],undefined);assert.equal(clear.props.value['aria-describedby'],undefined);

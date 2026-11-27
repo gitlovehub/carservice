@@ -13,6 +13,14 @@ class VehiclePolicy
             || (int) $vehicle->customer_id === (int) $account->customer?->id;
     }
 
+    /** Xe của chính tài khoản này — dùng cho "Xe của tôi" (/me/vehicles), kể cả nhân viên dùng như khách. */
+    public function own(Account $account, Vehicle $vehicle): bool
+    {
+        $customerId = $account->customer?->id;
+
+        return $customerId !== null && (int) $vehicle->customer_id === (int) $customerId;
+    }
+
     public function update(Account $account, Vehicle $vehicle): bool
     {
         return $this->view($account, $vehicle);

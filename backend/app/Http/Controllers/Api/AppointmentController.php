@@ -7,12 +7,14 @@ use App\Http\Requests\StoreAppointmentRequest;
 use App\Http\Requests\UpdateAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Customer;
-use App\Models\Service;
 use App\Models\Vehicle;
 use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
+use App\Services\AppointmentSlotService;
+use App\Services\CustomerActivityFeed;
+use App\Services\CustomerReschedulePolicy;
+use App\Support\VehicleCatalogSelection;
 use Carbon\Carbon;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -68,25 +70,60 @@ class AppointmentController extends Controller
                 } else {
                     $input = $validated['new_vehicle'];
                     $plate = isset($input['license_plate']) ? strtoupper(trim($input['license_plate'])) : null;
-                    if ($plate !== null && Vehicle::where('license_plate', $plate)->exists()) {
-                        throw ValidationException::withMessages(['new_vehicle.license_plate' => 'Biển số đã tồn tại.']);
+                    if ($plate === '') {
+                        $plate = null;
                     }
-                    $type = match ($input['vehicle_type']) {
-                        'Sedan / Hatchback (4-5 chỗ)' => 'SEDAN',
-                        'SUV / Crossover (5-7 chỗ)' => 'SUV',
-                        'PICKUP' => 'PICKUP',
-                        default => 'MPV',
-                    };
-                    $brand = VehicleBrand::firstOrCreate(['name' => trim($input['brand'])], ['status' => 'ACTIVE']);
-                    $model = VehicleModel::firstOrCreate(
-                        ['brand_id' => $brand->id, 'name' => trim($input['model'])],
-                        ['body_type' => $type, 'status' => 'ACTIVE']
-                    );
-                    $vehicle = Vehicle::create([
-                        'customer_id' => $customer->id,
-                        'model_id' => $model->id,
-                        'license_plate' => $plate,
-                    ]);
+                    // Xe chưa biển số: mặc định dùng lại xe cùng dòng + phiên bản đã lưu (tránh tạo bản trùng);
+                    // khách chọn "Một xe khác" (separate) thì luôn tạo xe mới — VD hai xe mới giống hệt nhau chưa có biển.
+                    $reusePlateless = $plate === null && empty($input['separate']);
+
+                    // Biển số đã có: nếu là xe của chính khách (kể cả đã xóa mềm) thì dùng lại,
+                    // nếu thuộc khách khác thì từ chối để không đặt lịch trên xe của người khác.
+                    $existingVehicle = $plate === null ? null : Vehicle::withTrashed()
+                        ->where('license_plate', $plate)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($existingVehicle && (int) $existingVehicle->customer_id !== (int) $customer->id) {
+                        throw ValidationException::withMessages([
+                            'new_vehicle.license_plate' => 'Biển số này đã được đăng ký cho một tài khoản khác. Vui lòng liên hệ gara để được hỗ trợ.',
+                        ]);
+                    }
+
+                    if ($existingVehicle) {
+                        if ($existingVehicle->trashed()) {
+                            $existingVehicle->restore();
+                        }
+                        $vehicle = $existingVehicle;
+                    } elseif (! empty($input['model_id'])) {
+                        // Chọn từ bộ chọn xe: dòng xe/phiên bản phải đang hiển thị và khớp nhau.
+                        ['model' => $model, 'trim' => $trim] = VehicleCatalogSelection::resolve(
+                            (int) $input['model_id'],
+                            empty($input['trim_id']) ? null : (int) $input['trim_id'],
+                            'new_vehicle.',
+                        );
+                        $vehicle = ($reusePlateless ? $this->findPlatelessVehicle($customer->id, $model->id, $trim?->id) : null)
+                            ?? Vehicle::create([
+                                'customer_id' => $customer->id,
+                                'model_id' => $model->id,
+                                'trim_id' => $trim?->id,
+                                'variant' => $trim?->name,
+                                'license_plate' => $plate,
+                            ]);
+                    } else {
+                        // Cách cũ (gửi tên): loại thân xe lấy theo danh mục có sẵn; dòng xe mới do khách nhập để trống.
+                        $brand = VehicleBrand::firstOrCreate(['name' => trim($input['brand'])], ['status' => 'ACTIVE']);
+                        $model = VehicleModel::firstOrCreate(
+                            ['brand_id' => $brand->id, 'name' => trim($input['model'])],
+                            ['status' => 'ACTIVE']
+                        );
+                        $vehicle = ($reusePlateless ? $this->findPlatelessVehicle($customer->id, $model->id, null) : null)
+                            ?? Vehicle::create([
+                                'customer_id' => $customer->id,
+                                'model_id' => $model->id,
+                                'license_plate' => $plate,
+                            ]);
+                    }
                 }
 
                 $booked = DB::table('appointments')
@@ -102,8 +139,17 @@ class AppointmentController extends Controller
                     ->where('appointment_time', $time)
                     ->whereNotIn('status', ['CANCELLED', 'NO_SHOW'])->exists();
                 if ($duplicate) {
-                    throw ValidationException::withMessages(['vehicle_id' => 'Xe đã có lịch hẹn tại khung giờ này.']);
+                    throw ValidationException::withMessages(['vehicle_id' => $this->duplicateSlotMessage($vehicle, $time)]);
                 }
+
+                // Odo chỉ tăng: số khách nhập nhỏ hơn số đã lưu (gõ nhầm) thì giữ nguyên.
+                $mileage = isset($validated['mileage']) ? (int) $validated['mileage'] : null;
+                if ($mileage !== null && $mileage > (int) ($vehicle->mileage ?? 0)) {
+                    $vehicle->update(['mileage' => $mileage]);
+                }
+
+                $serviceIds = $validated['service_ids'] ?? [];
+                $packageIds = $validated['package_ids'] ?? [];
 
                 $appointment = Appointment::create([
                     'appointment_code' => 'APT-'.$when->format('Ymd').'-'.strtoupper(Str::random(8)),
@@ -111,23 +157,12 @@ class AppointmentController extends Controller
                     'vehicle_id' => $vehicle->id,
                     'appointment_date' => $date,
                     'appointment_time' => $time,
-                    'request_type' => $validated['request_type'],
+                    'request_type' => $validated['request_type'] ?? $this->inferRequestType($serviceIds, $packageIds),
                     'symptom_description' => $validated['symptom_description'] ?? null,
                     'note' => $validated['note'] ?? null,
                     'status' => 'PENDING',
                 ]);
-                $ids = $validated['service_ids'] ?? [];
-                if (! empty($validated['service_name'])) {
-                    $defaults = [
-                        'Bảo dưỡng định kỳ' => ['category' => 'Bảo dưỡng định kỳ', 'base_price' => 500000, 'estimated_minutes' => 60, 'status' => 'ACTIVE'],
-                        'Kiểm tra tổng quát' => ['category' => 'Kiểm tra tổng quát', 'base_price' => 300000, 'estimated_minutes' => 60, 'status' => 'ACTIVE'],
-                        'Thay dầu động cơ' => ['category' => 'Bảo dưỡng định kỳ', 'base_price' => 350000, 'estimated_minutes' => 30, 'status' => 'ACTIVE'],
-                    ];
-                    $service = Service::firstOrCreate(['name' => $validated['service_name']], $defaults[$validated['service_name']]);
-                    $ids[] = $service->id;
-                }
-                $appointment->services()->sync(array_unique($ids));
-                $appointment->packages()->sync($validated['package_ids'] ?? []);
+                $appointment->syncRequestedItems($serviceIds, $packageIds);
 
                 return $appointment;
             }, 3);
@@ -158,56 +193,49 @@ class AppointmentController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        try {
-            $account = $request->user();
+        $account = $request->user();
 
-            // 1. Xác thực hồ sơ khách hàng
-            $customer = Customer::where('account_id', $account->id)->first();
-            if (! $customer) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Không tìm thấy thông tin khách hàng liên kết với tài khoản này.',
-                ], Response::HTTP_NOT_FOUND);
-            }
-
-            // 2. Query lịch hẹn kèm thông tin xe, dịch vụ và gói bảo dưỡng
-            $query = Appointment::with([
-                'vehicle:id,customer_id,model_id,license_plate,variant,year',
-                'vehicle.model:id,brand_id,name',
-                'vehicle.model.brand:id,name',
-                'services:id,name,base_price',
-                'packages:id,name,mileage_milestone',
-            ])
-                ->where('customer_id', $customer->id);
-
-            // 3. Hỗ trợ lọc trạng thái (nếu có: PENDING, CONFIRMED, CANCELLED,...)
-            if ($request->filled('status')) {
-                $query->where('status', $request->query('status'));
-            }
-
-            // 4. Sắp xếp lịch hẹn mới nhất lên đầu và phân trang
-            $appointments = $query->orderBy('appointment_date', 'desc')
-                ->orderBy('appointment_time', 'desc')
-                ->paginate($request->query('per_page', 10));
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Lấy danh sách lịch hẹn thành công.',
-                'data' => $appointments->items(),
-                'pagination' => [
-                    'current_page' => $appointments->currentPage(),
-                    'per_page' => $appointments->perPage(),
-                    'total' => $appointments->total(),
-                    'last_page' => $appointments->lastPage(),
-                ],
-            ], Response::HTTP_OK);
-
-        } catch (Exception $e) {
+        // 1. Xác thực hồ sơ khách hàng
+        $customer = Customer::where('account_id', $account->id)->first();
+        if (! $customer) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+                'message' => 'Không tìm thấy thông tin khách hàng liên kết với tài khoản này.',
+            ], Response::HTTP_NOT_FOUND);
         }
+
+        // 2. Query lịch hẹn kèm thông tin xe, dịch vụ và gói bảo dưỡng
+        $query = Appointment::with([
+            'vehicle:id,customer_id,model_id,trim_id,license_plate,variant,year',
+            'vehicle.model:id,brand_id,name',
+            'vehicle.trim:id,name',
+            'vehicle.model.brand:id,name',
+            'services:id,name,base_price',
+            'packages:id,name,mileage_milestone',
+        ])
+            ->where('customer_id', $customer->id);
+
+        // 3. Hỗ trợ lọc trạng thái (nếu có: PENDING, CONFIRMED, CANCELLED,...)
+        if ($request->filled('status')) {
+            $query->where('status', $request->query('status'));
+        }
+
+        // 4. Sắp xếp lịch hẹn mới nhất lên đầu và phân trang
+        $appointments = $query->orderBy('appointment_date', 'desc')
+            ->orderBy('appointment_time', 'desc')
+            ->paginate($request->query('per_page', 10));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy danh sách lịch hẹn thành công.',
+            'data' => $appointments->items(),
+            'pagination' => [
+                'current_page' => $appointments->currentPage(),
+                'per_page' => $appointments->perPage(),
+                'total' => $appointments->total(),
+                'last_page' => $appointments->lastPage(),
+            ],
+        ], Response::HTTP_OK);
     }
 
     /**
@@ -224,6 +252,7 @@ class AppointmentController extends Controller
 
         $appointment = Appointment::with([
             'vehicle.model.brand',
+            'vehicle.trim:id,name',
             'services:id,name,base_price,estimated_minutes',
             'packages:id,name,mileage_milestone',
         ])
@@ -239,6 +268,8 @@ class AppointmentController extends Controller
         }
 
         $this->authorize('view', $appointment);
+        // Giao diện khách biết còn tự đổi được mấy lần / tới khi nào (hết thì hiện "Liên hệ gara").
+        $appointment->setAttribute('reschedule', app(CustomerReschedulePolicy::class)->state($appointment));
 
         return response()->json([
             'success' => true,
@@ -251,83 +282,88 @@ class AppointmentController extends Controller
      */
     public function update(UpdateAppointmentRequest $request, int $id): JsonResponse
     {
-        try {
-            $account = $request->user();
-            $customer = Customer::where('account_id', $account->id)->first();
-            if (! $customer) {
-                return response()->json(['success' => false, 'message' => 'Không tìm thấy hồ sơ khách hàng.'], 404);
-            }
-            $appointment = Appointment::where('id', $id)->where('customer_id', $customer->id)->first();
+        $account = $request->user();
+        $customer = Customer::where('account_id', $account->id)->first();
+        if (! $customer) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy hồ sơ khách hàng.'], 404);
+        }
+        $appointment = Appointment::where('id', $id)->where('customer_id', $customer->id)->first();
 
-            if (! $appointment) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Lịch hẹn không tồn tại hoặc bạn không có quyền thao tác.',
-                ], Response::HTTP_NOT_FOUND);
-            }
-
-            $this->authorize('update', $appointment);
-
-            // Chỉ cho phép sửa khi còn PENDING
-            if ($appointment->status !== 'PENDING') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Lịch hẹn đã được xác nhận hoặc tiếp nhận, không thể chỉnh sửa.',
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            $validated = $request->validated();
-
-            DB::transaction(function () use ($appointment, $validated, $customer) {
-                // Khóa lịch hẹn để hai lần đổi giờ đồng thời không cùng lọt qua kiểm tra slot.
-                $appointment = Appointment::whereKey($appointment->id)->lockForUpdate()->firstOrFail();
-
-                $vehicleId = (int) ($validated['vehicle_id'] ?? $appointment->vehicle_id);
-                $date = $validated['appointment_date'] ?? Carbon::parse($appointment->appointment_date)->toDateString();
-                $time = isset($validated['appointment_time'])
-                    ? $validated['appointment_time'].':00'
-                    : substr((string) $appointment->appointment_time, 0, 8);
-
-                if ($vehicleId !== (int) $appointment->vehicle_id
-                    && ! Vehicle::whereKey($vehicleId)->where('customer_id', $customer->id)->exists()) {
-                    throw ValidationException::withMessages(['vehicle_id' => 'Xe không tồn tại hoặc không thuộc tài khoản của bạn.']);
-                }
-
-                $slotChanged = $vehicleId !== (int) $appointment->vehicle_id
-                    || isset($validated['appointment_date'])
-                    || isset($validated['appointment_time']);
-
-                if ($slotChanged) {
-                    $this->assertSlotIsBookable($date, $time, $vehicleId, $appointment->id);
-                }
-
-                $appointment->update([
-                    ...collect($validated)->except(['service_ids', 'package_ids', 'appointment_time'])->toArray(),
-                    ...(isset($validated['appointment_time']) ? ['appointment_time' => $time] : []),
-                ]);
-
-                if (isset($validated['service_ids'])) {
-                    $appointment->services()->sync($validated['service_ids']);
-                }
-                if (isset($validated['package_ids'])) {
-                    $appointment->packages()->sync($validated['package_ids']);
-                }
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Cập nhật lịch hẹn thành công.',
-                'data' => $appointment->fresh(),
-            ], Response::HTTP_OK);
-
-        } catch (ValidationException $e) {
-            throw $e;
-        } catch (Exception $e) {
+        if (! $appointment) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => 'Lịch hẹn không tồn tại hoặc bạn không có quyền thao tác.',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $this->authorize('update', $appointment);
+
+        // Chỉ cho phép sửa khi còn PENDING
+        if ($appointment->status !== 'PENDING') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lịch hẹn đã được xác nhận hoặc tiếp nhận, không thể chỉnh sửa.',
             ], Response::HTTP_BAD_REQUEST);
         }
+
+        $validated = $request->validated();
+
+        DB::transaction(function () use ($appointment, $validated, $customer, $request) {
+            // Khóa lịch hẹn để hai lần đổi giờ đồng thời không cùng lọt qua kiểm tra slot.
+            $appointment = Appointment::whereKey($appointment->id)->lockForUpdate()->firstOrFail();
+
+            $vehicleId = (int) ($validated['vehicle_id'] ?? $appointment->vehicle_id);
+            $date = $validated['appointment_date'] ?? Carbon::parse($appointment->appointment_date)->toDateString();
+            $time = isset($validated['appointment_time'])
+                ? $validated['appointment_time'].':00'
+                : substr((string) $appointment->appointment_time, 0, 8);
+
+            if ($vehicleId !== (int) $appointment->vehicle_id
+                && ! Vehicle::whereKey($vehicleId)->where('customer_id', $customer->id)->exists()) {
+                throw ValidationException::withMessages(['vehicle_id' => 'Xe không tồn tại hoặc không thuộc tài khoản của bạn.']);
+            }
+
+            $vehicleChanged = $vehicleId !== (int) $appointment->vehicle_id;
+            $slotChanged = $vehicleChanged
+                || isset($validated['appointment_date'])
+                || isset($validated['appointment_time']);
+
+            // Đổi NGÀY / GIỜ (không tính đổi xe / dịch vụ): áp giới hạn số lần + hạn chót, ghi lịch sử.
+            $old = ['appointment_date' => Carbon::parse($appointment->appointment_date)->toDateString(), 'appointment_time' => substr((string) $appointment->appointment_time, 0, 8)];
+            $timeChanged = $date !== $old['appointment_date'] || $time !== $old['appointment_time'];
+            if ($timeChanged) {
+                app(CustomerReschedulePolicy::class)->assertAllowed($appointment);
+            }
+
+            if ($slotChanged) {
+                $this->assertSlotIsBookable($date, $time, $vehicleId, $appointment->id);
+            }
+
+            $appointment->update([
+                ...collect($validated)->except(['service_ids', 'package_ids', 'appointment_time'])->toArray(),
+                ...(isset($validated['appointment_time']) ? ['appointment_time' => $time] : []),
+            ]);
+
+            $itemsChanged = isset($validated['service_ids']) || isset($validated['package_ids']);
+
+            // Đổi xe thì kiểm tra lại gói theo dòng xe mới.
+            if ($itemsChanged || $vehicleChanged) {
+                $appointment->syncRequestedItems(
+                    $validated['service_ids'] ?? $appointment->services()->pluck('services.id')->all(),
+                    $validated['package_ids'] ?? $appointment->packages()->pluck('maintenance_packages.id')->all(),
+                );
+            }
+
+            if ($timeChanged) {
+                app(CustomerReschedulePolicy::class)->record($appointment->fresh(), $request->user(), $old);
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật lịch hẹn thành công.',
+            'data' => $appointment->fresh(),
+        ], Response::HTTP_OK);
     }
 
     /**
@@ -361,10 +397,14 @@ class AppointmentController extends Controller
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        $oldStatus = $appointment->status;
+        $reason = $request->input('cancel_reason', 'Khách hàng chủ động hủy');
         $appointment->update([
             'status' => 'CANCELLED',
-            'cancel_reason' => $request->input('cancel_reason', 'Khách hàng chủ động hủy'),
+            'cancel_reason' => $reason,
         ]);
+        // Ghi lịch sử để cố vấn thấy ở "Cập nhật từ khách" và lịch sử lịch hẹn.
+        CustomerActivityFeed::recordCancel($appointment, $account, $oldStatus, $reason);
 
         return response()->json([
             'success' => true,
@@ -373,40 +413,58 @@ class AppointmentController extends Controller
     }
 
     /**
+     * Có gói thì là bảo dưỡng; chỉ có dịch vụ lẻ thì là sửa chữa; chỉ mô tả triệu chứng thì là chẩn đoán.
+     *
+     * @param  array<int, int>  $serviceIds
+     * @param  array<int, int>  $packageIds
+     */
+    private function inferRequestType(array $serviceIds, array $packageIds): string
+    {
+        if ($packageIds !== []) {
+            return 'MAINTENANCE';
+        }
+
+        return $serviceIds !== [] ? 'REPAIR' : 'DIAGNOSIS';
+    }
+
+    /**
+     * Báo trùng lịch. Xe chưa biển số nói rõ xe nào + cách đặt cho một xe khác giống hệt
+     * (hệ thống chỉ phân biệt xe chưa biển số bằng dòng xe + phiên bản).
+     */
+    private function duplicateSlotMessage(Vehicle $vehicle, string $time): string
+    {
+        if (trim((string) $vehicle->license_plate) !== '') {
+            return 'Xe đã có lịch hẹn tại khung giờ này.';
+        }
+        $vehicle->loadMissing(['model.brand', 'trim']);
+        $name = trim(implode(' ', array_filter([$vehicle->model?->brand?->name, $vehicle->model?->name, $vehicle->trim?->name ?? $vehicle->variant]))) ?: 'Xe này';
+
+        return "Bạn đã có lịch cho {$name} (chưa có biển số) lúc ".substr($time, 0, 5).'. Nếu đây là một xe khác, hãy quay lại bước Xe và chọn "Một xe khác".';
+    }
+
+    /**
+     * Xe chưa có biển số chỉ phân biệt được bằng dòng xe + phiên bản: khách khai báo lại đúng xe đó
+     * thì dùng lại xe cũ thay vì tạo bản trùng. Có biển số khác nhau mới là hai xe khác nhau.
+     */
+    private function findPlatelessVehicle(int $customerId, int $modelId, ?int $trimId): ?Vehicle
+    {
+        return Vehicle::query()
+            ->where('customer_id', $customerId)
+            ->where('model_id', $modelId)
+            ->when($trimId === null, fn ($query) => $query->whereNull('trim_id'), fn ($query) => $query->where('trim_id', $trimId))
+            ->where(fn ($query) => $query->whereNull('license_plate')->orWhere('license_plate', ''))
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->first();
+    }
+
+    /**
      * Quy tắc chung cho một khung giờ (giống lúc đặt lịch): ở tương lai, không trùng ngày lễ,
      * trong giờ làm việc, còn slot và xe chưa có lịch khác cùng khung giờ.
      */
     private function assertSlotIsBookable(string $date, string $time, int $vehicleId, ?int $ignoreAppointmentId = null): void
     {
-        if (Carbon::parse("$date $time")->lessThanOrEqualTo(now())) {
-            throw ValidationException::withMessages(['appointment_time' => 'Giờ hẹn phải ở tương lai.']);
-        }
-
-        if (DB::table('holidays')->where('holiday_date', $date)->exists()) {
-            throw ValidationException::withMessages(['appointment_date' => 'Garage nghỉ lễ ngày này.']);
-        }
-
-        $hours = DB::table('working_hours')
-            ->where('day_of_week', Carbon::parse($date)->dayOfWeek)
-            ->lockForUpdate()
-            ->first();
-
-        if (! $hours || ! $hours->is_active || $time < substr($hours->open_time, 0, 8) || $time >= substr($hours->close_time, 0, 8)) {
-            throw ValidationException::withMessages(['appointment_time' => 'Ngoài giờ làm việc của garage.']);
-        }
-
-        $activeInSlot = Appointment::query()
-            ->where('appointment_date', $date)
-            ->where('appointment_time', $time)
-            ->whereNotIn('status', ['CANCELLED', 'NO_SHOW'])
-            ->when($ignoreAppointmentId, fn ($query) => $query->whereKeyNot($ignoreAppointmentId));
-
-        if ((clone $activeInSlot)->count() >= (int) ($hours->max_slots ?? 5)) {
-            throw ValidationException::withMessages(['appointment_time' => 'Khung giờ đã đầy.']);
-        }
-
-        if ((clone $activeInSlot)->where('vehicle_id', $vehicleId)->exists()) {
-            throw ValidationException::withMessages(['vehicle_id' => 'Xe đã có lịch hẹn tại khung giờ này.']);
-        }
+        // Quy tắc dùng chung với cố vấn đổi lịch (AppointmentSlotService).
+        app(AppointmentSlotService::class)->assertBookable($date, $time, $vehicleId, $ignoreAppointmentId);
     }
 }

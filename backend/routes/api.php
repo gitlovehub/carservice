@@ -1,28 +1,63 @@
 <?php
 
+use App\Http\Controllers\Api\AdminAdvisorActivityController;
+use App\Http\Controllers\Api\AdminHolidayController;
+use App\Http\Controllers\Api\AdminInsightsController;
+use App\Http\Controllers\Api\AdminInventoryController;
 use App\Http\Controllers\Api\AdminMaintenancePackageController;
+use App\Http\Controllers\Api\AdminOperationsController;
+use App\Http\Controllers\Api\AdminPeopleController;
+use App\Http\Controllers\Api\AdminServiceCategoryController;
 use App\Http\Controllers\Api\AdminServiceController;
+use App\Http\Controllers\Api\AdminVehicleCatalogController;
 use App\Http\Controllers\Api\AdvisorAppointmentController;
+use App\Http\Controllers\Api\AdvisorDashboardController;
+use App\Http\Controllers\Api\AdvisorReviewController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BookingCatalogController;
+use App\Http\Controllers\Api\CapacityController;
 use App\Http\Controllers\Api\ChatbotController;
+use App\Http\Controllers\Api\ContactMessageController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\CustomerEmailVerificationController;
+use App\Http\Controllers\Api\CustomerHandoverController;
+use App\Http\Controllers\Api\CustomerNotificationController;
+use App\Http\Controllers\Api\CustomerPickupAuthorizationController;
 use App\Http\Controllers\Api\CustomerRepairOrderController;
 use App\Http\Controllers\Api\CustomerReviewController;
+use App\Http\Controllers\Api\GarageSettingController;
+use App\Http\Controllers\Api\HandoverController;
+use App\Http\Controllers\Api\HandoverExceptionController;
+use App\Http\Controllers\Api\HomeStatsController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\MaintenancePackageController;
+use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\PartController;
+use App\Http\Controllers\Api\PartRequestController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PublicRepairLookupController;
+use App\Http\Controllers\Api\PublicReviewController;
+use App\Http\Controllers\Api\QuotationConfirmationController;
 use App\Http\Controllers\Api\QuotationController;
 use App\Http\Controllers\Api\RepairOrderController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\TechnicianController;
+use App\Http\Controllers\Api\VehicleCatalogController;
 use App\Http\Controllers\Api\VehicleController;
+use App\Http\Controllers\Api\VnpayController;
 use App\Http\Controllers\Api\WorkingHoursController;
 use App\Http\Controllers\Api\WorkItemController;
 use App\Models\Account;
+use App\Support\LiveStamp;
 use Illuminate\Support\Facades\Route;
+
+// Public part catalog images are streamed via Laravel: no symlink required.
+Route::get('part-images/{part}', [AdminInventoryController::class, 'showImage'])->whereNumber('part');
+// Ảnh đại diện xe: tên file UUID ngẫu nhiên; chỉ Admin/Cố vấn mới có API tải lên, thay, xoá.
+Route::get('vehicle-avatars/{file}', [VehicleController::class, 'avatar'])
+    ->where('file', '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(webp|jpg)');
 
 /*
 |--------------------------------------------------------------------------
@@ -36,9 +71,7 @@ Route::controller(AuthController::class)->group(function (): void {
 
     Route::post('login', 'login')->middleware('throttle:5,1');
 
-    Route::post('verify-email-otp', 'verifyEmailOtp')->middleware('throttle:5,1');
-
-    Route::post('resend-email-otp', 'resendEmailOtp')->middleware('throttle:3,1');
+    Route::post('resend-verification', 'resendVerification')->middleware('throttle:3,1');
 
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
 
@@ -47,12 +80,46 @@ Route::controller(AuthController::class)->group(function (): void {
 
 Route::get('services', [ServiceController::class, 'index']);
 Route::get('services/{service}', [ServiceController::class, 'show']);
+Route::get('service-categories', [ServiceController::class, 'categories']);
+Route::get('service-images/{service}', [ServiceController::class, 'image'])->whereNumber('service');
+// Tra cứu tiến độ không cần đăng nhập (mã phiếu/lịch hẹn + 4 số cuối SĐT); giới hạn 5 lần/phút chống dò mã.
+Route::post('repair-orders/lookup', [PublicRepairLookupController::class, 'lookup'])->middleware('throttle:5,1');
 Route::get('maintenance-packages', [MaintenancePackageController::class, 'index']);
 Route::get('maintenance-packages/{maintenancePackage}', [MaintenancePackageController::class, 'show']);
+Route::get('booking-catalog', [BookingCatalogController::class, 'index']);
+Route::get('reviews/featured', [PublicReviewController::class, 'featured']);
+Route::get('home-stats', [HomeStatsController::class, 'index']);
+// Form trang Liên hệ (công khai) — tối đa 3 lần/phút mỗi IP để chống spam.
+Route::post('contact-messages', [ContactMessageController::class, 'store'])->middleware('throttle:3,1');
+
+// Danh mục xe công khai: Hãng → Dòng xe → Phiên bản (chỉ bản ghi đang hiển thị).
+Route::controller(VehicleCatalogController::class)
+    ->prefix('vehicle-catalog')
+    ->middleware('throttle:120,1')
+    ->name('vehicle-catalog.')
+    ->group(function (): void {
+        Route::get('brands', 'brands')->name('brands');
+        // Logo hãng do Admin tải lên (danh sách để FE đồng bộ + ảnh PNG từng hãng).
+        Route::get('brand-logos', 'brandLogos')->name('brand-logos');
+        Route::get('brands/{brand}/logo', 'brandLogo')->whereNumber('brand')->name('brand-logo');
+        Route::get('brands/{brand}/models', 'models')->whereNumber('brand')->name('models');
+        Route::get('models/{model}/trims', 'trims')->whereNumber('model')->name('trims');
+        Route::get('search', 'search')->name('search');
+    });
 
 Route::get('/working-hours', [WorkingHoursController::class, 'index']);
+Route::get('/booking-slots', [WorkingHoursController::class, 'bookingSlots']);
+
+// Thông tin gara (Footer, trang Liên hệ).
+Route::get('garage-settings', [GarageSettingController::class, 'show']);
 
 Route::post('chatbot', [ChatbotController::class, 'chat'])->middleware('throttle:20,1');
+
+// VNPay: IPN do máy chủ VNPay gọi; Return do Frontend gọi để hiển thị kết quả. Bảo vệ bằng chữ ký.
+Route::controller(VnpayController::class)->prefix('payments/vnpay')->group(function (): void {
+    Route::get('ipn', 'ipn');
+    Route::get('return', 'return')->middleware('throttle:30,1');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -61,6 +128,17 @@ Route::post('chatbot', [ChatbotController::class, 'chat'])->middleware('throttle
 */
 
 Route::middleware('auth:sanctum')->group(function (): void {
+
+    // Realtime: dấu thời gian thay đổi (dự phòng hỏi định kỳ) + cấu hình WebSocket Reverb cho trình duyệt (khóa app là công khai).
+    Route::get('live', fn () => response()->json([
+        'stamp' => LiveStamp::current(),
+        'realtime' => config('broadcasting.default') === 'reverb' ? [
+            'key' => config('broadcasting.connections.reverb.key'),
+            'host' => config('broadcasting.connections.reverb.options.host'),
+            'port' => (int) config('broadcasting.connections.reverb.options.port'),
+            'scheme' => config('broadcasting.connections.reverb.options.scheme'),
+        ] : null,
+    ]))->name('live');
 
     /*
     |--------------------------------------------------------------------------
@@ -72,8 +150,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('me', 'me');
         Route::patch('me/profile', 'updateProfile');
         Route::post('me/change-password', 'changePassword');
+        Route::post('me/email-change', 'requestEmailChange')->middleware('throttle:5,1');
         Route::post('logout', 'logout');
     });
+
+    // Gợi ý địa chỉ (Goong / OpenStreetMap qua backend — key không lộ ra trình duyệt).
+    Route::get('address/suggest', [GarageSettingController::class, 'suggest'])->middleware('throttle:60,1');
+    Route::get('address/place', [GarageSettingController::class, 'place'])->middleware('throttle:60,1');
+
+    // Ảnh bằng chứng: xem theo quyền xem phiếu sửa chữa liên quan (MediaController).
+    Route::get('media', [MediaController::class, 'index']);
+    Route::get('media/{media}', [MediaController::class, 'show']);
 
     /*
     |--------------------------------------------------------------------------
@@ -81,6 +168,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     |--------------------------------------------------------------------------
     */
 
+    // Khu khách hàng: chỉ tài khoản khách (nhân viên đặt lịch hộ khách ở khu làm việc; xe riêng → tài khoản khách riêng).
+    // Các thao tác "của tôi" kiểm tra đúng chủ sở hữu (policy `own`), không dựa vào quyền xem chung.
     Route::middleware('role:'.Account::ROLE_CUSTOMER)->group(function (): void {
 
         // Phiếu sửa chữa, báo giá và hóa đơn của khách hàng hiện tại
@@ -90,6 +179,28 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('repair-orders/{repairOrder}/invoice', 'invoice');
             Route::post('quotations/{quotation}/respond', 'respondQuotation');
         });
+
+        // Ủy quyền nhận xe (P4, N9): chủ xe khai báo / thu hồi trong tài khoản.
+        Route::controller(CustomerPickupAuthorizationController::class)->prefix('me')->group(function (): void {
+            Route::get('repair-orders/{repairOrder}/pickup-authorizations', 'index');
+            Route::post('repair-orders/{repairOrder}/pickup-authorizations', 'store')->middleware('throttle:10,1');
+            Route::delete('pickup-authorizations/{pickupAuthorization}', 'revoke');
+        });
+
+        // Biên bản giao nhận xe của khách: xem (đã gửi / đã xác nhận) và tự xác nhận.
+        Route::controller(CustomerHandoverController::class)->prefix('me')->group(function (): void {
+            Route::get('repair-orders/{repairOrder}/handovers', 'index');
+            Route::post('handovers/{handover}/confirm', 'confirm')->middleware('throttle:10,1');
+        });
+
+        // Thanh toán hóa đơn qua VNPay
+        Route::post('me/invoices/{invoice}/vnpay', [VnpayController::class, 'create'])->middleware(['throttle:10,1', 'idempotency']);
+
+        // Thông báo của khách (chuông header, tạo qua CustomerNotifier): chỉ đọc/sửa bản ghi thuộc tài khoản đang đăng nhập.
+        Route::get('me/notifications', [CustomerNotificationController::class, 'index']);
+        Route::patch('me/notifications/read-all', [CustomerNotificationController::class, 'markAllRead']);
+        Route::delete('me/notifications', [CustomerNotificationController::class, 'destroyAll']);
+        Route::patch('me/notifications/{notification}/read', [CustomerNotificationController::class, 'markRead'])->whereNumber('notification');
 
         // Đánh giá dịch vụ
         Route::controller(CustomerReviewController::class)->prefix('me/reviews')->group(function (): void {
@@ -138,19 +249,58 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::prefix('advisor/appointments')->group(function (): void {
             Route::post('/', [AdvisorAppointmentController::class, 'store']);
             Route::get('/', [AdvisorAppointmentController::class, 'index']);
-            Route::get('/{id}', [AdvisorAppointmentController::class, 'show']);
+            Route::get('/filter-options', [AdvisorAppointmentController::class, 'filterOptions']);
+            Route::get('/{id}', [AdvisorAppointmentController::class, 'show'])->whereNumber('id');
             Route::post('/{id}/confirm', [AdvisorAppointmentController::class, 'confirm']);
+            // Gửi mail để khách tự bấm xác nhận lịch (song song với gọi điện).
+            Route::post('/{id}/send-confirmation-email', [AdvisorAppointmentController::class, 'sendConfirmationEmail'])->middleware('throttle:10,1');
             Route::post('/{id}/check-in', [AdvisorAppointmentController::class, 'checkIn']);
             Route::post('/{id}/cancel', [AdvisorAppointmentController::class, 'cancel']);
+            Route::post('/{id}/no-show', [AdvisorAppointmentController::class, 'noShow']);
+            // Đổi lịch giúp khách: bắt buộc lý do, ghi ai đổi, báo khách (web + email).
+            Route::post('/{id}/reschedule', [AdvisorAppointmentController::class, 'reschedule'])->middleware('throttle:20,1');
+        });
+
+        // ADV-10: Tổng quan cố vấn (một lần tải, số liệu thật).
+        Route::get('advisor/dashboard', [AdvisorDashboardController::class, 'show']);
+        // "Cập nhật từ khách": khách đặt / tự đổi / xác nhận qua email / hủy lịch (chưa có chuông thông báo nhân viên).
+        Route::get('advisor/customer-updates', [AdvisorDashboardController::class, 'customerUpdates']);
+
+        // ADV-04: tình trạng từng khung giờ đặt lịch trong ngày (đặt lịch hộ / đổi lịch).
+        Route::get('advisor/booking-availability', [AdvisorAppointmentController::class, 'availability']);
+
+        // P7: công suất gara theo phút / ngày (Q6: chỉ cảnh báo).
+        Route::get('advisor/capacity', [CapacityController::class, 'show']);
+        Route::get('advisor/capacity/range', [CapacityController::class, 'range']);
+
+        // P6 + ADV-01 (D-020): phụ tùng chờ. Cố vấn báo thiếu / hủy khi chưa đặt; Admin đặt hàng (ETA) + nhận hàng (kiểm trong controller).
+        Route::post('repair-orders/{repairOrder}/part-requests', [PartRequestController::class, 'store']);
+        // Trang "Phụ tùng" của cố vấn: chỉ xem tồn kho + lịch sử nhập/xuất (D-020, không có giá vốn).
+        Route::get('advisor/parts', [AdminInventoryController::class, 'advisorParts']);
+        Route::get('advisor/stock-moves', [AdminInventoryController::class, 'moves']);
+        Route::controller(PartRequestController::class)->prefix('part-requests')->group(function (): void {
+            Route::get('/', 'index');
+            Route::post('{partRequest}/order', 'order');
+            Route::post('{partRequest}/receive', 'receive');
+            Route::post('{partRequest}/cancel', 'cancel');
         });
 
         // Customer CRUD
         Route::apiResource('customers', CustomerController::class)
             ->only(['index', 'store', 'show', 'update']);
+        Route::post('customers/{customer}/email-verification', [CustomerEmailVerificationController::class, 'send'])
+            ->whereNumber('customer')->middleware('throttle:5,1');
+        Route::post('customers/{customer}/email-verification/verify', [CustomerEmailVerificationController::class, 'verify'])
+            ->whereNumber('customer')->middleware('throttle:10,1');
+        // Khách có tài khoản: chỉ gửi nút xác thực tới email mới để khách tự bấm.
+        Route::post('customers/{customer}/email-change-link', [CustomerEmailVerificationController::class, 'sendChangeLink'])
+            ->whereNumber('customer')->middleware('throttle:5,1');
 
         // Vehicle CRUD
         Route::apiResource('vehicles', VehicleController::class)
             ->only(['index', 'store', 'show', 'update', 'destroy']);
+        Route::post('vehicles/{vehicle}/avatar', [VehicleController::class, 'uploadAvatar'])->whereNumber('vehicle')->middleware('throttle:30,1');
+        Route::delete('vehicles/{vehicle}/avatar', [VehicleController::class, 'deleteAvatar'])->whereNumber('vehicle')->middleware('throttle:30,1');
 
         // Xe của một khách hàng
         Route::get(
@@ -173,6 +323,35 @@ Route::middleware('auth:sanctum')->group(function (): void {
             [CustomerController::class, 'destroy']
         );
 
+        // Ngoại lệ xác nhận biên bản khi chủ xe mất email: chỉ admin xem giấy tờ và duyệt.
+        Route::controller(HandoverExceptionController::class)->prefix('admin/handover-exceptions')->group(function (): void {
+            Route::get('/', 'index');
+            Route::get('{exception}/files/{kind}', 'file')->whereIn('kind', ['id-document', 'registration']);
+            Route::post('{exception}/approve', 'approve');
+            Route::post('{exception}/reject', 'reject');
+        });
+
+        // Thông tin gara: tên, liên hệ, địa chỉ (chọn từ gợi ý bản đồ).
+        Route::put('admin/garage-settings', [GarageSettingController::class, 'update']);
+
+        // Hoạt động của từng cố vấn với lịch hẹn / phiếu sửa chữa.
+        Route::get('admin/advisor-activity', [AdminAdvisorActivityController::class, 'index']);
+
+        // Ảnh minh họa dịch vụ (trang Dịch vụ phía khách).
+        Route::post('admin/services/{service}/image', [AdminServiceController::class, 'uploadImage'])->whereNumber('service');
+        Route::delete('admin/services/{service}/image', [AdminServiceController::class, 'deleteImage'])->whereNumber('service');
+        // Xóa hẳn: chỉ cho dịch vụ đã ngừng và chưa từng được dùng.
+        Route::delete('admin/services/{service}/permanent', [AdminServiceController::class, 'destroyPermanently'])->whereNumber('service');
+        // P5: bước chuẩn + phút chuẩn của dịch vụ.
+        Route::get('admin/services/{service}/steps', [AdminServiceController::class, 'steps']);
+        Route::put('admin/services/{service}/steps', [AdminServiceController::class, 'syncSteps']);
+
+        // Danh mục dịch vụ (tên + icon); chỉ xoá được danh mục rỗng.
+        Route::apiResource('admin/service-categories', AdminServiceCategoryController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->parameters(['service-categories' => 'category'])
+            ->names('admin.service-categories');
+
         // Quản trị danh mục dịch vụ (DELETE = xóa mềm, status = INACTIVE)
         Route::apiResource('admin/services', AdminServiceController::class)
             ->parameters(['services' => 'service'])
@@ -194,9 +373,86 @@ Route::middleware('auth:sanctum')->group(function (): void {
             ->parameters(['maintenance-packages' => 'maintenancePackage'])
             ->names('admin.maintenance-packages');
 
-        Route::get('/admin/working-hours', [WorkingHoursController::class, 'index']);
+        // Số liệu thật cho Tổng quan và Báo cáo.
+        Route::get('admin/dashboard', [AdminInsightsController::class, 'dashboard']);
+        Route::get('admin/reports', [AdminInsightsController::class, 'reports']);
+
+        // Vận hành toàn xưởng: phiếu, hoá đơn, thanh toán, đánh giá, nhật ký.
+        Route::controller(AdminOperationsController::class)->prefix('admin')->group(function (): void {
+            Route::get('repair-orders', 'repairOrders');
+            Route::get('repair-orders/{repairOrder}', 'repairOrder')->whereNumber('repairOrder');
+            Route::get('invoices', 'invoices');
+            Route::get('invoices/{invoice}', 'invoice')->whereNumber('invoice');
+            Route::get('payments', 'payments');
+            Route::get('reviews', 'reviews');
+            Route::post('reviews/{review}/reply', 'replyReview')->whereNumber('review');
+            Route::put('reviews/{review}/reply', 'updateReviewReply')->whereNumber('review');
+            Route::get('reviews/{review}/reply-history', 'reviewReplyHistory')->whereNumber('review');
+            Route::patch('reviews/{review}', 'updateReview')->whereNumber('review');
+            Route::get('audit-logs', 'auditLogs');
+        });
+
+        // Tin nhắn từ form trang Liên hệ.
+        Route::get('admin/contact-messages', [ContactMessageController::class, 'index']);
+        Route::patch('admin/contact-messages/{contactMessage}', [ContactMessageController::class, 'update'])->whereNumber('contactMessage');
+
+        // Ngày nghỉ lễ (theo khoảng ngày).
+        Route::get('admin/holidays', [AdminHolidayController::class, 'index']);
+        Route::post('admin/holidays', [AdminHolidayController::class, 'store']);
+        Route::delete('admin/holidays', [AdminHolidayController::class, 'destroy']);
+
+        // Phụ tùng & kho.
+        Route::controller(AdminInventoryController::class)->prefix('admin')->group(function (): void {
+            Route::get('parts', 'parts');
+            Route::post('parts', 'storePart');
+            Route::patch('parts/{part}', 'updatePart')->whereNumber('part');
+            Route::post('parts/{part}/image', 'uploadImage')->whereNumber('part');
+            Route::delete('parts/{part}/image', 'deleteImage')->whereNumber('part');
+            Route::post('parts/{part}/stock', 'adjustStock')->whereNumber('part');
+            Route::get('stock-moves', 'moves');
+        });
+
+        // Con người: khách hàng, nhân sự, tài khoản.
+        Route::controller(AdminPeopleController::class)->prefix('admin')->group(function (): void {
+            Route::get('customers', 'customers');
+            Route::get('customers/{customer}', 'customer')->whereNumber('customer');
+            Route::patch('customers/{customer}/lock', 'lockCustomer')->whereNumber('customer');
+            Route::post('customers/{customer}/email', 'emailCustomer')->whereNumber('customer')->middleware('throttle:10,1');
+            Route::get('staff', 'staff');
+            Route::post('staff', 'storeStaff');
+            Route::patch('staff/{employee}', 'updateStaff')->whereNumber('employee');
+            Route::get('accounts', 'accounts');
+            Route::post('accounts', 'storeAccount');
+            Route::patch('accounts/{account}/status', 'accountStatus')->whereNumber('account');
+            Route::post('accounts/{account}/reset-password', 'resetPassword')->whereNumber('account')->middleware('throttle:10,1');
+        });
+
+        // Quản trị danh mục xe: hãng, dòng xe, phiên bản (xóa bị chặn khi đang được dùng).
+        Route::controller(AdminVehicleCatalogController::class)->prefix('admin')->group(function (): void {
+            Route::get('vehicle-catalog/summary', 'summary');
+            Route::get('vehicle-brands', 'brandIndex');
+            Route::post('vehicle-brands', 'brandStore');
+            // Dán link ảnh → tách nền + cắt gọn → xem trước (chưa lưu). Giới hạn lượt vì phải tải ảnh từ ngoài.
+            Route::post('vehicle-brands/logo-preview', 'brandLogoPreview')->middleware('throttle:20,1');
+            Route::patch('vehicle-brands/{brand}', 'brandUpdate')->whereNumber('brand');
+
+            Route::get('vehicle-models', 'modelIndex');
+            Route::post('vehicle-models', 'modelStore');
+            Route::patch('vehicle-models/{model}', 'modelUpdate')->whereNumber('model');
+
+            Route::get('vehicle-trims', 'trimIndex');
+            Route::post('vehicle-trims', 'trimStore');
+            Route::patch('vehicle-trims/{trim}', 'trimUpdate')->whereNumber('trim');
+            Route::delete('vehicle-trims/{trim}', 'trimDestroy')->whereNumber('trim');
+        });
+
+        Route::get('/admin/working-hours', [WorkingHoursController::class, 'adminIndex']);
 
         Route::put('/admin/working-hours/{id}', [WorkingHoursController::class, 'update']);
+        Route::put('/admin/booking-slots', [WorkingHoursController::class, 'updateBookingSlots']);
+        // Giới hạn khách tự đổi lịch trên web (số lần / hạn chót trước giờ hẹn).
+        Route::get('/admin/reschedule-policy', [WorkingHoursController::class, 'reschedulePolicy']);
+        Route::put('/admin/reschedule-policy', [WorkingHoursController::class, 'updateReschedulePolicy']);
     });
 
     /*
@@ -240,6 +496,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('technicians', [TechnicianController::class, 'index']);
 
+        // Phản hồi khách hàng: chỉ đánh giá thuộc phiếu mình phụ trách (kiểm tra trong controller).
+        Route::controller(AdvisorReviewController::class)->prefix('advisor/reviews')->group(function (): void {
+            Route::get('/', 'index');
+            Route::post('{review}/reply', 'reply')->whereNumber('review')->middleware('throttle:30,1');
+            Route::put('{review}/reply', 'updateReply')->whereNumber('review')->middleware('throttle:30,1');
+        });
+
+        // Tải ảnh bằng chứng lên disk private (D-007).
+        Route::post('media', [MediaController::class, 'store'])->middleware('throttle:60,1');
+        Route::delete('media/{media}', [MediaController::class, 'destroy'])->middleware('throttle:60,1');
+
         Route::controller(RepairOrderController::class)->group(function (): void {
 
             Route::post('repair-orders', 'store');
@@ -252,6 +519,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
                 Route::post('review', 'review');
                 Route::post('complete', 'complete');
                 Route::post('close', 'close');
+                Route::post('quality-check', 'qualityCheck');
                 Route::post('hand-over', 'handOver');
             });
         });
@@ -264,15 +532,44 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::controller(QuotationController::class)->group(function (): void {
 
+            // Trang "Báo giá & phê duyệt": danh sách + số đếm theo trạng thái.
+            Route::get('quotations', 'index');
+
             Route::post(
                 'repair-orders/{repairOrder}/quotations',
                 'store'
             );
 
+            // P5: dịch vụ nhanh — báo giá niêm yết, bỏ chẩn đoán, khách vẫn duyệt giá.
+            Route::post('repair-orders/{repairOrder}/quick-quotation', 'quick');
+
+            // Phản hồi báo giá chỉ do khách thực hiện: POST /me/quotations/{id}/respond
+            // (CustomerRepairOrderController). Không có route nào cho nhân viên duyệt thay khách.
             Route::prefix('quotations/{quotation}')->group(function (): void {
+                // Sửa báo giá nháp (modal "Sửa báo giá" ở chi tiết phiếu + trang Báo giá & phê duyệt).
+                Route::put('/', 'update');
                 Route::post('send', 'send');
-                Route::post('respond', 'respond');
             });
+        });
+
+        // Biên bản giao nhận xe (P2: CHECK_IN). Khách xác nhận qua tài khoản hoặc OTP email chủ xe.
+        Route::controller(HandoverController::class)->group(function (): void {
+            Route::get('handovers', 'list');
+            Route::get('repair-orders/{repairOrder}/handovers', 'index');
+            Route::post('repair-orders/{repairOrder}/handovers', 'store');
+            Route::patch('handovers/{handover}', 'update');
+            Route::post('handovers/{handover}/submit', 'submit');
+            Route::post('handovers/{handover}/void', 'void');
+            Route::post('handovers/{handover}/otp', 'requestOtp')->middleware('throttle:5,1');
+            Route::post('handovers/{handover}/verify-otp', 'verifyOtp')->middleware('throttle:10,1');
+        });
+        Route::post('handovers/{handover}/exception', [HandoverExceptionController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('repair-orders/{repairOrder}/pickup-authorization-link', [HandoverController::class, 'sendPickupAuthorizationLink'])->middleware('throttle:3,1');
+
+        // Khách duyệt tại quầy: OTP gửi email chủ xe, gắn với đúng lựa chọn từng dòng (D-005, D-008).
+        Route::controller(QuotationConfirmationController::class)->prefix('quotations/{quotation}')->group(function (): void {
+            Route::post('otp', 'requestOtp')->middleware('throttle:5,1');
+            Route::post('verify-otp', 'verifyOtp')->middleware('throttle:10,1');
         });
 
         /*
@@ -299,6 +596,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
                 'invoices/{invoice}/payments',
                 'store'
             );
+
+            // Cố vấn đồng ý gửi hoá đơn kèm link thanh toán qua email
+            Route::post('invoices/{invoice}/payment-email', 'sendPaymentEmail')->middleware('throttle:6,1');
 
             // Tạm thời Advisor xác nhận QR
             Route::post(

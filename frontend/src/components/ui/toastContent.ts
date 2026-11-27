@@ -37,7 +37,7 @@ const KNOWN_MESSAGES: Array<{ pattern: RegExp; title: string; description?: stri
 ];
 
 /** Thao tác không thành công mà câu gốc chưa nói cần làm gì. */
-const FAILED_ACTION = /^Không (thể|tải|lưu|xoá|xóa|gửi|cập nhật|đổi|huỷ|hủy|xuất|đọc|xử lý|xác nhận|thực hiện|tra cứu)(?=\s|[.!?,:;…]|$)/iu;
+const FAILED_ACTION = /^Không (thể|tải|lưu|xoá|xóa|gửi|cập nhật|đổi|huỷ|hủy|xuất|đọc|xử lý|xác nhận|thực hiện|tra cứu)\b/i;
 
 /**
  * Lỗi nghiệp vụ (trùng dữ liệu, sai mật khẩu, mã hết hạn...) hiện bằng toast.

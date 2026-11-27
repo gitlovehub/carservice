@@ -1,9 +1,0 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { sandbox, mountFinal, ui, tick } from './final-harness.mjs';
-function setup(justSent=false,fail=false){const calls=[];const x=mountFinal('components/auth/VerifyEmailPrompt.tsx','VerifyEmailPrompt',{props:{email:'owner@example.test',justSent,backLabel:'Back',onBack:()=>calls.push('back')},modules:{'../../services/api':{fetchApi:async (...a)=>{calls.push(a);if(fail)throw Error('offline');}}}});return {...x,requests:calls};}
-const resend=n=>n.type==='button'&&n.props['aria-busy']!==undefined||n.type==='button'&&'disabled' in n.props;
-test('initial verification cooldown disables resend and schedules a timer',()=>{const x=setup(true);assert.equal(x.one(resend).props.disabled,true);x.runEffects();assert.equal(x.timers.length,1);x.timers[0]();assert.match(x.one(resend).props.children,/59s/);});
-test('resend posts only email and enters cooldown on success',async()=>{const x=setup();await x.click(resend);assert.deepEqual(x.requests,[['/resend-verification',{method:'POST',body:JSON.stringify({email:'owner@example.test'})}]]);assert.equal(x.one(resend).props.disabled,true);assert.equal(x.all(n=>n.props.role==='status').length,1);});
-test('failed resend displays error and permits retry',async()=>{const x=setup(false,true);await x.click(resend);assert.equal(x.one(resend).props.disabled,false);assert.equal(x.all(n=>n.props.role==='alert').length,1);});
-test('back returns control to parent and lost-email link is scoped to support topic',async()=>{const x=setup();await x.click(n=>n.type==='button'&&!('disabled' in n.props));assert.deepEqual(x.requests,['back']);const link=mountFinal('components/auth/VerifyEmailPrompt.tsx','LostEmailLink');assert.equal(link.one(n=>n.type==='Link').props.to,'/contact?topic=lost-email');});

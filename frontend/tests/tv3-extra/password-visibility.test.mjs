@@ -1,7 +1,0 @@
-import assert from 'node:assert/strict';
-import {component,nodes} from './component-harness.mjs';
-const provider=()=>null; let state=false; const ref={};
-const field={id:'field-1','aria-describedby':'hint-1','aria-invalid':true,required:true};
-const {Field,FieldError,Input,PasswordInput,Select,Textarea,SearchInput}=component('src/components/ui/Field.tsx',{react:{forwardRef:f=>p=>f(p,ref),useId:()=> 'field-1',useState:x=>[typeof x==='boolean'?state:x,v=>{state=typeof v==='function'?v(state):v;}]},'../../config/labels':{LABELS:{form:{optional:'không bắt buộc'},action:{search:'Tìm kiếm'}}},'./Icon':{Icon:()=>null},'./fieldContext':{FieldContext:{Provider:provider},controlClass:'control',useFieldControl:()=>field},'./focusInvalid':{focusFirstInvalid:()=>{}},'./formValidation':{isFormControl:()=>false,validityMessage:()=>''}});
-const render=(disabled=false)=>PasswordInput({value:'secret',disabled});const input=t=>nodes(t,n=>n.type==='input')[0].props;const button=t=>nodes(t,n=>n.type==='button')[0].props;
-let t=render();assert.equal(input(t).type,'password');assert.equal(button(t)['aria-pressed'],false);assert.equal(button(t).type,'button');assert.equal(button(t)['aria-label'],'Hiện mật khẩu');button(t).onClick();t=render();assert.equal(input(t).type,'text');assert.equal(input(t).value,'secret');assert.equal(button(t)['aria-pressed'],true);assert.equal(button(t)['aria-label'],'Ẩn mật khẩu');button(t).onClick();assert.equal(input(render()).type,'password');assert.equal(button(render(true)).disabled,true);

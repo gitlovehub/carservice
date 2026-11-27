@@ -1,0 +1,153 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Mail\AppointmentRescheduledMail;
+use App\Models\Account;
+use App\Models\Appointment;
+use App\Models\AuditLog;
+use App\Models\Customer;
+use App\Models\Employee;
+use App\Models\Notification;
+use App\Models\Vehicle;
+use App\Models\WorkingHour;
+use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
+use Tests\TestCase;
+
+/** Nhiều cố vấn: biết ai tạo / xác nhận / tiếp nhận / đổi / hủy lịch; cố vấn đổi lịch giúp khách (lý do + email). */
+class AppointmentStaffTrackingTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private Account $advisorA;
+
+    private Account $advisorB;
+
+    private Account $customerAccount;
+
+    private Appointment $appointment;
+
+    private CarbonImmutable $date;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Mail::fake();
+        $this->advisorA = Account::factory()->advisor()->create();
+        Employee::factory()->create(['account_id' => $this->advisorA->id, 'full_name' => 'Cố vấn An']);
+        $this->advisorB = Account::factory()->advisor()->create();
+        Employee::factory()->create(['account_id' => $this->advisorB->id, 'full_name' => 'Cố vấn Bình']);
+        $this->customerAccount = Account::factory()->create();
+        $customer = Customer::factory()->create(['account_id' => $this->customerAccount->id, 'email' => 'khach@example.test']);
+        for ($day = 0; $day <= 6; $day++) {
+            WorkingHour::query()->create(['day_of_week' => $day, 'open_time' => '08:00:00', 'close_time' => '17:00:00', 'max_slots' => 5, 'is_active' => true]);
+        }
+        $this->date = CarbonImmutable::today()->addDays(5);
+        $this->appointment = Appointment::query()->create([
+            'appointment_code' => 'APT-TRACK', 'customer_id' => $customer->id,
+            'vehicle_id' => Vehicle::factory()->create(['customer_id' => $customer->id])->id,
+            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '09:00:00',
+            'request_type' => 'MAINTENANCE', 'status' => 'PENDING',
+        ]);
+    }
+
+    public function test_each_action_records_which_advisor_handled_it(): void
+    {
+        $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/confirm")->assertOk();
+        $this->assertSame($this->advisorA->id, (int) $this->appointment->fresh()->handled_by_account_id);
+        $this->actingAs($this->advisorB)->postJson("/api/advisor/appointments/{$this->appointment->id}/check-in")->assertOk();
+
+        $show = $this->actingAs($this->advisorA)->getJson("/api/advisor/appointments/{$this->appointment->id}")->assertOk()
+            ->assertJsonPath('data.handled_by.employee.full_name', 'Cố vấn Bình');
+        $activities = collect($show->json('data.activities'));
+        $this->assertSame(['appointment.checked_in', 'appointment.confirmed'], $activities->pluck('action')->all());
+        $this->assertSame('Cố vấn An', $activities[1]['account']['employee']['full_name']);
+
+        $this->actingAs($this->advisorA)->getJson("/api/advisor/appointments?handled_by={$this->advisorB->id}")->assertOk()->assertJsonCount(1, 'data');
+        $this->actingAs($this->advisorA)->getJson("/api/advisor/appointments?handled_by={$this->advisorA->id}")->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_advisor_reschedules_with_reason_and_customer_is_notified(): void
+    {
+        $agreed = ['customer_agreed' => true, 'contact_method' => 'PHONE'];
+        $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
+            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:15', 'reason_type' => 'OTHER', ...$agreed,
+        ])->assertUnprocessable()->assertJsonValidationErrors('reason');
+        $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
+            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '20:00', 'reason_type' => 'CUSTOMER_REQUEST', ...$agreed,
+        ])->assertUnprocessable();
+
+        $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
+            'appointment_date' => $this->date->addDay()->toDateString(), 'appointment_time' => '14:15',
+            'reason_type' => 'OTHER', 'reason' => 'Khách bận buổi sáng', ...$agreed,
+        ])->assertOk();
+
+        $fresh = $this->appointment->fresh();
+        $this->assertSame('14:15:00', substr((string) $fresh->appointment_time, 0, 8));
+        $this->assertSame($this->advisorA->id, (int) $fresh->handled_by_account_id);
+        $log = $fresh->activities()->first();
+        $this->assertSame('appointment.rescheduled', $log->action);
+        $this->assertSame('09:00:00', $log->old_values['appointment_time']);
+        $this->assertSame('Lý do khác: Khách bận buổi sáng', $log->reason);
+        Mail::assertSent(AppointmentRescheduledMail::class, fn ($mail) => $mail->hasTo('khach@example.test') && str_contains($mail->render(), 'Khách bận buổi sáng'));
+        $this->assertSame($this->customerAccount->id, Notification::query()->where('type', 'APPOINTMENT_RESCHEDULED')->sole()->account_id);
+    }
+
+    public function test_cannot_reschedule_checked_in_and_customers_cannot_use_staff_endpoints(): void
+    {
+        $this->actingAs($this->customerAccount)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
+            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:15', 'reason' => 'Tự đổi qua API nhân viên',
+        ])->assertForbidden();
+
+        $this->appointment->update(['status' => 'CHECKED_IN']);
+        $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/reschedule", [
+            'appointment_date' => $this->date->toDateString(), 'appointment_time' => '14:15', 'reason_type' => 'CUSTOMER_REQUEST',
+            'customer_agreed' => true, 'contact_method' => 'PHONE',
+        ])->assertUnprocessable()->assertJsonPath('errors.status.0', 'Lịch đã tiếp nhận xe, không thể đổi ngày giờ hẹn.');
+        Mail::assertNothingSent();
+    }
+
+    public function test_customer_is_notified_when_advisor_confirms_or_cancels(): void
+    {
+        $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/confirm")->assertOk();
+        $this->actingAs($this->advisorB)->postJson("/api/advisor/appointments/{$this->appointment->id}/cancel", ['cancel_reason' => 'Gara kín lịch'])->assertOk();
+
+        $rows = collect($this->actingAs($this->customerAccount)->getJson('/api/me/notifications')->assertOk()->json('data'));
+        $this->assertEqualsCanonicalizing(
+            [Notification::TYPE_APPOINTMENT_CONFIRMED, Notification::TYPE_APPOINTMENT_CANCELLED],
+            $rows->pluck('type')->all(),
+        );
+        $this->assertTrue($rows->every(fn (array $row) => $row['appointment_id'] === $this->appointment->id));
+        $this->assertStringContainsString('Gara kín lịch', $rows->firstWhere('type', Notification::TYPE_APPOINTMENT_CANCELLED)['content']);
+    }
+
+    public function test_admin_sees_activity_per_advisor(): void
+    {
+        $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/confirm")->assertOk();
+        $this->actingAs($this->advisorB)->postJson("/api/advisor/appointments/{$this->appointment->id}/cancel", ['cancel_reason' => 'Khách hủy'])->assertOk();
+
+        $admin = Account::factory()->create(['role' => Account::ROLE_ADMIN]);
+        $rows = collect($this->actingAs($admin)->getJson('/api/admin/advisor-activity')->assertOk()->json('data'))->keyBy('account_id');
+        $this->assertSame(1, $rows[$this->advisorA->id]['confirmed']);
+        $this->assertSame(1, $rows[$this->advisorB->id]['cancelled']);
+        $this->assertSame('Cố vấn Bình', $rows[$this->advisorB->id]['name']);
+        $this->actingAs($this->advisorA)->getJson('/api/admin/advisor-activity')->assertForbidden();
+    }
+
+    public function test_advisor_activity_filters_by_vietnam_day(): void
+    {
+        $this->actingAs($this->advisorA)->postJson("/api/advisor/appointments/{$this->appointment->id}/confirm")->assertOk();
+        // 18:00 UTC ngày 22 = 01:00 ngày 23 giờ Việt Nam.
+        AuditLog::query()->where('account_id', $this->advisorA->id)->update(['created_at' => '2026-11-22 18:00:00']);
+        $admin = Account::factory()->create(['role' => Account::ROLE_ADMIN]);
+        $confirmedIn = fn (string $query) => collect($this->actingAs($admin)->getJson("/api/admin/advisor-activity?{$query}")->assertOk()->json('data'))
+            ->firstWhere('account_id', $this->advisorA->id)['confirmed'];
+
+        $this->assertSame(1, $confirmedIn('date_from=2026-11-23&date_to=2026-11-23'));
+        $this->assertSame(0, $confirmedIn('date_from=2026-11-22&date_to=2026-11-22'));
+        $this->assertSame(1, $confirmedIn('date_from=2026-11-01&date_to=2026-11-30'));
+        $this->actingAs($admin)->getJson('/api/admin/advisor-activity?date_from=2026-11-24&date_to=2026-11-23')->assertJsonValidationErrors('date_to');
+    }
+}
